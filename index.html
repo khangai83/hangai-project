@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZAR.mn - Үл хөдлөх хөрөнгийн зар</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+</head>
+<body>
+  <!-- ============ HEADER ============ -->
+  <header class="header">
+    <div class="header-inner">
+      <a href="/" class="logo" onclick="showPage('home')">
+        🏠 ZAR<span>.mn</span>
+      </a>
+      <div class="header-actions">
+        <button class="btn btn-outline btn-sm" onclick="showPage('my-listings')">📋 Миний зарууд</button>
+        <button class="btn btn-primary" id="addListingBtn" onclick="openAddListing()">➕ Зар нэмэх</button>
+        <button class="btn btn-secondary btn-sm" id="loginBtn" onclick="openAuthModal()">🔑 Нэвтрэх</button>
+        <button class="btn btn-secondary btn-sm" id="userBtn" style="display:none" onclick="showPage('my-listings')">
+          👤 <span id="userPhoneDisplay"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ MAIN CONTENT ============ -->
+  <div id="app">
+    <!-- HOME PAGE -->
+    <div id="page-home">
+      <!-- Hero -->
+      <section class="hero">
+        <h1>🏠 Үл хөдлөх хөрөнгийн зар</h1>
+        <p>Худалдаа, түрээсийн үл хөдлөх хөрөнгийн зарууд</p>
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Хайх... (жишээ нь: Баянгол, орон сууц)" onkeyup="if(event.key==='Enter') searchListings()">
+          <button onclick="searchListings()">🔍 Хайх</button>
+        </div>
+      </section>
+
+      <!-- Category Tabs -->
+      <div class="category-tabs">
+        <button class="category-tab active" onclick="filterByCategory('all')">Бүгд</button>
+        <button class="category-tab" onclick="filterByCategory('sell')">💰 Зарах</button>
+        <button class="category-tab" onclick="filterByCategory('rent')">🔑 Түрээслэх</button>
+      </div>
+
+      <!-- Filters -->
+      <div class="container">
+        <div class="filters-bar">
+          <div class="filter-group">
+            <label>Төрөл</label>
+            <select id="filterPropertyType" onchange="loadListings()">
+              <option value="">Бүх төрөл</option>
+              <option value="Орон сууц">🏢 Орон сууц</option>
+              <option value="House">🏠 House</option>
+              <option value="Худалдаа үйлчилгээний талбай">🏪 Худалдаа үйлчилгээний талбай</option>
+              <option value="Обьект, үйлдвэр, агуулах">🏭 Обьект, үйлдвэр, агуулах</option>
+              <option value="Газар">🌳 Газар</option>
+              <option value="Оффис">🏢 Оффис</option>
+              <option value="Хашаа байшин">🏡 Хашаа байшин</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Өрөө</label>
+            <select id="filterRooms" onchange="loadListings()">
+              <option value="">Бүгд</option>
+              <option value="1">1 өрөө</option>
+              <option value="2">2 өрөө</option>
+              <option value="3">3 өрөө</option>
+              <option value="4">4 өрөө</option>
+              <option value="5">5+ өрөө</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Хот/Аймаг</label>
+            <select id="filterCity" onchange="onCityChange()">
+              <option value="">Бүгд</option>
+              <option value="Улаанбаатар">Улаанбаатар</option>
+              <option value="Архангай">Архангай</option>
+              <option value="Баян-Өлгий">Баян-Өлгий</option>
+              <option value="Баянхонгор">Баянхонгор</option>
+              <option value="Булган">Булган</option>
+              <option value="Говь-Алтай">Говь-Алтай</option>
+              <option value="Говьсүмбэр">Говьсүмбэр</option>
+              <option value="Дархан-Уул">Дархан-Уул</option>
+              <option value="Дорноговь">Дорноговь</option>
+              <option value="Дорнод">Дорнод</option>
+              <option value="Дундговь">Дундговь</option>
+              <option value="Завхан">Завхан</option>
+              <option value="Орхон">Орхон</option>
+              <option value="Өвөрхангай">Өвөрхангай</option>
+              <option value="Өмнөговь">Өмнөговь</option>
+              <option value="Сүхбаатар">Сүхбаатар</option>
+              <option value="Сэлэнгэ">Сэлэнгэ</option>
+              <option value="Төв">Төв</option>
+              <option value="Увс">Увс</option>
+              <option value="Ховд">Ховд</option>
+              <option value="Хөвсгөл">Хөвсгөл</option>
+              <option value="Хэнтий">Хэнтий</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Дүүрэг / Сум</label>
+            <select id="filterDistrict" onchange="onDistrictChange()">
+              <option value="">Бүгд</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label>Хороо</label>
+            <select id="filterKhoroo" onchange="loadListings()">
+              <option value="">Бүгд</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label>Үнэ (доод)</label>
+            <input type="number" id="filterMinPrice" placeholder="₮" onchange="loadListings()">
+          </div>
+          <div class="filter-group">
+            <label>Үнэ (дээд)</label>
+            <input type="number" id="filterMaxPrice" placeholder="₮" onchange="loadListings()">
+          </div>
+          <div class="filter-group">
+            <label>Талбай (доод м²)</label>
+            <input type="number" id="filterMinArea" placeholder="м²" onchange="loadListings()">
+          </div>
+          <div class="filter-group">
+            <label>Талбай (дээд м²)</label>
+            <input type="number" id="filterMaxArea" placeholder="м²" onchange="loadListings()">
+          </div>
+          <button class="btn btn-secondary" onclick="resetFilters()">🔄 Цэвэрлэх</button>
+        </div>
+
+        <!-- View Toggle & Map Toggle -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div class="section-title" id="listingsTitle" style="margin-bottom:0">📌 Сүүлийн зарууд</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div class="view-toggle">
+              <button class="active" onclick="setViewMode('grid')" id="viewGridBtn">📰 Сүлжээ</button>
+              <button onclick="setViewMode('map')" id="viewMapBtn">🗺️ Газрын зураг</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Map Container (hidden by default) -->
+        <div id="mapContainer" class="map-container" style="display:none"></div>
+
+        <!-- Listings Grid -->
+        <div id="listingsGrid" class="listings-grid"></div>
+      </div>
+    </div>
+
+    <!-- LISTING DETAIL PAGE -->
+    <div id="page-detail" style="display:none">
+      <div class="detail-page" id="detailContent"></div>
+    </div>
+
+    <!-- MY LISTINGS PAGE -->
+    <div id="page-my-listings" style="display:none">
+      <div class="user-panel">
+        <div class="user-panel-header">
+          <h2>📋 Миний зарууд</h2>
+          <button class="btn btn-primary" onclick="openAddListing()">➕ Зар нэмэх</button>
+        </div>
+        <div class="user-info-bar" id="userInfoBar">
+          <div class="user-avatar">👤</div>
+          <div class="user-details">
+            <h3 id="myNameDisplay">Хэрэглэгч</h3>
+            <p id="myPhoneDisplay"></p>
+          </div>
+        </div>
+        <div id="myListingsContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ AUTH MODAL ============ -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>🔑 Нэвтрэх / Бүртгүүлэх</h2>
+        <button class="modal-close" onclick="closeModal('authModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="auth-step active" id="authStep1">
+          <p style="margin-bottom:16px;color:var(--gray-500)">Үргэлжлүүлэхийн тулд утасны дугаараа оруулна уу</p>
+          <div class="form-group">
+            <label>Утасны дугаар</label>
+            <div class="auth-phone-input">
+              <span class="phone-prefix">+976</span>
+              <input type="tel" id="authPhone" placeholder="88112233" maxlength="8" onkeyup="if(this.value.length===8) sendCode()">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Нэр (заавал биш)</label>
+            <input type="text" id="authName" placeholder="Таны нэр">
+          </div>
+          <button class="btn btn-primary btn-lg" style="width:100%;margin-top:8px" onclick="sendCode()">
+            📨 Код авах
+          </button>
+        </div>
+        <div class="auth-step" id="authStep2">
+          <p style="margin-bottom:16px;color:var(--gray-500)">
+            <span id="authPhoneDisplay"></span> руу илгээсэн баталгаажуулах кодыг оруулна уу
+          </p>
+          <div class="code-inputs">
+            <input type="text" maxlength="1" class="code-input" onkeyup="moveToNext(this, 1)" autofocus>
+            <input type="text" maxlength="1" class="code-input" onkeyup="moveToNext(this, 2)">
+            <input type="text" maxlength="1" class="code-input" onkeyup="moveToNext(this, 3)">
+            <input type="text" maxlength="1" class="code-input" onkeyup="moveToNext(this, 4)">
+            <input type="text" maxlength="1" class="code-input" onkeyup="moveToNext(this, 5)">
+            <input type="text" maxlength="1" class="code-input" onkeyup="moveToNext(this, 6)">
+          </div>
+          <button class="btn btn-primary btn-lg" style="width:100%;margin-top:8px" onclick="verifyCode()">
+            ✅ Баталгаажуулах
+          </button>
+          <p style="text-align:center;margin-top:12px">
+            <a href="#" onclick="resetAuth()" style="color:var(--primary);font-size:14px">← Буцах</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ADD LISTING MODAL ============ -->
+  <div class="modal-overlay" id="addListingModal">
+    <div class="modal" style="max-width:700px">
+      <div class="modal-header">
+        <h2>➕ Шинэ зар нэмэх</h2>
+        <button class="modal-close" onclick="closeModal('addListingModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="listingForm" onsubmit="submitListing(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Зар төрөл *</label>
+              <select id="formCategory" required>
+                <option value="">Сонгох</option>
+                <option value="sell">💰 Зарах</option>
+                <option value="rent">🔑 Түрээслэх</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Үл хөдлөх төрөл *</label>
+              <select id="formPropertyType" required>
+                <option value="">Сонгох</option>
+                <option value="Орон сууц">🏢 Орон сууц</option>
+                <option value="House">🏠 House</option>
+                <option value="Худалдаа үйлчилгээний талбай">🏪 Худалдаа үйлчилгээний талбай</option>
+                <option value="Обьект, үйлдвэр, агуулах">🏭 Обьект, үйлдвэр, агуулах</option>
+                <option value="Газар">🌳 Газар</option>
+                <option value="Оффис">🏢 Оффис</option>
+                <option value="Хашаа байшин">🏡 Хашаа байшин</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Өрөөний тоо</label>
+              <select id="formRooms">
+                <option value="0">Сонгох</option>
+                <option value="1">1 өрөө</option>
+                <option value="2">2 өрөө</option>
+                <option value="3">3 өрөө</option>
+                <option value="4">4 өрөө</option>
+                <option value="5">5+ өрөө</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Талбай (м²)</label>
+              <input type="number" id="formArea" placeholder="Жишээ нь: 75" step="0.1">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Хот / Аймаг *</label>
+              <select id="formCity" required>
+                <option value="">Сонгох</option>
+                <option value="Улаанбаатар">Улаанбаатар</option>
+                <option value="Архангай">Архангай</option>
+                <option value="Баян-Өлгий">Баян-Өлгий</option>
+                <option value="Баянхонгор">Баянхонгор</option>
+                <option value="Булган">Булган</option>
+                <option value="Говь-Алтай">Говь-Алтай</option>
+                <option value="Говьсүмбэр">Говьсүмбэр</option>
+                <option value="Дархан-Уул">Дархан-Уул</option>
+                <option value="Дорноговь">Дорноговь</option>
+                <option value="Дорнод">Дорнод</option>
+                <option value="Дундговь">Дундговь</option>
+                <option value="Завхан">Завхан</option>
+                <option value="Орхон">Орхон</option>
+                <option value="Өвөрхангай">Өвөрхангай</option>
+                <option value="Өмнөговь">Өмнөговь</option>
+                <option value="Сүхбаатар">Сүхбаатар</option>
+                <option value="Сэлэнгэ">Сэлэнгэ</option>
+                <option value="Төв">Төв</option>
+                <option value="Увс">Увс</option>
+                <option value="Ховд">Ховд</option>
+                <option value="Хөвсгөл">Хөвсгөл</option>
+                <option value="Хэнтий">Хэнтий</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Дүүрэг / Сум</label>
+              <select id="formDistrict">
+                <option value="">Сонгох</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Хороо</label>
+              <select id="formKhoroo">
+                <option value="">Сонгох</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Дэлгэрэнгүй хаяг</label>
+              <input type="text" id="formAddress" placeholder="Байр, гудамж, байшингийн дугаар">
+            </div>
+          </div>
+
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Үнэ *</label>
+              <input type="number" id="formPrice" placeholder="₮" required>
+            </div>
+            <div class="form-group">
+              <label>Үнийн төрөл</label>
+              <select id="formPriceType">
+                <option value="total">Нийт үнэ</option>
+                <option value="month">Сард</option>
+                <option value="day">Өдөрт</option>
+                <option value="sqm">м² тутамд</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Холбоо барих утас *</label>
+              <input type="text" id="formPhone" placeholder="88112233" required>
+            </div>
+            <div class="form-group">
+              <label>Холбоо барих хүн</label>
+              <input type="text" id="formContactName" placeholder="Таны нэр">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Нэмэлт тайлбар</label>
+            <textarea id="formDescription" placeholder="Үл хөдлөх хөрөнгийн дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Зураг оруулах</label>
+            <div class="image-upload-area" id="imageUploadArea" onclick="document.getElementById('imageInput').click()">
+              <div class="upload-icon">📷</div>
+              <p>Зураг оруулахын тулд дарна уу</p>
+              <p class="form-hint">Дээд тал нь 10 зураг (jpg, png, webp)</p>
+            </div>
+            <input type="file" id="imageInput" accept="image/*" multiple style="display:none" onchange="handleImageSelect(event)">
+            <div class="image-preview-grid" id="imagePreviewGrid"></div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg" style="width:100%;margin-top:16px">
+            ✅ Зар нийтлэх
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ JAVASCRIPT ============ -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
