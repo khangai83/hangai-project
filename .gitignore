@@ -1,3 +1,22 @@
+# Node.js модулиуд
 node_modules/
+.next/
+out/
+
+# Өгөгдлийн сангийн файлууд
 unegui.db
+*.sqlite
+*.sqlite3
+
+# MacOS системийн файлууд
 .DS_Store
+
+# Орчны тохиргоо (нууц үг, API түлхүүр)
+.env
+.env*.local
+
+# Upload хийсэн зургууд (демо svg файлуудыг commit хадгална)
+public/uploads/*
+!public/uploads/.gitkeep
+!public/uploads/property-*.svg
+

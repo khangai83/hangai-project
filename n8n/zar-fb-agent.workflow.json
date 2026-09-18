@@ -1,0 +1,124 @@
+{
+  "name": "ZAR.mn — FB группын зар цаг тутам (агент)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "trigger-schedule",
+      "name": "Цаг тутам (1 цаг)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-420, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/v18.0/{{ $env.FB_GROUP_ID }}/feed",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "id,message,created_time,permalink_url,from{name}"
+            },
+            {
+              "name": "limit",
+              "value": "50"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.FB_ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "graph-fetch",
+      "name": "Graph API — группын feed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-220, 0]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Сүүлийн 1 цагт орсон постыг шүүж, ingest форматад хөрвүүлнэ\nconst HOUR_MS = 60 * 60 * 1000;\nconst now = Date.now();\nconst out = [];\nconst seen = new Set();\nconst group = ($env.FB_GROUP_ID || '').toString();\nfor (const it of $input.all()) {\n  const resp = it.json || {};\n  const body = resp.data || resp;\n  const feed = Array.isArray(body) ? body : (Array.isArray(body.data) ? body.data : []);\n  for (const p of feed) {\n    const created = p.created_time ? Date.parse(p.created_time) : now;\n    if (now - created > HOUR_MS) continue;\n    const text = String(p.message || '').trim();\n    if (!text) continue;\n    const id = String(p.id || '');\n    const shortId = id.includes('_') ? id.split('_').pop() : id;\n    const url = p.permalink_url || ('https://www.facebook.com/groups/' + group + '/posts/' + shortId);\n    if (seen.has(url)) continue;\n    seen.add(url);\n    out.push({\n      source: 'facebook',\n      group: group,\n      url: url,\n      postedBy: (p.from && p.from.name) ? p.from.name : '',\n      postedAt: p.created_time || null,\n      text: text,\n      images: []\n    });\n  }\n}\nreturn [{ json: { posts: out } }];"
+      },
+      "id": "filter-map",
+      "name": "Шүүх + хөрвүүлэх (сүүлийн 1 цаг)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [-20, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.AGENT_INGEST_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ posts: $json.posts }) }}",
+        "options": {
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "x-agent-key",
+                "value": "={{ $env.AGENT_INGEST_KEY }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "ingest-post",
+      "name": "Апп руу илгээх (/api/agent/ingest)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [180, 0]
+    }
+  ],
+  "connections": {
+    "Цаг тутам (1 цаг)": {
+      "main": [
+        [
+          {
+            "node": "Graph API — группын feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Graph API — группын feed": {
+      "main": [
+        [
+          {
+            "node": "Шүүх + хөрвүүлэх (сүүлийн 1 цаг)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Шүүх + хөрвүүлэх (сүүлийн 1 цаг)": {
+      "main": [
+        [
+          {
+            "node": "Апп руу илгээх (/api/agent/ingest)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

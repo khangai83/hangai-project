@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   GLOBALS.CSS — Tailwind CSS суурь + давтагддаг компонентын классууд
+   Legacy style.css-ийг бүрэн орлосон. Бүх layout нь компонентуудын
+   JSX дотор Tailwind utility классуудаар бичигдэнэ.
+   ============================================================ */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  /* Leaflet газрын зургийн контейнер стандарт өндөртэй байх */
+  .leaflet-container {
+    font-family: inherit;
+  }
+}
+
+@layer components {
+  /* ---------- Layout ---------- */
+  .page-container {
+    @apply mx-auto w-full max-w-[1280px] px-4 py-6 sm:px-6;
+  }
+
+  .section-card {
+    @apply rounded-xl border border-gray-200 bg-white p-5 shadow-card sm:p-6;
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-transparent
+           px-4 py-2.5 text-sm font-medium transition
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40
+           disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-dark hover:-translate-y-px;
+  }
+  .btn-secondary {
+    @apply bg-secondary text-white hover:bg-secondary-dark;
+  }
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700;
+  }
+  .btn-outline {
+    @apply border-gray-300 bg-transparent text-gray-700 hover:border-gray-400 hover:bg-gray-100;
+  }
+  .btn-ghost {
+    @apply border-gray-200 bg-transparent text-gray-500 hover:bg-gray-100;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-[13px];
+  }
+  .btn-lg {
+    @apply px-7 py-3.5 text-base;
+  }
+
+  /* ---------- Form controls ---------- */
+  .form-label {
+    @apply mb-1 block text-[13px] font-semibold text-gray-700;
+  }
+  .form-label-upper {
+    @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500;
+  }
+  .form-input,
+  .form-select,
+  .form-textarea {
+    @apply w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900
+           outline-none transition placeholder:text-gray-400
+           focus:border-primary focus:ring-[3px] focus:ring-primary-light
+           disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70;
+  }
+  .form-textarea {
+    @apply min-h-[100px] resize-y;
+  }
+  .form-hint {
+    @apply mt-1 text-xs text-gray-500;
+  }
+  .form-error {
+    @apply my-1 text-[13px] text-red-600;
+  }
+
+  /* Формын мөр/бүлэг — AddListingModal & QueueDraftItem-д давтагддаг бүтэц */
+  .form-row {
+    @apply mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2;
+  }
+  .form-group {
+    @apply flex flex-col gap-1;
+  }
+  .form-group label {
+    @apply mb-1 block text-[13px] font-semibold text-gray-700;
+  }
+  .form-group :is(input, select, textarea) {
+    @apply w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition
+           placeholder:text-gray-400 focus:border-primary focus:ring-[3px] focus:ring-primary-light
+           disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70;
+  }
+  .form-group textarea {
+    @apply min-h-[100px] resize-y;
+  }
+
+  /* ---------- Badges ---------- */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white;
+  }
+  .badge-sell {
+    @apply bg-primary;
+  }
+  .badge-rent {
+    @apply bg-secondary;
+  }
+
+  /* ---------- Loading ---------- */
+  .spinner {
+    @apply mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-[3px] border-gray-200 border-t-primary;
+  }
+}

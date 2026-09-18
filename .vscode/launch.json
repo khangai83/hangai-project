@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "pwa-msedge",
+            "name": "Launch Chrome via Edge DevTools",
+            "request": "launch",
+            "runtimeArgs": [
+                "--remote-debugging-port=9222"
+            ],
+            "url": "http://localhost:3000",
+            "runtimeExecutable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        }
+    ]
+}

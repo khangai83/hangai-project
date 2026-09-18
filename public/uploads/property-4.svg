@@ -1,6 +1,34 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
-  <rect width="800" height="600" fill="#002dea"/>
-  <text x="400" y="280" font-family="Arial" font-size="48" fill="white" text-anchor="middle" font-weight="bold">Үл хөдлөх хөрөнгө</text>
-  <text x="400" y="340" font-family="Arial" font-size="24" fill="rgba(255,255,255,0.8)" text-anchor="middle">Зураг 4</text>
-  <rect x="300" y="380" width="200" height="4" rx="2" fill="rgba(255,255,255,0.5)"/>
+  <defs>
+    <linearGradient id="s3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#93C5FD"/><stop offset="100%" stop-color="#E0F0FF"/></linearGradient>
+    <linearGradient id="cb3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6B7280"/><stop offset="100%" stop-color="#374151"/></linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#s3)"/>
+  <ellipse cx="200" cy="70" rx="55" ry="20" fill="white" opacity="0.8"/>
+  <rect x="150" y="120" width="500" height="380" fill="url(#cb3)" rx="4"/>
+  <rect x="150" y="120" width="500" height="50" fill="#3B82F6" rx="4"/>
+  <rect x="180" y="200" width="130" height="150" fill="#93C5FD" rx="2" stroke="#1F2937" stroke-width="2"/>
+  <rect x="180" y="200" width="65" height="150" fill="#BFDBFE" rx="2" opacity="0.5"/>
+  <rect x="340" y="200" width="130" height="150" fill="#93C5FD" rx="2" stroke="#1F2937" stroke-width="2"/>
+  <rect x="340" y="200" width="65" height="150" fill="#BFDBFE" rx="2" opacity="0.5"/>
+  <rect x="500" y="380" width="80" height="120" fill="#1F2937" rx="4"/>
+  <rect x="505" y="385" width="70" height="110" fill="#60A5FA" rx="2" opacity="0.6"/>
+  <rect x="250" y="135" width="300" height="30" fill="#F59E0B" rx="4"/>
+  <text x="400" y="156" font-family="Arial" font-size="16" fill="white" text-anchor="middle" font-weight="bold">ХУДАЛДААНЫ ТӨВ</text>
+  <rect x="190" y="380" width="40" height="50" fill="#FDE047" rx="2" opacity="0.8"/>
+  <rect x="260" y="380" width="40" height="50" fill="#FDE047" rx="2" opacity="0.8"/>
+  <rect x="330" y="380" width="40" height="50" fill="#FDE047" rx="2" opacity="0.8"/>
+  <rect x="400" y="380" width="40" height="50" fill="#FDE047" rx="2" opacity="0.8"/>
+  <rect x="0" y="500" width="800" height="30" fill="#D1D5DB"/>
+  <rect x="0" y="530" width="800" height="70" fill="#9CA3AF"/>
+  <rect x="0" y="550" width="800" height="50" fill="#4B5563"/>
+  <rect x="100" y="572" width="80" height="6" fill="#FBBF24" rx="3"/>
+  <rect x="350" y="572" width="80" height="6" fill="#FBBF24" rx="3"/>
+  <rect x="600" y="572" width="80" height="6" fill="#FBBF24" rx="3"/>
+  <rect x="50" y="540" width="50" height="20" fill="#DC2626" rx="4"/>
+  <circle cx="62" cy="562" r="6" fill="#1F2937"/>
+  <circle cx="88" cy="562" r="6" fill="#1F2937"/>
+  <rect x="650" y="535" width="50" height="20" fill="#2563EB" rx="4"/>
+  <circle cx="662" cy="557" r="6" fill="#1F2937"/>
+  <circle cx="688" cy="557" r="6" fill="#1F2937"/>
 </svg>
