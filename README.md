@@ -11,7 +11,9 @@
 - **Орон сууцны нэмэлт мэдээлэл**: ашиглалтанд орсон он, барилгын нийт давхар, тухайн байрны давхар,
   тагт (1-4), гараж байгаа эсэх
 - Миний зарууд хуудас
-- Телефон дугаараар нэвтрэх (Supabase Auth — phone OTP)
+- **Бүртгүүлэх**: нэр + утасны дугаар + нууц үг → утсаа **SMS-ээр баталгаажуулна**
+  ([verify.mn](https://verify.mn) — MO SMS gateway, `144773` дугаар)
+- **Нэвтрэх**: утасны дугаар + нууц үг (SMS дахин шаардлагагүй)
 
 ## Үл хөдлөхийн төрлүүд (бүрдэл хэсгүүд)
 
@@ -57,7 +59,7 @@
 | Cloudinary (зураг)        | Supabase Storage `listing-images`        |
 | SQLite seed               | `scripts/seed-supabase.js`               |
 | `index.html` + `app.js`   | React components (`components/`, `app/`) |
-| Custom session            | Supabase Auth (phone OTP)                |
+| Custom session            | Supabase Auth (утас + нууц үг)            |
 
 ## Эхлүүлэх заавар
 
@@ -73,7 +75,9 @@ cp .env.local.example .env.local
 `.env.local` дотор:
 - `NEXT_PUBLIC_SUPABASE_URL` — Dashboard → Settings → API → Project URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — anon key
-- `SUPABASE_SERVICE_ROLE_KEY` — зөвхөн seed-д (нууц, хэзээч frontend-д бүү ашигла)
+- `SUPABASE_SERVICE_ROLE_KEY` — сервер талд (seed + бүртгэл; нууц, хэзээч frontend-д бүү ашигла)
+- `VERIFY_MN_API_KEY` — [verify.mn](https://verify.mn) → Developer Console → API KEY
+  (бүртгэлийн SMS баталгаажуулалт; мөн нууц — сервер талд л)
 
 3) Schema + RLS-ийг ажиллуулах (дарааллаар нь)
 Dashboard → SQL Editor-т дараах файлуудын агуулгыг оруулан Run хийнэ
@@ -82,8 +86,8 @@ Dashboard → SQL Editor-т дараах файлуудын агуулгыг о�
 | Дараалал | Файл | Юу нэмэгдэх вэ |
 |---|---|---|
 | 1 | `supabase/migrations/0001_schema.sql` | `profiles`, `listings`, RLS, `listing-images` bucket |
-| 2 | `supabase/migrations/0002_listing_drafts.sql` | Facebook агентын queue (`listing_drafts`) |
-| 3 | `supabase/migrations/0003_listing_details.sql` | **Орон сууцны нэмэлт талбарууд** (`build_year`, `floor`, `total_floors`, `balconies`, `has_garage`) + хуучин төрлийн нэрсийг шинэчилэх |
+| 2 | `supabase/migrations/0003_listing_details.sql` | **Орон сууцны нэмэлт талбарууд** (`build_year`, `floor`, `total_floors`, `balconies`, `has_garage`) + хуучин төрлийн нэрсийг шинэчилэх |
+| 3 | `supabase/migrations/0004_remove_listing_drafts.sql` | *(сонголтоор)* хуучин Facebook агентын `listing_drafts` хүснэгтийг бүрэн устгана |
 
 > `0003` ороогүй бол апп ажиллах боловч зар нэмэхэд «ашиглалтанд орсон он, давхар,
 > тагт, гараж» хадгалагдахгүй (console-д анхааруулга гарна). Шалгах:
@@ -132,85 +136,200 @@ npm run check:supabase
 ```
 
 Энэ нь `.env.local`-ийн хувьсагчид, URL-ийн формат, DNS (NXDOMAIN эсэх),
-`listings`/`listing_drafts`/`profiles` хүснэгтүүд болон `listing-images` bucket-ыг шалгана.
+`listings`/`profiles` хүснэгтүүд, `listing-images` bucket болон `VERIFY_MN_API_KEY`-г шалгана.
 
 Хамгийн түгээмэл шалтгаан: **`.env.local`-д буруу/хуучирсан `NEXT_PUBLIC_SUPABASE_URL`**
 (төсөл устсан эсвэл project ref буруу бичсэн). Supabase Dashboard →
 Project Settings → Data API → Project URL-аа хуулж тавиад `npm run dev`-ээ дахин эхлүүлнэ.
 
-## Facebook агент (review-queue pipeline)
+### UI дээр «Supabase тохиргоо олдсонгүй. .env.local файл үүсгэнэ үү.» гэж гарвал
 
-Facebook группээс зар цуглуулж, **хүн баталгаажуулсны дараа л** сайт руу нийтлэдэг
-агент багтсан. Урсгал:
+Гэхдээ `npm run check:supabase` бүх шалгалтыг ✅ гэж харуулж байгаа бол `.env.local`
+нь зөв байна. Энэ тохиолдолд шалтгаан нь **хуучин bundle** байна:
 
-```
-Facebook групп
-   ↓  (жинхэнэ скрейп эсвэл JSON экспорт)
-listing_drafts (queue, status=pending)
-   ↓  /admin/queue — хүн засварлаж баталгаажуулна
-listings (нийтэд харагдах зар)
-```
+`NEXT_PUBLIC_*` хувьсагчид нь **build/compile үед** client bundle дотор шууд
+бичигддэг ба Next.js нь `.env.local`-ийг **зөвхөн dev server эхлэх үед** уншдаг.
+Иймд `.env.local` үүсгэх/засахаас өмнө эхэлсэн `next dev` процесс болон browser-ийн
+хуучин JS chunk нь env-гүй (хоосон) хувилбараа үйлчилсээр байна. Засвар:
 
-Аюулгүй байдлын үүднээс агент шууд нийтлэхгүй — `raw_text`-аас parse хийж draft болгоно.
-Зөвхөн `✅ Нийтлэх` товчийг хүн дарсан тохиолдолд л зар жагсаалтад орно.
+1. Ажиллаж байгаа dev server-ээ **бүрэн зогсооно** (`Ctrl+C`) — эсвэл
+   `lsof -nP -iTCP:3000 -sTCP:LISTEN` гэж PID-г олоод `kill <PID>`.
+   Дараа нь `npm run dev`.
+2. Browser дээр **hard refresh** хийнэ: `Cmd+Shift+R` (эсвэл DevTools →
+   Network → *Disable cache* сонгоод reload).
+3. Хэвээр бол Next.js-ийн кэшийг устгана: `rm -rf .next && npm run dev`.
 
-1) Schema-аа ажиллуулна (SQL Editor-т):
-   `supabase/migrations/0002_listing_drafts.sql`
+Баталгаажуулах: dev server ажиллаж байхад client bundle дотор URL орсон эсэхийг
+шууд харж болно:
 
-2) Queue-д демо зар оруулах (бодит FB-гүйгээр flow-г турших):
-   ```bash
-   node scripts/ingest-fb-demo.js
-   ```
-   Эсвэл жинхэнэ FB post-оо JSON файлаар оруулах:
-   ```bash
-   node scripts/ingest-from-json.js scripts/fb-dump.example.json
-   ```
-   JSON формат: `scripts/fb-dump.example.json`-ыг үзнэ үү.
-
-3) `/admin/queue` (нэвтэрсэн хэрэглэгч, header → 🤖 Facebook агент) хуудсаар
-   зарыг засварлаж баталгаажуулна. Нийтлэх үед зар нэвтэрсэн таны нэр дээр бүртгэгдэнэ.
-
-`lib/fbParser.js` нь Монгол текстаас категори/төрөл/үнэ(сая, мянга)/өрөө/м²/дүүрэг/утас-ыг
-автоматаар таних **best-effort** parse хийгдэг тул нийтлэхээс өмнө үр дүнг засаж болно.
-
-> **Жинхэнэ Facebook скрейпинг:** FB нь нэвтрэлт, анти-бот бүхий тул групп post-ыг
-> автоматаар татах нь сесс cookie / Graph API access token шаарддаг ба ToS-той зөрчилдөж
-> болзошгүй. Тиймээс одоогийн pipeline нь ямар ч эх үүсвэрээс (JSON import) тэжээгдэхэд
-> зориулагдсан. Жинхэнэ FB татах provider-ыг хожим холбоход `draftAgent.ingestRawPost()`
-> интерфэйс бэлэн.
-
-### n8n-ээр цаг тутам автоматаар оруулах (тухайн группээс)
-
-`n8n/zar-fb-agent.workflow.json` — import хийгдэх workflow. Урсгал:
-
-```
-Schedule (1 цаг тутам)
-   → Facebook Graph API: GET /{FB_GROUP_ID}/feed
-   → Code: сүүлийн 1 цагт орсон постыг шүүж ingest формат болгох
-   → POST /api/agent/ingest  (манай апп-д) → queue (listing_drafts)
+```bash
+curl -s http://localhost:3000/_next/static/chunks/app/page.js | grep -o 'htjbox[a-z0-9]*'
+# → https://<project-ref>.supabase.co гэж гарвал зөв compile хийгдсэн гэсэн үг
 ```
 
-Тохиргоо (n8n-ийн environment хувьсагч):
-- `FB_GROUP_ID` — группын ID
-- `FB_ACCESS_TOKEN` — Graph API access token (group feed уншихад **группын гишүүн** байх хэрэгтэй)
-- `AGENT_INGEST_URL` — `https://<таны_host>/api/agent/ingest`
-- `AGENT_INGEST_KEY` — апп-ын `.env.local`-ийн `AGENT_INGEST_KEY`-тэй ижил
+### Хуудас «Заруудыг ачаалж байна...» дээр мөнхөрч, console-д `/_next/static/...` **404** гарвал
 
-Апп-д: `.env.local`-д `AGENT_INGEST_KEY=<нууц>` нэмээд дахин ачаална. Ингэснээр
-`/api/agent/ingest` (x-agent-key header-тэй POST) идэвхжинэ.
+Энэ нь `.env`-ийн асуудал **БИШ** — dev server-ийн **client build эвдэрсэн** гэсэн үг.
+HTML нь `main-app.js`, `app/page.js`, `app/layout.js`, `app/*.css`-ийг дуудаж байтал
+тэдгээр файл `.next/static` дотроос алга болсон байна. JS ачаалагдахгүй тул React
+hydrate болж чадахгүй → `useEffect`/`fetchListings` хэзээ ч ажиллахгүй → хуудас
+«ачаалж байна...» дээрээ мөнхөрнө (заримдаа өмнөх алдааны мессеж хэвээр харагдана).
 
-> n8n node-ын typeVersion дээр ажиллаж буй n8n хувилбараас хамаарч бага зэрэг
-> таарч тохируулах шаардлага гарч болзошгүй. Import амжилтгүй бол README-ийн
-> 4 node (Schedule → HTTP Request → Code → HTTP Request) зургийг гараар давтахад хангалттай.
+Шалтгаан: `.next` эвдэрсэн — ихэвчлэн **нэгэн зэрэг 2 `next dev` процесс** нэг төслийн
+`.next`-ийг хамт бичих (эсвэл dev server-ийн restart-тай зэрэгцсэн хүсэлт) үед үүсдэг.
 
-## Нэвтрэлтийн тухай анхаарал
+Шалгах:
 
-Энэ апп Supabase-ийн **phone OTP** ашигладаг. Код хүлээн авахын тулд Supabase Auth дээр
-**SMS provider (Twilio г.м.)** тохируулсан байх шаардлагатай. Тухайн дугаарт код
-ирэхгүй бол:
+```bash
+# HTML ямар asset дуудаж байна вэ
+curl -s http://localhost:3000/ | grep -o '/_next/static/[^"?]*' | sort -u
+# тэдгээр файл дискэн дээр байгаа эсэх
+ls .next/static/chunks/app/   # main-app.js, page.js, layout.js байх ёстой
+```
 
-- Supabase Dashboard → Authentication → SMS provider → тохируулах, эсвэл
-- Хөгжүүлэлтэд зориулж Email OTP руу шилжүүлэх эсвэл mock хийх.
+Хэрэв дуудагдсан файл `ls`-д байхгүй бол (эсвэл 404 бол):
+
+```bash
+# 1) БҮХ dev server-ээ зогсоо — нэг л процесс ажиллах ёстой
+lsof -nP -iTCP:3000 -sTCP:LISTEN     # PID-г олоод: kill <PID>
+pkill -f 'next dev'
+# 2) эвдэрсэн кэшийг бүрмөсөн устга
+rm -rf .next
+# 3) нэг л удаа эхлүүл
+npm run dev
+```
+
+Дараа нь browser-оо hard refresh (`Cmd+Shift+R`) хийнэ. Зөв болсныг:
+
+```bash
+find .next/static -type f | sort   # app/page.js, app/layout.js, css/app/*.css байх ёстой
+```
+
+> ⚠️ Нэг төслийн хавтаст **2 dev server зэрэг бүү ажиллуул** — хоёулаа нэг `.next`-ийг
+> бичиж, яг дээрх эвдрэлийг үүсгэдэг. Хэрэв 3000 порт завгүй бол Next өөр порт
+> санал болгодог — тэр үед хуучин процессыг `lsof -nP -iTCP:3000 -sTCP:LISTEN`-ээр
+> олж зогсооно.
+
+## Бүртгэл ба нэвтрэлт (утас + нууц үг + SMS баталгаажуулалт)
+
+| Үйлдэл | Юу шаардлагатай вэ |
+|---|---|
+| **Бүртгүүлэх** | Нэр + утасны дугаар + нууц үг → дараа нь **утсаа SMS-ээр баталгаажуулна** |
+| **Нэвтрэх** | Утасны дугаар + нууц үг (SMS дахин шаардлагагүй) |
+
+> Энэ төслөөс **Facebook агент / n8n автоматжуулалт** (`listing_drafts` queue,
+> `/admin/queue`, `lib/draftAgent.js`, `lib/fbParser.js`, `n8n/` workflow) бүрэн
+> хасагдсан. Хүснэгтийг устгах бол `0004_remove_listing_drafts.sql`.
+
+### Хэрхэн ажилладаг вэ (verify.mn — MO SMS gateway)
+
+[verify.mn](https://verify.mn) нь Монголын бүх үүрэн операторыг (Mobicom, Skytel,
+Unitel, G-Mobile, ONDO, …) нэгтгэсэн **MO (Mobile-Originated)** gateway:
+**хэрэглэгч өөрөө `144773` руу SMS илгээж**, verify.mn манай сервер рүү мэдэгдэнэ.
+Тиймээс Twilio гэх мэт MT SMS provider заавал хэрэггүй.
+
+```
+AuthModal (нэр / утас / нууц үг)
+   → POST /api/auth/register/start     → verify.mn POST /sessions (6 оронтой код)
+   → UI: displayInstruction (үгчлэн) + smsUri (tap-to-open)  → хэрэглэгч 144773 руу илгээнэ
+   → GET  /api/auth/register/status     (3 сек тутам)   → PENDING → VERIFIED
+   → POST /api/auth/register/complete   → Supabase Admin: createUser(phone, password, phone_confirm: true)
+   → signInWithPassword(утас, нууц үг)  → нэвтэрнэ
+```
+
+Файл | Үүрэг
+---|---
+`lib/verifyMn.js` | verify.mn REST клиент (сервер тал, `VERIFY_MN_API_KEY`)
+`lib/authServer.js` | Supabase Admin client, `requestToken` (HMAC), хэрэглэгч үүсгэх, phone provider шалгалт
+`lib/authApi.js` | Клиент талаас `/api/auth/*` дуудах туслах
+`components/AuthModal.jsx` | Нэвтрэх / Бүртгүүлэх / SMS баталгаажуулах UI (3 секундын polling)
+`app/api/auth/register/{start,status,complete}/route.js` | Бүртгэлийн API
+`app/api/auth/verify/callback/route.js` | verify.mn-ийн "шалга" дохио (шууд 200 буцаана)
+`scripts/check-verify-mn.js` | **Бодит** verify.mn-ээр гараар турших: `npm run check:verify -- 99112233`
+`scripts/test-verify-mn.js` | **Offline** автомат тест (mock verify.mn, 0₮): `npm run test:verify`
+
+### `verifyPhone(phone)` — сервер талын нэг функцээр баталгаажуулах
+
+`lib/verifyMn.js` нь бүхэл урсгалыг нэг функцээр санал болгодог:
+
+```js
+const verifyMn = require('./lib/verifyMn');   // ESM: import verifyMn from '@/lib/verifyMn'
+
+const ok = await verifyMn.verifyPhone('99112233', {
+  // session үүссэн даруйд: displayInstruction-ийг үгчлэн харуулж,
+  // smsUri-г tap-to-open (mobile) холбоосоор өгнө
+  onSession: (s) => show(s.displayInstruction, s.smsUri),   // s.text = 6 оронтой код
+  onTick: (s) => console.log(s.sessionStatus),              // PENDING / VERIFIED / EXPIRED
+});
+if (ok) { /* утас баталгаажсан */ }
+```
+
+| Тайлбар | Утга |
+|---|---|
+| Буцаах утга | `true` — зөвхөн `sessionStatus === 'VERIFIED'` үед; `false` — EXPIRED / timeout |
+| Polling | `GET /sessions/{sessionId}` **3 секунд** тутам (`POLL_INTERVAL_MS`), VERIFIED болмогц **шууд зогсоно** |
+| TTL | 300 секунд (`TTL_SECONDS`) — `timeoutMs`-ээр солиж болно |
+| `text` | 6 оронтой санамсаргүй тоо (session бүрт шинэ; 409 давхцал гарвал дахин үүсгэнэ) |
+| Callback | `app/api/auth/verify/callback` нь verify.mn-ийн "шалга" дохиог 2xx-ээр шууд хариулна (body/HMAC байхгүй тул **итгэхгүй** — polling нь үнэн төлөв) |
+| Алдааны бодлого | Хэрэглэгчээс хамаарах → `false`; **тохиргооны** алдаа (`VERIFY_MN_API_KEY` дутуу/буруу=401, дугаар буруу) → `Error` **шиднэ** (false болгож нуувал буруу оношилгоо өгнө) |
+
+> ⚠️ Вэб аппын бүртгэлийн урсгал нь энэ функцийг шууд дуудахгүй (учир нь browser
+> verify.mn-ийг шууд дуудаж чадахгүй — API key серверт байдаг). Тиймээс апп нь
+> `/api/auth/register/{start,status,complete}` route-уудаар **алхам алхмаар**
+> ажилладаг; `verifyPhone()` нь скрипт, admin tool, background job-д зориулагдсан.
+
+### Тест
+
+```bash
+npm run test:verify     # offline, mock verify.mn — 0₮, интернэт шаардахгүй
+npm run check:verify -- 99112233   # бодит verify.mn + бодит SMS (150₮ хэрэглэгч төлнө)
+```
+
+`test:verify` нь 8 тохиолдлыг шалгана: PENDING→VERIFIED→`true` · VERIFIED болмогц
+polling зогсох · EXPIRED→`false` · timeout→`false` · 401→`Error` · key дутуу→`Error` ·
+буруу дугаар→`Error` · `+976`/зураас/зайтай хэлбэр хөрвүүлэлт.
+
+**Аюулгүй байдал**
+
+- `VERIFY_MN_API_KEY` нь **NEXT_PUBLIC_ угтваргүй** — browser-д хэзээ ч орохгүй.
+- Хэрэглэгч зөвхөн `service_role`-оор (сервер талд) үүснэ → SMS баталгаажуулалтыг
+  тойрч бүртгүүлэх боломжгүй.
+- `requestToken` нь (sessionId ↔ утас) хосыг HMAC-SHA256 гарын үсгээр холбоно →
+  нэг дугаараа баталгаажуулаад өөр дугаар бүртгэхийг хориглоно (30 мин TTL).
+- Бүртгэгдсэн дугаарыг `start` шатанд шалгана → verify.mn-ийн 150₮-ийн SMS дэмий
+  зарцуулагдахгүй (`PHONE_EXISTS`).
+- Phone provider идэвхгүй бол мөн `start` дээр шалгаж, тодорхой мессеж өгнө
+  (`PHONE_PROVIDER_DISABLED`).
+
+### Заавал хийх 2 тохиргоо
+
+1. **Verify.MN API KEY** — https://verify.mn → Developer Console → API KEY-г
+   `.env.local`-ийн `VERIFY_MN_API_KEY=` -д тавина.
+   > Нэг SMS нь **хэрэглэгчид 150₮** төлбөртэй (таны дансанд 40₮ орлого очно).
+   > Баталгаажмагц UI автоматаар polling-оо зогсооно — дэмий SMS зарцуулагдахгүй.
+2. **Supabase → утасны нэвтрэлтийг идэвхжүүлэх** —
+   Dashboard → Authentication → Providers → **Phone → Enable** (Save).
+   SMS provider (Twilio) тохируулах шаардлагагүй — SMS-ийг verify.mn илгээдэг,
+   Supabase зөвхөн хэрэглэгчийг хадгална.
+
+   > ⚠️ Идэвхгүй бол бүртгэл эхлэхэд шууд `PHONE_PROVIDER_DISABLED` гарч,
+   > нэвтрэх үед `Phone logins are disabled` (HTTP 422) гэж буцаана.
+   > Шалгах: `curl <SUPABASE_URL>/auth/v1/settings` → `"external": {"phone": true}`
+
+3. Турших (нэг SMS зарцуулагдана): `npm run check:verify -- 99112233`
+
+### Localhost дээрх онцлог
+
+verify.mn нь зөвхөн **public host** руу callback хийж чадна. Тиймээс browser нь
+`/api/auth/register/status`-ыг **3 секунд тутам** дуудаж өөрөө шалгадаг (polling) —
+production дээр ч энэ нь үндсэн механизм. `VERIFY_MN_CALLBACK_URL`-ийг зөвхөн
+production дээр тохируулж болно (сонголтоор, шуурхай болгоно).
+
+### Нууц үгээ мартвал?
+
+"Нууц үг сэргээх" урсгал одоогоор байхгүй. Дугаар нь бүртгэлтэй тул дахин
+бүртгүүлэхэд `PHONE_EXISTS` гарна — хэрэгтэй бол Supabase Admin API-аар
+`admin.updateUserById(id, { password })` хийх endpoint нэмнэ.
 
 ## Төслийн бүтэц
 
@@ -219,18 +338,24 @@ app/
   layout.jsx, page.jsx, globals.css   # globals.css = Tailwind суурь + @layer components
   listings/[id]/page.jsx     # зарын дэлгэрэнгүй
   my-listings/page.jsx       # миний зарууд
+  api/auth/register/{start,status,complete}/route.js   # бүртгэлийн API (SMS баталгаажуулалт)
+  api/auth/verify/callback/route.js                    # verify.mn-ийн "шалга" дохио
   not-found.jsx
 components/
   AppProviders.jsx           # auth/toast/modal state + header/footer
-  AuthModal.jsx, AddListingModal.jsx
+  AuthModal.jsx              # Нэвтрэх / Бүртгүүлэх / SMS баталгаажуулалт (3 сек polling)
+  AddListingModal.jsx
   HomeClient.jsx, ListingCard.jsx, ListingDetailClient.jsx
   Breadcrumb.jsx             # unegui.mn загварын замчилсан цэс (client)
   MyListingsClient.jsx, MapView.jsx (Leaflet)
 lib/
   supabaseClient.js, queries.js, format.js, locationData.js
+  verifyMn.js                # verify.mn (MO SMS) REST клиент — зөвхөн сервер тал
+  authServer.js              # Supabase Admin client + requestToken (HMAC) + хэрэглэгч үүсгэх
+  authApi.js                 # клиент талаас /api/auth/* дуудах туслах
   breadcrumb.js              # breadcrumb-ийн мөрүүд + URL угсрах (buildListingBreadcrumb/buildHomeBreadcrumb)
-supabase/migrations/0001_schema.sql, 0002_listing_drafts.sql, 0003_listing_details.sql
-scripts/seed-supabase.js
+supabase/migrations/0001_schema.sql, 0003_listing_details.sql, 0004_remove_listing_drafts.sql
+scripts/seed-supabase.js, check-supabase.js, check-verify-mn.js
 ```
 
 ## Загвар (Tailwind CSS)
@@ -275,7 +400,7 @@ scripts/seed-supabase.js
 ## Орон сууцны нэмэлт талбарууд
 
 `Орон сууц` төрөл сонгосон үед «Зар нэмэх» формат доорх талбарууд нэмэгдэнэ
-(`components/AddListingModal.jsx`, `/admin/queue` дээр `components/QueueDraftItem.jsx`):
+(`components/AddListingModal.jsx`):
 
 | Формын нэр | DB багана | Тайлбар |
 |---|---|---|

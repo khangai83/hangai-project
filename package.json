@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "check:supabase": "node scripts/check-supabase.js"
+    "check:supabase": "node scripts/check-supabase.js",
+    "check:verify": "node scripts/check-verify-mn.js",
+    "test:verify": "node scripts/test-verify-mn.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.114.0",

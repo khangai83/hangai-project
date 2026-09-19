@@ -4,8 +4,24 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import Link from 'next/link';
 import { getSupabase } from '../lib/supabaseClient';
 import { fetchProfile, upsertProfile } from '../lib/queries';
+import { normalizePhone } from '../lib/format';
 import AuthModal from './AuthModal';
 import AddListingModal from './AddListingModal';
+
+/** Supabase-ийн англи алдааг хэрэглэгчид ойлгомжтой Монгол мессеж болгох */
+function friendlySignInError(error) {
+  const msg = `${(error && error.code) || ''} ${(error && error.message) || ''}`.toLowerCase();
+  if (msg.includes('invalid login') || msg.includes('invalid_credentials')) {
+    return 'Утасны дугаар эсвэл нууц үг буруу байна.';
+  }
+  if (msg.includes('phone') && msg.includes('confirm')) {
+    return 'Утасны дугаар баталгаажаагүй байна. Дахин бүртгүүлнэ үү.';
+  }
+  if (msg.includes('disabled') || msg.includes('not enabled')) {
+    return 'Supabase дээр Phone provider идэвхгүй байна (Dashboard → Authentication → Providers → Phone).';
+  }
+  return (error && error.message) || 'Нэвтрэхэд алдаа гарлаа.';
+}
 
 // ---------------- Contexts ----------------
 const AuthContext = createContext(null);
@@ -64,20 +80,19 @@ export default function AppProviders({ children }) {
   }, [sb]);
 
   // ---------- Auth actions ----------
-  const signInWithPhone = useCallback(async (phone) => {
+  // Бүртгэл: нэр + утас + нууц үг → verify.mn-ээр SMS баталгаажуулалт
+  // (AuthModal → /api/auth/register/*). Нэвтрэх: утас + нууц үг.
+  const signIn = useCallback(async (phone, password) => {
     const client = getSupabase();
     if (!client) return { error: 'Supabase тохиргоо алга. .env.local үүсгэнэ үү.' };
-    const { error } = await client.auth.signInWithOtp({ phone });
-    return { error: error ? error.message : null };
-  }, []);
+    if (!password) return { error: 'Нууц үгээ оруулна уу.' };
 
-  const verifyCode = useCallback(async (phone, code) => {
-    const client = getSupabase();
-    if (!client) return { error: 'Supabase тохиргоо алга. .env.local үүсгэнэ үү.' };
-    const { error } = await client.auth.verifyOtp({ phone, token: String(code).trim(), type: 'sms' });
-    if (error) return { error: error.message };
-    const { data } = await client.auth.getUser();
-    if (data?.user) setUser({ id: data.user.id, phone: data.user.phone });
+    const { data, error } = await client.auth.signInWithPassword({
+      phone: normalizePhone(phone),
+      password,
+    });
+    if (error) return { error: friendlySignInError(error) };
+    if (data && data.user) setUser({ id: data.user.id, phone: data.user.phone });
     return { error: null };
   }, []);
 
@@ -107,8 +122,8 @@ export default function AppProviders({ children }) {
   const closeAdd = useCallback(() => setAddOpen(false), []);
   const notifyListingsChanged = useCallback(() => setDataVersion((v) => v + 1), []);
 
-  const authValue = useMemo(() => ({ user, profileName, authLoading, signInWithPhone, verifyCode, saveName, logout }),
-    [user, profileName, authLoading, signInWithPhone, verifyCode, saveName, logout]);
+  const authValue = useMemo(() => ({ user, profileName, authLoading, signIn, saveName, logout }),
+    [user, profileName, authLoading, signIn, saveName, logout]);
   const toastValue = useMemo(() => ({ showToast }), [showToast]);
   const uiValue = useMemo(() => ({ openAuth, openAdd, closeAdd, dataVersion, notifyListingsChanged }),
     [openAuth, openAdd, closeAdd, dataVersion, notifyListingsChanged]);
@@ -138,7 +153,6 @@ export default function AppProviders({ children }) {
                     {userMenuOpen && (
                       <div className="absolute right-0 top-[calc(100%+6px)] z-50 min-w-[220px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card-hover">
                         <Link href="/my-listings" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={() => setUserMenuOpen(false)}>📋 Миний зарууд</Link>
-                        <Link href="/admin/queue" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={() => setUserMenuOpen(false)}>🤖 Facebook агент (queue)</Link>
                         <button className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={() => { setUserMenuOpen(false); editName(); }}>✏️ Нэр засах</button>
                         <div className="h-px bg-gray-200"></div>
                         <button className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={logout}>🚪 Гарах</button>
@@ -162,7 +176,7 @@ export default function AppProviders({ children }) {
           </footer>
 
           {/* ===== MODALS & TOAST ===== */}
-          <AuthModal open={authOpen} onClose={closeAuth} onLoggedIn={saveName} />
+          <AuthModal open={authOpen} onClose={closeAuth} />
           <AddListingModal open={addOpen} onClose={closeAdd} userId={user?.id || null} displayName={displayName} />
 
           {toast && (

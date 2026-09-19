@@ -37,6 +37,7 @@ function loadEnvLocal() {
 }
 
 const results = [];
+let phoneProviderOn = null; // Supabase: external.phone идэвхтэй эсэх
 function report(ok, label, detail) {
   results.push({ ok, label });
   const icon = ok === true ? '✅' : ok === false ? '❌' : '⚠️ ';
@@ -50,6 +51,8 @@ async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // SMS баталгаажуулалт (verify.mn) — зөвхөн сервер талд хэрэглэгдэнэ
+  const verifyKey = (process.env.VERIFY_MN_API_KEY || '').trim();
 
   // ---------- 1. Хувьсагчид ----------
   report(!!url, 'NEXT_PUBLIC_SUPABASE_URL тохируулсан', url || 'дутуу байна');
@@ -57,6 +60,13 @@ async function main() {
     anonKey ? `${anonKey.slice(0, 12)}… (${anonKey.length} тэмдэгт)` : 'дутуу байна');
   report(!!serviceKey, 'SUPABASE_SERVICE_ROLE_KEY тохируулсан (зөвхөн seed/скриптэд)',
     serviceKey ? `${serviceKey.slice(0, 12)}… (${serviceKey.length} тэмдэгт)` : 'дутуу байна');
+  report(
+    verifyKey && !verifyKey.includes('tanii_verify_mn'),
+    'VERIFY_MN_API_KEY (бүртгэлийн SMS баталгаажуулалт)',
+    verifyKey && !verifyKey.includes('tanii_verify_mn')
+      ? `${verifyKey.slice(0, 6)}… (${verifyKey.length} тэмдэгт)`
+      : 'дутуу байна → бүртгүүлэх үед SMS код илгээгдэхгүй. verify.mn → Developer Console → API KEY'
+  );
 
   if (!url || !anonKey) {
     console.log('\n❌ Үндсэн тохиргоо дутуу — засвараас хойш дахин ажиллуулна уу.');
@@ -94,7 +104,7 @@ async function main() {
   const headers = { apikey: anonKey, Authorization: `Bearer ${anonKey}` };
 
   // ---------- 4. REST API + хүснэгтүүд ----------
-  for (const table of ['listings', 'listing_drafts', 'profiles']) {
+  for (const table of ['listings', 'profiles']) {
     try {
       const res = await fetch(`${url}/rest/v1/${table}?select=*&limit=1`, { headers });
       if (res.status === 200 || res.status === 206) {
@@ -127,18 +137,83 @@ async function main() {
     report(false, 'Орон сууцны нэмэлт багана шалгахад алдаа', e.message);
   }
 
-  // ---------- 5. Storage bucket ----------
+  // ---------- 4.6. Утасны (phone) нэвтрэлт идэвхтэй эсэх ----------
+  // Бүртгэл (утас + нууц үг + SMS) ажиллахад ЗААВАЛ шаардлагатай.
+  // Идэвхгүй бол нэвтрэх нь `phone_provider_disabled` (HTTP 422) буцаана.
   try {
-    const res = await fetch(`${url}/storage/v1/bucket/listing-images`, { headers });
-    if (res.status === 200) report(true, 'Storage bucket «listing-images» байна', 'HTTP 200');
-    else report(false, `Storage bucket «listing-images» HTTP ${res.status}`,
-      (await res.text()).slice(0, 300));
+    const res = await fetch(`${url}/auth/v1/settings`, { headers });
+    if (res.status === 200) {
+      const settings = await res.json();
+      phoneProviderOn = !!(settings && settings.external && settings.external.phone);
+      report(
+        phoneProviderOn,
+        'Supabase дээр утасны (phone) нэвтрэлт идэвхтэй',
+        phoneProviderOn
+          ? 'external.phone = true'
+          : 'external.phone = FALSE → бүртгүүлэх/нэвтрэх боломжгүй!\n' +
+            '     → Dashboard → Authentication → Providers → Phone → Enable → Save\n' +
+            '     → SMS provider (Twilio) тохируулах шаардлагагүй (SMS-ийг verify.mn илгээдэг)'
+      );
+    } else {
+      report(false, `Supabase auth settings уншиж чадсангүй (HTTP ${res.status})`,
+        (await res.text()).slice(0, 200));
+    }
+  } catch (e) {
+    report(false, 'Утасны нэвтрэлт шалгахад алдаа', e.message);
+  }
+
+  // ---------- 5. Storage bucket ----------
+  // АНХААР: `GET /storage/v1/bucket/:id` (bucket metadata) нь зөвхөн service_role
+  // эрхээр харагдана. anon key-ээр дуудвал bucket БАЙСАН ч "Bucket not found"
+  // (HTTP 400, NoSuchBucket) гэж буцаадаг тул хуурамч ❌ гардаг байсан.
+  // Тиймээс: service key байвал түүгээр шалгана; байхгүй бол public object
+  // замыг probe хийж NoSuchBucket / NoSuchKey-ээр ялгана.
+  try {
+    if (serviceKey) {
+      const res = await fetch(`${url}/storage/v1/bucket/listing-images`, {
+        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+      });
+      if (res.status === 200) {
+        const bucket = await res.json().catch(() => null);
+        report(true, 'Storage bucket «listing-images» байна',
+          `public: ${bucket && bucket.public ? 'true' : 'false'} (service_role-ээр шалгав)`);
+      } else {
+        report(false, `Storage bucket «listing-images» олдсонгүй (HTTP ${res.status})`,
+          `${(await res.text()).slice(0, 300)}\n` +
+          '     → supabase/migrations/0001_schema.sql-ийг Supabase SQL Editor-т ажиллуулна уу.');
+      }
+    } else {
+      const res = await fetch(`${url}/storage/v1/object/public/listing-images/__check_probe__`, { headers });
+      const body = await res.text().catch(() => '');
+      if (/NoSuchBucket/i.test(body)) {
+        report(false, 'Storage bucket «listing-images» олдсонгүй',
+          'supabase/migrations/0001_schema.sql-ийг Supabase SQL Editor-т ажиллуулна уу.');
+      } else {
+        report(true, 'Storage bucket «listing-images» байна (public object зам хүрч байна)',
+          'bucket metadata шалгахад SUPABASE_SERVICE_ROLE_KEY шаардлагатай тул probe хийв.');
+      }
+    }
   } catch (e) {
     report(false, 'Storage bucket шалгахад алдаа', e.message);
   }
 
   const failed = results.filter((r) => r.ok === false).length;
   console.log(`\n${failed === 0 ? '🎉 Бүх шалгалт амжилттай!' : `⚠️  ${failed} шалгалт амжилтгүй.`}`);
+
+  // Бүртгэл (SMS баталгаажуулалт) эсвэл нэвтрэлт ажиллахгүй бол дараагийн алхмуудыг хэлнэ
+  const hints = [];
+  if (!verifyKey || verifyKey.includes('tanii_verify_mn')) {
+    hints.push('• .env.local → VERIFY_MN_API_KEY=<verify.mn Developer Console-оос авсан түлхүүр>');
+  }
+  if (phoneProviderOn === false) {
+    hints.push('• Supabase Dashboard → Authentication → Providers → Phone → Enable');
+  }
+  if (hints.length) {
+    console.log('\n🔧 Бүртгэл/нэвтрэлт ажиллахад дараах алхмууд дутуу байна:');
+    hints.forEach((h) => console.log(`   ${h}`));
+    console.log('   Дараа нь: npm run check:verify -- 99112233   (бодит SMS-ээр турших)');
+  }
+
   process.exit(failed === 0 ? 0 : 1);
 }
 
