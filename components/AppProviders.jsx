@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getSupabase } from '../lib/supabaseClient';
 import { fetchProfile, upsertProfile } from '../lib/queries';
 import { normalizePhone } from '../lib/format';
+import phoneEmail from '../lib/phoneEmail';
 import AuthModal from './AuthModal';
 import AddListingModal from './AddListingModal';
 
@@ -87,13 +88,29 @@ export default function AppProviders({ children }) {
     if (!client) return { error: 'Supabase тохиргоо алга. .env.local үүсгэнэ үү.' };
     if (!password) return { error: 'Нууц үгээ оруулна уу.' };
 
-    const { data, error } = await client.auth.signInWithPassword({
-      phone: normalizePhone(phone),
+    const normalized = normalizePhone(phone);
+
+    // ---------- 1) Утасны (phone) provider-ээр ----------
+    const first = await client.auth.signInWithPassword({ phone: normalized, password });
+    if (!first.error && first.data && first.data.user) {
+      setUser({ id: first.data.user.id, phone: first.data.user.phone });
+      return { error: null };
+    }
+
+    // ---------- 2) Phone provider идэвхгүй бол ДОТООД имэйлээр ----------
+    // (бүртгэл нь дотоод имэйлээр хийгдсэн байж болно — lib/phoneEmail.js)
+    const retry = await client.auth.signInWithPassword({
+      email: phoneEmail.phoneToEmail(phone),
       password,
     });
-    if (error) return { error: friendlySignInError(error) };
-    if (data && data.user) setUser({ id: data.user.id, phone: data.user.phone });
-    return { error: null };
+    if (!retry.error && retry.data && retry.data.user) {
+      const u = retry.data.user;
+      setUser({ id: u.id, phone: (u.user_metadata && u.user_metadata.phone) || normalized });
+      return { error: null };
+    }
+
+    // Хоёулаа нурсан бол имэйл оролдлогын алдаа нь хэрэглэгчид илүү ойлгомжтой
+    return { error: friendlySignInError(retry.error || first.error) };
   }, []);
 
   const saveName = useCallback(async (name) => {

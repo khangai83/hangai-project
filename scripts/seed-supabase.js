@@ -6,6 +6,9 @@
 //                SUPABASE_SERVICE_ROLE_KEY байх ёстой.
 // ============================================================
 const { createClient } = require('@supabase/supabase-js');
+// ⚠️ Бүртгэлийн логикийг давхардуулахгүйн тулд сервер талын модулийг ашиглана
+const { createVerifiedUser, findUserByPhone, isPhoneProviderEnabled } = require('../lib/authServer');
+const { phoneToEmail } = require('../lib/phoneEmail');
 const fs = require('fs');
 const path = require('path');
 
@@ -55,32 +58,50 @@ const LISTINGS = [...LISTINGS1, ...LISTINGS2];
 async function main() {
   let uid = null;
 
-  // Хэрэглэгчийг хайх (phone-ийн формат ялгаатай байж болзошгүй тул жигдэрүүлэн харьцуулна)
-  const norm = (p) => String(p || '').replace(/\D/g, '');
-  const { data: users } = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-  const found = users.users.find((u) => norm(u.phone) === norm(DEMO_PHONE));
+  // Демо хэрэглэгчийг хайх (lib/authServer нь phone, дотоод имэйл болон
+  // user_metadata.phone гэсэн гурван хэлбэрийг шалгана)
+  const found = await findUserByPhone(DEMO_PHONE);
   if (found) {
     uid = found.id;
-    console.log('👤 Демо хэрэглэгч олдлоо:', found.phone || DEMO_PHONE);
+    console.log('👤 Демо хэрэглэгч олдлоо:', found.phone || found.email || DEMO_PHONE);
   }
 
-  // Олдохгүй бол үүсгэх
+  // Олдохгүй бол үүсгэх.
+  // `createVerifiedUser` нь phone provider идэвхтэй эсэхийг өөрөө шалгаж,
+  // идэвхгүй бол ДОТООД имэйлээр (`976...@phone.zarmn.mn`) бүртгэнэ —
+  // ингэснээр dashboard дээр юу ч солихгүйгээр нэвтэрч чадна.
   if (!uid) {
     try {
-      const { data, error } = await admin.auth.admin.createUser({
+      const user = await createVerifiedUser({
         phone: DEMO_PHONE,
         password: DEMO_PASSWORD,
-        email_confirm: true,
+        name: 'Демо хэрэглэгч',
       });
-      if (error) throw error;
-      uid = (data && (data.id || (data.user && data.user.id))) || null;
+      uid = user.id;
       console.log('👤 Демо хэрэглэгч үүслээ:', DEMO_PHONE, '(password:', DEMO_PASSWORD + ')');
     } catch (e) {
-      // "already registered" гарвал аль хэдийн үүссэн гэсэн үг — жагсаалтаас авах
-      if (!/already registered/i.test(e.message)) throw e;
-      const again = await admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-      uid = (again.data.users.find((u) => norm(u.phone) === norm(DEMO_PHONE)) || again.data.users[0] || {}).id;
+      // "аль хэдийн бүртгэгдсэн" гарвал жагсаалтаас дахин хайна
+      if (!/бүртгэгдсэн|already/i.test(e.message)) throw e;
+      const again = await findUserByPhone(DEMO_PHONE);
+      uid = again && again.id;
       if (!uid) throw e;
+    }
+  }
+
+  // ----- Хуучин (зөвхөн phone-той) хэрэглэгчийг засах -----
+  // phone provider идэвхгүй үед `phone`-той хэрэглэгч НЭВТЭРЧ ЧАДАХГҮЙ
+  // (422 phone_provider_disabled). Тиймээс тэр хэрэглэгчид дотоод имэйл
+  // нэмж өгснөөр нэвтрэх боломжтой болно.
+  const current = (await findUserByPhone(DEMO_PHONE)) || null;
+  if (current && !current.email) {
+    const phoneAuthOn = await isPhoneProviderEnabled();
+    if (!phoneAuthOn) {
+      const { error: fixErr } = await admin.auth.admin.updateUserById(current.id, {
+        email: phoneToEmail(DEMO_PHONE),
+        email_confirm: true,
+      });
+      if (fixErr) throw fixErr;
+      console.log('🔧 Демо хэрэглэгчид дотоод имэйл нэмлээ (phone provider идэвхгүй тул):', phoneToEmail(DEMO_PHONE));
     }
   }
 
@@ -100,8 +121,9 @@ async function main() {
   }
 
   console.log(`🎉 Нийт ${count} зар амжилттай орууллаа!`);
-  console.log('\n📱 Нэвтрэлт: энэ апп телефон OTP-ээр нэвтрэдэг тул SMS provider (Twilio г.м.) шаардлагатай.');
-  console.log('   Демо заруудыг "99112233" дугаартай бүртгэлээр харна.');
+  console.log(`\n📱 Нэвтрэлт: утасны дугаар + нууц үг`);
+  console.log(`   Дугаар:  ${DEMO_PHONE.replace('+976', '')}    Нууц үг: ${DEMO_PASSWORD}`);
+  console.log('   (phone provider идэвхтэй эсэхээс үл хамааран ажиллана — lib/authServer.js)');
   process.exit(0);
 }
 

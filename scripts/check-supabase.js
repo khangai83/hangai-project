@@ -146,13 +146,15 @@ async function main() {
       const settings = await res.json();
       phoneProviderOn = !!(settings && settings.external && settings.external.phone);
       report(
-        phoneProviderOn,
-        'Supabase дээр утасны (phone) нэвтрэлт идэвхтэй',
+        phoneProviderOn ? true : null, // ⚠️ ОДОО ЗААВАЛ БИШ — дээрх тайлбарыг үзнэ үү
+        `Supabase утасны (phone) provider: ${phoneProviderOn ? 'идэвхтэй' : 'идэвхгүй'}`,
         phoneProviderOn
-          ? 'external.phone = true'
-          : 'external.phone = FALSE → бүртгүүлэх/нэвтрэх боломжгүй!\n' +
-            '     → Dashboard → Authentication → Providers → Phone → Enable → Save\n' +
-            '     → SMS provider (Twilio) тохируулах шаардлагагүй (SMS-ийг verify.mn илгээдэг)'
+          ? 'external.phone = true — бүртгэл утасны дугаараар хийгдэнэ'
+          : 'external.phone = false → БҮРТГЭЛ АЖИЛЛАСААР БАЙНА: утсыг дотоод имэйл\n' +
+            '     (976XXXXXXXX@phone.zarmn.mn) болгож Email provider-ээр бүртгэнэ\n' +
+            '     (lib/authServer.js → createVerifiedUser, lib/phoneEmail.js).\n' +
+            '     Асаахыг хүсвэл: Dashboard → Authentication → Providers → Phone → Enable\n' +
+            '     эсвэл: npm run enable:phone-auth'
       );
     } else {
       report(false, `Supabase auth settings уншиж чадсангүй (HTTP ${res.status})`,
@@ -205,11 +207,8 @@ async function main() {
   if (!verifyKey || verifyKey.includes('tanii_verify_mn')) {
     hints.push('• .env.local → VERIFY_MN_API_KEY=<verify.mn Developer Console-оос авсан түлхүүр>');
   }
-  if (phoneProviderOn === false) {
-    hints.push('• Supabase Dashboard → Authentication → Providers → Phone → Enable');
-  }
   if (hints.length) {
-    console.log('\n🔧 Бүртгэл/нэвтрэлт ажиллахад дараах алхмууд дутуу байна:');
+    console.log('\n🔧 Бүртгэл ажиллахад дараах алхам дутуу байна:');
     hints.forEach((h) => console.log(`   ${h}`));
     console.log('   Дараа нь: npm run check:verify -- 99112233   (бодит SMS-ээр турших)');
   }

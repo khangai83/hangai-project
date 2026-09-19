@@ -233,20 +233,49 @@ AuthModal (нэр / утас / нууц үг)
    → POST /api/auth/register/start     → verify.mn POST /sessions (6 оронтой код)
    → UI: displayInstruction (үгчлэн) + smsUri (tap-to-open)  → хэрэглэгч 144773 руу илгээнэ
    → GET  /api/auth/register/status     (3 сек тутам)   → PENDING → VERIFIED
-   → POST /api/auth/register/complete   → Supabase Admin: createUser(phone, password, phone_confirm: true)
+   → POST /api/auth/register/complete   → Supabase Admin: createUser(утас эсвэл дотоод имэйл, password)
    → signInWithPassword(утас, нууц үг)  → нэвтэрнэ
 ```
 
 Файл | Үүрэг
 ---|---
 `lib/verifyMn.js` | verify.mn REST клиент (сервер тал, `VERIFY_MN_API_KEY`)
-`lib/authServer.js` | Supabase Admin client, `requestToken` (HMAC), хэрэглэгч үүсгэх, phone provider шалгалт
+`lib/phoneEmail.js` | Утас ↔ **дотоод имэйл** (`86889911@phone.zarmn.mn`) — сервер + клиент хоёулаа
+`lib/authServer.js` | Supabase Admin client, `requestToken` (HMAC), хэрэглэгч үүсгэх, provider шалгалт
 `lib/authApi.js` | Клиент талаас `/api/auth/*` дуудах туслах
 `components/AuthModal.jsx` | Нэвтрэх / Бүртгүүлэх / SMS баталгаажуулах UI (3 секундын polling)
 `app/api/auth/register/{start,status,complete}/route.js` | Бүртгэлийн API
+`app/api/auth/status/route.js` | Бэлэн эсэх (`loginMode: 'phone' \| 'email'`)
 `app/api/auth/verify/callback/route.js` | verify.mn-ийн "шалга" дохио (шууд 200 буцаана)
 `scripts/check-verify-mn.js` | **Бодит** verify.mn-ээр гараар турших: `npm run check:verify -- 99112233`
 `scripts/test-verify-mn.js` | **Offline** автомат тест (mock verify.mn, 0₮): `npm run test:verify`
+`scripts/enable-phone-auth.js` | *(сонголтоор)* Phone provider-ыг 1 командаар асаах: `npm run enable:phone-auth`
+
+### Утасны дугаар ба Supabase provider (чухал!)
+
+Supabase-ийн **"Phone" provider** нь төслийн тохиргооноос хамаарч идэвхгүй байж болно.
+Тэр үед `signInWithPassword({ phone })` нь `422 phone_provider_disabled` буцаана.
+
+> ⚠️ Ажиглагдсан онцлог: Admin API нь phone provider **идэвхгүй байхад ч** `phone`-той
+> хэрэглэгч **үүсгэдэг** — гэхдээ тэр хэрэглэгч **нэвтэрч чаддаггүй**. Тиймээс шийдвэрийг
+> үүсгэх алдаагаар биш, **provider-ийн бодит төлвөөр** гаргадаг.
+
+Тиймээс бүртгэл/нэвтрэлт нь **хоёр горимд** ажиллана (автоматаар сонгогдоно):
+
+| Горим | Нөхцөл | Supabase-д хэрхэн хадгалагдах |
+|---|---|---|
+| `phone` | Phone provider **идэвхтэй** | `user.phone = +97699112233`, `phone_confirm: true` |
+| `email` | Phone provider **идэвхгүй** (default) | `user.email = 99112233@phone.zarmn.mn`, `email_confirm: true`, `user_metadata.phone = +97699112233` |
+
+- **Хэрэглэгч UI дээр зөвхөн утсаа харж/оруулна** — дотоод имэйл хэзээ ч харагдахгүй,
+  хэзээ ч илгээгдэхгүй (синтетик хаяг).
+- Нэвтрэх үед `AppProviders.signIn()` эхлээд утсаар, нурвал дотоод имэйлээр оролдоно →
+  аль ч горимд ажиллана, dashboard дээр юу ч солих шаардлагагүй.
+- Хуучин (зөвхөн `phone`-той) хэрэглэгчдийг `node scripts/seed-supabase.js` (демо
+  хэрэглэгчийг автоматаар засна) эсвэл доорх нэг мөрөөр засна:
+  ```js
+  // admin.updateUserById(id, { email: phoneToEmail(phone), email_confirm: true })
+  ```
 
 ### `verifyPhone(phone)` — сервер талын нэг функцээр баталгаажуулах
 
@@ -298,25 +327,33 @@ polling зогсох · EXPIRED→`false` · timeout→`false` · 401→`Error` 
   нэг дугаараа баталгаажуулаад өөр дугаар бүртгэхийг хориглоно (30 мин TTL).
 - Бүртгэгдсэн дугаарыг `start` шатанд шалгана → verify.mn-ийн 150₮-ийн SMS дэмий
   зарцуулагдахгүй (`PHONE_EXISTS`).
-- Phone provider идэвхгүй бол мөн `start` дээр шалгаж, тодорхой мессеж өгнө
-  (`PHONE_PROVIDER_DISABLED`).
+- Phone provider идэвхгүй байх нь бүртгэлийг **хориглохгүй** — `createVerifiedUser`
+  автоматаар дотоод имэйл рүү шилжинэ (дээрх хүснэгтийг үзнэ үү).
 
-### Заавал хийх 2 тохиргоо
+### Заавал хийх ганц тохиргоо
 
-1. **Verify.MN API KEY** — https://verify.mn → Developer Console → API KEY-г
-   `.env.local`-ийн `VERIFY_MN_API_KEY=` -д тавина.
-   > Нэг SMS нь **хэрэглэгчид 150₮** төлбөртэй (таны дансанд 40₮ орлого очно).
-   > Баталгаажмагц UI автоматаар polling-оо зогсооно — дэмий SMS зарцуулагдахгүй.
-2. **Supabase → утасны нэвтрэлтийг идэвхжүүлэх** —
-   Dashboard → Authentication → Providers → **Phone → Enable** (Save).
-   SMS provider (Twilio) тохируулах шаардлагагүй — SMS-ийг verify.mn илгээдэг,
-   Supabase зөвхөн хэрэглэгчийг хадгална.
+**Verify.MN API KEY** — https://verify.mn → Developer Console → API KEY-г
+`.env.local`-ийн `VERIFY_MN_API_KEY=` -д тавина (мөн deploy дээр Vercel/платформын
+Environment Variables-д).
 
-   > ⚠️ Идэвхгүй бол бүртгэл эхлэхэд шууд `PHONE_PROVIDER_DISABLED` гарч,
-   > нэвтрэх үед `Phone logins are disabled` (HTTP 422) гэж буцаана.
-   > Шалгах: `curl <SUPABASE_URL>/auth/v1/settings` → `"external": {"phone": true}`
+> Нэг SMS нь **хэрэглэгчид 150₮** төлбөртэй (таны дансанд 40₮ орлого очно).
+> Баталгаажмагц UI автоматаар polling-оо зогсооно — дэмий SMS зарцуулагдахгүй.
 
-3. Турших (нэг SMS зарцуулагдана): `npm run check:verify -- 99112233`
+Дараа нь турших: `npm run check:supabase` → `npm run check:verify -- 99112233`
+
+### (Сонголтоор) Supabase утасны provider-ыг асаах
+
+Хэрэв `user.phone` талбарт дугаарыг жинхэнэ утсаар хадгалахыг хүсвэл
+Dashboard → Authentication → Providers → **Phone → Enable** (SMS provider/Twilio
+тохируулах шаардлагагүй — SMS-ийг verify.mn илгээдэг). Эсвэл:
+
+```bash
+# .env.local-д SUPABASE_ACCESS_TOKEN=sbp_... нэмээд
+npm run enable:phone-auth
+```
+
+> Асаахгүй байсан ч **бүртгэл/нэвтрэлт бүрэн ажиллана** (дотоод имэйлийн горим).
+> Шалгах: `curl <SUPABASE_URL>/auth/v1/settings` → `"external": {"phone": true|false}`
 
 ### Localhost дээрх онцлог
 

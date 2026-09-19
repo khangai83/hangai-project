@@ -291,20 +291,13 @@ export default function AuthModal({ open, onClose }) {
         </div>
 
         <div className="p-6">
-          {setup && (setup.phoneProviderEnabled === false || !setup.verifyMnConfigured) && (
+          {setup && !setup.verifyMnConfigured && (
             <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3.5 py-3 text-[13px] leading-relaxed text-amber-900">
-              <p className="mb-1 font-semibold">⚠️ Тохиргоо дутуу — бүртгэл/нэвтрэлт ажиллахгүй</p>
+              <p className="mb-1 font-semibold">⚠️ Тохиргоо дутуу — бүртгэл ажиллахгүй</p>
               <ul className="list-disc space-y-1 pl-5">
-                {setup.phoneProviderEnabled === false && (
-                  <li>
-                    Supabase Dashboard → <b>Authentication → Providers → Phone</b> → <b>Enable</b> (Save)
-                  </li>
-                )}
-                {!setup.verifyMnConfigured && (
-                  <li>
-                    <code>.env.local</code> → <b>VERIFY_MN_API_KEY</b> = verify.mn-ийн Developer Console-оос авсан түлхүүр
-                  </li>
-                )}
+                <li>
+                  <code>.env.local</code> → <b>VERIFY_MN_API_KEY</b> = verify.mn-ийн Developer Console-оос авсан түлхүүр
+                </li>
               </ul>
               <p className="mt-1.5 text-amber-800">
                 Тэгээд: <code>npm run check:supabase</code>

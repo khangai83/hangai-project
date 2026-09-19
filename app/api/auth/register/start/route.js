@@ -39,20 +39,15 @@ export async function POST(req) {
     return NextResponse.json({ ok: false, error: 'Нэр хэт урт байна (60 тэмдэгт хүртэл).' }, { status: 400 });
   }
 
-  // Supabase дээр утасны нэвтрэлт идэвхтэй эсэх — SMS (150₮) илгээхээс ӨМНӨ
+  // ⚠️ Утасны (phone) provider идэвхгүй байх нь БҮРТГЭЛИЙГ ХОРИГЛОХГҮЙ:
+  // тэр үед `createVerifiedUser` нь дотоод имэйлээр (Email provider) бүртгэнэ.
+  // Тиймээс зөвхөн лог бичиж, урсгалыг үргэлжлүүлнэ.
   try {
     const phoneAuthOn = await isPhoneProviderEnabled();
     if (!phoneAuthOn) {
-      return NextResponse.json(
-        {
-          ok: false,
-          code: 'PHONE_PROVIDER_DISABLED',
-          error:
-            'Supabase дээр утасны (phone) нэвтрэлт идэвхгүй байна. ' +
-            'Dashboard → Authentication → Providers → Phone-ийг Enable хийнэ үү ' +
-            '(SMS provider тохируулах шаардлагагүй — SMS-ийг verify.mn илгээнэ).',
-        },
-        { status: 500 }
+      console.info(
+        '[auth/register/start] Supabase Phone provider идэвхгүй — бүртгэлийг дотоод имэйлээр ' +
+          '(Email provider) хийх болно. Хүсвэл Dashboard → Authentication → Providers → Phone-оос асаана.'
       );
     }
   } catch (err) {

@@ -27,5 +27,7 @@ export async function GET() {
     ok: true,
     phoneProviderEnabled,
     verifyMnConfigured: !!verifyMn.getApiKey(),
+    // Нэвтрэх/бүртгэх горим: 'phone' = утасны provider, 'email' = дотоод имэйл (fallback)
+    loginMode: phoneProviderEnabled ? 'phone' : 'email',
   });
 }
