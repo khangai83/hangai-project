@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getSupabase } from '../lib/supabaseClient';
 import { fetchProfile, upsertProfile } from '../lib/queries';
 import { normalizePhone } from '../lib/format';
+import { fetchAdminMe } from '../lib/adminApi';
 import phoneEmail from '../lib/phoneEmail';
 import AuthModal from './AuthModal';
 import AddListingModal from './AddListingModal';
@@ -48,6 +49,7 @@ export default function AppProviders({ children }) {
   const [addOpen, setAddOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [dataVersion, setDataVersion] = useState(0); // зарын шинэчлэлт дохио
+  const [isAdmin, setIsAdmin] = useState(false); // app_metadata.is_admin
 
   const sb = getSupabase();
 
@@ -79,6 +81,20 @@ export default function AppProviders({ children }) {
     const { data: sub } = sb.auth.onAuthStateChange((_evt, session) => refresh(session?.user || null));
     return () => { active = false; sub?.subscription.unsubscribe(); };
   }, [sb]);
+
+  // ---------- Админ эрх (app_metadata.is_admin → header дээр «🛠 Админ» цэс) ----------
+  const userId = user ? user.id : null;
+  useEffect(() => {
+    if (!userId) {
+      setIsAdmin(false);
+      return undefined;
+    }
+    let active = true;
+    fetchAdminMe().then((res) => {
+      if (active && res.data) setIsAdmin(!!res.data.isAdmin);
+    });
+    return () => { active = false; };
+  }, [userId]);
 
   // ---------- Auth actions ----------
   // Бүртгэл: нэр + утас + нууц үг → verify.mn-ээр SMS баталгаажуулалт
@@ -170,6 +186,9 @@ export default function AppProviders({ children }) {
                     {userMenuOpen && (
                       <div className="absolute right-0 top-[calc(100%+6px)] z-50 min-w-[220px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card-hover">
                         <Link href="/my-listings" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={() => setUserMenuOpen(false)}>📋 Миний зарууд</Link>
+                        {isAdmin && (
+                          <Link href="/admin/users" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-amber-800 transition hover:bg-amber-50" onClick={() => setUserMenuOpen(false)}>🛠 Админ — Хэрэглэгчид</Link>
+                        )}
                         <button className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={() => { setUserMenuOpen(false); editName(); }}>✏️ Нэр засах</button>
                         <div className="h-px bg-gray-200"></div>
                         <button className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={logout}>🚪 Гарах</button>

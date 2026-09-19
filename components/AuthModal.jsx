@@ -296,7 +296,9 @@ export default function AuthModal({ open, onClose }) {
               <p className="mb-1 font-semibold">⚠️ Тохиргоо дутуу — бүртгэл ажиллахгүй</p>
               <ul className="list-disc space-y-1 pl-5">
                 <li>
-                  <code>.env.local</code> → <b>VERIFY_MN_API_KEY</b> = verify.mn-ийн Developer Console-оос авсан түлхүүр
+                  <b>VERIFY_MN_API_KEY</b> тохируулаагүй — локал дээр <code>.env.local</code>-д, deploy
+                  хийсэн бол тухайн платформын <b>Environment Variables</b>-д (Vercel → Settings →
+                  Environment Variables) нэмээд <b>дахин deploy</b> хийнэ.
                 </li>
               </ul>
               <p className="mt-1.5 text-amber-800">
