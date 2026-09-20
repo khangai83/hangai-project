@@ -11,6 +11,17 @@ import phoneEmail from '../lib/phoneEmail';
 import AuthModal from './AuthModal';
 import AddListingModal from './AddListingModal';
 
+/** Supabase-ийн user → '+976XXXXXXXX' (эсвэл null).
+ *  Гурван эх сурвалжаас дарааллаар нь хайна:
+ *    1) u.phone            — Phone provider-ээр бүртгэсэн хэрэглэгч
+ *    2) user_metadata.phone — дотоод имэйлээр (fallback) бүртгэсэн хэрэглэгч
+ *    3) имэйлээс           — '88093663@phone.zarmn.mn' → '+97688093663'
+ *  Ингэснээр аль ч замаар бүртгэгдсэн хэрэглэгчийн утас олдоно. */
+function resolveUserPhone(u) {
+  if (!u) return null;
+  return u.phone || (u.user_metadata && u.user_metadata.phone) || phoneEmail.emailToPhone(u.email) || null;
+}
+
 /** Supabase-ийн англи алдааг хэрэглэгчид ойлгомжтой Монгол мессеж болгох */
 function friendlySignInError(error) {
   const msg = `${(error && error.code) || ''} ${(error && error.message) || ''}`.toLowerCase();
@@ -71,7 +82,7 @@ export default function AppProviders({ children }) {
       if (u) {
         const p = await fetchProfile(u.id);
         if (active) {
-          setUser({ id: u.id, phone: u.phone });
+          setUser({ id: u.id, phone: resolveUserPhone(u) });
           setProfileName(p?.name || null);
         }
       } else if (active) {
@@ -112,7 +123,7 @@ export default function AppProviders({ children }) {
     // ---------- 1) Утасны (phone) provider-ээр ----------
     const first = await client.auth.signInWithPassword({ phone: normalized, password });
     if (!first.error && first.data && first.data.user) {
-      setUser({ id: first.data.user.id, phone: first.data.user.phone });
+      setUser({ id: first.data.user.id, phone: resolveUserPhone(first.data.user) });
       return { error: null };
     }
 
@@ -124,7 +135,7 @@ export default function AppProviders({ children }) {
     });
     if (!retry.error && retry.data && retry.data.user) {
       const u = retry.data.user;
-      setUser({ id: u.id, phone: (u.user_metadata && u.user_metadata.phone) || normalized });
+      setUser({ id: u.id, phone: resolveUserPhone(u) || normalized });
       return { error: null };
     }
 
@@ -241,6 +252,7 @@ export default function AppProviders({ children }) {
             onClose={closeAdd}
             userId={user?.id || null}
             displayName={displayName}
+            userPhone={user?.phone || ''}
             editing={editTarget}
           />
 

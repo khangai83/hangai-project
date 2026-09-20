@@ -5,6 +5,7 @@ import { useToast, useUI } from './AppProviders';
 import { createListing, updateListing, uploadImages } from '../lib/queries';
 import { CITIES, getDistricts, getKhoroos, PROPERTY_TYPES, hasApartmentFields, hasFloorFields, hasRoomsFields, BALCONY_OPTIONS, GARAGE_OPTIONS } from '../lib/locationData';
 import { normalizePhone, getPropertyTypeLabel } from '../lib/format';
+import phoneEmail from '../lib/phoneEmail';
 import { compressImages, formatBytes } from '../lib/imageUtils';
 
 /** Зарын DB мөр → форм (засах горимд) */
@@ -20,7 +21,7 @@ function listingToForm(l) {
     addressDetail: l.address_detail || '',
     price: l.price ? String(l.price) : '',
     priceType: l.price_type || 'total',
-    phone: String(l.phone || '').replace(/^\+/, '').replace(/^976/, ''),
+    phone: phoneEmail.toLocalPhone(l.phone),
     contactName: l.contact_name || '',
     description: l.description || '',
     // ---- Орон сууцны нэмэлт мэдээлэл ----
@@ -32,7 +33,7 @@ function listingToForm(l) {
   };
 }
 
-export default function AddListingModal({ open, onClose, userId, displayName, editing }) {
+export default function AddListingModal({ open, onClose, userId, displayName, userPhone, editing }) {
   const { showToast } = useToast();
   const { notifyListingsChanged } = useUI();
 
@@ -49,7 +50,12 @@ export default function AddListingModal({ open, onClose, userId, displayName, ed
     addressDetail: '',
     price: '',
     priceType: 'total',
-    phone: String(displayName || '').replace(/^\+/, '').replace(/^976/, ''),
+    // ⚠️ ЗАСВАР: өмнө нь энд `displayName` (хэрэглэгчийн НЭР) орж байсан нь алдаа байв —
+    // «Холбоо барих утас» талбарт нэр бөглөгдөж харагддаг байсан.
+    // Одоо нэвтэрсэн хэрэглэгчийн БОДИТ утасны дугаарыг бөглөнө ('+97688093663' → '88093663').
+    phone: phoneEmail.toLocalPhone(userPhone),
+    // Нэр нь «Холбоо барих хүн» (contact_name) талбарт хэвээр — тэр талбар нуугдсан ч
+    // зар хадгалахдаа нэрийг хамт хадгална.
     contactName: displayName || '',
     description: '',
     // ---- Орон сууцны нэмэлт мэдээлэл ----
