@@ -352,7 +352,7 @@ export default function AddListingModal({ open, onClose, userId, displayName, ed
                 <label>Үнэ *</label>
                 <input type="number" min="0" value={form.price} onChange={(e) => set('price', e.target.value)} placeholder="₮" required />
               </div>
-              <div className="form-group">
+              {/* <div className="form-group">
                 <label>Үнийн төрөл</label>
                 <select value={form.priceType} onChange={(e) => set('priceType', e.target.value)}>
                   <option value="total">Нийт үнэ</option>
@@ -360,7 +360,7 @@ export default function AddListingModal({ open, onClose, userId, displayName, ed
                   <option value="day">Өдөрт</option>
                   <option value="sqm">м² тутамд</option>
                 </select>
-              </div>
+              </div> */}
             </div>
 
             <div className="form-row">
