@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { formatPrice, getPriceTypeLabel, getPropertyIcon, firstImage, getFloorLabel } from '../lib/format';
-import { toggleFavorite, useFavorites } from '../lib/favorites';
+import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 
 export default function ListingCard({ listing }) {
   const img = firstImage(listing);
   const favoriteIds = useFavorites();
   const isFav = favoriteIds.includes(listing.id);
+  // ❤️ Нийт хэдэн хүн таалагдсан (listings.likes — supabase/migrations/0006)
+  const likes = useLikeCount(listing.id, listing.likes);
   const isSell = listing.category === 'sell';
   const floorLabel = getFloorLabel(listing.floor, listing.total_floors);
   const hasMeta = listing.rooms > 0 || listing.area > 0 || !!floorLabel || listing.build_year > 0;
@@ -40,9 +42,13 @@ export default function ListingCard({ listing }) {
             e.stopPropagation();
             toggleFavorite(listing.id);
           }}
-          className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-lg shadow transition hover:scale-110"
+          className={`absolute right-2 top-2 flex h-9 items-center gap-1 rounded-full bg-white/90 px-2.5 text-lg shadow transition hover:scale-110 ${
+            isFav ? 'text-red-600' : ''
+          }`}
         >
-          {isFav ? '❤️' : '🤍'}
+          <span>{isFav ? '❤️' : '🤍'}</span>
+          {/* Хичнээн хүн ❤️ дарсан (0 байвал ч харагдана) */}
+          <span className="text-xs font-bold tabular-nums">{likes}</span>
         </button>
       </div>
       <div className="flex flex-1 flex-col justify-between overflow-hidden p-4">

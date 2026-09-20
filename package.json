@@ -16,7 +16,9 @@
     "make:admin": "node scripts/make-admin.js",
     "find": "node scripts/find.js",
     "doctor": "node scripts/doctor.js",
-    "seed:more": "node scripts/seed-more-listings.mjs"
+    "seed:more": "node scripts/seed-more-listings.mjs",
+    "stats:setup": "node scripts/setup-stats.js",
+    "stats:check": "node scripts/setup-stats.js --check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.114.0",

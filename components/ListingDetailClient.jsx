@@ -5,11 +5,11 @@ import Link from 'next/link';
 import MapView from './MapView';
 import Breadcrumb from './Breadcrumb';
 import { useToast } from './AppProviders';
-import { fetchListingById } from '../lib/queries';
+import { fetchListingById, trackListingView } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
 import { formatPrice, getPriceTypeLabel, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo } from '../lib/format';
 import { buildListingBreadcrumb } from '../lib/breadcrumb';
-import { toggleFavorite, useFavorites } from '../lib/favorites';
+import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 
 export default function ListingDetailClient({ id }) {
   const { showToast } = useToast();
@@ -17,7 +17,9 @@ export default function ListingDetailClient({ id }) {
   const [loadError, setLoadError] = useState(null); // холболтын алдаа
   const [active, setActive] = useState(0);
   const [phoneShown, setPhoneShown] = useState(false);
+  const [views, setViews] = useState(null); // 👁 серверээс ирсэн «үзсэн» тоо (null = миграцгүй)
   const favoriteIds = useFavorites(); // ❤️ (дээрх hook-уудтай хамт дуудагдах ёстой)
+  const likes = useLikeCount(id, listing ? listing.likes : 0); // ❤️ нийт хэдэн хүн дарсан
 
   useEffect(() => {
     let mounted = true;
@@ -33,6 +35,27 @@ export default function ListingDetailClient({ id }) {
     })();
     return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  /**
+   * 👁 «Үзсэн» тоог +1.
+   * ⚠️ Нэг browser session-д НЭГ л удаа — F5 дарах бүрд хөөрөгдөхгүй.
+   *    (Шинэ tab/session нээхэд дахин тоолно — энэ нь зөв.)
+   */
+  useEffect(() => {
+    if (!id) return undefined;
+    try {
+      const key = `zarmn_viewed_${id}`;
+      if (window.sessionStorage.getItem(key)) return undefined;
+      window.sessionStorage.setItem(key, '1');
+    } catch (e) {
+      return undefined; // private mode гэх мэт — тоолохгүй
+    }
+    let mounted = true;
+    trackListingView(id).then((n) => {
+      if (mounted && typeof n === 'number') setViews(n);
+    });
+    return () => { mounted = false; };
   }, [id]);
 
   if (listing === null) {
@@ -84,6 +107,10 @@ export default function ListingDetailClient({ id }) {
   const isSell = listing.category === 'sell';
   const phoneDigits = String(listing.phone || '').replace(/^976/, '').replace(/^\+/, '');
 
+  // 👁/❤️ — серверээс ирсэн тоо (миграц 0006 хийгээгүй бол 0 харагдана)
+  const viewCount = views != null ? views : Number(listing.views) || 0;
+  const likeCount = likes;
+
   // unegui.mn-ийн <section data-component="AdvertFeaturesApp"> хэсэгт харагдах шинж чанарууд.
   // Зөвхөн утгатай (хоосон биш) мөрүүдийг харуулна.
   const isFav = favoriteIds.includes(listing.id);
@@ -100,6 +127,9 @@ export default function ListingDetailClient({ id }) {
     /*{ label: 'Нийтэлсэн', value: timeAgo(listing.created_at) },*/
     { label: 'Зарын дугаар', value: `ID: ${listing.id}` },
     { label: 'Байршил', value: address || 'Тодорхойгүй' },
+    // 👁/❤️ статистик (listings.views / listings.likes — 0006_listing_stats.sql)
+    { label: 'Үзсэн', value: `${viewCount} удаа` },
+    { label: 'Таалагдсан', value: `${likeCount} хүн` },
   ].filter(Boolean);
 
   return (
@@ -117,7 +147,12 @@ export default function ListingDetailClient({ id }) {
             className={`btn btn-sm ${isFav ? 'btn-danger' : 'btn-outline'}`}
           >
             {isFav ? '❤️ Таалагдсан' : '🤍 Таалагдсан'}
+            <span className="ml-1.5 font-bold tabular-nums">{likeCount}</span>
           </button>
+          {/* 👁 Хичнээн хүн үзсэн — ❤️ товчны ЯГ хажууд */}
+          <span className="text-[13px] text-gray-500" title="Энэ зарыг хэдэн удаа үзсэн">
+            👁 {viewCount} үзсэн
+          </span>
           <span className="text-[13px] text-gray-400">ID: {listing.id}</span>
         </div>
         <h1 className="mb-1.5 text-2xl font-bold leading-snug text-gray-900 sm:text-[28px]">
