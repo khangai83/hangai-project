@@ -1,30 +1,40 @@
 // ============================================================
-// POST /api/listings/[id]/view — «Үзсэн» тоог +1
+// POST /api/listings/[id]/view — 👁 «Үзсэн» (хүн тус бүрээр НЭГ л удаа)
 //
-// Дэлгэрэнгүй хуудас нээгдэх бүрд клиент үүнийг дуудна
-// (нэг browser session-д нэг л удаа — lib/queries.js → trackListingView).
+// Header (заавал биш): Authorization: Bearer <supabase access_token>
+//                      → байвал хэрэглэгчийн id-гаар тоолно
+// Body:  { device: '<browser uuid>' }  ← зочин хүнийг таних (lib/statsClient.js)
 //
 // Resp: { ok, views: number|null, statsEnabled: boolean }
-//   statsEnabled=false → 0006 миграц ажиллуулаагүй (тоо хадгалах багана алга)
+//   statsEnabled=false → 0007 миграц ажиллуулаагүй (тоолуур хадгалах газар алга)
 //
-// ⚠️ Тоолуур нь ЗҮГЭЭР ЧИМЭЭГҮЙ нэмэгддэг — алдаа гарвал ч 200 буцаана,
-//    ингэснээр хэрэглэгчийн зар харахад хэзээ ч саад болохгүй.
+// ⚠️ Нэг viewer нэг зард нэг л удаа тоологдоно (PRIMARY KEY).
+//    Тоолуур эвдэрсэн ч 200 буцаана — зар харахад хэзээ ч саад болохгүй.
 // ============================================================
 import { NextResponse } from 'next/server';
-import { bumpViews, isUuid } from '../../../../../lib/listingStats';
+import { registerView, resolveViewer, isUuid } from '../../../../../lib/listingStats';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(_req, { params }) {
+export async function POST(req, { params }) {
   // Next.js 15: params нь Promise
   const { id } = await params;
   if (!isUuid(id)) return NextResponse.json({ ok: false, error: 'Зарын id буруу.' }, { status: 400 });
 
+  let body = {};
   try {
-    const views = await bumpViews(id);
+    body = await req.json();
+  } catch (e) {
+    body = {};
+  }
+
+  try {
+    const viewer = await resolveViewer(req, body);
+    const views = await registerView(id, viewer);
     return NextResponse.json({ ok: true, views, statsEnabled: views != null });
   } catch (err) {
     console.warn('[listings/view] тоолуур нэмэгдсэнгүй:', (err && err.message) || err);
     return NextResponse.json({ ok: true, views: null, statsEnabled: false });
   }
 }
+

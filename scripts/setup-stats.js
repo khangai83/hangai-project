@@ -16,7 +16,7 @@ const path = require('path');
 const { execSync, spawn } = require('child_process');
 
 const root = path.join(__dirname, '..');
-const sqlFile = path.join(root, 'supabase', 'migrations', '0006_listing_stats.sql');
+const sqlFile = path.join(root, 'supabase', 'migrations', '0007_listing_likes_views.sql');
 
 // ---- .env.local унших ----
 const env = {};
@@ -34,23 +34,34 @@ const editorUrl = projectRef
   ? `https://supabase.com/dashboard/project/${projectRef}/sql/new`
   : 'https://supabase.com/dashboard';
 
-/** Тоолуурын багана байгаа эсэх (REST-ээр шалгана) */
+/** Тоолуурын хүснэгт/багана байгаа эсэх */
 async function check() {
-  const url = `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/listings?select=id,views,likes&limit=1`;
-  const res = await fetch(url, {
-    headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` },
-  });
-  const text = await res.text();
-  if (res.ok) {
-    console.log('🎉 Миграц АЖИЛЛАЖ БАЙНА — «Үзсэн» ба «Таалагдсан» тоолуур ажиллана.');
-    console.log(`   Дээж: ${text.slice(0, 120)}`);
-    return true;
+  const headers = { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` };
+  const cols = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/listings?select=id,views,likes&limit=1`, { headers });
+  const colsText = await cols.text();
+
+  if (!cols.ok) {
+    console.log('❌ Миграц ажиллаагүй байна — тоолуур 0-д байна (сайт хэвийн ажиллана).');
+    console.log(`   Шалтгаан: ${colsText.slice(0, 160)}`);
+    console.log('\n   Засах:  npm run stats:setup  →  Cmd+V  →  Run');
+    return false;
   }
-  const missingCol = /views|likes|column/i.test(text);
-  console.log('❌ Миграц ажиллаагүй байна — тоолуур 0-д байна (сайт хэвийн ажиллана).');
-  console.log(`   Шалтгаан: ${text.slice(0, 160)}`);
-  if (missingCol) console.log('\n   Засах:  npm run stats:setup  →  Cmd+V  →  Run');
-  return false;
+
+  const tables = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/listing_likes?select=listing_id&limit=1`, { headers });
+  const tables2 = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/listing_views?select=listing_id&limit=1`, { headers });
+  if (!tables.ok || !tables2.ok) {
+    console.log('⚠️  Багана байна, гэхдээ хүснэгт (listing_likes / listing_views) дутуу.');
+    console.log('   → npm run stats:setup  (0007 миграцыг бүтнээр ажиллуулна)');
+    return false;
+  }
+
+  const counts = await (
+    await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/listing_likes?select=listing_id&limit=1000`, { headers })
+  ).json();
+  console.log('🎉 Миграц АЖИЛЛАЖ БАЙНА — ❤️/👁 тоолуур хүн тус бүрээр ажиллана.');
+  console.log(`   Багана: views ✅  likes ✅    Хүснэгт: listing_likes ✅  listing_views ✅`);
+  console.log(`   Одоогийн ❤️ мөрийн тоо: ${Array.isArray(counts) ? counts.length : '?'}`);
+  return true;
 }
 
 (async () => {

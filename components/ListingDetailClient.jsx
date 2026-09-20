@@ -5,7 +5,8 @@ import Link from 'next/link';
 import MapView from './MapView';
 import Breadcrumb from './Breadcrumb';
 import { useToast } from './AppProviders';
-import { fetchListingById, trackListingView } from '../lib/queries';
+import { fetchListingById } from '../lib/queries';
+import { trackListingView } from '../lib/statsClient';
 import { normalizeError } from '../lib/errors';
 import { formatPrice, getPriceTypeLabel, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo } from '../lib/format';
 import { buildListingBreadcrumb } from '../lib/breadcrumb';
@@ -149,17 +150,16 @@ export default function ListingDetailClient({ id }) {
             {isFav ? '❤️ Таалагдсан' : '🤍 Таалагдсан'}
             <span className="ml-1.5 font-bold tabular-nums">{likeCount}</span>
           </button>
-          {/* 👁 Хичнээн хүн үзсэн — ❤️ товчны ЯГ хажууд */}
-          <span className="text-[13px] text-gray-500" title="Энэ зарыг хэдэн удаа үзсэн">
-            👁 {viewCount} үзсэн
-          </span>
+          {/* 👁/❤️ тоог «зар хэзээ орсон» огнооны хажууд харуулна (доор) */}
           <span className="text-[13px] text-gray-400">ID: {listing.id}</span>
         </div>
         <h1 className="mb-1.5 text-2xl font-bold leading-snug text-gray-900 sm:text-[28px]">
           {getPropertyIcon(listing.property_type)} {typeLabel}
         </h1>
         <p className="text-sm text-gray-500">
-          📍 {address || 'Хаяг тодорхойгүй'} · 📅 {timeAgo(listing.created_at)}
+          📍 {address || 'Хаяг тодорхойгүй'} · 📅 {timeAgo(listing.created_at)} ·{' '}
+          <span title="Энэ зарыг хэдэн хүн үзсэн">👁 {viewCount} үзсэн</span> ·{' '}
+          <span title="Хэдэн хүн ❤️ дарсан">❤️ {likeCount} таалагдсан</span>
         </p>
       </header>
 

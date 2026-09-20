@@ -1,17 +1,21 @@
 // ============================================================
-// POST /api/listings/[id]/like — «Таалагдсан» тоог ±1
+// POST /api/listings/[id]/like — ❤️ «Таалагдсан» (хүн тус бүрээр)
 //
-// Body: { action: 'like' | 'unlike' }
-// Resp: { ok, likes: number|null, statsEnabled: boolean }
+// Header (заавал биш): Authorization: Bearer <supabase access_token>
+//                      → байвал хэрэглэгчийн id-гаар тоолно
+// Body:   { action: 'like' | 'unlike', device: '<browser uuid>' }
+// Resp:   { ok, likes: number|null, statsEnabled: boolean }
 //
-// ❤️/🤍 товч дарах бүрд client (lib/favorites.js → toggleFavorite) дуудна.
-// «Хэн таалагдсан» нь localStorage-д хадгалагддаг тул нэг хүн 2 удаа
-// дарахгүй (товч нь солигддог). Тоолуур нь нийт хэдэн хүн дарсныг харуулна.
+// ⚙️ ЗАГВАР (0007_listing_likes_views.sql):
+//    like   → `listing_likes` хүснэгтэд мөр НЭМНЭ (давхардвал юу ч болохгүй)
+//    unlike → тэр мөрийг УСТГАНА
+//    `listings.likes` тоог ТРИГГЕР `count(*)`-ээр автоматаар шинэчилнэ
+//    → нэг хүн нэг зард нэг л удаа (PRIMARY KEY), зэрэгцээ хүсэлтэд ч зөв.
 //
 // ⚠️ Алдаа гарвал ч 200 буцаана — товч дарах нь хэзээ ч эвдрэхгүй.
 // ============================================================
 import { NextResponse } from 'next/server';
-import { bumpLikes, isUuid } from '../../../../../lib/listingStats';
+import { setLike, resolveViewer, isUuid } from '../../../../../lib/listingStats';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,13 +29,15 @@ export async function POST(req, { params }) {
   } catch (e) {
     body = {};
   }
-  const delta = body.action === 'unlike' ? -1 : 1;
+  const liked = body.action !== 'unlike';
 
   try {
-    const likes = await bumpLikes(id, delta);
+    const viewer = await resolveViewer(req, body);
+    const likes = await setLike(id, viewer, liked);
     return NextResponse.json({ ok: true, likes, statsEnabled: likes != null });
   } catch (err) {
     console.warn('[listings/like] тоолуур өөрчлөгдсөнгүй:', (err && err.message) || err);
     return NextResponse.json({ ok: true, likes: null, statsEnabled: false });
   }
 }
+
