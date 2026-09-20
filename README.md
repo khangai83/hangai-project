@@ -170,6 +170,9 @@ curl -s http://localhost:3000/_next/static/chunks/app/page.js | grep -o 'htjbox[
 
 ### Хуудас «Заруудыг ачаалж байна...» дээр мөнхөрч, console-д `/_next/static/...` **404** гарвал
 
+> 🩺 **Хамгийн хурдан шийдэл: `npm run doctor`** — энэ нь HTML-ийн дууддаг бүх
+> `/_next/static` файлыг шалгаж, 404 гарвал засварын командуудыг шууд хэвлэнэ.
+
 Энэ нь `.env`-ийн асуудал **БИШ** — dev server-ийн **client build эвдэрсэн** гэсэн үг.
 HTML нь `main-app.js`, `app/page.js`, `app/layout.js`, `app/*.css`-ийг дуудаж байтал
 тэдгээр файл `.next/static` дотроос алга болсон байна. JS ачаалагдахгүй тул React
@@ -355,6 +358,118 @@ npm run enable:phone-auth
 
 > Асаахгүй байсан ч **бүртгэл/нэвтрэлт бүрэн ажиллана** (дотоод имэйлийн горим).
 > Шалгах: `curl <SUPABASE_URL>/auth/v1/settings` → `"external": {"phone": true|false}`
+## Түргэн командууд (бүгд нэг дор)
+
+```bash
+npm run dev              # dev server (http://localhost:3000)
+npm run build            # production build
+
+npm run doctor           # 🩺 «Юу эвдэрсэн бэ?» — client bundle, env, API шалгах
+npm run find -- "текст"   # 🔍 Код доторх текстээр хайх (файл:мөр харуулна)
+
+npm run check:supabase   # Supabase + env + phone provider шалгах
+npm run check:verify -- 99112233   # verify.mn-ээр БОДИТ SMS турших (150₮)
+npm run test:verify      # verify.mn offline тест (mock, 0₮)
+
+npm run make:admin -- 88093663     # хэрэглэгчийг админ болгох
+npm run make:admin -- --list       # админуудыг харуулах
+npm run enable:phone-auth          # Supabase Phone provider асаах (sbp_ token)
+npm run deploy:vercel              # Vercel env-ийг 1 командаар тавих (VERCEL_TOKEN)
+```
+
+### Онцгой тохиолдол: хуудас «ачаалж байна...» дээр мөнхөрвөл
+```bash
+npm run doctor           # → шалтгааныг хэлж, засварын командуудыг өгнө
+# ердийн шийдэл:
+pkill -f 'next dev' && rm -rf .next && npm run dev
+# дараа нь browser дээр Cmd+Shift+R
+```
+
+## Зураг/бичлэг хадгалах орон зай (Storage) хэмнэх
+
+### ⚠️ Эхлээд чухал тодруулга: зураг нь **DB-д ОРОХГҮЙ**
+
+| Юу | Хаана | Хэмжээ |
+|---|---|---|
+| Зургийн **файл** | **Supabase Storage** (`listing-images` bucket) | хэдэн KB – хэдэн MB |
+| Зургийн **URL** | DB (`listings.images` jsonb) | ~120 тэмдэгт × тоо |
+
+Тэгэхээр «DB хэмнэх» гэдэг нь үнэндээ **Storage + трафик (bandwidth)** хэмнэх.
+
+### Асуудал: утасны зураг бүтнээрээ хадгалагдаж байсан ❌
+
+`uploadImages()` нь файлыг **ямар ч боловсруулалтгүй** шууд илгээдэг байсан:
+- Гар утасны камерын нэг зураг = **3–12 MB**
+- 10 зурагтай зар = **30–120 MB**
+- Bucket-д `file_size_limit = null` (хязгааргүй), `allowed_mime_types = null` → хэдэн ч MB, ямар ч төрөл
+
+### ✅ Шийдэл 1: Browser дээр автомат шахалт (`lib/imageUtils.js`)
+
+Зураг **илгээхээс өмнө** browser дээр (Canvas API, нэмэлт сан **шаардахгүй**):
+1. Хамгийн урт талыг **1600px** болгож жижигрүүлнэ
+2. **JPEG, чанар 82%** болгоно
+3. 1.5 MB-ээс том бол чанарыг 50% хүртэл аажмаар бууруулна
+4. Шахаасан нь илүү том болвол (жижиг зураг, PNG) эхийг хэвээр үлдээнэ
+5. EXIF эргэлтийг хүндэтгэнэ (`createImageBitmap({ imageOrientation: 'from-image' })`)
+
+**Хэмжигдсэн үр дүн** (бодит туршилт, 3200×2400 шуугиантай JPEG):
+
+| | Хэмжээ |
+|---|---|
+| Оруулсан | **9.24 MB** |
+| Хадгалагдсан | **845 KB** |
+| Хэмнэлт | **91%** 🎉 |
+
+UI дээр хэрэглэгчид шууд харагдана:
+```
+🗜 1 зураг шахагдлаа: 9.24 MB → 845 KB · 91% хэмнэлт 🎉
+```
+Зураг бүрийн буланд мөн «845 KB · −91%» гэсэн шошго гарна.
+
+Тохиргоог солих: `components/AddListingModal.jsx` → `compressImages(files, { maxDim, quality })`
+(эсвэл `lib/imageUtils.js` доторх default утгууд).
+
+### ✅ Шийдэл 2: Сервер талын хатуу хязгаар (bucket тохиргоо)
+
+Шахаалт алдаа гарсан ч (ж: browser хуучин) хамгаалалт байх ёстой тул bucket-д тавив:
+
+| Тохиргоо | Утга | Үр дүн |
+|---|---|---|
+| `file_size_limit` | **5 MB** | 9.2MB файл → `The object exceeded the maximum allowed size` ❌ |
+| `allowed_mime_types` | `image/jpeg, png, webp, gif, svg+xml, avif` | `video/mp4` → `mime type video/mp4 is not supported` ❌ |
+
+Шалгасан: 9.2MB → блоклогдлоо ✅ · video/mp4 → блоклогдлоо ✅ · 20KB JPEG → орлоо ✅
+
+Солих (service_role шаардана):
+```js
+await admin.storage.updateBucket('listing-images', {
+  public: true,
+  fileSizeLimit: 5 * 1024 * 1024,          // эсвэл null (хязгааргүй)
+  allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'image/avif'],
+});
+```
+
+### 🎥 Бичлэг (видео) — одоогоор ДЭМЖИГДЭХГҮЙ
+
+- UI нь `accept="image/*"` — утаснаас видео сонгох боломжгүй
+- Storage нь зөвхөн зураг зөвшөөрдөг болсон
+- **Шалтгаан:** утасны 1 минут 1080p видео = **100–300 MB**. Browser дээр шахах
+  боломжгүй (видео транскодод `ffmpeg.wasm` ~30 MB сан эсвэл сервер талын
+  encoder шаардана). Хэрэв нэмбэл Storage/трафик нь зурагнаас **100 дахин** их
+  зарцуулагдана — «хэмнэх» зорилготой зөрчилдөнө.
+
+Хэрэв бичлэг заавал хэрэгтэй бол 3 сонголт (хэлээрэй, хийж өгнө):
+
+| Сонголт | Давуу | Сул |
+|---|---|---|
+| **A. Богино видео (≤20 MB)** зөвшөөрч, эхний кадрыг poster болгож хадгалах | Энгийн, нэмэлт сан байхгүй | Чанар муу, олон видео болбол Storage дүүрнэ |
+| **B. `ffmpeg.wasm`-аар browser дээр транскод** (720p, ~2 Mbps) | 200MB → ~15MB | ~30MB WASM татах, удаан (30–90 сек), зарим утсанд санах ой хүрэхгүй |
+| **C. Гадаад видео (YouTube/ардчилсан холбоос)** — зөвхөн линк хадгална | Storage **0 MB** | Гадаад платформ шаардана |
+
+> Санал: эхлээд **C** (линк) эсвэл **A** (жижиг видео). Том видео Storage-ийг
+> хамгийн хурдан дүүргэдэг тул зургийн шахалтыг (дээрх) эхлүүлэх нь хамгийн их
+> хэмнэлт өгнө.
+
 ## Зар засах · Таалагдсан зарууд · Экспорт
 
 ### 1. Зар нэмэх цонх — өгөгдөл алдагдахаас хамгаалалт ✅
@@ -374,16 +489,24 @@ npm run enable:phone-auth
 (гарчиг: «✏️ Зарыг засах», товч: «💾 Өөрчлөлтийг хадгалах»). Хуучин зургуудыг
 харах ба «×» дарж устгах боломжтой.
 
-> ⚠️ **ЗААВАЛ НЭГ УДАА SQL АЖИЛЛУУЛНА** — `0001_schema.sql` нь `listings`-д
-> select/insert/delete policy үүсгэсэн ч **UPDATE policy БАЙХГҮЙ**. RLS идэвхтэй
-> үед policy байхгүй бол UPDATE чимээгүйгээр 0 мөр буцаана (`HTTP 200, []`).
+> ℹ️ **SQL шаардлагагүй — ажиллаж байна ✅.** `0001_schema.sql`-д `listings_update`
+> policy байхгүй тул RLS нь UPDATE-ыг чимээгүй блоклоно (`HTTP 200, []` → 0 мөр).
+> Тиймээс `updateListing()` нь **2 шатлалтай**:
 >
+> 1. Эхлээд энгийн **UPDATE**-ээр оролдоно — policy байвал хамгийн сайн (1 хүсэлт).
+> 2. Ажиллахгүй бол **DELETE + INSERT** fallback — `id` болон `created_at`-ыг
+>    хадгалж, яг ижил зар болгон дахин үүсгэнэ (0001-д delete/insert policy бий).
+>
+> Fallback нь SQL-гүйгээр ажиллана (бодит browser + DB тестээр баталгаажсан:
+> үнэ шинэчлэгдэж, `id`/`created_at` хэвээр үлдсэн).
+>
+> Илүү найдвартай (1 хүсэлт, эрсдэлгүй) болгохыг хүсвэл — сонголтоор:
 > ```bash
 > pbcopy < supabase/migrations/0005_listings_update_policy.sql
 > # → https://supabase.com/dashboard/project/<ref>/sql/new → Cmd+V → Run
 > ```
-> Ингээгүй бол UI дээр «Зарыг засах боломжгүй байна … 0005… SQL Editor-т
-> ажиллуулна уу» гэсэн ойлгомжтой мессеж гарна.
+> Эсвэл `SUPABASE_ACCESS_TOKEN` (sbp_…) байвал би өөрөө хийж өгнө:
+> `node scripts/apply-schema.js 0005_listings_update_policy.sql`
 
 ### 3. Миний + Бүх зарууд нэг цонхонд 🌐
 

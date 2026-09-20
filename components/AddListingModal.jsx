@@ -5,6 +5,7 @@ import { useToast, useUI } from './AppProviders';
 import { createListing, updateListing, uploadImages } from '../lib/queries';
 import { CITIES, getDistricts, getKhoroos, PROPERTY_TYPES, hasApartmentFields, hasFloorFields, BALCONY_OPTIONS, GARAGE_OPTIONS } from '../lib/locationData';
 import { normalizePhone, getPropertyTypeLabel } from '../lib/format';
+import { compressImages, formatBytes } from '../lib/imageUtils';
 
 /** Зарын DB мөр → форм (засах горимд) */
 function listingToForm(l) {
@@ -63,6 +64,8 @@ export default function AddListingModal({ open, onClose, userId, displayName, ed
   const [pending, setPending] = useState([]); // {file,url} — шинээр нэмэх зурагнууд
   const [existingImages, setExistingImages] = useState([]); // засах үед үлдээх хуучин зургууд
   const [submitting, setSubmitting] = useState(false);
+  const [compressing, setCompressing] = useState(false); // 🗜 зураг шахаж байна
+  const [lastReport, setLastReport] = useState(null); // сүүлийн шахалтын тайлан
   const [error, setError] = useState('');
   const baselineRef = useRef(''); // анхны төлөв (өөрчлөгдсөн эсэхийг шалгах)
 
@@ -107,17 +110,39 @@ export default function AddListingModal({ open, onClose, userId, displayName, ed
   const showApartment = hasApartmentFields(form.propertyType);
   const showFloors = hasFloorFields(form.propertyType);
 
-  const onPickFiles = (e) => {
+  const onPickFiles = async (e) => {
     const files = Array.from(e.target.files || []);
+    e.target.value = '';
     if (!files.length) return;
     if (pending.length + files.length > 10) {
       setError('Хамгийн ихдээ 10 зураг оруулах боломжтой');
       return;
     }
     setError('');
-    const mapped = files.map((file) => ({ file, url: URL.createObjectURL(file) }));
-    setPending((p) => [...p, ...mapped]);
-    e.target.value = '';
+    setCompressing(true);
+    try {
+      // 🗜 Storage хэмнэх: илгээхээс өмнө resize + JPEG шахалт (lib/imageUtils.js)
+      const report = await compressImages(files);
+      const mapped = report.items.map((it) => ({
+        file: it.file,
+        url: URL.createObjectURL(it.file),
+        originalSize: it.originalSize,
+        newSize: it.newSize,
+        savedPercent: it.savedPercent,
+        skipped: !!it.skipped,
+      }));
+      setPending((p) => [...p, ...mapped]);
+      setLastReport({
+        count: report.items.length,
+        totalOriginal: report.totalOriginal,
+        totalNew: report.totalNew,
+        savedPercent: report.savedPercent,
+      });
+    } catch (err) {
+      setError(`Зураг боловсруулахад алдаа: ${(err && err.message) || err}`);
+    } finally {
+      setCompressing(false);
+    }
   };
 
   const removeImage = (idx) => setPending((p) => p.filter((_, i) => i !== idx));
@@ -209,7 +234,14 @@ export default function AddListingModal({ open, onClose, userId, displayName, ed
               </div>
               <div className="form-group">
                 <label>Талбай (м²)</label>
-                <input type="number" min="0" value={form.area} onChange={(e) => set('area', e.target.value)} placeholder="75" />
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={form.area}
+                  onChange={(e) => set('area', e.target.value.replace(/[^\d.,]/g, ''))}
+                  placeholder="75.5"
+                />
+                <p className="form-hint">Аравтын бутархайг «.» эсвэл «,»-ээр бичиж болно (ж: 75,5)</p>
               </div>
             </div>
 
@@ -368,18 +400,40 @@ export default function AddListingModal({ open, onClose, userId, displayName, ed
             <div className="form-group">
               <label>Зураг оруулах</label>
               <div
-                className="cursor-pointer rounded-lg border-2 border-dashed border-gray-300 p-10 text-center transition hover:border-primary hover:bg-primary-light"
+                className={`cursor-pointer rounded-lg border-2 border-dashed border-gray-300 p-10 text-center transition hover:border-primary hover:bg-primary-light ${
+                  compressing ? 'pointer-events-none opacity-60' : ''
+                }`}
                 onClick={() => document.getElementById('imageInput')?.click()}
               >
-                <div className="text-[40px]">📷</div>
-                <p>Зураг оруулахын тулд дарна уу</p>
-                <p className="form-hint">Дээд тал нь 10 зураг (jpg, png, webp)</p>
+                <div className="text-[40px]">{compressing ? '⏳' : '📷'}</div>
+                <p>{compressing ? 'Зургуудыг шахаж байна...' : 'Зураг оруулахын тулд дарна уу'}</p>
+                <p className="form-hint">
+                  Дээд тал нь 10 зураг (jpg, png, webp) · 🗜 автоматаар <b>1600px / 82%</b> болж шахагдана
+                </p>
               </div>
-              <input type="file" id="imageInput" accept="image/*" multiple className="hidden" onChange={onPickFiles} />
+              <input
+                type="file"
+                id="imageInput"
+                accept="image/*"
+                multiple
+                className="hidden"
+                disabled={compressing}
+                onChange={onPickFiles}
+              />
+
+              {lastReport && (
+                <p className="form-hint">
+                  🗜 <b>{lastReport.count} зураг</b> шахагдлаа: {formatBytes(lastReport.totalOriginal)} →{' '}
+                  <b>{formatBytes(lastReport.totalNew)}</b>
+                  {lastReport.savedPercent > 0 && ` · ${lastReport.savedPercent}% хэмнэлт 🎉`}
+                </p>
+              )}
+
               {pending.length > 0 && (
                 <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
                   {pending.map((p, i) => (
                     <div key={i} className="relative aspect-square overflow-hidden rounded-lg">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={p.url} alt="" className="h-full w-full object-cover" />
                       <button
                         type="button"
@@ -388,16 +442,22 @@ export default function AddListingModal({ open, onClose, userId, displayName, ed
                       >
                         ×
                       </button>
+                      <span className="absolute bottom-0 left-0 right-0 bg-black/60 px-1.5 py-0.5 text-center text-[10px] text-white">
+                        {formatBytes(p.newSize)}
+                        {p.savedPercent > 0 ? ` · −${p.savedPercent}%` : ''}
+                      </span>
                     </div>
                   ))}
                 </div>
               )}
             </div>
 
-            <button type="submit" className="btn btn-primary btn-lg mt-4 w-full" disabled={submitting}>
-              {submitting
-                ? isEdit ? 'Хадгалж байна...' : 'Нийтэлж байна...'
-                : isEdit ? '💾 Өөрчлөлтийг хадгалах' : '✅ Зар нийтлэх'}
+            <button type="submit" className="btn btn-primary btn-lg mt-4 w-full" disabled={submitting || compressing}>
+              {compressing
+                ? '🗜 Зургуудыг шахаж байна...'
+                : submitting
+                  ? isEdit ? 'Хадгалж байна...' : 'Нийтэлж байна...'
+                  : isEdit ? '💾 Өөрчлөлтийг хадгалах' : '✅ Зар нийтлэх'}
             </button>
           </form>
         </div>

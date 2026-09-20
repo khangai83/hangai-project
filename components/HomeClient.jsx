@@ -299,11 +299,25 @@ export default function HomeClient() {
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Талбай (м²) доод</label>
-              <input className="form-input" type="number" min="0" value={filters.minArea} onChange={(e) => setF('minArea', e.target.value)} />
+              <input
+                className="form-input"
+                type="text"
+                inputMode="decimal"
+                placeholder="75.5"
+                value={filters.minArea}
+                onChange={(e) => setF('minArea', e.target.value.replace(/[^\d.,]/g, ''))}
+              />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Талбай (м²) дээд</label>
-              <input className="form-input" type="number" min="0" value={filters.maxArea} onChange={(e) => setF('maxArea', e.target.value)} />
+              <input
+                className="form-input"
+                type="text"
+                inputMode="decimal"
+                placeholder="120"
+                value={filters.maxArea}
+                onChange={(e) => setF('maxArea', e.target.value.replace(/[^\d.,]/g, ''))}
+              />
             </div>
           </div>
 
