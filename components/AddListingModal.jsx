@@ -1,14 +1,41 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useToast, useUI } from './AppProviders';
-import { createListing, uploadImages } from '../lib/queries';
+import { createListing, updateListing, uploadImages } from '../lib/queries';
 import { CITIES, getDistricts, getKhoroos, PROPERTY_TYPES, hasApartmentFields, hasFloorFields, BALCONY_OPTIONS, GARAGE_OPTIONS } from '../lib/locationData';
 import { normalizePhone, getPropertyTypeLabel } from '../lib/format';
 
-export default function AddListingModal({ open, onClose, userId, displayName }) {
+/** Зарын DB мөр → форм (засах горимд) */
+function listingToForm(l) {
+  return {
+    category: l.category || 'sell',
+    propertyType: l.property_type || '',
+    rooms: l.rooms ? String(l.rooms) : '',
+    area: l.area ? String(l.area) : '',
+    city: l.city || 'Улаанбаатар',
+    district: l.district || '',
+    khoroo: l.khoroo || '',
+    addressDetail: l.address_detail || '',
+    price: l.price ? String(l.price) : '',
+    priceType: l.price_type || 'total',
+    phone: String(l.phone || '').replace(/^\+/, '').replace(/^976/, ''),
+    contactName: l.contact_name || '',
+    description: l.description || '',
+    // ---- Орон сууцны нэмэлт мэдээлэл ----
+    buildYear: l.build_year ? String(l.build_year) : '',
+    floor: l.floor ? String(l.floor) : '',
+    totalFloors: l.total_floors ? String(l.total_floors) : '',
+    balconies: l.balconies ? String(l.balconies) : '',
+    hasGarage: l.has_garage === true ? 'yes' : l.has_garage === false ? 'no' : '',
+  };
+}
+
+export default function AddListingModal({ open, onClose, userId, displayName, editing }) {
   const { showToast } = useToast();
   const { notifyListingsChanged } = useUI();
+
+  const isEdit = !!(editing && editing.id);
 
   const emptyForm = () => ({
     category: 'sell',
@@ -33,18 +60,40 @@ export default function AddListingModal({ open, onClose, userId, displayName }) 
   });
 
   const [form, setForm] = useState(emptyForm);
-  const [pending, setPending] = useState([]); // {file,url} зурагнууд
+  const [pending, setPending] = useState([]); // {file,url} — шинээр нэмэх зурагнууд
+  const [existingImages, setExistingImages] = useState([]); // засах үед үлдээх хуучин зургууд
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const baselineRef = useRef(''); // анхны төлөв (өөрчлөгдсөн эсэхийг шалгах)
 
   useEffect(() => {
-    if (open) {
-      setForm(emptyForm());
-      setPending([]);
-      setError('');
-    }
+    if (!open) return;
+    const initial = isEdit ? listingToForm(editing) : emptyForm();
+    setForm(initial);
+    setPending([]);
+    setExistingImages(isEdit && Array.isArray(editing.images) ? editing.images : []);
+    setError('');
+    baselineRef.current = JSON.stringify(initial);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, editing]);
+
+  const originalImageCount = isEdit && Array.isArray(editing.images) ? editing.images.length : 0;
+  const isDirty = () =>
+    JSON.stringify(form) !== baselineRef.current ||
+    pending.length > 0 ||
+    existingImages.length !== originalImageCount;
+
+  /**
+   * Цонх хаах. ⚠️ Гадна (хар дэвсгэр) дарж санамсаргүй хаагдаж, оруулсан
+   * мэдээлэл алдагдахаас сэргийлж: өөрчлөлт байвал баталгаажуулна.
+   */
+  const requestClose = () => {
+    if (submitting) return;
+    if (isDirty() && !window.confirm('Оруулсан мэдээлэл хадгалагдахгүй УСТАНА. Гарахдаа итгэлтэй байна уу?')) {
+      return;
+    }
+    onClose();
+  };
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -83,23 +132,31 @@ export default function AddListingModal({ open, onClose, userId, displayName }) 
 
     setSubmitting(true);
     try {
-      const urls = pending.length ? await uploadImages(userId, pending.map((p) => p.file)) : [];
-      await createListing(userId, {
+      const uploaded = pending.length ? await uploadImages(userId, pending.map((p) => p.file)) : [];
+      const payload = {
         ...form,
         phone: normalizePhone(form.phone).replace(/^\+/, ''),
-        images: urls,
+        // Засах үед хуучин зургуудыг хадгалаад шинээр нэмсэнийг залгана
+        images: [...existingImages, ...uploaded],
         // Тухайн төрөлд хамаарахгүй нэмэлт талбаруудыг хоосолж хадгална
         buildYear: showApartment ? form.buildYear : '',
         floor: showFloors ? form.floor : '',
         totalFloors: showFloors ? form.totalFloors : '',
         balconies: showApartment ? form.balconies : '',
         hasGarage: showApartment ? form.hasGarage : '',
-      });
+      };
+
+      if (isEdit) {
+        await updateListing(userId, editing.id, payload);
+      } else {
+        await createListing(userId, payload);
+      }
+
       notifyListingsChanged();
-      showToast('Зар амжилттай нийтлэгдлээ ✅');
+      showToast(isEdit ? 'Зар амжилттай засагдлаа ✅' : 'Зар амжилттай нийтлэгдлээ ✅');
       onClose();
     } catch (err) {
-      setError(err.message || 'Зар нэмэхэд алдаа гарлаа');
+      setError(err.message || (isEdit ? 'Зар засахад алдаа гарлаа' : 'Зар нэмэхэд алдаа гарлаа'));
     } finally {
       setSubmitting(false);
     }
@@ -107,14 +164,20 @@ export default function AddListingModal({ open, onClose, userId, displayName }) 
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-5" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-5" onClick={requestClose}>
       <div
         className="max-h-[90vh] w-full max-w-[760px] overflow-y-auto rounded-2xl bg-white shadow-card-hover"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-5">
-          <h2 className="text-xl font-semibold">➕ Зар нэмэх</h2>
-          <button className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-lg transition hover:bg-gray-200" onClick={onClose} aria-label="Хаах">×</button>
+          <h2 className="text-xl font-semibold">{isEdit ? '✏️ Зарыг засах' : '➕ Зар нэмэх'}</h2>
+          <button
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-lg transition hover:bg-gray-200"
+            onClick={requestClose}
+            aria-label="Хаах"
+          >
+            ×
+          </button>
         </div>
         <div className="p-6">
           <form onSubmit={handleSubmit}>
@@ -268,16 +331,39 @@ export default function AddListingModal({ open, onClose, userId, displayName }) 
                 <label>Холбоо барих утас *</label>
                 <input type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="99112233" required />
               </div>
-              <div className="form-group">
+              {/* <div className="form-group">
                 <label>Холбоо барих хүн</label>
                 <input type="text" value={form.contactName} onChange={(e) => set('contactName', e.target.value)} placeholder="Таны нэр" />
-              </div>
+              </div> */}
             </div>
 
             <div className="form-group">
               <label>Нэмэлт тайлбар</label>
               <textarea rows="4" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Үл хөдлөх хөрөнгийн дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..." />
             </div>
+
+            {isEdit && existingImages.length > 0 && (
+              <div className="form-group">
+                <label>Одоогийн зурагнууд ({existingImages.length})</label>
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
+                  {existingImages.map((url, i) => (
+                    <div key={`${url}-${i}`} className="relative aspect-square overflow-hidden rounded-lg">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt="" className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        title="Устгах"
+                        className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-sm leading-none text-white"
+                        onClick={() => setExistingImages((p) => p.filter((_, idx) => idx !== i))}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <p className="form-hint">× дарж хуучин зургийг устгаж болно (хадгалахад шинэчлэгдэнэ)</p>
+              </div>
+            )}
 
             <div className="form-group">
               <label>Зураг оруулах</label>
@@ -309,7 +395,9 @@ export default function AddListingModal({ open, onClose, userId, displayName }) 
             </div>
 
             <button type="submit" className="btn btn-primary btn-lg mt-4 w-full" disabled={submitting}>
-              {submitting ? 'Нийтэлж байна...' : '✅ Зар нийтлэх'}
+              {submitting
+                ? isEdit ? 'Хадгалж байна...' : 'Нийтэлж байна...'
+                : isEdit ? '💾 Өөрчлөлтийг хадгалах' : '✅ Зар нийтлэх'}
             </button>
           </form>
         </div>

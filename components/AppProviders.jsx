@@ -6,6 +6,7 @@ import { getSupabase } from '../lib/supabaseClient';
 import { fetchProfile, upsertProfile } from '../lib/queries';
 import { normalizePhone } from '../lib/format';
 import { fetchAdminMe } from '../lib/adminApi';
+import { useFavorites } from '../lib/favorites';
 import phoneEmail from '../lib/phoneEmail';
 import AuthModal from './AuthModal';
 import AddListingModal from './AddListingModal';
@@ -47,6 +48,8 @@ export default function AppProviders({ children }) {
   const toastTimer = useRef(null);
   const [authOpen, setAuthOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState(null); // засах горимд зарын объект
+  const favoriteIds = useFavorites(); // ❤️ таалагдсан зарууд (localStorage)
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [dataVersion, setDataVersion] = useState(0); // зарын шинэчлэлт дохио
   const [isAdmin, setIsAdmin] = useState(false); // app_metadata.is_admin
@@ -150,16 +153,23 @@ export default function AppProviders({ children }) {
   const closeAuth = useCallback(() => setAuthOpen(false), []);
   const openAdd = useCallback(() => {
     if (!user) { showToast('Эхлээд нэвтрэх шаардлагатай', 'error'); setAuthOpen(true); return; }
-    setAuthOpen(false); setAddOpen(true);
+    setAuthOpen(false); setEditTarget(null); setAddOpen(true);
   }, [user, showToast]);
-  const closeAdd = useCallback(() => setAddOpen(false), []);
+  // Засах горим: ижил цонх, гэхдээ утгууд урьдчилан бөглөгдөнө
+  const openEdit = useCallback((listing) => {
+    if (!user) { showToast('Эхлээд нэвтрэх шаардлагатай', 'error'); setAuthOpen(true); return; }
+    setAuthOpen(false); setEditTarget(listing); setAddOpen(true);
+  }, [user, showToast]);
+  const closeAdd = useCallback(() => { setAddOpen(false); setEditTarget(null); }, []);
   const notifyListingsChanged = useCallback(() => setDataVersion((v) => v + 1), []);
 
   const authValue = useMemo(() => ({ user, profileName, authLoading, signIn, saveName, logout }),
     [user, profileName, authLoading, signIn, saveName, logout]);
   const toastValue = useMemo(() => ({ showToast }), [showToast]);
-  const uiValue = useMemo(() => ({ openAuth, openAdd, closeAdd, dataVersion, notifyListingsChanged }),
-    [openAuth, openAdd, closeAdd, dataVersion, notifyListingsChanged]);
+  const uiValue = useMemo(
+    () => ({ openAuth, openAdd, openEdit, closeAdd, dataVersion, notifyListingsChanged }),
+    [openAuth, openAdd, openEdit, closeAdd, dataVersion, notifyListingsChanged]
+  );
 
   const displayName = profileName || user?.phone || '';
 
@@ -178,6 +188,19 @@ export default function AppProviders({ children }) {
                 🏠 ZAR<span className="text-gray-900">.mn</span>
               </Link>
               <div className="flex items-center gap-3">
+                <Link
+                  href="/favorites"
+                  className="btn btn-secondary btn-sm"
+                  title="Таалагдсан зарууд"
+                  onClick={() => setUserMenuOpen(false)}
+                >
+                  ❤️ Таалагдсан
+                  {favoriteIds.length > 0 && (
+                    <span className="ml-1.5 rounded-full bg-red-500 px-1.5 py-px text-[11px] font-bold text-white">
+                      {favoriteIds.length}
+                    </span>
+                  )}
+                </Link>
                 {user ? (
                   <div className="relative">
                     <button className="btn btn-secondary btn-sm" onClick={() => setUserMenuOpen((v) => !v)}>
@@ -213,7 +236,13 @@ export default function AppProviders({ children }) {
 
           {/* ===== MODALS & TOAST ===== */}
           <AuthModal open={authOpen} onClose={closeAuth} />
-          <AddListingModal open={addOpen} onClose={closeAdd} userId={user?.id || null} displayName={displayName} />
+          <AddListingModal
+            open={addOpen}
+            onClose={closeAdd}
+            userId={user?.id || null}
+            displayName={displayName}
+            editing={editTarget}
+          />
 
           {toast && (
             <div

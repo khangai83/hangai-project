@@ -9,6 +9,7 @@ import { fetchListingById } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
 import { formatPrice, getPriceTypeLabel, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo } from '../lib/format';
 import { buildListingBreadcrumb } from '../lib/breadcrumb';
+import { toggleFavorite, useFavorites } from '../lib/favorites';
 
 export default function ListingDetailClient({ id }) {
   const { showToast } = useToast();
@@ -16,6 +17,7 @@ export default function ListingDetailClient({ id }) {
   const [loadError, setLoadError] = useState(null); // холболтын алдаа
   const [active, setActive] = useState(0);
   const [phoneShown, setPhoneShown] = useState(false);
+  const favoriteIds = useFavorites(); // ❤️ (дээрх hook-уудтай хамт дуудагдах ёстой)
 
   useEffect(() => {
     let mounted = true;
@@ -84,6 +86,7 @@ export default function ListingDetailClient({ id }) {
 
   // unegui.mn-ийн <section data-component="AdvertFeaturesApp"> хэсэгт харагдах шинж чанарууд.
   // Зөвхөн утгатай (хоосон биш) мөрүүдийг харуулна.
+  const isFav = favoriteIds.includes(listing.id);
   const features = [
     { label: 'Төрөл', value: typeLabel },
     listing.rooms > 0 && { label: 'Өрөөний тоо', value: `${listing.rooms} өрөө` },
@@ -107,6 +110,14 @@ export default function ListingDetailClient({ id }) {
       <header className="mb-5">
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <span className={`badge ${isSell ? 'badge-sell' : 'badge-rent'}`}>{getCategoryLabel(listing.category)}</span>
+          <button
+            type="button"
+            onClick={() => toggleFavorite(listing.id)}
+            title="Надад таалагдсан зарууд"
+            className={`btn btn-sm ${isFav ? 'btn-danger' : 'btn-outline'}`}
+          >
+            {isFav ? '❤️ Таалагдсан' : '🤍 Таалагдсан'}
+          </button>
           <span className="text-[13px] text-gray-400">ID: {listing.id}</span>
         </div>
         <h1 className="mb-1.5 text-2xl font-bold leading-snug text-gray-900 sm:text-[28px]">

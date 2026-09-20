@@ -2,9 +2,12 @@
 
 import Link from 'next/link';
 import { formatPrice, getPriceTypeLabel, getPropertyIcon, firstImage, getFloorLabel } from '../lib/format';
+import { toggleFavorite, useFavorites } from '../lib/favorites';
 
 export default function ListingCard({ listing }) {
   const img = firstImage(listing);
+  const favoriteIds = useFavorites();
+  const isFav = favoriteIds.includes(listing.id);
   const isSell = listing.category === 'sell';
   const floorLabel = getFloorLabel(listing.floor, listing.total_floors);
   const hasMeta = listing.rooms > 0 || listing.area > 0 || !!floorLabel || listing.build_year > 0;
@@ -28,6 +31,19 @@ export default function ListingCard({ listing }) {
         <span className={`badge absolute left-2 top-2 ${isSell ? 'badge-sell' : 'badge-rent'}`}>
           {isSell ? 'Зарах' : 'Түрээс'}
         </span>
+        <button
+          type="button"
+          aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
+          title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleFavorite(listing.id);
+          }}
+          className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-lg shadow transition hover:scale-110"
+        >
+          {isFav ? '❤️' : '🤍'}
+        </button>
       </div>
       <div className="flex flex-1 flex-col justify-between overflow-hidden p-4">
         <div>
