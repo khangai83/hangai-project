@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useToast, useUI } from './AppProviders';
 import { createListing, updateListing, uploadImages } from '../lib/queries';
-import { CITIES, getDistricts, getKhoroos, PROPERTY_TYPES, hasApartmentFields, hasFloorFields, BALCONY_OPTIONS, GARAGE_OPTIONS } from '../lib/locationData';
+import { CITIES, getDistricts, getKhoroos, PROPERTY_TYPES, hasApartmentFields, hasFloorFields, hasRoomsFields, BALCONY_OPTIONS, GARAGE_OPTIONS } from '../lib/locationData';
 import { normalizePhone, getPropertyTypeLabel } from '../lib/format';
 import { compressImages, formatBytes } from '../lib/imageUtils';
 
@@ -109,6 +109,7 @@ export default function AddListingModal({ open, onClose, userId, displayName, ed
   // Орон сууцны нэмэлт талбарууд төрлөөс хамаарч харагдана
   const showApartment = hasApartmentFields(form.propertyType);
   const showFloors = hasFloorFields(form.propertyType);
+  const showRooms = hasRoomsFields(form.propertyType); // ← зөвхөн Орон сууц, АОС/хаус
 
   const onPickFiles = async (e) => {
     const files = Array.from(e.target.files || []);
@@ -164,6 +165,7 @@ export default function AddListingModal({ open, onClose, userId, displayName, ed
         // Засах үед хуучин зургуудыг хадгалаад шинээр нэмсэнийг залгана
         images: [...existingImages, ...uploaded],
         // Тухайн төрөлд хамаарахгүй нэмэлт талбаруудыг хоосолж хадгална
+        rooms: showRooms ? form.rooms : '',
         buildYear: showApartment ? form.buildYear : '',
         floor: showFloors ? form.floor : '',
         totalFloors: showFloors ? form.totalFloors : '',
@@ -228,11 +230,14 @@ export default function AddListingModal({ open, onClose, userId, displayName, ed
             </div>
 
             <div className="form-row">
-              <div className="form-group">
-                <label>Өрөө</label>
-                <input type="number" min="0" value={form.rooms} onChange={(e) => set('rooms', e.target.value)} placeholder="0" />
-              </div>
-              <div className="form-group">
+              {/* «Өрөө» нь зөвхөн Орон сууц, АОС/хаус төрөлд харагдана (lib/locationData.js) */}
+              {showRooms && (
+                <div className="form-group">
+                  <label>Өрөө</label>
+                  <input type="number" min="0" value={form.rooms} onChange={(e) => set('rooms', e.target.value)} placeholder="3" />
+                </div>
+              )}
+              <div className={`form-group ${showRooms ? '' : 'sm:col-span-2'}`}>
                 <label>Талбай (м²)</label>
                 <input
                   type="text"

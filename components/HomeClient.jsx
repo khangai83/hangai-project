@@ -194,7 +194,7 @@ export default function HomeClient() {
 
         {/* PROPERTY TYPE NAV — Зарах/Түрээслэх-ийн бүрдэл хэсгүүд (unegui.mn загвар)
             Сонгосон категорид тохируулан нэрлэгдэнэ: 'Орон сууц зарна' / 'Орон сууц түрээслүүлнэ' */}
-        <div className="-mt-3 mb-5 flex flex-wrap gap-2 border-b border-gray-200 pb-4" role="tablist" aria-label="Үл хөдлөхийн төрөл">
+        <div className="-mt-3 mb-5 flex flex-wrap gap-4 border-b border-gray-200 pb-4" role="tablist" aria-label="Үл хөдлөхийн төрөл">
           <button
             type="button"
             role="tab"

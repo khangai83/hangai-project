@@ -15,7 +15,8 @@
     "deploy:vercel": "node scripts/deploy-vercel-env.js",
     "make:admin": "node scripts/make-admin.js",
     "find": "node scripts/find.js",
-    "doctor": "node scripts/doctor.js"
+    "doctor": "node scripts/doctor.js",
+    "seed:more": "node scripts/seed-more-listings.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.114.0",
