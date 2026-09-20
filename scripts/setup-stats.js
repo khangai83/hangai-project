@@ -77,17 +77,27 @@ async function check() {
   let copied = false;
   try {
     execSync('pbcopy', { input: sql });
-    copied = true;
+    // ⚠️ БАТАЛГААЖУУЛАХ: clipboard-д үнэхээр миний SQL орсон эсэх
+    const back = execSync('pbpaste', { encoding: 'utf8' });
+    copied = back.includes('listing_likes') && back.includes('sync_listing_counters');
+    if (copied) {
+      console.log(`✅ SQL нь CLIPBOARD-д орлоо (${back.split('\n').length} мөр) — Cmd+V хийхэд бэлэн ✨`);
+    } else {
+      console.log('⚠️  Clipboard-д хуулсан эсэхийг баталж чадсангүй — SQL-ийг доороос хуулна уу.');
+    }
   } catch (e) {
     copied = false;
   }
 
-  if (copied) console.log('✅ SQL нь CLIPBOARD-д хуулагдлаа — Cmd+V хийхэд бэлэн ✨\n');
+  console.log('\n⚠️ ХАМГИЙН ЧУХАЛ: SQL Editor дотор ХУУЧИН агуулга байж болзошгүй!');
+  console.log('   (Өмнөх ажиллагааны SQL draft хэлбэрээр хадгалагдсан байдаг —');
+  console.log('    тэр нь «policy "Public Read Access" already exists» гэх алдаа өгдөг.)\n');
 
-  console.log('ХИЙХ 3 АЛХАМ (20 секунд):');
+  console.log('ХИЙХ 4 АЛХАМ (30 секунд):');
   console.log('  1) Доор нээгдэх Supabase цонх дээр «SQL Editor» нээгдэнэ');
-  console.log('  2) Cmd+V дараад SQL-ээ буулгана');
-  console.log('  3) «Run» (эсвэл Cmd+Enter) → «Success. No rows returned» гарвал бэлэн 🎉\n');
+  console.log('  2) ⌘A  →  ⌫ Delete     ← ХУУЧИН агуулгыг БҮРЭН устгана (заавал!)');
+  console.log('  3) ⌘V                  ← миний SQL-ийг буулгана');
+  console.log('  4) «Run» (⌘+Enter)     ← «Success. No rows returned» гарвал бэлэн 🎉\n');
 
   if (!copied) {
     console.log('----- SQL-ийг доороос хуулна уу -----');
@@ -103,4 +113,6 @@ async function check() {
   }
 
   console.log('\nДараа нь шалгах:  npm run stats:check');
+  console.log('💡 Claude-д алдаа илгээхийн тулд алдааг хуулбал clipboard дахин солигдоно —');
+  console.log('   тийм тохиолдолд `npm run stats:setup`-г дахин ажиллуулаарай.');
 })();
