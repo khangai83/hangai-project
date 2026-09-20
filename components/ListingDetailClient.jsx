@@ -126,11 +126,11 @@ export default function ListingDetailClient({ id }) {
     garageLabel && { label: 'Гараж', value: garageLabel },
     /*{ label: 'Зарын төрөл', value: getCategoryLabel(listing.category) },*/
     /*{ label: 'Нийтэлсэн', value: timeAgo(listing.created_at) },*/
-    { label: 'Зарын дугаар', value: `ID: ${listing.id}` },
+    // { label: 'Зарын дугаар', value: `ID: ${listing.id}` },
     { label: 'Байршил', value: address || 'Тодорхойгүй' },
     // 👁/❤️ статистик (listings.views / listings.likes — 0006_listing_stats.sql)
-    { label: 'Үзсэн', value: `${viewCount} удаа` },
-    { label: 'Таалагдсан', value: `${likeCount} хүн` },
+    // { label: 'Үзсэн', value: `${viewCount} удаа` },
+    // { label: 'Таалагдсан', value: `${likeCount} хүн` },
   ].filter(Boolean);
 
   return (
