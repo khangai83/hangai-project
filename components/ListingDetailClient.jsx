@@ -158,8 +158,8 @@ export default function ListingDetailClient({ id }) {
         </h1>
         <p className="text-sm text-gray-500">
           📍 {address || 'Хаяг тодорхойгүй'} · 📅 {timeAgo(listing.created_at)} ·{' '}
-          <span title="Энэ зарыг хэдэн хүн үзсэн">👁 {viewCount} үзсэн</span> ·{' '}
-          <span title="Хэдэн хүн ❤️ дарсан">❤️ {likeCount} таалагдсан</span>
+          {/* <span title="Энэ зарыг хэдэн хүн үзсэн">👁 {viewCount} үзсэн</span> ·{' '}
+          <span title="Хэдэн хүн ❤️ дарсан">❤️ {likeCount} таалагдсан</span> */}
         </p>
       </header>
 

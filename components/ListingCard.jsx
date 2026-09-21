@@ -41,12 +41,12 @@ export default function ListingCard({ listing }) {
         {/* 👁 Хичнээн хүн үзсэн — зургийн ЗҮҮН ДООД буланд.
             ⚠️ Баруун доод буланд биш: /favorites хуудсанд «✕ Хасах» товч
             (absolute bottom-3 right-3) нь тэнд байрладаг тул халхлагдана. */}
-        <span
+        {/* <span
           title="Энэ зарыг хэдэн хүн үзсэн"
           className="absolute bottom-2 left-2 flex h-7 items-center gap-1 rounded-full bg-black/65 px-2.5 text-[12px] font-bold tabular-nums text-white shadow backdrop-blur-sm"
         >
           👁 {views}
-        </span>
+        </span> */}
       </div>
       <div className="flex flex-1 flex-col justify-between overflow-hidden p-4">
         <div>
