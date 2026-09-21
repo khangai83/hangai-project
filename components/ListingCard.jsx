@@ -35,6 +35,10 @@ export default function ListingCard({ listing }) {
         <span className={`badge absolute left-2 top-2 ${isSell ? 'badge-sell' : 'badge-rent'}`}>
           {isSell ? 'Зарах' : 'Түрээс'}
         </span>
+        {/* ❤️/🤍 Зөвхөн МИНИЙ favourite toggle — зураг дээр ТОО ГАРАХГҮЙ.
+            ⚠️ Нийт таалагдсан тоо (listings.likes) доорх мета мөрөнд
+            «👁 N үзсэн»-ий ЯГ хажууд харагдана (caab711-д тоог энд нэмж,
+            зургийг «таалагдсан» тэмдэглээ мэт харагдуулж байсныг буцаав). */}
         <button
           type="button"
           aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
@@ -44,13 +48,9 @@ export default function ListingCard({ listing }) {
             e.stopPropagation();
             toggleFavorite(listing.id);
           }}
-          className={`absolute right-2 top-2 flex h-9 items-center gap-1 rounded-full bg-white/90 px-2.5 text-lg shadow transition hover:scale-110 ${
-            isFav ? 'text-red-600' : ''
-          }`}
+          className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-lg shadow transition hover:scale-110"
         >
-          <span>{isFav ? '❤️' : '🤍'}</span>
-          {/* Хичнээн хүн ❤️ дарсан (0 байвал ч харагдана) */}
-          <span className="text-xs font-bold tabular-nums">{likes}</span>
+          {isFav ? '❤️' : '🤍'}
         </button>
 
         {/* 👁 Хичнээн хүн үзсэн — зургийн ЗҮҮН ДООД буланд.

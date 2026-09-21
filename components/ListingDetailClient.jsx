@@ -169,19 +169,18 @@ export default function ListingDetailClient({ id }) {
           {/* Gallery */}
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
             <div className="relative">
-              {/* ❤️ Таалагдах — зургийн баруун дээд буланд (карт дээрхтэй ижил)
-                  Зар луу ормогц шууд ❤️ дарж болно. */}
+              {/* ❤️ Таалагдах — зургийн баруун дээд буланд (карт дээрхтэй ижил).
+                  Зар луу ормогц шууд ❤️ дарж болно.
+                  ⚠️ Зураг дээр ТОО ГАРАХГҮЙ (карттай ижил) — нийт «таалагдсан» тоо
+                  доорх мета мөрөнд «👁 N үзсэн · ❤️ N таалагдсан»-аар харагдана. */}
               <button
                 type="button"
                 onClick={() => toggleFavorite(listing.id)}
                 aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
                 title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
-                className={`absolute right-3 top-3 z-10 flex h-11 items-center gap-1.5 rounded-full bg-white/95 px-3.5 text-xl shadow-lg backdrop-blur transition hover:scale-110 ${
-                  isFav ? 'text-red-600' : 'text-gray-700'
-                }`}
+                className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/95 text-xl shadow-lg backdrop-blur transition hover:scale-110"
               >
-                <span>{isFav ? '❤️' : '🤍'}</span>
-                <span className="text-sm font-bold tabular-nums">{likeCount}</span>
+                {isFav ? '❤️' : '🤍'}
               </button>
               {images.length ? (
                 <>
