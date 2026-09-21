@@ -116,7 +116,7 @@ export default function ListingDetailClient({ id }) {
   // Зөвхөн утгатай (хоосон биш) мөрүүдийг харуулна.
   const isFav = favoriteIds.includes(listing.id);
   const features = [
-    { label: 'Төрөл', value: typeLabel },
+    //{ label: 'Төрөл', value: typeLabel },
     listing.rooms > 0 && { label: 'Өрөөний тоо', value: `${listing.rooms} өрөө` },
     listing.area > 0 && { label: 'Талбай', value: `${listing.area} м²` },
     listing.floor > 0 && { label: 'Хэдэн давхарт', value: `${listing.floor} давхарт` },
@@ -237,7 +237,7 @@ export default function ListingDetailClient({ id }) {
 
           {/* ===== ШИНЖ ЧАНАР — unegui.mn-ийн <section data-component="AdvertFeaturesApp" class="mt-6"> хэсэгтэй ижил загвар ===== */}
           <section data-component="AdvertFeaturesApp" className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white">
-            <h2 className="border-b border-gray-100 px-5 py-4 text-base font-semibold text-gray-800">Шинж чанар</h2>
+            <h2 className="border-b border-gray-100 px-5 py-4 text-base font-semibold text-gray-800">Зарын дэлгэрэнгүй</h2>
             <dl className="grid grid-cols-1 sm:grid-cols-2">
               {features.map((f) => (
                 <div

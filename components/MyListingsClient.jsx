@@ -139,7 +139,7 @@ export default function MyListingsClient() {
             return (
               <div
                 key={l.id}
-                className="flex flex-col items-start gap-4 rounded-xl border border-gray-200 bg-white p-4 sm:flex-row sm:items-center"
+                className="flex flex-col items-start gap-4 rounded-xl border border-gray-200 bg-black p-4 sm:flex-row sm:items-center"
               >
                 <div className="h-[150px] w-full shrink-0 overflow-hidden rounded-lg bg-gray-100 sm:h-20 sm:w-[100px]">
                   {firstImage ? (

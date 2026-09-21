@@ -8,11 +8,13 @@ export default function ListingCard({ listing }) {
   const img = firstImage(listing);
   const favoriteIds = useFavorites();
   const isFav = favoriteIds.includes(listing.id);
-  // ❤️ Нийт хэдэн хүн таалагдсан (listings.likes — supabase/migrations/0006)
+  // ❤️ Нийт хэдэн хүн таалагдсан (listings.likes — supabase/migrations/0007)
   const likes = useLikeCount(listing.id, listing.likes);
+  // 👁 Нийт хэдэн хүн үзсэн (listings.views — 0007_listing_likes_views.sql,
+  //    триггер count(*) -ээр автоматаар бодно)
+  const views = Number(listing.views) || 0;
   const isSell = listing.category === 'sell';
   const floorLabel = getFloorLabel(listing.floor, listing.total_floors);
-  const hasMeta = listing.rooms > 0 || listing.area > 0 || !!floorLabel || listing.build_year > 0;
   return (
     <Link
       href={`/listings/${listing.id}`}
@@ -63,14 +65,15 @@ export default function ListingCard({ listing }) {
             📍 {[listing.city, listing.district, listing.khoroo].filter(Boolean).join(', ')}
           </div>
         </div>
-        {hasMeta && (
-          <div className="mt-auto flex flex-wrap justify-between gap-2 border-t border-gray-100 pt-1.5 text-xs text-gray-400">
-            {listing.rooms > 0 && <span>🛏 {listing.rooms} өрөө</span>}
-            {listing.area > 0 && <span>📐 {listing.area} м²</span>}
-            {floorLabel && <span>🏢 {floorLabel}</span>}
-            {listing.build_year > 0 && <span>📅 {listing.build_year}</span>}
-          </div>
-        )}
+        {/* Мета мөр — ҮРГЭЛЖ харагдана (👁 үзсэн тоо байх ёстой тул) */}
+        <div className="mt-auto flex flex-wrap justify-between gap-2 border-t border-gray-100 pt-1.5 text-xs text-gray-400">
+          {listing.rooms > 0 && <span>🛏 {listing.rooms} өрөө</span>}
+          {listing.area > 0 && <span>📐 {listing.area} м²</span>}
+          {floorLabel && <span>🏢 {floorLabel}</span>}
+          {listing.build_year > 0 && <span>📅 {listing.build_year}</span>}
+          {/* 👁 Энэ зарыг хэдэн хүн үзсэн */}
+          <span title="Энэ зарыг хэдэн хүн үзсэн">👁 {views} үзсэн</span>
+        </div>
       </div>
     </Link>
   );

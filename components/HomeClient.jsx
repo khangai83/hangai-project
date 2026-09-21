@@ -361,12 +361,12 @@ export default function HomeClient() {
             </div>
             <button className="btn btn-primary mt-4" onClick={load}>↻ Дахин оролдох</button>
           </div>
-        ) : listings.length === 0 ? (
-          <div className="px-5 py-16 text-center">
-            <div className="mb-4 text-6xl">🔎</div>
-            <h3 className="mb-2 text-xl font-semibold">Зарууд олдсонгүй</h3>
-            <p className="text-gray-500">Шүүлт, хайлтаа өөрчилж үзнэ үү. {query && `«${query}»`} {getCategoryLabel(category)}</p>
-          </div>
+        // ) : listings.length === 0 ? (
+        //   <div className="px-5 py-16 text-center">
+        //     <div className="mb-4 text-6xl">🔎</div>
+        //     <h3 className="mb-2 text-xl font-semibold">Зарууд олдсонгүй</h3>
+        //     <p className="text-gray-500">Шүүлт, хайлтаа өөрчилж үзнэ үү. {query && `«${query}»`} {getCategoryLabel(category)}</p>
+        //   </div>
         ) : (
           <div className="flex flex-col gap-4">
             {listings.map((l) => <ListingCard key={l.id} listing={l} />)}
