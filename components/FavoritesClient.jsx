@@ -169,13 +169,15 @@ export default function FavoritesClient() {
           {listings.map((l) => (
             <div key={l.id} className="relative">
               <ListingCard listing={l} />
+              {/* ⚠️ Товчийг картын ГАДНА (баруун дээд булан) байрлуулав —
+                  ингэснээр картын доод мөрийн текстийг халхлахгүй. */}
               <button
                 type="button"
                 onClick={() => removeOne(l)}
                 title="Таалагдсанаас хасах"
-                className="absolute bottom-3 right-3 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-semibold text-gray-600 shadow-sm transition hover:border-red-300 hover:text-red-600"
+                className="absolute -right-1 -top-1 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-sm font-bold text-gray-500 shadow-md transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
               >
-                ✕ Хасах
+                ✕
               </button>
             </div>
           ))}
