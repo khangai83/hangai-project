@@ -52,6 +52,16 @@ export default function ListingCard({ listing }) {
           {/* Хичнээн хүн ❤️ дарсан (0 байвал ч харагдана) */}
           <span className="text-xs font-bold tabular-nums">{likes}</span>
         </button>
+
+        {/* 👁 Хичнээн хүн үзсэн — зургийн ЗҮҮН ДООД буланд.
+            ⚠️ Баруун доод буланд биш: /favorites хуудсанд «✕ Хасах» товч
+            (absolute bottom-3 right-3) нь тэнд байрладаг тул халхлагдана. */}
+        <span
+          title="Энэ зарыг хэдэн хүн үзсэн"
+          className="absolute bottom-2 left-2 flex h-7 items-center gap-1 rounded-full bg-black/65 px-2.5 text-[12px] font-bold tabular-nums text-white shadow backdrop-blur-sm"
+        >
+          👁 {views}
+        </span>
       </div>
       <div className="flex flex-1 flex-col justify-between overflow-hidden p-4">
         <div>
@@ -65,14 +75,12 @@ export default function ListingCard({ listing }) {
             📍 {[listing.city, listing.district, listing.khoroo].filter(Boolean).join(', ')}
           </div>
         </div>
-        {/* Мета мөр — ҮРГЭЛЖ харагдана (👁 үзсэн тоо байх ёстой тул) */}
+        {/* Мета мөр — ҮРГЭЛЖ харагдана */}
         <div className="mt-auto flex flex-wrap justify-between gap-2 border-t border-gray-100 pt-1.5 text-xs text-gray-400">
           {listing.rooms > 0 && <span>🛏 {listing.rooms} өрөө</span>}
           {listing.area > 0 && <span>📐 {listing.area} м²</span>}
           {floorLabel && <span>🏢 {floorLabel}</span>}
           {listing.build_year > 0 && <span>📅 {listing.build_year}</span>}
-          {/* 👁 Энэ зарыг хэдэн хүн үзсэн */}
-          <span title="Энэ зарыг хэдэн хүн үзсэн">👁 {views} үзсэн</span>
         </div>
       </div>
     </Link>
