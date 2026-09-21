@@ -170,14 +170,16 @@ export default function FavoritesClient() {
             <div key={l.id} className="relative">
               <ListingCard listing={l} />
               {/* ⚠️ Товчийг картын ГАДНА (баруун дээд булан) байрлуулав —
-                  ингэснээр картын доод мөрийн текстийг халхлахгүй. */}
+                  ингэснээр картын доод мөрийн текстийг халхлахгүй.
+                  📱 Утасны дэлгэцэд (max-sm) доош буулгав: тэнд ❤️ товч
+                  баруун дээд буланд байдаг тул мөргөлдөхөөс сэргийлнэ. */}
               <button
                 type="button"
                 onClick={() => removeOne(l)}
                 title="Таалагдсанаас хасах"
-                className="absolute -right-1 -top-1 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-sm font-bold text-gray-500 shadow-md transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                className="absolute right-3 top-3 z-10 flex h-8 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 shadow-sm transition hover:border-red-300 hover:bg-red-50 hover:text-red-600 max-sm:bottom-3 max-sm:right-2 max-sm:top-auto"
               >
-                ✕
+                Хасах
               </button>
             </div>
           ))}

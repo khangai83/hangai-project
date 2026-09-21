@@ -77,8 +77,9 @@ export default function ListingCard({ listing }) {
         </div>
         {/* Мета мөр — ҮРГЭЛЖ харагдана.
             ⚠️ `justify-between` БИШ: баруун захад элемент үлдвэл /favorites-ийн
-            «✕ Хасах» товч түүнийг халхална. Тиймээс зүүнээс эхлэн жагсаана. */}
-        <div className="mt-auto flex flex-wrap justify-start gap-x-3 gap-y-1 border-t border-gray-100 pt-1.5 text-xs text-gray-400">
+            «Хасах» товч түүнийг халхална. Тиймээс зүүнээс эхлэн жагсааж,
+            баруун талд `pr-20` (80px) хоосон зай үлдээв. */}
+        <div className="mt-auto flex flex-wrap justify-start gap-x-3 gap-y-1 border-t border-gray-100 pt-1.5 pr-20 text-xs text-gray-400">
           {/* 👁 Хэдэн хүн үзсэн — хамгийн тод харагдахын тулд ЭХЭНД */}
           <span className="font-semibold text-gray-500" title="Энэ зарыг хэдэн хүн үзсэн">
             👁 {views} үзсэн
