@@ -137,29 +137,19 @@ export default function ListingDetailClient({ id }) {
     <div className="page-container">
       <Breadcrumb items={buildListingBreadcrumb(listing)} />
 
-      {/* ===== ГАРЧИГ (HEADER) ===== */}
+      {/* ===== ГАРЧИГ (HEADER) =====
+          ⚠️ 👁/❤️ тоо БА ❤️ товч энд БАЙХГҮЙ — Facebook-ийн зарчмаар зургийн
+             ДОР (доорх Gallery картын footer) байрлана. */}
       <header className="mb-5">
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <span className={`badge ${isSell ? 'badge-sell' : 'badge-rent'}`}>{getCategoryLabel(listing.category)}</span>
-          <button
-            type="button"
-            onClick={() => toggleFavorite(listing.id)}
-            title="Надад таалагдсан зарууд"
-            className={`btn btn-sm ${isFav ? 'btn-danger' : 'btn-outline'}`}
-          >
-            {isFav ? '❤️ Таалагдсан' : '🤍 Таалагдсан'}
-            <span className="ml-1.5 font-bold tabular-nums">{likeCount}</span>
-          </button>
-          {/* 👁/❤️ тоог «зар хэзээ орсон» огнооны хажууд харуулна (доор) */}
           <span className="text-[13px] text-gray-400">ID: {listing.id}</span>
         </div>
         <h1 className="mb-1.5 text-2xl font-bold leading-snug text-gray-900 sm:text-[28px]">
           {getPropertyIcon(listing.property_type)} {typeLabel}
         </h1>
         <p className="text-sm text-gray-500">
-          📍 {address || 'Хаяг тодорхойгүй'} · 📅 {timeAgo(listing.created_at)} ·{' '}
-          {/* <span title="Энэ зарыг хэдэн хүн үзсэн">👁 {viewCount} үзсэн</span> ·{' '}
-          <span title="Хэдэн хүн ❤️ дарсан">❤️ {likeCount} таалагдсан</span> */}
+          📍 {address || 'Хаяг тодорхойгүй'} · 📅 {timeAgo(listing.created_at)}
         </p>
       </header>
 
@@ -169,9 +159,8 @@ export default function ListingDetailClient({ id }) {
           {/* Gallery */}
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
             <div className="relative">
-              {/* ⚠️ ЗУРАГ дээр «таалагдсан» тэмдэглээ БАЙХГҮЙ (карттай ижил дүрэм).
-                  ❤️/🤍 toggle нь дээрх гарчгийн «Таалагдсан» товч (btn-danger/
-                  btn-outline), тоо нь доорх «👁 N үзсэн · ❤️ N таалагдсан» мөрөнд. */}
+              {/* ⚠️ ЗУРАГ дээр «таалагдсан/үзсэн» тэмдэглээ БАЙХГҮЙ (карттай ижил).
+                  👁/❤️ тоо ба ❤️/🤍 toggle нь доорх FB-style footer мөрөнд. */}
               {images.length ? (
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -222,6 +211,31 @@ export default function ListingDetailClient({ id }) {
                 ))}
               </div>
             )}
+
+            {/* ===== FB-style POST FOOTER — 👁/❤️ тоо ЗУРГИЙН ДОР =====
+                Facebook-ийн постын доод мөр шиг: зүүн талд тоо (👁 үзсэн,
+                ❤️ таалагдсан), баруун талд ❤️/🤍 toggle товч.
+                ⚠️ Зурган дээр ямар ч тэмдэглээ байхгүй (карттай ижил дүрэм).
+                ⚠️ Тоо нь серверээс (listings.views / listings.likes — 0007). */}
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-gray-100 px-4 py-3">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-gray-500">
+                <span title="Энэ зарыг хэдэн хүн үзсэн" className="font-semibold tabular-nums">
+                  👁 {viewCount} үзсэн
+                </span>
+                <span title="Энэ зарыг хэдэн хүн таалагдсан" className="font-semibold tabular-nums">
+                  ❤️ {likeCount} таалагдсан
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => toggleFavorite(listing.id)}
+                aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
+                title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
+                className={`btn btn-sm ${isFav ? 'btn-danger' : 'btn-outline'}`}
+              >
+                {isFav ? '❤️ Таалагдсан' : '🤍 Таалагдсан'}
+              </button>
+            </div>
           </div>
 
           {/* ===== ШИНЖ ЧАНАР — unegui.mn-ийн <section data-component="AdvertFeaturesApp" class="mt-6"> хэсэгтэй ижил загвар ===== */}
