@@ -84,6 +84,13 @@ export default function ListingCard({ listing }) {
           <span className="font-semibold text-gray-500" title="Энэ зарыг хэдэн хүн үзсэн">
             👁 {views} үзсэн
           </span>
+          {/* ❤️ Нийт хэдэн хүн таалагдсан — «үзсэн»-ий ЯГ хажууд.
+              ⚠️ Зурган дээрх ❤️/🤍 товч нь МИНИЙ favourite (toggle),
+              энэ нь НИЙТ хүний тоо (listings.likes) — хоёрыг ялгаж харуулав.
+              Detail хуудасны «👁 15 үзсэн · ❤️ 2 таалагдсан»-тай ижил хэв маяг. */}
+          <span className="font-semibold text-gray-500" title="Энэ зарыг хэдэн хүн таалагдсан">
+            ❤️ {likes} таалагдсан
+          </span>
           {listing.rooms > 0 && <span>🛏 {listing.rooms} өрөө</span>}
           {listing.area > 0 && <span>📐 {listing.area} м²</span>}
           {floorLabel && <span>🏢 {floorLabel}</span>}
