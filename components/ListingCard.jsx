@@ -35,23 +35,8 @@ export default function ListingCard({ listing }) {
         <span className={`badge absolute left-2 top-2 ${isSell ? 'badge-sell' : 'badge-rent'}`}>
           {isSell ? 'Зарах' : 'Түрээс'}
         </span>
-        {/* ❤️/🤍 Зөвхөн МИНИЙ favourite toggle — зураг дээр ТОО ГАРАХГҮЙ.
-            ⚠️ Нийт таалагдсан тоо (listings.likes) доорх мета мөрөнд
-            «👁 N үзсэн»-ий ЯГ хажууд харагдана (caab711-д тоог энд нэмж,
-            зургийг «таалагдсан» тэмдэглээ мэт харагдуулж байсныг буцаав). */}
-        <button
-          type="button"
-          aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
-          title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleFavorite(listing.id);
-          }}
-          className="absolute right-2 top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-lg shadow transition hover:scale-110"
-        >
-          {isFav ? '❤️' : '🤍'}
-        </button>
+        {/* ⚠️ ЗУРАГ дээр «таалагдсан» тэмдэглээ (зүрх/тоо) БАЙХГҮЙ.
+            Нийт тоо + ❤️/🤍 товч нь доорх МЭДЭЭЛЛИЙН хэсэгт (мета мөр) байна. */}
 
         {/* 👁 Хичнээн хүн үзсэн — зургийн ЗҮҮН ДООД буланд.
             ⚠️ Баруун доод буланд биш: /favorites хуудсанд «✕ Хасах» товч
@@ -84,13 +69,27 @@ export default function ListingCard({ listing }) {
           <span className="font-semibold text-gray-500" title="Энэ зарыг хэдэн хүн үзсэн">
             👁 {views} үзсэн
           </span>
-          {/* ❤️ Нийт хэдэн хүн таалагдсан — «үзсэн»-ий ЯГ хажууд.
-              ⚠️ Зурган дээрх ❤️/🤍 товч нь МИНИЙ favourite (toggle),
-              энэ нь НИЙТ хүний тоо (listings.likes) — хоёрыг ялгаж харуулав.
-              Detail хуудасны «👁 15 үзсэн · ❤️ 2 таалагдсан»-тай ижил хэв маяг. */}
-          <span className="font-semibold text-gray-500" title="Энэ зарыг хэдэн хүн таалагдсан">
-            ❤️ {likes} таалагдсан
-          </span>
+          {/* ❤️/🤍 Таалагдсан — «үзсэн»-ий ЯГ хажууд (зургийн хажуугийн мэдээлэл).
+              Энэ нь МИНИЙ favourite toggle БА нийт тоо (listings.likes) хоёулаа:
+              дарвал ❤️↔🤍 солигдож, сервер дээрх тоо ±1 болно (lib/favorites.js).
+              ⚠️ Зурган дээр тусдаа товч БАЙХГҮЙ (зураг цэвэр байх ёстой).
+              ⚠️ «Хасах» товч (/favorites, баруун доод/дээд) халхлахгүйн тулд
+                 мета мөр зүүн талаас эхэлж, баруун талд `pr-20` зайтай. */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleFavorite(listing.id);
+            }}
+            aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
+            title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
+            className={`-mx-1.5 inline-flex items-center gap-1 rounded-full px-1.5 font-semibold text-gray-500 transition hover:bg-red-50 hover:text-red-600 ${
+              isFav ? 'text-red-600' : ''
+            }`}
+          >
+            {isFav ? '❤️' : '🤍'} {likes} таалагдсан
+          </button>
           {listing.rooms > 0 && <span>🛏 {listing.rooms} өрөө</span>}
           {listing.area > 0 && <span>📐 {listing.area} м²</span>}
           {floorLabel && <span>🏢 {floorLabel}</span>}
