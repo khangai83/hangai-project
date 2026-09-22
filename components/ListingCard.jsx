@@ -58,9 +58,19 @@ export default function ListingCard({ listing }) {
           <div className="mb-0.5 truncate text-sm font-semibold text-gray-800">
             {getPropertyIcon(listing.property_type)} {listing.property_type}
           </div>
-          {/* ---------- 🛏 БАЙРНЫ МЭДЭЭЛЭЛ (дээд хэсэгт) ----------
-              Өрөө · талбай · давхар · баригдсан он — өмнө доод мета мөрөнд
-              байсныг энд шилжүүлэв.
+          {/* ---------- 📍 ХАЯГ (зүүн) + 🕒 НИЙТЭЛСЭН (баруун) ----------
+              ⚠️ Энэ мөр нь байрны мэдээллийн (🛏 өрөө / 📐 м² / 🏢 давхар /
+                 📅 он) ӨМНӨ, хоёр захад нь тусдаа байрлана
+                 (`justify-between`). Дэлгэрэнгүй хуудсан дээр ч мөн адил.
+              ⚠️ Огноо нь 🕒 (цаг) — баригдсан он нь 📅 (хуанли) тул
+                 хоёр 📅 зөрөхгүй.
+              ⚠️ `truncate` — хаяг урт байвал картын өндөр (sm:h-[220px]) хэвээр. */}
+          <div className="flex w-full items-center justify-between gap-x-3 text-[14px] text-gray-500">
+            <span className="min-w-0 truncate">📍 {formatAddress(listing) || 'Хаяг тодорхойгүй'}</span>
+            <span className="shrink-0 whitespace-nowrap text-[13px] text-gray-400">🕒 {timeAgo(listing.created_at)}</span>
+          </div>
+          {/* ---------- 🛏 БАЙРНЫ МЭДЭЭЛЭЛ (хаягийн ДОР) ----------
+              Өрөө · талбай · давхар · баригдсан он.
               ⚠️ `rooms/area/build_year` нь 0 байж болох тул `> 0` шалгалттай;
                  `floorLabel` нь lib/format-аас '' (хоосон) буцаж болно. */}
           {(listing.rooms > 0 || listing.area > 0 || floorLabel || listing.build_year > 0) && (
@@ -72,44 +82,36 @@ export default function ListingCard({ listing }) {
             </div>
           )}
         </div>
-        {/* ===== МЭДЭЭЛЛИЙН БАГАНЫ ДООД ХЭСЭГ =====
-            📍 Хаяг (зүүн) + 🕒 Нийтэлсэн огноо (баруун), доор нь 👁/❤️ тоолуур.
-            ⚠️ ШИЛЖИЛТ: хаяг+огнооны мөр нь өмнө нь байрны мэдээллийн блок ДОТОР
-               (зураасны дээд талд) байсныг энэ ДООД хэсэг рүү шилжүүлэв.
-            ⚠️ Огноо нь 🕒 (цаг) — баригдсан он нь 📅 (хуанли) тул зөрөхгүй.
-            ⚠️ Хаяг урт байвал `truncate` (нэг мөр) — картын өндөр (sm:h-[220px]) хэвээр.
-            ⚠️ `max-sm:pr-20`: /favorites хуудсанд «Хасах» товч утсанд баруун доод
-               буланд (absolute bottom-3) буудаг тул халхлахгүйн тулд 80px зай. */}
-        <div className="mt-auto flex flex-col gap-1.5 border-t border-gray-100 pt-2 max-sm:pr-20">
-          <div className="flex w-full items-center justify-between gap-x-3 text-[14px] text-gray-500">
-            <span className="min-w-0 truncate">📍 {formatAddress(listing) || 'Хаяг тодорхойгүй'}</span>
-            <span className="shrink-0 whitespace-nowrap text-[13px] text-gray-400">🕒 {timeAgo(listing.created_at)}</span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-start gap-x-3 gap-y-1 text-xs text-gray-400">
-            {/* ❤️/🤍 Таалагдсан — энэ нь МИНИЙ favourite toggle БА нийт тоо
-                (listings.likes) хоёулаа: дарвал ❤️↔🤍 солигдож, сервер дээрх
-                тоо ±1 болно (lib/favorites.js).
-                ⚠️ Зурган дээр тусдаа товч БАЙХГҮЙ (зураг цэвэр байх ёстой). */}
-            <span className="font-semibold text-sm text-gray-700" title="Энэ зарыг хэдэн хүн үзсэн">
-              👁 {views}
+        {/* ДООД МӨР — зөвхөн ❤️/🤍 «Таалагдсан» товч үлдэв.
+            ⚠️ ШИЛЖИЛТ: 👁 «үзсэн» тоо болон 🛏 байрны мэдээлэл (өрөө / м² /
+               давхар / он) нь ДЭЭШЭЭ — 📍 ХАЯГИЙН хэсэг рүү шилжсэн
+               (дээрх «📍 ХАЯГ + 👁 ҮЗСЭН» ба «🛏 БАЙРНЫ МЭДЭЭЛЭЛ» блокоос харна уу).
+            ⚠️ `justify-between` БИШ: /favorites хуудсанд «Хасах» товч утсанд
+               (max-sm) баруун ДОО буланд буудаг тул халхлахгүйн тулд мөр
+               зүүнээс эхэлж, баруун талд `pr-20` (80px) хоосон зай үлдээв. */}
+        <div className="mt-auto flex flex-wrap items-center justify-start gap-x-3 gap-y-1 border-t border-gray-100 pt-2 pr-20 text-xs text-gray-400">
+          {/* ❤️/🤍 Таалагдсан — энэ нь МИНИЙ favourite toggle БА нийт тоо
+              (listings.likes) хоёулаа: дарвал ❤️↔🤍 солигдож, сервер дээрх
+              тоо ±1 болно (lib/favorites.js).
+              ⚠️ Зурган дээр тусдаа товч БАЙХГҮЙ (зураг цэвэр байх ёстой). */}
+          <span className="font-semibold text-sm text-gray-700" title="Энэ зарыг хэдэн хүн үзсэн">
+              👁 {views} 
             </span>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleFavorite(listing.id);
-              }}
-              aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
-              title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
-              className={`-mx-1.5 inline-flex items-center gap-1 rounded-full px-1.5 font-semibold text-[14px] text-gray-700 transition hover:bg-red-50 hover:text-red-600 ${
-                isFav ? 'text-red-600' : ''
-              }`}
-            >
-              {isFav ? '❤️' : '🤍'} {likes}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleFavorite(listing.id);
+            }}
+            aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
+            title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
+            className={`-mx-1.5 inline-flex items-center gap-1 rounded-full px-1.5 font-semibold text-[14px] text-gray-700 transition hover:bg-red-50 hover:text-red-600 ${
+              isFav ? 'text-red-600' : ''
+            }`}
+          >
+            {isFav ? '❤️' : '🤍'} {likes}
+          </button>
         </div>
       </div>
     </Link>
