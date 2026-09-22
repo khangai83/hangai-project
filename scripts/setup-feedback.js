@@ -138,10 +138,24 @@ async function check() {
     }
   }
 
-  // Хоёр миграцыг НЭГ paste-аар ажиллуулахын тулд нэгтгэнэ
-  const sql = files
+  // Хоёр миграцыг + schema cache reload-ийг НЭГ paste-аар ажиллуулахын тулд нэгтгэнэ
+  // ⚠️ `notify pgrst` нь ЧУХАЛ: DDL-ийн дараа PostgREST-ийн schema cache хуучирч,
+  //    «Could not find the table … in the schema cache» (PGRST205) алдаа гарсаар
+  //    байж болно. Энэ мөр cache-г шууд шинэчилнэ.
+  // ⚠️ Миграцууд `if not exists` / `drop … if exists` хэлбэртэй тул ДАХИН
+  //    ажиллуулахад аюулгүй (idempotent) — давхардаж алдаа өгөхгүй.
+  const sql = `${files
     .map((f) => `-- ===== ${f} =====\n${fs.readFileSync(path.join(root, f), 'utf8')}`)
-    .join('\n\n');
+    .join('\n\n')}
+
+-- ============================================================
+-- PostgREST-ийн schema cache-г шинэчлэх (DDL-ийн дараа ЗААВАЛ хэрэгтэй байж болно)
+-- ============================================================
+notify pgrst, 'reload schema';
+
+-- ----- Шалгах (доорх нь тоо буцаана; 0 байвал хүснэгт үүссэн гэсэн үг) -----
+select count(*) as feedback_rows from public.feedback;
+`;
 
   console.log('📋 «Санал хүсэлт» миграцуудыг (0008 + 0009) бэлдэж байна...\n');
 
@@ -165,8 +179,10 @@ async function check() {
   console.log('ХИЙХ 4 АЛХАМ (30 секунд):');
   console.log('  1) Доор нээгдэх Supabase цонх дээр «SQL Editor» нээгдэнэ');
   console.log('  2) ⌘A  →  ⌫ Delete     ← ХУУЧИН агуулгыг БҮРЭН устгана (заавал!)');
-  console.log('  3) ⌘V                  ← 0008 + 0009 миграцыг буулгана');
-  console.log('  4) «Run» (⌘+Enter)     ← «Success. No rows returned» гарвал бэлэн 🎉\n');
+  console.log('  3) ⌘V                  ← 0008 + 0009 + schema-reload буулгана');
+  console.log('  4) «Run» (⌘+Enter)     ← доод талд `feedback_rows | 0` гарвал БЭЛЭН 🎉\n');
+  console.log('ℹ️ SQL нь idempotent (if not exists / drop policy if exists) тул');
+  console.log('   өмнө нь ажиллуулсан байсан ч ДАХИН ажиллуулж болно — алдаа өгөхгүй.\n');
 
   if (!copied) {
     console.log('----- SQL-ийг доороос хуулна уу -----');
