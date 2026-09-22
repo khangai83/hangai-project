@@ -37,6 +37,50 @@ const editorUrl = projectRef
   ? `https://supabase.com/dashboard/project/${projectRef}/sql/new`
   : 'https://supabase.com/dashboard';
 
+/**
+ * Management API-аар DDL автоматаар ажиллуулах.
+ * Шаардлага: `.env.local` дотор `SUPABASE_ACCESS_TOKEN=sbp_…`
+ *   (Supabase → Account → Access Tokens → Generate new token)
+ * ⚠️ Энэ бол DDL ажиллуулах ЦОРЫН ГАНЦ автомат зам — PostgREST/service_role
+ *    -ээр `create table` хийх боломжгүй.
+ */
+async function runViaManagementApi() {
+  const token = (env.SUPABASE_ACCESS_TOKEN || '').trim();
+  if (!token) return false;
+  if (!projectRef) {
+    console.error('❌ NEXT_PUBLIC_SUPABASE_URL-ээс project ref олдсонгүй.');
+    return false;
+  }
+
+  console.log('🚀 SUPABASE_ACCESS_TOKEN олдлоо → миграцуудыг АВТОМАТААР ажиллуулж байна...\n');
+
+  for (const f of files) {
+    const sql = fs.readFileSync(path.join(root, f), 'utf8');
+    const res = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/database/query`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: sql }),
+    });
+    const body = await res.text();
+    if (res.ok) {
+      console.log(`✅ ${f} — амжилттай`);
+    } else {
+      console.log(`❌ ${f} — HTTP ${res.status}: ${body.slice(0, 400)}`);
+      return false;
+    }
+  }
+
+  // PostgREST-ийн schema cache-г шинэчлэх (DDL-ийн дараа заримдаа хуучирдаг)
+  await fetch(`https://api.supabase.com/v1/projects/${projectRef}/database/query`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: "notify pgrst, 'reload schema';" }),
+  });
+
+  await new Promise((r) => setTimeout(r, 1500)); // schema cache-д түр хүлээнэ
+  return true;
+}
+
 const headers = {
   apikey: env.SUPABASE_SERVICE_ROLE_KEY,
   Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
@@ -75,6 +119,23 @@ async function check() {
   if (process.argv.includes('--check')) {
     await check();
     return;
+  }
+
+  // 1) Автомат зам: SUPABASE_ACCESS_TOKEN байвал (эсвэл --auto)
+  const wantsAuto = process.argv.includes('--auto') || !!env.SUPABASE_ACCESS_TOKEN;
+  if (wantsAuto) {
+    const ok = await runViaManagementApi();
+    if (ok) {
+      await check();
+      return;
+    }
+    if (!env.SUPABASE_ACCESS_TOKEN) {
+      console.log('\n⚠️  `SUPABASE_ACCESS_TOKEN` байхгүй тул автомат зам ажиллахгүй → гараар хийх заавар руу шилжлээ.');
+      console.log('    Токен авах: Supabase Dashboard → Account → Access Tokens → Generate new token');
+      console.log('    Тэгээд `.env.local`-д: SUPABASE_ACCESS_TOKEN=sbp_... гэж нэмнэ.\n');
+    } else {
+      console.log('\n⚠️ Автомат ажиллагаа амжилтгүй — доорх гараар хийх зааврыг ашиглана уу.\n');
+    }
   }
 
   // Хоёр миграцыг НЭГ paste-аар ажиллуулахын тулд нэгтгэнэ
