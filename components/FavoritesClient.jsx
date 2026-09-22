@@ -8,14 +8,14 @@ import { fetchListingsByIds } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
 import { useFavorites, removeFavorite, clearFavorites } from '../lib/favorites';
 import { downloadCsv, printTablePdf } from '../lib/exporters';
-import { formatPrice, getPriceTypeLabel, getCategoryLabel, getFloorLabel } from '../lib/format';
+import { formatPrice, getCategoryLabel, getFloorLabel } from '../lib/format';
 
 /** Экспортод (Excel/PDF) гарах баганын тодорхойлолт */
 function exportColumns(origin) {
   return [
     { label: 'Төрөл', value: (l) => l.property_type || '' },
     { label: 'Зар/Түрээс', value: (l) => getCategoryLabel(l.category) },
-    { label: 'Үнэ', value: (l) => `${formatPrice(l.price)} ${getPriceTypeLabel(l.price_type)}`.trim() },
+    { label: 'Үнэ', value: (l) => formatPrice(l.price) },
     { label: 'Өрөө', value: (l) => (l.rooms > 0 ? l.rooms : '') },
     { label: 'Талбай (м²)', value: (l) => (l.area > 0 ? l.area : '') },
     { label: 'Давхар', value: (l) => getFloorLabel(l.floor, l.total_floors) },

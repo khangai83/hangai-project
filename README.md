@@ -230,6 +230,9 @@ Dashboard → SQL Editor-т дараах файлуудын агуулгыг о�
 | 2 | `supabase/migrations/0003_listing_details.sql` | **Орон сууцны нэмэлт талбарууд** (`build_year`, `floor`, `total_floors`, `balconies`, `has_garage`) + хуучин төрлийн нэрсийг шинэчилэх |
 | 3 | `supabase/migrations/0004_remove_listing_drafts.sql` | *(сонголтоор)* хуучин Facebook агентын `listing_drafts` хүснэгтийг бүрэн устгана |
 | 4 | `supabase/migrations/0005_listings_update_policy.sql` | **Зар засах боломж** (`listings` UPDATE policy) + *(сонголтоор)* `favorites` хүснэгт |
+| 5 | `supabase/migrations/0006_listing_stats.sql` | `listings.views` / `listings.likes` багана + атомар bump функцууд |
+| 6 | `supabase/migrations/0007_listing_likes_views.sql` | `listing_likes` / `listing_views` хүснэгт + `count(*)` триггер |
+| 7 | `supabase/migrations/0008_feedback.sql` | **Санал хүсэлт** (`feedback` хүснэгт + RLS) → `/feedback`, `/admin/feedback` |
 
 > `0003` ороогүй бол апп ажиллах боловч зар нэмэхэд «ашиглалтанд орсон он, давхар,
 > тагт, гараж» хадгалагдахгүй (console-д анхааруулга гарна). Шалгах:
@@ -882,14 +885,85 @@ production дээр тохируулж болно (сонголтоор, шуу�
 бүртгүүлэхэд `PHONE_EXISTS` гарна — хэрэгтэй бол Supabase Admin API-аар
 `admin.updateUserById(id, { password })` хийх endpoint нэмнэ.
 
+## Үйлчилгээний нөхцөл (`/terms`) ба Санал хүсэлт (`/feedback`)
+
+### 1. Үйлчилгээний нөхцөл — `/terms`
+
+`app/terms/page.jsx` — статик (server component) хуудас. Монгол Улсын хууль
+тогтоомжид үндэслэн боловсруулсан **13 зүйл + хавсралт**:
+
+| Зүйл | Агуулга |
+|---|---|
+| 1–3 | Ерөнхий заалт, нэр томьёо, бүртгэл ба хэрэглэгчийн үүрэг (18+, утас+SMS) |
+| **4** | **Зар байршуулах дүрэм ба ЗАРЫН ХАРИУЦЛАГА** — «зарын үнэн бодит байдал, үнийн үнэн зөв, зураг/мэдээллийг **Зар нийтлэгч өөрөө бүрэн хариуцна**», платформ нь урьдчилан шалгах үүрэггүй |
+| 5–7 | Хориглосон агуулга, платформ нь зуучлагч биш, оюуны өмч |
+| **8** | **Хувийн мэдээлэл ба ГАДААДЫН СЕРВЕРТ хадгалах тухай** — утас/нэр/зарын мэдээлэл нь **Supabase/AWS (Монгол Улсын нутаг дэвсгэрээс гадна)** хадгалагдах ба бүртгүүлснээр гадаад руу шилжүүлэх **зөвшөөрөл олгосонд тооцно**; 8.1 юу цуглуулах, 8.2 зарын утас нийтэд харагдана, 8.4 хамгаалалт/хугацаа, 8.5 хэрэглэгчийн эрх |
+| 9–13 | Хариуцлагын хязгаар, төлбөр, бүртгэл хаах, маргаан (Монгол Улсын шүүх), нөхцөл өөрчлөх |
+
+Үндэслэсэн хуулиуд (хавсралтад жагсаасан): Үндсэн хууль · Иргэний хууль ·
+Хувь хүний мэдээллийн хамгаалалтын тухай хууль · Хэрэглэгчийн эрхийг хамгаалах
+тухай хууль · Цахим худалдааны тухай хууль · Зар сурталчилгааны тухай хууль ·
+Цахим гарын үсгийн тухай хууль · Зөрчлийн тухай хууль.
+
+> ⚠️ Хуудасны доод хэсэгт «энэ нь **загвар** — нийтлэхийн өмнө хуульчаар хянуулж,
+> байгууллагынхаа мэдээлэл (нэр, регистр, хаяг, холбоо барих)-ыг нэмнэ үү» гэсэн
+> анхааруулга байгаа. `LAST_UPDATED` тогтмолыг (`app/terms/page.jsx`) шинэчлэхээ мартуузай.
+
+**Хаана холбогдсон:** footer (бүх хуудсанд), бүртгэлийн форман дээрх зөвшөөрлийн
+мөр (`components/AuthModal.jsx` — SMS баталгаажуулалтын өмнө), санал хүсэлтийн форм.
+
+### 2. Санал хүсэлт — `/feedback` → `/admin/feedback`
+
+```
+Хэрэглэгч (бүртгэлтэй)  ──insert──►  public.feedback  ──service_role──►  /admin/feedback
+   /feedback               (RLS: own)   (RLS: own select)     API: /api/admin/feedback
+```
+
+- **Зөвхөн БҮРТГЭЛТЭЙ хэрэглэгч** илгээнэ. Нэвтрээгүй бол «🔑 Нэвтрэх / Бүртгүүлэх»
+  товч харагдана (`components/FeedbackClient.jsx`).
+- Форм: саналын төрөл (`💡 Санал` / `⚠️ Гомдол` / `🐞 Алдаа` / `💬 Бусад`), гарчиг
+  (сонголтоор), агуулга (5–4000 тэмдэгт). Илгээхдээ нэр + утас **хуулбар** болж
+  хадгалагдана (админ жагсаалтад auth хүснэгт рүү нэмэлт query хийхгүйн тулд).
+- Хэрэглэгч өөрийн илгээсэн саналууд ба **админы хариуг** жагсаалтаар харна.
+- **Админ** нь `/admin/feedback` хуудсаар (зөвхөн `app_metadata.is_admin`) бүгдийг
+  харж, шүүж (Бүгд / Шинэ / Харсан / Шийдсэн + текст хайлт), төлөв сольж,
+  хэрэглэгчид харагдах **хариу (admin_note)** бичнэ.
+
+#### ⚠️ НЭГ УДАА хийх тохиргоо — `feedback` хүснэгт үүсгэх
+
+```bash
+# 1) SQL-ийг clipboard-д хуулах (эсвэл файлыг гараар нээж хуулна)
+pbcopy < supabase/migrations/0008_feedback.sql
+# 2) Supabase Dashboard → SQL Editor → New query → Cmd+V → Run
+```
+
+Миграц ажиллаагүй бол `/feedback` дээр «Санал хүсэлтийн хүснэгт олдсонгүй. …
+0008_feedback.sql-ийг ажиллуулна уу» гэсэн ойлгомжтой мессеж гарна (сайт эвдрэхгүй).
+Шалгах: `select count(*) from public.feedback;`
+
+| API | Юу хийх |
+|---|---|
+| `GET /api/admin/feedback` | Бүх санал + статистик (`{rows, stats:{total,new,read,resolved}}`) |
+| `PATCH /api/admin/feedback` | `{ id, status?: 'new'\|'read'\|'resolved', adminNote?: string }` |
+
+Хүснэгтийн бүтэц: `id · user_id · category · subject · message · contact_name ·
+phone · status · admin_note · created_at · handled_at` (RLS: insert/select нь
+зөвхөн өөрийн мөр; update/delete нь хэрэглэгчид БАЙХГҮЙ — админ service_role-оор).
+
+
+
 ## Төслийн бүтэц
 
 ```
 app/
   layout.jsx, page.jsx, globals.css   # globals.css = Tailwind суурь + @layer components
+  terms/page.jsx             # үйлчилгээний нөхцөл (статик)
+  feedback/page.jsx          # санал хүсэлт (бүртгэлтэй хэрэглэгч)
+  admin/feedback/page.jsx    # админ — санал хүсэлт
   listings/[id]/page.jsx     # зарын дэлгэрэнгүй
   sellers/[id]/page.jsx      # зар нийтлэгчийн бусад зарууд (Зарах/Түрээслэх табтай)
   my-listings/page.jsx       # миний зарууд
+  api/admin/feedback/route.js                          # GET/PATCH (санал хүсэлт)
   api/auth/register/{start,status,complete}/route.js   # бүртгэлийн API (SMS баталгаажуулалт)
   api/auth/verify/callback/route.js                    # verify.mn-ийн "шалга" дохио
   not-found.jsx
@@ -899,6 +973,8 @@ components/
   AddListingModal.jsx
   HomeClient.jsx, ListingCard.jsx, ListingDetailClient.jsx
   SellerListingsClient.jsx   # /sellers/[id] — нэг хэрэглэгчийн зарууд (Бүгд/Зарах/Түрээслэх)
+  FeedbackClient.jsx         # /feedback — санал хүсэлт (бүртгэлтэй хэрэглэгч)
+  AdminFeedbackClient.jsx    # /admin/feedback — админы санал хүсэлтийн самбар
   Breadcrumb.jsx             # unegui.mn загварын замчилсан цэс (client)
   MyListingsClient.jsx, MapView.jsx (Leaflet)
 lib/
@@ -939,7 +1015,7 @@ scripts/seed-supabase.js, check-supabase.js, check-verify-mn.js
 Зүүн талд зураг, баруун талд мэдээлэл. Дээдээс доош:
 
 ```
-₮280,000,000 нийт
+₮280,000,000
 🏢 Орон сууц
 📍 Хангай дүүрэг 16-р байр, 5-р хороо, Баянгол, Улаанбаатар
 🛏 3 өрөө   📐 75 м²   🏢 5 / 9 давхар   📅 2015
@@ -956,6 +1032,9 @@ scripts/seed-supabase.js, check-supabase.js, check-verify-mn.js
 - Дэлгэрэнгүй хуудсанд: гарчгийн доор `📍 Байршил` (1-р мөр), түүний **ЯГ ДОР**
   `📅 Нийтэлсэн` (2-р мөр) — хоёулаа зүүн тийш, тусдаа block div-үүд
 - Огноог карт дээр **🕒** (цаг) гэж тэмдэглэв — баригдсан он (📅) хоёр 📅 зөрөхөөс сэргийлсэн
+- ⚠️ **`price_type`** («нийт» / «сард» / «м²») нь UI-д **хаана ч харагдахгүй** —
+  карт, дэлгэрэнгүй хуудас, миний зарууд, газрын зургийн popup, Excel/PDF экспорт
+  бүгдээс хассан. Зар нэмэх/засах форм (`AddListingModal`) дээр л сонгогдоно.
 - Хаяг урт байвал `truncate` (нэг мөр) — картын өндөр `sm:h-[220px]` хэвээр хадгалагдана
 - Доод блокт `max-sm:pr-20` — /favorites хуудсанд «Хасах» товч утсанд баруун доод
   буланд буудаг тул халхлахгүй байх зорилготой

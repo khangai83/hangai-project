@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAuth, useToast, useUI } from './AppProviders';
 import { fetchMyListings, fetchListings, deleteListing } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
-import { formatPrice, getPriceTypeLabel, getPropertyIcon, timeAgo, getFloorLabel, getGarageLabel } from '../lib/format';
+import { formatPrice, getPropertyIcon, timeAgo, getFloorLabel, getGarageLabel } from '../lib/format';
 
 const TABS = [
   { key: 'mine', label: '📋 Миний зарууд' },
@@ -160,7 +160,7 @@ export default function MyListingsClient() {
                     )}
                   </h4>
                   <p className="text-[13px] text-gray-500">📍 {[l.city, l.district].filter(Boolean).join(', ')}</p>
-                  <p className="text-[13px] text-gray-500">💰 ₮{formatPrice(l.price)} {getPriceTypeLabel(l.price_type)}</p>
+                  <p className="text-[13px] text-gray-500">💰 ₮{formatPrice(l.price)}</p>
                   {l.rooms > 0 && <p className="text-[13px] text-gray-500">🛏 {l.rooms} өрөө</p>}
                   {l.area > 0 && <p className="text-[13px] text-gray-500">📐 {l.area} м²</p>}
                   {getFloorLabel(l.floor, l.total_floors) && <p className="text-[13px] text-gray-500">🏢 {getFloorLabel(l.floor, l.total_floors)}</p>}

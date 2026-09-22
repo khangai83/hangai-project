@@ -8,7 +8,7 @@ import { useToast } from './AppProviders';
 import { fetchListingById, fetchSellerCategoryCounts } from '../lib/queries';
 import { trackListingView } from '../lib/statsClient';
 import { normalizeError } from '../lib/errors';
-import { formatPrice, getPriceTypeLabel, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress } from '../lib/format';
+import { formatPrice, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress } from '../lib/format';
 import { buildListingBreadcrumb } from '../lib/breadcrumb';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 
@@ -291,9 +291,8 @@ export default function ListingDetailClient({ id }) {
         <aside className="space-y-4 lg:sticky lg:top-[88px] lg:self-start">
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-card sm:p-6">
             <div className="text-3xl font-bold text-primary">₮{formatPrice(listing.price)}</div>
-            {getPriceTypeLabel(listing.price_type) && (
-              <div className="mt-0.5 text-sm text-gray-500">{getPriceTypeLabel(listing.price_type)}</div>
-            )}
+            {/* ⚠️ `price_type` («нийт» / «сард» / «м²») ЭНД ХАРАГДАХГҮЙ —
+                зөвхөн үнэ (бүх UI дээр нэгэн жигд хассан). */}
 
             <div className="mt-5 space-y-3">
               {listing.user_id ? (

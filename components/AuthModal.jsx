@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useAuth, useToast } from './AppProviders';
 import { normalizePhone } from '../lib/format';
 import {
@@ -454,6 +455,18 @@ export default function AuthModal({ open, onClose }) {
                 />
               </div>
               {error && <p className="form-error">{error}</p>}
+              {/* ⚠️ Үйлчилгээний нөхцөл + хувийн мэдээллийн зөвшөөрөл (Хувь хүний
+                  мэдээллийн хамгаалалтын тухай хуулийн дагуу бүртгүүлэхээс өмнө
+                  мэдэгдэж, зөвшөөрөл авах ёстой). */}
+              <p className="mb-1 mt-2 rounded-lg bg-gray-50 px-3 py-2.5 text-[12px] leading-relaxed text-gray-500">
+                «Үргэлжлүүлэх» дарж бүртгүүлснээр та{' '}
+                <Link href="/terms" target="_blank" className="font-semibold text-primary hover:underline">
+                  Үйлчилгээний нөхцөл
+                </Link>
+                -ийг хүлээн зөвшөөрч, <b>утасны дугаар, нэр</b> зэрэг хувийн мэдээллийг
+                Монгол Улсын нутаг дэвсгэрээс гадна байрлах үүлэн серверт (Supabase/AWS)
+                хадгалах, боловсруулах <b>зөвшөөрлийг</b> олгож байна.
+              </p>
               <button className="btn btn-primary mt-2 w-full" disabled={loading}>
                 {loading ? 'Илгээж байна...' : 'Үргэлжлүүлэх → SMS баталгаажуулалт'}
               </button>

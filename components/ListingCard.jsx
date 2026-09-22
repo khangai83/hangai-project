@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { formatPrice, getPriceTypeLabel, getPropertyIcon, firstImage, getFloorLabel, timeAgo, formatAddress } from '../lib/format';
+import { formatPrice, getPropertyIcon, firstImage, getFloorLabel, timeAgo, formatAddress } from '../lib/format';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 
 export default function ListingCard({ listing }) {
@@ -50,19 +50,29 @@ export default function ListingCard({ listing }) {
       </div>
       <div className="flex flex-1 flex-col justify-between overflow-hidden p-4">
         <div>
-          {/* ---------- ҮНЭ ---------- */}
+          {/* ---------- ҮНЭ ----------
+              ⚠️ `price_type` («нийт» / «сард» / «м²») карт дээр ХАРАГДАХГҮЙ —
+                 зөвхөн үнэ. (Ижил дүрэм: ListingDetailClient, MyListingsClient,
+                 MapView — бүх UI дээр хассан.)
+              ⚠️ `getPriceTypeLabel` импорт ч хасагдсан (unused import → ESLint). */}
           <div className="mb-0.5 text-lg font-bold text-gray-900">
-            ₮{formatPrice(listing.price)} <span className="text-lg font-normal text-gray-500">{getPriceTypeLabel(listing.price_type)}</span>
+            ₮{formatPrice(listing.price)}
           </div>
           {/* ---------- ТӨРӨЛ ---------- */}
           <div className="mb-0.5 truncate text-sm font-semibold text-gray-800">
             {getPropertyIcon(listing.property_type)} {listing.property_type}
           </div>
-          {/* ---------- 📍 ХАЯГ (байрны мэдээллийн ӨМНӨ) ----------
-              ⚠️ Огноо (🕒) нь ЭНД БАЙХГҮЙ — байрны мэдээллийн ДОР байна.
+          {/* ---------- 📍 ХАЯГ + 🕒 НИЙТЭЛСЭН (2 мөр, ЗҮҮН тийш) ----------
+              ⚠️ Хаяг эхний мөрөнд, огноо нь ЯГ ДООР нь — хоёулаа ЗҮҮН тийш
+                 зэрэгцсэн (`justify-between` БИШ).
+              ⚠️ Энэ блок нь байрны мэдээллийн (🛏 өрөө / 📐 м² / 🏢 давхар /
+                 📅 он) ӨМНӨ байрлана. Дэлгэрэнгүй хуудсан дээр ч мөн адил.
+              ⚠️ Огноо нь 🕒 (цаг) — баригдсан он нь 📅 (хуанли) тул
+                 хоёр 📅 зөрөхгүй.
               ⚠️ `truncate` — хаяг урт байвал картын өндөр (sm:h-[220px]) хэвээр. */}
-          <div className="truncate text-[14px] text-gray-700">
-            📍 {formatAddress(listing) || 'Хаяг тодорхойгүй'}
+          <div className="text-[14px] text-gray-700">
+            <div className="truncate">📍 {formatAddress(listing) || 'Хаяг тодорхойгүй'}</div>
+            <div className="text-[14px] text-gray-700">🕒 {timeAgo(listing.created_at)}</div>
           </div>
           {/* ---------- 🛏 БАЙРНЫ МЭДЭЭЛЭЛ (хаягийн ДОР) ----------
               Өрөө · талбай · давхар · баригдсан он.
@@ -75,13 +85,8 @@ export default function ListingCard({ listing }) {
               {floorLabel && <span>🏢 {floorLabel}</span>}
               {listing.build_year > 0 && <span>📅 {listing.build_year}</span>}
             </div>
+            
           )}
-          {/* ---------- 🕒 НИЙТЭЛСЭН (байрны мэдээллийн ДОР) ----------
-              ⚠️ Зөвхөн НӨХЦӨЛГҮЙ, ҮРГЭЛЖ харагдах элементүүд нь `&& ( … )`
-                 хаалтны ГАДНА байрлана — хаалтны дотор 2 элемент зэрэгцвэл
-                 «Adjacent JSX elements» алдаа гарна (хэрэгтэй бол `<>…</>`).
-              ⚠️ Огноо нь 🕒 (цаг) — баригдсан он нь 📅 (хуанли) тул зөрөхгүй. */}
-          <div className="mt-0.5 text-[14px] text-gray-700">🕒 {timeAgo(listing.created_at)}</div>
         </div>
         {/* ДООД МӨР — зөвхөн ❤️/🤍 «Таалагдсан» товч үлдэв.
             ⚠️ ШИЛЖИЛТ: 👁 «үзсэн» тоо болон 🛏 байрны мэдээлэл (өрөө / м² /

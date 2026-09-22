@@ -43,7 +43,7 @@ export default function MapView({ listings }) {
           <div class="min-w-[180px]">
             <a href="/listings/${l.id}" class="block no-underline">
               <strong class="block text-sm font-semibold text-gray-900">${l.property_type}</strong>
-              <span class="block text-base font-bold text-primary">₮${formatPrice(l.price)} ${l.price_type === 'total' ? 'нийт' : l.price_type}</span>
+              <span class="block text-base font-bold text-primary">₮${formatPrice(l.price)}</span>
             </a>
           </div>`;
         const m = L.marker([l.latitude, l.longitude], { icon }).addTo(map).bindPopup(popup);

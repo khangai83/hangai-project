@@ -220,8 +220,12 @@ export default function AppProviders({ children }) {
                     {userMenuOpen && (
                       <div className="absolute right-0 top-[calc(100%+6px)] z-50 min-w-[220px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card-hover">
                         <Link href="/my-listings" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={() => setUserMenuOpen(false)}>📋 Миний зарууд</Link>
+                        <Link href="/feedback" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={() => setUserMenuOpen(false)}>💬 Санал хүсэлт</Link>
                         {isAdmin && (
-                          <Link href="/admin/users" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-amber-800 transition hover:bg-amber-50" onClick={() => setUserMenuOpen(false)}>🛠 Админ — Хэрэглэгчид</Link>
+                          <>
+                            <Link href="/admin/feedback" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-amber-800 transition hover:bg-amber-50" onClick={() => setUserMenuOpen(false)}>📨 Админ — Санал хүсэлт</Link>
+                            <Link href="/admin/users" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-amber-800 transition hover:bg-amber-50" onClick={() => setUserMenuOpen(false)}>🛠 Админ — Хэрэглэгчид</Link>
+                          </>
                         )}
                         <button className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={() => { setUserMenuOpen(false); editName(); }}>✏️ Нэр засах</button>
                         <div className="h-px bg-gray-200"></div>
@@ -239,9 +243,20 @@ export default function AppProviders({ children }) {
 
           <main className="min-h-[calc(100vh-130px)]">{children}</main>
 
-          <footer className="mt-12 bg-gray-900 py-5 text-center text-sm text-gray-300">
+          <footer className="mt-12 bg-gray-900 py-6 text-center text-sm text-gray-300">
             <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
-              <p>🏠 ZAR.mn — Үл хөдлөх хөрөнгийн зар. Next.js + Supabase хувилбар.</p>
+              <nav className="mb-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+                <Link href="/" className="transition hover:text-white">🏠 Нүүр хуудас</Link>
+                <Link href="/terms" className="transition hover:text-white">📄 Үйлчилгээний нөхцөл</Link>
+                <Link href="/feedback" className="transition hover:text-white">💬 Санал хүсэлт</Link>
+              </nav>
+              <p className="text-[13.5px]">🏠 ZAR.mn — Үл хөдлөх хөрөнгийн зар. Next.js + Supabase хувилбар.</p>
+              <p className="mx-auto mt-2 max-w-[760px] text-[12px] leading-relaxed text-gray-500">
+                Үйлчилгээг ашигласнаар та <Link href="/terms" className="underline hover:text-gray-300">Үйлчилгээний нөхцөлийг</Link> хүлээн
+                зөвшөөрнө. Зар байршуулсан хэрэглэгч зарынхаа үнэн бодит байдлыг өөрөө хариуцна.
+                Хувийн мэдээлэл (утасны дугаар, нэр) нь Монгол Улсын нутаг дэвсгэрээс гадна
+                байрлах үүлэн серверт хадгалагдана.
+              </p>
             </div>
           </footer>
 
