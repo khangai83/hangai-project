@@ -58,17 +58,11 @@ export default function ListingCard({ listing }) {
           <div className="mb-0.5 truncate text-sm font-semibold text-gray-800">
             {getPropertyIcon(listing.property_type)} {listing.property_type}
           </div>
-          {/* ---------- 📍 ХАЯГ + 🕒 НИЙТЭЛСЭН (2 мөр, ЗҮҮН тийш) ----------
-              ⚠️ Хаяг эхний мөрөнд, огноо нь ЯГ ДООР нь — хоёулаа ЗҮҮН тийш
-                 зэрэгцсэн (`justify-between` БИШ).
-              ⚠️ Энэ блок нь байрны мэдээллийн (🛏 өрөө / 📐 м² / 🏢 давхар /
-                 📅 он) ӨМНӨ байрлана. Дэлгэрэнгүй хуудсан дээр ч мөн адил.
-              ⚠️ Огноо нь 🕒 (цаг) — баригдсан он нь 📅 (хуанли) тул
-                 хоёр 📅 зөрөхгүй.
+          {/* ---------- 📍 ХАЯГ (байрны мэдээллийн ӨМНӨ) ----------
+              ⚠️ Огноо (🕒) нь ЭНД БАЙХГҮЙ — байрны мэдээллийн ДОР байна.
               ⚠️ `truncate` — хаяг урт байвал картын өндөр (sm:h-[220px]) хэвээр. */}
-          <div className="text-[14px] text-gray-700">
-            <div className="truncate">📍 {formatAddress(listing) || 'Хаяг тодорхойгүй'}</div>
-            <div className="text-[14px] text-gray-700">🕒 {timeAgo(listing.created_at)}</div>
+          <div className="truncate text-[14px] text-gray-700">
+            📍 {formatAddress(listing) || 'Хаяг тодорхойгүй'}
           </div>
           {/* ---------- 🛏 БАЙРНЫ МЭДЭЭЛЭЛ (хаягийн ДОР) ----------
               Өрөө · талбай · давхар · баригдсан он.
@@ -82,6 +76,12 @@ export default function ListingCard({ listing }) {
               {listing.build_year > 0 && <span>📅 {listing.build_year}</span>}
             </div>
           )}
+          {/* ---------- 🕒 НИЙТЭЛСЭН (байрны мэдээллийн ДОР) ----------
+              ⚠️ Зөвхөн НӨХЦӨЛГҮЙ, ҮРГЭЛЖ харагдах элементүүд нь `&& ( … )`
+                 хаалтны ГАДНА байрлана — хаалтны дотор 2 элемент зэрэгцвэл
+                 «Adjacent JSX elements» алдаа гарна (хэрэгтэй бол `<>…</>`).
+              ⚠️ Огноо нь 🕒 (цаг) — баригдсан он нь 📅 (хуанли) тул зөрөхгүй. */}
+          <div className="mt-0.5 text-[14px] text-gray-700">🕒 {timeAgo(listing.created_at)}</div>
         </div>
         {/* ДООД МӨР — зөвхөн ❤️/🤍 «Таалагдсан» товч үлдэв.
             ⚠️ ШИЛЖИЛТ: 👁 «үзсэн» тоо болон 🛏 байрны мэдээлэл (өрөө / м² /
