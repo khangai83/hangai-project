@@ -518,6 +518,8 @@ npm run seed:more -- 88093663   # өөр хэрэглэгчийн нэр дээ�
 
 npm run check:supabase   # Supabase + env + phone provider шалгах
 npm run report:usage     # 📊 DB мөр/хэмжээ, Storage хэрэглээ, планын багтаамж
+npm run feedback:setup   # 💬 «Санал хүсэлт» миграц (0008+0009) — clipboard + SQL Editor
+npm run feedback:check   # 💬 feedback хүснэгт/багана ажиллаж байгаа эсэх
 npm run check:verify -- 99112233   # verify.mn-ээр БОДИТ SMS турших (150₮)
 npm run test:verify      # verify.mn offline тест (mock, 0₮)
 
@@ -933,10 +935,17 @@ production дээр тохируулж болно (сонголтоор, шуу�
 #### ⚠️ НЭГ УДАА хийх 2 ТОХИРГОО (хоёуланг нь ажиллуулна)
 
 ```bash
-pbcopy < supabase/migrations/0008_feedback.sql   # 1) feedback хүснэгт + RLS
-pbcopy < supabase/migrations/0009_feedback_listing.sql  # 2) зарын холбоос (listing_id)
-# → Supabase Dashboard → SQL Editor → New query → Cmd+V → Run (тус бүрийг тусад нь)
+npm run feedback:setup     # 0008 + 0009-ийн SQL-ийг clipboard-д хийж, SQL Editor-ийг нээнэ
+npm run feedback:check     # миграц ажилласан эсэхийг шалгана
 ```
+
+**SQL Editor дээрх 4 алхам (30 сек):** `⌘A` → `⌫ Delete` (хуучин агуулгыг БҮРЭН
+устгах — заавал!) → `⌘V` → **Run** (`⌘+Enter`). «Success. No rows returned» гарвал бэлэн.
+
+> ⚠️ Supabase нь DDL (`create table …`) командыг **зөвхөн** SQL Editor эсвэл
+> Management API (`sbp_…` token) -аар гүйцэтгэдэг — `service_role`-ээр PostgREST
+> дамжуулан ажиллуулах боломжгүй. (`SUPABASE_ACCESS_TOKEN` байвал
+> `node scripts/apply-schema.js 0008_feedback.sql` гэж автоматаар ажиллуулж болно.)
 
 ⚠️ `0009` ажиллуулаагүй ч **сайт эвдрэхгүй** — зарын гомдол `listing_id`-гүйгээр
 илгээгдэж, зарын ID нь гарчигт нь автоматаар бичигдэнэ (`submitFeedback` fallback).

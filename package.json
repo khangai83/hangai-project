@@ -19,6 +19,8 @@
     "seed:more": "node scripts/seed-more-listings.mjs",
     "stats:setup": "node scripts/setup-stats.js",
     "stats:check": "node scripts/setup-stats.js --check",
+    "feedback:setup": "node scripts/setup-feedback.js",
+    "feedback:check": "node scripts/setup-feedback.js --check",
     "report:usage": "node scripts/db-usage.js"
   },
   "dependencies": {
