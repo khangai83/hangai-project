@@ -58,23 +58,24 @@ export default function ListingCard({ listing }) {
           <div className="mb-0.5 truncate text-sm font-semibold text-gray-800">
             {getPropertyIcon(listing.property_type)} {listing.property_type}
           </div>
-          {/* ---------- 📍 ХАЯГ (зүүн) + 🕒 НИЙТЭЛСЭН (баруун) ----------
-              ⚠️ Энэ мөр нь байрны мэдээллийн (🛏 өрөө / 📐 м² / 🏢 давхар /
-                 📅 он) ӨМНӨ, хоёр захад нь тусдаа байрлана
-                 (`justify-between`). Дэлгэрэнгүй хуудсан дээр ч мөн адил.
+          {/* ---------- 📍 ХАЯГ + 🕒 НИЙТЭЛСЭН (2 мөр, ЗҮҮН тийш) ----------
+              ⚠️ Хаяг эхний мөрөнд, огноо нь ЯГ ДООР нь — хоёулаа ЗҮҮН тийш
+                 зэрэгцсэн (`justify-between` БИШ).
+              ⚠️ Энэ блок нь байрны мэдээллийн (🛏 өрөө / 📐 м² / 🏢 давхар /
+                 📅 он) ӨМНӨ байрлана. Дэлгэрэнгүй хуудсан дээр ч мөн адил.
               ⚠️ Огноо нь 🕒 (цаг) — баригдсан он нь 📅 (хуанли) тул
                  хоёр 📅 зөрөхгүй.
               ⚠️ `truncate` — хаяг урт байвал картын өндөр (sm:h-[220px]) хэвээр. */}
-          <div className="flex w-full items-center justify-between gap-x-3 text-[14px] text-gray-500">
-            <span className="min-w-0 truncate">📍 {formatAddress(listing) || 'Хаяг тодорхойгүй'}</span>
-            <span className="shrink-0 whitespace-nowrap text-[13px] text-gray-400">🕒 {timeAgo(listing.created_at)}</span>
+          <div className="text-[14px] text-gray-700">
+            <div className="truncate">📍 {formatAddress(listing) || 'Хаяг тодорхойгүй'}</div>
+            <div className="text-[14px] text-gray-700">🕒 {timeAgo(listing.created_at)}</div>
           </div>
           {/* ---------- 🛏 БАЙРНЫ МЭДЭЭЛЭЛ (хаягийн ДОР) ----------
               Өрөө · талбай · давхар · баригдсан он.
               ⚠️ `rooms/area/build_year` нь 0 байж болох тул `> 0` шалгалттай;
                  `floorLabel` нь lib/format-аас '' (хоосон) буцаж болно. */}
           {(listing.rooms > 0 || listing.area > 0 || floorLabel || listing.build_year > 0) && (
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-gray-500">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-gray-700">
               {listing.rooms > 0 && <span>🛏 {listing.rooms} өрөө</span>}
               {listing.area > 0 && <span>📐 {listing.area} м²</span>}
               {floorLabel && <span>🏢 {floorLabel}</span>}

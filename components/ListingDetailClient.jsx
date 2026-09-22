@@ -167,12 +167,12 @@ export default function ListingDetailClient({ id }) {
         <h1 className="mb-1.5 text-2xl font-bold leading-snug text-gray-900 sm:text-[28px]">
           {getPropertyIcon(listing.property_type)} {typeLabel}
         </h1>
-        {/* ===== БАЙРШИЛ (зүүн) + НИЙТЭЛСЭН ОГНОО (баруун) =====
-            ⚠️ Хоёр мэдээлэл өмнө нь «📍 … · 📅 …» гэж нэг мөрөнд наалдсан
-               байсныг `justify-between`-ээр хоёр захад нь тусгаарлав. */}
-        <div className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-sm text-gray-600">
-          <span className="min-w-0">📍 {address || 'Хаяг тодорхойгүй'}</span>
-          <span className="shrink-0 whitespace-nowrap text-[13px] text-gray-500">📅 {timeAgo(listing.created_at)}</span>
+        {/* ===== 📍 БАЙРШИЛ + 📅 НИЙТЭЛСЭН ОГНОО (2 мөр, ЗҮҮН тийш) =====
+            ⚠️ Эхний мөрөнд хаяг, ЯГ ДООР нь огноо — хоёулаа зүүн тийш
+               зэрэгцсэн (`justify-between` БИШ). Карт дээр ч ижил. */}
+        <div className="text-sm text-gray-600">
+          <div className="min-w-0">📍 {address || 'Хаяг тодорхойгүй'}</div>
+          <div className="text-[13px] text-gray-500">📅 {timeAgo(listing.created_at)}</div>
         </div>
       </header>
 
