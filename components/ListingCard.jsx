@@ -93,7 +93,7 @@ export default function ListingCard({ listing }) {
               тоо ±1 болно (lib/favorites.js).
               ⚠️ Зурган дээр тусдаа товч БАЙХГҮЙ (зураг цэвэр байх ёстой). */}
           <span className="font-semibold text-sm text-gray-700" title="Энэ зарыг хэдэн хүн үзсэн">
-              👁 {views}
+              👁 {views} 
             </span>
           <button
             type="button"
@@ -104,7 +104,7 @@ export default function ListingCard({ listing }) {
             }}
             aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
             title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
-            className={`-mx-1.5 inline-flex items-center gap-1 rounded-full px-1.5 font-semibold text-[14px] text-gray-500 transition hover:bg-red-50 hover:text-red-600 ${
+            className={`-mx-1.5 inline-flex items-center gap-1 rounded-full px-1.5 font-semibold text-[14px] text-gray-700 transition hover:bg-red-50 hover:text-red-600 ${
               isFav ? 'text-red-600' : ''
             }`}
           >

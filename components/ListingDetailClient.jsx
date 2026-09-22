@@ -5,7 +5,7 @@ import Link from 'next/link';
 import MapView from './MapView';
 import Breadcrumb from './Breadcrumb';
 import { useToast } from './AppProviders';
-import { fetchListingById } from '../lib/queries';
+import { fetchListingById, fetchSellerCategoryCounts } from '../lib/queries';
 import { trackListingView } from '../lib/statsClient';
 import { normalizeError } from '../lib/errors';
 import { formatPrice, getPriceTypeLabel, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo } from '../lib/format';
@@ -19,6 +19,7 @@ export default function ListingDetailClient({ id }) {
   const [active, setActive] = useState(0);
   const [phoneShown, setPhoneShown] = useState(false);
   const [views, setViews] = useState(null); // 👁 серверээс ирсэн «үзсэн» тоо (null = миграцгүй)
+  const [sellerStats, setSellerStats] = useState(null); // 📋 зар нийтлэгчийн зарын тоо (Зарах/Түрээслэх)
   const favoriteIds = useFavorites(); // ❤️ (дээрх hook-уудтай хамт дуудагдах ёстой)
   const likes = useLikeCount(id, listing ? listing.likes : 0); // ❤️ нийт хэдэн хүн дарсан
 
@@ -37,6 +38,23 @@ export default function ListingDetailClient({ id }) {
     return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  /**
+   * 📋 «Зар нийтлэгч» карт дээр харагдах тоо — тухайн хэрэглэгчийн
+   * Зарах / Түрээслэх зарын тоо. Карт нь `/sellers/[id]` хуудас руу шилжүүлнэ.
+   * ⚠️ Алдаа гарвал зүгээр л «Зар нийтэлсэн» гэж харуулна (үндсэн агуулгад нөлөөлөхгүй).
+   */
+  useEffect(() => {
+    if (!listing || !listing.user_id) {
+      setSellerStats(null);
+      return undefined;
+    }
+    let mounted = true;
+    fetchSellerCategoryCounts(listing.user_id)
+      .then((stats) => { if (mounted) setSellerStats(stats); })
+      .catch((err) => console.warn(normalizeError(err)));
+    return () => { mounted = false; };
+  }, [listing]);
 
   /**
    * 👁 «Үзсэн» тоог +1.
@@ -273,15 +291,45 @@ export default function ListingDetailClient({ id }) {
             )}
 
             <div className="mt-5 space-y-3">
-              <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-                <span className="text-2xl">👤</span>
-                <div className="min-w-0">
-                  <div className="truncate text-base font-semibold text-gray-800">
-                    {listing.contact_name || 'Холбоо барих хүн'}
+              {listing.user_id ? (
+                /* ===== ЗАР НИЙТЛЭГЧ РҮҮ ОРОХ (линк) =====
+                   Дарвал `/sellers/<user_id>` — түүний БУСАД зарууд
+                   «🏷️ Зарах» / «🔑 Түрээслэх» гэж ЯЛГАГДАН харагдана. */
+                <Link
+                  href={`/sellers/${listing.user_id}`}
+                  title="Энэ хүний бусад зарыг харах"
+                  className="group flex items-center gap-3 rounded-lg bg-gray-50 p-3 transition hover:bg-primary-light"
+                >
+                  <span className="text-2xl">👤</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-base font-semibold text-gray-800 transition group-hover:text-primary">
+                      {listing.contact_name || 'Холбоо барих хүн'}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
+                      {sellerStats && sellerStats.total > 0 ? (
+                        <>
+                          <span>📋 {sellerStats.total} зар нийтэлсэн</span>
+                          {sellerStats.sell > 0 && <span className="font-semibold text-primary">🏷️ {sellerStats.sell}</span>}
+                          {sellerStats.rent > 0 && <span className="font-semibold text-secondary-dark">🔑 {sellerStats.rent}</span>}
+                        </>
+                      ) : (
+                        <span>Зар нийтэлсэн</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-500">Зар нийтэлсэн</div>
+                  <span aria-hidden="true" className="shrink-0 text-lg text-gray-300 transition group-hover:text-primary">›</span>
+                </Link>
+              ) : (
+                <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
+                  <span className="text-2xl">👤</span>
+                  <div className="min-w-0">
+                    <div className="truncate text-base font-semibold text-gray-800">
+                      {listing.contact_name || 'Холбоо барих хүн'}
+                    </div>
+                    <div className="text-xs text-gray-500">Зар нийтэлсэн</div>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {listing.phone && (
                 phoneShown ? (

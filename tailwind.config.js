@@ -35,10 +35,16 @@ module.exports = {
           from: { transform: 'translateX(100%)', opacity: '0' },
           to: { transform: 'translateX(0)', opacity: '1' },
         },
+        // Дэлгэрэнгүй хайлтын панель дээрээс доошоо нээгдэх хөдөлгөөн
+        slideDown: {
+          from: { transform: 'translateY(-6px)', opacity: '0' },
+          to: { transform: 'translateY(0)', opacity: '1' },
+        },
       },
       animation: {
         spin: 'spin 0.8s linear infinite',
         'slide-in': 'slideIn 0.3s ease',
+        'slide-down': 'slideDown 0.18s ease-out',
       },
     },
   },

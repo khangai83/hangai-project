@@ -8,7 +8,7 @@ import { useToast, useUI } from './AppProviders';
 import { fetchListings, fetchPropertyTypeCounts } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
 import { CITIES, getDistricts, getKhoroos, CATEGORIES, PROPERTY_TYPES } from '../lib/locationData';
-import { getCategoryLabel, getPropertyIcon, getPropertyTypeLabel } from '../lib/format';
+import { getCategoryLabel, getPropertyIcon, getPropertyTypeLabel, formatPrice } from '../lib/format';
 import { buildHomeBreadcrumb } from '../lib/breadcrumb';
 import Breadcrumb from './Breadcrumb';
 
@@ -31,6 +31,7 @@ export default function HomeClient() {
   const [loadError, setLoadError] = useState(null); // холболтын алдаа (UI-д тусдаа харуулна)
   const [urlReady, setUrlReady] = useState(false); // URL-ийн шүүлтийг уншсан эсэх
   const [typeCounts, setTypeCounts] = useState({}); // төрөл тус бүрийн зарын тоо
+  const [filtersOpen, setFiltersOpen] = useState(false); // «Дэлгэрэнгүй хайлт» панель нээлттэй эсэх
 
   // ---- URL-ийн query-ээс шүүлтийг унших ----
   // breadcrumb болон хуваалцсан линк ажиллахын тулд:
@@ -147,6 +148,28 @@ export default function HomeClient() {
   const khoroos = useMemo(() => getKhoroos(filters.city, filters.district), [filters.city, filters.district]);
   const hasFilters = Object.values(filters).some(Boolean) || category !== 'all' || query;
 
+  /** Идэвхтэй шүүлтүүд — toolbar-ын доор «чип» хэлбэрээр (✕ дарж тус тусад нь арилгана) */
+  const activeFilterChips = useMemo(() => {
+    const chips = [];
+    if (filters.propertyType) {
+      chips.push({ key: 'propertyType', label: `${getPropertyIcon(filters.propertyType)} ${getPropertyTypeLabel(filters.propertyType, category)}` });
+    }
+    if (filters.rooms) chips.push({ key: 'rooms', label: `🛏 ${Number(filters.rooms) >= 5 ? '5+' : filters.rooms} өрөө` });
+    if (filters.city) chips.push({ key: 'city', label: `🏙 ${filters.city}` });
+    if (filters.district) chips.push({ key: 'district', label: `📍 ${filters.district}` });
+    if (filters.khoroo) chips.push({ key: 'khoroo', label: filters.khoroo });
+    if (filters.minPrice) chips.push({ key: 'minPrice', label: `₮${formatPrice(filters.minPrice)}-с дээш` });
+    if (filters.maxPrice) chips.push({ key: 'maxPrice', label: `₮${formatPrice(filters.maxPrice)} хүртэл` });
+    if (filters.minArea) chips.push({ key: 'minArea', label: `${filters.minArea} м²-с дээш` });
+    if (filters.maxArea) chips.push({ key: 'maxArea', label: `${filters.maxArea} м² хүртэл` });
+    return chips;
+  }, [filters, category]);
+
+  const activeFilterCount = activeFilterChips.length;
+
+  /** Нэг чипийг арилгах */
+  const removeFilterChip = (key) => setF(key, '');
+
   return (
     <>
       {/* HERO */}
@@ -236,31 +259,109 @@ export default function HomeClient() {
           })}
         </div>
 
-        {/* FILTERS + VIEW TOGGLE */}
-        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-card">
-          <div className="mb-5 flex w-fit flex-wrap items-center gap-1 rounded-lg bg-gray-100 p-1">
+        {/* ===== ХАЙЛТЫН TOOLBAR =====
+            unegui.mn-ийн «Олон шүүлт» хэсгийг эндээс нээнэ:
+            • «⚙️ Дэлгэрэнгүй хайлт» — шүүлтийн панелийг нээх/хаах (идэвхтэй шүүлтийн тоотой)
+            • Баруун талд — ☰ Жагсаалт / 🗺 Газрын зураг харах горим
+            • Доор нь — идэвхтэй шүүлтүүд «чип» хэлбэрээр (✕ дарж тус тусад нь арилгана) */}
+        <div className="mb-4 rounded-xl border border-gray-200 bg-white p-3 shadow-card sm:p-4">
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              className={`rounded-md px-4 py-2 text-sm transition ${view === 'list' ? 'bg-white text-gray-900 shadow-card' : 'text-gray-500'}`}
-              onClick={() => setView('list')}
+              type="button"
+              onClick={() => setFiltersOpen((v) => !v)}
+              aria-expanded={filtersOpen}
+              aria-controls="advanced-filters"
+              className={`inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-semibold transition ${
+                filtersOpen || activeFilterCount > 0
+                  ? 'border-primary bg-primary-light text-primary'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-primary hover:text-primary'
+              }`}
             >
-              ☰ Жагсаалт
+              <span aria-hidden="true">⚙️</span>
+              Дэлгэрэнгүй хайлт
+              {activeFilterCount > 0 && (
+                <span className="rounded-full bg-primary px-1.5 py-px text-[11px] font-bold text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+              <span aria-hidden="true" className={`text-[10px] transition-transform ${filtersOpen ? 'rotate-180' : ''}`}>▼</span>
             </button>
+
+            <span className="text-sm text-gray-500">
+              {loadError ? 'холболтын алдаа' : listings !== null ? `${listings.length} зар` : 'ачаалж байна...'}
+              {query ? ` · «${query}»` : ''}
+            </span>
+
+            <div className="ml-auto flex items-center gap-1 rounded-lg bg-gray-100 p-1" role="group" aria-label="Харах горим">
+              <button
+                type="button"
+                aria-pressed={view === 'list'}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-[13px] font-semibold transition ${
+                  view === 'list' ? 'bg-white text-gray-900 shadow-card' : 'text-gray-500 hover:text-gray-800'
+                }`}
+                onClick={() => setView('list')}
+              >
+                ☰ Жагсаалт
+              </button>
+              <button
+                type="button"
+                aria-pressed={view === 'map'}
+                className={`inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-[13px] font-semibold transition ${
+                  view === 'map' ? 'bg-white text-gray-900 shadow-card' : 'text-gray-500 hover:text-gray-800'
+                }`}
+                onClick={() => setView('map')}
+              >
+                🗺 Газрын зураг
+              </button>
+            </div>
+          </div>
+
+          {activeFilterChips.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-gray-100 pt-3">
+              <span className="mr-0.5 text-[12px] font-semibold uppercase tracking-wide text-gray-400">Шүүлт</span>
+              {activeFilterChips.map((chip) => (
+                <span
+                  key={chip.key}
+                  className="inline-flex items-center gap-1 rounded-full bg-gray-100 py-1 pl-2.5 pr-1 text-[12px] font-medium text-gray-700"
+                >
+                  {chip.label}
+                  <button
+                    type="button"
+                    onClick={() => removeFilterChip(chip.key)}
+                    aria-label={`${chip.label} шүүлтийг хасах`}
+                    className="grid h-4 w-4 place-items-center rounded-full text-gray-400 transition hover:bg-gray-200 hover:text-gray-700"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+              <button type="button" onClick={resetAll} className="ml-0.5 text-[12px] font-semibold text-primary hover:underline">
+                Бүгдийг цэвэрлэх
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ===== ДЭЛГЭРЭНГҮЙ ХАЙЛТ — зөвхөн товч дарвал нээгдэнэ =====
+            ⚠️ «Төрөл» нь энд БАЙХГҮЙ: дээрх төрлийн табуудаас сонгогдоно (давхардлаас зайлсхийв). */}
+        <div
+          id="advanced-filters"
+          className={`${filtersOpen ? 'mb-6 block animate-slide-down' : 'hidden'} rounded-xl border border-gray-200 bg-white p-5 shadow-card`}
+        >
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold text-gray-800">⚙️ Дэлгэрэнгүй хайлт</h2>
             <button
-              className={`rounded-md px-4 py-2 text-sm transition ${view === 'map' ? 'bg-white text-gray-900 shadow-card' : 'text-gray-500'}`}
-              onClick={() => setView('map')}
+              type="button"
+              onClick={() => setFiltersOpen(false)}
+              className="rounded-lg px-2.5 py-1 text-[13px] font-semibold text-gray-500 transition hover:bg-gray-100 hover:text-gray-800"
             >
-              🗺 Газрын зураг
+              ✕ Хаах
             </button>
           </div>
 
           <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Төрөл</label>
-              <select className="form-select" value={filters.propertyType} onChange={(e) => setF('propertyType', e.target.value)}>
-                <option value="">Бүх төрөл</option>
-                {PROPERTY_TYPES.map((t) => <option key={t} value={t}>{getPropertyTypeLabel(t, category)}</option>)}
-              </select>
-            </div>
+
+            {/* «Төрөл» энд БАЙХГҮЙ — дээрх ⬆ төрлийн табуудаас сонгогдоно (дубликат зайлсхийв) */}
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Өрөө</label>
               <select className="form-select" value={filters.rooms} onChange={(e) => setF('rooms', e.target.value)}>
@@ -321,11 +422,9 @@ export default function HomeClient() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-gray-100 pt-3 text-sm text-gray-500">
-            <span className="mr-auto">
-              {loadError ? 'холболтын алдаа' : listings !== null ? `${listings.length} зар` : 'ачаалж байна...'} {query ? `— «${query}» хайлт` : ''}
-            </span>
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-gray-100 pt-4">
             {hasFilters && <button className="btn btn-outline btn-sm" onClick={resetAll}>↺ Шүүлтийг цэвэрлэх</button>}
+            <button className="btn btn-primary btn-sm" onClick={() => setFiltersOpen(false)}>Дуусгах</button>
           </div>
         </div>
 
