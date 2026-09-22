@@ -11,7 +11,7 @@
 //    дуудагчийг `app_metadata.is_admin`-аар эхлээд шалгана.
 // ============================================================
 import { NextResponse } from 'next/server';
-import { requireAdmin, getAdminFeedbackList, setFeedbackStatus } from '../../../../lib/adminAuth';
+import { requireAdmin, getAdminFeedbackList, setFeedbackStatus, getListingsByIds } from '../../../../lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +21,10 @@ export async function GET(req) {
 
   try {
     const { rows, stats } = await getAdminFeedbackList();
-    return NextResponse.json({ ok: true, rows, stats });
+    // Тухайн зард холбоотой гомдлуудын зарын мэдээллийг нэг query-ээр хавсаргана
+    const listingIds = [...new Set(rows.map((r) => r.listing_id).filter(Boolean))];
+    const listings = await getListingsByIds(listingIds);
+    return NextResponse.json({ ok: true, rows, stats, listings });
   } catch (err) {
     console.error('[admin/feedback] алдаа:', (err && err.message) || err);
     return NextResponse.json({ ok: false, error: (err && err.message) || 'Санал хүсэлт татаж чадсангүй.' }, { status: 500 });

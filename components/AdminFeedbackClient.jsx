@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from './AppProviders';
-import { fetchAdminFeedback, updateFeedback } from '../lib/adminApi';
+import { fetchAdminFeedback, updateFeedback, adminDeleteListing } from '../lib/adminApi';
 import { FEEDBACK_CATEGORIES, FEEDBACK_STATUSES } from '../lib/queries';
-import { timeAgo } from '../lib/format';
+import { timeAgo, formatPrice } from '../lib/format';
 
 const STATUS_MAP = Object.fromEntries(FEEDBACK_STATUSES.map((s) => [s.value, s]));
 const CATEGORY_MAP = Object.fromEntries(FEEDBACK_CATEGORIES.map((c) => [c.value, c]));
@@ -84,6 +84,22 @@ export default function AdminFeedbackClient() {
       return;
     }
     if (okMsg) setNotice(okMsg);
+    load();
+  };
+
+  /** Гомдол гаргасан зарыг устгах (админ — ямар ч зар) */
+  const removeListing = async (f) => {
+    if (!f.listing_id) return;
+    if (!window.confirm('Энэ гомдол гаргасан зарыг БҮРМӨСӨН устгах уу?\n\n⚠️ Зургууд нь Storage-оос ч устгагдана. Буцаах боломжгүй.')) return;
+    setBusyId(f.id);
+    setNotice('');
+    const res = await adminDeleteListing(f.listing_id);
+    setBusyId(null);
+    if (res.error) {
+      setNotice(`❌ ${res.error}`);
+      return;
+    }
+    setNotice('🗑 Зар устгагдлаа (зураг: ' + (res.data.imagesRemoved || 0) + ')');
     load();
   };
 
@@ -263,6 +279,40 @@ export default function AdminFeedbackClient() {
 
                 {f.subject && <h3 className="text-[15px] font-semibold text-gray-900">{f.subject}</h3>}
                 <p className="whitespace-pre-line text-[14px] leading-relaxed text-gray-700">{f.message}</p>
+
+                {/* ===== ГОМДОЛ ГАРГАСАН ЗАР (0009: feedback.listing_id) =====
+                    Хэрэглэгч зарын хуудаснаас гомдол мэдэгдсэн бол тухайн зарыг
+                    энд харуулж, админ ШУУД устгах боломжтой болгоно. */}
+                {f.listing_id && (() => {
+                  const linked = (data.listings || {})[f.listing_id];
+                  return (
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12.5px] text-amber-900">
+                      <span className="font-semibold">🏷️ Гомдол гаргасан зар:</span>
+                      {linked ? (
+                        <>
+                          <span>
+                            {linked.property_type} · ₮{formatPrice(linked.price)} ·{' '}
+                            📍 {[linked.city, linked.district].filter(Boolean).join(', ')}
+                          </span>
+                          <Link href={`/listings/${f.listing_id}`} target="_blank" className="font-semibold text-primary hover:underline">
+                            👁 Харах
+                          </Link>
+                        </>
+                      ) : (
+                        <span>ID: <span className="font-mono">{String(f.listing_id).slice(0, 8)}</span> (зар устгагдсан байж болно)</span>
+                      )}
+                      <span className="font-mono text-[11px] text-amber-700">ID: {String(f.listing_id).slice(0, 8)}</span>
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm ml-auto"
+                        disabled={busyId === f.id}
+                        onClick={() => removeListing(f)}
+                      >
+                        {busyId === f.id ? 'Устгаж байна...' : '🗑 Зар устгах'}
+                      </button>
+                    </div>
+                  );
+                })()}
 
                 {/* ===== АДМИНЫ ТЭМДЭГЛЭЛ / ХАРИУ ===== */}
                 <div className="mt-3">

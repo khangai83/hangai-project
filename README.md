@@ -233,6 +233,7 @@ Dashboard → SQL Editor-т дараах файлуудын агуулгыг о�
 | 5 | `supabase/migrations/0006_listing_stats.sql` | `listings.views` / `listings.likes` багана + атомар bump функцууд |
 | 6 | `supabase/migrations/0007_listing_likes_views.sql` | `listing_likes` / `listing_views` хүснэгт + `count(*)` триггер |
 | 7 | `supabase/migrations/0008_feedback.sql` | **Санал хүсэлт** (`feedback` хүснэгт + RLS) → `/feedback`, `/admin/feedback` |
+| 8 | `supabase/migrations/0009_feedback_listing.sql` | `feedback.listing_id` — гомдлыг ТУХАЙН ЗАРТАЙ холбох (зарын дэлгэрэнгүй хуудсанд гомдол мэдэгдэх) |
 
 > `0003` ороогүй бол апп ажиллах боловч зар нэмэхэд «ашиглалтанд орсон он, давхар,
 > тагт, гараж» хадгалагдахгүй (console-д анхааруулга гарна). Шалгах:
@@ -929,13 +930,16 @@ production дээр тохируулж болно (сонголтоор, шуу�
   харж, шүүж (Бүгд / Шинэ / Харсан / Шийдсэн + текст хайлт), төлөв сольж,
   хэрэглэгчид харагдах **хариу (admin_note)** бичнэ.
 
-#### ⚠️ НЭГ УДАА хийх тохиргоо — `feedback` хүснэгт үүсгэх
+#### ⚠️ НЭГ УДАА хийх 2 ТОХИРГОО (хоёуланг нь ажиллуулна)
 
 ```bash
-# 1) SQL-ийг clipboard-д хуулах (эсвэл файлыг гараар нээж хуулна)
-pbcopy < supabase/migrations/0008_feedback.sql
-# 2) Supabase Dashboard → SQL Editor → New query → Cmd+V → Run
+pbcopy < supabase/migrations/0008_feedback.sql   # 1) feedback хүснэгт + RLS
+pbcopy < supabase/migrations/0009_feedback_listing.sql  # 2) зарын холбоос (listing_id)
+# → Supabase Dashboard → SQL Editor → New query → Cmd+V → Run (тус бүрийг тусад нь)
 ```
+
+⚠️ `0009` ажиллуулаагүй ч **сайт эвдрэхгүй** — зарын гомдол `listing_id`-гүйгээр
+илгээгдэж, зарын ID нь гарчигт нь автоматаар бичигдэнэ (`submitFeedback` fallback).
 
 Миграц ажиллаагүй бол `/feedback` дээр «Санал хүсэлтийн хүснэгт олдсонгүй. …
 0008_feedback.sql-ийг ажиллуулна уу» гэсэн ойлгомжтой мессеж гарна (сайт эвдрэхгүй).
@@ -952,14 +956,96 @@ phone · status · admin_note · created_at · handled_at` (RLS: insert/select �
 
 
 
+## 🏦 Ипотекийн тооцоолуур ба 📊 Үнийн статистик
+
+### Ипотекийн тооцоолуур — `/mortgage` (+ зарын дэлгэрэнгүй хуудсанд)
+
+- **`lib/mortgage.js`** — цэвэр функцууд: `monthlyPayment()`, `calcMortgage()`,
+  `rateScenarios()`. Аннуитет томьёо `M = P·r / (1 − (1+r)^−n)`.
+- **`components/MortgageCalculator.jsx`** — үнэ / урьдчилгаа (10–40% chip + slider) /
+  жилийн хүү (preset + гараар) / хугацаа (5–30 жил) оруулаад:
+  сарын төлбөр, урьдчилгаа, зээлийн дүн, **нийт төлөх**, **нийт хүү**, мөн
+  «хүү ±2% болвол сарын төлбөр» харьцуулалт.
+- **Хаана:** `/mortgage` бүтэн хуудас (FAQ + юу ороогүй вэ) ба **зарын баруун баганад**
+  (зөвхөн `category === 'sell'`, `details/summary`-ээр эвхэгддэг, зарын үнэ автоматаар).
+- **Дэлгэрэнгүй хуудсанд нэмж** шинж чанарын хүснэгтэд **«Үнэ / м²»** мөр нэмэгдэв
+  (`price ÷ area`, зөвхөн «зарах» + талбайтай үед).
+- Шалгасан тоо (price 280сая, 30% урьдчилгаа, 12.5%, 20 жил):
+  зээл **196,000,000** → сарын **2,226,835 ₮** → нийт **534,440,515 ₮** (хүү 338,440,515).
+- ⚠️ Тооцоололд банкны шимтгэл/даатгал/нотариат ороогүй — ЗБӨ-г банкнаас шалгана.
+
+### Үнийн статистик — `/stats` (манай өөрийн заруудаас)
+
+- **`lib/queries.js` → `fetchPricePerM2Stats()`** — «зарах» + «Орон сууц» + талбай/үнэ
+  бүрэн зар уудыг татаж, **дүүрэг ба хороогоор** медиан/дундаж ₮/м², бага–их, дундаж
+  үнийг бодно (PostgREST GROUP BY дэмждэггүй тул JS дээр агрегац).
+- **`components/PriceStatsClient.jsx`** — хот сонголт, «Дүүргээр / Хороогоор» таб,
+  харьцуулах бар, гаргасан огноо, **эх сурвалжийн тэмдэглэл**.
+- **`lib/marketData.js`** — гадны лавлагаа (эх сурвалжтай): Монголбанкны
+  **бодлогын хүү 12.5%** (2026-09-17), УБ-ын инфляц **7.2%** *(mongolbank.mn, 2026-08)*.
+- ⚠️ **Жинхэнэ дүүрэг/хорооны өгөгдөл (9 зар)** — медиан **3,579,098 ₮/м²**,
+  Хан-Уул 3.58 сая (4 зар), Баянгол 3.95 сая (2), Багахангай 6.0 сая (2), Баянзүрх 3.08 сая (1).
+  Түүвэр 10-аас доош үед «төлөөлөх чанар муу» гэсэн анхааруулга UI дээр гардаг.
+
+#### ⚠️ Гадны статистик — ХИЙСЭН ШАЛГАЛТ (автоматаар татах боломжгүй)
+| Эх сурвалж | Үр дүн |
+|---|---|
+| `mongolbank.mn` | ✅ нээлттэй — бодлогын хүү 12.5%, инфляц (лавлагаа болгож авсан) |
+| `unegui.mn` | ❌ HTTP 403 (bot хамгаалалт) |
+| `1212.mn` (ҮСХ) | ❌ fetch failed |
+| `duckduckgo.com`, `bing.com` | ❌ bot challenge / холбогдолгүй үр дүн |
+| `news.mn` | ❌ timeout |
+
+Тиймээс: **дүүргийн ₮/м²-ийг манай заруудаас бодно** (автомат, хууль цэвэр);
+албан ёсны/лицензтэй тайлангийн тоог гараар нэмэх боломжтой —
+`lib/marketData.js → REFERENCE_PRICE_PER_M2` (эх сурвалж + огноо + линктэй).
+
+**DB migration шаардлагагүй** — одоо байгаа `listings` хүснэгтээс бодогдоно.
+
+### 3. Админ — Зарын удирдлага (`/admin/listings`)
+
+Админ нь **ЯМАР Ч зарыг** хайж, устгах боломжтой (`app_metadata.is_admin` шаардана).
+
+| Хайлтын горим | Хэрхэн ажилладаг |
+|---|---|
+| **Бүтэн ID** (uuid) | `eq('id', …)` |
+| **ID-ийн эхлэл** (4+ hex тэмдэгт) | ⚠️ `id` нь **uuid** багана тул `ilike` ажиллахгүй (`operator does not exist: uuid ~* unknown`, HTTP **42883**) → сүүлийн 500 зарыг татаж JS дээр `startsWith`-ээр шүүнэ (UI дээр «сүүлийн N зарын дотор…» гэж харуулна) |
+| **Текст** | утас · нэр · төрөл · дүүрэг · хороо · хот · хаяг (`ilike`) |
+
+- **Устгах:** `DELETE /api/admin/listings?id=<uuid>` → `deleteAdminListing()` нь эхлээд
+  Storage дахь зургуудыг (`listing-images`) устгаж, дараа нь мөрийг устгана
+  (RLS нь зөвхөн «өөрийн зар»-ыг устгахыг зөвшөөрдөг тул **service_role** ашиглана).
+- Карт бүр дээр: төрөл/үнэ/хаяг/утас/нэр/зургийн тоо/👁❤️ + `👁 Харах`, `👤 Зар нийтлэгч`, `🗑 Зар устгах`.
+- **Хэрэглэгчийн гомдол:** зарын дэлгэрэнгүй хуудсанд «⚠️ Энэ зарын талаар гомдол
+  мэдэгдэх» товч (`components/ReportListingModal.jsx`) → шалтгаан сонгож илгээнэ →
+  `feedback` хүснэгтэд `category='complaint'` + `listing_id`-той хадгалагдана →
+  **`/admin/feedback`** хуудсанд зарын мэдээлэл, холбоос, `🗑 Зар устгах` товчтой хамт гарна.
+
+#### 🧪 E2E тест (бодит DB дээр хийсэн)
+
+| # | Шалгалт | Үр дүн |
+|---|---|---|
+| 1 | Туршилтын зар үүсгэх (`E2E-TEST-…` хаягтай) | ✓ |
+| 2 | Бүтэн ID-аар хайх | ✓ 1 илэрц (`mode: id`) |
+| 3 | ID-ийн эхлэлээр (6 тэмдэгт) хайх | ✓ 1 илэрц (`mode: id-prefix`) |
+| 4 | Текстийн хайлт (хаягаар) | ✓ 1 илэрц (`mode: text`) |
+| 5 | `deleteAdminListing()` — ямар ч зар устгах | ✓ устгав |
+| 6 | DB-д үнэхээр устсан эсэх | ✓ олдсонгүй |
+| 7 | Байхгүй ID дээр | ✓ ойлгомжтой алдаа |
+| 8 | Токенгүй `GET`/`DELETE /api/admin/listings` | ✓ **401** |
+| 9 | `/admin/listings` хуудас | ✓ 200, dev log алдаагүй |
+
 ## Төслийн бүтэц
 
 ```
 app/
   layout.jsx, page.jsx, globals.css   # globals.css = Tailwind суурь + @layer components
+  mortgage/page.jsx          # ипотекийн тооцоолуур
+  stats/page.jsx             # үнийн статистик (₮/м²)
   terms/page.jsx             # үйлчилгээний нөхцөл (статик)
   feedback/page.jsx          # санал хүсэлт (бүртгэлтэй хэрэглэгч)
   admin/feedback/page.jsx    # админ — санал хүсэлт
+  admin/listings/page.jsx    # админ — зарын удирдлага (ID-аар хайх + устгах)
   listings/[id]/page.jsx     # зарын дэлгэрэнгүй
   sellers/[id]/page.jsx      # зар нийтлэгчийн бусад зарууд (Зарах/Түрээслэх табтай)
   my-listings/page.jsx       # миний зарууд
@@ -975,10 +1061,16 @@ components/
   SellerListingsClient.jsx   # /sellers/[id] — нэг хэрэглэгчийн зарууд (Бүгд/Зарах/Түрээслэх)
   FeedbackClient.jsx         # /feedback — санал хүсэлт (бүртгэлтэй хэрэглэгч)
   AdminFeedbackClient.jsx    # /admin/feedback — админы санал хүсэлтийн самбар
+  AdminListingsClient.jsx    # /admin/listings — зарын хайлт (ID/текст) + ямар ч зарыг устгах
+  ReportListingModal.jsx     # зарын дэлгэрэнгүй хуудсанд «⚠️ гомдол мэдэгдэх» форм
+  MortgageCalculator.jsx     # ипотекийн тооцоолуур (хуудас + зарын баруун багана)
+  PriceStatsClient.jsx       # /stats — дүүрэг/хорооны ₮/м² статистик
   Breadcrumb.jsx             # unegui.mn загварын замчилсан цэс (client)
   MyListingsClient.jsx, MapView.jsx (Leaflet)
 lib/
   supabaseClient.js, queries.js, format.js, locationData.js
+  mortgage.js                # аннуитетийн тооцоо (monthlyPayment/calcMortgage/rateScenarios)
+  marketData.js              # гадны лавлагаа (Монголбанкны хүү) + REFERENCE_PRICE_PER_M2
   verifyMn.js                # verify.mn (MO SMS) REST клиент — зөвхөн сервер тал
   authServer.js              # Supabase Admin client + requestToken (HMAC) + хэрэглэгч үүсгэх
   authApi.js                 # клиент талаас /api/auth/* дуудах туслах

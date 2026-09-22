@@ -223,6 +223,7 @@ export default function AppProviders({ children }) {
                         <Link href="/feedback" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={() => setUserMenuOpen(false)}>💬 Санал хүсэлт</Link>
                         {isAdmin && (
                           <>
+                            <Link href="/admin/listings" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-amber-800 transition hover:bg-amber-50" onClick={() => setUserMenuOpen(false)}>🏷️ Админ — Зарууд</Link>
                             <Link href="/admin/feedback" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-amber-800 transition hover:bg-amber-50" onClick={() => setUserMenuOpen(false)}>📨 Админ — Санал хүсэлт</Link>
                             <Link href="/admin/users" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-amber-800 transition hover:bg-amber-50" onClick={() => setUserMenuOpen(false)}>🛠 Админ — Хэрэглэгчид</Link>
                           </>
@@ -247,6 +248,8 @@ export default function AppProviders({ children }) {
             <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
               <nav className="mb-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
                 <Link href="/" className="transition hover:text-white">🏠 Нүүр хуудас</Link>
+                <Link href="/mortgage" className="transition hover:text-white">🏦 Ипотекийн тооцоолуур</Link>
+                <Link href="/stats" className="transition hover:text-white">📊 Үнийн статистик</Link>
                 <Link href="/terms" className="transition hover:text-white">📄 Үйлчилгээний нөхцөл</Link>
                 <Link href="/feedback" className="transition hover:text-white">💬 Санал хүсэлт</Link>
               </nav>

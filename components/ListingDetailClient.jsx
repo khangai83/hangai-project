@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import MapView from './MapView';
+import MortgageCalculator from './MortgageCalculator';
+import ReportListingModal from './ReportListingModal';
 import Breadcrumb from './Breadcrumb';
 import { useToast } from './AppProviders';
 import { fetchListingById, fetchSellerCategoryCounts } from '../lib/queries';
@@ -143,6 +145,12 @@ export default function ListingDetailClient({ id }) {
     listing.build_year > 0 && { label: 'Ашиглалтанд орсон он', value: `${listing.build_year} он` },
     listing.balconies > 0 && { label: 'Тагт', value: `${listing.balconies} тагттай` },
     garageLabel && { label: 'Гараж', value: garageLabel },
+    // ₮/м² — үнэ ÷ талбай (зөвхөн «зарах» ба талбайтай үед). Үнэ харьцуулахад
+    // хамгийн хэрэгтэй үзүүлэлт тул шинж чанарын хүснэгтэд шууд харуулна.
+    isSell && listing.area > 0 && listing.price > 0 && {
+      label: 'Үнэ / м²',
+      value: `₮${formatPrice(Math.round(Number(listing.price) / Number(listing.area)))}`,
+    },
     /*{ label: 'Зарын төрөл', value: getCategoryLabel(listing.category) },*/
     /*{ label: 'Нийтэлсэн', value: timeAgo(listing.created_at) },*/
     // { label: 'Зарын дугаар', value: `ID: ${listing.id}` },
@@ -348,7 +356,26 @@ export default function ListingDetailClient({ id }) {
                 )
               )}
             </div>
+
+            {/* ===== ⚠️ ГОМДОЛ — «Зар дээр ямар нэг зүйл буруу байна» =====
+                Хэрэглэгч тухайн зарын талаар админд гомдол илгээнэ
+                (feedback → category='complaint' + listing_id). */}
+            <ReportListingModal listing={listing} />
           </div>
+
+          {/* ===== 🏦 ИПОТЕКИЙН ТООЦООЛУУР (зөвхөн «зарах» зарт) =====
+              ⚠️ `details/summary` — баруун баганыг хэт урт болгохгүйн тулд
+                 эвхэгддэг. Зээлийн тооцоолол зөвхөн «зарах» зарт утга учиртай. */}
+          {isSell && (
+            <details className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card" open>
+              <summary className="cursor-pointer select-none px-5 py-4 text-base font-semibold text-gray-800">
+                🏦 Ипотекийн тооцоолуур
+              </summary>
+              <div className="border-t border-gray-100 p-4">
+                <MortgageCalculator defaultPrice={Number(listing.price) || 0} compact />
+              </div>
+            </details>
+          )}
 
           {listing.latitude && listing.longitude && (
             <div className="h-[280px] overflow-hidden rounded-xl border border-gray-200">
