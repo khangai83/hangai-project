@@ -61,9 +61,9 @@ export default function ListingCard({ listing }) {
           {/* ---------- 📍 ХАЯГ + 👁 ҮЗСЭН (нэг мөрөнд) ----------
               ⚠️ ШИЛЖИЛТ: «үзсэн» тоо нь өмнө доод мета мөрөнд (❤️-ийн хажууд)
                  байсан. Одоо хаягтайгаа нэг мөрөнд, ДЭЭД хэсэгт харагдана. */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-gray-500">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[14px] text-gray-5500">
             <span>📍 {[listing.city, listing.district, listing.khoroo].filter(Boolean).join(', ')}</span>
-            <span aria-hidden="true" className="text-gray-300"></span>
+            <span aria-hidden="true" className="text-gray-3000"></span>
             
           </div>
           {/* ---------- 🛏 БАЙРНЫ МЭДЭЭЛЭЛ (хаягийн ЯГ доор, мөн дээд хэсэгт) ----------
@@ -72,7 +72,7 @@ export default function ListingCard({ listing }) {
               ⚠️ `rooms/area/build_year` нь 0 байж болох тул `> 0` шалгалттай;
                  `floorLabel` нь lib/format-аас '' (хоосон) буцаж болно. */}
           {(listing.rooms > 0 || listing.area > 0 || floorLabel || listing.build_year > 0) && (
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-gray-5500">
               {listing.rooms > 0 && <span>🛏 {listing.rooms} өрөө</span>}
               {listing.area > 0 && <span>📐 {listing.area} м²</span>}
               {floorLabel && <span>🏢 {floorLabel}</span>}
@@ -92,8 +92,8 @@ export default function ListingCard({ listing }) {
               (listings.likes) хоёулаа: дарвал ❤️↔🤍 солигдож, сервер дээрх
               тоо ±1 болно (lib/favorites.js).
               ⚠️ Зурган дээр тусдаа товч БАЙХГҮЙ (зураг цэвэр байх ёстой). */}
-          <span className="font-semibold text-gray-500" title="Энэ зарыг хэдэн хүн үзсэн">
-              👁 {views} үзсэн
+          <span className="font-semibold text-sm text-gray-700" title="Энэ зарыг хэдэн хүн үзсэн">
+              👁 {views}
             </span>
           <button
             type="button"
@@ -104,11 +104,11 @@ export default function ListingCard({ listing }) {
             }}
             aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
             title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
-            className={`-mx-1.5 inline-flex items-center gap-1 rounded-full px-1.5 font-semibold text-gray-500 transition hover:bg-red-50 hover:text-red-600 ${
+            className={`-mx-1.5 inline-flex items-center gap-1 rounded-full px-1.5 font-semibold text-[14px] text-gray-500 transition hover:bg-red-50 hover:text-red-600 ${
               isFav ? 'text-red-600' : ''
             }`}
           >
-            {isFav ? '❤️' : '🤍'} {likes} таалагдсан
+            {isFav ? '❤️' : '🤍'} {likes}
           </button>
         </div>
       </div>
