@@ -50,31 +50,51 @@ export default function ListingCard({ listing }) {
       </div>
       <div className="flex flex-1 flex-col justify-between overflow-hidden p-4">
         <div>
+          {/* ---------- ҮНЭ ---------- */}
           <div className="mb-0.5 text-lg font-bold text-gray-900">
             ₮{formatPrice(listing.price)} <span className="text-lg font-normal text-gray-500">{getPriceTypeLabel(listing.price_type)}</span>
           </div>
+          {/* ---------- ТӨРӨЛ ---------- */}
           <div className="mb-0.5 truncate text-sm font-semibold text-gray-800">
             {getPropertyIcon(listing.property_type)} {listing.property_type}
           </div>
-          <div className="text-[13px] text-gray-500">
-            📍 {[listing.city, listing.district, listing.khoroo].filter(Boolean).join(', ')}
+          {/* ---------- 📍 ХАЯГ + 👁 ҮЗСЭН (нэг мөрөнд) ----------
+              ⚠️ ШИЛЖИЛТ: «үзсэн» тоо нь өмнө доод мета мөрөнд (❤️-ийн хажууд)
+                 байсан. Одоо хаягтайгаа нэг мөрөнд, ДЭЭД хэсэгт харагдана. */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-gray-500">
+            <span>📍 {[listing.city, listing.district, listing.khoroo].filter(Boolean).join(', ')}</span>
+            <span aria-hidden="true" className="text-gray-300"></span>
+            
           </div>
+          {/* ---------- 🛏 БАЙРНЫ МЭДЭЭЛЭЛ (хаягийн ЯГ доор, мөн дээд хэсэгт) ----------
+              Өрөө · талбай · давхар · баригдсан он — өмнө доод мета мөрөнд
+              байсныг энд шилжүүлэв.
+              ⚠️ `rooms/area/build_year` нь 0 байж болох тул `> 0` шалгалттай;
+                 `floorLabel` нь lib/format-аас '' (хоосон) буцаж болно. */}
+          {(listing.rooms > 0 || listing.area > 0 || floorLabel || listing.build_year > 0) && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+              {listing.rooms > 0 && <span>🛏 {listing.rooms} өрөө</span>}
+              {listing.area > 0 && <span>📐 {listing.area} м²</span>}
+              {floorLabel && <span>🏢 {floorLabel}</span>}
+              {listing.build_year > 0 && <span>📅 {listing.build_year}</span>}
+            </div>
+          )}
         </div>
-        {/* Мета мөр — ҮРГЭЛЖ харагдана.
-            ⚠️ `justify-between` БИШ: баруун захад элемент үлдвэл /favorites-ийн
-            «Хасах» товч түүнийг халхална. Тиймээс зүүнээс эхлэн жагсааж,
-            баруун талд `pr-20` (80px) хоосон зай үлдээв. */}
-        <div className="mt-auto flex flex-wrap justify-start gap-x-3 gap-y-1 border-t border-gray-100 pt-1.5 pr-20 text-xs text-gray-400">
-          {/* 👁 Хэдэн хүн үзсэн — хамгийн тод харагдахын тулд ЭХЭНД */}
+        {/* ДООД МӨР — зөвхөн ❤️/🤍 «Таалагдсан» товч үлдэв.
+            ⚠️ ШИЛЖИЛТ: 👁 «үзсэн» тоо болон 🛏 байрны мэдээлэл (өрөө / м² /
+               давхар / он) нь ДЭЭШЭЭ — 📍 ХАЯГИЙН хэсэг рүү шилжсэн
+               (дээрх «📍 ХАЯГ + 👁 ҮЗСЭН» ба «🛏 БАЙРНЫ МЭДЭЭЛЭЛ» блокоос харна уу).
+            ⚠️ `justify-between` БИШ: /favorites хуудсанд «Хасах» товч утсанд
+               (max-sm) баруун ДОО буланд буудаг тул халхлахгүйн тулд мөр
+               зүүнээс эхэлж, баруун талд `pr-20` (80px) хоосон зай үлдээв. */}
+        <div className="mt-auto flex flex-wrap items-center justify-start gap-x-3 gap-y-1 border-t border-gray-100 pt-2 pr-20 text-xs text-gray-400">
+          {/* ❤️/🤍 Таалагдсан — энэ нь МИНИЙ favourite toggle БА нийт тоо
+              (listings.likes) хоёулаа: дарвал ❤️↔🤍 солигдож, сервер дээрх
+              тоо ±1 болно (lib/favorites.js).
+              ⚠️ Зурган дээр тусдаа товч БАЙХГҮЙ (зураг цэвэр байх ёстой). */}
           <span className="font-semibold text-gray-500" title="Энэ зарыг хэдэн хүн үзсэн">
-            👁 {views} үзсэн
-          </span>
-          {/* ❤️/🤍 Таалагдсан — «үзсэн»-ий ЯГ хажууд (зургийн хажуугийн мэдээлэл).
-              Энэ нь МИНИЙ favourite toggle БА нийт тоо (listings.likes) хоёулаа:
-              дарвал ❤️↔🤍 солигдож, сервер дээрх тоо ±1 болно (lib/favorites.js).
-              ⚠️ Зурган дээр тусдаа товч БАЙХГҮЙ (зураг цэвэр байх ёстой).
-              ⚠️ «Хасах» товч (/favorites, баруун доод/дээд) халхлахгүйн тулд
-                 мета мөр зүүн талаас эхэлж, баруун талд `pr-20` зайтай. */}
+              👁 {views} үзсэн
+            </span>
           <button
             type="button"
             onClick={(e) => {
@@ -90,10 +110,6 @@ export default function ListingCard({ listing }) {
           >
             {isFav ? '❤️' : '🤍'} {likes} таалагдсан
           </button>
-          {listing.rooms > 0 && <span>🛏 {listing.rooms} өрөө</span>}
-          {listing.area > 0 && <span>📐 {listing.area} м²</span>}
-          {floorLabel && <span>🏢 {floorLabel}</span>}
-          {listing.build_year > 0 && <span>📅 {listing.build_year}</span>}
         </div>
       </div>
     </Link>

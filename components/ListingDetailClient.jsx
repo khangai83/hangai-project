@@ -213,27 +213,28 @@ export default function ListingDetailClient({ id }) {
             )}
 
             {/* ===== FB-style POST FOOTER — 👁/❤️ тоо ЗУРГИЙН ДОР =====
-                Facebook-ийн постын доод мөр шиг: зүүн талд тоо (👁 үзсэн,
-                ❤️ таалагдсан), баруун талд ❤️/🤍 toggle товч.
+                ⚠️ НҮҮРЭН ДЭЭРХ КАРТТАЙ (ListingCard.jsx) ЯГ ИЖИЛ загвар:
+                   `👁 N үзсэн` ба `🤍/❤️ N таалагдсан` — хоёр л элемент,
+                   сүүлийнх нь ӨӨРӨӨ товч: дарвал ❤️↔🤍 солигдож, сервер дээрх
+                   тоо ±1 болно (lib/favorites.js).
+                ⚠️ Өмнө нь «таалагдсан» ХОЁР газарт (зүүн талд тоо + баруун талд
+                   том товч) харагддаг байсныг нэгтгэв — duplicate байхгүй.
                 ⚠️ Зурган дээр ямар ч тэмдэглээ байхгүй (карттай ижил дүрэм).
                 ⚠️ Тоо нь серверээс (listings.views / listings.likes — 0007). */}
-            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-gray-100 px-4 py-3">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-gray-500">
-                <span title="Энэ зарыг хэдэн хүн үзсэн" className="font-semibold tabular-nums">
-                  👁 {viewCount} үзсэн
-                </span>
-                <span title="Энэ зарыг хэдэн хүн таалагдсан" className="font-semibold tabular-nums">
-                  ❤️ {likeCount} таалагдсан
-                </span>
-              </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-gray-100 px-4 py-3 text-[13px] text-gray-500">
+              <span title="Энэ зарыг хэдэн хүн үзсэн" className="font-semibold tabular-nums">
+                👁 {viewCount} үзсэн
+              </span>
               <button
                 type="button"
                 onClick={() => toggleFavorite(listing.id)}
                 aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
                 title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
-                className={`btn btn-sm ${isFav ? 'btn-danger' : 'btn-outline'}`}
+                className={`-my-1 inline-flex items-center gap-1 rounded-full px-2 py-1 font-semibold tabular-nums text-gray-500 transition hover:bg-red-50 hover:text-red-600 ${
+                  isFav ? 'text-red-600' : ''
+                }`}
               >
-                {isFav ? '❤️ Таалагдсан' : '🤍 Таалагдсан'}
+                {isFav ? '❤️' : '🤍'} {likeCount} таалагдсан
               </button>
             </div>
           </div>

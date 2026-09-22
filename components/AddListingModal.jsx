@@ -261,7 +261,7 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
               <div className="form-row">
                 {showApartment && (
                   <div className="form-group">
-                    <label>Ашиглалтанд орсон он</label>
+                    <label>Ашиглалтанд орсон ооон</label>
                     <input
                       type="number"
                       min="1900"
