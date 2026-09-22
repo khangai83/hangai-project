@@ -8,7 +8,7 @@ import { useToast } from './AppProviders';
 import { fetchListingById, fetchSellerCategoryCounts } from '../lib/queries';
 import { trackListingView } from '../lib/statsClient';
 import { normalizeError } from '../lib/errors';
-import { formatPrice, getPriceTypeLabel, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo } from '../lib/format';
+import { formatPrice, getPriceTypeLabel, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress } from '../lib/format';
 import { buildListingBreadcrumb } from '../lib/breadcrumb';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 
@@ -120,7 +120,8 @@ export default function ListingDetailClient({ id }) {
   }
 
   const images = Array.isArray(listing.images) ? listing.images : [];
-  const address = [listing.address_detail, listing.khoroo, listing.district, listing.city].filter(Boolean).join(', ');
+  // 📍 Хаяг — карттай ЯГ ижил форматаар (lib/format.js → formatAddress)
+  const address = formatAddress(listing);
   const typeLabel = getPropertyTypeLabel(listing.property_type, listing.category);
   const garageLabel = getGarageLabel(listing.has_garage);
   const isSell = listing.category === 'sell';
@@ -166,9 +167,13 @@ export default function ListingDetailClient({ id }) {
         <h1 className="mb-1.5 text-2xl font-bold leading-snug text-gray-900 sm:text-[28px]">
           {getPropertyIcon(listing.property_type)} {typeLabel}
         </h1>
-        <p className="text-sm text-gray-500">
-          📍 {address || 'Хаяг тодорхойгүй'} · 📅 {timeAgo(listing.created_at)}
-        </p>
+        {/* ===== БАЙРШИЛ (зүүн) + НИЙТЭЛСЭН ОГНОО (баруун) =====
+            ⚠️ Хоёр мэдээлэл өмнө нь «📍 … · 📅 …» гэж нэг мөрөнд наалдсан
+               байсныг `justify-between`-ээр хоёр захад нь тусгаарлав. */}
+        <div className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-sm text-gray-600">
+          <span className="min-w-0">📍 {address || 'Хаяг тодорхойгүй'}</span>
+          <span className="shrink-0 whitespace-nowrap text-[13px] text-gray-500">📅 {timeAgo(listing.created_at)}</span>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_350px]">

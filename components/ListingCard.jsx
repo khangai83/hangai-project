@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { formatPrice, getPriceTypeLabel, getPropertyIcon, firstImage, getFloorLabel } from '../lib/format';
+import { formatPrice, getPriceTypeLabel, getPropertyIcon, firstImage, getFloorLabel, timeAgo, formatAddress } from '../lib/format';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 
 export default function ListingCard({ listing }) {
@@ -58,21 +58,13 @@ export default function ListingCard({ listing }) {
           <div className="mb-0.5 truncate text-sm font-semibold text-gray-800">
             {getPropertyIcon(listing.property_type)} {listing.property_type}
           </div>
-          {/* ---------- 📍 ХАЯГ + 👁 ҮЗСЭН (нэг мөрөнд) ----------
-              ⚠️ ШИЛЖИЛТ: «үзсэн» тоо нь өмнө доод мета мөрөнд (❤️-ийн хажууд)
-                 байсан. Одоо хаягтайгаа нэг мөрөнд, ДЭЭД хэсэгт харагдана. */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[14px] text-gray-5500">
-            <span>📍 {[listing.city, listing.district, listing.khoroo].filter(Boolean).join(', ')}</span>
-            <span aria-hidden="true" className="text-gray-3000"></span>
-            
-          </div>
-          {/* ---------- 🛏 БАЙРНЫ МЭДЭЭЛЭЛ (хаягийн ЯГ доор, мөн дээд хэсэгт) ----------
+          {/* ---------- 🛏 БАЙРНЫ МЭДЭЭЛЭЛ (дээд хэсэгт) ----------
               Өрөө · талбай · давхар · баригдсан он — өмнө доод мета мөрөнд
               байсныг энд шилжүүлэв.
               ⚠️ `rooms/area/build_year` нь 0 байж болох тул `> 0` шалгалттай;
                  `floorLabel` нь lib/format-аас '' (хоосон) буцаж болно. */}
           {(listing.rooms > 0 || listing.area > 0 || floorLabel || listing.build_year > 0) && (
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-gray-5500">
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-gray-500">
               {listing.rooms > 0 && <span>🛏 {listing.rooms} өрөө</span>}
               {listing.area > 0 && <span>📐 {listing.area} м²</span>}
               {floorLabel && <span>🏢 {floorLabel}</span>}
@@ -80,36 +72,44 @@ export default function ListingCard({ listing }) {
             </div>
           )}
         </div>
-        {/* ДООД МӨР — зөвхөн ❤️/🤍 «Таалагдсан» товч үлдэв.
-            ⚠️ ШИЛЖИЛТ: 👁 «үзсэн» тоо болон 🛏 байрны мэдээлэл (өрөө / м² /
-               давхар / он) нь ДЭЭШЭЭ — 📍 ХАЯГИЙН хэсэг рүү шилжсэн
-               (дээрх «📍 ХАЯГ + 👁 ҮЗСЭН» ба «🛏 БАЙРНЫ МЭДЭЭЛЭЛ» блокоос харна уу).
-            ⚠️ `justify-between` БИШ: /favorites хуудсанд «Хасах» товч утсанд
-               (max-sm) баруун ДОО буланд буудаг тул халхлахгүйн тулд мөр
-               зүүнээс эхэлж, баруун талд `pr-20` (80px) хоосон зай үлдээв. */}
-        <div className="mt-auto flex flex-wrap items-center justify-start gap-x-3 gap-y-1 border-t border-gray-100 pt-2 pr-20 text-xs text-gray-400">
-          {/* ❤️/🤍 Таалагдсан — энэ нь МИНИЙ favourite toggle БА нийт тоо
-              (listings.likes) хоёулаа: дарвал ❤️↔🤍 солигдож, сервер дээрх
-              тоо ±1 болно (lib/favorites.js).
-              ⚠️ Зурган дээр тусдаа товч БАЙХГҮЙ (зураг цэвэр байх ёстой). */}
-          <span className="font-semibold text-sm text-gray-700" title="Энэ зарыг хэдэн хүн үзсэн">
-              👁 {views} 
+        {/* ===== МЭДЭЭЛЛИЙН БАГАНЫ ДООД ХЭСЭГ =====
+            📍 Хаяг (зүүн) + 🕒 Нийтэлсэн огноо (баруун), доор нь 👁/❤️ тоолуур.
+            ⚠️ ШИЛЖИЛТ: хаяг+огнооны мөр нь өмнө нь байрны мэдээллийн блок ДОТОР
+               (зураасны дээд талд) байсныг энэ ДООД хэсэг рүү шилжүүлэв.
+            ⚠️ Огноо нь 🕒 (цаг) — баригдсан он нь 📅 (хуанли) тул зөрөхгүй.
+            ⚠️ Хаяг урт байвал `truncate` (нэг мөр) — картын өндөр (sm:h-[220px]) хэвээр.
+            ⚠️ `max-sm:pr-20`: /favorites хуудсанд «Хасах» товч утсанд баруун доод
+               буланд (absolute bottom-3) буудаг тул халхлахгүйн тулд 80px зай. */}
+        <div className="mt-auto flex flex-col gap-1.5 border-t border-gray-100 pt-2 max-sm:pr-20">
+          <div className="flex w-full items-center justify-between gap-x-3 text-[14px] text-gray-500">
+            <span className="min-w-0 truncate">📍 {formatAddress(listing) || 'Хаяг тодорхойгүй'}</span>
+            <span className="shrink-0 whitespace-nowrap text-[13px] text-gray-400">🕒 {timeAgo(listing.created_at)}</span>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-start gap-x-3 gap-y-1 text-xs text-gray-400">
+            {/* ❤️/🤍 Таалагдсан — энэ нь МИНИЙ favourite toggle БА нийт тоо
+                (listings.likes) хоёулаа: дарвал ❤️↔🤍 солигдож, сервер дээрх
+                тоо ±1 болно (lib/favorites.js).
+                ⚠️ Зурган дээр тусдаа товч БАЙХГҮЙ (зураг цэвэр байх ёстой). */}
+            <span className="font-semibold text-sm text-gray-700" title="Энэ зарыг хэдэн хүн үзсэн">
+              👁 {views}
             </span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              toggleFavorite(listing.id);
-            }}
-            aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
-            title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
-            className={`-mx-1.5 inline-flex items-center gap-1 rounded-full px-1.5 font-semibold text-[14px] text-gray-700 transition hover:bg-red-50 hover:text-red-600 ${
-              isFav ? 'text-red-600' : ''
-            }`}
-          >
-            {isFav ? '❤️' : '🤍'} {likes}
-          </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleFavorite(listing.id);
+              }}
+              aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
+              title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
+              className={`-mx-1.5 inline-flex items-center gap-1 rounded-full px-1.5 font-semibold text-[14px] text-gray-700 transition hover:bg-red-50 hover:text-red-600 ${
+                isFav ? 'text-red-600' : ''
+              }`}
+            >
+              {isFav ? '❤️' : '🤍'} {likes}
+            </button>
+          </div>
         </div>
       </div>
     </Link>

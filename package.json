@@ -18,7 +18,8 @@
     "doctor": "node scripts/doctor.js",
     "seed:more": "node scripts/seed-more-listings.mjs",
     "stats:setup": "node scripts/setup-stats.js",
-    "stats:check": "node scripts/setup-stats.js --check"
+    "stats:check": "node scripts/setup-stats.js --check",
+    "report:usage": "node scripts/db-usage.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.114.0",
