@@ -710,6 +710,105 @@ await admin.storage.updateBucket('listing-images', {
 });
 ```
 
+### 🎥 YouTube видео линк (Storage 0 MB)
+
+Зар нэмэх форм дээр **`🎥 YouTube видео (сонголтоор)`** талбар байна. Хэрэглэгч
+видеогоо YouTube-д байршуулаад **линкийг** оруулна — видео ФАЙЛ Storage-д
+**огт орохгүй** (`0 MB`).
+
+```
+┌──────────────────────────────────────────┬────┐
+│ https://youtu.be/dQw4w9WgXcQ             │ ✕  │
+└──────────────────────────────────────────┴────┘
+┌───────────┐ ✅ YouTube видео бэлэн
+│ ▶️ [зураг] │ https://www.youtube.com/watch?v=dQw4w9WgXcQ
+└───────────┘ Видео нь YouTube-д байршина — манай серверт файл хадгалагдахгүй
+```
+
+#### Дэмжих линк хэлбэрүүд (бүгд нэг ID болно)
+
+| Оролт | Гарц |
+|---|---|
+| `https://www.youtube.com/watch?v=ID` | `ID` |
+| `https://youtu.be/ID` | `ID` |
+| `https://www.youtube.com/shorts/ID` · `/embed/` · `/live/` · `/v/` | `ID` |
+| `https://m.youtube.com/…` · `music.youtube.com/…` | `ID` |
+| `https://www.youtube.com/watch?v=ID&t=30s&list=PL…` | `ID` (нэмэлт параметр алгасна) |
+| `ID` (зөвхөн 11 тэмдэгт) | `ID` |
+
+#### 🔒 Аюулгүй байдал — ХАМГИЙН ЧУХАЛ
+
+Хэрэглэгчийн бичсэн текстийг **шууд `<iframe src>`-д хийхгүй**. `lib/youtube.mjs`
+нь эхлээд **11 тэмдэгтийн video ID**-г ялгаж аваад, дараа нь **бид өөрсдөө**
+`youtube.com` / `i.ytimg.com` URL угсарна:
+
+```js
+embedUrl → `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1`
+thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
+```
+
+Тиймээс `https://youtube.evil.com/…`, `javascript:…`, `data:…` гэх мэт нь `null`
+болж, **preview ч, iframe ч үүсэхгүй** (тестээр бариулсан).
+
+| Модуль | Үүрэг |
+|---|---|
+| `lib/youtube.mjs` | Цэвэр функцууд: `extractYouTubeId`, `parseYouTube`, `normalizeYouTubeUrl`, `youTubeEmbedUrl`, `youTubeThumbUrl` |
+| `components/YouTubeField.jsx` | Формын талбар + thumbnail preview + ✕ арилгах |
+| `supabase/migrations/0011_listing_video.sql` | `listings.video_url text` багана |
+| `scripts/test-youtube.mjs` | **18 тест** — `npm run test:youtube` |
+
+#### Хадгалах утга нь КАНОНИК линк
+
+Хэрэглэгч `youtu.be`, `shorts`, нэмэлт параметр гэж бичсэн ч DB-д
+**нэг ижил** хэлбэрээр хадгалагдана: `https://www.youtube.com/watch?v=ID`
+(`queries.js → normalizeYouTubeUrl(payload.videoUrl)`). Ингэснээр дэлгэрэнгүй
+хуудас тогтвортой ажиллана.
+
+#### Дэлгэрэнгүй хуудсан дээр — «дарж тоглуулах»
+
+```
+section «🎥 Видео»
+┌──────────────────────────────────────┐
+│        ▶️  (thumbnail)                │  ← эхэнд iframe АЧААЛАГДАХГҮЙ
+└──────────────────────────────────────┘
+Видео нь YouTube-ээс ачаалагдана · YouTube дээр нээх ↗
+```
+
+- **Хурд:** эхэнд YouTube-ийн ~1 MB script татахгүй
+- **Нууцлал:** хэрэглэгч дартал YouTube cookie тавихгүй
+- Дарсны дараа `iframe` (`autoplay=1`, `rel=0`) + `allowFullScreen`
+
+Карт дээр (`ListingCard`) `🎥 Видео` гэсэн badge гарч, жагсаалтаас харагдана.
+
+#### 🚀 Migration ажиллуулах (нэг удаа)
+
+```bash
+npm run migration:copy 0011_listing_video.sql
+# → SQL нь clipboard-д орж, Supabase SQL Editor нээгдэнэ
+# → ⌘A ⌫ (хуучин агуулгыг устга) → ⌘V → Run
+```
+
+> 💡 `npm run migration:copy` нь **аль ч** migration-д ажиллана (аргументгүй
+> ажиллуулбал бүх файлын жагсаалтыг харуулна). `.env.local`-д
+> `SUPABASE_ACCESS_TOKEN=sbp_…` байвал автоматаар ажиллуулж болно:
+> `node scripts/apply-schema.js 0011_listing_video.sql`
+
+**Ажиллуулаагүй ч сайт эвдрэхгүй:** `video_url` нь `DETAIL_ROW_KEYS` группт
+байгаа тул багана байхгүй бол PostgREST-ийн «schema cache» алдааг барьж,
+**зөвхөн линкийг орхиод** бусад мэдээллийг хэвийн хадгална.
+
+> ⚠️ **Хамт зассан бодит эрсдэл:** `updateListing()`-ийн DELETE+INSERT fallback
+> нь өмнө нь `DETAIL_ROW_KEYS`-ийг ХАСДАГГҮЙ байв. Хэрэв багана байхгүй +
+> UPDATE policy байхгүй бол: зар устгагдаад, шинэ мөр оруулж чадалгүй
+> **ЗАР АЛГА БОЛОХ** байсан. Одоо `detailColumnsMissing` туг нэмж, тэр
+> багануудыг fallback insert-ээс хасдаг болсон.
+
+#### ⚠️ Яагаад видео ФАЙЛ биш линк вэ
+
+Утасны 1 минут 1080p видео = **100–300 MB**. Storage-д хадгалахад зурагнаас
+~100 дахин их зай/трафик зарцуулагдана. YouTube линк = **0 MB**.
+(Дэлгэрэнгүй харьцуулалт: доорх «Storage хэмнэх» хэсэг.)
+
 ### 🎥 Бичлэг (видео) — одоогоор ДЭМЖИГДЭХГҮЙ
 
 - UI нь `accept="image/*"` — утаснаас видео сонгох боломжгүй
@@ -723,9 +822,12 @@ await admin.storage.updateBucket('listing-images', {
 
 | Сонголт | Давуу | Сул |
 |---|---|---|
+| **C. Гадаад видео (YouTube холбоос)** — зөвхөн линк хадгална | Storage **0 MB** | Гадаад платформ шаардана |
 | **A. Богино видео (≤20 MB)** зөвшөөрч, эхний кадрыг poster болгож хадгалах | Энгийн, нэмэлт сан байхгүй | Чанар муу, олон видео болбол Storage дүүрнэ |
 | **B. `ffmpeg.wasm`-аар browser дээр транскод** (720p, ~2 Mbps) | 200MB → ~15MB | ~30MB WASM татах, удаан (30–90 сек), зарим утсанд санах ой хүрэхгүй |
-| **C. Гадаад видео (YouTube/ардчилсан холбоос)** — зөвхөн линк хадгална | Storage **0 MB** | Гадаад платформ шаардана |
+
+> ✅ **Сонголт C ХЭРЭГЖСЭН** — дээрх «🎥 YouTube видео линк» хэсгийг харна уу
+> (`0011_listing_video.sql` + `lib/youtube.mjs`). A, B хэрэггүй болсон.
 
 > Санал: эхлээд **C** (линк) эсвэл **A** (жижиг видео). Том видео Storage-ийг
 > хамгийн хурдан дүүргэдэг тул зургийн шахалтыг (дээрх) эхлүүлэх нь хамгийн их

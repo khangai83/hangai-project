@@ -13,11 +13,13 @@ import { normalizeError } from '../lib/errors';
 import { formatPrice, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress } from '../lib/format';
 import { buildListingBreadcrumb } from '../lib/breadcrumb';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
+import { parseYouTube } from '../lib/youtube.mjs';
 
 export default function ListingDetailClient({ id }) {
   const { showToast } = useToast();
   const [listing, setListing] = useState(null); // null = loading, false = not found
   const [loadError, setLoadError] = useState(null); // холболтын алдаа
+  const [videoPlaying, setVideoPlaying] = useState(false); // 🎥 видеог дарж эхлүүлсэн эсэх
   const [active, setActive] = useState(0);
   const [phoneShown, setPhoneShown] = useState(false);
   const [views, setViews] = useState(null); // 👁 серверээс ирсэн «үзсэн» тоо (null = миграцгүй)
@@ -132,6 +134,11 @@ export default function ListingDetailClient({ id }) {
   // 👁/❤️ — серверээс ирсэн тоо (миграц 0006 хийгээгүй бол 0 харагдана)
   const viewCount = views != null ? views : Number(listing.views) || 0;
   const likeCount = likes;
+
+  // 🎥 YouTube видео (0011_listing_video.sql → video_url).
+  // ⚠️ Embed URL-ийг `parseYouTube` нь БИД өөрсдөө угсарна (хэрэглэгчийн
+  //    текстийг шууд iframe-д хийхгүй) — XSS-ээс хамгаална.
+  const video = parseYouTube(listing.video_url);
 
   // unegui.mn-ийн <section data-component="AdvertFeaturesApp"> хэсэгт харагдах шинж чанарууд.
   // Зөвхөн утгатай (хоосон биш) мөрүүдийг харуулна.
@@ -269,6 +276,63 @@ export default function ListingDetailClient({ id }) {
               </button>
             </div>
           </div>
+
+          {/* ===== 🎥 ВИДЕО (YouTube) =====
+              ⚠️ iframe нь ЗӨВХӨН хэрэглэгч дарсны дараа ачаалагдана:
+                 • хурдан (эхэнд YouTube-ийн 1MB+ script татахгүй)
+                 • нууцлал (дартал YouTube cookie тавихгүй) */}
+          {video.ok && (
+            <section className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white">
+              <h2 className="border-b border-gray-100 px-5 py-4 text-base font-semibold text-gray-800">
+                🎥 Видео
+              </h2>
+              <div className="p-5 sm:p-6">
+                {videoPlaying ? (
+                  <div className="relative aspect-video overflow-hidden rounded-lg bg-black">
+                    <iframe
+                      src={`${video.embedUrl}&autoplay=1`}
+                      title="Зарын видео"
+                      className="absolute inset-0 h-full w-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      referrerPolicy="strict-origin-when-cross-origin"
+                    />
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setVideoPlaying(true)}
+                    className="group relative block w-full overflow-hidden rounded-lg bg-black"
+                    title="Видеог тоглуулах"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={video.thumbUrl}
+                      alt="Зарын видео"
+                      loading="lazy"
+                      className="aspect-video w-full object-cover opacity-75 transition duration-300 group-hover:scale-[1.02] group-hover:opacity-95"
+                    />
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <span className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 text-2xl shadow-card-hover transition group-hover:scale-110">
+                        ▶️
+                      </span>
+                    </span>
+                  </button>
+                )}
+                <p className="mt-2 text-[12px] text-gray-500">
+                  Видео нь YouTube-ээс ачаалагдана ·{' '}
+                  <a
+                    href={video.watchUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-primary hover:underline"
+                  >
+                    YouTube дээр нээх ↗
+                  </a>
+                </p>
+              </div>
+            </section>
+          )}
 
           {/* ===== ШИНЖ ЧАНАР — unegui.mn-ийн <section data-component="AdvertFeaturesApp" class="mt-6"> хэсэгтэй ижил загвар ===== */}
           <section data-component="AdvertFeaturesApp" className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white">

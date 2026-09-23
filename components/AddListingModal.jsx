@@ -6,6 +6,8 @@ import { createListing, updateListing, uploadImages } from '../lib/queries';
 import { CITIES, getDistricts, getKhoroos, PROPERTY_TYPES, hasApartmentFields, hasFloorFields, hasRoomsFields, BALCONY_OPTIONS, GARAGE_OPTIONS } from '../lib/locationData';
 import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice } from '../lib/format';
 import phoneEmail from '../lib/phoneEmail';
+import YouTubeField from './YouTubeField';
+import { parseYouTube } from '../lib/youtube.mjs';
 import { compressImages, formatBytes } from '../lib/imageUtils';
 
 /** Зарын DB мөр → форм (засах горимд) */
@@ -24,6 +26,8 @@ function listingToForm(l) {
     phone: phoneEmail.toLocalPhone(l.phone),
     contactName: l.contact_name || '',
     description: l.description || '',
+    // YouTube видео линк (0011). Хадгалагдсан нь КАНОНИК линк байна.
+    videoUrl: l.video_url || '',
     // ---- Орон сууцны нэмэлт мэдээлэл ----
     buildYear: l.build_year ? String(l.build_year) : '',
     floor: l.floor ? String(l.floor) : '',
@@ -58,6 +62,7 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
     // зар хадгалахдаа нэрийг хамт хадгална.
     contactName: displayName || '',
     description: '',
+    videoUrl: '', // YouTube линк (сонголтоор) — Storage-д файл хадгалахгүй
     // ---- Орон сууцны нэмэлт мэдээлэл ----
     buildYear: '',    // Ашиглалтанд орсон он
     floor: '',        // Тухайн байр хэдэн давхарт
@@ -166,6 +171,12 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
     if (!priceDigits) { setError('Үнээ оруулна уу'); return; }
     if (Number(priceDigits) <= 0) { setError('Үнэ 0-ээс их байх ёстой'); return; }
     if (priceDigits.length > 15) { setError('Үнэ хэт урт байна (15 цифр хүртэл)'); return; }
+    // 🎥 Видео линк: хоосон бол зүгээр; бичсэн бол YouTube линк БАЙХ ЁСТОЙ
+    // (буруу линк хадгалагдвал дэлгэрэнгүй хуудас дээр видео харагдахгүй).
+    if (form.videoUrl && form.videoUrl.trim() && !parseYouTube(form.videoUrl).ok) {
+      setError('YouTube линк буруу байна. Жишээ: https://youtu.be/dQw4w9WgXcQ');
+      return;
+    }
     if (!form.phone) { setError('Холбоо барих утас оруулна уу'); return; }
 
     setSubmitting(true);
@@ -424,6 +435,9 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
               <label>Нэмэлт тайлбар</label>
               <textarea rows="4" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Үл хөдлөх хөрөнгийн дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..." />
             </div>
+
+            {/* 🎥 YouTube видео линк — Storage 0 MB (файл биш, линк хадгална) */}
+            <YouTubeField value={form.videoUrl} onChange={(v) => set('videoUrl', v)} />
 
             {isEdit && existingImages.length > 0 && (
               <div className="form-group">

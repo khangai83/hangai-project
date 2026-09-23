@@ -35,6 +35,17 @@ export default function ListingCard({ listing }) {
         <span className={`badge absolute left-2 top-2 ${isSell ? 'badge-sell' : 'badge-rent'}`}>
           {isSell ? 'Зарах' : 'Түрээс'}
         </span>
+        {/* 🎥 Видео байгаа зарын тэмдэг (0011_listing_video.sql → video_url).
+            ⚠️ `listing.video_url` нь КАНОНИК линк (lib/youtube.mjs) — энд
+            зөвхөн «байгаа эсэх»-ийг шалгана, задлан шинжлэх шаардлагагүй. */}
+        {listing.video_url && (
+          <span
+            title="Энэ зарт видео бий"
+            className="absolute right-2 top-2 flex h-7 items-center gap-1 rounded-full bg-black/65 px-2.5 text-[12px] font-bold text-white shadow backdrop-blur-sm"
+          >
+            🎥 Видео
+          </span>
+        )}
         {/* ⚠️ ЗУРАГ дээр «таалагдсан» тэмдэглээ (зүрх/тоо) БАЙХГҮЙ.
             Нийт тоо + ❤️/🤍 товч нь доорх МЭДЭЭЛЛИЙН хэсэгт (мета мөр) байна. */}
 
