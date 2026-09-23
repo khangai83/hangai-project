@@ -175,10 +175,24 @@ export default function HomeClient() {
 
   return (
     <>
-      {/* HERO */}
-      <section className="bg-gradient-to-br from-primary to-primary-dark px-4 py-12 text-center text-white">
+      {/* HERO — фон нь Улаанбаатарын панорама зураг (`public/hero-ub.jpg`)
+          ⚠️ OVERLAY ЗААВАЛ: зураг нь маш тод (нар жаргах тэнгэр) тул overlay
+             байхгүй бол цагаан гарчиг уншигдахгүй. Доорх хар градиент нь
+             white текстэд ~12:1 контраст өгнө (WCAG AA-аас хол давсан).
+             `isolate` + `-z-10` нь overlay-г контентын АРД, гэхдээ хуудасны
+             дэвсгэрээс ГАДНА байлгана. */}
+      <section className="relative isolate overflow-hidden bg-primary-dark px-4 py-12 text-center text-white">
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: "url('/hero-ub.jpg')" }}
+        />
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 -z-10 bg-gradient-to-b from-black/70 via-black/55 to-black/75"
+        />
         <h1 className="mb-2 text-3xl font-bold sm:text-4xl">🏠 Үл хөдлөх хөрөнгийн зар</h1>
-        <p className="mb-6 text-sm text-blue-100 sm:text-base">Худалдаа, түрээсийн үл хөдлөх хөрөнгийн зарууд</p>
+        <p className="mb-6 text-sm text-white/90 sm:text-base">Худалдаа, түрээсийн үл хөдлөх хөрөнгийн зарууд</p>
         <div className="mx-auto flex w-full max-w-[620px] overflow-hidden rounded-lg shadow-card-hover">
           <input
             type="text"
@@ -189,6 +203,7 @@ export default function HomeClient() {
             className="flex-1 border-none px-4 py-3 text-sm text-gray-900 outline-none placeholder:text-gray-400"
           />
           <button
+            type="button"
             onClick={() => setQuery(search)}
             className="shrink-0 bg-gray-900 px-6 text-sm font-medium text-white transition hover:bg-black"
           >

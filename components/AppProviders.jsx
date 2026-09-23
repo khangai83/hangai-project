@@ -199,7 +199,31 @@ export default function AppProviders({ children }) {
                 🏠 ZAR<span className="text-gray-900">.mn</span>
               </Link>
               <div className="flex items-center gap-3">
-                {/* ---- ① Нэвтрэх / Хэрэглэгчийн цэс ---- */}
+                {/* ---- ③ ➕ Зар нэмэх ----
+                    ⚠️ БАЙР СОЛИСОН: өмнө нь хамгийн БАРУУН талд байсан. Хэрэглэгчийн
+                    хүслээр «🔑 Нэвтрэх»-тэй байраа сольж, хамгийн ЭХЭНД тавив
+                    (гол үйлдэл нь эхэнд — Zillow-ийн «Advertise» маяг). */}
+                <button className="btn btn-primary" onClick={openAdd}>➕ Зар нэмэх</button>
+
+                {/* ---- ② ❤️ Таалагдсан ---- */}
+                <Link
+                  href="/favorites"
+                  className="btn btn-secondary btn-sm"
+                  title="Таалагдсан зарууд"
+                  onClick={() => setUserMenuOpen(false)}
+                >
+                  ❤️ Таалагдсан
+                  {favoriteIds.length > 0 && (
+                    <span className="ml-1.5 rounded-full bg-red-500 px-1.5 py-px text-[11px] font-bold text-white">
+                      {favoriteIds.length}
+                    </span>
+                  )}
+                </Link>
+
+                {/* ---- ① Нэвтрэх / Хэрэглэгчийн цэс ----
+                    ⚠️ БАЙР СОЛИСОН: өмнө нь ЗҮҮН талд (хамгийн эхэнд) байсан.
+                    Одоо баруун захад — Zillow шиг «хэрэглэгчийн цэс хамгийн
+                    баруунд» заншил. Хэрэглэгчийн хүслээр сольсон. */}
                 {user ? (
                   <div className="relative">
                     <button className="btn btn-secondary btn-sm" onClick={() => setUserMenuOpen((v) => !v)}>
@@ -225,24 +249,6 @@ export default function AppProviders({ children }) {
                 ) : (
                   <button className="btn btn-secondary btn-sm" onClick={openAuth} disabled={authLoading}>🔑 Нэвтрэх</button>
                 )}
-                {/* ---- ② ❤️ Таалагдсан ----
-                    ⚠️ ӨМНӨ «🔑 Нэвтрэх»-ийн ЗҮҮН талд байсан. Хэрэглэгчийн хүслээр
-                    байрыг сольж, Нэвтрэх-ийн БАРУУН талд (➕ Зар нэмэх-ийн өмнө) тавив. */}
-                <Link
-                  href="/favorites"
-                  className="btn btn-secondary btn-sm"
-                  title="Таалагдсан зарууд"
-                  onClick={() => setUserMenuOpen(false)}
-                >
-                  ❤️ Таалагдсан
-                  {favoriteIds.length > 0 && (
-                    <span className="ml-1.5 rounded-full bg-red-500 px-1.5 py-px text-[11px] font-bold text-white">
-                      {favoriteIds.length}
-                    </span>
-                  )}
-                </Link>
-                {/* ---- ③ ➕ Зар нэмэх ---- */}
-                <button className="btn btn-primary" onClick={openAdd}>➕ Зар нэмэх</button>
               </div>
             </div>
           </header>
