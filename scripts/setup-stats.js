@@ -1,5 +1,6 @@
 // ============================================================
-// setup-stats.js — «Үзсэн / Таалагдсан» тоолуурыг бэлдэх ХЯЛБАР зам
+// setup-stats.js — «Үзсэн / Таалагдсан» тоолуур БОЛОН өдөр тутмын
+//                 хандалтын (📈 Статистик) хүснэгтийг бэлдэх ХЯЛБАР зам
 //
 // ЯАГААД ГАРААР ВЭ:
 //   Supabase нь DDL (`alter table …`) командыг зөвхөн SQL Editor эсвэл
@@ -10,13 +11,20 @@
 //   npm run stats:setup   → SQL-ийг clipboard-д хуулж, SQL Editor-ийг нээнэ
 //                           (та Cmd+V → Run гэж 2 секунд дарна)
 //   npm run stats:check   → миграц ажилласан эсэхийг шалгана
+//
+// ⚠️ ХОЁР файлыг дараалан хуулна (нэг удаагийн Run-д хангалттай):
+//      0007_listing_likes_views.sql     ← хүн тус бүрийн үзсэн/таалагдсан
+//      0010_listing_activity_daily.sql  ← өдөр тутмын хандалт (график)
 // ============================================================
 const fs = require('fs');
 const path = require('path');
 const { execSync, spawn } = require('child_process');
 
 const root = path.join(__dirname, '..');
-const sqlFile = path.join(root, 'supabase', 'migrations', '0007_listing_likes_views.sql');
+const sqlFiles = [
+  path.join(root, 'supabase', 'migrations', '0007_listing_likes_views.sql'),
+  path.join(root, 'supabase', 'migrations', '0010_listing_activity_daily.sql'),
+];
 
 // ---- .env.local унших ----
 const env = {};
@@ -58,8 +66,24 @@ async function check() {
   const counts = await (
     await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/listing_likes?select=listing_id&limit=1000`, { headers })
   ).json();
-  console.log('🎉 Миграц АЖИЛЛАЖ БАЙНА — ❤️/👁 тоолуур хүн тус бүрээр ажиллана.');
-  console.log(`   Багана: views ✅  likes ✅    Хүснэгт: listing_likes ✅  listing_views ✅`);
+
+  // 0010 — өдөр тутмын хандалтын хүснэгт (📈 Статистик табд шаардлагатай)
+  const activity = await fetch(
+    `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/listing_activity_daily?select=listing_id&limit=1`,
+    { headers }
+  );
+  const activityOk = activity.ok;
+  if (!activityOk) {
+    console.log('⚠️  0007 АЖИЛЛАЖ байна, харин 0010 (өдөр тутмын хандалт) ДУТУУ.');
+    console.log('   → Үзсэн/таалагдсан тоолуур хэвийн ажиллана.');
+    console.log('   → «Миний зарууд → 📈 Статистик» таб зөвхөн «ШИНЭ үзсэн хүн» горимд');
+    console.log('     харагдах бөгөөд өдөр тутмын график гарахгүй.');
+    console.log('   Засах:  npm run stats:setup  →  Cmd+V  →  Run  (дараа нь stats:check)');
+    return false;
+  }
+
+  console.log('🎉 Миграцууд АЖИЛЛАЖ БАЙНА — ❤️/👁 тоолуур + 📈 хандалтын статистик.');
+  console.log(`   Багана: views ✅  likes ✅    Хүснэгт: listing_likes ✅  listing_views ✅  listing_activity_daily ✅`);
   console.log(`   Одоогийн ❤️ мөрийн тоо: ${Array.isArray(counts) ? counts.length : '?'}`);
   return true;
 }
@@ -70,8 +94,10 @@ async function check() {
     return;
   }
 
-  const sql = fs.readFileSync(sqlFile, 'utf8');
-  console.log('📋 «Үзсэн / Таалагдсан» тоолуурын SQL бэлдэж байна...\n');
+  const sql = sqlFiles
+    .map((f) => fs.readFileSync(f, 'utf8'))
+    .join('\n\n\n/* ============================================================ */\n\n\n');
+  console.log('📋 «Үзсэн / Таалагдсан» + «Өдөр тутмын хандалт» SQL бэлдэж байна...\n');
 
   // 1) Clipboard-д хуулах (macOS: pbcopy)
   let copied = false;
@@ -79,7 +105,7 @@ async function check() {
     execSync('pbcopy', { input: sql });
     // ⚠️ БАТАЛГААЖУУЛАХ: clipboard-д үнэхээр миний SQL орсон эсэх
     const back = execSync('pbpaste', { encoding: 'utf8' });
-    copied = back.includes('listing_likes') && back.includes('sync_listing_counters');
+    copied = back.includes('listing_likes') && back.includes('sync_listing_counters') && back.includes('listing_activity_daily');
     if (copied) {
       console.log(`✅ SQL нь CLIPBOARD-д орлоо (${back.split('\n').length} мөр) — Cmd+V хийхэд бэлэн ✨`);
     } else {

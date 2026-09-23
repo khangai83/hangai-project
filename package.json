@@ -11,6 +11,7 @@
     "check:supabase": "node scripts/check-supabase.js",
     "check:verify": "node scripts/check-verify-mn.js",
     "test:verify": "node scripts/test-verify-mn.js",
+    "test:activity": "node scripts/test-activity.mjs",
     "enable:phone-auth": "node scripts/enable-phone-auth.js",
     "deploy:vercel": "node scripts/deploy-vercel-env.js",
     "make:admin": "node scripts/make-admin.js",

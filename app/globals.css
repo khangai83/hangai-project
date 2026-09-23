@@ -34,33 +34,76 @@
     @apply rounded-xl border border-gray-200 bg-white p-5 shadow-card sm:p-6;
   }
 
-  /* ---------- Buttons ---------- */
+  /* ---------- Buttons — бодит 3D мэт, сүүдэртэй ----------
+     ЗАГВАР (бүх өөрөөс нэг): дугуй хэлбэр + босоо градиент биет +
+       • inset 0 1px 0 white  → дээд ирэг дээр гэрэл туссан мэт
+       • inset 0 -1px 0 black → доод ирэг дээр бараан зураас (зузаан мэт)
+       • 0 Npx ... colored    → тухайн өнгөөрөө «гэрэлтсэн» гадна сүүдэр
+     hover  → товч өргөгдөнө (-translate-y-0.5) + сүүдэр томорно
+     active → товч дарагдана (translate-y-0) + дотогшоо сүүдэр (inset)
+     ⚠️ hover/active-ийг `enabled:`-ээр хязгаарласан — disabled товч хөдлөхгүй. */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-transparent
-           px-4 py-2.5 text-sm font-medium transition
-           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40
-           disabled:cursor-not-allowed disabled:opacity-60;
+    @apply relative inline-flex items-center justify-center gap-2 whitespace-nowrap
+           rounded-full border border-transparent px-4 py-2.5
+           text-sm font-semibold leading-none
+           transition-all duration-150 ease-out
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/45
+           disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none;
   }
+
   .btn-primary {
-    @apply bg-primary text-white hover:bg-primary-dark hover:-translate-y-px;
+    @apply bg-gradient-to-b from-[#3b82f6] to-[#1d4ed8] text-white shadow-btn-primary
+           enabled:hover:from-[#2563eb] enabled:hover:to-[#1e3fae]
+           enabled:hover:shadow-btn-primary-hover enabled:hover:-translate-y-0.5
+           enabled:active:translate-y-0 enabled:active:shadow-btn-primary-active;
   }
+
   .btn-secondary {
-    @apply bg-secondary text-white hover:bg-secondary-dark;
+    @apply bg-gradient-to-b from-[#10b981] to-[#047857] text-white shadow-btn-secondary
+           enabled:hover:from-[#059669] enabled:hover:to-[#065f46]
+           enabled:hover:shadow-btn-secondary-hover enabled:hover:-translate-y-0.5
+           enabled:active:translate-y-0 enabled:active:shadow-btn-secondary-active;
   }
+
   .btn-danger {
-    @apply bg-red-600 text-white hover:bg-red-700;
+    @apply bg-gradient-to-b from-[#ef4444] to-[#b91c1c] text-white shadow-btn-danger
+           enabled:hover:from-[#dc2626] enabled:hover:to-[#991b1b]
+           enabled:hover:shadow-btn-danger-hover enabled:hover:-translate-y-0.5
+           enabled:active:translate-y-0 enabled:active:shadow-btn-danger-active;
   }
+
   .btn-outline {
-    @apply border-gray-300 bg-transparent text-gray-700 hover:border-gray-400 hover:bg-gray-100;
+    @apply border-gray-300 bg-gradient-to-b from-white to-gray-50 text-gray-700 shadow-btn
+           enabled:hover:border-primary/40 enabled:hover:text-primary
+           enabled:hover:shadow-btn-hover enabled:hover:-translate-y-0.5
+           enabled:active:translate-y-0 enabled:active:shadow-btn-active;
   }
+
   .btn-ghost {
-    @apply border-gray-200 bg-transparent text-gray-500 hover:bg-gray-100;
+    @apply border-gray-200 bg-white/70 text-gray-600 shadow-btn
+           enabled:hover:border-gray-300 enabled:hover:bg-white enabled:hover:text-gray-900
+           enabled:hover:shadow-btn-hover enabled:hover:-translate-y-0.5
+           enabled:active:translate-y-0 enabled:active:shadow-btn-active;
   }
+
   .btn-sm {
-    @apply px-3 py-1.5 text-[13px];
+    @apply px-3.5 py-2 text-[13px];
   }
   .btn-lg {
     @apply px-7 py-3.5 text-base;
+  }
+
+  /* ---------- Segmented control (хугацааны сонголт) ----------
+     Дугуй хэлбэртэй; идэвхтэй нь цагаан «чип» болж товойно. */
+  .segmented {
+    @apply inline-flex flex-wrap items-center gap-1 rounded-full border border-gray-200/80 bg-gray-100/90 p-1;
+  }
+  .segmented-item {
+    @apply rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold text-gray-500
+           transition-all duration-150 ease-out hover:text-gray-800;
+  }
+  .segmented-item-active {
+    @apply bg-white text-primary shadow-chip ring-1 ring-inset ring-gray-200/80;
   }
 
   /* ---------- Form controls ---------- */

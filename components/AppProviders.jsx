@@ -199,19 +199,7 @@ export default function AppProviders({ children }) {
                 🏠 ZAR<span className="text-gray-900">.mn</span>
               </Link>
               <div className="flex items-center gap-3">
-                <Link
-                  href="/favorites"
-                  className="btn btn-secondary btn-sm"
-                  title="Таалагдсан зарууд"
-                  onClick={() => setUserMenuOpen(false)}
-                >
-                  ❤️ Таалагдсан
-                  {favoriteIds.length > 0 && (
-                    <span className="ml-1.5 rounded-full bg-red-500 px-1.5 py-px text-[11px] font-bold text-white">
-                      {favoriteIds.length}
-                    </span>
-                  )}
-                </Link>
+                {/* ---- ① Нэвтрэх / Хэрэглэгчийн цэс ---- */}
                 {user ? (
                   <div className="relative">
                     <button className="btn btn-secondary btn-sm" onClick={() => setUserMenuOpen((v) => !v)}>
@@ -237,6 +225,23 @@ export default function AppProviders({ children }) {
                 ) : (
                   <button className="btn btn-secondary btn-sm" onClick={openAuth} disabled={authLoading}>🔑 Нэвтрэх</button>
                 )}
+                {/* ---- ② ❤️ Таалагдсан ----
+                    ⚠️ ӨМНӨ «🔑 Нэвтрэх»-ийн ЗҮҮН талд байсан. Хэрэглэгчийн хүслээр
+                    байрыг сольж, Нэвтрэх-ийн БАРУУН талд (➕ Зар нэмэх-ийн өмнө) тавив. */}
+                <Link
+                  href="/favorites"
+                  className="btn btn-secondary btn-sm"
+                  title="Таалагдсан зарууд"
+                  onClick={() => setUserMenuOpen(false)}
+                >
+                  ❤️ Таалагдсан
+                  {favoriteIds.length > 0 && (
+                    <span className="ml-1.5 rounded-full bg-red-500 px-1.5 py-px text-[11px] font-bold text-white">
+                      {favoriteIds.length}
+                    </span>
+                  )}
+                </Link>
+                {/* ---- ③ ➕ Зар нэмэх ---- */}
                 <button className="btn btn-primary" onClick={openAdd}>➕ Зар нэмэх</button>
               </div>
             </div>

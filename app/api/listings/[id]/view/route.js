@@ -12,7 +12,7 @@
 //    Тоолуур эвдэрсэн ч 200 буцаана — зар харахад хэзээ ч саад болохгүй.
 // ============================================================
 import { NextResponse } from 'next/server';
-import { registerView, resolveViewer, isUuid } from '../../../../../lib/listingStats';
+import { registerView, resolveViewer, isUuid, logActivity } from '../../../../../lib/listingStats';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +31,10 @@ export async function POST(req, { params }) {
   try {
     const viewer = await resolveViewer(req, body);
     const views = await registerView(id, viewer);
+    // 📈 Өдөр тутмын хандалт (0010 миграц) — «Миний зарууд → Статистик»-д.
+    // ⚠️ `registerView` нь нэг хүнд нэг л удаа тоологддог бол энэ нь БҮР
+    //    хуудас нээлтийг тоолно (хандалтын давтамж). Миграцгүй бол алгасна.
+    await logActivity(id, 1, 0);
     return NextResponse.json({ ok: true, views, statsEnabled: views != null });
   } catch (err) {
     console.warn('[listings/view] тоолуур нэмэгдсэнгүй:', (err && err.message) || err);

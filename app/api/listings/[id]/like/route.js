@@ -15,7 +15,7 @@
 // ⚠️ Алдаа гарвал ч 200 буцаана — товч дарах нь хэзээ ч эвдрэхгүй.
 // ============================================================
 import { NextResponse } from 'next/server';
-import { setLike, resolveViewer, isUuid } from '../../../../../lib/listingStats';
+import { setLike, resolveViewer, isUuid, logActivity } from '../../../../../lib/listingStats';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +34,8 @@ export async function POST(req, { params }) {
   try {
     const viewer = await resolveViewer(req, body);
     const likes = await setLike(id, viewer, liked);
+    // 📈 Өдөр тутмын ❤️-ийн цэвэр өөрчлөлт (0010 миграц) — +1 / -1.
+    await logActivity(id, 0, liked ? 1 : -1);
     return NextResponse.json({ ok: true, likes, statsEnabled: likes != null });
   } catch (err) {
     console.warn('[listings/like] тоолуур өөрчлөгдсөнгүй:', (err && err.message) || err);
