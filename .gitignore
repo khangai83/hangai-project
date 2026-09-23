@@ -11,6 +11,9 @@ unegui.db
 # MacOS системийн файлууд
 .DS_Store
 
+# Тестийн түр файл (scripts/test-format.mjs үүсгэж, дуусахад устгана)
+.format.test.tmp.mjs
+
 # Орчны тохиргоо (нууц үг, API түлхүүр)
 .env
 .env*.local

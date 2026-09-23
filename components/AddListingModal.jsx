@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useToast, useUI } from './AppProviders';
 import { createListing, updateListing, uploadImages } from '../lib/queries';
 import { CITIES, getDistricts, getKhoroos, PROPERTY_TYPES, hasApartmentFields, hasFloorFields, hasRoomsFields, BALCONY_OPTIONS, GARAGE_OPTIONS } from '../lib/locationData';
-import { normalizePhone, getPropertyTypeLabel } from '../lib/format';
+import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice } from '../lib/format';
 import phoneEmail from '../lib/phoneEmail';
 import { compressImages, formatBytes } from '../lib/imageUtils';
 
@@ -159,7 +159,13 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
     setError('');
     if (!form.propertyType) { setError('Үл хөдлөх хөрөнгийн төрлөө сонгоно уу'); return; }
     if (!form.city) { setError('Хот/Аймгаа сонгоно уу'); return; }
-    if (!form.price) { setError('Үнээ оруулна уу'); return; }
+    // ⚠️ Үнэ нь ЗӨВХӨН ЦИФР хэлбэрээр хадгалагдана (formatThousands нь зөвхөн
+    //    ХАРАГДАЦЫГ таслалтай болгоно). quires.js → toNumber() нь «,»-г
+    //    аравтын бутархай гэж үздэг тул таслалтай утга илгээвэл үнэ 0 болно.
+    const priceDigits = String(form.price || '').replace(/\D/g, '');
+    if (!priceDigits) { setError('Үнээ оруулна уу'); return; }
+    if (Number(priceDigits) <= 0) { setError('Үнэ 0-ээс их байх ёстой'); return; }
+    if (priceDigits.length > 15) { setError('Үнэ хэт урт байна (15 цифр хүртэл)'); return; }
     if (!form.phone) { setError('Холбоо барих утас оруулна уу'); return; }
 
     setSubmitting(true);
@@ -356,7 +362,41 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
             <div className="form-row">
               <div className="form-group">
                 <label>Үнэ *</label>
-                <input type="number" min="0" value={form.price} onChange={(e) => set('price', e.target.value)} placeholder="₮" required />
+                {/* ⚠️ type="number" БИШ: number input нь «250,000,000» гэсэн
+                    таслалтай утгыг ХҮЛЭЭХГҮЙ (хоосон болгочихдог). Тиймээс
+                    type="text" + inputMode="numeric" ашиглаж, бичих үед нь
+                    мянгатаар хувааж харуулаад, төлөвт ЗӨВХӨН ЦИФР хадгална.
+
+                    ⚠️ ₮-г input ДОТОР absolute-аар БАЙРЛУУЛАХГҮЙ: CSS
+                    specificity-ийн улмаас `.form-group :is(input…)` (0,1,1) нь
+                    `.pl-7` (0,1,0)-г дардаг тул input-ийн padding-left 12px
+                    хэвээр үлдэж, ₮ нь ЭХНИЙ ТООН ДЭЭР ДАВХАРЛАДАГ байв.
+                    Одоо ₮ нь хөрш элемент (input group) — давхарлах боломжгүй. */}
+                <div className="flex items-stretch gap-2">
+                  <span className="flex shrink-0 items-center rounded-lg border border-gray-200 bg-gray-100 px-3 text-sm font-bold text-gray-500">
+                    ₮
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    className="min-w-0 flex-1 font-semibold tabular-nums"
+                    value={formatThousands(form.price)}
+                    onChange={(e) => set('price', e.target.value.replace(/\D/g, ''))}
+                    placeholder="250,000,000"
+                    required
+                  />
+                </div>
+                {/* Дээрх талбартай ДАВХАРДАХГҮЙ — зөвхөн нэмэлт мэдээлэл:
+                    хэдэн орон (тэг тоолох алдаа арилна) + «сая/тэрбум» уншилт */}
+                {form.price ? (
+                  <p className="form-hint">
+                    {digitCount(form.price)} орон
+                    {shortPrice(form.price) ? ` · ≈ ${shortPrice(form.price)} ₮` : ''}
+                  </p>
+                ) : (
+                  <p className="form-hint">Мянгатаар автоматаар хуваагдана</p>
+                )}
               </div>
               {/* <div className="form-group">
                 <label>Үнийн төрөл</label>
