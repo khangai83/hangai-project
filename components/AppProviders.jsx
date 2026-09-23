@@ -259,8 +259,10 @@ export default function AppProviders({ children }) {
                 <Link href="/feedback" className="transition hover:text-white">💬 Санал хүсэлт</Link>
               </nav>
               <p className="text-[13.5px]">🏠 ZAR.mn — Үл хөдлөх хөрөнгийн зар. Next.js + Supabase хувилбар.</p>
-              <p className="mx-auto mt-2 max-w-[760px] text-[12px] leading-relaxed text-gray-500">
-                Үйлчилгээг ашигласнаар та <Link href="/terms" className="underline hover:text-gray-300">Үйлчилгээний нөхцөлийг</Link> хүлээн
+              {/* ⚠️ КОНТРАСТ ЗАСВАР: bg-gray-900 дээр text-gray-500 нь 3.55:1
+                  байсан (AA 4.5:1-д хүрэхгүй). text-gray-400 → 7.41:1 ✅ */}
+              <p className="mx-auto mt-2 max-w-[760px] text-[12px] leading-relaxed text-gray-400">
+                Үйлчилгээг ашигласнаар та <Link href="/terms" className="underline hover:text-white">Үйлчилгээний нөхцөлийг</Link> хүлээн
                 зөвшөөрнө. Зар байршуулсан хэрэглэгч зарынхаа үнэн бодит байдлыг өөрөө хариуцна.
                 Хувийн мэдээлэл (утасны дугаар, нэр) нь Монгол Улсын нутаг дэвсгэрээс гадна
                 байрлах үүлэн серверт хадгалагдана.
