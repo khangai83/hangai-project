@@ -166,6 +166,9 @@ export default function HomeClient() {
   }, [filters, category]);
 
   const activeFilterCount = activeFilterChips.length;
+  // «Дэлгэрэнгүй хайлт» товчны төлөв: панель нээлттэй эсвэл идэвхтэй шүүлт байвал
+  // илүү хүчтэй гэрэлтэлт (glow) → анхаарал татана.
+  const advancedActive = filtersOpen || activeFilterCount > 0;
 
   /** Нэг чипийг арилгах */
   const removeFilterChip = (key) => setF(key, '');
@@ -266,26 +269,39 @@ export default function HomeClient() {
             • Доор нь — идэвхтэй шүүлтүүд «чип» хэлбэрээр (✕ дарж тус тусад нь арилгана) */}
         <div className="mb-4 rounded-xl border border-gray-200 bg-white p-3 shadow-card sm:p-4">
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setFiltersOpen((v) => !v)}
-              aria-expanded={filtersOpen}
-              aria-controls="advanced-filters"
-              className={`inline-flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-semibold transition ${
-                filtersOpen || activeFilterCount > 0
-                  ? 'border-primary bg-primary-light text-primary'
-                  : 'border-gray-200 bg-white text-gray-700 hover:border-primary hover:text-primary'
-              }`}
-            >
-              <span aria-hidden="true">⚙️</span>
-              Дэлгэрэнгүй хайлт
-              {activeFilterCount > 0 && (
-                <span className="rounded-full bg-primary px-1.5 py-px text-[11px] font-bold text-white">
-                  {activeFilterCount}
+            {/* ⚙️ ДЭЛГЭРЭНГҮЙ ХАЙЛТ — анхаарал татах ёстой үндсэн шүүлтийн орох хаалга:
+                • градиент + бодит сүүдэр (товчны нэгдсэн системтэй ижил)
+                • цаана нь blur-тай ГЭРЭЛТЭЛТ (glow) → нүд шууд түүн дээр очно
+                • идэвхтэй шүүлттэй үед гэрэлтэлт хүчтэй болно
+                • идэвхтэй тоо нь ЦАГААН дугуй дотор (бусад шүүлтээс ялгарна) */}
+            <span className="relative inline-flex">
+              <span
+                aria-hidden="true"
+                className={`pointer-events-none absolute -inset-[3px] rounded-full blur-[7px] transition-opacity duration-300 ${
+                  advancedActive ? 'bg-primary/45' : 'bg-primary/25'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setFiltersOpen((v) => !v)}
+                aria-expanded={filtersOpen}
+                aria-controls="advanced-filters"
+                className="relative inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-[#3b82f6] to-[#1d4ed8] px-4 py-2.5 text-sm font-bold text-white shadow-btn-primary transition-all duration-150 ease-out hover:-translate-y-0.5 hover:from-[#2563eb] hover:to-[#1e3fae] hover:shadow-btn-primary-hover active:translate-y-0 active:shadow-btn-primary-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/45"
+              >
+                <span aria-hidden="true" className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/20 text-[11px]">
+                  ⚙️
                 </span>
-              )}
-              <span aria-hidden="true" className={`text-[10px] transition-transform ${filtersOpen ? 'rotate-180' : ''}`}>▼</span>
-            </button>
+                Дэлгэрэнгүй хайлт
+                {activeFilterCount > 0 && (
+                  <span className="grid h-5 min-w-[20px] shrink-0 place-items-center rounded-full bg-white px-1 text-[11px] font-bold text-primary">
+                    {activeFilterCount}
+                  </span>
+                )}
+                <span aria-hidden="true" className={`text-[10px] transition-transform duration-200 ${filtersOpen ? 'rotate-180' : ''}`}>
+                  ▼
+                </span>
+              </button>
+            </span>
 
             <span className="text-sm text-gray-500">
               {loadError ? 'холболтын алдаа' : listings !== null ? `${listings.length} зар` : 'ачаалж байна...'}
@@ -346,14 +362,27 @@ export default function HomeClient() {
             ⚠️ «Төрөл» нь энд БАЙХГҮЙ: дээрх төрлийн табуудаас сонгогдоно (давхардлаас зайлсхийв). */}
         <div
           id="advanced-filters"
-          className={`${filtersOpen ? 'mb-6 block animate-slide-down' : 'hidden'} rounded-xl border border-gray-200 bg-white p-5 shadow-card`}
+          className={`${filtersOpen ? 'mb-6 block animate-slide-down' : 'hidden'} rounded-xl border-2 border-primary/25 bg-white p-5 shadow-card-hover`}
         >
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-sm font-semibold text-gray-800">⚙️ Дэлгэрэнгүй хайлт</h2>
+          {/* Толгой нь primary өнгөөр будсан зурвас — нээгдсэн үед «энэ бол шүүлт»
+              гэдэг нь нэг харцаар мэдэгдэнэ (сөрөг margin-аар container-ийн padding
+              дээгүүр гарна — доорх агуулгыг дахин бүтэцлэх шаардлагагүй). */}
+          <div className="-mx-5 -mt-5 mb-4 flex items-center justify-between gap-3 rounded-t-xl border-b border-primary/15 bg-primary/5 px-5 py-3.5">
+            <h2 className="flex items-center gap-2 text-sm font-bold text-primary">
+              <span aria-hidden="true" className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-[12px] text-white">
+                ⚙️
+              </span>
+              Дэлгэрэнгүй хайлт
+              {activeFilterCount > 0 && (
+                <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-bold text-white">
+                  {activeFilterCount} шүүлт
+                </span>
+              )}
+            </h2>
             <button
               type="button"
               onClick={() => setFiltersOpen(false)}
-              className="rounded-lg px-2.5 py-1 text-[13px] font-semibold text-gray-500 transition hover:bg-gray-100 hover:text-gray-800"
+              className="rounded-full border border-primary/20 bg-white px-3 py-1 text-[13px] font-semibold text-primary transition hover:bg-primary hover:text-white"
             >
               ✕ Хаах
             </button>
