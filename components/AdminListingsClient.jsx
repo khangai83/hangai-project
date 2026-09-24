@@ -212,6 +212,7 @@ export default function AdminListingsClient() {
                   <span>📍 {[row.city, row.district, row.khoroo].filter(Boolean).join(', ') || '—'}</span>
                   {row.address_detail && <span>🏠 {row.address_detail}</span>}
                   {row.rooms > 0 && <span>🛏 {row.rooms} өрөө</span>}
+                  {row.bathrooms > 0 && <span>🚿 {row.bathrooms} угаалгын өрөө</span>}
                   {row.area > 0 && <span>📐 {row.area} м²</span>}
                   <span>📱 {row.phone || '—'}</span>
                   <span>👤 {row.contact_name || '—'}</span>

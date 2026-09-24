@@ -146,11 +146,13 @@ export default function ListingDetailClient({ id }) {
   const features = [
     //{ label: 'Төрөл', value: typeLabel },
     listing.rooms > 0 && { label: 'Өрөөний тоо', value: `${listing.rooms} өрөө` },
+    // 🚿 Угаалгын өрөөний тоо (0012_listing_bathrooms.sql) — 3+ өрөө / АОС/хаус
+    listing.bathrooms > 0 && { label: 'Угаалгын өрөө', value: `${listing.bathrooms} Угаалгын өрөө` },
     listing.area > 0 && { label: 'Талбай', value: `${listing.area} м²` },
-    listing.floor > 0 && { label: 'Хэдэн давхарт', value: `${listing.floor} давхарт` },
-    listing.total_floors > 0 && { label: 'Барилгын давхар', value: `${listing.total_floors} давхар` },
-    listing.build_year > 0 && { label: 'Ашиглалтанд орсон он', value: `${listing.build_year} он` },
-    listing.balconies > 0 && { label: 'Тагт', value: `${listing.balconies} тагттай` },
+    listing.floor > 0 && { label: 'Хэдэн давхарт', value: `${listing.floor} Давхарт` },
+    listing.total_floors > 0 && { label: 'Барилгын давхар', value: `${listing.total_floors} Давхар` },
+    listing.build_year > 0 && { label: 'Ашиглалтанд орсон он', value: `${listing.build_year} Он` },
+    listing.balconies > 0 && { label: 'Тагт', value: `${listing.balconies} Тагттай` },
     garageLabel && { label: 'Гараж', value: garageLabel },
     // ₮/м² — үнэ ÷ талбай (зөвхөн «зарах» ба талбайтай үед). Үнэ харьцуулахад
     // хамгийн хэрэгтэй үзүүлэлт тул шинж чанарын хүснэгтэд шууд харуулна.

@@ -21,6 +21,7 @@
     "find": "node scripts/find.js",
     "doctor": "node scripts/doctor.js",
     "seed:more": "node scripts/seed-more-listings.mjs",
+    "seed:bathrooms": "node scripts/seed-bathrooms.mjs",
     "stats:setup": "node scripts/setup-stats.js",
     "stats:check": "node scripts/setup-stats.js --check",
     "feedback:setup": "node scripts/setup-feedback.js",

@@ -86,12 +86,15 @@ export default function ListingCard({ listing }) {
             <div className="text-[14px] text-gray-700">🕒 {timeAgo(listing.created_at)}</div>
           </div>
           {/* ---------- 🛏 БАЙРНЫ МЭДЭЭЛЭЛ (хаягийн ДОР) ----------
-              Өрөө · талбай · давхар · баригдсан он.
-              ⚠️ `rooms/area/build_year` нь 0 байж болох тул `> 0` шалгалттай;
-                 `floorLabel` нь lib/format-аас '' (хоосон) буцаж болно. */}
-          {(listing.rooms > 0 || listing.area > 0 || floorLabel || listing.build_year > 0) && (
+              Өрөө · угаалгын өрөө · талбай · давхар · баригдсан он.
+              ⚠️ `rooms/area/build_year/bathrooms` нь 0 байж болох тул `> 0`
+                 шалгалттай; `floorLabel` нь lib/format-аас '' (хоосон) буцаж болно.
+              ⚠️ 🚿 нь 3+ өрөөтэй орон сууц / АОС/хаус зар дээр л хадгалагддаг
+                 (0012_listing_bathrooms.sql) — property.mn загварын тэмдэгт. */}
+          {(listing.rooms > 0 || listing.bathrooms > 0 || listing.area > 0 || floorLabel || listing.build_year > 0) && (
             <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-gray-700">
-              {listing.rooms > 0 && <span>🛏 {listing.rooms} өрөө</span>}
+              {listing.rooms > 0 && <span>🛏 {listing.rooms} Өрөө</span>}
+              {listing.bathrooms > 0 && <span>🚿 {listing.bathrooms} Угаалгын өрөө</span>}
               {listing.area > 0 && <span>📐 {listing.area} м²</span>}
               {floorLabel && <span>🏢 {floorLabel}</span>}
               {listing.build_year > 0 && <span>📅 {listing.build_year}</span>}

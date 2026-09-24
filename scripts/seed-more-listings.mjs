@@ -155,6 +155,8 @@ function buildListing(def, k) {
     total_floors: totalFloors,
     balconies: p.apartment ? randInt(1, 4) : null,
     has_garage: p.apartment || def.value === 'Оффис' ? rand() > 0.4 : null,
+    // 🛁 Угаалгын өрөө (0012) — АОС/хаус төрөлд үргэлж, 3+ өрөөтэй зарт мөн
+    bathrooms: def.bathrooms ? randInt(1, 3) : def.rooms && rooms >= 3 ? randInt(1, 2) : null,
   };
 }
 
@@ -190,7 +192,7 @@ function buildListing(def, k) {
     if (error) {
       console.error(`\n❌ Оруулахад алдаа: ${error.message}`);
       if (/column|schema cache/i.test(error.message)) {
-        console.error('   → supabase/migrations/0003_listing_details.sql-ийг SQL Editor-т ажиллуулна уу.');
+        console.error('   → supabase/migrations/0003_listing_details.sql ба 0012_listing_bathrooms.sql-ийг SQL Editor-т ажиллуулна уу.');
       }
       process.exit(1);
     }

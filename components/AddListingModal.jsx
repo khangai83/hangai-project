@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useToast, useUI } from './AppProviders';
 import { createListing, updateListing, uploadImages } from '../lib/queries';
-import { CITIES, getDistricts, getKhoroos, PROPERTY_TYPES, hasApartmentFields, hasFloorFields, hasRoomsFields, BALCONY_OPTIONS, GARAGE_OPTIONS } from '../lib/locationData';
+import { CITIES, getDistricts, getKhoroos, PROPERTY_TYPES, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, BALCONY_OPTIONS, GARAGE_OPTIONS } from '../lib/locationData';
 import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice } from '../lib/format';
 import phoneEmail from '../lib/phoneEmail';
 import YouTubeField from './YouTubeField';
@@ -34,6 +34,8 @@ function listingToForm(l) {
     totalFloors: l.total_floors ? String(l.total_floors) : '',
     balconies: l.balconies ? String(l.balconies) : '',
     hasGarage: l.has_garage === true ? 'yes' : l.has_garage === false ? 'no' : '',
+    // Угаалгын өрөөний тоо (0012) — зөвхөн 3+ өрөөтэй орон сууц / АОС/хаус дээр
+    bathrooms: l.bathrooms ? String(l.bathrooms) : '',
   };
 }
 
@@ -69,6 +71,7 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
     totalFloors: '',  // Барилгын нийт давхар
     balconies: '',    // Тагтны тоо (1-4)
     hasGarage: '',    // '' | 'yes' | 'no'
+    bathrooms: '',    // Угаалгын өрөөний тоо (3+ өрөө / АОС/хаус)
   });
 
   const [form, setForm] = useState(emptyForm);
@@ -121,6 +124,8 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
   const showApartment = hasApartmentFields(form.propertyType);
   const showFloors = hasFloorFields(form.propertyType);
   const showRooms = hasRoomsFields(form.propertyType); // ← зөвхөн Орон сууц, АОС/хаус
+  // «Угаалгын өрөө» — АОС/хаус төрөлд үргэлж, 3+ өрөөтэй орон сууцанд нэмж харагдана
+  const showBathrooms = hasBathroomFields(form.propertyType, form.rooms);
 
   const onPickFiles = async (e) => {
     const files = Array.from(e.target.files || []);
@@ -194,6 +199,8 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
         totalFloors: showFloors ? form.totalFloors : '',
         balconies: showApartment ? form.balconies : '',
         hasGarage: showApartment ? form.hasGarage : '',
+        // Угаалгын өрөө — талбар харагдахгүй бол утгыг хоосолж хадгална
+        bathrooms: showBathrooms ? form.bathrooms : '',
       };
 
       if (isEdit) {
@@ -272,6 +279,25 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                 <p className="form-hint">Аравтын бутархайг «.» эсвэл «,»-ээр бичиж болно (ж: 75,5)</p>
               </div>
             </div>
+            {/* ===== 🚿 УГААЛГЫН ӨРӨӨ (0012_listing_bathrooms.sql) =====
+                АОС/хаус төрөлд ҮРГЭЛЖ, мөн 3 ба түүнээс олон өрөөтэй зарт
+                харагдана (lib/locationData.js → hasBathroomFields). */}
+            {showBathrooms && (
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Угаалгын өрөө</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="20"
+                    value={form.bathrooms}
+                    onChange={(e) => set('bathrooms', e.target.value)}
+                    placeholder="1"
+                  />
+                  <p className="form-hint">Хэдэн угаалгын өрөөтэй вэ? (сонголтоор)</p>
+                </div>
+              </div>
+            )}
 
             {/* ===== Орон сууцны нэмэлт мэдээлэл (зөвхөн Орон сууц сонгосон үед) ===== */}
             {showFloors && (

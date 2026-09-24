@@ -17,6 +17,7 @@ function exportColumns(origin) {
     { label: 'Зар/Түрээс', value: (l) => getCategoryLabel(l.category) },
     { label: 'Үнэ', value: (l) => formatPrice(l.price) },
     { label: 'Өрөө', value: (l) => (l.rooms > 0 ? l.rooms : '') },
+    { label: 'Угаалгын өрөө', value: (l) => (l.bathrooms > 0 ? l.bathrooms : '') },
     { label: 'Талбай (м²)', value: (l) => (l.area > 0 ? l.area : '') },
     { label: 'Давхар', value: (l) => getFloorLabel(l.floor, l.total_floors) },
     { label: 'Он', value: (l) => (l.build_year > 0 ? l.build_year : '') },

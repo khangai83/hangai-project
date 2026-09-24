@@ -182,6 +182,7 @@ export default function MyListingsClient() {
                         <p className="text-[13px] text-gray-500">📍 {[l.city, l.district].filter(Boolean).join(', ')}</p>
                         <p className="text-[13px] text-gray-500">💰 ₮{formatPrice(l.price)}</p>
                         {l.rooms > 0 && <p className="text-[13px] text-gray-500">🛏 {l.rooms} өрөө</p>}
+                        {l.bathrooms > 0 && <p className="text-[13px] text-gray-500">🚿 {l.bathrooms} угаалгын өрөө</p>}
                         {l.area > 0 && <p className="text-[13px] text-gray-500">📐 {l.area} м²</p>}
                         {getFloorLabel(l.floor, l.total_floors) && <p className="text-[13px] text-gray-500">🏢 {getFloorLabel(l.floor, l.total_floors)}</p>}
                         {l.build_year > 0 && <p className="text-[13px] text-gray-500">📅 Ашиглалтанд орсон: {l.build_year} он</p>}

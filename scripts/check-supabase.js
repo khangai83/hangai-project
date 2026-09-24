@@ -121,20 +121,41 @@ async function main() {
     }
   }
 
-  // ---------- 4.5. 0003 migration-ийн орон сууцны баганууд ----------
-  try {
-    const cols = 'build_year,floor,total_floors,balconies,has_garage';
-    const res = await fetch(`${url}/rest/v1/listings?select=${cols}&limit=1`, { headers });
-    if (res.status === 200 || res.status === 206) {
-      report(true, 'listings-д орон сууцны нэмэлт багана байна', cols);
-    } else {
-      const body = await res.text();
-      report(false, 'listings-д орон сууцны нэмэлт багана алга (0003 migration ороогүй)',
-        `HTTP ${res.status}: ${body.slice(0, 200)}\n` +
-        '     → supabase/migrations/0003_listing_details.sql-ийг Supabase SQL Editor-т ажиллуулна уу.');
+  // ---------- 4.5. Нэмэлт баганууд — migration тус бүрээр ТУСДАА шалгана ----------
+  // ⚠️ Тусдаа шалгах нь ЧУХАЛ: PostgREST нэг л дутуу баганыг мэдэгддэг тул
+  //    `bathrooms` (0012) дутуу үед «0003 бас ороогүй» гэж БУРУУ дүгнэхээс сэргийлнэ.
+  const detailChecks = [
+    {
+      label: '0003 — орон сууцны нэмэлт багана',
+      cols: 'build_year,floor,total_floors,balconies,has_garage',
+      file: '0003_listing_details.sql',
+    },
+    {
+      label: '0011 — видео линк',
+      cols: 'video_url',
+      file: '0011_listing_video.sql',
+    },
+    {
+      label: '0012 — угаалгын өрөө',
+      cols: 'bathrooms',
+      file: '0012_listing_bathrooms.sql',
+    },
+  ];
+
+  for (const c of detailChecks) {
+    try {
+      const res = await fetch(`${url}/rest/v1/listings?select=${c.cols}&limit=1`, { headers });
+      if (res.status === 200 || res.status === 206) {
+        report(true, `${c.label} байна`, c.cols);
+      } else {
+        const body = await res.text();
+        report(false, `${c.label} АЛГА (${c.file} ороогүй)`,
+          `HTTP ${res.status}: ${body.slice(0, 200)}\n` +
+          `     → supabase/migrations/${c.file}-ийг Supabase SQL Editor-т ажиллуулна уу.`);
+      }
+    } catch (e) {
+      report(false, `${c.label} шалгахад алдаа`, e.message);
     }
-  } catch (e) {
-    report(false, 'Орон сууцны нэмэлт багана шалгахад алдаа', e.message);
   }
 
   // ---------- 4.6. Утасны (phone) нэвтрэлт идэвхтэй эсэх ----------
