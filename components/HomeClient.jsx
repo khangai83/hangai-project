@@ -155,8 +155,9 @@ export default function HomeClient() {
   //    (үнэ, байршил г.м.) нөлөөлөхгүй (`lib/queries.js` → `fetchRoomCounts`).
   useEffect(() => {
     if (!urlReady) return;
-    // «Өрөө» талбаргүй төрөлд тоо хэрэггүй — дэмий 5 query явуулахгүй
-    if (filters.propertyType && !hasRoomsFields(filters.propertyType)) {
+    // Төрөл сонгоогүй эсвэл «Өрөө» талбаргүй төрөлд тоо ХЭРЭГГҮЙ — мөр нь
+    // ч харагдахгүй тул дэмий 5 query явуулахгүй.
+    if (!hasRoomsFields(filters.propertyType)) {
       setRoomCounts({});
       return;
     }
@@ -227,6 +228,19 @@ export default function HomeClient() {
     setFilters(emptyFilters()); // массив хуваалцахгүй
   };
 
+  /** Breadcrumb-ийн линк дээр дарахад тухайн түвшин рүү буцаана.
+   *  ⚠️ `<Link>`-ээр ЯВАХГҮЙ: бүх линк нь `/` зам дээр байдаг тул Next.js
+   *     компонентийг ДАХИН MOUNT хийдэггүй → `useEffect([])` нь URL-ийг дахин
+   *     уншихгүй, шүүлт ХУУЧНААРАА үлдэнэ. Тиймээс төлөвийг ШУУД өөрчилнө
+   *     (URL-ийг доорх эффект өөрөө бичнэ). */
+  const goToCrumb = (item) => {
+    const nav = item?.nav;
+    if (!nav) return;
+    if (nav.reset) { resetAll(); return; }
+    if (nav.category !== undefined) setCategory(nav.category);
+    if (nav.filters) setFilters((f) => ({ ...f, ...nav.filters }));
+  };
+
   /** Дүүргийн сонголтууд (сонгосон хот/аймагт) — НЭГ сонголттой */
   const districtOptions = useMemo(() => getDistricts(filters.city), [filters.city]);
   /** Хороодын сонголтууд (сонгосон хот + дүүрэгт) */
@@ -234,10 +248,11 @@ export default function HomeClient() {
     () => getKhoroos(filters.city, filters.district),
     [filters.city, filters.district]
   );
-  /** «Өрөө» талбар харагдах эсэх.
-   *  ⚠️ Худалдаа/үйлчилгээний талбай, Оффис, Газар, Үйлдвэр зэрэг төрөлд
-   *     «өрөө» гэдэг ойлголт БАЙХГҮЙ тул мөрийг бүрэн хайна. */
-  const showRooms = !filters.propertyType || hasRoomsFields(filters.propertyType);
+  /** «Өрөө» мөр ба тоо харагдах эсэх.
+   *  ⚠️ PROGRESSIVE DISCLOSURE: ЗӨВХӨН төрөл сонгосон үед (`filters.propertyType`)
+   *     БА тухайн төрөл «Өрөө» талбартай үед. Худалдаа/үйлчилгээний талбай,
+   *     Оффис, Газар, Үйлдвэр, Гараж зэрэгт «өрөө» гэдэг ойлголт БАЙХГҮЙ. */
+  const showRooms = hasRoomsFields(filters.propertyType);
 
   /** Хуудасны гарчиг — unegui.mn загвар: «Орон сууц түрээслүүлнэ 16,345».
    *  Төрөл > категори > бүгд гэсэн дарааллаар тодорхойлно. */
@@ -353,8 +368,18 @@ export default function HomeClient() {
             rooms: filters.rooms,
             district: filters.district,
           })}
+          onNavigate={goToCrumb}
         />
 
+        {/* ===== АНГИЛАЛ БА ТӨРЛИЙН НАВИГАЦИ — ЗӨВХӨН ТӨРӨЛ СОНГООГҮЙ ҮЕД =====
+            ⚠️ PROGRESSIVE DISCLOSURE (хэрэглэгчийн хүсэлт): төрөл сонгомогц
+               энэ ХОЁР МӨР БҮРЭН АЛГА БОЛЖ, дэлгэц минимал болно — зөвхөн
+               BREADCRUMB + гарчиг + шүүлт + зарууд үлдэнэ (unegui.mn шиг).
+               Буцах / төрөл солих зам нь дээрх breadcrumb (линкүүд нь ажиллана).
+            ⚠️ «Бүх төрөл» таб нь `propertyType = ''` болгодог тул энэ хэсгийг
+               буцааж харуулна. */}
+        {!filters.propertyType && (
+        <>
         {/* CATEGORY TABS */}
         <div className="mb-6 flex flex-wrap gap-2">
           {CATEGORIES.map((c) => (
@@ -415,19 +440,26 @@ export default function HomeClient() {
             );
           })}
         </div>
+        </>
+        )}
 
         {/* ===== 2 БАГАНАТ БҮТЭЦ — unegui.mn загвар =====
-            ⚠️ Урьд нь шүүлт нь ДЭЭД талд нуугдах панель («⚙️ Хайлт ▼» товчоор
-               нээгддэг) байв. Одоо unegui.mn шиг: ЗҮҮН талд байнга харагдах
-               ШҮҮЛТИЙН SIDEBAR, БАРУУН талд гарчиг + үр дүн.
+            ⚠️ PROGRESSIVE DISCLOSURE: sidebar нь БАЙНГИЙН ХАРАГДАХГҮЙ —
+               ЗӨВХӨН ТӨРӨЛ сонгосон үед гарч ирнэ (хэрэглэгчийн хүсэлт).
+               Төрөл сонгоогүй үед үр дүн нь БҮТЭН ӨРГӨНӨӨР харагдаж,
+               дэлгэц цэвэр, анхаарал сарниулахгүй байна.
             ⚠️ Мобайл дээр (`lg`-ээс доош) sidebar нь НУУГДАЖ, баруун талын
-               «⚙️ Шүүлт» товчоор нээгдэнэ — ингэснээр жижиг дэлгэц дээр үр
-               дүн дарагдахгүй, мөн товч нь DOM-д sidebar-ийн өмнө байрлаж,
-               нээгдэхэд дээгүүр гарч ирнэ.
+               «⚙️ Шүүлт» товчоор нээгдэнэ — товч нь DOM-д sidebar-ийн ӨМНӨ
+               байрлана (нээгдэхэд дээгүүр гарна). Төрөл сонгоогүй үед оронд
+               нь «Төрөл сонгоход шүүлт нээгдэнэ» гэсэн зөвлөмж харагдана.
             ⚠️ Sidebar нь `lg:sticky lg:top-4` — урт жагсаалт гүйлгэхэд шүүлт
-               хамт гүйлгэхгүй, дэлгэц дээр байнга барина (unegui.mn-тэй ижил). */}
+               хамт гүйлгэхгүй, дэлгэц дээр барина (unegui.mn-тэй ижил). */}
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-          {/* ================= SIDEBAR — ШҮҮЛТ (зүүн багана) ================= */}
+          {/* ================= SIDEBAR — ШҮҮЛТ (зүүн багана) =================
+              ⚠️ ЗӨВХӨН төрөл сонгосон үед render болно (дээрх тайлбарыг харна уу).
+              ⚠️ `lg:block` нь мобайл дээрх `hidden`-ыг дарах тул `lg` дээр
+                 нээлттэй; мобайл дээр «⚙️ Шүүлт» товчоор нээгдэнэ. */}
+          {filters.propertyType && (
           <aside
             id="advanced-filters"
             className={`w-full shrink-0 lg:sticky lg:top-4 lg:block lg:w-[280px] ${filtersOpen ? '' : 'hidden'}`}
@@ -459,7 +491,8 @@ export default function HomeClient() {
 
               <div className="divide-y divide-gray-100 px-4">
                 {/* ===== БАЙРШИЛ — Хот/Аймаг · Дүүрэг · ХОРОО =====
-                    ⚠️ «Төрөл» энд БАЙХГҮЙ — дээрх төрлийн табуудаас сонгогдоно.
+                    ⚠️ «Төрөл» энд БАЙХГҮЙ — төрлийг BREADCRUMB-ээс сольж буцаана
+                       (төрөл сонгосон үед дээрх табууд хаагддаг тул).
                     ⚠️ Дүүрэг нь НЭГ сонголттой `<select>` (олон дүүрэг сонгох нь
                        хасагдсан), харин хороо нь ОЛОН сонголттой чип. */}
                 <SideBlock label="Байршил">
@@ -606,6 +639,7 @@ export default function HomeClient() {
               </div>
             </div>
           </aside>
+          )}
 
           {/* ================= ҮР ДҮН (баруун багана) ================= */}
           <div className="min-w-0 flex-1">
@@ -625,7 +659,16 @@ export default function HomeClient() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                {/* МОБАЙЛ дээр л — sidebar-ийг нээх/хаах */}
+                {/* ⚠️ PROGRESSIVE DISCLOSURE: төрөл сонгоогүй бол нээх «шүүлт»
+                    байхгүй тул оронд нь юу хийхийг хэлсэн зөвлөмж харуулна. */}
+                {!filters.propertyType && (
+                  <span className="text-[12.5px] text-gray-400">
+                    💡 Төрөл сонгоход шүүлт нээгдэнэ
+                  </span>
+                )}
+
+                {/* МОБАЙЛ дээр л — sidebar-ийг нээх/хаах. Зөвхөн төрөл сонгосон үед */}
+                {filters.propertyType && (
                 <button
                   type="button"
                   onClick={() => setFiltersOpen((v) => !v)}
@@ -647,6 +690,7 @@ export default function HomeClient() {
                     ▼
                   </span>
                 </button>
+                )}
 
                 {/* Харах горим — `.segmented` */}
                 <div className="segmented" role="group" aria-label="Харах горим">
