@@ -2,7 +2,7 @@ import './globals.css';
 import AppProviders from '../components/AppProviders';
 
 export const metadata = {
-  title: 'ZAR.mn — Үл хөдлөх хөрөнгийн зар',
+  title: 'Зарлаа.mn — Үл хөдлөх хөрөнгийн зар',
   description: 'Худалдаа, түрээсийн үл хөдлөх хөрөнгийн зарууд (Next.js + Supabase)',
 };
 

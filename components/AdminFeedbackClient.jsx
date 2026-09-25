@@ -213,7 +213,7 @@ export default function AdminFeedbackClient() {
         </div>
       </div>
 
-      {/* ===== ШҮҮЛТ ===== */}
+      {/* ===== ХАЙЛТ ===== */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex flex-wrap items-center gap-1 rounded-lg bg-gray-100 p-1">
           {TABS.map((t) => (
@@ -248,7 +248,7 @@ export default function AdminFeedbackClient() {
           <p className="text-sm text-gray-500">
             {data.rows.length === 0
               ? 'Хэрэглэгчдээс санал хүсэлт ирээгүй байна.'
-              : 'Энэ шүүлтэд тохирох санал олдсонгүй.'}
+              : 'Энэ хайлтад тохирох санал олдсонгүй.'}
           </p>
         </div>
       ) : (

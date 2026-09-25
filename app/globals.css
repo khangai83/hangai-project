@@ -41,7 +41,12 @@
        • 0 Npx ... colored    → тухайн өнгөөрөө «гэрэлтсэн» гадна сүүдэр
      hover  → товч өргөгдөнө (-translate-y-0.5) + сүүдэр томорно
      active → товч дарагдана (translate-y-0) + дотогшоо сүүдэр (inset)
-     ⚠️ hover/active-ийг `enabled:`-ээр хязгаарласан — disabled товч хөдлөхгүй. */
+     ⚠️ hover/active-ийг `enabled:`-ээр хязгаарласан — disabled товч хөдлөхгүй.
+     ⚠️ БРЭНД: градиентийн ГОЛ утга нь #2563eb (primary.DEFAULT). Дээд нь
+        бага зэрэг цайвар, доод нь бараан — ингэснээр «бодит биет» мэдрэмж
+        төрж, ирмэг дээр гэрэл туссан мэт харагдана (Apple-ийн маяг).
+        ⚠️ ТҮҮХ: түр хугацаанд #F77E2D (iPhone 17 жүрж) туршсан боловч
+           хэрэглэгчийн үнэлгээгээр ЦЭНХЭР илүү дээр гарсан тул буцаав. */
   .btn {
     @apply relative inline-flex items-center justify-center gap-2 whitespace-nowrap
            rounded-full border border-transparent px-4 py-2.5
@@ -52,15 +57,18 @@
   }
 
   .btn-primary {
-    @apply bg-gradient-to-b from-[#3b82f6] to-[#1d4ed8] text-white shadow-btn-primary
-           enabled:hover:from-[#2563eb] enabled:hover:to-[#1e3fae]
+    @apply bg-gradient-to-b from-[#4B8EF8] via-[#3B82F6] to-[#1D4ED8] text-white shadow-btn-primary
+           enabled:hover:from-[#3B82F6] enabled:hover:to-[#1E3FAE]
            enabled:hover:shadow-btn-primary-hover enabled:hover:-translate-y-0.5
            enabled:active:translate-y-0 enabled:active:shadow-btn-primary-active;
   }
 
+  /* Хоёрдогч «бэх» (ink) товч — төвийг сахисан, minimal.
+     ⚠️ Урьд нь ногоон байсан; одоо бүх цэсэн товч (Таалагдсан/Нэвтрэх/нэр)
+        нэг өнгөтэй болж, анхаарал нь зөвхөн primary (➕ Зар нэмэх) дээр төвлөрнө. */
   .btn-secondary {
-    @apply bg-gradient-to-b from-[#10b981] to-[#047857] text-white shadow-btn-secondary
-           enabled:hover:from-[#059669] enabled:hover:to-[#065f46]
+    @apply bg-gradient-to-b from-[#3D3730] via-[#2B2622] to-[#1C1815] text-white shadow-btn-secondary
+           enabled:hover:from-[#2B2622] enabled:hover:to-[#12100E]
            enabled:hover:shadow-btn-secondary-hover enabled:hover:-translate-y-0.5
            enabled:active:translate-y-0 enabled:active:shadow-btn-secondary-active;
   }
@@ -104,6 +112,22 @@
   }
   .segmented-item-active {
     @apply bg-white text-primary shadow-chip ring-1 ring-inset ring-gray-200/80;
+  }
+
+  /* ---------- Сонголтын чип (ОЛОН сонголттой — хороо г.м.) ----------
+     ⚠️ ЯАГААД: «1 хороо» биш ОЛОН хороог зэрэг сонгох боломж (unegui.mn-ийн
+        олон хайлт). Идэвхтэй нь брэнд өнгөөр дүүрнэ — нэг харцаар ялгарна.
+     ⚠️ Текст нь `text-primary` (#2563eb — цагаан дээр 4.5:1 ✅ AA),
+        сонгогдсон үед цагаан. */
+  .chip-toggle {
+    @apply inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white
+           px-3 py-1.5 text-[12.5px] font-medium text-gray-600
+           transition-all duration-150 ease-out
+           hover:border-primary/60 hover:text-primary
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40;
+  }
+  .chip-toggle-active {
+    @apply border-primary bg-primary text-white shadow-chip hover:text-white;
   }
 
   /* ---------- Form controls ---------- */

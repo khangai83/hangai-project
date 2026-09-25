@@ -159,7 +159,7 @@ export default function FeedbackClient() {
               id="fb-subject"
               className="form-input"
               maxLength={120}
-              placeholder="Жишээ: Хайлтын шүүлт дээр алдаа гарч байна"
+              placeholder="Жишээ: Дэлгэрэнгүй хайлт дээр алдаа гарч байна"
               value={form.subject}
               onChange={(e) => set('subject', e.target.value)}
             />

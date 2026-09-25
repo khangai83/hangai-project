@@ -80,7 +80,7 @@ export default function PriceStatsClient() {
         </p>
       </header>
 
-      {/* ===== ШҮҮЛТ ===== */}
+      {/* ===== ХАЙЛТ ===== */}
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <select className="form-select sm:max-w-[220px]" value={city} onChange={(e) => setCity(e.target.value)}>
           {CITIES.map((c) => (

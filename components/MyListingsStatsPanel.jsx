@@ -108,7 +108,7 @@ function ActivityChart({ daily, days }) {
       </div>
 
       {!hasData && (
-        <p className="mb-3 rounded-lg bg-blue-50 px-3 py-2 text-[12px] leading-relaxed text-blue-700">
+        <p className="mb-3 rounded-lg bg-primary-light px-3 py-2 text-[12px] leading-relaxed text-primary">
           📭 Энэ хугацаанд хандалт бүртгэгдээгүй байна. Зар нэмэгдсэн эсвэл шинэчлэгдсэн
           үед энд харагдаж эхэлнэ.
         </p>

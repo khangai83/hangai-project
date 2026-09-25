@@ -198,23 +198,28 @@ export default function AppProviders({ children }) {
               >
                 🏠 ZAR<span className="text-gray-900">.mn</span>
               </Link>
-              <div className="flex items-center gap-3">
-                {/* ---- ③ ➕ Зар нэмэх ----
-                    ⚠️ БАЙР СОЛИСОН: өмнө нь хамгийн БАРУУН талд байсан. Хэрэглэгчийн
-                    хүслээр «🔑 Нэвтрэх»-тэй байраа сольж, хамгийн ЭХЭНД тавив
-                    (гол үйлдэл нь эхэнд — Zillow-ийн «Advertise» маяг). */}
-                <button className="btn btn-primary" onClick={openAdd}>➕ Зар нэмэх</button>
+              {/* ⚠️ БҮХ ЦЭСЭН ТОВЧ НЭГ ХЭМЖЭЭТЭЙ (`btn-sm` = 13px, font-semibold):
+                  урьд нь «Зар нэмэх» нь `btn` (14px) байсан бол «Таалагдсан»,
+                  «Нэвтрэх», хэрэглэгчийн нэр нь `btn-sm` (13px) байв → дэлгэц
+                  дээр хэмжээ нь жижиг зөрүүтэй, харагдац тогтворгүй байв.
+                  Одоо: ГОЛ үйлдэл = btn-primary (брэнд өнгө), бусад нь
+                  btn-outline (төвийг сахисан) — палитр minimal хэвээр. */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                {/* ---- ③ ➕ Зар нэмэх (ГОЛ үйлдэл — цорын ганц брэнд өнгөтэй товч) ---- */}
+                <button className="btn btn-primary btn-sm" onClick={openAdd}>➕ Зар нэмэх</button>
 
                 {/* ---- ② ❤️ Таалагдсан ---- */}
                 <Link
                   href="/favorites"
-                  className="btn btn-secondary btn-sm"
+                  className="btn btn-outline btn-sm"
                   title="Таалагдсан зарууд"
                   onClick={() => setUserMenuOpen(false)}
                 >
                   ❤️ Таалагдсан
                   {favoriteIds.length > 0 && (
-                    <span className="ml-1.5 rounded-full bg-red-500 px-1.5 py-px text-[11px] font-bold text-white">
+                    /* ⚠️ Тоо нь урьд нь УЛААН (bg-red-500) байв — улаан нь алдааны
+                       семантик өнгө тул тоолуурт тохирохгүй → брэнд өнгө. */
+                    <span className="ml-1 rounded-full bg-primary px-1.5 py-px text-[11px] font-bold text-white">
                       {favoriteIds.length}
                     </span>
                   )}
@@ -226,8 +231,13 @@ export default function AppProviders({ children }) {
                     баруунд» заншил. Хэрэглэгчийн хүслээр сольсон. */}
                 {user ? (
                   <div className="relative">
-                    <button className="btn btn-secondary btn-sm" onClick={() => setUserMenuOpen((v) => !v)}>
-                      👤 {displayName || 'Хэрэглэгч'}
+                    <button
+                      className="btn btn-outline btn-sm max-w-[180px]"
+                      aria-haspopup="menu"
+                      aria-expanded={userMenuOpen}
+                      onClick={() => setUserMenuOpen((v) => !v)}
+                    >
+                      <span className="truncate">👤 {displayName || 'Хэрэглэгч'}</span>
                     </button>
                     {userMenuOpen && (
                       <div className="absolute right-0 top-[calc(100%+6px)] z-50 min-w-[220px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card-hover">
@@ -247,7 +257,7 @@ export default function AppProviders({ children }) {
                     )}
                   </div>
                 ) : (
-                  <button className="btn btn-secondary btn-sm" onClick={openAuth} disabled={authLoading}>🔑 Нэвтрэх</button>
+                  <button className="btn btn-outline btn-sm" onClick={openAuth} disabled={authLoading}>🔑 Нэвтрэх</button>
                 )}
               </div>
             </div>

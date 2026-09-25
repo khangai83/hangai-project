@@ -5,17 +5,49 @@ import { useRouter } from 'next/navigation';
 import ListingCard from './ListingCard';
 import MapView from './MapView';
 import { useToast, useUI } from './AppProviders';
-import { fetchListings, fetchPropertyTypeCounts } from '../lib/queries';
+import { fetchListings, fetchPropertyTypeCounts, fetchRoomCounts } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
-import { CITIES, getDistricts, getKhoroos, CATEGORIES, PROPERTY_TYPES } from '../lib/locationData';
-import { getCategoryLabel, getPropertyIcon, getPropertyTypeLabel, formatPrice } from '../lib/format';
+import {
+  CITIES, getDistricts, getKhoroos, ROOM_OPTIONS, formatRoomsLabel,
+  hasRoomsFields, CATEGORIES, PROPERTY_TYPES,
+} from '../lib/locationData';
+import { getCategoryLabel, getPropertyIcon, getPropertyTypeLabel, formatPrice, formatCount } from '../lib/format';
 import { buildHomeBreadcrumb } from '../lib/breadcrumb';
 import Breadcrumb from './Breadcrumb';
 
+// Нүүр хуудсны хайлтын анхдагч (хоосон) утга.
+// ⚠️ `khoroos` нь МАССИВ — хэрэглэгч ОЛОН хороог зэрэг сонгоно (unegui.mn-ийн
+//    «олон хайлт»). Массивыг санамсаргүй ХУВААЛЦАХААС сэргийлж `EMPTY_FILTERS`-ийг
+//    шууд хэрэглэхгүй — `emptyFilters()`-ээр шинэ хуулбар авна.
+// ℹ️ `district` нь НЭГ утга (string) — олон дүүрэг зэрэг сонгох нь ХАСАГДСАН.
 const EMPTY_FILTERS = {
-  propertyType: '', rooms: '', city: '', district: '', khoroo: '',
+  propertyType: '', rooms: '', city: '', district: '', khoroos: [],
   minPrice: '', maxPrice: '', minArea: '', maxArea: '',
 };
+
+/** Массив талбаруудыг ХУВААЛЦАХГҮЙ шинэ хоосон хайлт буцаана */
+const emptyFilters = () => ({ ...EMPTY_FILTERS, khoroos: [] });
+
+/** URL-ийн таслалаар бичсэн жагсаалтыг массив болгох (хороо) */
+function parseListParam(raw) {
+  return String(raw || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Sidebar-ийн НЭГ БЛОК — unegui.mn загвараар: дээрээ БОЛД гарчиг,
+ * доор нь оролтууд. Блокууд нь `divide-y`-ээр тусгаарлагдана.
+ */
+function SideBlock({ label, children }) {
+  return (
+    <div className="py-3.5">
+      <span className="mb-2 block text-[13px] font-bold text-gray-800">{label}</span>
+      <div className="flex flex-col gap-2">{children}</div>
+    </div>
+  );
+}
 
 export default function HomeClient() {
   const { showToast } = useToast();
@@ -25,15 +57,16 @@ export default function HomeClient() {
   const [category, setCategory] = useState('all');
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState('');
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [filters, setFilters] = useState(() => emptyFilters());
   const [view, setView] = useState('list');
   const [listings, setListings] = useState(null); // null = ачаалж байна
   const [loadError, setLoadError] = useState(null); // холболтын алдаа (UI-д тусдаа харуулна)
-  const [urlReady, setUrlReady] = useState(false); // URL-ийн шүүлтийг уншсан эсэх
+  const [urlReady, setUrlReady] = useState(false); // URL-ийн хайлтыг уншсан эсэх
   const [typeCounts, setTypeCounts] = useState({}); // төрөл тус бүрийн зарын тоо
+  const [roomCounts, setRoomCounts] = useState({}); // өрөө тус бүрийн зарын тоо (unegui.mn загвар)
   const [filtersOpen, setFiltersOpen] = useState(false); // «Дэлгэрэнгүй хайлт» панель нээлттэй эсэх
 
-  // ---- URL-ийн query-ээс шүүлтийг унших ----
+  // ---- URL-ийн query-ээс хайлтыг унших ----
   // breadcrumb болон хуваалцсан линк ажиллахын тулд:
   //   /?category=sell&type=Орон сууц&rooms=3
   useEffect(() => {
@@ -45,17 +78,26 @@ export default function HomeClient() {
     if (q) { setSearch(q); setQuery(q); }
     if (sp.get('view') === 'map') setView('map');
 
-    const next = { ...EMPTY_FILTERS };
+    const next = emptyFilters(); // массив хуваалцахгүй
     if (sp.get('type')) next.propertyType = sp.get('type');
     if (sp.get('rooms')) next.rooms = sp.get('rooms');
+    // ⚠️ «Өрөө» талбаргүй төрөлд (ж: Худалдаа, үйлчилгээний талбай) өрөөний
+    //    хайлт нь утгагүй тул хуучин линкээс ирсэн ч орхигдуулна.
+    if (next.propertyType && !hasRoomsFields(next.propertyType)) next.rooms = '';
     if (sp.get('city')) next.city = sp.get('city');
-    if (sp.get('district')) next.district = sp.get('district');
-    if (sp.get('khoroo')) next.khoroo = sp.get('khoroo');
+    // ⚠️ ХОРОО: URL-д `khoroo=1-р хороо,3-р хороо` (таслалаар) — хуваалцсан
+    //    линк эвдрэхгүйн тулд НЭГ утгатай хуучин линкийг ч зөв уншина.
+    // ⚠️ ДҮҮРЭГ нь НЭГ утга. Хуучин ОЛОН дүүрэгтэй линк (`district=А,Б`)
+    //    ирвэл ЭХНИЙ дүүргийг л авна (олон дүүрэг сонгох нь хасагдсан).
+    const districtRaw = sp.get('district');
+    if (districtRaw) next.district = parseListParam(districtRaw)[0] || '';
+    const khorooRaw = sp.get('khoroo');
+    if (khorooRaw) next.khoroos = parseListParam(khorooRaw);
     if (sp.get('minPrice')) next.minPrice = sp.get('minPrice');
     if (sp.get('maxPrice')) next.maxPrice = sp.get('maxPrice');
     if (sp.get('minArea')) next.minArea = sp.get('minArea');
     if (sp.get('maxArea')) next.maxArea = sp.get('maxArea');
-    if (Object.values(next).some(Boolean)) setFilters(next);
+    if (Object.values(next).some((v) => (Array.isArray(v) ? v.length : v))) setFilters(next);
 
     setUrlReady(true);
   }, []);
@@ -71,7 +113,7 @@ export default function HomeClient() {
         rooms: filters.rooms || undefined,
         city: filters.city || undefined,
         district: filters.district || undefined,
-        khoroo: filters.khoroo || undefined,
+        khoroos: filters.khoroos.length ? filters.khoroos : undefined,
         minPrice: filters.minPrice || undefined,
         maxPrice: filters.maxPrice || undefined,
         minArea: filters.minArea || undefined,
@@ -108,7 +150,35 @@ export default function HomeClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlReady, category, dataVersion]);
 
-  // ---- Шүүлт өөрчлөгдөхөд URL-ийг шинэчлэх (хуваалцах боломжтой болгох) ----
+  // ---- Өрөө тус бүрийн зарын тоо (unegui.mn загварын «1 өрөө 1,088» мөр) ----
+  // ⚠️ Зөвхөн КАТЕГОРИ + ТӨРӨЛ өөрчлөгдөхөд дахин татна — бусад шүүлт
+  //    (үнэ, байршил г.м.) нөлөөлөхгүй (`lib/queries.js` → `fetchRoomCounts`).
+  useEffect(() => {
+    if (!urlReady) return;
+    // «Өрөө» талбаргүй төрөлд тоо хэрэггүй — дэмий 5 query явуулахгүй
+    if (filters.propertyType && !hasRoomsFields(filters.propertyType)) {
+      setRoomCounts({});
+      return;
+    }
+    let mounted = true;
+    (async () => {
+      try {
+        const counts = await fetchRoomCounts({
+          category,
+          propertyType: filters.propertyType || undefined,
+        });
+        if (mounted) setRoomCounts(counts || {});
+      } catch (err) {
+        // Тоо харуулахгүй — үндсэн жагсаалтад нөлөөлөхгүй
+        console.warn(normalizeError(err));
+        if (mounted) setRoomCounts({});
+      }
+    })();
+    return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlReady, category, filters.propertyType, dataVersion]);
+
+  // ---- Хайлт өөрчлөгдөхөд URL-ийг шинэчлэх (хуваалцах боломжтой болгох) ----
   useEffect(() => {
     if (!urlReady) return;
     const params = new URLSearchParams();
@@ -118,7 +188,7 @@ export default function HomeClient() {
     if (filters.rooms) params.set('rooms', filters.rooms);
     if (filters.city) params.set('city', filters.city);
     if (filters.district) params.set('district', filters.district);
-    if (filters.khoroo) params.set('khoroo', filters.khoroo);
+    if (filters.khoroos.length) params.set('khoroo', filters.khoroos.join(','));
     if (filters.minPrice) params.set('minPrice', filters.minPrice);
     if (filters.maxPrice) params.set('maxPrice', filters.maxPrice);
     if (filters.minArea) params.set('minArea', filters.minArea);
@@ -134,30 +204,68 @@ export default function HomeClient() {
   const setF = (k, v) => {
     setFilters((f) => {
       const next = { ...f, [k]: v };
-      if (k === 'city') { next.district = ''; next.khoroo = ''; }
-      if (k === 'district') { next.khoroo = ''; }
+      // Хот/аймаг солигдвол дүүрэг, хорооны сонголт ХҮЧИНГҮЙ болно (жагсаалт өөр)
+      if (k === 'city') { next.district = ''; next.khoroos = []; }
+      // Дүүрэг солигдвол хороодын жагсаалт өөр болно
+      if (k === 'district') { next.khoroos = []; }
+      // «Өрөө» талбаргүй төрөл сонговол өрөөний хайлтыг цэвэрлэнэ (ж: Худалдаа…)
+      if (k === 'propertyType' && v && !hasRoomsFields(v)) next.rooms = '';
       return next;
     });
   };
 
-  const resetAll = () => {
-    setCategory('all'); setQuery(''); setSearch(''); setFilters(EMPTY_FILTERS);
+  /** ОЛОН ХОРОО — нэг дарж нэмэх/хасах (checkbox мэт) */
+  const toggleKhoroo = (k) => {
+    setFilters((f) => ({
+      ...f,
+      khoroos: f.khoroos.includes(k) ? f.khoroos.filter((x) => x !== k) : [...f.khoroos, k],
+    }));
   };
 
-  const districts = useMemo(() => getDistricts(filters.city), [filters.city]);
-  const khoroos = useMemo(() => getKhoroos(filters.city, filters.district), [filters.city, filters.district]);
-  const hasFilters = Object.values(filters).some(Boolean) || category !== 'all' || query;
+  const resetAll = () => {
+    setCategory('all'); setQuery(''); setSearch('');
+    setFilters(emptyFilters()); // массив хуваалцахгүй
+  };
 
-  /** Идэвхтэй шүүлтүүд — toolbar-ын доор «чип» хэлбэрээр (✕ дарж тус тусад нь арилгана) */
+  /** Дүүргийн сонголтууд (сонгосон хот/аймагт) — НЭГ сонголттой */
+  const districtOptions = useMemo(() => getDistricts(filters.city), [filters.city]);
+  /** Хороодын сонголтууд (сонгосон хот + дүүрэгт) */
+  const khoroos = useMemo(
+    () => getKhoroos(filters.city, filters.district),
+    [filters.city, filters.district]
+  );
+  /** «Өрөө» талбар харагдах эсэх.
+   *  ⚠️ Худалдаа/үйлчилгээний талбай, Оффис, Газар, Үйлдвэр зэрэг төрөлд
+   *     «өрөө» гэдэг ойлголт БАЙХГҮЙ тул мөрийг бүрэн хайна. */
+  const showRooms = !filters.propertyType || hasRoomsFields(filters.propertyType);
+
+  /** Хуудасны гарчиг — unegui.mn загвар: «Орон сууц түрээслүүлнэ 16,345».
+   *  Төрөл > категори > бүгд гэсэн дарааллаар тодорхойлно. */
+  const pageTitle = filters.propertyType
+    ? getPropertyTypeLabel(filters.propertyType, category)
+    : category === 'rent'
+      ? 'Үл хөдлөх түрээслүүлнэ'
+      : category === 'sell'
+        ? 'Үл хөдлөх зарна'
+        : 'Бүх зар';
+  const hasFilters = Object.values(filters).some((v) => (Array.isArray(v) ? v.length : v)) || category !== 'all' || query;
+
+  /** Идэвхтэй хайлтууд — статус мөрийн доор «чип» хэлбэрээр (✕ дарж тус тусад нь арилгана) */
   const activeFilterChips = useMemo(() => {
     const chips = [];
     if (filters.propertyType) {
       chips.push({ key: 'propertyType', label: `${getPropertyIcon(filters.propertyType)} ${getPropertyTypeLabel(filters.propertyType, category)}` });
     }
-    if (filters.rooms) chips.push({ key: 'rooms', label: `🛏 ${Number(filters.rooms) >= 5 ? '5+' : filters.rooms} өрөө` });
+    if (filters.rooms) chips.push({ key: 'rooms', label: `🛏 ${formatRoomsLabel(filters.rooms)}` });
     if (filters.city) chips.push({ key: 'city', label: `🏙 ${filters.city}` });
     if (filters.district) chips.push({ key: 'district', label: `📍 ${filters.district}` });
-    if (filters.khoroo) chips.push({ key: 'khoroo', label: filters.khoroo });
+    // ⚠️ Хороо: 1 сонгосон бол нэрийг, олон бол «N хороо» гэж товчлон харуулна
+    if (filters.khoroos.length) {
+      chips.push({
+        key: 'khoroos',
+        label: filters.khoroos.length === 1 ? `🏘 ${filters.khoroos[0]}` : `🏘 ${filters.khoroos.length} хороо`,
+      });
+    }
     if (filters.minPrice) chips.push({ key: 'minPrice', label: `₮${formatPrice(filters.minPrice)}-с дээш` });
     if (filters.maxPrice) chips.push({ key: 'maxPrice', label: `₮${formatPrice(filters.maxPrice)} хүртэл` });
     if (filters.minArea) chips.push({ key: 'minArea', label: `${filters.minArea} м²-с дээш` });
@@ -166,12 +274,22 @@ export default function HomeClient() {
   }, [filters, category]);
 
   const activeFilterCount = activeFilterChips.length;
-  // «Дэлгэрэнгүй хайлт» товчны төлөв: панель нээлттэй эсвэл идэвхтэй шүүлт байвал
-  // илүү хүчтэй гэрэлтэлт (glow) → анхаарал татана.
-  const advancedActive = filtersOpen || activeFilterCount > 0;
 
-  /** Нэг чипийг арилгах */
-  const removeFilterChip = (key) => setF(key, '');
+  /** Нэг чипийг арилгах (`khoroos` нь массив тул хоосон массив) */
+  const removeFilterChip = (key) => setF(key, key === 'khoroos' ? [] : '');
+
+  // ---- PROGRESSIVE DISCLOSURE: ТӨРӨЛ сонгомогц хайлт нээгдэнэ ----
+  // ⚠️ ЯАГААД: урьд нь hero-ийн хайлтын мөр БА том «⚙️ Дэлгэрэнгүй хайлт»
+  //    товчтой карт хоёулаа нэгэн зэрэг харагддаг байв → хэрэглэгчид
+  //    «дэлгэц дээр 2 хайлтын хэсэг» мэт санагддаг. Одоо урсгал нь:
+  //      категори (Зарах/Түрээслэх) → ТӨРӨЛ → дараа нь л дэлгэрэнгүй хайлт.
+  //    Ингэснээр эхлээд л дэлгэц цэвэр, дараа нь хэрэгцээтэй үед нээгдэнэ
+  //    (Zillow / Airbnb-гийн progressive disclosure загвар).
+  //    Хэрэглэгч гараар хаасан бол дахин албадаж нээхгүй (зөвхөн төрөл
+  //    СОЛИГДОХ үед ажиллана).
+  useEffect(() => {
+    setFiltersOpen(!!filters.propertyType);
+  }, [filters.propertyType]);
 
   return (
     <>
@@ -193,28 +311,49 @@ export default function HomeClient() {
         />
         <h1 className="mb-2 text-3xl font-bold sm:text-4xl">🏠 Үл хөдлөх хөрөнгийн зар</h1>
         <p className="mb-6 text-sm text-white/90 sm:text-base">Худалдаа, түрээсийн үл хөдлөх хөрөнгийн зарууд</p>
-        <div className="mx-auto flex w-full max-w-[620px] overflow-hidden rounded-lg shadow-card-hover">
+
+        {/* ===== ЦОРЫН ГАНЦ ХАЙЛТЫН МӨР =====
+            ⚠️ ЯАГААД НЭГ ВЭ: дараа нь «⚙️ Дэлгэрэнгүй хайлт» товчтой ЦАГААН
+               КАРТ байсныг «статус мөр» болгож бууруулсан (доор) → дэлгэц
+               дээр хайлт нэг л удаа харагдана. Хайлтын мөр нь `<form>` тул
+               Enter дарахад ч, товч дарахад ч ИЖИЛ ажиллана (a11y дээр зөв).
+            ⚠️ Товч нь .btn БИШ: container нь `rounded-xl overflow-hidden` тул
+               дотроос нь брэнд градиентаар дүүрнэ (товчны pill хэлбэр хэрэггүй). */}
+        <form
+          className="mx-auto flex w-full max-w-[620px] overflow-hidden rounded-xl bg-white shadow-card-hover ring-1 ring-black/10"
+          onSubmit={(e) => { e.preventDefault(); setQuery(search); }}
+          role="search"
+        >
+          <label className="sr-only" htmlFor="home-search">Зар хайх</label>
           <input
+            id="home-search"
             type="text"
             placeholder="Хайх... (жишээ нь: Баянгол, орон сууц)"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') setQuery(search); }}
-            className="flex-1 border-none px-4 py-3 text-sm text-gray-900 outline-none placeholder:text-gray-400"
+            className="min-w-0 flex-1 border-none px-4 py-3.5 text-sm text-gray-900 outline-none placeholder:text-gray-400"
           />
           <button
-            type="button"
-            onClick={() => setQuery(search)}
-            className="shrink-0 bg-gray-900 px-6 text-sm font-medium text-white transition hover:bg-black"
+            type="submit"
+            className="shrink-0 bg-gradient-to-b from-[#4B8EF8] via-[#3B82F6] to-[#1D4ED8] px-6 text-sm font-bold text-white transition-all duration-150 ease-out hover:from-[#3B82F6] hover:to-[#1E3FAE]"
           >
             🔍 Хайх
           </button>
-        </div>
+        </form>
       </section>
 
       <div className="page-container">
-        {/* BREADCRUMB — хэрэглэгч хаана явж байгаа (unegui.mn загвар) */}
-        <Breadcrumb items={buildHomeBreadcrumb({ category, propertyType: filters.propertyType, rooms: filters.rooms })} />
+        {/* BREADCRUMB — хэрэглэгч хаана явж байгаа (unegui.mn загвар).
+            ⚠️ Хайлт ХИЙГЭЭГҮЙ ч гэсэн харагдана («Бүх зар › Үл хөдлөх») —
+               байр суурь нь байнга мэдэгдэж байх ёстой. */}
+        <Breadcrumb
+          items={buildHomeBreadcrumb({
+            category,
+            propertyType: filters.propertyType,
+            rooms: filters.rooms,
+            district: filters.district,
+          })}
+        />
 
         {/* CATEGORY TABS */}
         <div className="mb-6 flex flex-wrap gap-2">
@@ -268,7 +407,7 @@ export default function HomeClient() {
                 <span className="text-[15px] leading-none">{getPropertyIcon(t)}</span>
                 {getPropertyTypeLabel(t, category)}
                 {typeof count === 'number' && (
-                  <span className={`ml-0.5 rounded-full px-1.5 py-px text-[11px] font-semibold ${isActive ? 'bg-blue-200 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <span className={`ml-0.5 rounded-full px-1.5 py-px text-[11px] font-semibold ${isActive ? 'bg-primary-light text-primary' : 'bg-gray-100 text-gray-500'}`}>
                     {count}
                   </span>
                 )}
@@ -277,200 +416,329 @@ export default function HomeClient() {
           })}
         </div>
 
-        {/* ===== ХАЙЛТЫН TOOLBAR =====
-            unegui.mn-ийн «Олон шүүлт» хэсгийг эндээс нээнэ:
-            • «⚙️ Дэлгэрэнгүй хайлт» — шүүлтийн панелийг нээх/хаах (идэвхтэй шүүлтийн тоотой)
-            • Баруун талд — ☰ Жагсаалт / 🗺 Газрын зураг харах горим
-            • Доор нь — идэвхтэй шүүлтүүд «чип» хэлбэрээр (✕ дарж тус тусад нь арилгана) */}
-        <div className="mb-4 rounded-xl border border-gray-200 bg-white p-3 shadow-card sm:p-4">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* ⚙️ ДЭЛГЭРЭНГҮЙ ХАЙЛТ — анхаарал татах ёстой үндсэн шүүлтийн орох хаалга:
-                • градиент + бодит сүүдэр (товчны нэгдсэн системтэй ижил)
-                • цаана нь blur-тай ГЭРЭЛТЭЛТ (glow) → нүд шууд түүн дээр очно
-                • идэвхтэй шүүлттэй үед гэрэлтэлт хүчтэй болно
-                • идэвхтэй тоо нь ЦАГААН дугуй дотор (бусад шүүлтээс ялгарна) */}
-            <span className="relative inline-flex">
-              <span
-                aria-hidden="true"
-                className={`pointer-events-none absolute -inset-[3px] rounded-full blur-[7px] transition-opacity duration-300 ${
-                  advancedActive ? 'bg-primary/45' : 'bg-primary/25'
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setFiltersOpen((v) => !v)}
-                aria-expanded={filtersOpen}
-                aria-controls="advanced-filters"
-                className="relative inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-[#3b82f6] to-[#1d4ed8] px-4 py-2.5 text-sm font-bold text-white shadow-btn-primary transition-all duration-150 ease-out hover:-translate-y-0.5 hover:from-[#2563eb] hover:to-[#1e3fae] hover:shadow-btn-primary-hover active:translate-y-0 active:shadow-btn-primary-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/45"
-              >
-                <span aria-hidden="true" className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white/20 text-[11px]">
-                  ⚙️
-                </span>
-                Дэлгэрэнгүй хайлт
-                {activeFilterCount > 0 && (
-                  <span className="grid h-5 min-w-[20px] shrink-0 place-items-center rounded-full bg-white px-1 text-[11px] font-bold text-primary">
-                    {activeFilterCount}
+        {/* ===== 2 БАГАНАТ БҮТЭЦ — unegui.mn загвар =====
+            ⚠️ Урьд нь шүүлт нь ДЭЭД талд нуугдах панель («⚙️ Хайлт ▼» товчоор
+               нээгддэг) байв. Одоо unegui.mn шиг: ЗҮҮН талд байнга харагдах
+               ШҮҮЛТИЙН SIDEBAR, БАРУУН талд гарчиг + үр дүн.
+            ⚠️ Мобайл дээр (`lg`-ээс доош) sidebar нь НУУГДАЖ, баруун талын
+               «⚙️ Шүүлт» товчоор нээгдэнэ — ингэснээр жижиг дэлгэц дээр үр
+               дүн дарагдахгүй, мөн товч нь DOM-д sidebar-ийн өмнө байрлаж,
+               нээгдэхэд дээгүүр гарч ирнэ.
+            ⚠️ Sidebar нь `lg:sticky lg:top-4` — урт жагсаалт гүйлгэхэд шүүлт
+               хамт гүйлгэхгүй, дэлгэц дээр байнга барина (unegui.mn-тэй ижил). */}
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+          {/* ================= SIDEBAR — ШҮҮЛТ (зүүн багана) ================= */}
+          <aside
+            id="advanced-filters"
+            className={`w-full shrink-0 lg:sticky lg:top-4 lg:block lg:w-[280px] ${filtersOpen ? '' : 'hidden'}`}
+          >
+            <div className="rounded-xl border border-gray-200 bg-white shadow-card">
+              {/* Толгой — unegui.mn-д тусдаа гарчиг байхгүй ч «N шүүлт» badge нь
+                  хэрэглэгчид ямар нэг зүйл сонгосноо мэдэгдэхэд тустай. */}
+              <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3.5">
+                <h2 className="flex items-center gap-2 text-[15px] font-bold text-gray-900">
+                  <span aria-hidden="true" className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-[12px] text-white">
+                    ⚙️
                   </span>
-                )}
-                <span aria-hidden="true" className={`text-[10px] transition-transform duration-200 ${filtersOpen ? 'rotate-180' : ''}`}>
-                  ▼
-                </span>
-              </button>
-            </span>
-
-            <span className="text-sm text-gray-500">
-              {loadError ? 'холболтын алдаа' : listings !== null ? `${listings.length} зар` : 'ачаалж байна...'}
-              {query ? ` · «${query}»` : ''}
-            </span>
-
-            <div className="ml-auto flex items-center gap-1 rounded-lg bg-gray-100 p-1" role="group" aria-label="Харах горим">
-              <button
-                type="button"
-                aria-pressed={view === 'list'}
-                className={`inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-[13px] font-semibold transition ${
-                  view === 'list' ? 'bg-white text-gray-900 shadow-card' : 'text-gray-500 hover:text-gray-800'
-                }`}
-                onClick={() => setView('list')}
-              >
-                ☰ Жагсаалт
-              </button>
-              <button
-                type="button"
-                aria-pressed={view === 'map'}
-                className={`inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-[13px] font-semibold transition ${
-                  view === 'map' ? 'bg-white text-gray-900 shadow-card' : 'text-gray-500 hover:text-gray-800'
-                }`}
-                onClick={() => setView('map')}
-              >
-                🗺 Газрын зураг
-              </button>
-            </div>
-          </div>
-
-          {activeFilterChips.length > 0 && (
-            <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-gray-100 pt-3">
-              <span className="mr-0.5 text-[12px] font-semibold uppercase tracking-wide text-gray-400">Шүүлт</span>
-              {activeFilterChips.map((chip) => (
-                <span
-                  key={chip.key}
-                  className="inline-flex items-center gap-1 rounded-full bg-gray-100 py-1 pl-2.5 pr-1 text-[12px] font-medium text-gray-700"
+                  Шүүлт
+                  {activeFilterCount > 0 && (
+                    <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-bold text-white">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </h2>
+                {/* Мобайл дээр л — sheet-ийг хаах */}
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen(false)}
+                  className="rounded-full border border-gray-200 px-2.5 py-1 text-[12px] font-semibold text-gray-500 transition hover:border-primary hover:text-primary lg:hidden"
                 >
-                  {chip.label}
+                  ✕ Хаах
+                </button>
+              </div>
+
+              <div className="divide-y divide-gray-100 px-4">
+                {/* ===== БАЙРШИЛ — Хот/Аймаг · Дүүрэг · ХОРОО =====
+                    ⚠️ «Төрөл» энд БАЙХГҮЙ — дээрх төрлийн табуудаас сонгогдоно.
+                    ⚠️ Дүүрэг нь НЭГ сонголттой `<select>` (олон дүүрэг сонгох нь
+                       хасагдсан), харин хороо нь ОЛОН сонголттой чип. */}
+                <SideBlock label="Байршил">
+                  <select
+                    className="form-select"
+                    aria-label="Хот/Аймаг"
+                    value={filters.city}
+                    onChange={(e) => setF('city', e.target.value)}
+                  >
+                    <option value="">Бүх байршил — Хот/Аймаг</option>
+                    {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+
+                  {districtOptions.length > 0 && (
+                    <select
+                      className="form-select"
+                      aria-label="Дүүрэг / Сум"
+                      value={filters.district}
+                      onChange={(e) => setF('district', e.target.value)}
+                    >
+                      <option value="">Дүүрэг / Сум — Бүгд</option>
+                      {districtOptions.map((d) => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  )}
+
+                  {/* ХОРОО — ОЛОН СОНГОЛТ. Сонгосон дүүргийн хороодыг харуулна
+                      (40+ хороо багтах ёстой тул жагсаалт скроллтой). */}
+                  {khoroos.length ? (
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[12px] font-semibold text-gray-500">
+                        Хороо
+                        {filters.khoroos.length > 0 && (
+                          <span className="ml-1.5 rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
+                            {filters.khoroos.length} сонгосон
+                          </span>
+                        )}
+                      </span>
+                      <div className="max-h-[150px] overflow-y-auto rounded-lg border border-gray-200 bg-gray-50/70 p-2">
+                        <div className="flex flex-wrap gap-1.5">
+                          {khoroos.map((k) => {
+                            const on = filters.khoroos.includes(k);
+                            return (
+                              <button
+                                key={k}
+                                type="button"
+                                aria-pressed={on}
+                                onClick={() => toggleKhoroo(k)}
+                                className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                              >
+                                {on && <span aria-hidden="true">✓</span>}
+                                {k}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[12px] text-gray-500">
+                      {filters.city
+                        ? '💡 Дүүргээ сонгоход хорооны жагсаалт нээгдэнэ.'
+                        : '💡 Эхлээд хот/аймгаа сонгоно уу.'}
+                    </p>
+                  )}
+                </SideBlock>
+                {/* ===== ҮНЭ, ₮ — unegui.mn-ийн «Эхлэх / Дуусах» хос оролт ===== */}
+                <SideBlock label="Үнэ, ₮">
+                  <div className="flex items-center gap-2">
+                    <input
+                      className="form-input"
+                      type="number"
+                      min="0"
+                      placeholder="Эхлэх"
+                      aria-label="Үнэ (эхлэх)"
+                      value={filters.minPrice}
+                      onChange={(e) => setF('minPrice', e.target.value)}
+                    />
+                    <input
+                      className="form-input"
+                      type="number"
+                      min="0"
+                      placeholder="Дуусах"
+                      aria-label="Үнэ (дуусах)"
+                      value={filters.maxPrice}
+                      onChange={(e) => setF('maxPrice', e.target.value)}
+                    />
+                  </div>
+                </SideBlock>
+
+                {/* ===== ТАЛБАЙ, м² =====
+                    ⚠️ `inputMode="decimal"` + «75,5» хэлбэрийн монгол бутархайг
+                       зөвшөөрнө (`lib/queries.js` → `toNumber`). */}
+                <SideBlock label="Талбай, м²">
+                  <div className="flex items-center gap-2">
+                    <input
+                      className="form-input"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Эхлэх"
+                      aria-label="Талбай (эхлэх)"
+                      value={filters.minArea}
+                      onChange={(e) => setF('minArea', e.target.value.replace(/[^\d.,]/g, ''))}
+                    />
+                    <input
+                      className="form-input"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="Дуусах"
+                      aria-label="Талбай (дуусах)"
+                      value={filters.maxArea}
+                      onChange={(e) => setF('maxArea', e.target.value.replace(/[^\d.,]/g, ''))}
+                    />
+                  </div>
+                </SideBlock>
+              </div>
+
+              {/* Доод хэсэг — unegui.mn-ийн «N зар харуулах» хэсэг.
+                  ⚠️ Шүүлт нь амьд (real-time) хэрэгждэг тул энэ товч нь зөвхөн
+                     мобайл дээрх sheet-ийг хаана — unegui.mn-тэй ижил байрлал. */}
+              <div className="border-t border-gray-100 px-4 py-3.5">
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen(false)}
+                  className="btn btn-primary btn-sm w-full"
+                >
+                  🔍 Хайх
+                </button>
+                <p className="mt-2 text-center text-[12px] text-gray-500">
+                  {loadError
+                    ? 'холболтын алдаа'
+                    : listings !== null
+                      ? `${formatCount(listings.length)} зар харуулах`
+                      : 'ачаалж байна…'}
+                </p>
+                {hasFilters && (
                   <button
                     type="button"
-                    onClick={() => removeFilterChip(chip.key)}
-                    aria-label={`${chip.label} шүүлтийг хасах`}
-                    className="grid h-4 w-4 place-items-center rounded-full text-gray-400 transition hover:bg-gray-200 hover:text-gray-700"
+                    onClick={resetAll}
+                    className="mt-1.5 w-full text-center text-[12px] font-semibold text-primary hover:underline"
                   >
-                    ✕
+                    ↺ Хайлтыг цэвэрлэх
                   </button>
-                </span>
-              ))}
-              <button type="button" onClick={resetAll} className="ml-0.5 text-[12px] font-semibold text-primary hover:underline">
-                Бүгдийг цэвэрлэх
-              </button>
+                )}
+              </div>
             </div>
-          )}
-        </div>
+          </aside>
 
-        {/* ===== ДЭЛГЭРЭНГҮЙ ХАЙЛТ — зөвхөн товч дарвал нээгдэнэ =====
-            ⚠️ «Төрөл» нь энд БАЙХГҮЙ: дээрх төрлийн табуудаас сонгогдоно (давхардлаас зайлсхийв). */}
-        <div
-          id="advanced-filters"
-          className={`${filtersOpen ? 'mb-6 block animate-slide-down' : 'hidden'} rounded-xl border-2 border-primary/25 bg-white p-5 shadow-card-hover`}
-        >
-          {/* Толгой нь primary өнгөөр будсан зурвас — нээгдсэн үед «энэ бол шүүлт»
-              гэдэг нь нэг харцаар мэдэгдэнэ (сөрөг margin-аар container-ийн padding
-              дээгүүр гарна — доорх агуулгыг дахин бүтэцлэх шаардлагагүй). */}
-          <div className="-mx-5 -mt-5 mb-4 flex items-center justify-between gap-3 rounded-t-xl border-b border-primary/15 bg-primary/5 px-5 py-3.5">
-            <h2 className="flex items-center gap-2 text-sm font-bold text-primary">
-              <span aria-hidden="true" className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-[12px] text-white">
-                ⚙️
-              </span>
-              Дэлгэрэнгүй хайлт
-              {activeFilterCount > 0 && (
-                <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-bold text-white">
-                  {activeFilterCount} шүүлт
-                </span>
-              )}
-            </h2>
+          {/* ================= ҮР ДҮН (баруун багана) ================= */}
+          <div className="min-w-0 flex-1">
+            {/* ГАРЧИГ + НИЙТ ТОО — unegui.mn: «Өрөө байр зарна 16,345» */}
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+              <div className="min-w-0">
+                <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
+                  {pageTitle}
+                  {listings !== null && !loadError && (
+                    <span className="ml-2 align-middle text-base font-normal text-gray-500">
+                      {formatCount(listings.length)}
+                    </span>
+                  )}
+                </h1>
+                {query && <p className="mt-0.5 text-[13px] text-gray-500">«{query}» хайлтын үр дүн</p>}
+                {loadError && <p className="mt-0.5 text-[13px] text-red-600">Өгөгдлийн сантай холбогдож чадсангүй</p>}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* МОБАЙЛ дээр л — sidebar-ийг нээх/хаах */}
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen((v) => !v)}
+                  aria-expanded={filtersOpen}
+                  aria-controls="advanced-filters"
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 lg:hidden ${
+                    filtersOpen || activeFilterCount > 0
+                      ? 'border-primary bg-primary-light text-primary shadow-chip'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-primary/60 hover:text-primary'
+                  }`}
+                >
+                  ⚙️ Шүүлт
+                  {activeFilterCount > 0 && (
+                    <span className="grid h-4 min-w-[16px] place-items-center rounded-full bg-primary px-1 text-[11px] font-bold text-white">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                  <span aria-hidden="true" className={`text-[10px] transition-transform duration-200 ${filtersOpen ? 'rotate-180' : ''}`}>
+                    ▼
+                  </span>
+                </button>
+
+                {/* Харах горим — `.segmented` */}
+                <div className="segmented" role="group" aria-label="Харах горим">
             <button
               type="button"
-              onClick={() => setFiltersOpen(false)}
-              className="rounded-full border border-primary/20 bg-white px-3 py-1 text-[13px] font-semibold text-primary transition hover:bg-primary hover:text-white"
+              aria-pressed={view === 'list'}
+              className={`segmented-item ${view === 'list' ? 'segmented-item-active' : ''}`}
+              onClick={() => setView('list')}
             >
-              ✕ Хаах
+              ☰ Жагсаалт
+            </button>
+            <button
+              type="button"
+              aria-pressed={view === 'map'}
+              className={`segmented-item ${view === 'map' ? 'segmented-item-active' : ''}`}
+              onClick={() => setView('map')}
+            >
+              🗺 Газрын зураг
+            </button>
+                </div>
+              </div>
+            </div>
+
+            {/* ===== ӨРӨӨНИЙ ТООТОЙ МӨР (unegui.mn загвар) =====
+                ⚠️ unegui.mn нь «1 өрөө 1,088 · 2 өрөө 6,509 …» гэж ТООТОЙ линк
+                   хэлбэрээр харуулдаг. Тоо нь тухайн ангиллын НИЙТ тоо
+                   (`fetchRoomCounts` — зөвхөн категори + төрлийг харгалзана)
+                   тул «аль өрөө хэдэн зартай вэ» гэдгээ нэг харцаар мэднэ.
+                ⚠️ `showRooms` — «Худалдаа, үйлчилгээний талбай» / Оффис /
+                   Газар / Үйлдвэр зэрэг төрөлд өрөө гэсэн ойлголт БАЙХГҮЙ
+                   тул мөр бүрэн харагдахгүй. */}
+            {showRooms && (
+              <div className="mb-3 flex flex-wrap items-baseline gap-x-5 gap-y-2">
+                {ROOM_OPTIONS.map((r) => {
+                  const on = filters.rooms === r.value;
+                  const c = roomCounts[r.value];
+                  return (
+                    <button
+                      key={r.value}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => setF('rooms', on ? '' : r.value)}
+                      className={`inline-flex items-baseline gap-1.5 text-[15px] transition ${
+                        on ? 'font-bold text-primary underline' : 'font-medium text-primary hover:underline'
+                      }`}
+                    >
+                      {r.label}
+                      {typeof c === 'number' && (
+                        <span className={`text-[13px] ${on ? 'font-semibold text-primary' : 'font-normal text-gray-500'}`}>
+                          {formatCount(c)}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+                {filters.rooms && (
+                  <button
+                    type="button"
+                    onClick={() => setF('rooms', '')}
+                    className="text-[12px] font-semibold text-gray-500 hover:underline"
+                  >
+                    ✕ Цуцлах
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Идэвхтэй хайлтууд — «чип» хэлбэрээр (✕ дарж ТУС ТУСАД нь арилгана). */}
+            {activeFilterChips.length > 0 && (
+          <div className="mb-5 flex flex-wrap items-center gap-1.5">
+            <span className="mr-0.5 text-[12px] font-semibold uppercase tracking-wide text-gray-400">Хайлт</span>
+            {activeFilterChips.map((chip) => (
+              <span
+                key={chip.key}
+                className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white py-1 pl-2.5 pr-1 text-[12px] font-medium text-gray-700"
+              >
+                {chip.label}
+                <button
+                  type="button"
+                  onClick={() => removeFilterChip(chip.key)}
+                  aria-label={`${chip.label} хайлтыг хасах`}
+                  className="grid h-4 w-4 place-items-center rounded-full text-gray-400 transition hover:bg-gray-200 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+            <button type="button" onClick={resetAll} className="ml-0.5 text-[12px] font-semibold text-primary hover:underline">
+              Бүгдийг цэвэрлэх
             </button>
           </div>
-
-          <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-
-            {/* «Төрөл» энд БАЙХГҮЙ — дээрх ⬆ төрлийн табуудаас сонгогдоно (дубликат зайлсхийв) */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Өрөө</label>
-              <select className="form-select" value={filters.rooms} onChange={(e) => setF('rooms', e.target.value)}>
-                <option value="">Бүгд</option>
-                {[1, 2, 3, 4, 5].map((r) => <option key={r} value={r}>{r === 5 ? '5+ өрөө' : `${r} өрөө`}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Хот/Аймаг</label>
-              <select className="form-select" value={filters.city} onChange={(e) => setF('city', e.target.value)}>
-                <option value="">Бүгд</option>
-                {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Дүүрэг</label>
-              <select className="form-select" value={filters.district} onChange={(e) => setF('district', e.target.value)} disabled={!districts.length}>
-                <option value="">Бүгд</option>
-                {districts.map((d) => <option key={d} value={d}>{d}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Хороо</label>
-              <select className="form-select" value={filters.khoroo} onChange={(e) => setF('khoroo', e.target.value)} disabled={!khoroos.length}>
-                <option value="">Бүгд</option>
-                {khoroos.map((k) => <option key={k} value={k}>{k}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Үнэ (доод)</label>
-              <input className="form-input" type="number" min="0" placeholder="₮" value={filters.minPrice} onChange={(e) => setF('minPrice', e.target.value)} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Үнэ (дээд)</label>
-              <input className="form-input" type="number" min="0" placeholder="₮" value={filters.maxPrice} onChange={(e) => setF('maxPrice', e.target.value)} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Талбай (м²) доод</label>
-              <input
-                className="form-input"
-                type="text"
-                inputMode="decimal"
-                placeholder="75.5"
-                value={filters.minArea}
-                onChange={(e) => setF('minArea', e.target.value.replace(/[^\d.,]/g, ''))}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold uppercase tracking-wide text-gray-500">Талбай (м²) дээд</label>
-              <input
-                className="form-input"
-                type="text"
-                inputMode="decimal"
-                placeholder="120"
-                value={filters.maxArea}
-                onChange={(e) => setF('maxArea', e.target.value.replace(/[^\d.,]/g, ''))}
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-gray-100 pt-4">
-            {hasFilters && <button className="btn btn-outline btn-sm" onClick={resetAll}>↺ Шүүлтийг цэвэрлэх</button>}
-            <button className="btn btn-primary btn-sm" onClick={() => setFiltersOpen(false)}>Дуусгах</button>
-          </div>
-        </div>
+        )}
 
         {/* CONTENT */}
         {view === 'map' ? (
@@ -508,7 +776,7 @@ export default function HomeClient() {
           <div className="px-5 py-16 text-center">
             <div className="mb-4 text-6xl">🔎</div>
             <h3 className="mb-2 text-xl font-semibold">Зарууд олдсонгүй</h3>
-            <p className="text-gray-500">Шүүлт, хайлтаа өөрчилж үзнэ үү. {query && `«${query}»`} {getCategoryLabel(category)}</p>
+            <p className="text-gray-500">Хайлтаа өөрчилж үзнэ үү. {query && `«${query}»`} {getCategoryLabel(category)}</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -516,6 +784,8 @@ export default function HomeClient() {
           </div>
         )}
 
+          </div>
+        </div>
       </div>
     </>
   );

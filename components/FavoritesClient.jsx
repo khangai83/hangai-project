@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import ListingCard from './ListingCard';
-import { useToast } from './AppProviders';
+import { useAuth, useToast, useUI } from './AppProviders';
 import { fetchListingsByIds } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
 import { useFavorites, removeFavorite, clearFavorites } from '../lib/favorites';
@@ -46,6 +46,8 @@ function countLabel(savedCount, foundCount) {
 
 export default function FavoritesClient() {
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const { openAuth } = useUI();
   const ids = useFavorites();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -156,7 +158,7 @@ export default function FavoritesClient() {
       ) : !listings.length ? (
         <div className="px-5 py-16 text-center">
           <div className="mb-4 text-6xl">🤍</div>
-          <h3 className="mb-2 text-xl font-semibold">Таалагдсан зар байхгүй байна</h3>
+          <h3 className="mb-2 text-xl font-semibold">Одоогоор Танд таалагдсан зар байхгүй байна</h3>
           <p className="text-gray-500">
             Зар үзэхдээ зүрхэн дээр дарж «Таалагдсан»-д нэмээрэй — дараа нь эндээс бүгдийг нь хараад
             Excel/PDF болгон татаж авах боломжтой.
@@ -188,9 +190,23 @@ export default function FavoritesClient() {
       )}
 
       <p className="mt-4 text-[12px] text-gray-400">
-        ℹ️ Таалагдсан зарууд нь энэ browser-т хадгалагдана (localStorage). Олон төхөөрөмж дээр синхрон
-        болгохыг хүсвэл <code>supabase/migrations/0005_listings_update_policy.sql</code> файлын доод
-        хэсэгт бэлэн <code>favorites</code> хүснэгтийн SQL байна.
+        ℹ️ Одоогоор Таалагдсан зарууд нь энэ browser-т хадгалагдана (localStorage).
+        {/* ⚠️ Нэвтрэх уриалга нь зөвхөн НЭВТРЭЭГҮЙ үед харагдана —
+            нэвтэрсэн хэрэглэгчид энэ өгүүлбэр утгагүй тул нууна. */}
+        {!user && (
+          <>
+            {' '}
+            Хэрэв та өөртөө хадгалахыг хүсвэл{' '}
+            <button
+              type="button"
+              onClick={openAuth}
+              className="font-semibold text-primary underline underline-offset-2 hover:text-primary"
+            >
+              нэвтэрч орно уу
+            </button>
+            .
+          </>
+        )}
       </p>
     </div>
   );
