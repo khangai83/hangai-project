@@ -9,6 +9,7 @@ import Breadcrumb from './Breadcrumb';
 import { useToast } from './AppProviders';
 import { fetchListingById, fetchSellerCategoryCounts, fetchProfilesByIds } from '../lib/queries';
 import Avatar from './Avatar';
+import VerifiedBadge from './VerifiedBadge';
 import { trackListingView } from '../lib/statsClient';
 import { normalizeError } from '../lib/errors';
 import { formatPrice, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress } from '../lib/format';
@@ -431,8 +432,12 @@ export default function ListingDetailClient({ id }) {
                 >
                   <Avatar src={author && author.avatarUrl} name={sellerName} size={120} />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-base font-semibold text-gray-800 transition group-hover:text-primary">
-                      {sellerName}
+                    {/* ✅ БАТАЛГААЖСАН badge (Facebook-ийнх шиг) — ListingCard-тай
+                        ижил. ⚠️ Зөвхөн `listing.user_id` БАЙГАА үед (энэ салбар)
+                        — эс бөгөөс нийтлэгч тодорхойгүй тул badge ч байхгүй ✓ */}
+                    <div className="flex items-center gap-1.5 text-base font-semibold text-gray-800 transition group-hover:text-primary">
+                      <span className="truncate">{sellerName}</span>
+                      <VerifiedBadge size={16} className="text-primary" />
                     </div>
                     <div className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
                     {/* ✅ Утсаар баталгаажсан — БҮРТГЭЛ нь verify.mn-ийн SMS-ээр

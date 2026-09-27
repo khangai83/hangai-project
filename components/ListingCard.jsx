@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { formatPrice, getPropertyIcon, firstImage, getFloorLabel, timeAgo, formatAddress } from '../lib/format';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 import Avatar from './Avatar';
+import VerifiedBadge from './VerifiedBadge';
 
 /**
 * @param {{listing: object, author?: {displayName?: string, avatarUrl?: string|null}}} props
@@ -26,14 +27,14 @@ export default function ListingCard({ listing, author, attrsLine }) {
   const isRealEstate = (listing.section || 'real-estate') === 'real-estate';
   const floorLabel = getFloorLabel(listing.floor, listing.total_floors);
   /*
-   * ══════ ⚠️ КАРТЫН ӨНДӨР — `sm:h-[280px]` (2026-09-27) ══════
+   * ══════ ⚠️ КАРТЫН ӨНДӨР — `sm:h-[300px]` (2026-09-27) ══════
    * 🔴 ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «profile зургийг томруулахаар картны бусад
    *    мэдээлэл доош орж харагдахгүй болоод байна»
    * 🔴 ШАЛТГААН: карт нь `overflow-hidden` + БЭХЛЭГДСЭН өндөр байсан
    *    (`sm:h-[220px]`) тул агуулга хэтэрвэл ДООРООС НЬ ТАЙРАГДДАГ ✗
    *
-   * 📐 ТООЦОО (доорх мэдээллийн блокийн агуулга; avatar = `size={50}`):
-   *      58px  👤 Зар нийтлэгч (Avatar 50px) + mb-2
+   * 📐 ТООЦОО (доорх мэдээллийн блокийн агуулга; avatar = `size={60}`):
+   *      68px  👤 Зар нийтлэгч (Avatar 60px + ✅ badge) + mb-2
    *      24px  🏢 ТӨРӨЛ + mb-1.5
    *      21px  📋 attrsLine (бусад хэсэгт) + mb-1
    *      29px  💰 ҮНЭ + mb-0.5
@@ -41,23 +42,22 @@ export default function ListingCard({ listing, author, attrsLine }) {
    *      27px  🛏 өрөө / 📐 м² / 🏢 давхар / 📅 он + mt-1.5
    *      27px  ❤️ доод мөр (border-t + pt-2)
    *     ─────
-   *     228px  НИЙТ агуулга
-   * ⚠️ `sm:h-[220px]` → `p-4` (32px) хасвал **188px** л боломжтой байв
-   *    → 228 − 188 = **40px ТАЙРАГДДАГ** ✗
-   * ⚠️ `sm:h-[260px]` → 228px боломжтой = ЯГ хязгаарт (нөөц 0px ✗ эрсдэлтэй)
-   * ✅ `sm:h-[280px]` → боломжтой **248px** → **20px нөөцтэй** БҮГД БАГТАНА ✓
-   *    (зураг ч 320×280 болж томорно — илүү сайн ✓)
+   *     238px  НИЙТ агуулга
+   * ⚠️ `220px` → 188px боломжтой → 238−188 = **50px ТАЙРАГДДАГ** байв ✗
+   * ⚠️ `280px` → 248px боломжтой → нөөц ердөө 10px (эрсдэлтэй ✗)
+   * ✅ `sm:h-[300px]` → боломжтой **268px** → **30px нөөцтэй** БҮГД БАГТАНА ✓
    *
-   * 🔧 ӨНДРИЙГ СОЛИХ БОЛ: доорх `sm:h-[280px]`-г `270` (нягт) эсвэл
-   *    `300` (илүү чөлөөтэй) гэж бичнэ. ⚠️ Автарын хэмжээг (`size={50}`)
-   *    томруулбал өндрийг ч мөн адил нэмэх ёстой ✓
+   * 🔧 ӨНДРИЙГ СОЛИХ БОЛ: доорх `sm:h-[300px]`-г `290` (нягт) эсвэл
+   *    `320` (илүү чөлөөтэй) гэж бичнэ.
+   * 📏 ФОРМУЛА: `картын өндөр ≥ (агуулга − 48px + автарын хэмжээ) + 32px`
+   *    ⚠️ Автарыг томруулбал өндрийг ч мөн адил нэмэхээ МАРТАХГҮЙ ✓
    * ⚠️ МОБАЙЛ дээр бэхлэгдсэн өндөр БАЙХГҮЙ (`flex-col`, auto өндөр) тул
    *    тайрагдахгүй ✓ — энэ засвар нь ЗӨВХӨН `sm:` (≥640px) дээр нөлөөлнө.
    */
   return (
     <Link
       href={`/listings/${listing.id}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover sm:flex-row sm:h-[280px]"
+      className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover sm:flex-row sm:h-[300px]"
     >
       <div className="relative h-52 w-full shrink-0 overflow-hidden bg-gray-100 sm:h-full sm:w-[320px]">
         {img ? (
@@ -105,10 +105,10 @@ export default function ListingCard({ listing, author, attrsLine }) {
           {/* ══════ 👤 ЗАР НИЙТЛЭГЧ — КАРТЫН БАРУУН ДЭЭД БУЛАНД ══════
               (2026-09-27, хэрэглэгчийн хүсэлт: «Нэр болон Зургийг баруун
                буланд, хүнд харагдахаар байрлуул»)
-              • `justify-end` → нэр + профайл зураг БАРУУН тийш тэгшилнэ ✓
-              • 🖼 Зураг нь `Avatar` **28px** (өмнө 20px — бүдэг байв)
-              • Текст нь `font-semibold text-gray-700` (өмнө `text-gray-500`
-                бүдэг байсан тул харагдахгүй байв ✗)
+              • `justify-end` → нэр + ✅ badge + профайл зураг БАРУУН тийш тэгшилнэ ✓
+              • 🖼 Зураг нь `Avatar` (одоо **50px** — хэрэглэгчийн хүслээр)
+              • ✅ `VerifiedBadge` — Facebook-ийнх шиг цэнхэр баталгаажуулалт
+              • Текст нь `font-semibold text-gray-800` (тод ✓)
               ⚠️ `show_identity = false` (0017) эсвэл 0015/0017 ороогүй бол
                  `fetchProfilesByIds` нь `displayName`-ыг ХООСОН буцаана →
                  энэ блок ОГТ ХАРАГДАХГҮЙ ✓
@@ -122,10 +122,16 @@ export default function ListingCard({ listing, author, attrsLine }) {
               >
                 {author.displayName}
               </span>
-              {/* ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): 28px → 40px — карт дээр
-                  профайл зураг САЙН ХАРАГДАХЫН тулд томруулав.
-                  🔧 Хэмжээг солих бол `size={40}` → 32 / 48 / 56 гэж бичнэ. */}
-              <Avatar src={author.avatarUrl} name={author.displayName} size={50} />
+              {/* ✅ БАТАЛГААЖСАН badge (Facebook-ийнх шиг) — 2026-09-27 (хэрэглэгчийн хүсэлт).
+                  ⚠️ Бүртгэл нь verify.mn-ийн SMS-ээр л болдог тул нэр
+                     харагдаж байгаа нийтлэгч БҮР баталгаажсан ✓
+                  🎨 `text-primary` = цэнхэр (дугуй нь `fill="currentColor"`)
+                  🔧 Хэмжээг солих бол `size={14}` → 12 / 16 / 18 гэж бичнэ. */}
+              <VerifiedBadge size={14} className="text-primary" />
+              {/* 🖼 Профайл зураг — `size={60}` (хэрэглэгчийн хүслээр 40→50→60)
+                  ⚠️ Автарыг томруулбал картын өндрийг ч НЭМЭХ ЁСТОЙ —
+                     дээрх «КАРТЫН ӨНДӨР» тайлбарыг харна уу. */}
+              <Avatar src={author.avatarUrl} name={author.displayName} size={60} />
             </div>
           )}
           {/* ---------- ТӨРӨЛ — КАРТЫН ХАМГИЙН ЭХНИЙ МӨР ----------
