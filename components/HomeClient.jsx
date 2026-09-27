@@ -684,9 +684,10 @@ export default function HomeClient() {
                Төрөл сонгоогүй үед үр дүн нь БҮТЭН ӨРГӨНӨӨР харагдаж,
                дэлгэц цэвэр, анхаарал сарниулахгүй байна.
             ⚠️ Мобайл дээр (`lg`-ээс доош) sidebar нь НУУГДАЖ, баруун талын
-               «⚙️ Шүүлт» товчоор нээгдэнэ — товч нь DOM-д sidebar-ийн ӨМНӨ
-               байрлана (нээгдэхэд дээгүүр гарна). Төрөл сонгоогүй үед оронд
-               нь «Төрөл сонгоход шүүлт нээгдэнэ» гэсэн зөвлөмж харагдана.
+               «⚙️ Дэлгэрэнгүй хайлт» товчоор нээгдэнэ (товч нь өрөөний
+               тоотой мөрийн ДООР — 2026-09-27-нд доош зөөсөн ✓). Төрөл
+               сонгоогүй үед оронд нь «Төрөл сонгоход дэлгэрэнгүй хайлт
+               нээгдэнэ» гэсэн зөвлөмж харагдана.
             ⚠️ Sidebar нь `lg:sticky lg:top-4` — урт жагсаалт гүйлгэхэд шүүлт
                хамт гүйлгэхгүй, дэлгэц дээр барина (unegui.mn-тэй ижил). */}
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
@@ -707,7 +708,7 @@ export default function HomeClient() {
                   <span aria-hidden="true" className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-[12px] text-white">
                     ⚙️
                   </span>
-                  Шүүлт
+                  Дэлгэрэнгүй хайлт
                   {activeFilterCount > 0 && (
                     <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-bold text-white">
                       {activeFilterCount}
@@ -922,34 +923,14 @@ export default function HomeClient() {
                     байхгүй тул оронд нь юу хийхийг хэлсэн зөвлөмж харуулна. */}
                 {!filters.propertyType && (
                   <span className="text-[12.5px] text-gray-400">
-                    💡 Төрөл сонгоход шүүлт нээгдэнэ
+                    💡 Төрөл сонгоход дэлгэрэнгүй хайлт нээгдэнэ
                   </span>
                 )}
 
-                {/* МОБАЙЛ дээр л — sidebar-ийг нээх/хаах. Зөвхөн төрөл сонгосон үед */}
-                {filters.propertyType && (
-                <button
-                  type="button"
-                  onClick={() => setFiltersOpen((v) => !v)}
-                  aria-expanded={filtersOpen}
-                  aria-controls="advanced-filters"
-                  className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 lg:hidden ${
-                    filtersOpen || activeFilterCount > 0
-                      ? 'border-primary bg-primary-light text-primary shadow-chip'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-primary/60 hover:text-primary'
-                  }`}
-                >
-                  ⚙️ Шүүлт
-                  {activeFilterCount > 0 && (
-                    <span className="grid h-4 min-w-[16px] place-items-center rounded-full bg-primary px-1 text-[11px] font-bold text-white">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                  <span aria-hidden="true" className={`text-[10px] transition-transform duration-200 ${filtersOpen ? 'rotate-180' : ''}`}>
-                    ▼
-                  </span>
-                </button>
-                )}
+                {/* ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): МОБАЙЛ дээрх
+                    «Дэлгэрэнгүй хайлт» (хуучнаар «⚙️ Шүүлт») товч ЭНД
+                    БАЙСАН — өрөөний тоотой мөрийн ДООР зөөгдсөн ✓
+                    (мобайл: [гарчиг] → [өрөөний мөр] → [товч] боллов) */}
 
                 {/* Харах горим — `.segmented` */}
                 <div className="segmented" role="group" aria-label="Харах горим">
@@ -1014,6 +995,46 @@ export default function HomeClient() {
                     ✕ Цуцлах
                   </button>
                 )}
+              </div>
+            )}
+
+            {/* ===== ⚙️ МОБАЙЛ: «Дэлгэрэнгүй хайлт» товч (lg:hidden) =====
+                ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «Гар утасаар хархад
+                   өрөөний тоо сонгох хэсэг нь Шүүлт-ийн ӨМНӨ байрлуулна уу»
+                   → товч нь ДЭЭРЭХ (гарчгийн мөр) БАЙСНАА ЭНД, өрөөний
+                   мөрийн ДООР зөөгдөв ✓
+                📱 МОБАЙЛ ДЭЭРХ ДАРААЛАЛ:
+                     [гарчиг 1 өрөө 1,088]
+                     [1 өрөө · 2 өрөө · 3 өрөө …]   ← өрөөний мөр (хурдан ✓)
+                     [⚙️ Дэлгэрэнгүй хайлт ▼]        ← товч (нарийвчилсан ✓)
+                ⚠️ Товч нь `lg:hidden` тул DESKTOP дээр огт харагдахгүй —
+                   тэнд sidebar байнга зүүн талд (`lg:block`) байрлана ✓
+                ⚠️ Товчлах үед `#advanced-filters` (aside) нээгддэг бөгөөд
+                   тэр нь DOM-д ЭНЭ хэсгийн ӨМНӨ байрладаг тул нээгдэхэд
+                   хайлтын панель гарын доор ШУУД гарч ирнэ ✓ */}
+            {filters.propertyType && (
+              <div className="mb-4 lg:hidden">
+                <button
+                  type="button"
+                  onClick={() => setFiltersOpen((v) => !v)}
+                  aria-expanded={filtersOpen}
+                  aria-controls="advanced-filters"
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-all duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
+                    filtersOpen || activeFilterCount > 0
+                      ? 'border-primary bg-primary-light text-primary shadow-chip'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-primary/60 hover:text-primary'
+                  }`}
+                >
+                  ⚙️ Дэлгэрэнгүй хайлт
+                  {activeFilterCount > 0 && (
+                    <span className="grid h-4 min-w-[16px] place-items-center rounded-full bg-primary px-1 text-[11px] font-bold text-white">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                  <span aria-hidden="true" className={`text-[10px] transition-transform duration-200 ${filtersOpen ? 'rotate-180' : ''}`}>
+                    ▼
+                  </span>
+                </button>
               </div>
             )}
 

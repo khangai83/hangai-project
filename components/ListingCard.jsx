@@ -116,7 +116,7 @@ export default function ListingCard({ listing, author, attrsLine }) {
               {author.displayName}
             </span>
             <VerifiedBadge size={12} className="text-primary" />
-            <Avatar src={author.avatarUrl} name={author.displayName} size={26} />
+            <Avatar src={author.avatarUrl} name={author.displayName} size={68} />
           </div>
         )}
         {/* ⚠️ ЗУРАГ дээр «таалагдсан» тэмдэглээ (зүрх/тоо) БАЙХГҮЙ.
