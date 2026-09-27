@@ -152,8 +152,10 @@ const JOB_POSITIONS = {
 /** ⚠️ АВТОМАШИНЫ брэнд+загвар — ДЭД ТӨРӨЛ тус бүрд (BMW X5 нь «Трактор»
  *  дэд төрөлд орохгүй байхын тулд). */
 const AUTO_SUBTYPE_PAIRS = {
-  'Седан': [['Toyota', 'Camry'], ['Lexus', 'IS 250'], ['Hyundai', 'Elantra'], ['Kia', 'K5'], ['BMW', '320i'], ['Mercedes-Benz', 'E 200'], ['Mazda', 'Atenza'], ['Toyota', 'Prius 30']],
-  'Хэтчбек': [['Toyota', 'Aqua'], ['Honda', 'Fit'], ['Mazda', 'Demio'], ['Suzuki', 'Swift'], ['Volkswagen', 'Golf'], ['Toyota', 'Prius 20']],
+  // ⚠️ 2026-09-27: «Седан» + «Хэтчбек» НЭГТГЭЖ «Суудлын машин» болов
+  //    (хэрэглэгчийн хүсэлт). Загварууд нь суудлын машины төрлүүд:
+  //    седан (Camry, K5…), хэтчбек (Aqua, Fit, Golf…).
+  'Суудлын машин': [['Toyota', 'Camry'], ['Lexus', 'IS 250'], ['Hyundai', 'Elantra'], ['Kia', 'K5'], ['BMW', '320i'], ['Mercedes-Benz', 'E 200'], ['Mazda', 'Atenza'], ['Toyota', 'Prius 30'], ['Toyota', 'Aqua'], ['Honda', 'Fit'], ['Mazda', 'Demio'], ['Suzuki', 'Swift'], ['Volkswagen', 'Golf'], ['Toyota', 'Prius 20']],
   'Жийп, SUV': [['Toyota', 'Land Cruiser 200'], ['Lexus', 'LX 570'], ['Nissan', 'Patrol'], ['Mitsubishi', 'Pajero'], ['Land Rover', 'Discovery'], ['BMW', 'X5'], ['Subaru', 'Forester'], ['Haval', 'H6']],
   'Микроавтобус': [['Toyota', 'Hiace'], ['Hyundai', 'Starex'], ['Hyundai', 'H1'], ['Toyota', 'Regius'], ['Nissan', 'Caravan'], ['Ford', 'Transit']],
   'Ачааны машин': [['Isuzu', 'Elf 3.5т'], ['Shacman', 'X3000'], ['JAC', 'N 120'], ['Hyundai', 'Mighty'], ['ГАЗ', 'Газель'], ['Камаз', '65115']],
@@ -424,7 +426,7 @@ function buildRow(section, subtype, k) {
     console.log(`\nНИЙТ: ${total} зар\n`);
     const samples = [
       ['real-estate', 'Орон сууц', 0], ['real-estate', 'Орон сууц', 1],
-      ['auto', 'Седан', 0], ['auto', 'Жийп, SUV', 1],
+      ['auto', 'Суудлын машин', 0], ['auto', 'Жийп, SUV', 1],
       ['jobs', 'IT, программист', 0], ['computers', 'Зөөврийн компьютер', 0],
       ['home', 'Тавилга, буйдан', 0], ['services', 'Сантехник', 0],
     ];

@@ -144,7 +144,7 @@ export default function ListingCard({ listing, author, attrsLine }) {
                  өмнө нь ҮНИЙН ДООР байсан → одоо ЗУРГИЙН дараагийн
                  ХАМГИЙН ЭХЭНД (урд) гарлаа.
               ⚠️ `getPropertyIcon(type, section)` — `section`-ыг ЗААВАЛ дамжуулна:
-                 эс бөгөөс бусд хэсгийн дэд төрөл (ж: «Седан») 🏠 icon авна.
+                 эс бөгөөс бусд хэсгийн дэд төрөл (ж: «Суудлын машин») 🏠 icon авна.
                  (Бусад хэсэгт icon нь ХЭСГИЙН icon: 🚗 💼 💻 🛋️ 🛠️) */}
           <div className="mb-1.5 truncate text-[13px] font-semibold text-gray-800">
             {getPropertyIcon(listing.property_type, listing.section)} {listing.property_type}
