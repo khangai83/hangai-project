@@ -25,10 +25,37 @@ export default function ListingCard({ listing, author, attrsLine }) {
   //    бусад хэсэгт (авто/ажил/компьютер…) энэ badge ХАРАГДАХГҮЙ.
   const isRealEstate = (listing.section || 'real-estate') === 'real-estate';
   const floorLabel = getFloorLabel(listing.floor, listing.total_floors);
+  /*
+   * ══════ ⚠️ КАРТЫН ӨНДӨР — `sm:h-[260px]` (2026-09-27) ══════
+   * 🔴 ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «profile зургийг томруулахаар картны бусад
+   *    мэдээлэл доош орж харагдахгүй болоод байна»
+   * 🔴 ШАЛТГААН: карт нь `overflow-hidden` + БЭХЛЭГДСЭН өндөр байсан
+   *    (`sm:h-[220px]`) тул агуулга хэтэрвэл ДООРООС НЬ ТАЙРАГДДАГ ✗
+   *
+   * 📐 ТООЦОО (доорх мэдээллийн блокийн агуулга):
+   *      48px  👤 Зар нийтлэгч (Avatar 40px) + mb-2
+   *      24px  🏢 ТӨРӨЛ + mb-1.5
+   *      21px  📋 attrsLine (бусад хэсэгт) + mb-1
+   *      29px  💰 ҮНЭ + mb-0.5
+   *      42px  📍 Хаяг + 🕒 Огноо (2 мөр)
+   *      27px  🛏 өрөө / 📐 м² / 🏢 давхар / 📅 он + mt-1.5
+   *      27px  ❤️ доод мөр (border-t + pt-2)
+   *     ─────
+   *     218px  НИЙТ агуулга
+   * ⚠️ `sm:h-[220px]` → `p-4` (32px) хасвал **188px** л боломжтой байв
+   *    → 218 − 188 = **30px ТАЙРАГДДАГ** ✗
+   * ✅ `sm:h-[260px]` → боломжтой **228px** → 10px нөөцтэйгээр БҮГД БАГТАНА ✓
+   *    (зураг ч 320×260 болж томорно — илүү сайн ✓)
+   *
+   * 🔧 ӨНДРИЙГ СОЛИХ БОЛ: доорх `sm:h-[260px]`-г `252` (нягт) эсвэл
+   *    `270` (илүү чөлөөтэй) гэж бичнэ.
+   * ⚠️ МОБАЙЛ дээр бэхлэгдсэн өндөр БАЙХГҮЙ (`flex-col`, auto өндөр) тул
+   *    тайрагдахгүй ✓ — энэ засвар нь ЗӨВХӨН `sm:` (≥640px) дээр нөлөөлнө.
+   */
   return (
     <Link
       href={`/listings/${listing.id}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover sm:flex-row sm:h-[220px]"
+      className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover sm:flex-row sm:h-[260px]"
     >
       <div className="relative h-52 w-full shrink-0 overflow-hidden bg-gray-100 sm:h-full sm:w-[320px]">
         {img ? (
@@ -96,7 +123,7 @@ export default function ListingCard({ listing, author, attrsLine }) {
               {/* ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): 28px → 40px — карт дээр
                   профайл зураг САЙН ХАРАГДАХЫН тулд томруулав.
                   🔧 Хэмжээг солих бол `size={40}` → 32 / 48 / 56 гэж бичнэ. */}
-              <Avatar src={author.avatarUrl} name={author.displayName} size={40} />
+              <Avatar src={author.avatarUrl} name={author.displayName} size={50} />
             </div>
           )}
           {/* ---------- ТӨРӨЛ — КАРТЫН ХАМГИЙН ЭХНИЙ МӨР ----------

@@ -429,7 +429,7 @@ export default function ListingDetailClient({ id }) {
                   title="Энэ хүний бусад зарыг харах"
                   className="group flex items-center gap-3 rounded-lg bg-gray-50 p-3 transition hover:bg-primary-light"
                 >
-                  <Avatar src={author && author.avatarUrl} name={sellerName} size={44} />
+                  <Avatar src={author && author.avatarUrl} name={sellerName} size={120} />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-base font-semibold text-gray-800 transition group-hover:text-primary">
                       {sellerName}
