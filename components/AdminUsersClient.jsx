@@ -22,6 +22,15 @@ function fmtDate(value) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
+/**
+ * Тухайн хэрэглэгчийн ЗАРУУД руу очих холбоос.
+ * `/admin/listings` нь `?userId=`-г уншиж зөвхөн тэр хэрэглэгчийн зарыг харуулна.
+ */
+function listingsHref(row) {
+  const label = row.name ? `${row.name} · ${displayPhone(row)}` : displayPhone(row);
+  return `/admin/listings?userId=${row.id}&label=${encodeURIComponent(label)}`;
+}
+
 export default function AdminUsersClient() {
   const { user, authLoading } = useAuth();
   const [data, setData] = useState(null); // { rows, stats }
@@ -206,7 +215,13 @@ export default function AdminUsersClient() {
               <tr key={r.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
                 <td className="px-4 py-3">
                   <p className="font-semibold text-gray-900">
-                    {r.name || <span className="text-gray-400">(нэргүй)</span>}
+                    <Link
+                      href={listingsHref(r)}
+                      title="Энэ хэрэглэгчийн заруудыг харах"
+                      className="hover:text-primary hover:underline"
+                    >
+                      {r.name || <span className="text-gray-400">(нэргүй)</span>}
+                    </Link>
                     {r.isAdmin && (
                       <span className="ml-2 rounded bg-amber-100 px-1.5 py-px text-[11px] font-semibold text-amber-800">
                         ADMIN
@@ -215,7 +230,11 @@ export default function AdminUsersClient() {
                   </p>
                   <p className="text-[12px] text-gray-400">{r.email || r.id}</p>
                 </td>
-                <td className="px-4 py-3 font-mono text-gray-800">{displayPhone(r)}</td>
+                <td className="px-4 py-3 font-mono text-gray-800">
+                  <Link href={listingsHref(r)} title="Энэ хэрэглэгчийн заруудыг харах" className="hover:text-primary hover:underline">
+                    {displayPhone(r)}
+                  </Link>
+                </td>
                 <td className="px-4 py-3 text-gray-600">
                   {fmtDate(r.createdAt)}
                   <span className="block text-[12px] text-gray-400">{timeAgo(r.createdAt)}</span>
@@ -223,9 +242,14 @@ export default function AdminUsersClient() {
                 <td className="px-4 py-3 text-gray-600">{r.lastSignInAt ? fmtDate(r.lastSignInAt) : '—'}</td>
                 <td className="px-4 py-3 text-center">
                   {r.listingsCount > 0 ? (
-                    <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[13px] font-semibold text-primary">
+                    <Link
+                      href={listingsHref(r)}
+                      title="Энэ хэрэглэгчийн заруудыг харах"
+                      className="inline-flex flex-col items-center gap-0.5 rounded-full bg-primary/10 px-2.5 py-1 text-[13px] font-semibold text-primary hover:bg-primary/20"
+                    >
                       {r.listingsCount}
-                    </span>
+                      <span className="text-[10px] font-medium text-primary/80">👁 харах</span>
+                    </Link>
                   ) : (
                     <span className="text-gray-300">0</span>
                   )}
@@ -255,6 +279,7 @@ export default function AdminUsersClient() {
       <p className="mt-3 text-[12px] text-gray-400">
         Нийт {stats.users} хэрэглэгчээс {rows.length} харуулж байна. Эрх нь Supabase-ийн{' '}
         <code>app_metadata.is_admin</code>-д хадгалагдана (клиент хуурах боломжгүй).
+        {' '}👤 <b>Нэр / утас эсвэл «👁 харах» тоо</b> дээр дарж тухайн хэрэглэгчийн зарууд руу орно.
       </p>
     </div>
   );

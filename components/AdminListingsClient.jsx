@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from './AppProviders';
 import { fetchAdminListings, adminDeleteListing } from '../lib/adminApi';
@@ -18,7 +18,9 @@ function fmtDate(value) {
 /**
  * АДМИН — ЗАРЫН УДИРДЛАГА (`/admin/listings`).
  *
- * • Хайлт: зарын ID (бүтэн эсвэл эхлэлээр), утас, нэр, дүүрэг, хаяг, төрөл
+ * • Хайлт: зарын ID (бүтэн эсвэл эхлэлээр), УТАС, нэр, дүүрэг, хаяг, төрөл
+ * • Хэрэглэгчээр шүүх: `/admin/listings?userId=<uuid>&label=<нэр/утас>`
+ *   (`/admin/users` хуудсанд «Зар» тоо эсвэл нэрэн дээр дарж орно)
  * • Устгах: ЯМАР Ч зарыг (service_role → `/api/admin/listings?id=…`).
  *   Зургууд нь Storage-оос ч хамт цэвэрлэгдэнэ.
  */
@@ -31,10 +33,12 @@ export default function AdminListingsClient() {
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState(null);
   const [notice, setNotice] = useState('');
+  const [userFilter, setUserFilter] = useState(null); // { id, label }
+  const filterRef = useRef(null); // load() дотор ашиглах (useCallback-ийг тогтвортой байлгана)
 
   const load = useCallback(async (search) => {
     setLoading(true);
-    const res = await fetchAdminListings(search || '', 200);
+    const res = await fetchAdminListings(search || '', 200, (filterRef.current && filterRef.current.id) || '');
     setLoading(false);
     if (res.error) {
       setLoadError({ message: res.error, status: res.status || null });
@@ -50,6 +54,14 @@ export default function AdminListingsClient() {
       setData(null);
       setLoadError(null);
       return;
+    }
+    // ?userId=<uuid>&label=<нэр/утас> → зөвхөн тэр хэрэглэгчийн зарууд
+    const sp = new URLSearchParams(window.location.search);
+    const uid = (sp.get('userId') || '').trim();
+    if (uid) {
+      const next = { id: uid, label: (sp.get('label') || '').trim() };
+      filterRef.current = next;
+      setUserFilter(next);
     }
     load('');
   }, [authLoading, user, load]);
@@ -138,7 +150,8 @@ export default function AdminListingsClient() {
           <h1 className="text-2xl font-bold">🏷️ Зарын удирдлага — Админ</h1>
           <p className="mt-1 text-[13px] text-gray-500">
             Бүх зарыг хайж, <b>ямар ч зарыг устгах</b> боломжтой ({data.total} зар нийт).
-            ID-ийн эхний 4+ тэмдэгтээр ч хайж болно. Устгахад зургууд Storage-оос хамт цэвэрлэгдэнэ.
+            <b> Утасны дугаараар</b> ч хайж болно (ж: 99112233 — 976 угтваргүй ч таарна);
+            ID-ийн эхний 4+ тэмдэгтээр ч болно. Устгахад зургууд Storage-оос хамт цэвэрлэгдэнэ.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -147,11 +160,27 @@ export default function AdminListingsClient() {
         </div>
       </header>
 
+      {/* ===== ХЭРЭГЛЭГЧЭЭР ШҮҮХ (/admin/users → «Зар»/нэрэн дээр дарах) ===== */}
+      {userFilter && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+          <span className="text-[13px] text-gray-700">
+            👤 <b>{userFilter.label || userFilter.id.slice(0, 8)}</b> хэрэглэгчийн зарууд —{' '}
+            <b>{data.rows.length}</b> илэрц.
+            <span className="block text-[12px] text-gray-500">
+              Хайлтын мөр нь зөвхөн ЭНЭ хэрэглэгчийн заруудаас хайна (бүх зар гэсэн үг биш).
+            </span>
+          </span>
+          <Link href="/admin/listings" className="btn btn-outline btn-sm ml-auto">
+            ✕ Бүх зар руу буцах
+          </Link>
+        </div>
+      )}
+
       {/* ===== ХАЙЛТ ===== */}
       <form onSubmit={submitSearch} className="mb-4 flex flex-wrap items-center gap-2">
         <input
           className="form-input sm:max-w-[420px]"
-          placeholder="🔍 Зарын ID / утас / нэр / дүүрэг / хаяг / төрөл..."
+          placeholder="🔍 Зарын ID / УТАС / нэр / дүүрэг / хаяг / төрөл..."
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
@@ -177,6 +206,11 @@ export default function AdminListingsClient() {
           {data.mode === 'id-prefix' && data.scanned
             ? ` (сүүлийн ${data.scanned} зарын дотор ID-ийн эхлэлээр хайв)`
             : ''}
+          {data.mode === 'phone' && data.ownerIds && data.ownerIds.length
+            ? ` (утасны дугаараар — сүүлийн 8 цифрээр ч тааруулж, ${data.ownerIds.length} хэрэглэгчийн заруудыг хамруулав)`
+            : data.mode === 'phone'
+              ? ' (утасны дугаараар — сүүлийн 8 цифрээр ч тааруулав)'
+              : ''}
         </p>
       )}
 
@@ -185,7 +219,10 @@ export default function AdminListingsClient() {
         <div className="rounded-xl border border-gray-200 bg-white px-5 py-14 text-center">
           <div className="mb-3 text-5xl">🔎</div>
           <h3 className="mb-1 text-lg font-semibold">Зар олдсонгүй</h3>
-          <p className="text-sm text-gray-500">Хайлтын үгээ өөрчилж үзнэ үү (жишээ: зарын ID-ийн эхний 4 тэмдэгт).</p>
+          <p className="text-sm text-gray-500">
+            Хайлтын үгээ өөрчилж үзнэ үү — <b>утасны дугаар</b> (99112233), зарын ID-ийн эхний 4+ тэмдэгт,
+            эсвэл нэр/дүүрэг/төрөл.
+          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">

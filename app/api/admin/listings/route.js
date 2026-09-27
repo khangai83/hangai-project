@@ -3,6 +3,8 @@
 //
 //   GET    /api/admin/listings?q=<ID|утас|нэр|дүүрэг>&limit=100
 //          → { ok, rows, total }        (ID-аар: бүтэн эсвэл эхлэлээр)
+//   GET    /api/admin/listings?userId=<uuid>&limit=200
+//          → тухайн хэрэглэгчийн БҮХ зар (`/admin/users` хуудаснаас)
 //   DELETE /api/admin/listings?id=<uuid>
 //          → { ok, deletedId, imagesRemoved }
 //
@@ -23,11 +25,12 @@ export async function GET(req) {
 
   const url = new URL(req.url);
   const q = url.searchParams.get('q') || '';
+  const userId = (url.searchParams.get('userId') || '').trim();
   const limit = Number(url.searchParams.get('limit')) || 100;
 
   try {
-    const { rows, total, mode, scanned } = await searchAdminListings({ q, limit });
-    return NextResponse.json({ ok: true, rows, total, mode, scanned });
+    const { rows, total, mode, scanned } = await searchAdminListings({ q, limit, userId });
+    return NextResponse.json({ ok: true, rows, total, mode, scanned, userId: userId || null });
   } catch (err) {
     console.error('[admin/listings] алдаа:', (err && err.message) || err);
     return NextResponse.json({ ok: false, error: (err && err.message) || 'Заруудыг татаж чадсангүй.' }, { status: 500 });

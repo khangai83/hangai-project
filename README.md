@@ -2164,8 +2164,10 @@ phone · status · admin_note · created_at · handled_at` (RLS: insert/select �
 | Хайлтын горим | Хэрхэн ажилладаг |
 |---|---|
 | **Бүтэн ID** (uuid) | `eq('id', …)` |
-| **ID-ийн эхлэл** (4+ hex тэмдэгт) | ⚠️ `id` нь **uuid** багана тул `ilike` ажиллахгүй (`operator does not exist: uuid ~* unknown`, HTTP **42883**) → сүүлийн 500 зарыг татаж JS дээр `startsWith`-ээр шүүнэ (UI дээр «сүүлийн N зарын дотор…» гэж харуулна) |
+| **Утасны дугаар** (зөвхөн цифр, зай, `+`, `-`, `()`) | ⚠️ Эхлээд УТАС гэж таана (эс бөгөөс `[0-9a-f]{4,}` regex-тэй андуурч 0 илэрц өгдөг байв 🐞). `phone.ilike.%термин%` **+ `phone.ilike.%сүүлийн 8 цифр%`** (DB-д `97699112233` гэж хадгалагдсан ч `99112233` гэж хайхад таарна) **+ утас нь таарсан ХЭРЭГЛЭГЧИЙН зарууд** (`user_id.in.(…)`, `findUserIdsByPhone()`) → `mode: 'phone'` |
+| **ID-ийн эхлэл** (4+ hex тэмдэгт, `a–f` үсэг агуулсан) | ⚠️ `id` нь **uuid** багана тул `ilike` ажиллахгүй (`operator does not exist: uuid ~* unknown`, HTTP **42883**) → сүүлийн 500 зарыг татаж JS дээр `startsWith`-ээр шүүнэ (UI дээр «сүүлийн N зарын дотор…» гэж харуулна) |
 | **Текст** | утас · нэр · төрөл · дүүрэг · хороо · хот · хаяг (`ilike`) |
+| **Хэрэглэгчээр** (`?userId=<uuid>`) | `/admin/users` хуудсанд **нэр · утас · «👁 харах» зар тоо** дээр дарахад `/admin/listings?userId=…&label=…` нээгдэнэ → `eq('user_id', …)` (`mode: 'user'`). Хайлтын үгтэй хамт ирвэл **AND** — ө.х. зөвхөн тэр хэрэглэгчийн заруудын дотроос хайна |
 
 - **Устгах:** `DELETE /api/admin/listings?id=<uuid>` → `deleteAdminListing()` нь эхлээд
   Storage дахь зургуудыг (`listing-images`) устгаж, дараа нь мөрийг устгана
@@ -2189,6 +2191,10 @@ phone · status · admin_note · created_at · handled_at` (RLS: insert/select �
 | 7 | Байхгүй ID дээр | ✓ ойлгомжтой алдаа |
 | 8 | Токенгүй `GET`/`DELETE /api/admin/listings` | ✓ **401** |
 | 9 | `/admin/listings` хуудас | ✓ 200, dev log алдаагүй |
+| 10 | 🐞→✅ **Утсаар хайх** (`?q=99112233`, `?q=+976 9911-2233`) | ✓ **88** илэрц (`mode: phone`) — өмнө **0** байв (regex-ийн андуурлаас) |
+| 11 | **Хэрэглэгчийн зарууд** (`?userId=<uuid>`) | ✓ **88** илэрц (`mode: user`) |
+| 12 | **Шүүсэн хэрэглэгчийн дотор хайх** (`?userId=…&q=99001122`) | ✓ **1** илэрц (AND) |
+| 13 | `/admin/users` — нэр/утас/зарын тоо дээр дарахад | ✓ `/admin/listings?userId=…&label=…` нээгдэж, 88 карт + «✕ Бүх зар руу буцах» баннер |
 
 ## Төслийн бүтэц
 
@@ -2216,7 +2222,8 @@ components/
   SellerListingsClient.jsx   # /sellers/[id] — нэг хэрэглэгчийн зарууд (Бүгд/Зарах/Түрээслэх)
   FeedbackClient.jsx         # /feedback — санал хүсэлт (бүртгэлтэй хэрэглэгч)
   AdminFeedbackClient.jsx    # /admin/feedback — админы санал хүсэлтийн самбар
-  AdminListingsClient.jsx    # /admin/listings — зарын хайлт (ID/текст) + ямар ч зарыг устгах
+  AdminListingsClient.jsx    # /admin/listings — зарын хайлт (ID/утас/текст, ?userId=…) + ямар ч зарыг устгах
+  AdminUsersClient.jsx       # /admin/users — хэрэглэгчид; нэр/утас/зарын тоо → түүний зарууд руу линк
   ReportListingModal.jsx     # зарын дэлгэрэнгүй хуудсанд «⚠️ гомдол мэдэгдэх» форм
   MortgageCalculator.jsx     # ипотекийн тооцоолуур (хуудас + зарын баруун багана)
   PriceStatsClient.jsx       # /stats — дүүрэг/хорооны ₮/м² статистик
