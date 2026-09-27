@@ -666,7 +666,7 @@ export default function HomeClient() {
                   }`}
                 >
                   <span className="shrink-0 text-[34px] leading-[1.4]">{s.icon}</span>
-                  <span className={`w-full text-center text-[12px] font-semibold leading-snug ${on ? 'text-primary' : 'text-gray-700'}`}>
+                  <span className={`w-full text-left text-[14px] font-semibold leading-snug ${on ? 'text-primary' : 'text-gray-700'}`}>
                     {s.label}
                   </span>
                 </button>
