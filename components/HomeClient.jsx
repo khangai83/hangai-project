@@ -595,7 +595,7 @@ export default function HomeClient() {
                 ⚠️ ЦУВАА БИШ: дэлгэцэнд тааруулж 2 → 3 → 4 багана.
                 ⚠️ Скелетон: тоо татагдахаас өмнө `count` нь `undefined` →
                    badge харагдахгүй (мөр нь үсрэхгүй). */}
-            <div className="tile-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4" role="tablist" aria-label="Зарын дэд төрөл">
+            <div className="tile-grid-sm grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4" role="tablist" aria-label="Зарын дэд төрөл">
               {subtypes.map((t) => {
                 const count = typeCounts[t];
                 return (
@@ -605,7 +605,7 @@ export default function HomeClient() {
                     role="tab"
                     aria-selected={false}
                     onClick={() => setF('propertyType', t)}
-                    className="group flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-2.5 text-left transition hover:border-primary hover:bg-primary-light"
+                    className="group flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-left transition hover:border-primary hover:bg-primary-light"
                   >
                     {/* ⚠️ ICON ХАСАГДСАН (2026-09-27, хэрэглэгчийн хүсэлт):
                         Дэд төрлийн tile-үүд одоо ЗӨВХӨН ТЕКСТЭЭР харагдана
