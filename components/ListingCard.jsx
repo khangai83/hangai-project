@@ -27,14 +27,14 @@ export default function ListingCard({ listing, author, attrsLine }) {
   const isRealEstate = (listing.section || 'real-estate') === 'real-estate';
   const floorLabel = getFloorLabel(listing.floor, listing.total_floors);
   /*
-   * ══════ ⚠️ КАРТЫН ӨНДӨР — `sm:h-[300px]` (2026-09-27) ══════
-   * 🔴 ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «profile зургийг томруулахаар картны бусад
-   *    мэдээлэл доош орж харагдахгүй болоод байна»
-   * 🔴 ШАЛТГААН: карт нь `overflow-hidden` + БЭХЛЭГДСЭН өндөр байсан
-   *    (`sm:h-[220px]`) тул агуулга хэтэрвэл ДООРООС НЬ ТАЙРАГДДАГ ✗
+   * ══════ ⚠️ КАРТЫН ӨНДӨР — `sm:h-[240px]` (2026-09-27) ══════
+   * 🔴 1-р АСУУДАЛ: карт нь `overflow-hidden` + БЭХЛЭГДСЭН өндөр байсан
+   *    (`sm:h-[220px]`) тул агуулга хэтэрвэл ДООРООС НЬ ТАЙРАГДДАГ байв ✗
+   * ✅ 2-р ШИЙДЭЛ: «👤 ЗАР НИЙТЛЭГЧ» (нэр + ✅ + автар) нь мэдээллийн
+   *    блокоос ЗУРГИЙН overlay руу зөөгдсөн тул мэдээллийн блокт
+   *    ~68px ЧӨЛӨӨЛӨГДӨВ ✓ → өндрийг буцааж багасгав ✓
    *
-   * 📐 ТООЦОО (доорх мэдээллийн блокийн агуулга; avatar = `size={60}`):
-   *      68px  👤 Зар нийтлэгч (Avatar 60px + ✅ badge) + mb-2
+   * 📐 ТООЦОО (мэдээллийн блокийн агуулга — автар ОДОО зураг дээр):
    *      24px  🏢 ТӨРӨЛ + mb-1.5
    *      21px  📋 attrsLine (бусад хэсэгт) + mb-1
    *      29px  💰 ҮНЭ + mb-0.5
@@ -42,22 +42,24 @@ export default function ListingCard({ listing, author, attrsLine }) {
    *      27px  🛏 өрөө / 📐 м² / 🏢 давхар / 📅 он + mt-1.5
    *      27px  ❤️ доод мөр (border-t + pt-2)
    *     ─────
-   *     238px  НИЙТ агуулга
-   * ⚠️ `220px` → 188px боломжтой → 238−188 = **50px ТАЙРАГДДАГ** байв ✗
-   * ⚠️ `280px` → 248px боломжтой → нөөц ердөө 10px (эрсдэлтэй ✗)
-   * ✅ `sm:h-[300px]` → боломжтой **268px** → **30px нөөцтэй** БҮГД БАГТАНА ✓
+   *     170px  НИЙТ агуулга
+   * ✅ `sm:h-[240px]` → `p-4` (32px) хасвал **208px** → **38px нөөцтэй**
+   *    БҮГД БАГТАНА ✓ (зураг ч 320×240 ✓)
    *
-   * 🔧 ӨНДРИЙГ СОЛИХ БОЛ: доорх `sm:h-[300px]`-г `290` (нягт) эсвэл
-   *    `320` (илүү чөлөөтэй) гэж бичнэ.
-   * 📏 ФОРМУЛА: `картын өндөр ≥ (агуулга − 48px + автарын хэмжээ) + 32px`
-   *    ⚠️ Автарыг томруулбал өндрийг ч мөн адил нэмэхээ МАРТАХГҮЙ ✓
+   * 🔧 ӨНДРИЙГ СОЛИХ БОЛ: доорх `sm:h-[240px]`-г `220` (нягт) эсвэл
+   *    `260` (илүү чөлөөтэй) гэж бичнэ.
+   * 📏 ФОРМУЛА: `картын өндөр ≥ (мэдээллийн агуулга) + 32px (p-4)`
+   *    ⚠️ Мэдээллийн блокт ШИНЭ мөр нэмбэл өндрийг ч нэмнэ ✓
+   *    ⚠️ Үүнээс өмнө автарыг 40→50→60px болгож томруулахад мэдээллийн
+   *       блок хэтэрч ТАЙРАГДДАГ байсан (238px агуулга / 188px боломжтой) ✗
+   *       → одоо автар нь зураг дээр (overlay) тул энэ асуудал ГАРАХГҮЙ ✓
    * ⚠️ МОБАЙЛ дээр бэхлэгдсэн өндөр БАЙХГҮЙ (`flex-col`, auto өндөр) тул
    *    тайрагдахгүй ✓ — энэ засвар нь ЗӨВХӨН `sm:` (≥640px) дээр нөлөөлнө.
    */
   return (
     <Link
       href={`/listings/${listing.id}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover sm:flex-row sm:h-[300px]"
+      className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover sm:flex-row sm:h-[240px]"
     >
       <div className="relative h-52 w-full shrink-0 overflow-hidden bg-gray-100 sm:h-full sm:w-[320px]">
         {img ? (
@@ -87,6 +89,36 @@ export default function ListingCard({ listing, author, attrsLine }) {
             🎥 Видео
           </span>
         )}
+        {/* ══════ 👤 ЗАР НИЙТЛЭГЧ — ЗУРГИЙН БАРУУН ДООД БУЛАНД (2026-09-27) ══════
+            ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Profile нэр болон зургийг картны зарын
+               зурагны баруун буланд болгоё» → мэдээллийн блокоос ЗУРАГ РУУ
+               зөөв ✓ Ингэснээр:
+                 • мэдээллийн блокт ~68px чөлөөлөгдөж, карт цэвэрхэн болно ✓
+                 • нэр/зураг нь ЗАРНЫ ЗУРАГТАЙ шууд холбогдож харагдана ✓
+            ⚠️ БАРУУН ДООД (top БИШ) — баруун ДЭЭД буланд 🎥 Видео тэмдэг
+               байрладаг тул давхцахаас сэргийлэв ✓
+            🎨 ХАРАГДАЦ: зураг нь харанхуй/цайвар аль ч байж болох тул
+               ХАР хагас тунгалаг pill (`bg-black/60` + `backdrop-blur-sm`)
+               + ЦАГААН текст → ямар ч зураг дээр тод харагдана ✓
+            🔧 ХЭМЖЭЭГ СОЛИХ: `size={26}` (автар) · `size={12}` (✅ badge)
+               · `text-[12px]` (нэр) · `max-w-[…]` (нэрний хязгаар)
+            ⚠️ `show_identity = false` (0017) эсвэл 0015/0017 ороогүй бол
+               `fetchProfilesByIds` нь `displayName`-ыг ХООСОН буцаана →
+               энэ overlay ОГТ ХАРАГДАХГҮЙ ✓
+            ⚠️ Нэр нь холбоос БИШ — карт бүхэлдээ зар руу линк (`<Link>`
+               дотор `<Link>` хийх нь HTML-д хоригтой). */}
+        {author?.displayName && (
+          <div className="absolute bottom-2 right-2 flex max-w-[calc(100%-16px)] items-center gap-1.5 rounded-full bg-black/60 py-1 pl-2.5 pr-1 shadow backdrop-blur-sm">
+            <span
+              className="truncate text-[12px] font-semibold text-white"
+              title={author.displayName}
+            >
+              {author.displayName}
+            </span>
+            <VerifiedBadge size={12} className="text-primary" />
+            <Avatar src={author.avatarUrl} name={author.displayName} size={26} />
+          </div>
+        )}
         {/* ⚠️ ЗУРАГ дээр «таалагдсан» тэмдэглээ (зүрх/тоо) БАЙХГҮЙ.
             Нийт тоо + ❤️/🤍 товч нь доорх МЭДЭЭЛЛИЙН хэсэгт (мета мөр) байна. */}
 
@@ -102,38 +134,10 @@ export default function ListingCard({ listing, author, attrsLine }) {
       </div>
       <div className="flex flex-1 flex-col justify-between overflow-hidden p-4">
         <div>
-          {/* ══════ 👤 ЗАР НИЙТЛЭГЧ — КАРТЫН БАРУУН ДЭЭД БУЛАНД ══════
-              (2026-09-27, хэрэглэгчийн хүсэлт: «Нэр болон Зургийг баруун
-               буланд, хүнд харагдахаар байрлуул»)
-              • `justify-end` → нэр + ✅ badge + профайл зураг БАРУУН тийш тэгшилнэ ✓
-              • 🖼 Зураг нь `Avatar` (одоо **50px** — хэрэглэгчийн хүслээр)
-              • ✅ `VerifiedBadge` — Facebook-ийнх шиг цэнхэр баталгаажуулалт
-              • Текст нь `font-semibold text-gray-800` (тод ✓)
-              ⚠️ `show_identity = false` (0017) эсвэл 0015/0017 ороогүй бол
-                 `fetchProfilesByIds` нь `displayName`-ыг ХООСОН буцаана →
-                 энэ блок ОГТ ХАРАГДАХГҮЙ ✓
-              ⚠️ Нэр нь холбоос БИШ — карт бүхэлдээ зар руу линк (`<Link>`
-                 дотор `<Link>` хийх нь HTML-д хоригтой). */}
-          {author?.displayName && (
-            <div className="mb-2 flex items-center justify-end gap-2.5">
-              <span
-                className="truncate text-[13.5px] font-semibold text-gray-800"
-                title={author.displayName}
-              >
-                {author.displayName}
-              </span>
-              {/* ✅ БАТАЛГААЖСАН badge (Facebook-ийнх шиг) — 2026-09-27 (хэрэглэгчийн хүсэлт).
-                  ⚠️ Бүртгэл нь verify.mn-ийн SMS-ээр л болдог тул нэр
-                     харагдаж байгаа нийтлэгч БҮР баталгаажсан ✓
-                  🎨 `text-primary` = цэнхэр (дугуй нь `fill="currentColor"`)
-                  🔧 Хэмжээг солих бол `size={14}` → 12 / 16 / 18 гэж бичнэ. */}
-              <VerifiedBadge size={14} className="text-primary" />
-              {/* 🖼 Профайл зураг — `size={60}` (хэрэглэгчийн хүслээр 40→50→60)
-                  ⚠️ Автарыг томруулбал картын өндрийг ч НЭМЭХ ЁСТОЙ —
-                     дээрх «КАРТЫН ӨНДӨР» тайлбарыг харна уу. */}
-              <Avatar src={author.avatarUrl} name={author.displayName} size={60} />
-            </div>
-          )}
+          {/* ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «👤 ЗАР НИЙТЛЭГЧ» (нэр +
+              ✅ badge + профайл зураг) нь ЭНД БАЙХАА БОЛИВ — дээрх
+              ЗУРГИЙН БАРУУН ДООД булан руу ЗӨӨГДСӨН ✓
+              (мэдээллийн блокт ~68px чөлөөлөгдөж, карт цэвэрхэн болов ✓) */}
           {/* ---------- ТӨРӨЛ — КАРТЫН ХАМГИЙН ЭХНИЙ МӨР ----------
               ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «Зар бүрийн доор харагдаж
                  байгаа Үл хөдлөх / Автомашин гэх мэтийг урд нь гарга» —
