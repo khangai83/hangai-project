@@ -7,6 +7,7 @@ import MapView from './MapView';
 import { useToast, useUI } from './AppProviders';
 import {
   fetchListings, fetchPropertyTypeCounts, fetchRoomCounts, fetchProfilesByIds,
+  LISTINGS_PAGE_SIZE,
 } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
 import {
@@ -63,6 +64,121 @@ function SideBlock({ label, children }) {
   );
 }
 
+/**
+ * Хуудасны дугааруудын цонх — урт жагсаалтыг товчлоно.
+ * ж: page=7, pageCount=20 → [1, '…', 5, 6, 7, 8, 9, '…', 20]
+ * ⚠️ Эхний ба сүүлийн хуудас ҮРГЭЛЖ харагдана (хэрэглэгч төгсгөл рүү
+ *    шууд үсрэх боломжтой ✓); дунд нь ±2 хуудас.
+ */
+function pageWindow(page, pageCount, span = 2) {
+  const out = [];
+  const from = Math.max(2, page - span);
+  const to = Math.min(pageCount - 1, page + span);
+  out.push(1);
+  if (from > 2) out.push('…');
+  for (let i = from; i <= to; i += 1) out.push(i);
+  if (to < pageCount - 1) out.push('…');
+  if (pageCount > 1) out.push(pageCount);
+  return out;
+}
+
+/**
+ * 📄 ХУУДАСЛАЛТ (pagination) — 2026-09-27 (хэрэглэгчийн хүсэлт).
+ * «нэг хуудсанд 50 аас илүү зар харуулахгүй ба page болгоё» → нэг хуудсанд
+ * `LISTINGS_PAGE_SIZE` (50) зар, бусад нь `?page=N` болж хуваагдана.
+ *
+ * ⚠️ МОБАЙЛ (390px) дээр тоонууд нь хэвтээ overflow үүсгэж болзошгүй тул:
+ *    • `sm`-ээс ДООШ  → зөвхөн «← Өмнөх | N / M | Дараах →» (товч 2 + тоо)
+ *    • `sm`-ээс ДЭЭШ  → бүтэн тоон жагсаалт (товчлолтой)
+ *    Хоёулаа НЭГ `aria-label="Хуудаслалт"`-тай nav дотор.
+ * ⚠️ `total === null` (count ирээгүй) үед хуудасны тоог мэдэхгүй → зөвхөн
+ *    «Дараах» товчийг `hasMore`-оор харуулна (тоон жагсаалт гарахгүй).
+ */
+function Pagination({ page, pageCount, total, hasMore, onChange }) {
+  const known = typeof total === 'number';
+  if (!known ? !hasMore && page === 1 : pageCount <= 1) return null;
+
+  const btn =
+    'btn btn-outline btn-sm disabled:cursor-not-allowed disabled:opacity-40';
+  const jump = (p) => onChange(Math.max(1, p));
+
+  return (
+    <nav aria-label="Хуудаслалт" className="mt-7 flex flex-col items-center gap-2">
+      {/* ---- 📱 Мобайл: товч + «N / M» ---- */}
+      <div className="flex w-full items-center justify-center gap-2 sm:hidden">
+        <button
+          type="button"
+          className={btn}
+          disabled={page <= 1}
+          onClick={() => jump(page - 1)}
+          aria-label="Өмнөх хуудас"
+        >
+          ← Өмнөх
+        </button>
+        <span className="px-1 text-[13px] font-semibold text-gray-700">
+          {page}
+          {known ? ` / ${pageCount}` : ''}
+        </span>
+        <button
+          type="button"
+          className={btn}
+          disabled={!hasMore}
+          onClick={() => jump(page + 1)}
+          aria-label="Дараагийн хуудас"
+        >
+          Дараах →
+        </button>
+      </div>
+
+      {/* ---- 💻 Desktop: бүтэн тоон жагсаалт ---- */}
+      <div className="hidden flex-wrap items-center justify-center gap-1.5 sm:flex">
+        <button
+          type="button"
+          className={btn}
+          disabled={page <= 1}
+          onClick={() => jump(page - 1)}
+        >
+          ← Өмнөх
+        </button>
+        {known &&
+          pageCount > 1 &&
+          pageWindow(page, pageCount).map((p, i) =>
+            p === '…' ? (
+              <span key={`gap-${i}`} className="px-1 text-gray-400" aria-hidden="true">
+                …
+              </span>
+            ) : (
+              <button
+                key={p}
+                type="button"
+                onClick={() => jump(p)}
+                aria-current={p === page ? 'page' : undefined}
+                className={
+                  p === page
+                    ? 'btn btn-primary btn-sm min-w-[38px]'
+                    : 'btn btn-outline btn-sm min-w-[38px]'
+                }
+              >
+                {p}
+              </button>
+            )
+          )}
+        <button type="button" className={btn} disabled={!hasMore} onClick={() => jump(page + 1)}>
+          Дараах →
+        </button>
+      </div>
+
+      {/* ---- ℹ️ Мэдээлэл: «1–50 / нийт 690» ---- */}
+      {known && (
+        <p className="text-[12.5px] text-gray-500">
+          {(page - 1) * LISTINGS_PAGE_SIZE + 1}–
+          {Math.min(total, page * LISTINGS_PAGE_SIZE)} / нийт {total}
+        </p>
+      )}
+    </nav>
+  );
+}
+
 export default function HomeClient() {
   const { showToast } = useToast();
   const { dataVersion } = useUI();
@@ -73,6 +189,13 @@ export default function HomeClient() {
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState(() => emptyFilters());
   const [view, setView] = useState('list');
+  // 📄 ХУУДАСЛАЛТ (2026-09-27, хэрэглэгчийн хүсэлт) — нэг хуудсанд
+  //    `LISTINGS_PAGE_SIZE` (50) зар; бусад нь `?page=N` болж хуваагдана.
+  //    ⚠️ `total` нь БҮХ хуудасны нийт тоо (`fetchListings().total`) — гарчигт
+  //       харуулна; `hasMore` = дараагийн хуудас байгаа эсэх.
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
   const [listings, setListings] = useState(null); // null = ачаалж байна
   const [loadError, setLoadError] = useState(null); // холболтын алдаа (UI-д тусдаа харуулна)
   const [urlReady, setUrlReady] = useState(false); // URL-ийн хайлтыг уншсан эсэх
@@ -117,6 +240,14 @@ export default function HomeClient() {
     if (q) { setSearch(q); setQuery(q); }
     if (sp.get('view') === 'map') setView('map');
 
+    // ---- 📄 ХУУДАС (`?page=2`) — хуваалцсан линк зөв хуудсыг нээнэ ✓ ----
+    // ⚠️ 1-ээс бага / тоо биш / бутархай утгыг алгасна (эвдэрсэн линкээс сэргийлэв)
+    const pageRaw = sp.get('page');
+    if (pageRaw) {
+      const p = Math.floor(Number(pageRaw));
+      if (Number.isFinite(p) && p > 1) setPage(p);
+    }
+
     const next = emptyFilters(); // массив хуваалцахгүй
     if (sp.get('type')) next.propertyType = sp.get('type');
     if (sp.get('rooms')) next.rooms = sp.get('rooms');
@@ -156,7 +287,8 @@ export default function HomeClient() {
     setListings(null);
     setLoadError(null);
     try {
-      const data = await fetchListings({
+      // 📄 ХУУДАСЛАЛТ: нэг хуудсанд 50 зар (`range`) + нийт тоо (`count`)
+      const res = await fetchListings({
         category,
         section,
         attrs: Object.keys(filters.attrs || {}).length ? filters.attrs : undefined,
@@ -170,17 +302,31 @@ export default function HomeClient() {
         maxPrice: filters.maxPrice || undefined,
         minArea: filters.minArea || undefined,
         maxArea: filters.maxArea || undefined,
-      });
-      setListings(data || []);
+      }, { page });
+
+      // 📄 ХЭТ ӨНДӨР ХУУДАС (`?page=999`) → ХАМГИЙН СҮҮЛИЙН хуудас руу засна.
+      //    ⚠️ Эс бөгөөс хэрэглэгч «Зарууд олдсонгүй» дэлгэц дээр гацаж,
+      //       буцах хуудаслалт ХАРАГДАХГҮЙ (мөр 0 тул) → гарц байхгүй ✗
+      //       (хуучирсан/гараар зассан линкээр ирсэн үед тохиолддог).
+      if (!res.rows.length && page > 1 && typeof res.total === 'number' && res.total > 0) {
+        setPage(res.pageCount);
+        return;
+      }
+
+      setListings(res.rows || []);
+      setTotal(typeof res.total === 'number' ? res.total : null);
+      setHasMore(!!res.hasMore);
     } catch (err) {
       const e = normalizeError(err);
       console.error(e);
       setListings([]);
+      setTotal(null);
+      setHasMore(false);
       setLoadError(e);
       showToast(e.message, 'error');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, section, query, filters, dataVersion]);
+  }, [category, section, query, filters, page, dataVersion]);
 
   useEffect(() => { if (urlReady) load(); }, [load, urlReady]);
 
@@ -273,14 +419,25 @@ export default function HomeClient() {
     if (filters.minArea) params.set('minArea', filters.minArea);
     if (filters.maxArea) params.set('maxArea', filters.maxArea);
     if (view === 'map') params.set('view', 'map');
+    // 📄 ХУУДАС — 1-р хуудас нь URL-д БИЧИГДЭХГҮЙ (цэвэр линк ✓)
+    if (page > 1) params.set('page', String(page));
 
     const qs = params.toString();
     const next = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
     const current = `${window.location.pathname}${window.location.search}`;
     if (next !== current) router.replace(next, { scroll: false });
-  }, [urlReady, category, section, query, filters, view, router]);
+  }, [urlReady, category, section, query, filters, view, page, router]);
 
+  /**
+   * Шүүлт тавих/солих (талбарууд нь sidebar + чипүүд).
+   * ⚠️ 📄 Шүүлт өөрчлөгдвөл 1-р хуудас руу БУЦНА (`setPage(1)`) — эс бөгөөс
+   *    хэрэглэгч 5-р хуудсан дээр шүүлт тавиад «хоосон» хуудас харна ✗
+   *    (шүүсэн үр дүн цөөн байхад хуудасны дугаар хэт өндөр болно).
+   *    ⚠️ React нэг event доторх бүх `setState`-ийг БАГЦААР нэгтгэдэг тул
+   *       `load` НЭГ удаа л (page=1-ээр) ажиллана ✓ (илүү query явуулахгүй).
+   */
   const setF = (k, v) => {
+    setPage(1);
     setFilters((f) => {
       const next = { ...f, [k]: v };
       // Хот/аймаг солигдвол дүүрэг, хорооны сонголт ХҮЧИНГҮЙ болно (жагсаалт өөр)
@@ -295,6 +452,7 @@ export default function HomeClient() {
 
   /** ОЛОН ХОРОО — нэг дарж нэмэх/хасах (checkbox мэт) */
   const toggleKhoroo = (k) => {
+    setPage(1); // 📄 шүүлт өөрчлөгдсөн → 1-р хуудас
     setFilters((f) => ({
       ...f,
       khoroos: f.khoroos.includes(k) ? f.khoroos.filter((x) => x !== k) : [...f.khoroos, k],
@@ -303,6 +461,7 @@ export default function HomeClient() {
 
   const resetAll = () => {
     setCategory('all'); setQuery(''); setSearch('');
+    setPage(1); // 📄 бүх шүүлт арилсан → 1-р хуудас
     // ⚠️ ХЭСЭГ ба drill-down-ыг ч сэргээнэ — эс бөгөөс «Бүх зар» дарсан ч
     //    тухайн хэсгийн (ж: Автомашин) зарууд хэвээр үлддэг байв (АЛДАА).
     setSection('all');
@@ -317,6 +476,7 @@ export default function HomeClient() {
     setSection('all');
     setSectionOpen(false);
     setCategory('all');
+    setPage(1); // 📄 хэсэг арилсан → 1-р хуудас
     setFilters((f) => ({ ...f, propertyType: '', rooms: '', attrs: {} }));
   };
 
@@ -329,6 +489,9 @@ export default function HomeClient() {
   const changeSection = (nextSection, { open = true } = {}) => {
     if (nextSection !== section) {
       setSection(nextSection);
+      // 📄 өөр хэсэг → өөр жагсаалт тул 1-р хуудас
+      //    ⚠️ Ижил хэсэг дээр (зөвхөн нээх) дарах үед хуудсыг ХӨНДӨХГҮЙ ✓
+      setPage(1);
       // ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд
       setCategory((c) => (hasCategoryChoice(nextSection) && c !== 'all' ? c : 'all'));
       setFilters((f) => ({ ...f, propertyType: '', rooms: '', attrs: {} }));
@@ -340,6 +503,7 @@ export default function HomeClient() {
 
   /** ATTR шүүлт (jsonb) — утга тавих / хоослох (`delete` тул URL/DB цэвэр) */
   const setAttr = (key, value) => {
+    setPage(1); // 📄 шүүлт өөрчлөгдсөн → 1-р хуудас
     setFilters((f) => {
       const attrs = { ...(f.attrs || {}) };
       if (value) attrs[key] = value;
@@ -360,11 +524,26 @@ export default function HomeClient() {
     const nav = item?.nav;
     if (!nav) return;
     if (nav.reset) { resetAll(); return; }
+    // 📄 breadcrumb-аар түвшин солих = өөр жагсаалт → 1-р хуудас
+    setPage(1);
     // ⚠️ ХЭСЭГ (0016) — breadcrumb-ийн «Үл хөдлөх» / «Автомашин» линк.
     //    ⚠️ `nav.section` байхгүй бол хэсэг ХӨНДӨГДӨХГҮЙ
     if (nav.section !== undefined) { setSection(nav.section); setSectionOpen(false); }
     if (nav.category !== undefined) setCategory(nav.category);
     if (nav.filters) setFilters((f) => ({ ...f, ...nav.filters }));
+  };
+
+  /**
+   * 📄 Хуудас солих (pagination) — 2026-09-27.
+   * ⚠️ Хуудас сольсны дараа үр дүнгийн эхэнд ГҮЙЛГЭНЭ ✓ — эс бөгөөс мобайлд
+   *    хэрэглэгч хуудасны доод хэсэгт (товч дээр) үлдэж, шинэ заруудыг
+   *    харахгүй ✗. `scrollIntoView` нь байгаа «🔍 Хайх» товчтой ижил арга ✓
+   */
+  const goToPage = (p) => {
+    const next = Math.max(1, Math.floor(Number(p) || 1));
+    setPage(next);
+    const el = document.getElementById('listing-results');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   /** Дүүргийн сонголтууд (сонгосон хот/аймагт) — НЭГ сонголттой */
@@ -534,7 +713,7 @@ export default function HomeClient() {
                дотроос нь брэнд градиентаар дүүрнэ (товчны pill хэлбэр хэрэггүй). */}
         <form
           className="mx-auto flex w-full max-w-[620px] overflow-hidden rounded-xl bg-white shadow-card-hover"
-          onSubmit={(e) => { e.preventDefault(); setQuery(search); }}
+          onSubmit={(e) => { e.preventDefault(); setPage(1); setQuery(search); }}
           role="search"
         >
           <label className="sr-only" htmlFor="home-search">Зар хайх</label>
@@ -986,7 +1165,8 @@ export default function HomeClient() {
                   {loadError
                     ? 'холболтын алдаа'
                     : listings !== null
-                      ? `${formatCount(listings.length)} зар харуулах`
+                      // 📄 НИЙТ тоо (бүх хуудасны) — зөвхөн энэ хуудны биш ✓
+                      ? `${formatCount(total ?? listings.length)} зар харуулах`
                       : 'ачаалж байна…'}
                 </p>
                 {hasFilters && (
@@ -1015,11 +1195,18 @@ export default function HomeClient() {
                   {pageTitle}
                   {listings !== null && !loadError && (
                     <span className="ml-2 align-middle text-base font-normal text-gray-500">
-                      {formatCount(listings.length)}
+                      {/* 📄 НИЙТ зарын тоо (`count`) — хуудасны биш ✓ */}
+                      {formatCount(total ?? listings.length)}
                     </span>
                   )}
                 </h1>
                 {query && <p className="mt-0.5 text-[13px] text-gray-500">«{query}» хайлтын үр дүн</p>}
+                {/* 📄 Хуудас 2+ үед «N дэх хуудас» гэж тодруулна (төөрөгдөлөөс сэргийлэв) */}
+                {page > 1 && listings !== null && !loadError && (
+                  <p className="mt-0.5 text-[13px] text-gray-500">
+                    📄 {page} дэх хуудас
+                  </p>
+                )}
                 {loadError && <p className="mt-0.5 text-[13px] text-red-600">Өгөгдлийн сантай холбогдож чадсангүй</p>}
               </div>
 
@@ -1147,8 +1334,16 @@ export default function HomeClient() {
 
         {/* CONTENT */}
         {view === 'map' ? (
-          <div className="h-[560px] overflow-hidden rounded-xl">
-            <MapView listings={listings || []} />
+          <div>
+            <div className="h-[560px] overflow-hidden rounded-xl">
+              <MapView listings={listings || []} />
+            </div>
+            {/* 📄 Хуудаслалттай үед газрын зураг ЗӨВХӨН тухайн хуудны зарыг
+                (50 хүртэл) харуулна — тодорхой хэлж өгнө (төөрөгдөлөөс сэргийлэв) */}
+            <p className="mt-2 text-[12.5px] text-gray-500">
+              🗺 Газрын зураг нь зөвхөн <b>энэ хуудны</b> зарыг харуулна
+              {total !== null && total > LISTINGS_PAGE_SIZE ? ` (нийт ${total} зарыг хуудаслаж үзнэ үү)` : ''}
+            </p>
           </div>
         ) : listings === null ? (
           <div className="px-5 py-16 text-center">
@@ -1194,6 +1389,22 @@ export default function HomeClient() {
               />
             ))}
           </div>
+        )}
+
+        {/* 📄 ХУУДАСЛАЛТ — 2026-09-27 (хэрэглэгчийн хүсэлт: нэг хуудсанд
+            50-аас илүү зар харуулахгүй, page болгох).
+            ⚠️ Зөвхөн амжилттай ачаалсан үед (`listings !== null && !loadError`)
+               — ачаалж/алдаа/олдоогүй үед хуудаслалт утгагүй ✓
+            ⚠️ ХОЁР ГОРИМД (жагсаалт БА газрын зураг) харагдана — эс бөгөөс
+               газрын зураг дээр хэрэглэгч 2 дахь хуудас руу шилжих боломжгүй ✗ */}
+        {listings !== null && !loadError && listings.length > 0 && (
+          <Pagination
+            page={page}
+            pageCount={total === null ? 1 : Math.max(1, Math.ceil(total / LISTINGS_PAGE_SIZE))}
+            total={total}
+            hasMore={hasMore}
+            onChange={goToPage}
+          />
         )}
 
           </div>

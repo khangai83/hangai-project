@@ -187,6 +187,13 @@ export default function AppProviders({ children }) {
   // ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «✏️ Нэр засах» (window.prompt) зүйл
   //    УСТГАГДСАН ✓ — нэр засах нь «👤 Профайл (нэр, зураг)» цонхон ДОТОР
   //    аль хэдийн байгаа (`Хоч нэр` талбар) тул хоёр газар байх шаардлагагүй.
+  // ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «💬 Санал хүсэлт» зүйл УСТГАГДСАН ✓
+  //    Шалтгаан: footer (бүх хуудсанд харагдана) дээр аль хэдийн байгаа
+  //    (`AppProviders` доор, `<footer>` → `💬 Санал хүсэлт`) тул профайлын
+  //    цэсэн дэх давхардал шаардлагагүй (хэрэглэгч: «сана хүсэлтийг profile
+  //    аас хасаарай, доор угаасаа байна ш дээ»).
+  //    ℹ️ `/feedback` хуудас ӨӨРӨӨ ХЭВЭЭР ✓ (зөвхөн цэсний холбоос хасав) —
+  //    мөн админы «📨 Админ — Санал хүсэлт» (/admin/feedback) хэвээр ✓.
   const closeUserMenus = useCallback(() => {
     setUserMenuOpen(false);
     setMobileMenuOpen(false);
@@ -195,7 +202,6 @@ export default function AppProviders({ children }) {
   const userMenuItems = useMemo(() => {
     const items = [
       { key: 'my-listings', label: '📋 Миний зарууд', href: '/my-listings' },
-      { key: 'feedback', label: '💬 Санал хүсэлт', href: '/feedback' },
     ];
     if (isAdmin) {
       items.push(
