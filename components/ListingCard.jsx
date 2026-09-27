@@ -26,14 +26,14 @@ export default function ListingCard({ listing, author, attrsLine }) {
   const isRealEstate = (listing.section || 'real-estate') === 'real-estate';
   const floorLabel = getFloorLabel(listing.floor, listing.total_floors);
   /*
-   * ══════ ⚠️ КАРТЫН ӨНДӨР — `sm:h-[260px]` (2026-09-27) ══════
+   * ══════ ⚠️ КАРТЫН ӨНДӨР — `sm:h-[280px]` (2026-09-27) ══════
    * 🔴 ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «profile зургийг томруулахаар картны бусад
    *    мэдээлэл доош орж харагдахгүй болоод байна»
    * 🔴 ШАЛТГААН: карт нь `overflow-hidden` + БЭХЛЭГДСЭН өндөр байсан
    *    (`sm:h-[220px]`) тул агуулга хэтэрвэл ДООРООС НЬ ТАЙРАГДДАГ ✗
    *
-   * 📐 ТООЦОО (доорх мэдээллийн блокийн агуулга):
-   *      48px  👤 Зар нийтлэгч (Avatar 40px) + mb-2
+   * 📐 ТООЦОО (доорх мэдээллийн блокийн агуулга; avatar = `size={50}`):
+   *      58px  👤 Зар нийтлэгч (Avatar 50px) + mb-2
    *      24px  🏢 ТӨРӨЛ + mb-1.5
    *      21px  📋 attrsLine (бусад хэсэгт) + mb-1
    *      29px  💰 ҮНЭ + mb-0.5
@@ -41,21 +41,23 @@ export default function ListingCard({ listing, author, attrsLine }) {
    *      27px  🛏 өрөө / 📐 м² / 🏢 давхар / 📅 он + mt-1.5
    *      27px  ❤️ доод мөр (border-t + pt-2)
    *     ─────
-   *     218px  НИЙТ агуулга
+   *     228px  НИЙТ агуулга
    * ⚠️ `sm:h-[220px]` → `p-4` (32px) хасвал **188px** л боломжтой байв
-   *    → 218 − 188 = **30px ТАЙРАГДДАГ** ✗
-   * ✅ `sm:h-[260px]` → боломжтой **228px** → 10px нөөцтэйгээр БҮГД БАГТАНА ✓
-   *    (зураг ч 320×260 болж томорно — илүү сайн ✓)
+   *    → 228 − 188 = **40px ТАЙРАГДДАГ** ✗
+   * ⚠️ `sm:h-[260px]` → 228px боломжтой = ЯГ хязгаарт (нөөц 0px ✗ эрсдэлтэй)
+   * ✅ `sm:h-[280px]` → боломжтой **248px** → **20px нөөцтэй** БҮГД БАГТАНА ✓
+   *    (зураг ч 320×280 болж томорно — илүү сайн ✓)
    *
-   * 🔧 ӨНДРИЙГ СОЛИХ БОЛ: доорх `sm:h-[260px]`-г `252` (нягт) эсвэл
-   *    `270` (илүү чөлөөтэй) гэж бичнэ.
+   * 🔧 ӨНДРИЙГ СОЛИХ БОЛ: доорх `sm:h-[280px]`-г `270` (нягт) эсвэл
+   *    `300` (илүү чөлөөтэй) гэж бичнэ. ⚠️ Автарын хэмжээг (`size={50}`)
+   *    томруулбал өндрийг ч мөн адил нэмэх ёстой ✓
    * ⚠️ МОБАЙЛ дээр бэхлэгдсэн өндөр БАЙХГҮЙ (`flex-col`, auto өндөр) тул
    *    тайрагдахгүй ✓ — энэ засвар нь ЗӨВХӨН `sm:` (≥640px) дээр нөлөөлнө.
    */
   return (
     <Link
       href={`/listings/${listing.id}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover sm:flex-row sm:h-[260px]"
+      className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover sm:flex-row sm:h-[280px]"
     >
       <div className="relative h-52 w-full shrink-0 overflow-hidden bg-gray-100 sm:h-full sm:w-[320px]">
         {img ? (
