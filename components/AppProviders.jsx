@@ -150,10 +150,10 @@ export default function AppProviders({ children }) {
     try { await upsertProfile(user.id, name || null); setProfileName(name || null); } catch (e) { /* ignore */ }
   }, [user]);
 
-  const editName = useCallback(() => {
-    const next = window.prompt('Хэрэглэгчийн нэр:', profileName || '');
-    if (next !== null) saveName(next);
-  }, [profileName, saveName]);
+  // ⚠️ 2026-09-27: `editName()` (window.prompt-оор нэр солих) УСТГАГДСАН —
+  //    нэр засах нь «👤 Профайл» цонхон дотор (`Хоч нэр` талбар) нэгтгэгдсэн ✓
+  //    (`saveName`/`upsertProfile` нь auth context-д хэвээр — гаднаас
+  //     дуудаж болно, гэхдээ UI-д тусдаа цэсийн зүйл байхгүй.)
 
   const logout = useCallback(async () => {
     const client = getSupabase();
@@ -254,7 +254,12 @@ export default function AppProviders({ children }) {
                           </>
                         )}
                         <button className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-primary transition hover:bg-primary-light" onClick={() => { setUserMenuOpen(false); setProfileOpen(true); }}>👤 Профайл (нэр, зураг)</button>
-                        <button className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={() => { setUserMenuOpen(false); editName(); }}>✏️ Нэр засах</button>
+                        {/* ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «✏️ Нэр засах»
+                            цэсийн зүйл УСТГАГДСАН ✓ Учир нь нэр засах нь
+                            «👤 Профайл (нэр, зураг)» цонхон ДОТОР аль хэдийн
+                            байгаа (`Хоч нэр` талбар) — хоёр газар байх
+                            шаардлагагүй. Өмнө нь `window.prompt()` ашигладаг
+                            тусдаа муухай цонх гардаг байв ✗ */}
                         <div className="h-px bg-gray-200"></div>
                         <button className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={logout}>🚪 Гарах</button>
                       </div>
