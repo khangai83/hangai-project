@@ -547,42 +547,67 @@ export default function HomeClient() {
             ⚠️ EMOJI ICON: `leading-none` БИЧИХГҮЙ (мөрийн хайрцгаас ХАЛЬЖ
                гардаг) → `leading-[1.4]` хэрэглэнэ. */}
         {!filters.propertyType && (
-        <section className="mb-5 rounded-xl border border-gray-200 bg-white p-2.5 shadow-card sm:p-3.5">
+        <section
+          className={`mb-5 ${
+            sectionOpen
+              /* unegui.mn-ийн «SubcategoryPanel» — саарал дугуй панел */
+              ? 'rounded-2xl bg-gray-100 px-3 py-4 pt-5 sm:px-8'
+              /* 6 хэсгийн tile сүлжээ — цагаан карт */
+              : 'rounded-xl border border-gray-200 bg-white p-2.5 shadow-card sm:p-3.5'
+          }`}
+        >
 
         {sectionOpen ? (
           <>
-            {/* ---------- ПАНЕЛИЙН ТОЛГОЙ: хэсгийн нэр + БУЦАХ ---------- */}
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-gray-100 pb-3">
-              <div className="flex min-w-0 items-center gap-2">
-                <span className="shrink-0 text-[22px] leading-[1.4]">{sec.icon}</span>
-                <h2 className="truncate text-[15px] font-bold text-gray-900 sm:text-base">{sec.label}</h2>
+            {/* ══════════ unegui.mn ЗАГВАР — SubcategoryPanel ══════════
+                ⚠️ БҮТЭЦ (unegui-ийн DOM-той ижил):
+                   • ТОЛГОЙ: «X» категорийн бүх зарууд  N  + [← Бүх хэсэг]
+                   • SEPARATOR (1px зураас)
+                   • БАГАНУУД: `columns-*` — CSS multi-column нь дээшээс
+                     доош дүүргэж, дараа нь ДАРААГИЙН багана руу шилжинэ
+                ⚠️ Линк бүр нь: chevron (›) + текст, hover-т bg-white
+                🔧 Баганын тоо: доорх `columns-1 sm:columns-2 lg:columns-4` */}
+
+            {/* ---------- ТОЛГОЙ: «бүх зарууд» + БУЦАХ ---------- */}
+            <div className="mb-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+              <button
+                type="button"
+                onClick={() => setSectionOpen(false)}
+                title="Энэ хэсгийн БҮХ зарыг харах"
+                className="flex items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[13px] font-bold text-primary transition hover:bg-white"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0 opacity-40" aria-hidden="true">
+                  <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                «{sec.label}» категорийн бүх зарууд
                 {sectionTotal > 0 && (
-                  <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">
-                    {formatCount(sectionTotal)}
-                  </span>
+                  <span className="text-[12px] font-normal text-gray-500">{formatCount(sectionTotal)}</span>
                 )}
-              </div>
+              </button>
               <button
                 type="button"
                 onClick={backToAllSections}
-                className="shrink-0 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-[12.5px] font-semibold text-gray-600 transition hover:border-primary hover:text-primary"
+                className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-1 text-[12px] font-semibold text-gray-600 transition hover:border-primary hover:text-primary"
               >
                 ← Бүх хэсэг
               </button>
             </div>
 
+            {/* ---------- SEPARATOR ---------- */}
+            <div className="mb-1.5 h-px w-full bg-gray-200" />
+
             {/* ---------- КАТЕГОРИ (зөвхөн үл хөдлөх) ---------- */}
             {showCategories && (
-              <div className="mb-3 flex flex-wrap gap-1.5">
+              <div className="mb-2 flex flex-wrap items-center justify-center gap-1.5">
                 {sectionCategories.map((c) => (
                   <button
                     key={c.value}
                     type="button"
                     onClick={() => setCategory(c.value)}
-                    className={`rounded-full border px-4 py-1.5 text-[12.5px] font-semibold transition ${
+                    className={`rounded-md px-3 py-1 text-[12px] font-semibold transition ${
                       category === c.value
-                        ? 'border-primary bg-primary text-white'
-                        : 'border-gray-200 bg-white text-gray-600 hover:border-primary hover:text-primary'
+                        ? 'bg-primary text-white'
+                        : 'text-gray-600 hover:bg-white hover:text-primary'
                     }`}
                   >
                     {c.label}
@@ -591,38 +616,33 @@ export default function HomeClient() {
               </div>
             )}
 
-            {/* ---------- ДЭД ТӨРӨЛ — БАГАНА (grid) ----------
-                ⚠️ ЦУВАА БИШ: дэлгэцэнд тааруулж 2 → 3 → 4 багана.
-                ⚠️ Скелетон: тоо татагдахаас өмнө `count` нь `undefined` →
-                   badge харагдахгүй (мөр нь үсрэхгүй). */}
-            <div className="tile-grid-sm grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4" role="tablist" aria-label="Зарын дэд төрөл">
-              {subtypes.map((t) => {
-                const count = typeCounts[t];
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    role="tab"
-                    aria-selected={false}
-                    onClick={() => setF('propertyType', t)}
-                    className="group flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-left transition hover:border-primary hover:bg-primary-light"
-                  >
-                    {/* ⚠️ ICON ХАСАГДСАН (2026-09-27, хэрэглэгчийн хүсэлт):
-                        Дэд төрлийн tile-үүд одоо ЗӨВХӨН ТЕКСТЭЭР харагдана
-                        (өмнө нь бүгд ижил хэсгийн icon 💻/🚗/💼 харагддаг байв).
-                        ↩️ БУЦААХ БОЛ: доорх мөрийг энэ байранд буцааж тавина —
-                        <span className="shrink-0 text-[17px] leading-[1.4]">{getPropertyIcon(t, section)}</span> */}
-                    <span className="min-w-0 flex-1 text-[12.5px] font-medium leading-snug text-gray-700 group-hover:text-primary">
-                      {getPropertyTypeLabel(t, category)}
-                    </span>
-                    {typeof count === 'number' && (
-                      <span className="shrink-0 rounded-full bg-gray-100 px-1.5 py-px text-[11px] font-semibold text-gray-500 group-hover:bg-white group-hover:text-primary">
-                        {count}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+            {/* ---------- ДЭД ТӨРӨЛ — unegui.mn шиг БАГАНА ----------
+                ⚠️ unegui нь ХҮРЭЭТЭЙ TILE БИШ, энгийн ТЕКСТ ЛИНК-үүдийг
+                   БАГАНА болгодог: CSS `columns-*` нь дээшээс доош дүүргэж,
+                   дараа нь ДАРААГИЙН багана руу шилжинэ (unegui-тэй ижил).
+                ⚠️ `break-inside-avoid` — линк баганы зааг дээр ТАСРАХГҮЙ.
+                ⚠️ unegui-тэй ижил: дэд төрөл тус бүрийн ТОО ХАРАГДАХГҮЙ
+                   (нийт тоо нь дээрх толгойд байна). Тоог буцаах бол
+                   доорх `<span>`-ы дараа `{typeCounts[t]}` badge нэмнэ.
+                🔧 Баганын тоо: `columns-1 sm:columns-2 lg:columns-4` */}
+            <div className="columns-1 gap-x-6 sm:columns-2 lg:columns-4" role="tablist" aria-label="Зарын дэд төрөл">
+              {subtypes.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="tab"
+                  aria-selected={false}
+                  onClick={() => setF('propertyType', t)}
+                  className="group flex w-full break-inside-avoid items-start gap-1.5 rounded-md px-2 py-1 text-left transition hover:bg-white"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0 opacity-30" aria-hidden="true">
+                    <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span className="line-clamp-2 overflow-hidden text-[12px] font-medium text-ellipsis text-gray-700 group-hover:text-primary">
+                    {getPropertyTypeLabel(t, category)}
+                  </span>
+                </button>
+              ))}
             </div>
           </>
         ) : (
