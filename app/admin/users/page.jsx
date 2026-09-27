@@ -1,7 +1,18 @@
 import AdminUsersClient from '../../../components/AdminUsersClient';
+import AdminNav from '../../../components/AdminNav';
 
-export const metadata = { title: 'Админ — Хэрэглэгчид (ZAR.mn)' };
+export const metadata = { title: 'Админ — Хэрэглэгчид (Зарлаа.mn)' };
 
 export default function AdminUsersPage() {
-  return <AdminUsersClient />;
+  return (
+    <>
+      <div className="page-container pb-0">
+        <div className="mx-auto max-w-[1280px]">
+          <AdminNav active="/admin/users" className="mb-4" />
+        </div>
+      </div>
+      <AdminUsersClient />
+    </>
+  );
 }
+

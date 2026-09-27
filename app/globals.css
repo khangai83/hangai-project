@@ -18,14 +18,14 @@
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
-  /* Leaflet газрын зургийн контейнер стандарт өндөртэй байх */
+ /* Leaflet газрын зургийн контейнер стандарт өндөртэй байх */
   .leaflet-container {
     font-family: inherit;
   }
 }
 
 @layer components {
-  /* ---------- Layout ---------- */
+ /* ---------- Layout ---------- */
   .page-container {
     @apply mx-auto w-full max-w-[1280px] px-4 py-6 sm:px-6;
   }
@@ -34,7 +34,48 @@
     @apply rounded-xl border border-gray-200 bg-white p-5 shadow-card sm:p-6;
   }
 
-  /* ---------- Buttons — бодит 3D мэт, сүүдэртэй ----------
+  /* ════════════════════════════════════════════════════════════════
+     📐 TILE СҮЛЖЭЭНИЙ ЗАЙ   ←←← ХАЙХ ҮГ: tile-grid
+     ════════════════════════════════════════════════════════════════
+     ЮУ ВЭ:  HomeClient.jsx дэх ХЭСЭГ ба ДЭД ТӨРЛИЙН tile-үүдийн
+             хоорондын зай (багана БОЛОН мөрийн зай хоёулаа).
+
+     🎯 ХААНА ХЭРЭГЛЭГДЭНЭ (2 газар — components/HomeClient.jsx):
+          • 601-р мөр — ДЭД ТӨРЛИЙН багана:
+                        🚗 Седан · Хэтчбек · Жийп, SUV …  (10 ширхэг)
+                        💼 IT, программист · Борлуулалт … (15 ширхэг)
+                        💻 Зөөврийн компьютер · Монитор …
+                        🛋️ Тавилга, буйдан · Гал тогоо …
+                        🛠️ Засвар, үйлчилгээ · Барилга …
+          • 631-р мөр — 6 ХЭСГИЙН tile:
+                        🏠 Үл хөдлөх · 🚗 Автомашин · 💼 Ажлын зар ·
+                        💻 Компьютер · 🛋️ Гэр ахуйн бараа · 🛠️ Үйлчилгээ
+
+     🔧 ЗАЙГ ӨӨРЧЛӨХ БОЛ — ЗӨВХӨН доорх `gap` утгыг солино:
+          gap: 1cm;        ← ОДОО (~37.8px · «1 см орчим»)
+          gap: 0.5cm;      ← хагас см (нягт)
+          gap: 0.8cm;      ← жаахан бага
+          gap: 24px;       ← Tailwind-ийн gap-6
+          gap: 40px;       ← Tailwind-ийн gap-10
+          gap: clamp(12px, 2vw, 1cm);   ← дэлгэцэнд тааруулж автоматаар
+
+     📱 Мобайл / десктопт ӨӨР байлгах бол:
+          gap: 0.6cm;
+          @media (min-width: 640px) { gap: 0.8cm; }
+          @media (min-width: 1024px) { gap: 1cm; }
+
+     ⚠️ ЯАГААД CSS КЛАСС ВЭ: өмнө нь Tailwind-ийн `gap-[1cm]` байсан боловч
+        VS Code-ийн хайлтад `[ ]` нь REGEX-ийн тэмдэгтийн класс болдог тул
+        олддоггүй байв. Одоо зүгээр `tile-grid` гэж хайхад л олдоно ✓
+
+     ⚠️ Tailwind-ийн `gap-*` класс нь энэ классаас ДАВАМГАЙ (specificity) тул
+        HTML дээрх className-д `gap-…` БИЧИХГҮЙ байх ёстой.
+     ════════════════════════════════════════════════════════════════ */
+  .tile-grid {
+    gap: 1cm;
+  }
+
+ /* ---------- Buttons — бодит 3D мэт, сүүдэртэй ----------
      ЗАГВАР (бүх өөрөөс нэг): дугуй хэлбэр + босоо градиент биет +
        • inset 0 1px 0 white  → дээд ирэг дээр гэрэл туссан мэт
        • inset 0 -1px 0 black → доод ирэг дээр бараан зураас (зузаан мэт)
@@ -63,7 +104,7 @@
            enabled:active:translate-y-0 enabled:active:shadow-btn-primary-active;
   }
 
-  /* Хоёрдогч «бэх» (ink) товч — төвийг сахисан, minimal.
+ /* Хоёрдогч «бэх» (ink) товч — төвийг сахисан, minimal.
      ⚠️ Урьд нь ногоон байсан; одоо бүх цэсэн товч (Таалагдсан/Нэвтрэх/нэр)
         нэг өнгөтэй болж, анхаарал нь зөвхөн primary (➕ Зар нэмэх) дээр төвлөрнө. */
   .btn-secondary {
@@ -101,7 +142,7 @@
     @apply px-7 py-3.5 text-base;
   }
 
-  /* ---------- Segmented control (хугацааны сонголт) ----------
+ /* ---------- Segmented control (хугацааны сонголт) ----------
      Дугуй хэлбэртэй; идэвхтэй нь цагаан «чип» болж товойно. */
   .segmented {
     @apply inline-flex flex-wrap items-center gap-1 rounded-full border border-gray-200/80 bg-gray-100/90 p-1;
@@ -114,8 +155,8 @@
     @apply bg-white text-primary shadow-chip ring-1 ring-inset ring-gray-200/80;
   }
 
-  /* ---------- Сонголтын чип (ОЛОН сонголттой — хороо г.м.) ----------
-     ⚠️ ЯАГААД: «1 хороо» биш ОЛОН хороог зэрэг сонгох боломж (unegui.mn-ийн
+ /* ---------- Сонголтын чип (ОЛОН сонголттой — хороо г.м.) ----------
+     ⚠️ ЯАГААД: «1 хороо» биш ОЛОН хороог зэрэг сонгох боломж  (олон сонголттой
         олон хайлт). Идэвхтэй нь брэнд өнгөөр дүүрнэ — нэг харцаар ялгарна.
      ⚠️ Текст нь `text-primary` (#2563eb — цагаан дээр 4.5:1 ✅ AA),
         сонгогдсон үед цагаан. */
@@ -130,7 +171,7 @@
     @apply border-primary bg-primary text-white shadow-chip hover:text-white;
   }
 
-  /* ---------- Form controls ---------- */
+ /* ---------- Form controls ---------- */
   .form-label {
     @apply mb-1 block text-[13px] font-semibold text-gray-700;
   }
@@ -155,7 +196,7 @@
     @apply my-1 text-[13px] text-red-600;
   }
 
-  /* Формын мөр/бүлэг — AddListingModal-д хэрэглэгддэг бүтэц */
+ /* Формын мөр/бүлэг — AddListingModal-д хэрэглэгддэг бүтэц */
   .form-row {
     @apply mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2;
   }
@@ -174,7 +215,7 @@
     @apply min-h-[100px] resize-y;
   }
 
-  /* ---------- Badges ---------- */
+ /* ---------- Badges ---------- */
   .badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white;
   }
@@ -185,7 +226,7 @@
     @apply bg-secondary;
   }
 
-  /* ---------- Loading ---------- */
+ /* ---------- Loading ---------- */
   .spinner {
     @apply mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-[3px] border-gray-200 border-t-primary;
   }

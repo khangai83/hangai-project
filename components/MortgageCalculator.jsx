@@ -8,24 +8,22 @@ import { formatPrice } from '../lib/format';
 const DOWN_CHIPS = [10, 20, 30, 40];
 const YEAR_CHIPS = [5, 10, 15, 20, 25, 30];
 
-/**
- * Ипотекийн (зээлийн) тооцоолуур — аннуитет схем.
- *
- * @param {object} props
- * @param {number} [props.defaultPrice] — зарын үнэ (дэлгэрэнгүй хуудсанд)
- * @param {boolean} [props.compact] — баруун баганад (жижиг) эсвэл бүтэн хуудсанд
- *
- * ⚠️ Тооцоолол нь зөвхөн МЭДЭЭЛЛИЙН зорилготой: банкны шимтгэл, даатгал,
- *    нотариат, улсын бүртгэлийн хураамж ороогүй (ЗБӨ-г банкнаас шалгана).
- */
+// Гараас оруулж буй тоог мянгатын орноор тусгаарлах туслах функц
+const formatNumberInput = (val) => {
+  const digits = String(val).replace(/[^\d]/g, '');
+  return digits ? Number(digits).toLocaleString('en-US') : '';
+};
+
 export default function MortgageCalculator({ defaultPrice = 0, compact = false }) {
   const startPrice = defaultPrice > 0 ? defaultPrice : MORTGAGE_DEFAULTS.price;
 
-  const [priceInput, setPriceInput] = useState(String(Math.round(startPrice)));
+  // Анхны утгыг мянгатын орноор тусгаарласан байдалтай эхлүүлнэ
+  const [priceInput, setPriceInput] = useState(formatNumberInput(startPrice));
   const [downPercent, setDownPercent] = useState(MORTGAGE_DEFAULTS.downPercent);
   const [rate, setRate] = useState(MORTGAGE_DEFAULTS.annualRate);
   const [years, setYears] = useState(MORTGAGE_DEFAULTS.years);
 
+  // Зөвхөн цифрүүдийг нь салгаж авч тооцоололд ашиглана
   const price = Number(String(priceInput).replace(/[^\d]/g, '')) || 0;
 
   const input = useMemo(
@@ -54,7 +52,7 @@ export default function MortgageCalculator({ defaultPrice = 0, compact = false }
               className="form-input"
               inputMode="numeric"
               value={priceInput}
-              onChange={(e) => setPriceInput(e.target.value.replace(/[^\d]/g, ''))}
+              onChange={(e) => setPriceInput(formatNumberInput(e.target.value))}
             />
             <p className="form-hint">₮{formatPrice(price)}</p>
           </div>
@@ -62,7 +60,7 @@ export default function MortgageCalculator({ defaultPrice = 0, compact = false }
           <div>
             <label className="form-label">
               Урьдчилгаа — <b className="text-primary">{Math.round(downPercent)}%</b>{' '}
-              <span className="font-normal text-gray-500">(₮{formatPrice(r.down)})</span>
+              <span className="font-normal text-gray-500">(₮{formatPrice(Math.round(r.down))})</span>
             </label>
             <div className="mb-2 flex flex-wrap gap-2">
               {DOWN_CHIPS.map((p) => (
@@ -116,28 +114,31 @@ export default function MortgageCalculator({ defaultPrice = 0, compact = false }
         {/* ===== ҮР ДҮН ===== */}
         <div className={`rounded-xl border border-primary/20 bg-primary-light/40 ${compact ? 'p-4' : 'p-5'}`}>
           <p className="text-[12.5px] font-semibold uppercase tracking-wide text-primary">Сарын төлбөр</p>
-          <p className={`font-bold text-primary ${compact ? 'text-2xl' : 'text-3xl'}`}>₮{formatPrice(r.monthly)}</p>
+          {/* Бутархайг Math.round ашиглан арилгасан */}
+          <p className={`font-bold text-primary ${compact ? 'text-2xl' : 'text-3xl'}`}>
+            ₮{formatPrice(Math.round(r.monthly))}
+          </p>
           <p className="mt-0.5 text-[12.5px] text-gray-500">Аннуитет · {r.months} сар ({years} жил)</p>
 
           <dl className="mt-4 space-y-2 text-[13.5px]">
             <div className="flex justify-between gap-3 border-b border-white/60 pb-1.5">
               <dt className="text-gray-600">Урьдчилгаа</dt>
               <dd className="font-semibold text-gray-900">
-                ₮{formatPrice(r.down)} <span className="font-normal text-gray-500">({Math.round(r.downPercent)}%)</span>
+                ₮{formatPrice(Math.round(r.down))} <span className="font-normal text-gray-500">({Math.round(r.downPercent)}%)</span>
               </dd>
             </div>
             <div className="flex justify-between gap-3 border-b border-white/60 pb-1.5">
               <dt className="text-gray-600">Зээлийн дүн</dt>
-              <dd className="font-semibold text-gray-900">₮{formatPrice(r.principal)}</dd>
+              <dd className="font-semibold text-gray-900">₮{formatPrice(Math.round(r.principal))}</dd>
             </div>
             <div className="flex justify-between gap-3 border-b border-white/60 pb-1.5">
               <dt className="text-gray-600">Нийт төлөх</dt>
-              <dd className="font-semibold text-gray-900">₮{formatPrice(r.totalPay)}</dd>
+              <dd className="font-semibold text-gray-900">₮{formatPrice(Math.round(r.totalPay))}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-gray-600">Үүнээс хүү</dt>
               <dd className="font-semibold text-red-600">
-                ₮{formatPrice(r.totalInterest)} <span className="font-normal">({Math.round(r.interestShare)}%)</span>
+                ₮{formatPrice(Math.round(r.totalInterest))} <span className="font-normal">({Math.round(r.interestShare)}%)</span>
               </dd>
             </div>
           </dl>
@@ -150,10 +151,10 @@ export default function MortgageCalculator({ defaultPrice = 0, compact = false }
                 <li key={s.rate} className="flex items-center justify-between gap-2">
                   <span className={Number(rate) === s.rate ? 'font-bold text-primary' : 'text-gray-600'}>{s.rate}%</span>
                   <span className="font-semibold text-gray-900">
-                    ₮{formatPrice(s.monthly)}
+                    ₮{formatPrice(Math.round(s.monthly))}
                     {s.diff !== 0 && (
                       <span className={`ml-1.5 text-[11.5px] ${s.diff > 0 ? 'text-red-600' : 'text-secondary-dark'}`}>
-                        ({s.diff > 0 ? '+' : '−'}₮{formatPrice(Math.abs(s.diff))})
+                        ({s.diff > 0 ? '+' : '−'}₮{formatPrice(Math.round(Math.abs(s.diff)))})
                       </span>
                     )}
                   </span>

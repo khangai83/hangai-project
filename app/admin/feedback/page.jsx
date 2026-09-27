@@ -1,7 +1,18 @@
 import AdminFeedbackClient from '../../../components/AdminFeedbackClient';
+import AdminNav from '../../../components/AdminNav';
 
-export const metadata = { title: 'Админ — Санал хүсэлт (ZAR.mn)' };
+export const metadata = { title: 'Админ — Санал хүсэлт (Зарлаа.mn)' };
 
 export default function AdminFeedbackPage() {
-  return <AdminFeedbackClient />;
+  return (
+    <>
+      <div className="page-container pb-0">
+        <div className="mx-auto max-w-[1280px]">
+          <AdminNav active="/admin/feedback" className="mb-4" />
+        </div>
+      </div>
+      <AdminFeedbackClient />
+    </>
+  );
 }
+

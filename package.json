@@ -1,8 +1,8 @@
 {
-  "name": "unegui-clone",
+  "name": "zar-mn",
   "version": "3.0.0",
   "private": true,
-  "description": "Mongolian Real Estate Marketplace (ZAR.mn) — Next.js + Supabase",
+  "description": "Mongolian Real Estate Marketplace (Зарлаа.mn) — Next.js + Supabase",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -21,6 +21,7 @@
     "find": "node scripts/find.js",
     "doctor": "node scripts/doctor.js",
     "seed:more": "node scripts/seed-more-listings.mjs",
+    "seed:sections": "node scripts/seed-sections.mjs",
     "seed:bathrooms": "node scripts/seed-bathrooms.mjs",
     "stats:setup": "node scripts/setup-stats.js",
     "stats:check": "node scripts/setup-stats.js --check",

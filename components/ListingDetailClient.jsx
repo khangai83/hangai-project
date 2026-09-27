@@ -7,7 +7,8 @@ import MortgageCalculator from './MortgageCalculator';
 import ReportListingModal from './ReportListingModal';
 import Breadcrumb from './Breadcrumb';
 import { useToast } from './AppProviders';
-import { fetchListingById, fetchSellerCategoryCounts } from '../lib/queries';
+import { fetchListingById, fetchSellerCategoryCounts, fetchProfilesByIds } from '../lib/queries';
+import Avatar from './Avatar';
 import { trackListingView } from '../lib/statsClient';
 import { normalizeError } from '../lib/errors';
 import { formatPrice, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress } from '../lib/format';
@@ -24,6 +25,7 @@ export default function ListingDetailClient({ id }) {
   const [phoneShown, setPhoneShown] = useState(false);
   const [views, setViews] = useState(null); // 👁 серверээс ирсэн «үзсэн» тоо (null = миграцгүй)
   const [sellerStats, setSellerStats] = useState(null); // 📋 зар нийтлэгчийн зарын тоо (Зарах/Түрээслэх)
+  const [author, setAuthor] = useState(null); // 👤 нийтлэгчийн профайл (хоч нэр + зураг)
   const favoriteIds = useFavorites(); // ❤️ (дээрх hook-уудтай хамт дуудагдах ёстой)
   const likes = useLikeCount(id, listing ? listing.likes : 0); // ❤️ нийт хэдэн хүн дарсан
 
@@ -43,7 +45,7 @@ export default function ListingDetailClient({ id }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  /**
+ /**
    * 📋 «Зар нийтлэгч» карт дээр харагдах тоо — тухайн хэрэглэгчийн
    * Зарах / Түрээслэх зарын тоо. Карт нь `/sellers/[id]` хуудас руу шилжүүлнэ.
    * ⚠️ Алдаа гарвал зүгээр л «Зар нийтэлсэн» гэж харуулна (үндсэн агуулгад нөлөөлөхгүй).
@@ -60,7 +62,7 @@ export default function ListingDetailClient({ id }) {
     return () => { mounted = false; };
   }, [listing]);
 
-  /**
+ /**
    * 👁 «Үзсэн» тоог +1.
    * ⚠️ Нэг browser session-д НЭГ л удаа — F5 дарах бүрд хөөрөгдөхгүй.
    *    (Шинэ tab/session нээхэд дахин тоолно — энэ нь зөв.)
@@ -140,7 +142,7 @@ export default function ListingDetailClient({ id }) {
   //    текстийг шууд iframe-д хийхгүй) — XSS-ээс хамгаална.
   const video = parseYouTube(listing.video_url);
 
-  // unegui.mn-ийн <section data-component="AdvertFeaturesApp"> хэсэгт харагдах шинж чанарууд.
+  // <section data-component="AdvertFeaturesApp"> хэсэгт харагдах шинж чанарууд.
   // Зөвхөн утгатай (хоосон биш) мөрүүдийг харуулна.
   const isFav = favoriteIds.includes(listing.id);
   const features = [
@@ -160,14 +162,25 @@ export default function ListingDetailClient({ id }) {
       label: 'Үнэ / м²',
       value: `₮${formatPrice(Math.round(Number(listing.price) / Number(listing.area)))}`,
     },
-    /*{ label: 'Зарын төрөл', value: getCategoryLabel(listing.category) },*/
-    /*{ label: 'Нийтэлсэн', value: timeAgo(listing.created_at) },*/
+ /*{ label: 'Зарын төрөл', value: getCategoryLabel(listing.category) },*/
+ /*{ label: 'Нийтэлсэн', value: timeAgo(listing.created_at) },*/
     // { label: 'Зарын дугаар', value: `ID: ${listing.id}` },
     { label: 'Байршил', value: address || 'Тодорхойгүй' },
     // 👁/❤️ статистик (listings.views / listings.likes — 0006_listing_stats.sql)
     // { label: 'Үзсэн', value: `${viewCount} удаа` },
     // { label: 'Таалагдсан', value: `${likeCount} хүн` },
   ].filter(Boolean);
+
+  // ---- ЗАР НИЙТЛЭГЧИЙН ХАРАГДАХ НЭР ----
+  // ⚠️ Дарааллаар: ХОЧ НЭР (`display_name`, нийтэд) → зарын холбоо барих нэр
+  // (`contact_name`) → ерөнхий төлөв. Жинхэнэ нэр (`profiles.name`) нь
+  // НИЙТЭД ХАРАГДАХГҮЙ (хэрэглэгч нэрээ нууцалж чадна — 0015).
+  const sellerName =
+    (author && author.displayName) || listing.contact_name || 'Холбоо барих хүн';
+
+  // «Элссэн огноо» — «Элссэн огноо 3-р сар, 2021» загвар
+  const joinedAt = author && author.createdAt ? new Date(author.createdAt) : null;
+  const joinedText = joinedAt ? `${joinedAt.getFullYear()} оны ${joinedAt.getMonth() + 1} сар` : '';
 
   return (
     <div className="page-container">
@@ -336,7 +349,7 @@ export default function ListingDetailClient({ id }) {
             </section>
           )}
 
-          {/* ===== ШИНЖ ЧАНАР — unegui.mn-ийн <section data-component="AdvertFeaturesApp" class="mt-6"> хэсэгтэй ижил загвар ===== */}
+          {/* ===== ШИНЖ ЧАНАР — <section data-component="AdvertFeaturesApp" class="mt-6"> хэсэгтэй ижил загвар ===== */}
           <section data-component="AdvertFeaturesApp" className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white">
             <h2 className="border-b border-gray-100 px-5 py-4 text-base font-semibold text-gray-800">Зарын дэлгэрэнгүй</h2>
             <dl className="grid grid-cols-1 sm:grid-cols-2">
@@ -370,7 +383,7 @@ export default function ListingDetailClient({ id }) {
 
             <div className="mt-5 space-y-3">
               {listing.user_id ? (
-                /* ===== ЗАР НИЙТЛЭГЧ РҮҮ ОРОХ (линк) =====
+ /* ===== ЗАР НИЙТЛЭГЧ РҮҮ ОРОХ (линк) =====
                    Дарвал `/sellers/<user_id>` — түүний БУСАД зарууд
                    «🏷️ Зарах» / «🔑 Түрээслэх» гэж ЯЛГАГДАН харагдана. */
                 <Link
@@ -378,10 +391,17 @@ export default function ListingDetailClient({ id }) {
                   title="Энэ хүний бусад зарыг харах"
                   className="group flex items-center gap-3 rounded-lg bg-gray-50 p-3 transition hover:bg-primary-light"
                 >
-                  <span className="text-2xl">👤</span>
+                  <Avatar src={author && author.avatarUrl} name={sellerName} size={44} />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-base font-semibold text-gray-800 transition group-hover:text-primary">
-                      {listing.contact_name || 'Холбоо барих хүн'}
+                      {sellerName}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
+                    {/* ✅ Утсаар баталгаажсан — БҮРТГЭЛ нь verify.mn-ийн SMS-ээр
+                          л болдог тул бүх хэрэглэгч баталгаажсан  (олон сонголттой
+                          «Verified account»-тай ижил утга). */}
+                      <span className="font-semibold text-secondary-dark">✅ Утсаар баталгаажсан</span>
+                      {joinedText && <span>· Элссэн огноо: {joinedText}</span>}
                     </div>
                     <div className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
                       {sellerStats && sellerStats.total > 0 ? (
@@ -399,10 +419,10 @@ export default function ListingDetailClient({ id }) {
                 </Link>
               ) : (
                 <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-                  <span className="text-2xl">👤</span>
+                  <Avatar src={author && author.avatarUrl} name={sellerName} size={44} />
                   <div className="min-w-0">
                     <div className="truncate text-base font-semibold text-gray-800">
-                      {listing.contact_name || 'Холбоо барих хүн'}
+                      {sellerName}
                     </div>
                     <div className="text-xs text-gray-500">Зар нийтэлсэн</div>
                   </div>
@@ -430,12 +450,18 @@ export default function ListingDetailClient({ id }) {
           </div>
 
           {/* ===== 🏦 ИПОТЕКИЙН ТООЦООЛУУР (зөвхөн «зарах» зарт) =====
-              ⚠️ `details/summary` — баруун баганыг хэт урт болгохгүйн тулд
-                 эвхэгддэг. Зээлийн тооцоолол зөвхөн «зарах» зарт утга учиртай. */}
+              ⚠️ `details/summary` — ЭВХЭГДДЭГ ба **АНХДАГЧААР ХААЛТТАЙ**.
+                 Хэрэглэгч өөрөө хүсвэл дарж нээнэ (opt-in).
+                 ⚠️ УРЬД НЬ `open` атрибуттай байсан → байр үзэхээр ороход
+                    тооцоолуур ШУУД БААГААД гарч ирдэг байв (хүчээр).
+                 ⚠️ Зээлийн тооцоолол зөвхөн «зарах» зарт утга учиртай. */}
           {isSell && (
-            <details className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card" open>
-              <summary className="cursor-pointer select-none px-5 py-4 text-base font-semibold text-gray-800">
-                🏦 Ипотекийн тооцоолуур
+            <details className="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card">
+              <summary className="flex cursor-pointer select-none list-none items-center justify-between gap-2 px-5 py-3.5 text-[14px] font-semibold text-gray-700 transition hover:bg-gray-50 hover:text-primary [&::-webkit-details-marker]:hidden">
+                <span>🏦 Ипотекийн тооцоолуур</span>
+                <span className="flex items-center gap-1.5 text-[12px] font-normal text-gray-400">
+                  <span aria-hidden="true" className="transition-transform duration-200 group-open:rotate-180">▼</span>
+                </span>
               </summary>
               <div className="border-t border-gray-100 p-4">
                 <MortgageCalculator defaultPrice={Number(listing.price) || 0} compact />

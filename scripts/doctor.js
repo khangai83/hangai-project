@@ -27,7 +27,7 @@ async function status(url) {
 }
 
 (async () => {
-  console.log('🩺 ZAR.mn — оношлогоо\n');
+  console.log('🩺 Зарлаа.mn — оношлогоо\n');
 
   // ---------- 1. Dev server ----------
   const home = await status(`${BASE}/`);

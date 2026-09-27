@@ -3,8 +3,15 @@
 import Link from 'next/link';
 import { formatPrice, getPropertyIcon, firstImage, getFloorLabel, timeAgo, formatAddress } from '../lib/format';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
+import Avatar from './Avatar';
 
-export default function ListingCard({ listing }) {
+/**
+* @param {{listing: object, author?: {displayName?: string, avatarUrl?: string|null}}} props
+* `author` — зар нийтлэгчийн НИЙТИЙН профайл (хоч нэр + зураг).
+* ⚠️ Сонголтоор: `HomeClient` нь тусдаа query-ээр татаж дамжуулна
+* (`fetchProfilesByIds`). Байхгүй бол блок харагдахгүй.
+*/
+export default function ListingCard({ listing, author, attrsLine }) {
   const img = firstImage(listing);
   const favoriteIds = useFavorites();
   const isFav = favoriteIds.includes(listing.id);
@@ -14,6 +21,9 @@ export default function ListingCard({ listing }) {
   //    триггер count(*) -ээр автоматаар бодно)
   const views = Number(listing.views) || 0;
   const isSell = listing.category === 'sell';
+  // ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд (хэрэглэгчийн хүсэлт) —
+  //    бусад хэсэгт (авто/ажил/компьютер…) энэ badge ХАРАГДАХГҮЙ.
+  const isRealEstate = (listing.section || 'real-estate') === 'real-estate';
   const floorLabel = getFloorLabel(listing.floor, listing.total_floors);
   return (
     <Link
@@ -30,11 +40,13 @@ export default function ListingCard({ listing }) {
             className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-5xl">{getPropertyIcon(listing.property_type)}</div>
+          <div className="flex h-full w-full items-center justify-center text-5xl">{getPropertyIcon(listing.property_type, listing.section)}</div>
         )}
+        {isRealEstate && (
         <span className={`badge absolute left-2 top-2 ${isSell ? 'badge-sell' : 'badge-rent'}`}>
           {isSell ? 'Зарах' : 'Түрээс'}
         </span>
+        )}
         {/* 🎥 Видео байгаа зарын тэмдэг (0011_listing_video.sql → video_url).
             ⚠️ `listing.video_url` нь КАНОНИК линк (lib/youtube.mjs) — энд
             зөвхөн «байгаа эсэх»-ийг шалгана, задлан шинжлэх шаардлагагүй. */}
@@ -61,6 +73,40 @@ export default function ListingCard({ listing }) {
       </div>
       <div className="flex flex-1 flex-col justify-between overflow-hidden p-4">
         <div>
+          {/* ---------- ТӨРӨЛ — КАРТЫН ХАМГИЙН ЭХНИЙ МӨР ----------
+              ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «Зар бүрийн доор харагдаж
+                 байгаа Үл хөдлөх / Автомашин гэх мэтийг урд нь гарга» —
+                 өмнө нь ҮНИЙН ДООР байсан → одоо ЗУРГИЙН дараагийн
+                 ХАМГИЙН ЭХЭНД (урд) гарлаа.
+              ⚠️ `getPropertyIcon(type, section)` — `section`-ыг ЗААВАЛ дамжуулна:
+                 эс бөгөөс бусд хэсгийн дэд төрөл (ж: «Седан») 🏠 icon авна.
+                 (Бусад хэсэгт icon нь ХЭСГИЙН icon: 🚗 💼 💻 🛋️ 🛠️) */}
+          <div className="mb-1.5 truncate text-[13px] font-semibold text-gray-800">
+            {getPropertyIcon(listing.property_type, listing.section)} {listing.property_type}
+          </div>
+          {/* ---------- ЗАР НИЙТЛЭГЧ (хоч нэр + профайл зураг) ----------
+              ⚠️ ЗАГВАР адил: зар дээр НЭР нь ЗААВАЛ, зураг нь СОНГОЛТОЙ.
+                 Хоч нэр (`display_name`) хоосон бол жинхэнэ нэр рүү fallback
+                 (`fetchProfilesByIds`), тэр ч хоосон бол блок харагдахгүй.
+              ⚠️ Нэр нь холбоос БИШ — карт бүхэлдээ зар руу линк байдаг тул
+                 (`<Link>` дотор `<Link>` хийх нь HTML-д хоригтой). */}
+          {author?.displayName && (
+            <div className="mb-1 flex items-center gap-1.5">
+              <Avatar src={author.avatarUrl} name={author.displayName} size={20} />
+              <span className="truncate text-[12px] font-medium text-gray-500">
+                {author.displayName}
+              </span>
+            </div>
+          )}
+          {/* ---------- ХЭСГИЙН НЭМЭЛТ МЭДЭЭЛЭЛ (0016) ----------
+              ж: «Toyota Harrier, 2021 · 95,200 км · Автомат · 2.5 л · Хайбрид»
+              ⚠️ `HomeClient` нь `formatAttrsLine()`-ээр бэлдэж дамжуулна
+                 (үл хөдлөхөд хоосон ирнэ → блок харагдахгүй). */}
+          {attrsLine && (
+            <div className="mb-1 truncate text-[12.5px] font-medium text-gray-600" title={attrsLine}>
+              {attrsLine}
+            </div>
+          )}
           {/* ---------- ҮНЭ ----------
               ⚠️ `price_type` («нийт» / «сард» / «м²») карт дээр ХАРАГДАХГҮЙ —
                  зөвхөн үнэ. (Ижил дүрэм: ListingDetailClient, MyListingsClient,
@@ -68,10 +114,6 @@ export default function ListingCard({ listing }) {
               ⚠️ `getPriceTypeLabel` импорт ч хасагдсан (unused import → ESLint). */}
           <div className="mb-0.5 text-lg font-bold text-gray-900">
             ₮{formatPrice(listing.price)}
-          </div>
-          {/* ---------- ТӨРӨЛ ---------- */}
-          <div className="mb-0.5 truncate text-sm font-semibold text-gray-800">
-            {getPropertyIcon(listing.property_type)} {listing.property_type}
           </div>
           {/* ---------- 📍 ХАЯГ + 🕒 НИЙТЭЛСЭН (2 мөр, ЗҮҮН тийш) ----------
               ⚠️ Хаяг эхний мөрөнд, огноо нь ЯГ ДООР нь — хоёулаа ЗҮҮН тийш

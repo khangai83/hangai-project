@@ -1,7 +1,7 @@
 import PriceStatsClient from '../../components/PriceStatsClient';
 
 export const metadata = {
-  title: 'Үнийн статистик — дүүрэг, хороогоор ₮/м² (ZAR.mn)',
+  title: 'Үнийн статистик — дүүрэг, хороогоор ₮/м² (Зарлаа.mn)',
   description:
     'Улаанбаатар хотын орон сууцны зарууд дээр үндэслэсэн ₮/м² үнийн статистик — дүүрэг, хороогоор медиан ба дундаж үнэ.',
 };

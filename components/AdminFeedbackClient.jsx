@@ -73,7 +73,7 @@ export default function AdminFeedbackClient() {
     load();
   }, [authLoading, user, load]);
 
-  /** Төлөв солих эсвэл админы тэмдэглэл хадгалах */
+ /** Төлөв солих эсвэл админы тэмдэглэл хадгалах */
   const patch = async (row, body, okMsg) => {
     setBusyId(row.id);
     setNotice('');
@@ -87,7 +87,7 @@ export default function AdminFeedbackClient() {
     load();
   };
 
-  /** Гомдол гаргасан зарыг устгах (админ — ямар ч зар) */
+ /** Гомдол гаргасан зарыг устгах (админ — ямар ч зар) */
   const removeListing = async (f) => {
     if (!f.listing_id) return;
     if (!window.confirm('Энэ гомдол гаргасан зарыг БҮРМӨСӨН устгах уу?\n\n⚠️ Зургууд нь Storage-оос ч устгагдана. Буцаах боломжгүй.')) return;

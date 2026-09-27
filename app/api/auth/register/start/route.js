@@ -14,7 +14,14 @@
 // ============================================================
 import { NextResponse } from 'next/server';
 import verifyMn from '../../../../../lib/verifyMn';
-import { findUserByPhone, isPhoneProviderEnabled, signPhoneSession } from '../../../../../lib/authServer';
+import {
+  assertAuthRateLimit,
+  findUserByPhone,
+  getClientIp,
+  isPhoneProviderEnabled,
+  recordAuthEvent,
+  signPhoneSession,
+} from '../../../../../lib/authServer';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +44,20 @@ export async function POST(req) {
   }
   if (name && name.length > 60) {
     return NextResponse.json({ ok: false, error: 'Нэр хэт урт байна (60 тэмдэгт хүртэл).' }, { status: 400 });
+  }
+
+  // ---------- SMS ХЯЗГААР (0015 — auth_events) ----------
+  // ⚠️ verify.mn-ийн SMS нь МӨНГӨ ЗАРЦУУЛДАГ. Хязгааргүй бол хэн нэгэн
+  //    скриптээр олон мянган SMS илгээж үлдэгдлийг шавхана.
+  const ip = getClientIp(req);
+  try {
+    await assertAuthRateLimit({ kind: 'register_start', phone, ip });
+  } catch (err) {
+    if (err && err.code === 'RATE_LIMIT') {
+      return NextResponse.json({ ok: false, code: 'RATE_LIMIT', error: err.message }, { status: 429 });
+    }
+    // ⚠️ 0015 ороогүй бол ч урсгалыг зогсоохгүй
+    console.warn('[auth/register/start] хязгаар шалгахад алдаа:', (err && err.message) || err);
   }
 
   // ⚠️ Утасны (phone) provider идэвхгүй байх нь БҮРТГЭЛИЙГ ХОРИГЛОХГҮЙ:
@@ -75,6 +96,9 @@ export async function POST(req) {
   try {
     const callback = process.env.VERIFY_MN_CALLBACK_URL || undefined;
     const session = await verifyMn.startVerification(phone, { callback });
+
+    // ⚠️ SMS амжилттай эхэлсний ДАРАА л бүртгэнэ (хязгаарын тооцоонд)
+    await recordAuthEvent({ kind: 'register_start', phone, ip });
 
     return NextResponse.json({
       ok: true,

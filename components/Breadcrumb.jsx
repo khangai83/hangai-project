@@ -3,7 +3,7 @@
 import Link from 'next/link';
 
 /**
- * Breadcrumb — unegui.mn загварын замчилсан цэс.
+ * Breadcrumb — загварын замчилсан цэс.
  *
  * items: [{ label, href, nav }] — href-гүй (эсвэл сүүлийн) элемент нь одоогийн хуудас.
  *

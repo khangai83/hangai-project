@@ -11,7 +11,7 @@ import { timeAgo } from '../lib/format';
 
 /**
  * Табууд: Бүгд / Зарах / Түрээслэх.
- * ⚠️ unegui.mn-тэй ижил зарчмаар «Зарах» ба «Түрээслэх» зарыг ЯЛГАЖ харуулна.
+ * ⚠️ ижил зарчмаар «Зарах» ба «Түрээслэх» зарыг ЯЛГАЖ харуулна.
  */
 const TABS = [
   { key: 'sell', label: '🏷️ Зарах' },
@@ -53,7 +53,7 @@ export default function SellerListingsClient({ sellerId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sellerId]);
 
-  /** Зар нийтлэгчийн мэдээлэл — нэр, утас, хотууд, сүүлд нийтэлсэн огноо */
+ /** Зар нийтлэгчийн мэдээлэл — нэр, утас, хотууд, сүүлд нийтэлсэн огноо */
   const seller = useMemo(() => {
     const rows = listings || [];
     if (!rows.length) return { name: '', phone: '', cities: [], lastPost: null };
@@ -68,12 +68,26 @@ export default function SellerListingsClient({ sellerId }) {
   const sellListings = useMemo(() => (listings || []).filter((l) => l.category === 'sell'), [listings]);
   const rentListings = useMemo(() => (listings || []).filter((l) => l.category === 'rent'), [listings]);
 
+  /**
+   * Нийтлэгчид ҮЛ ХӨДЛӨХ зар байгаа эсэх.
+   * ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд (хэрэглэгчийн хүсэлт) — бусад
+   *    хэсэгт (авто/ажил/компьютер…) энэ ялгавар ХАРАГДАХГҮЙ. Хэрэглэгч зөвхөн
+   *    автомашин зардаг бол «🔑 Түрээслэх 0» гэсэн утгагүй таб гарахгүй.
+   */
+  const hasRealEstate = useMemo(
+    () => (listings || []).some((l) => (l.section || 'real-estate') === 'real-estate'),
+    [listings]
+  );
+
   const counts = {
     all: (listings || []).length,
     sell: sellListings.length,
     rent: rentListings.length,
   };
-  const visible = tab === 'sell' ? sellListings : tab === 'rent' ? rentListings : listings || [];
+  // ⚠️ Үл хөдлөхгүй бол «Зарах/Түрээслэх» таб утгагүй тул зөвхөн бүгдийг харуулна
+  const visible = hasRealEstate && (tab === 'sell' || tab === 'rent')
+    ? (tab === 'sell' ? sellListings : rentListings)
+    : listings || [];
 
   // ---------- Ачаалж байна ----------
   if (listings === null) {
@@ -148,15 +162,22 @@ export default function SellerListingsClient({ sellerId }) {
           )}
         </div>
 
-        {/* Зарах / Түрээслэх-ийн товч статистик */}
+        {/* Зарах / Түрээслэх-ийн товч статистик —
+            ⚠️ ЗӨВХӨН үл хөдлөх зартай нийтлэгчид (хэрэглэгчийн хүсэлт) */}
         <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 px-5 py-3.5 sm:px-6">
           <span className="text-[13px] font-semibold text-gray-600">📋 Нийт {counts.all} зар</span>
-          <span className="rounded-full bg-primary-light px-2.5 py-1 text-[12px] font-semibold text-primary">🏷️ Зарах {counts.sell}</span>
-          <span className="rounded-full bg-secondary/10 px-2.5 py-1 text-[12px] font-semibold text-secondary-dark">🔑 Түрээслэх {counts.rent}</span>
+          {hasRealEstate && (
+            <>
+              <span className="rounded-full bg-primary-light px-2.5 py-1 text-[12px] font-semibold text-primary">🏷️ Зарах {counts.sell}</span>
+              <span className="rounded-full bg-secondary/10 px-2.5 py-1 text-[12px] font-semibold text-secondary-dark">🔑 Түрээслэх {counts.rent}</span>
+            </>
+          )}
         </div>
       </section>
 
-      {/* ===== ТАБУУД — Зарах / Түрээслэх-ээр ялгаж харах ===== */}
+      {/* ===== ТАБУУД — Зарах / Түрээслэх-ээр ялгаж харах =====
+          ⚠️ ЗӨВХӨН үл хөдлөх зартай үед — эс бөгөөс «Бүгд» ганцаараа үлдэж утгагүй */}
+      {hasRealEstate && (
       <div className="mb-5 flex flex-wrap items-center gap-1 rounded-lg bg-gray-100 p-1">
         <button
           type="button"
@@ -180,6 +201,7 @@ export default function SellerListingsClient({ sellerId }) {
           </button>
         ))}
       </div>
+      )}
 
       {visible.length === 0 ? (
         <div className="rounded-xl border border-gray-200 bg-white px-5 py-14 text-center">

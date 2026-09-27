@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useToast, useUI } from './AppProviders';
 import { createListing, updateListing, uploadImages } from '../lib/queries';
-import { CITIES, getDistricts, getKhoroos, PROPERTY_TYPES, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, BALCONY_OPTIONS, GARAGE_OPTIONS } from '../lib/locationData';
+import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSubtypes, hasCategoryChoice } from '../lib/locationData';
 import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice } from '../lib/format';
 import phoneEmail from '../lib/phoneEmail';
 import YouTubeField from './YouTubeField';
@@ -14,6 +14,9 @@ import { compressImages, formatBytes } from '../lib/imageUtils';
 function listingToForm(l) {
   return {
     category: l.category || 'sell',
+    // ---- ХЭСЭГ ба attr (0016) ----
+    section: l.section || 'real-estate',
+    attrs: (l.attrs && typeof l.attrs === 'object') ? { ...l.attrs } : {},
     propertyType: l.property_type || '',
     rooms: l.rooms ? String(l.rooms) : '',
     area: l.area ? String(l.area) : '',
@@ -47,6 +50,9 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
 
   const emptyForm = () => ({
     category: 'sell',
+    // ---- ХЭСЭГ ба attr (0016) — анхдагч нь үл хөдлөх ----
+    section: 'real-estate',
+    attrs: {},
     propertyType: '',
     rooms: '',
     area: '',
@@ -120,6 +126,27 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
   const districts = getDistricts(form.city);
   const khoroos = getKhoroos(form.city, form.district);
 
+  // ===== ХЭСЭГ ба ATTR (0016) =====
+  // ⚠️ `real-estate` нь уламжлалт: дэд төрөл нь `PROPERTY_TYPES`, нэмэлт
+  //    талбарууд нь `rooms`/`floor`/`build_year` … тусдаа БАГАНА дээр.
+  //    Бусад хэсэг (авто/ажил/компьютер/бараа/үйлчилгээ) нь `attrs` jsonb.
+  const isRealEstate = (form.section || 'real-estate') === 'real-estate';
+  const subtypes = getSubtypes(form.section || 'real-estate');
+  /** «Зарах / Түрээслэх» сонголт харагдах эсэх — ⚠️ ЗӨВХӨН үл хөдлөхөд */
+  const showCategoryChoice = hasCategoryChoice(form.section || 'real-estate');
+  /** Тухайн хэсгийн attr талбарүүд (форм автоматаар үүсгэнэ) */
+  const attrFields = (SECTIONS.find((s) => s.value === (form.section || 'real-estate')) || SECTIONS[0]).attrFields || [];
+
+  /** ATTR утга тавих/хоослох (хоосон бол `delete` — DB-д хог үлдээхгүй) */
+  const setAttr = (key, value) => {
+    setForm((f) => {
+      const attrs = { ...(f.attrs || {}) };
+      if (value !== '') attrs[key] = value;
+      else delete attrs[key];
+      return { ...f, attrs };
+    });
+  };
+
   // Орон сууцны нэмэлт талбарууд төрлөөс хамаарч харагдана
   const showApartment = hasApartmentFields(form.propertyType);
   const showFloors = hasFloorFields(form.propertyType);
@@ -167,7 +194,7 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!form.propertyType) { setError('Үл хөдлөх хөрөнгийн төрлөө сонгоно уу'); return; }
+    if (!form.propertyType) { setError('Зарын төрлөө сонгоно уу'); return; }
     if (!form.city) { setError('Хот/Аймгаа сонгоно уу'); return; }
     // ⚠️ Үнэ нь ЗӨВХӨН ЦИФР хэлбэрээр хадгалагдана (formatThousands нь зөвхөн
     //    ХАРАГДАЦЫГ таслалтай болгоно). quires.js → toNumber() нь «,»-г
@@ -193,7 +220,12 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
         // Засах үед хуучин зургуудыг хадгалаад шинээр нэмсэнийг залгана
         images: [...existingImages, ...uploaded],
         // Тухайн төрөлд хамаарахгүй нэмэлт талбаруудыг хоосолж хадгална
+        // ⚠️ 0016: үл хөдлөхийн талбарууд (өрөө, талбай, давхар…) нь ЗӨВХӨН
+        //    үл хөдлөх хэсэгт утгатай — бусад хэсэгт хоосон хадгална.
         rooms: showRooms ? form.rooms : '',
+        area: isRealEstate ? form.area : '',
+        // ⚠️ «Зарах / Түрээслэх» нь зөвхөн үл хөдлөхөд — бусад хэсэгт `sell`
+        category: isRealEstate ? form.category : 'sell',
         buildYear: showApartment ? form.buildYear : '',
         floor: showFloors ? form.floor : '',
         totalFloors: showFloors ? form.totalFloors : '',
@@ -241,6 +273,43 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
             {error && <div className="mb-3 rounded-lg bg-red-50 p-2.5 text-red-800">{error}</div>}
 
             <div className="form-row">
+              {/* ===== ХЭСЭГ (0016) — Автомашин / Ажлын зар / Компьютер … =====
+                  ⚠️ Хэсэг солиход дэд төрөл (propertyType) ба attr утгууд нь
+                     тухайн хэсэгт тохирохгүй тул ЦЭВЭРЛЭНЭ. */}
+              <div className="form-group">
+                <label>Хэсэг *</label>
+                <select
+                  value={form.section || 'real-estate'}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setForm((f) => ({
+                      ...f,
+                      section: next,
+                      propertyType: '',
+                      attrs: {},
+                      // ⚠️ «Зарах / Түрээслэх» нь зөвхөн үл хөдлөхөд — бусад
+                      //    хэсэгт `sell` болж буцна (select нь харагдахгүй).
+                      category: hasCategoryChoice(next) ? f.category : 'sell',
+                    }));
+                  }}
+                >
+                  {SECTIONS.map((s) => (
+                    <option key={s.value} value={s.value}>{s.icon} {s.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Дэд төрөл *</label>
+                <select value={form.propertyType} onChange={(e) => set('propertyType', e.target.value)}>
+                  <option value="">Сонгох</option>
+                  {subtypes.map((t) => (
+                    <option key={t} value={t}>{getPropertyTypeLabel(t, form.category)}</option>
+                  ))}
+                </select>
+              </div>
+              {/* «Зар эсвэл түрээс» — ⚠️ ЗӨВХӨН үл хөдлөхөд (хэрэглэгчийн хүсэлт).
+                  Бусад хэсэгт `category` нь `sell` (DB-ийн default) байна. */}
+              {showCategoryChoice && (
               <div className="form-group">
                 <label>Зар эсвэл түрээс *</label>
                 <select value={form.category} onChange={(e) => set('category', e.target.value)}>
@@ -248,16 +317,38 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                   <option value="rent">🔑 Түрээслэх</option>
                 </select>
               </div>
-              <div className="form-group">
-                <label>Үл хөдлөх хөрөнгийн төрөл *</label>
-                <select value={form.propertyType} onChange={(e) => set('propertyType', e.target.value)}>
-                  <option value="">Сонгох</option>
-                  {PROPERTY_TYPES.map((t) => (
-                    <option key={t} value={t}>{getPropertyTypeLabel(t, form.category)}</option>
-                  ))}
-                </select>
-              </div>
+              )}
             </div>
+
+            {/* ===== ХЭСГИЙН НЭМЭЛТ ТАЛБАРУУД (attrs jsonb, 0016) =====
+                ⚠️ Хэсэг тус бүрд өөр (Авто: брэнд/он/гүйлт/түлш; Ажил: компани/
+                   цалин; Компьютер: CPU/RAM …). `SECTIONS[].attrFields`-ээс
+                   автоматаар үүснэ — шинэ талбар нэмэхэд код засахгүй. */}
+            {attrFields.length > 0 && (
+              <div className="form-row">
+                {attrFields.map((f) => (
+                  <div key={f.key} className="form-group">
+                    <label>{f.icon ? `${f.icon} ` : ''}{f.label}</label>
+                    {f.type === 'select' ? (
+                      <select
+                        value={(form.attrs || {})[f.key] || ''}
+                        onChange={(e) => setAttr(f.key, e.target.value)}
+                      >
+                        <option value="">Сонгох</option>
+                        {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    ) : (
+                      <input
+                        type={f.type === 'number' ? 'number' : 'text'}
+                        value={(form.attrs || {})[f.key] || ''}
+                        onChange={(e) => setAttr(f.key, e.target.value)}
+                        placeholder={f.placeholder || ''}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="form-row">
               {/* «Өрөө» нь зөвхөн Орон сууц, АОС/хаус төрөлд харагдана (lib/locationData.js) */}
@@ -267,6 +358,8 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                   <input type="number" min="0" value={form.rooms} onChange={(e) => set('rooms', e.target.value)} placeholder="3" />
                 </div>
               )}
+              {/* ⚠️ «Талбай» нь ЗӨВХӨН үл хөдлөх хэсэгт (0016) */}
+              {isRealEstate && (
               <div className={`form-group ${showRooms ? '' : 'sm:col-span-2'}`}>
                 <label>Талбай (м²)</label>
                 <input
@@ -278,6 +371,7 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                 />
                 <p className="form-hint">Аравтын бутархайг «.» эсвэл «,»-ээр бичиж болно (ж: 75,5)</p>
               </div>
+              )}
             </div>
             {/* ===== 🚿 УГААЛГЫН ӨРӨӨ (0012_listing_bathrooms.sql) =====
                 АОС/хаус төрөлд ҮРГЭЛЖ, мөн 3 ба түүнээс олон өрөөтэй зарт

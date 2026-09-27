@@ -140,11 +140,30 @@ async function main() {
       cols: 'bathrooms',
       file: '0012_listing_bathrooms.sql',
     },
+    {
+      label: '0014 — давхардлын хамгаалалт (dedupe_key)',
+      cols: 'dedupe_key',
+      file: '0014_listing_dedupe.sql',
+    },
+    {
+      label: '0015 — хоч нэр ба профайл зураг',
+      cols: 'display_name,avatar_url',
+      file: '0015_profiles_public.sql',
+      table: 'profiles',
+    },
+    {
+      // ⚠️ 0016: `section` ба `attrs` хоёр нь ШИНЭ багана. Аль нэг нь дутуу бол
+      //    `?section=eq.auto` шүүлт нь PostgREST-ийн 400 алдаа болно.
+      label: '0016 — зарын хэсгүүд (section, attrs)',
+      cols: 'section,attrs',
+      file: '0016_listing_sections.sql',
+    },
   ];
 
   for (const c of detailChecks) {
+    const tbl = c.table || 'listings';
     try {
-      const res = await fetch(`${url}/rest/v1/listings?select=${c.cols}&limit=1`, { headers });
+      const res = await fetch(`${url}/rest/v1/${tbl}?select=${c.cols}&limit=1`, { headers });
       if (res.status === 200 || res.status === 206) {
         report(true, `${c.label} байна`, c.cols);
       } else {

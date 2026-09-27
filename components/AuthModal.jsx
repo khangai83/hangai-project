@@ -8,10 +8,12 @@ import {
   startPhoneVerification,
   checkPhoneVerification,
   completeRegistration,
+  startPasswordReset,
+  completePasswordReset,
   fetchAuthStatus,
 } from '../lib/authApi';
 
-const VIEW = { SIGNIN: 'signin', SIGNUP: 'signup' };
+const VIEW = { SIGNIN: 'signin', SIGNUP: 'signup', RESET: 'reset' };
 const STEP = { FORM: 'form', VERIFY: 'verify' };
 const POLL_MS = 3000; // verify.mn-ийг 3 секундээс хурдан бүү шалга (docs)
 const MIN_PASSWORD = 6;
@@ -102,6 +104,31 @@ export default function AuthModal({ open, onClose }) {
       setChecking(false);
       setStatusText('Баталгаажлаа! Бүртгэлийг дуусгаж байна...');
 
+      // ⚠️ НУУЦ ҮГ СЭРГЭЭХ урсгал бол өөр endpoint — салгаж дуудна.
+      // Токен/утас/SMS-ийн шалгалт нь ЯГ ижил (`signPhoneSession`).
+      if (view === VIEW.RESET) {
+        const reset = await completePasswordReset({
+          phone: normalizePhone(phone),
+          password,
+          requestToken,
+        });
+        finishingRef.current = false;
+        if (reset.error) {
+          setError(reset.error);
+          setStatusText('');
+          return;
+        }
+        showToast('Нууц үг амжилттай шинэчлэгдлээ ✅ Одоо нэвтэрнэ үү.');
+        // Нэвтрэх хэсэг рүү буцаана — хэрэглэгч шинэ нууц үгээрээ нэвтэрнэ
+        setView(VIEW.SIGNIN);
+        setStep(STEP.FORM);
+        setSession(null);
+        setStatusText('');
+        setPassword('');
+        setPassword2('');
+        return;
+      }
+
       const done = await completeRegistration({
         name: name.trim(),
         phone: normalizePhone(phone),
@@ -126,7 +153,7 @@ export default function AuthModal({ open, onClose }) {
       showToast('Амжилттай бүртгүүллээ 🎉');
       onClose();
     },
-    [name, phone, password, signIn, showToast, onClose]
+    [name, phone, password, signIn, showToast, onClose, view]
   );
 
   // ---------- Төлөв шалгах (auto + гараар) ----------
@@ -234,12 +261,50 @@ export default function AuthModal({ open, onClose }) {
     showToast('144773 дугаар руу кодыг SMS-ээр илгээнэ үү', 'info');
   };
 
+  // ---------- НУУЦ ҮГЭЭ МАРТСАН → verify.mn-ээр сэргээх ----------
+  // ⚠️ Урсгал нь бүртгэлтэй ЯГ ижил (phone → SMS → VERIFIED), зөвхөн
+  // төгсгөлд нь `completeRegistration` биш `completePasswordReset`.
+  const submitReset = async (e) => {
+    e.preventDefault();
+    setError('');
+    if (!validatePhone()) return;
+    if (password.length < MIN_PASSWORD) {
+      setError(`Нууц үг хамгийн багадаа ${MIN_PASSWORD} тэмдэгт байх ёстой.`);
+      return;
+    }
+    if (password !== password2) {
+      setError('Нууц үг хоёр таарахгүй байна.');
+      return;
+    }
+
+    setLoading(true);
+    const res = await startPasswordReset({ phone: normalizePhone(phone) });
+    setLoading(false);
+
+    if (res.error) {
+      setError(res.error);
+      // Бүртгэлгүй бол шууд шинэ бүртгэл үүсгэх хэсэг рүү санал болгоно
+      if (res.code === 'PHONE_NOT_FOUND') setView(VIEW.SIGNUP);
+      return;
+    }
+
+    setSession(res.data);
+    setStep(STEP.VERIFY);
+    setStatusText('SMS-ийг хүлээж байна...');
+    setRemaining(secondsLeft(res.data.expiresAt));
+    finishingRef.current = false;
+    showToast('144773 дугаар руу кодыг SMS-ээр илгээнэ үү', 'info');
+  };
+
   // ---------- Шинэ код авах (шинэ verify.mn session) ----------
   const restartVerification = async () => {
     setError('');
     setSession(null);
     setLoading(true);
-    const res = await startPhoneVerification({ phone: normalizePhone(phone), name: name.trim() });
+    const res =
+      view === VIEW.RESET
+        ? await startPasswordReset({ phone: normalizePhone(phone) })
+        : await startPhoneVerification({ phone: normalizePhone(phone), name: name.trim() });
     setLoading(false);
     if (res.error) {
       setError(res.error);
@@ -272,7 +337,9 @@ export default function AuthModal({ open, onClose }) {
       ? 'Утасны дугаар баталгаажуулах'
       : view === VIEW.SIGNIN
         ? 'Нэвтрэх'
-        : 'Бүртгүүлэх';
+        : view === VIEW.RESET
+          ? '🔑 Нууц үг сэргээх'
+          : 'Бүртгүүлэх';
 
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-5" onClick={onClose}>
@@ -391,8 +458,19 @@ export default function AuthModal({ open, onClose }) {
                   placeholder="••••••"
                 />
               </div>
+              {/* 🔑 НУУЦ ҮГЭЭ МАРТСАН — verify.mn-ээр (SMS) сэргээнэ.
+                  ⚠️ Системд имэйл БАЙХГҮЙ (утас → дотоод имэйл) тул цорын ганц зам. */}
+              <div className="mb-2 text-right">
+                <button
+                  type="button"
+                  className="text-[13px] font-semibold text-primary hover:underline"
+                  onClick={() => switchView(VIEW.RESET)}
+                >
+                  🔑 Нууц үгээ мартсан уу?
+                </button>
+              </div>
               {error && <p className="form-error">{error}</p>}
-              <button className="btn btn-primary mt-2 w-full" disabled={loading}>
+              <button className="btn btn-primary w-full" disabled={loading}>
                 {loading ? 'Нэвтэрч байна...' : 'Нэвтрэх'}
               </button>
               <p className="mt-4 text-center text-[13px] text-gray-500">
@@ -403,6 +481,65 @@ export default function AuthModal({ open, onClose }) {
                   onClick={() => switchView(VIEW.SIGNUP)}
                 >
                   Бүртгүүлэх
+                </button>
+              </p>
+            </form>
+          )}
+
+              {/* ========== 🔑 НУУЦ ҮГЭЭ МАРТСАН → verify.mn-ээр сэргээх ==========
+              Урсгал: утас + ШИНЭ нууц үг → 144773 руу SMS → VERIFIED → солигдоно.
+              ⚠️ Урсгал нь бүртгэлтэй ИЖИЛ (`startPhoneVerification` ↔
+                 `startPasswordReset`), зөвхөн төгсгөлд нь өөр endpoint. */}
+          {step === STEP.FORM && view === VIEW.RESET && (
+            <form onSubmit={submitReset}>
+              <p className="mb-5 text-sm text-gray-500">
+                Утасны дугаараа оруулаад <b>144773</b> руу SMS илгээнэ үү. Баталгаажмагц
+                шинэ нууц үг тань хүчинтэй болно.
+              </p>
+              <div className="mb-3 flex flex-col gap-1">
+                <label className="mb-1 block text-[13px] font-semibold text-gray-700">Утасны дугаар</label>
+                <input
+                  className="form-input"
+                  type="tel"
+                  inputMode="numeric"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="99112233"
+                  autoFocus
+                />
+              </div>
+              <div className="mb-3 flex flex-col gap-1">
+                <label className="mb-1 block text-[13px] font-semibold text-gray-700">Шинэ нууц үг</label>
+                <input
+                  className="form-input"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••"
+                />
+              </div>
+              <div className="mb-3 flex flex-col gap-1">
+                <label className="mb-1 block text-[13px] font-semibold text-gray-700">Шинэ нууц үг (дахин)</label>
+                <input
+                  className="form-input"
+                  type="password"
+                  value={password2}
+                  onChange={(e) => setPassword2(e.target.value)}
+                  placeholder="••••••"
+                />
+              </div>
+              {error && <p className="form-error">{error}</p>}
+              <button className="btn btn-primary mt-2 w-full" disabled={loading}>
+                {loading ? 'SMS илгээж байна...' : '📩 SMS-ээр баталгаажуулах'}
+              </button>
+              <p className="mt-4 text-center text-[13px] text-gray-500">
+                Санууллаа?{' '}
+                <button
+                  type="button"
+                  className="font-semibold text-primary hover:underline"
+                  onClick={() => switchView(VIEW.SIGNIN)}
+                >
+                  Нэвтрэх
                 </button>
               </p>
             </form>

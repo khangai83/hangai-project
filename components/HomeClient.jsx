@@ -5,11 +5,14 @@ import { useRouter } from 'next/navigation';
 import ListingCard from './ListingCard';
 import MapView from './MapView';
 import { useToast, useUI } from './AppProviders';
-import { fetchListings, fetchPropertyTypeCounts, fetchRoomCounts } from '../lib/queries';
+import {
+  fetchListings, fetchPropertyTypeCounts, fetchRoomCounts, fetchProfilesByIds,
+} from '../lib/queries';
 import { normalizeError } from '../lib/errors';
 import {
   CITIES, getDistricts, getKhoroos, ROOM_OPTIONS, formatRoomsLabel,
-  hasRoomsFields, CATEGORIES, PROPERTY_TYPES,
+  hasRoomsFields, SECTIONS, getSection, getSubtypes, getSectionCategories,
+  hasCategoryChoice, getAttrFilters, getAttrField, formatAttrsLine,
 } from '../lib/locationData';
 import { getCategoryLabel, getPropertyIcon, getPropertyTypeLabel, formatPrice, formatCount } from '../lib/format';
 import { buildHomeBreadcrumb } from '../lib/breadcrumb';
@@ -21,12 +24,23 @@ import Breadcrumb from './Breadcrumb';
 //    шууд хэрэглэхгүй — `emptyFilters()`-ээр шинэ хуулбар авна.
 // ℹ️ `district` нь НЭГ утга (string) — олон дүүрэг зэрэг сонгох нь ХАСАГДСАН.
 const EMPTY_FILTERS = {
-  propertyType: '', rooms: '', city: '', district: '', khoroos: [],
+  propertyType: '', rooms: '', city: '', district: '', khoroos: [], attrs: {},
   minPrice: '', maxPrice: '', minArea: '', maxArea: '',
 };
 
 /** Массив талбаруудыг ХУВААЛЦАХГҮЙ шинэ хоосон хайлт буцаана */
-const emptyFilters = () => ({ ...EMPTY_FILTERS, khoroos: [] });
+const emptyFilters = () => ({ ...EMPTY_FILTERS, khoroos: [], attrs: {} });
+
+/**
+ * Шүүлт «хоосон» эсэх.
+ * ⚠️ `attrs` нь ОБЪЕКТ тул `!!{}` нь `true` — тусдаа шалгана, эс бөгөөс
+ *    «Хайлтыг цэвэрлэх» товч үргэлж харагдана.
+ */
+const isFilterValueEmpty = (v) => {
+  if (Array.isArray(v)) return v.length === 0;
+  if (v && typeof v === 'object') return Object.keys(v).length === 0;
+  return !v;
+};
 
 /** URL-ийн таслалаар бичсэн жагсаалтыг массив болгох (хороо) */
 function parseListParam(raw) {
@@ -65,14 +79,37 @@ export default function HomeClient() {
   const [typeCounts, setTypeCounts] = useState({}); // төрөл тус бүрийн зарын тоо
   const [roomCounts, setRoomCounts] = useState({}); // өрөө тус бүрийн зарын тоо (unegui.mn загвар)
   const [filtersOpen, setFiltersOpen] = useState(false); // «Дэлгэрэнгүй хайлт» панель нээлттэй эсэх
+  // ---- ХЭСЭГ (0016_listing_sections.sql) ----
+  // ⚠️ `'all'` = хэсэг СОНГООГҮЙ (БҮХ ХЭСГИЙН зар) — үндсэн дэлгэцийн анхдагч.
+  //    Үл хөдлөх нь АНХДАГЧААР сонгогдохгүй (хэрэглэгчийн хүсэлт).
+  const [section, setSection] = useState('all');
+  // ⚠️ DRILL-DOWN: `false` → БҮХ хэсэг tile хэлбэрээр;
+  //    `true` → зөвхөн тухайн хэсгийн ДОТООД (дэд төрөл) багана болж харагдана.
+  const [sectionOpen, setSectionOpen] = useState(false);
+  // ⚠️ ЭНД, бүх `useEffect`-ийн ӨМНӨ: эффектүүдийн deps массив РЕНДЕРИЙН ҮЕД
+  //    үнэлэгддэг тул хойш зарлавал TDZ алдаа гарна.
+  const noSection = section === 'all';
+  const [authors, setAuthors] = useState({}); // { [user_id]: { displayName, avatarUrl } }
 
   // ---- URL-ийн query-ээс хайлтыг унших ----
   // breadcrumb болон хуваалцсан линк ажиллахын тулд:
   //   /?category=sell&type=Орон сууц&rooms=3
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
-    const cat = sp.get('category');
-    if (cat === 'sell' || cat === 'rent' || cat === 'all') setCategory(cat);
+
+    // ---- ХЭСЭГ (0016) — `?section=auto` ----
+    // ⚠️ ЭХЛЭЭД уншина: «Зарах / Түрээслэх» нь зөвхөн үл хөдлөхөд байдаг.
+    const secRaw = sp.get('section');
+    const secParam = secRaw && SECTIONS.some((s) => s.value === secRaw) ? secRaw : 'all';
+    if (secParam !== 'all') setSection(secParam);
+    // ⚠️ DRILL-DOWN: URL-д `section` БАЙВАЛ шууд тэр хэсэг рүү нээгдэнэ
+    if (secRaw) setSectionOpen(true);
+
+    // ⚠️ ЗӨВХӨН үл хөдлөхөд `category` уншина (бусад хэсэгт ийм сонголт байхгүй)
+    if (secParam === 'real-estate') {
+      const cat = sp.get('category');
+      if (cat === 'sell' || cat === 'rent' || cat === 'all') setCategory(cat);
+    }
 
     const q = sp.get('q') || sp.get('search') || '';
     if (q) { setSearch(q); setQuery(q); }
@@ -84,6 +121,17 @@ export default function HomeClient() {
     // ⚠️ «Өрөө» талбаргүй төрөлд (ж: Худалдаа, үйлчилгээний талбай) өрөөний
     //    хайлт нь утгагүй тул хуучин линкээс ирсэн ч орхигдуулна.
     if (next.propertyType && !hasRoomsFields(next.propertyType)) next.rooms = '';
+    // ⚠️ Тухайн ХЭСЭГТ тохирохгүй дэд төрлийг орхино (ж: авто хэсэгт «Орон сууц»)
+    if (next.propertyType && !getSubtypes(secParam).includes(next.propertyType)) {
+      next.propertyType = '';
+      next.rooms = '';
+    }
+    // ---- ATTR шүүлтүүд — `?attr_brand=Toyota&attr_fuel=Хайбрид` ----
+    const attrs = {};
+    sp.forEach((value, key) => {
+      if (key.startsWith('attr_') && value) attrs[key.slice(5)] = value;
+    });
+    if (Object.keys(attrs).length) next.attrs = attrs;
     if (sp.get('city')) next.city = sp.get('city');
     // ⚠️ ХОРОО: URL-д `khoroo=1-р хороо,3-р хороо` (таслалаар) — хуваалцсан
     //    линк эвдрэхгүйн тулд НЭГ утгатай хуучин линкийг ч зөв уншина.
@@ -97,7 +145,7 @@ export default function HomeClient() {
     if (sp.get('maxPrice')) next.maxPrice = sp.get('maxPrice');
     if (sp.get('minArea')) next.minArea = sp.get('minArea');
     if (sp.get('maxArea')) next.maxArea = sp.get('maxArea');
-    if (Object.values(next).some((v) => (Array.isArray(v) ? v.length : v))) setFilters(next);
+    if (Object.entries(next).some(([, v]) => !isFilterValueEmpty(v))) setFilters(next);
 
     setUrlReady(true);
   }, []);
@@ -108,6 +156,8 @@ export default function HomeClient() {
     try {
       const data = await fetchListings({
         category,
+        section,
+        attrs: Object.keys(filters.attrs || {}).length ? filters.attrs : undefined,
         search: query,
         propertyType: filters.propertyType || undefined,
         rooms: filters.rooms || undefined,
@@ -128,17 +178,38 @@ export default function HomeClient() {
       showToast(e.message, 'error');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, query, filters, dataVersion]);
+  }, [category, section, query, filters, dataVersion]);
 
   useEffect(() => { if (urlReady) load(); }, [load, urlReady]);
 
-  // ---- Төрөл тус бүрийн зарын тоо (сонгосон категорид) ----
+  // ---- 👤 ЗАР НИЙТЛЭГЧДИЙН ХОЧ НЭР + ЗУРАГ ----
+  // ⚠️ `listings.user_id` нь `profiles` руу FK-ГҮЙ тул PostgREST join
+  //    ажиллахгүй → 2 дахь query (`fetchProfilesByIds`) хийж нэгтгэнэ.
   useEffect(() => {
-    if (!urlReady) return;
+    if (!listings || !listings.length) { setAuthors({}); return; }
     let mounted = true;
     (async () => {
       try {
-        const counts = await fetchPropertyTypeCounts(category);
+        const map = await fetchProfilesByIds(listings.map((l) => l.user_id));
+        if (mounted) setAuthors(map || {});
+      } catch (err) {
+        console.warn(normalizeError(err));
+        if (mounted) setAuthors({});
+      }
+    })();
+    return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listings]);
+
+  // ---- Дэд төрөл тус бүрийн зарын тоо (сонгосон ХЭСЭГ + категорид) ----
+  useEffect(() => {
+    if (!urlReady) return;
+    // ⚠️ Хэсэг сонгоогүй бол дэд төрөл БАЙХГҮЙ → query явуулахгүй
+    if (noSection) { setTypeCounts({}); return; }
+    let mounted = true;
+    (async () => {
+      try {
+        const counts = await fetchPropertyTypeCounts(category, section);
         if (mounted) setTypeCounts(counts || {});
       } catch (err) {
         // Тоо харуулахгүй — үндсэн жагсаалтад нөлөөлөхгүй
@@ -148,16 +219,15 @@ export default function HomeClient() {
     })();
     return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlReady, category, dataVersion]);
+  }, [urlReady, category, section, noSection, dataVersion]);
 
   // ---- Өрөө тус бүрийн зарын тоо (unegui.mn загварын «1 өрөө 1,088» мөр) ----
   // ⚠️ Зөвхөн КАТЕГОРИ + ТӨРӨЛ өөрчлөгдөхөд дахин татна — бусад шүүлт
   //    (үнэ, байршил г.м.) нөлөөлөхгүй (`lib/queries.js` → `fetchRoomCounts`).
   useEffect(() => {
     if (!urlReady) return;
-    // Төрөл сонгоогүй эсвэл «Өрөө» талбаргүй төрөлд тоо ХЭРЭГГҮЙ — мөр нь
-    // ч харагдахгүй тул дэмий 5 query явуулахгүй.
-    if (!hasRoomsFields(filters.propertyType)) {
+    // ⚠️ «Өрөө» тоо нь ЗӨВХӨН үл хөдлөхөд (0016) — бусад хэсэгт өрөө гэж байхгүй
+    if (section !== 'real-estate' || !hasRoomsFields(filters.propertyType)) {
       setRoomCounts({});
       return;
     }
@@ -177,7 +247,7 @@ export default function HomeClient() {
     })();
     return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlReady, category, filters.propertyType, dataVersion]);
+  }, [urlReady, category, section, filters.propertyType, dataVersion]);
 
   // ---- Хайлт өөрчлөгдөхөд URL-ийг шинэчлэх (хуваалцах боломжтой болгох) ----
   useEffect(() => {
@@ -185,8 +255,14 @@ export default function HomeClient() {
     const params = new URLSearchParams();
     if (category && category !== 'all') params.set('category', category);
     if (query) params.set('q', query);
+    // ⚠️ Хэсэг (0016) — `'all'` (сонгоогүй) нь URL-д БИЧИГДЭХГҮЙ (цэвэр линк)
+    if (section && section !== 'all') params.set('section', section);
     if (filters.propertyType) params.set('type', filters.propertyType);
     if (filters.rooms) params.set('rooms', filters.rooms);
+    // ⚠️ ATTR шүүлтүүд — `attr_brand=Toyota` (jsonb)
+    Object.entries(filters.attrs || {}).forEach(([k, v]) => {
+      if (v) params.set(`attr_${k}`, v);
+    });
     if (filters.city) params.set('city', filters.city);
     if (filters.district) params.set('district', filters.district);
     if (filters.khoroos.length) params.set('khoroo', filters.khoroos.join(','));
@@ -200,7 +276,7 @@ export default function HomeClient() {
     const next = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
     const current = `${window.location.pathname}${window.location.search}`;
     if (next !== current) router.replace(next, { scroll: false });
-  }, [urlReady, category, query, filters, view, router]);
+  }, [urlReady, category, section, query, filters, view, router]);
 
   const setF = (k, v) => {
     setFilters((f) => {
@@ -225,8 +301,52 @@ export default function HomeClient() {
 
   const resetAll = () => {
     setCategory('all'); setQuery(''); setSearch('');
+    // ⚠️ ХЭСЭГ ба drill-down-ыг ч сэргээнэ — эс бөгөөс «Бүх зар» дарсан ч
+    //    тухайн хэсгийн (ж: Автомашин) зарууд хэвээр үлддэг байв (АЛДАА).
+    setSection('all');
+    setSectionOpen(false);
     setFilters(emptyFilters()); // массив хуваалцахгүй
   };
+
+  /** «← Бүх хэсэг» — хэсгийн сонголтыг БҮРЭН арилгаж, БҮХ ЗАР руу буцаана.
+   *  ⚠️ Зөвхөн панелийг хаадаг байсан нь алдаа байв: хэсэг хэвээр үлдэж,
+   *     буцах боломжгүй мэт санагддаг байсан. Байршил/үнэ хэвээр. */
+  const backToAllSections = () => {
+    setSection('all');
+    setSectionOpen(false);
+    setCategory('all');
+    setFilters((f) => ({ ...f, propertyType: '', rooms: '', attrs: {} }));
+  };
+
+  /**
+   * ХЭСЭГ солих (0016) — дэд төрөл/attr/өрөө бүгд ХҮЧИНГҮЙ болно.
+   * ⚠️ DRILL-DOWN: хэсэг дээр дарах нь түүнийг НЭЭНЭ (`sectionOpen = true`) —
+   *    бусад хэсэг алга болж, дотрох дэд төрлүүд багана болж харагдана.
+   * ⚠️ Аль хэдийн сонгогдсон хэсэг дээр дарахад ч НЭЭНЭ.
+   */
+  const changeSection = (nextSection, { open = true } = {}) => {
+    if (nextSection !== section) {
+      setSection(nextSection);
+      // ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд
+      setCategory((c) => (hasCategoryChoice(nextSection) && c !== 'all' ? c : 'all'));
+      setFilters((f) => ({ ...f, propertyType: '', rooms: '', attrs: {} }));
+      setFiltersOpen(false);
+    }
+    if (open) setSectionOpen(true);
+  };
+
+  /** ATTR шүүлт (jsonb) — утга тавих / хоослох (`delete` тул URL/DB цэвэр) */
+  const setAttr = (key, value) => {
+    setFilters((f) => {
+      const attrs = { ...(f.attrs || {}) };
+      if (value) attrs[key] = value;
+      else delete attrs[key];
+      return { ...f, attrs };
+    });
+  };
+
+  /** Хэсгийн attr шүүлтийн одоогийн утга */
+  const attrValue = (key) => (filters.attrs || {})[key] || '';
 
   /** Breadcrumb-ийн линк дээр дарахад тухайн түвшин рүү буцаана.
    *  ⚠️ `<Link>`-ээр ЯВАХГҮЙ: бүх линк нь `/` зам дээр байдаг тул Next.js
@@ -237,6 +357,9 @@ export default function HomeClient() {
     const nav = item?.nav;
     if (!nav) return;
     if (nav.reset) { resetAll(); return; }
+    // ⚠️ ХЭСЭГ (0016) — breadcrumb-ийн «Үл хөдлөх» / «Автомашин» линк.
+    //    ⚠️ `nav.section` байхгүй бол хэсэг ХӨНДӨГДӨХГҮЙ
+    if (nav.section !== undefined) { setSection(nav.section); setSectionOpen(false); }
     if (nav.category !== undefined) setCategory(nav.category);
     if (nav.filters) setFilters((f) => ({ ...f, ...nav.filters }));
   };
@@ -248,29 +371,64 @@ export default function HomeClient() {
     () => getKhoroos(filters.city, filters.district),
     [filters.city, filters.district]
   );
-  /** «Өрөө» мөр ба тоо харагдах эсэх.
-   *  ⚠️ PROGRESSIVE DISCLOSURE: ЗӨВХӨН төрөл сонгосон үед (`filters.propertyType`)
-   *     БА тухайн төрөл «Өрөө» талбартай үед. Худалдаа/үйлчилгээний талбай,
-   *     Оффис, Газар, Үйлдвэр, Гараж зэрэгт «өрөө» гэдэг ойлголт БАЙХГҮЙ. */
-  const showRooms = hasRoomsFields(filters.propertyType);
+  /** ХЭСГИЙН тодорхойлолт ба уламжлагдсан утгууд (0016)
+   *  ⚠️ `noSection` нь ДЭЭР (бүх hook-ийн өмнө) зарлагдсан.
+   *  ⚠️ `sec`/`isRealEstate` нь `showRooms`-ООС ӨМНӨ байх ЁСТОЙ (TDZ алдаа). */
+  const sec = getSection(noSection ? 'real-estate' : section);
+  const isRealEstate = section === 'real-estate';
 
-  /** Хуудасны гарчиг — unegui.mn загвар: «Орон сууц түрээслүүлнэ 16,345».
-   *  Төрөл > категори > бүгд гэсэн дарааллаар тодорхойлно. */
+  /** «Өрөө» мөр ба тоо харагдах эсэх.
+   *  ⚠️ ЗӨВХӨН үл хөдлөх хэсэгт (0016) БА төрөл «Өрөө» талбартай үед. */
+  const showRooms = isRealEstate && hasRoomsFields(filters.propertyType);
+
+  // ⚠️ Хэсэг сонгоогүй бол дэд төрөл БАЙХГҮЙ (дэмий query явуулахгүй)
+  const subtypes = useMemo(
+    () => (noSection ? [] : getSubtypes(section)),
+    [section, noSection]
+  );
+  const sectionCategories = useMemo(() => getSectionCategories(section), [section]);
+  const attrFilters = useMemo(() => getAttrFilters(section), [section]);
+  /** «Зарах / Түрээслэх» сонголт харагдах эсэх — ⚠️ ЗӨВХӨН үл хөдлөхөд */
+  const showCategories = hasCategoryChoice(section);
+  /** Хэсгийн НИЙТ зарын тоо (дэд төрлүүдийн нийлбэр) — панелийн толгойд */
+  const sectionTotal = useMemo(
+    () => Object.values(typeCounts).reduce((sum, n) => sum + (Number(n) || 0), 0),
+    [typeCounts]
+  );
+
+  /** Хуудасны гарчиг — «Бүх зар» / «Орон сууц түрээслүүлнэ 12» / «Автомашин 34» */
   const pageTitle = filters.propertyType
     ? getPropertyTypeLabel(filters.propertyType, category)
-    : category === 'rent'
-      ? 'Үл хөдлөх түрээслүүлнэ'
-      : category === 'sell'
-        ? 'Үл хөдлөх зарна'
-        : 'Бүх зар';
-  const hasFilters = Object.values(filters).some((v) => (Array.isArray(v) ? v.length : v)) || category !== 'all' || query;
+    // ⚠️ Хэсэг сонгоогүй → БҮХ ХЭСГИЙН зар
+    : noSection
+      ? 'Бүх зар'
+      : isRealEstate
+        ? (category === 'rent'
+            ? 'Үл хөдлөх түрээслүүлнэ'
+            : category === 'sell'
+              ? 'Үл хөдлөх зарна'
+              : 'Бүх зар')
+        // ⚠️ Бусад хэсэг (0016): «Автомашин», «Ажлын зар», «Компьютер» …
+        : (category === 'rent' ? `${sec.label} түрээслүүлнэ` : sec.label);
+
+  const hasFilters =
+    Object.entries(filters).some(([, v]) => !isFilterValueEmpty(v)) ||
+    category !== 'all' ||
+    section !== 'all' ||
+    query;
 
   /** Идэвхтэй хайлтууд — статус мөрийн доор «чип» хэлбэрээр (✕ дарж тус тусад нь арилгана) */
   const activeFilterChips = useMemo(() => {
     const chips = [];
     if (filters.propertyType) {
-      chips.push({ key: 'propertyType', label: `${getPropertyIcon(filters.propertyType)} ${getPropertyTypeLabel(filters.propertyType, category)}` });
+      chips.push({ key: 'propertyType', label: `${getPropertyIcon(filters.propertyType, section)} ${getPropertyTypeLabel(filters.propertyType, category)}` });
     }
+    // ⚠️ ATTR шүүлтүүд (0016) — ж: «🏷️ Toyota», «⛽ Хайбрид»
+    Object.entries(filters.attrs || {}).forEach(([k, v]) => {
+      if (!v) return;
+      const field = getAttrField(section, k);
+      chips.push({ key: `attr_${k}`, label: `${(field && field.icon) || '🔎'} ${v}` });
+    });
     if (filters.rooms) chips.push({ key: 'rooms', label: `🛏 ${formatRoomsLabel(filters.rooms)}` });
     if (filters.city) chips.push({ key: 'city', label: `🏙 ${filters.city}` });
     if (filters.district) chips.push({ key: 'district', label: `📍 ${filters.district}` });
@@ -286,12 +444,15 @@ export default function HomeClient() {
     if (filters.minArea) chips.push({ key: 'minArea', label: `${filters.minArea} м²-с дээш` });
     if (filters.maxArea) chips.push({ key: 'maxArea', label: `${filters.maxArea} м² хүртэл` });
     return chips;
-  }, [filters, category]);
+  }, [filters, category, section]);
 
   const activeFilterCount = activeFilterChips.length;
 
-  /** Нэг чипийг арилгах (`khoroos` нь массив тул хоосон массив) */
-  const removeFilterChip = (key) => setF(key, key === 'khoroos' ? [] : '');
+  /** Нэг чипийг арилгах (`khoroos` нь массив; `attr_*` нь jsonb түлхүүр) */
+  const removeFilterChip = (key) => {
+    if (key.startsWith('attr_')) { setAttr(key.slice(5), ''); return; }
+    setF(key, key === 'khoroos' ? [] : '');
+  };
 
   // ---- PROGRESSIVE DISCLOSURE: ТӨРӨЛ сонгомогц хайлт нээгдэнэ ----
   // ⚠️ ЯАГААД: урьд нь hero-ийн хайлтын мөр БА том «⚙️ Дэлгэрэнгүй хайлт»
@@ -364,6 +525,7 @@ export default function HomeClient() {
         <Breadcrumb
           items={buildHomeBreadcrumb({
             category,
+            section,
             propertyType: filters.propertyType,
             rooms: filters.rooms,
             district: filters.district,
@@ -371,76 +533,125 @@ export default function HomeClient() {
           onNavigate={goToCrumb}
         />
 
-        {/* ===== АНГИЛАЛ БА ТӨРЛИЙН НАВИГАЦИ — ЗӨВХӨН ТӨРӨЛ СОНГООГҮЙ ҮЕД =====
-            ⚠️ PROGRESSIVE DISCLOSURE (хэрэглэгчийн хүсэлт): төрөл сонгомогц
-               энэ ХОЁР МӨР БҮРЭН АЛГА БОЛЖ, дэлгэц минимал болно — зөвхөн
-               BREADCRUMB + гарчиг + шүүлт + зарууд үлдэнэ (unegui.mn шиг).
-               Буцах / төрөл солих зам нь дээрх breadcrumb (линкүүд нь ажиллана).
-            ⚠️ «Бүх төрөл» таб нь `propertyType = ''` болгодог тул энэ хэсгийг
-               буцааж харуулна. */}
+        {/* ===== ХЭСЭГ БА ДЭД ТӨРЛИЙН НАВИГАЦИ (0016) — DRILL-DOWN =====
+            ⚠️ ХОЁР ТӨЛӨВ:
+              1) `sectionOpen = false` → БҮХ 6 ХЭСЭГ tile хэлбэрээр, БАГАНА болж
+                 (2 → 3 → 6, дэлгэцэнд тааруулж).
+              2) Хэсэг дээр дарвал → БУСАД ХЭСЭГ БҮРЭН АЛГА БОЛЖ, зөвхөн
+                 ТУХАЙН ХЭСГИЙН ДОТООД (дэд төрөл) багана болж харагдана +
+                 «← Бүх хэсэг» буцах товч.
+            ⚠️ Дэд төрөл сонгомогц ЭНЭ ПАНЕЛЬ БҮРЭН АЛГА БОЛНО (progressive
+               disclosure — хэрэглэгчийн өмнөх хүсэлт). Буцах зам нь breadcrumb.
+            ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөх хэсэгт.
+            ⚠️ `tile-grid` = багана хоорондын зай (app/globals.css → `.tile-grid`)
+            ⚠️ EMOJI ICON: `leading-none` БИЧИХГҮЙ (мөрийн хайрцгаас ХАЛЬЖ
+               гардаг) → `leading-[1.4]` хэрэглэнэ. */}
         {!filters.propertyType && (
-        <>
-        {/* CATEGORY TABS */}
-        <div className="mb-6 flex flex-wrap gap-2">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c.value}
-              className={`rounded-full border px-6 py-2.5 text-sm font-medium transition ${
-                category === c.value
-                  ? 'border-primary bg-primary text-white'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-primary hover:text-primary'
-              }`}
-              onClick={() => setCategory(c.value)}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
+        <section className="mb-5 rounded-xl border border-gray-200 bg-white p-2.5 shadow-card sm:p-3.5">
 
-        {/* PROPERTY TYPE NAV — Зарах/Түрээслэх-ийн бүрдэл хэсгүүд (unegui.mn загвар)
-            Сонгосон категорид тохируулан нэрлэгдэнэ: 'Орон сууц зарна' / 'Орон сууц түрээслүүлнэ' */}
-        <div className="-mt-3 mb-5 flex flex-wrap gap-4 border-b border-gray-200 pb-4" role="tablist" aria-label="Үл хөдлөхийн төрөл">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={!filters.propertyType}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-[13px] font-medium transition ${
-              !filters.propertyType
-                ? 'border-primary bg-primary-light font-semibold text-primary'
-                : 'border-gray-200 bg-white text-gray-700 hover:border-primary hover:text-primary'
-            }`}
-            onClick={() => setF('propertyType', '')}
-          >
-            <span className="text-[15px] leading-none">🗂</span> Бүх төрөл
-          </button>
-          {PROPERTY_TYPES.map((t) => {
-            const isActive = filters.propertyType === t;
-            const count = typeCounts[t];
-            return (
-              <button
-                key={t}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                className={`inline-flex items-center gap-1.5 rounded-lg border px-3.5 py-2 text-[13px] font-medium transition ${
-                  isActive
-                    ? 'border-primary bg-primary-light font-semibold text-primary'
-                    : 'border-gray-200 bg-white text-gray-700 hover:border-primary hover:text-primary'
-                }`}
-                onClick={() => setF('propertyType', isActive ? '' : t)}
-              >
-                <span className="text-[15px] leading-none">{getPropertyIcon(t)}</span>
-                {getPropertyTypeLabel(t, category)}
-                {typeof count === 'number' && (
-                  <span className={`ml-0.5 rounded-full px-1.5 py-px text-[11px] font-semibold ${isActive ? 'bg-primary-light text-primary' : 'bg-gray-100 text-gray-500'}`}>
-                    {count}
+        {sectionOpen ? (
+          <>
+            {/* ---------- ПАНЕЛИЙН ТОЛГОЙ: хэсгийн нэр + БУЦАХ ---------- */}
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-gray-100 pb-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="shrink-0 text-[22px] leading-[1.4]">{sec.icon}</span>
+                <h2 className="truncate text-[15px] font-bold text-gray-900 sm:text-base">{sec.label}</h2>
+                {sectionTotal > 0 && (
+                  <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500">
+                    {formatCount(sectionTotal)}
                   </span>
                 )}
+              </div>
+              <button
+                type="button"
+                onClick={backToAllSections}
+                className="shrink-0 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-[12.5px] font-semibold text-gray-600 transition hover:border-primary hover:text-primary"
+              >
+                ← Бүх хэсэг
               </button>
-            );
-          })}
-        </div>
-        </>
+            </div>
+
+            {/* ---------- КАТЕГОРИ (зөвхөн үл хөдлөх) ---------- */}
+            {showCategories && (
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {sectionCategories.map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    onClick={() => setCategory(c.value)}
+                    className={`rounded-full border px-4 py-1.5 text-[12.5px] font-semibold transition ${
+                      category === c.value
+                        ? 'border-primary bg-primary text-white'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-primary hover:text-primary'
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* ---------- ДЭД ТӨРӨЛ — БАГАНА (grid) ----------
+                ⚠️ ЦУВАА БИШ: дэлгэцэнд тааруулж 2 → 3 → 4 багана.
+                ⚠️ Скелетон: тоо татагдахаас өмнө `count` нь `undefined` →
+                   badge харагдахгүй (мөр нь үсрэхгүй). */}
+            <div className="tile-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4" role="tablist" aria-label="Зарын дэд төрөл">
+              {subtypes.map((t) => {
+                const count = typeCounts[t];
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    role="tab"
+                    aria-selected={false}
+                    onClick={() => setF('propertyType', t)}
+                    className="group flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-2.5 text-left transition hover:border-primary hover:bg-primary-light"
+                  >
+                    <span className="shrink-0 text-[17px] leading-[1.4]">{getPropertyIcon(t, section)}</span>
+                    <span className="min-w-0 flex-1 text-[12.5px] font-medium leading-snug text-gray-700 group-hover:text-primary">
+                      {getPropertyTypeLabel(t, category)}
+                    </span>
+                    {typeof count === 'number' && (
+                      <span className="shrink-0 rounded-full bg-gray-100 px-1.5 py-px text-[11px] font-semibold text-gray-500 group-hover:bg-white group-hover:text-primary">
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          /* ---------- БҮХ ХЭСЭГ — tile сүлжээ (багана) ----------
+             ⚠️ 2 → 3 → 6 багана. Сонгогдсон хэсэг нь онцлогдож харагдана.
+             ⚠️ `min-h-[88px]` → бүх tile ИЖИЛ өндөртэй (шошго 1-2 мөр ч). */
+          <div className="tile-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6" role="tablist" aria-label="Зарын хэсэг">
+            {SECTIONS.map((s) => {
+              const on = s.value === section;
+              return (
+                <button
+                  key={s.value}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => changeSection(s.value)}
+                  className={`flex min-h-[88px] w-full flex-col items-center justify-center gap-1.5 rounded-lg border px-2 py-3 transition ${
+                    on
+                      ? 'border-primary bg-primary-light'
+                      : 'border-gray-200 bg-white hover:border-primary hover:bg-primary-light'
+                  }`}
+                >
+                  <span className="shrink-0 text-[24px] leading-[1.4]">{s.icon}</span>
+                  <span className={`w-full text-center text-[12px] font-semibold leading-snug ${on ? 'text-primary' : 'text-gray-700'}`}>
+                    {s.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        </section>
         )}
 
         {/* ===== 2 БАГАНАТ БҮТЭЦ — unegui.mn загвар =====
@@ -558,6 +769,25 @@ export default function HomeClient() {
                     </p>
                   )}
                 </SideBlock>
+                {/* ===== ХЭСГИЙН ATTR ШҮҮЛТҮҮД (0016) =====
+                    ⚠️ Хэсэг тус бүрийн `attrFilters` (зөвхөн `select` төрөл) —
+                       ж: Автомашин → Брэнд, Түлш, Хурдны хайрцаг, Хөтлөгч;
+                       Ажлын зар → Ажлын төрөл, Туршлага, Ажлын хэлбэр.
+                    ⚠️ Утга нь `listings.attrs` (jsonb) дотор → `?attr_brand=Toyota` */}
+                {attrFilters.map((f) => (
+                  <SideBlock key={f.key} label={`${f.icon ? `${f.icon} ` : ''}${f.label}`}>
+                    <select
+                      className="form-select"
+                      aria-label={f.label}
+                      value={attrValue(f.key)}
+                      onChange={(e) => setAttr(f.key, e.target.value)}
+                    >
+                      <option value="">Бүгд</option>
+                      {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </SideBlock>
+                ))}
+
                 {/* ===== ҮНЭ, ₮ — unegui.mn-ийн «Эхлэх / Дуусах» хос оролт ===== */}
                 <SideBlock label="Үнэ, ₮">
                   <div className="flex items-center gap-2">
@@ -585,6 +815,10 @@ export default function HomeClient() {
                 {/* ===== ТАЛБАЙ, м² =====
                     ⚠️ `inputMode="decimal"` + «75,5» хэлбэрийн монгол бутархайг
                        зөвшөөрнө (`lib/queries.js` → `toNumber`). */}
+                {/* ===== ТАЛБАЙ, м² =====
+                    ⚠️ «Талбай» нь ЗӨВХӨН үл хөдлөх хэсэгт (0016) — автомашин/
+                       ажил/компьютер/бараа/үйлчилгээнд талбай гэдэг ойлголт байхгүй. */}
+                {isRealEstate && (
                 <SideBlock label="Талбай, м²">
                   <div className="flex items-center gap-2">
                     <input
@@ -607,6 +841,7 @@ export default function HomeClient() {
                     />
                   </div>
                 </SideBlock>
+                )}
               </div>
 
               {/* Доод хэсэг — unegui.mn-ийн «N зар харуулах» хэсэг.
@@ -824,7 +1059,14 @@ export default function HomeClient() {
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            {listings.map((l) => <ListingCard key={l.id} listing={l} />)}
+            {listings.map((l) => (
+              <ListingCard
+                key={l.id}
+                listing={l}
+                author={authors[l.user_id]}
+                attrsLine={formatAttrsLine(l.section || section, l.attrs, l.category)}
+              />
+            ))}
           </div>
         )}
 

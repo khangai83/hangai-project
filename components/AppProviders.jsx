@@ -9,6 +9,7 @@ import { fetchAdminMe } from '../lib/adminApi';
 import { useFavorites } from '../lib/favorites';
 import phoneEmail from '../lib/phoneEmail';
 import AuthModal from './AuthModal';
+import ProfileModal from './ProfileModal';
 import AddListingModal from './AddListingModal';
 
 /** Supabase-ийн user → '+976XXXXXXXX' (эсвэл null).
@@ -62,6 +63,7 @@ export default function AppProviders({ children }) {
   const [editTarget, setEditTarget] = useState(null); // засах горимд зарын объект
   const favoriteIds = useFavorites(); // ❤️ таалагдсан зарууд (localStorage)
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false); // 👤 Профайл засах модал
   const [dataVersion, setDataVersion] = useState(0); // зарын шинэчлэлт дохио
   const [isAdmin, setIsAdmin] = useState(false); // app_metadata.is_admin
 
@@ -196,7 +198,7 @@ export default function AppProviders({ children }) {
                 className="flex items-center gap-2 text-[22px] font-bold text-primary"
                 onClick={() => setUserMenuOpen(false)}
               >
-                🏠 ZAR<span className="text-gray-900">.mn</span>
+                🏠 Зарлаа<span className="text-gray-900">.mn</span>
               </Link>
               {/* ⚠️ БҮХ ЦЭСЭН ТОВЧ НЭГ ХЭМЖЭЭТЭЙ (`btn-sm` = 13px, font-semibold):
                   урьд нь «Зар нэмэх» нь `btn` (14px) байсан бол «Таалагдсан»,
@@ -217,7 +219,7 @@ export default function AppProviders({ children }) {
                 >
                   ❤️ Таалагдсан
                   {favoriteIds.length > 0 && (
-                    /* ⚠️ Тоо нь урьд нь УЛААН (bg-red-500) байв — улаан нь алдааны
+ /* ⚠️ Тоо нь урьд нь УЛААН (bg-red-500) байв — улаан нь алдааны
                        семантик өнгө тул тоолуурт тохирохгүй → брэнд өнгө. */
                     <span className="ml-1 rounded-full bg-primary px-1.5 py-px text-[11px] font-bold text-white">
                       {favoriteIds.length}
@@ -245,11 +247,13 @@ export default function AppProviders({ children }) {
                         <Link href="/feedback" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={() => setUserMenuOpen(false)}>💬 Санал хүсэлт</Link>
                         {isAdmin && (
                           <>
+                            <Link href="/admin" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-amber-800 transition hover:bg-amber-50" onClick={() => setUserMenuOpen(false)}>📊 Админ — Хяналтын самбар</Link>
                             <Link href="/admin/listings" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-amber-800 transition hover:bg-amber-50" onClick={() => setUserMenuOpen(false)}>🏷️ Админ — Зарууд</Link>
                             <Link href="/admin/feedback" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-amber-800 transition hover:bg-amber-50" onClick={() => setUserMenuOpen(false)}>📨 Админ — Санал хүсэлт</Link>
                             <Link href="/admin/users" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-amber-800 transition hover:bg-amber-50" onClick={() => setUserMenuOpen(false)}>🛠 Админ — Хэрэглэгчид</Link>
                           </>
                         )}
+                        <button className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-primary transition hover:bg-primary-light" onClick={() => { setUserMenuOpen(false); setProfileOpen(true); }}>👤 Профайл (нэр, зураг)</button>
                         <button className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={() => { setUserMenuOpen(false); editName(); }}>✏️ Нэр засах</button>
                         <div className="h-px bg-gray-200"></div>
                         <button className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={logout}>🚪 Гарах</button>
@@ -274,7 +278,7 @@ export default function AppProviders({ children }) {
                 <Link href="/terms" className="transition hover:text-white">📄 Үйлчилгээний нөхцөл</Link>
                 <Link href="/feedback" className="transition hover:text-white">💬 Санал хүсэлт</Link>
               </nav>
-              <p className="text-[13.5px]">🏠 ZAR.mn — Үл хөдлөх хөрөнгийн зар. Next.js + Supabase хувилбар.</p>
+              <p className="text-[13.5px]">🏠 Зарлаа.mn — Үл хөдлөх хөрөнгийн зар. Next.js + Supabase хувилбар.</p>
               {/* ⚠️ КОНТРАСТ ЗАСВАР: bg-gray-900 дээр text-gray-500 нь 3.55:1
                   байсан (AA 4.5:1-д хүрэхгүй). text-gray-400 → 7.41:1 ✅ */}
               <p className="mx-auto mt-2 max-w-[760px] text-[12px] leading-relaxed text-gray-400">
@@ -288,6 +292,7 @@ export default function AppProviders({ children }) {
 
           {/* ===== MODALS & TOAST ===== */}
           <AuthModal open={authOpen} onClose={closeAuth} />
+          <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
           <AddListingModal
             open={addOpen}
             onClose={closeAdd}
