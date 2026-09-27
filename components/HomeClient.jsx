@@ -607,7 +607,11 @@ export default function HomeClient() {
                     onClick={() => setF('propertyType', t)}
                     className="group flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2.5 py-2.5 text-left transition hover:border-primary hover:bg-primary-light"
                   >
-                    <span className="shrink-0 text-[17px] leading-[1.4]">{getPropertyIcon(t, section)}</span>
+                    {/* ⚠️ ICON ХАСАГДСАН (2026-09-27, хэрэглэгчийн хүсэлт):
+                        Дэд төрлийн tile-үүд одоо ЗӨВХӨН ТЕКСТЭЭР харагдана
+                        (өмнө нь бүгд ижил хэсгийн icon 💻/🚗/💼 харагддаг байв).
+                        ↩️ БУЦААХ БОЛ: доорх мөрийг энэ байранд буцааж тавина —
+                        <span className="shrink-0 text-[17px] leading-[1.4]">{getPropertyIcon(t, section)}</span> */}
                     <span className="min-w-0 flex-1 text-[12.5px] font-medium leading-snug text-gray-700 group-hover:text-primary">
                       {getPropertyTypeLabel(t, category)}
                     </span>
@@ -635,13 +639,13 @@ export default function HomeClient() {
                   role="tab"
                   aria-selected={on}
                   onClick={() => changeSection(s.value)}
-                  className={`flex min-h-[88px] w-full flex-col items-center justify-center gap-1.5 rounded-lg border px-2 py-3 transition ${
+                  className={`flex min-h-[28px] w-full flex-row items-center justify-center gap-1 rounded-lg border px-1 py-1 transition ${
                     on
                       ? 'border-primary bg-primary-light'
                       : 'border-gray-200 bg-white hover:border-primary hover:bg-primary-light'
                   }`}
                 >
-                  <span className="shrink-0 text-[24px] leading-[1.4]">{s.icon}</span>
+                  <span className="shrink-0 text-[34px] leading-[1.4]">{s.icon}</span>
                   <span className={`w-full text-center text-[12px] font-semibold leading-snug ${on ? 'text-primary' : 'text-gray-700'}`}>
                     {s.label}
                   </span>
@@ -879,7 +883,7 @@ export default function HomeClient() {
           {/* ================= ҮР ДҮН (баруун багана) ================= */}
           <div className="min-w-0 flex-1">
             {/* ГАРЧИГ + НИЙТ ТОО — unegui.mn: «Өрөө байр зарна 16,345» */}
-            <div className="mb-3 flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+            <div className="mb-3 flex flex-wrap items-start justify-between gap-x-1 gap-y-1">
               <div className="min-w-0">
                 <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
                   {pageTitle}
