@@ -363,11 +363,17 @@ export default function AppProviders({ children }) {
               ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Гар утасаар ороход Профайлыг БАРУУН
                  ДООД буланд, Зар нэмэхийг ЗҮҮН ДООД буланд, Таалагдсаныг
                  өмнөх 2-ийн ДУНД байрлуулах» ✓
-              📐 БАЙРЛАЛ (grid-cols-3 — DOM дараалал = харагдах дараалал):
-                    ┌──────────────┬───────────────┬──────────────┐
-                    │ ➕ Зар нэмэх │ ❤️ Таалагдсан │ 👤 Профайл    │
-                    │  (ЗҮҮН)      │   (ДУНД)      │  (БАРУУН)    │
-                    └──────────────┴───────────────┴──────────────┘
+              ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «Санал хүсэлтийг Профайл,
+                 Таалагдсан 2-ийн ДУНД оруул» → 💬 Санал хүсэлт нэмэгдэж
+                 `grid-cols-3` → **`grid-cols-4`** болов ✓
+                 (⚠️ өмнө нь /feedback нь зөвхөн FOOTER-т байсан — мобайлд
+                  хүрэхийн тулд хуудсаа хамгийн доор гүйлгэх шаардлагатай байв)
+              📐 БАЙРЛАЛ (grid-cols-4 — DOM дараалал = харагдах дараалал):
+                 ┌───────────┬────────────┬─────────────┬──────────┐
+                 │ ➕ Зар    │ ❤️ Таалаг- │ 💬 Санал    │ 👤 Проф- │
+                 │ нэмэх     │ дсан       │ хүсэлт      │ айл      │
+                 │  (ЗҮҮН)   │            │             │ (БАРУУН) │
+                 └───────────┴────────────┴─────────────┴──────────┘
               ⚠️ `fixed inset-x-0 bottom-0` — гүйлгэхэд байнга харагдана ✓
               ⚠️ `env(safe-area-inset-bottom)` — iPhone-ийн доод зураас
                  (home indicator) доор товчнууд дарагдахаас сэргийлнэ ✓
@@ -376,7 +382,7 @@ export default function AppProviders({ children }) {
               ⚠️ `lg:hidden` — desktop дээр header-ийн товчнууд хангалттай ✓ */}
           <nav
             aria-label="Мобайл доод цэс"
-            className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-3 border-t border-gray-200 bg-white/95 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] backdrop-blur-sm lg:hidden"
+            className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-gray-200 bg-white/95 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] backdrop-blur-sm lg:hidden"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
             {/* ① ЗҮҮН ДООД — ➕ Зар нэмэх (гол үйлдэл → брэнд өнгө ✓) */}
@@ -389,11 +395,11 @@ export default function AppProviders({ children }) {
               Зар нэмэх
             </button>
 
-            {/* ② ДУНД — ❤️ Таалагдсан (тоолууртай ✓) */}
+            {/* ② — ❤️ Таалагдсан (тоолууртай ✓) */}
             <Link
               href="/favorites"
               onClick={closeUserMenus}
-              className="relative flex flex-col items-center justify-center gap-0.5 border-x border-gray-100 px-2 py-2 text-[11px] font-semibold text-gray-600 transition active:bg-gray-50"
+              className="relative flex flex-col items-center justify-center gap-0.5 border-l border-gray-100 px-2 py-2 text-[11px] font-semibold text-gray-600 transition active:bg-gray-50"
             >
               <span aria-hidden="true" className="text-[20px] leading-tight">❤️</span>
               Таалагдсан
@@ -404,7 +410,19 @@ export default function AppProviders({ children }) {
               )}
             </Link>
 
-            {/* ③ БАРУУН ДООД — 👤 Профайл
+            {/* ③ — 💬 Санал хүсэлт (2026-09-27, хэрэглэгчийн хүсэлт: «Профайл,
+                Таалагдсан 2-ийн дунд»). ⚠️ Footer-ийн холбоос ХЭВЭЭР ✓ —
+                энэ нь зөвхөн МОБАЙЛД хүртээмжтэй болгож байна. */}
+            <Link
+              href="/feedback"
+              onClick={closeUserMenus}
+              className="flex flex-col items-center justify-center gap-0.5 border-l border-gray-100 px-2 py-2 text-[11px] font-semibold text-gray-600 transition active:bg-gray-50"
+            >
+              <span aria-hidden="true" className="text-[20px] leading-tight">💬</span>
+              Санал хүсэлт
+            </Link>
+
+            {/* ④ БАРУУН ДООД — 👤 Профайл
                 ⚠️ Нэвтрээгүй бол `openAuth()` (нэвтрэх цонх ✓),
                    нэвтэрсэн бол доод sheet (`mobileMenuOpen`) ✓ */}
             <button
@@ -412,7 +430,7 @@ export default function AppProviders({ children }) {
               onClick={() => (user ? setMobileMenuOpen((v) => !v) : openAuth())}
               aria-haspopup="menu"
               aria-expanded={user ? mobileMenuOpen : undefined}
-              className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 text-[11px] font-semibold text-gray-600 transition active:bg-gray-50"
+              className="flex flex-col items-center justify-center gap-0.5 border-l border-gray-100 px-2 py-2 text-[11px] font-semibold text-gray-600 transition active:bg-gray-50"
             >
               <span aria-hidden="true" className="text-[20px] leading-tight">👤</span>
               <span className="max-w-full truncate">{user ? (displayName || 'Профайл') : 'Профайл'}</span>
