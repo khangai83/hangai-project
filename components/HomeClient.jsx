@@ -658,6 +658,10 @@ export default function HomeClient() {
                    БАГАНА болгодог: CSS `columns-*` нь дээшээс доош дүүргэж,
                    дараа нь ДАРААГИЙН багана руу шилжинэ (unegui-тэй ижил).
                 ⚠️ `break-inside-avoid` — линк баганы зааг дээр ТАСРАХГҮЙ.
+                🔤 ФОНТ (2026-09-27, хэрэглэгчийн хүсэлт «жаахан томруулж, илүү
+                   хар өнгөтэй»): `text-[12px] font-medium text-gray-700` →
+                   `text-[14px] font-semibold text-gray-900` (+2px, +1 жин,
+                   gray-700 #454037 → gray-900 #1B1815).
                 ⚠️ unegui-тэй ижил: дэд төрөл тус бүрийн ТОО ХАРАГДАХГҮЙ
                    (нийт тоо нь дээрх толгойд байна). Тоог буцаах бол
                    доорх `<span>`-ы дараа `{typeCounts[t]}` badge нэмнэ.
@@ -675,7 +679,7 @@ export default function HomeClient() {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0 opacity-30" aria-hidden="true">
                     <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                  <span className="line-clamp-2 overflow-hidden text-[12px] font-medium text-ellipsis text-gray-700 group-hover:text-primary">
+                  <span className="line-clamp-2 overflow-hidden text-[14px] font-semibold text-ellipsis text-gray-900 group-hover:text-primary">
                     {getPropertyTypeLabel(t, category)}
                   </span>
                 </button>
@@ -685,7 +689,13 @@ export default function HomeClient() {
         ) : (
           /* ---------- БҮХ ХЭСЭГ — tile сүлжээ (багана) ----------
              ⚠️ 2 → 3 → 6 багана. Сонгогдсон хэсэг нь онцлогдож харагдана.
-             ⚠️ `min-h-[88px]` → бүх tile ИЖИЛ өндөртэй (шошго 1-2 мөр ч). */
+             ⚠️ `min-h-[88px]` → бүх tile ИЖИЛ өндөртэй (шошго 1-2 мөр ч).
+             🔤 ФОНТ (2026-09-27, хэрэглэгчийн хүсэлт «жаахан томруулж, илүү
+                хар өнгөтэй»): `text-[14px] font-semibold` → `text-[16px] font-bold`;
+                сонгоогүй үед `text-gray-700` (#454037) → `text-gray-900` (#1B1815);
+                СОНГОСОН үед `text-primary` → `text-primary-dark` — ⚠️ учир нь
+                primary (#2563eb) нь primary-light (#dbeafe) дэвсгэр дээр 4.03:1
+                → AA-д ХҮРЭХГҮЙ; primary-dark (#1d4ed8) нь 5.55:1 ✅ AA. */
           <div className="tile-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6" role="tablist" aria-label="Зарын хэсэг">
             {SECTIONS.map((s) => {
               const on = s.value === section;
@@ -703,7 +713,7 @@ export default function HomeClient() {
                   }`}
                 >
                   <span className="shrink-0 text-[34px] leading-[1.4]">{s.icon}</span>
-                  <span className={`w-full text-left text-[14px] font-semibold leading-snug ${on ? 'text-primary' : 'text-gray-700'}`}>
+                  <span className={`w-full text-left text-[16px] font-bold leading-snug ${on ? 'text-primary-dark' : 'text-gray-900'}`}>
                     {s.label}
                   </span>
                 </button>
