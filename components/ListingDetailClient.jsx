@@ -45,6 +45,44 @@ export default function ListingDetailClient({ id }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  /**
+   * 👤 ЗАР НИЙТЛЭГЧИЙН ПРОФАЙЛ (хоч нэр + профайл зураг) — ТАТАХ.
+   *
+   * 🔴 БОДИТ АЛДАА ЗАСВАР (2026-09-27, хэрэглэгчийн гомдол: «зар луу ороод
+   *    харахад зураг гарч ирэхгүй байна»):
+   *    ⚠️ Өмнө нь `author` төлөв ЗАРЛАГДСАН (мөр 28) ч `setAuthor()` нь
+   *       ХЭЗЭЭ Ч ДУУДАГДААГҮЙ байв ✗ → дэлгэрэнгүй хуудсанд профайл зураг,
+   *       хоч нэр ОГТ ХАРАГДАХГҮЙ байсан. (`sellerName` нь зөвхөн
+   *       `listing.contact_name` fallback-аар гардаг байсан тул НЭР нь
+   *       харагдаж, ЗУРАГ нь гарахгүй байв — яг таны гомдол ✓)
+   *
+   * ⚠️ `listings.user_id` нь `profiles` руу FK-ГҮЙ тул PostgREST-ийн embed
+   *    (`profiles(...)`) ажиллахгүй → 2 дахь query (`fetchProfilesByIds`)
+   *    хийж client талд нэгтгэнэ (HomeClient-тэй ижил арга).
+   * ⚠️ `fetchProfilesByIds` нь `show_identity = false` (0017) үед
+   *    `displayName`/`avatarUrl`-ыг ХООСОН буцаана → тэгвэл зөвхөн
+   *    `contact_name` fallback харагдана ✓
+   */
+  useEffect(() => {
+    if (!listing || !listing.user_id) {
+      setAuthor(null);
+      return undefined;
+    }
+    let mounted = true;
+    (async () => {
+      try {
+        const map = await fetchProfilesByIds([listing.user_id]);
+        if (mounted) setAuthor((map && map[listing.user_id]) || null);
+      } catch (err) {
+        // Зураг/нэр харуулахгүй — үндсэн агуулгад нөлөөлөхгүй
+        console.warn(normalizeError(err));
+        if (mounted) setAuthor(null);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [listing]);
+
+
  /**
    * 📋 «Зар нийтлэгч» карт дээр харагдах тоо — тухайн хэрэглэгчийн
    * Зарах / Түрээслэх зарын тоо. Карт нь `/sellers/[id]` хуудас руу шилжүүлнэ.

@@ -86,14 +86,17 @@ export default function ListingCard({ listing, author, attrsLine }) {
               ⚠️ Нэр нь холбоос БИШ — карт бүхэлдээ зар руу линк (`<Link>`
                  дотор `<Link>` хийх нь HTML-д хоригтой). */}
           {author?.displayName && (
-            <div className="mb-1.5 flex items-center justify-end gap-2">
+            <div className="mb-2 flex items-center justify-end gap-2.5">
               <span
-                className="truncate text-[12.5px] font-semibold text-gray-700"
+                className="truncate text-[13.5px] font-semibold text-gray-800"
                 title={author.displayName}
               >
                 {author.displayName}
               </span>
-              <Avatar src={author.avatarUrl} name={author.displayName} size={28} />
+              {/* ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): 28px → 40px — карт дээр
+                  профайл зураг САЙН ХАРАГДАХЫН тулд томруулав.
+                  🔧 Хэмжээг солих бол `size={40}` → 32 / 48 / 56 гэж бичнэ. */}
+              <Avatar src={author.avatarUrl} name={author.displayName} size={40} />
             </div>
           )}
           {/* ---------- ТӨРӨЛ — КАРТЫН ХАМГИЙН ЭХНИЙ МӨР ----------
