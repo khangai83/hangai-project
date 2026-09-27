@@ -426,7 +426,7 @@ function buildRow(section, subtype, k) {
       ['real-estate', 'Орон сууц', 0], ['real-estate', 'Орон сууц', 1],
       ['auto', 'Седан', 0], ['auto', 'Жийп, SUV', 1],
       ['jobs', 'IT, программист', 0], ['computers', 'Зөөврийн компьютер', 0],
-      ['home', 'Тавилга, буйдан', 0], ['services', 'Засвар, үйлчилгээ', 0],
+      ['home', 'Тавилга, буйдан', 0], ['services', 'Сантехник', 0],
     ];
     for (const [s, st, k] of samples) {
       const r = buildRow(s, st, k);

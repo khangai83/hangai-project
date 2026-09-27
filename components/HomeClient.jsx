@@ -14,6 +14,7 @@ import {
   CITIES, getDistricts, getKhoroos, ROOM_OPTIONS, formatRoomsLabel,
   hasRoomsFields, SECTIONS, getSection, getSubtypes, getSectionCategories,
   hasCategoryChoice, getAttrFilters, getAttrField, formatAttrsLine,
+  getSubtypeGroups,   // 🛠 3 дахь түвшин (2026-09-27) — зөвхөн `services`
 } from '../lib/locationData';
 import { getCategoryLabel, getPropertyIcon, getPropertyTypeLabel, formatPrice, formatCount } from '../lib/format';
 import { buildHomeBreadcrumb } from '../lib/breadcrumb';
@@ -211,6 +212,9 @@ export default function HomeClient() {
   // ⚠️ DRILL-DOWN: `false` → БҮХ хэсэг tile хэлбэрээр;
   //    `true` → зөвхөн тухайн хэсгийн ДОТООД (дэд төрөл) багана болж харагдана.
   const [sectionOpen, setSectionOpen] = useState(false);
+  // 🛠 3 ДАХЬ ТҮВШИН (2026-09-27) — нээлттэй БҮЛЭГ (`services`-д л байна).
+  //    `null` = бүлгийн жагсаалт харагдана; утга = тухайн бүлгийн дэд төрлүүд.
+  const [groupOpen, setGroupOpen] = useState(null);
   // ⚠️ ЭНД, бүх `useEffect`-ийн ӨМНӨ: эффектүүдийн deps массив РЕНДЕРИЙН ҮЕД
   //    үнэлэгддэг тул хойш зарлавал TDZ алдаа гарна.
   const noSection = section === 'all';
@@ -462,10 +466,11 @@ export default function HomeClient() {
   const resetAll = () => {
     setCategory('all'); setQuery(''); setSearch('');
     setPage(1); // 📄 бүх шүүлт арилсан → 1-р хуудас
-    // ⚠️ ХЭСЭГ ба drill-down-ыг ч сэргээнэ — эс бөгөөс «Бүх зар» дарсан ч
+    // 🛠 ХЭСЭГ ба drill-down-ыг ч сэргээнэ — эс бөгөөс «Бүх зар» дарсан ч
     //    тухайн хэсгийн (ж: Автомашин) зарууд хэвээр үлддэг байв (АЛДАА).
     setSection('all');
     setSectionOpen(false);
+    setGroupOpen(null); // 🛠 нээлттэй бүлгийг ч хаана
     setFilters(emptyFilters()); // массив хуваалцахгүй
   };
 
@@ -475,6 +480,7 @@ export default function HomeClient() {
   const backToAllSections = () => {
     setSection('all');
     setSectionOpen(false);
+    setGroupOpen(null); // 🛠 нээлттэй бүлгийг хаана
     setCategory('all');
     setPage(1); // 📄 хэсэг арилсан → 1-р хуудас
     setFilters((f) => ({ ...f, propertyType: '', rooms: '', attrs: {} }));
@@ -489,6 +495,8 @@ export default function HomeClient() {
   const changeSection = (nextSection, { open = true } = {}) => {
     if (nextSection !== section) {
       setSection(nextSection);
+      // 🛠 өөр хэсэг → өмнөх хэсгийн НЭЭЛТТЭЙ БҮЛЭГ хүчингүй болно
+      setGroupOpen(null);
       // 📄 өөр хэсэг → өөр жагсаалт тул 1-р хуудас
       //    ⚠️ Ижил хэсэг дээр (зөвхөн нээх) дарах үед хуудсыг ХӨНДӨХГҮЙ ✓
       setPage(1);
@@ -529,6 +537,17 @@ export default function HomeClient() {
     // ⚠️ ХЭСЭГ (0016) — breadcrumb-ийн «Үл хөдлөх» / «Автомашин» линк.
     //    ⚠️ `nav.section` байхгүй бол хэсэг ХӨНДӨГДӨХГҮЙ
     if (nav.section !== undefined) { setSection(nav.section); setSectionOpen(false); }
+    // 🛠 БҮЛЭГ (3 дахь түвшин, 2026-09-27) — `nav.group` байвал тухайн бүлгийг
+    //    НЭЭНЭ, `null` бол хаана (`undefined` = хөндөхгүй).
+    // ⚠️ ЭНЭ БЛОК нь `nav.section`-ий ДАРАА байх ЁСТОЙ — эс бөгөөс дээрх
+    //    `setSectionOpen(false)` нь drill-down-ыг дахин хааж, хэрэглэгч «бүлэг
+    //    рүү буцсан» ч дахин хэсэг сонгох шаардлагатай болно (2 даралт ✗).
+    // ⚠️ Хэсгийн линк (`group: null`) нь хуучин зан төлөвөөр бүх хэсгийн
+    //    дэлгэц рүү буцна (sectionOpen=false) ✓
+    if (nav.group !== undefined) {
+      setGroupOpen(nav.group || null);
+      setSectionOpen(!!nav.group);
+    }
     if (nav.category !== undefined) setCategory(nav.category);
     if (nav.filters) setFilters((f) => ({ ...f, ...nav.filters }));
   };
@@ -567,6 +586,22 @@ export default function HomeClient() {
   const subtypes = useMemo(
     () => (noSection ? [] : getSubtypes(section)),
     [section, noSection]
+  );
+  /**
+   * 🛠 3 ДАХЬ ТҮВШИН (2026-09-27) — зөвхөн `services` хэсэгт бүлэг байна.
+   * ⚠️ `sectionOpen` ба `groupOpen` нь ХОЁР ӨӨР зүйл:
+   *    `sectionOpen=true, groupOpen=null`  → хэсгийн БҮЛГИЙН жагсаалт (7 групп)
+   *    `sectionOpen=true, groupOpen='x'`   → тухайн бүлгийн ДЭД ТӨРЛҮҮД
+   * ⚠️ Бүлэг нь ШҮҮЛТ БИШ — зөвхөн навигаци (хэрэглэгчийн сонголт ✓).
+   */
+  const subtypeGroups = useMemo(
+    () => (noSection ? [] : getSubtypeGroups(section)),
+    [section, noSection]
+  );
+  /** Нээлттэй бүлэг (олдохгүй бол `null` → бүлгийн жагсаалт харагдана) */
+  const activeGroup = useMemo(
+    () => subtypeGroups.find((g) => g.label === groupOpen) || null,
+    [subtypeGroups, groupOpen]
   );
   const sectionCategories = useMemo(() => getSectionCategories(section), [section]);
   const attrFilters = useMemo(() => getAttrFilters(section), [section]);
@@ -851,6 +886,18 @@ export default function HomeClient() {
               >
                 ← Бүх хэсэг
               </button>
+              {/* 🛠 БҮЛЭГ НЭЭЛТТЭЙ үед — бүлгийн жагсаалт руу буцах чип
+                  (хэрэглэгчийн сонголт: бүлэг нь шүүлт биш, зөвхөн нээгддэг) */}
+              {activeGroup && (
+                <button
+                  type="button"
+                  onClick={() => setGroupOpen(null)}
+                  title={`«${sec.label}» хэсгийн бүх бүлэг рүү буцах`}
+                  className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-1 text-[13px] font-semibold text-gray-600 transition hover:border-primary hover:text-primary"
+                >
+                  ← Бүх категори
+                </button>
+              )}
             </div>
 
             {/* ---------- SEPARATOR ---------- */}
@@ -889,8 +936,22 @@ export default function HomeClient() {
                    (нийт тоо нь дээрх толгойд байна). Тоог буцаах бол
                    доорх `<span>`-ы дараа `{typeCounts[t]}` badge нэмнэ.
                 🔧 Баганын тоо: `columns-1 sm:columns-2 lg:columns-4` */}
+
+            {/* ══════════ 🛠 3 ДАХЬ ТҮВШИН (`services`) — 2026-09-27 ══════════
+                Хэрэглэгчийн сонголт: «групп дээр дарахад ЗӨВХӨН доод item-үүд
+                нээгдэнэ, групп өөрөө шүүхгүй; доод түвшингүй групп (ж:
+                «Хэвлэл, реклам, медиа») нь ӨӨРӨӨ сонгогдоно».
+                ⚠️ Иймээс энэ блок гурван төлөвтэй:
+                    ① `activeGroup` → тухайн бүлгийн ДЭД ТӨРЛҮҮД (↓ доорх эхний блок)
+                    ② бүлэг байгаа ч нээгээгүй → БҮЛГИЙН жагсаалт (↓ 2 дахь блок)
+                    ③ бүлэг огт байхгүй (бусад хэсэг) → энгийн дэд төрлийн жагсаалт
+                ⚠️ Бүлэг дээр дарахад `setPage(1)` ХИЙХГҮЙ — хараахан шүүлт
+                   болоогүй (зөвхөн нээгдэж байна) ✓ */}
+
+            {/* ---------- ① / ③ ДЭД ТӨРӨЛ — unegui.mn шиг БАГАНА ---------- */}
+            {(!subtypeGroups.length || activeGroup) && (
             <div className="columns-1 gap-x-6 sm:columns-2 lg:columns-4" role="tablist" aria-label="Зарын дэд төрөл">
-              {subtypes.map((t) => (
+              {(activeGroup ? activeGroup.items : subtypes).map((t) => (
                 <button
                   key={t}
                   type="button"
@@ -908,6 +969,44 @@ export default function HomeClient() {
                 </button>
               ))}
             </div>
+            )}
+
+            {/* ---------- ② БҮЛГИЙН ЖАГСААЛТ (зөвхөн `services`) ----------
+                ⚠️ Групп нь ХҮРЭЭТЭЙ TILE биш — дэд төрлийн жагсаалттай ИЖИЛ
+                   хэлбэр (unegui.mn-ийг дагасан), гэхдээ ФОНТ нь BOLD
+                   (хэрэглэгчийн жагсаалтад группийн нэр BOLD байсан ✓).
+                ⚠️ Доод түвшингүй бүлэг (`items: []`) нь шууд СОНГОГДОНО
+                   (тэр нь хамгийн доод түвшин) — chevron-гүй, ✔ icon-той. */}
+            {subtypeGroups.length > 0 && !activeGroup && (
+            <div className="columns-1 gap-x-6 sm:columns-2 lg:columns-4" role="tablist" aria-label="Үйлчилгээний бүлэг">
+              {subtypeGroups.map((g) => {
+                const leaf = g.items.length === 0; // доод түвшингүй → өөрөө сонгогдоно
+                return (
+                  <button
+                    key={g.label}
+                    type="button"
+                    role="tab"
+                    aria-selected={false}
+                    onClick={() => (leaf ? setF('propertyType', g.label) : setGroupOpen(g.label))}
+                    className="group flex w-full break-inside-avoid items-start gap-1.5 rounded-md px-2 py-1.5 text-left transition hover:bg-white"
+                  >
+                    {leaf ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0 opacity-30" aria-hidden="true">
+                        <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0 opacity-30" aria-hidden="true">
+                        <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                    <span className="line-clamp-2 overflow-hidden text-[14px] font-bold tracking-[-0.01em] text-ellipsis text-gray-900 sm:text-[15px] group-hover:text-primary">
+                      {g.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            )}
           </>
         ) : (
           /* ---------- БҮХ ХЭСЭГ — tile сүлжээ (багана) ----------

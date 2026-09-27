@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useToast, useUI } from './AppProviders';
 import { createListing, updateListing, uploadImages } from '../lib/queries';
-import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSubtypes, hasCategoryChoice } from '../lib/locationData';
+import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSubtypes, hasCategoryChoice, getSubtypeGroups } from '../lib/locationData';
 import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice } from '../lib/format';
 import phoneEmail from '../lib/phoneEmail';
 import YouTubeField from './YouTubeField';
@@ -132,6 +132,15 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
   //    Бусад хэсэг (авто/ажил/компьютер/бараа/үйлчилгээ) нь `attrs` jsonb.
   const isRealEstate = (form.section || 'real-estate') === 'real-estate';
   const subtypes = getSubtypes(form.section || 'real-estate');
+  /**
+   * 🛠 БҮЛГҮҮД (3 дахь түвшин, 2026-09-27) — зөвхөн `services` хэсэгт.
+   * ⚠️ Формд `optgroup` болгож харуулна: 30 дэд төрөл нь нэг хавтгай
+   *    `<select>`-д ойлгомжгүй болно ✗; `optgroup` нь браузерын төрөлх
+   *    бүлэглэлт (нэмэлт CSS/JS шаардлагагүй ✓).
+   * ⚠️ Доод түвшингүй бүлэг (ж: «Хэвлэл, реклам, медиа») нь ШУУД
+   *    сонгогдох `<option>` болно (тэр нь хамгийн доод түвшин).
+   */
+  const subtypeGroups = getSubtypeGroups(form.section || 'real-estate');
   /** «Зарах / Түрээслэх» сонголт харагдах эсэх — ⚠️ ЗӨВХӨН үл хөдлөхөд */
   const showCategoryChoice = hasCategoryChoice(form.section || 'real-estate');
   /** Тухайн хэсгийн attr талбарүүд (форм автоматаар үүсгэнэ) */
@@ -302,9 +311,23 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                 <label>Дэд төрөл *</label>
                 <select value={form.propertyType} onChange={(e) => set('propertyType', e.target.value)}>
                   <option value="">Сонгох</option>
-                  {subtypes.map((t) => (
-                    <option key={t} value={t}>{getPropertyTypeLabel(t, form.category)}</option>
-                  ))}
+                  {/* 🛠 БҮЛЭГТЭЙ хэсэг (`services`) — `optgroup`-оор бүлэглэнэ */}
+                  {subtypeGroups.length > 0
+                    ? subtypeGroups.map((g) =>
+                        g.items.length ? (
+                          <optgroup key={g.label} label={g.label}>
+                            {g.items.map((t) => (
+                              <option key={t} value={t}>{getPropertyTypeLabel(t, form.category)}</option>
+                            ))}
+                          </optgroup>
+                        ) : (
+                          /* доод түвшингүй бүлэг — өөрөө сонгогдоно */
+                          <option key={g.label} value={g.label}>{getPropertyTypeLabel(g.label, form.category)}</option>
+                        )
+                      )
+                    : subtypes.map((t) => (
+                        <option key={t} value={t}>{getPropertyTypeLabel(t, form.category)}</option>
+                      ))}
                 </select>
               </div>
               {/* «Зар эсвэл түрээс» — ⚠️ ЗӨВХӨН үл хөдлөхөд (хэрэглэгчийн хүсэлт).
