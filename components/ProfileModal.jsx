@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useAuth, useToast } from './AppProviders';
-import { fetchProfilesByIds, updateProfile, uploadAvatar } from '../lib/queries';
+import { fetchProfile, updateProfile, uploadAvatar } from '../lib/queries';
 import { compressImage } from '../lib/imageUtils';
 import { normalizeError } from '../lib/errors';
 import Avatar from './Avatar';
@@ -24,6 +24,8 @@ export default function ProfileModal({ open, onClose }) {
 
   const [displayName, setDisplayName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(null);
+  // ⚠️ 0017: зар дээр нэр/зургаа нийтэд харуулах эсэх (opt-in)
+  const [showIdentity, setShowIdentity] = useState(false);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -41,11 +43,15 @@ export default function ProfileModal({ open, onClose }) {
     setPreview(null);
     (async () => {
       try {
-        const map = await fetchProfilesByIds([user.id]);
-        const p = map[user.id];
+        // ⚠️ ЗӨӨРИЙН профайлаа БҮРЭН уншина (`fetchProfile` → `select('*')`).
+        //    `fetchProfilesByIds` нь `show_identity = false` үед нэр/зургийг
+        //    ХООСОН буцаадаг (бусдын нүдээр) тул энд ТОХИРОХГҮЙ — эзэн
+        //    өөрийн хоч нэрээ харж, засах боломжтой байх ёстой.
+        const p = await fetchProfile(user.id);
         if (!mounted) return;
-        setDisplayName((p && p.displayName) || '');
-        setAvatarUrl((p && p.avatarUrl) || null);
+        setDisplayName((p && (p.display_name || p.name)) || '');
+        setAvatarUrl((p && p.avatar_url) || null);
+        setShowIdentity(p?.show_identity === true);
       } catch (err) {
         if (mounted) setError(normalizeError(err).message);
       } finally {
@@ -92,7 +98,7 @@ export default function ProfileModal({ open, onClose }) {
         nextAvatar = await uploadAvatar(user.id, small);
       }
 
-      await updateProfile(user.id, { displayName: name, avatarUrl: nextAvatar });
+      await updateProfile(user.id, { displayName: name, avatarUrl: nextAvatar, showIdentity });
 
       setAvatarUrl(nextAvatar);
       setFile(null);
@@ -180,6 +186,29 @@ export default function ProfileModal({ open, onClose }) {
                   нэр зар болон «Нийтлэгчийн бусад зарууд» хуудсан дээр гарна.
                 </p>
               </div>
+
+              {/* ══════ НИЙТЭД ХАРУУЛАХ ЭСЭХ (0017_profile_identity.sql) ══════
+                  ⚠️ Хэрэглэгч бүртгэлийн үед сонгосон тохиргоогоо ЭНД сольж
+                     болно. `false` үед зар дээр нэр, зураг ОГТ харагдахгүй
+                     (зөвхөн утасны дугаар).
+                  ⚠️ Хоч нэрээ хоосон үлдээвэл — `show_identity = true` байсан ч
+                     зар дээр нэр харагдахгүй (зураг л харагдана). */}
+              <label className="mb-3 flex cursor-pointer items-start gap-2.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 transition hover:border-primary/40">
+                <input
+                  type="checkbox"
+                  checked={showIdentity}
+                  onChange={(e) => setShowIdentity(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                />
+                <span className="text-[12.5px] leading-relaxed text-gray-600">
+                  <b className="text-gray-800">Зар дээр нэр, зурагаа харуулах</b>
+                  <br />
+                  <b>☑ Тийм</b> — хоч нэр ба зураг зарууд дээр харагдана.
+                  <i> Агент, бирж, дэлгүүрүүд үүнийг асаадаг.</i>
+                  <br />
+                  <b>☐ Үгүй</b> — зөвхөн утасны дугаар харагдана (нэр, зураг харагдахгүй).
+                </span>
+              </label>
 
               {error && <p className="form-error">{error}</p>}
             </>

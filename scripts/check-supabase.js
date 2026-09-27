@@ -152,6 +152,15 @@ async function main() {
       table: 'profiles',
     },
     {
+      // ⚠️ 0017: «Зар дээр нэр, зургаа харуулах уу» — opt-in тохиргоо.
+      //    Багана байхгүй бол `fetchProfilesByIds` нь хуучин зан төлвөөр
+      //    (нэр/зургийг шалгалтгүй харуулна) ажиллана — сайт эвдрэхгүй.
+      label: '0017 — зар дээр нэр/зураг харуулах (show_identity)',
+      cols: 'show_identity',
+      file: '0017_profile_identity.sql',
+      table: 'profiles',
+    },
+    {
       // ⚠️ 0016: `section` ба `attrs` хоёр нь ШИНЭ багана. Аль нэг нь дутуу бол
       //    `?section=eq.auto` шүүлт нь PostgREST-ийн 400 алдаа болно.
       label: '0016 — зарын хэсгүүд (section, attrs)',

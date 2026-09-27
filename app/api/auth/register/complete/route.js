@@ -17,6 +17,7 @@ import {
   createVerifiedUser,
   findUserByPhone,
   verifyPhoneSession,
+  getAdminClient,
 } from '../../../../../lib/authServer';
 
 export const dynamic = 'force-dynamic';
@@ -35,6 +36,9 @@ export async function POST(req) {
   const phone = body.phone;
   const password = body.password == null ? '' : String(body.password);
   const requestToken = body.requestToken;
+  // ⚠️ 0017_profile_identity.sql — «Зар дээр нэр, зургаа харуулах уу?»
+  //    Анхдагч нь `false` (нууцлал). Хэрэглэгч бүртгэлийн үед сонгоно.
+  const showIdentity = body.showIdentity === true;
 
   // ---------- 1. Оролтын шалгалт ----------
   if (!verifyMn.isValidMnPhone(phone)) {
@@ -112,7 +116,26 @@ export async function POST(req) {
   // ---------- 5. Хэрэглэгч үүсгэх ----------
   try {
     const user = await createVerifiedUser({ phone, password, name });
-    return NextResponse.json({ ok: true, userId: user.id });
+
+    // ---------- 6. «Нэр/зургаа харуулах» сонголт (0017) ----------
+    // ⚠️ Профайлын мөрийг `handle_new_user` триггер үүсгэдэг тул түүний
+    //    дараа энд шинэчилнэ. `display_name`-ыг ч үүсгэж өгнө (хоч нэр).
+    // ⚠️ 0017 эсвэл 0015 ороогүй бол АЛДАА ГАРАХГҮЙ — зөвхөн лог бичиж,
+    //    бүртгэл амжилттай үргэлжилнэ (сайт эвдрэхгүй).
+    try {
+      const admin = getAdminClient();
+      const patch = {};
+      if (showIdentity) patch.show_identity = true;
+      if (name) patch.display_name = name;
+      if (Object.keys(patch).length) {
+        const { error: upErr } = await admin.from('profiles').update(patch).eq('id', user.id);
+        if (upErr) console.warn('[register/complete] профайл шинэчлэхэд алдаа:', upErr.message);
+      }
+    } catch (e) {
+      console.warn('[register/complete] профайл шинэчлэхэд алдаа:', (e && e.message) || e);
+    }
+
+    return NextResponse.json({ ok: true, userId: user.id, showIdentity });
   } catch (err) {
     const duplicate = err && err.code === 'PHONE_EXISTS';
     return NextResponse.json(

@@ -41,6 +41,9 @@ export default function AuthModal({ open, onClose }) {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
+  // ⚠️ 0017: «Зар дээр нэр, зургаа харуулах уу» — бүртгэлийн үед АСУУНА.
+  //    Анхдагч нь `false` (нууцлал) — хэрэглэгч өөрөө сонгоно.
+  const [showIdentity, setShowIdentity] = useState(false);
   const [session, setSession] = useState(null); // verify.mn session + requestToken
   const [remaining, setRemaining] = useState(0);
   const [statusText, setStatusText] = useState('');
@@ -134,6 +137,8 @@ export default function AuthModal({ open, onClose }) {
         phone: normalizePhone(phone),
         password,
         requestToken,
+        // ⚠️ 0017: зар дээр нэр/зургаа харуулах эсэх (форм дээрх checkbox)
+        showIdentity,
       });
       if (done.error) {
         finishingRef.current = false;
@@ -153,7 +158,7 @@ export default function AuthModal({ open, onClose }) {
       showToast('Амжилттай бүртгүүллээ 🎉');
       onClose();
     },
-    [name, phone, password, signIn, showToast, onClose, view]
+    [name, phone, password, showIdentity, signIn, showToast, onClose, view]
   );
 
   // ---------- Төлөв шалгах (auto + гараар) ----------
@@ -591,6 +596,32 @@ export default function AuthModal({ open, onClose }) {
                   placeholder="••••••"
                 />
               </div>
+              {/* ══════════ «Нэр, зургаа харуулах уу?» (0017_profile_identity.sql) ══════════
+                  ⚠️ ЯАГААД АСУУЖ БАЙНА ВЭ: агент/дэлгүүрүүд нэр, зургаа
+                     харуулахыг хүсдэг, энгийн хэрэглэгч ихэвчлэн хүсдэггүй.
+                     Тиймээс БҮРТГЭЛИЙН үед сонголт өгнө (анхдагч: ХАРУУЛАХГҮЙ).
+                  ⚠️ Сонголтыг дараа нь «👤 Профайл (нэр, зураг)» цонхноос
+                     хэдийд ч солих боломжтой. */}
+              <label className="mb-3 flex cursor-pointer items-start gap-2.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 transition hover:border-primary/40">
+                <input
+                  type="checkbox"
+                  checked={showIdentity}
+                  onChange={(e) => setShowIdentity(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                />
+                <span className="text-[12.5px] leading-relaxed text-gray-600">
+                  <b className="text-gray-800">Зар дээр нэр, профайл зургаа харуулах</b>
+                  <br />
+                  <b>☑ Тийм</b> — таны <b>хоч нэр</b> ба зураг зар болон «Нийтлэгчийн
+                  бусад зарууд» хуудсан дээр харагдана. <i>Бирж, агент, дэлгүүрүүд
+                  ихэвчлэн үүнийг сонгодог.</i>
+                  <br />
+                  <b>☐ Үгүй</b> — зөвхөн утасны дугаар харагдана; нэр, зураг
+                  ОГТ харагдахгүй.
+                  <span className="text-gray-400"> (дараа нь солих боломжтой)</span>
+                </span>
+              </label>
+
               {error && <p className="form-error">{error}</p>}
               {/* ⚠️ Үйлчилгээний нөхцөл + хувийн мэдээллийн зөвшөөрөл (Хувь хүний
                   мэдээллийн хамгаалалтын тухай хуулийн дагуу бүртгүүлэхээс өмнө
