@@ -63,6 +63,9 @@ export default function AppProviders({ children }) {
   const [editTarget, setEditTarget] = useState(null); // засах горимд зарын объект
   const favoriteIds = useFavorites(); // ❤️ таалагдсан зарууд (localStorage)
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  // 📱 2026-09-27 (хэрэглэгчийн хүсэлт): мобайл доод навигацийн «👤 Профайл»
+  //    товч нь доод хуудас (bottom sheet) нээнэ — desktop dropdown-той ИЖИЛ зүйлс ✓
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false); // 👤 Профайл засах модал
   const [dataVersion, setDataVersion] = useState(0); // зарын шинэчлэлт дохио
   const [isAdmin, setIsAdmin] = useState(false); // app_metadata.is_admin
@@ -176,6 +179,44 @@ export default function AppProviders({ children }) {
   const closeAdd = useCallback(() => { setAddOpen(false); setEditTarget(null); }, []);
   const notifyListingsChanged = useCallback(() => setDataVersion((v) => v + 1), []);
 
+  // ---------- 👤 ХЭРЭГЛЭГЧИЙН ЦЭСНИЙ ЗҮЙЛС (нэг эх сурвалж) ----------
+  // ⚠️ ЯАГААД НЭГ ГАЗАР ВЭ: цэс нь ХОЁР газарт харагдана —
+  //    (1) desktop: header дахь цэсний dropdown, (2) мобайл: доод sheet.
+  //    Зүйлсийг хоёр удаа бичвэл нэг нь мартагдаж (ж: шинэ админ хуудас
+  //    зөвхөн desktop дээр гарна) → нэг массиваас render хийнэ ✓
+  // ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «✏️ Нэр засах» (window.prompt) зүйл
+  //    УСТГАГДСАН ✓ — нэр засах нь «👤 Профайл (нэр, зураг)» цонхон ДОТОР
+  //    аль хэдийн байгаа (`Хоч нэр` талбар) тул хоёр газар байх шаардлагагүй.
+  const closeUserMenus = useCallback(() => {
+    setUserMenuOpen(false);
+    setMobileMenuOpen(false);
+  }, []);
+
+  const userMenuItems = useMemo(() => {
+    const items = [
+      { key: 'my-listings', label: '📋 Миний зарууд', href: '/my-listings' },
+      { key: 'feedback', label: '💬 Санал хүсэлт', href: '/feedback' },
+    ];
+    if (isAdmin) {
+      items.push(
+        { key: 'admin', label: '📊 Админ — Хяналтын самбар', href: '/admin', tone: 'admin' },
+        { key: 'admin-listings', label: '🏷️ Админ — Зарууд', href: '/admin/listings', tone: 'admin' },
+        { key: 'admin-feedback', label: '📨 Админ — Санал хүсэлт', href: '/admin/feedback', tone: 'admin' },
+        { key: 'admin-users', label: '🛠 Админ — Хэрэглэгчид', href: '/admin/users', tone: 'admin' }
+      );
+    }
+    items.push(
+      {
+        key: 'profile',
+        label: '👤 Профайл (нэр, зураг)',
+        tone: 'primary',
+        onClick: () => { closeUserMenus(); setProfileOpen(true); },
+      },
+      { key: 'logout', label: '🚪 Гарах', onClick: () => { closeUserMenus(); logout(); } }
+    );
+    return items;
+  }, [isAdmin, logout, closeUserMenus]);
+
   const authValue = useMemo(() => ({ user, profileName, authLoading, signIn, saveName, logout }),
     [user, profileName, authLoading, signIn, saveName, logout]);
   const toastValue = useMemo(() => ({ showToast }), [showToast]);
@@ -190,23 +231,32 @@ export default function AppProviders({ children }) {
     <AuthContext.Provider value={authValue}>
       <ToastContext.Provider value={toastValue}>
         <UIContext.Provider value={uiValue}>
-          {/* ===== HEADER ===== */}
+          {/* ===== HEADER =====
+              ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «Гар утасаар ороход ЛОГО-г
+                 ГОЛЛУУЛЖ (төвд) харуулаарай» → мобайлд `justify-center` ✓
+                 (desktop дээр `lg:justify-between` — лого зүүн, цэс баруун ✓)
+              ⚠️ Баруун талын товчнууд (`➕ Зар нэмэх`, `❤️ Таалагдсан`,
+                 хэрэглэгчийн цэс) нь МОБАЙЛ дээр НУУГДАЖ (`hidden lg:flex` ✓),
+                 оронд нь доод навигац (`<nav>` доор) гарна ✓
+                 → Ингэснээр мобайлд header нь ЗӨВХӨН лого (төвд) ✓ */} 
           <header className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-card">
-            <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-4 sm:px-6">
+            <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-center px-4 sm:px-6 lg:justify-between">
               <Link
                 href="/"
                 className="flex items-center gap-2 text-[22px] font-bold text-primary"
-                onClick={() => setUserMenuOpen(false)}
+                onClick={closeUserMenus}
               >
-                🏠 Зарлаа<span className="text-gray-900">.mn</span>
+                🏠 ZARLAA<span className="text-gray-900">.MN</span>
               </Link>
               {/* ⚠️ БҮХ ЦЭСЭН ТОВЧ НЭГ ХЭМЖЭЭТЭЙ (`btn-sm` = 13px, font-semibold):
                   урьд нь «Зар нэмэх» нь `btn` (14px) байсан бол «Таалагдсан»,
                   «Нэвтрэх», хэрэглэгчийн нэр нь `btn-sm` (13px) байв → дэлгэц
                   дээр хэмжээ нь жижиг зөрүүтэй, харагдац тогтворгүй байв.
                   Одоо: ГОЛ үйлдэл = btn-primary (брэнд өнгө), бусад нь
-                  btn-outline (төвийг сахисан) — палитр minimal хэвээр. */}
-              <div className="flex items-center gap-2 sm:gap-3">
+                  btn-outline (төвийг сахисан) — палитр minimal хэвээр.
+              ⚠️ 2026-09-27: `hidden lg:flex` — МОБАЙЛ дээр эдгээр товч
+                  НУУГДАЖ, оронд нь доод навигац (`<nav>`) гарна ✓ */}
+              <div className="hidden items-center gap-2 sm:gap-3 lg:flex">
                 {/* ---- ③ ➕ Зар нэмэх (ГОЛ үйлдэл — цорын ганц брэнд өнгөтэй товч) ---- */}
                 <button className="btn btn-primary btn-sm" onClick={openAdd}>➕ Зар нэмэх</button>
 
@@ -215,7 +265,7 @@ export default function AppProviders({ children }) {
                   href="/favorites"
                   className="btn btn-outline btn-sm"
                   title="Таалагдсан зарууд"
-                  onClick={() => setUserMenuOpen(false)}
+                  onClick={closeUserMenus}
                 >
                   ❤️ Таалагдсан
                   {favoriteIds.length > 0 && (
@@ -243,25 +293,16 @@ export default function AppProviders({ children }) {
                     </button>
                     {userMenuOpen && (
                       <div className="absolute right-0 top-[calc(100%+6px)] z-50 min-w-[220px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card-hover">
-                        <Link href="/my-listings" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={() => setUserMenuOpen(false)}>📋 Миний зарууд</Link>
-                        <Link href="/feedback" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={() => setUserMenuOpen(false)}>💬 Санал хүсэлт</Link>
-                        {isAdmin && (
-                          <>
-                            <Link href="/admin" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-amber-800 transition hover:bg-amber-50" onClick={() => setUserMenuOpen(false)}>📊 Админ — Хяналтын самбар</Link>
-                            <Link href="/admin/listings" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-amber-800 transition hover:bg-amber-50" onClick={() => setUserMenuOpen(false)}>🏷️ Админ — Зарууд</Link>
-                            <Link href="/admin/feedback" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-amber-800 transition hover:bg-amber-50" onClick={() => setUserMenuOpen(false)}>📨 Админ — Санал хүсэлт</Link>
-                            <Link href="/admin/users" className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-amber-800 transition hover:bg-amber-50" onClick={() => setUserMenuOpen(false)}>🛠 Админ — Хэрэглэгчид</Link>
-                          </>
-                        )}
-                        <button className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-primary transition hover:bg-primary-light" onClick={() => { setUserMenuOpen(false); setProfileOpen(true); }}>👤 Профайл (нэр, зураг)</button>
-                        {/* ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «✏️ Нэр засах»
-                            цэсийн зүйл УСТГАГДСАН ✓ Учир нь нэр засах нь
-                            «👤 Профайл (нэр, зураг)» цонхон ДОТОР аль хэдийн
-                            байгаа (`Хоч нэр` талбар) — хоёр газар байх
-                            шаардлагагүй. Өмнө нь `window.prompt()` ашигладаг
-                            тусдаа муухай цонх гардаг байв ✗ */}
-                        <div className="h-px bg-gray-200"></div>
-                        <button className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-700 transition hover:bg-gray-50 hover:text-primary" onClick={logout}>🚪 Гарах</button>
+                        {/* ⚠️ Зүйлс нь `userMenuItems` (нэг эх сурвалж) —
+                            мобайл доод sheet-тэй ЯГ ИЖИЛ жагсаалт ✓
+                            (✏️«Нэр засах» нь 2026-09-27-нд УСТГАГДСАН —
+                             тэр нь «👤 Профайл» цонхон дотор байгаа ✓) */}
+                        {userMenuItems.map((it) => (
+                          <div key={it.key}>
+                            {it.key === 'logout' && <div className="h-px bg-gray-200"></div>}
+                            <UserMenuItem item={it} onNavigate={closeUserMenus} />
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -272,9 +313,12 @@ export default function AppProviders({ children }) {
             </div>
           </header>
 
+          {/* ⚠️ 2026-09-27: мобайл доод навигац байгаа тул доод зай нэмэв —
+              эс бөгөөс навигац нь хуудасны сүүлийн мөрүүдийг ДАРНА ✗
+              (`pb-20` = 80px ≈ nav-ийн өндөр + зай ✓; desktop дээр `lg:pb-6` ✓) */}
           <main className="min-h-[calc(100vh-130px)]">{children}</main>
 
-          <footer className="mt-12 bg-gray-900 py-6 text-center text-sm text-gray-300">
+          <footer className="mt-12 bg-gray-900 py-6 pb-20 text-center text-sm text-gray-300 lg:pb-6">
             <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
               <nav className="mb-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
                 <Link href="/" className="transition hover:text-white">🏠 Нүүр хуудас</Link>
@@ -283,7 +327,7 @@ export default function AppProviders({ children }) {
                 <Link href="/terms" className="transition hover:text-white">📄 Үйлчилгээний нөхцөл</Link>
                 <Link href="/feedback" className="transition hover:text-white">💬 Санал хүсэлт</Link>
               </nav>
-              <p className="text-[13.5px]">🏠 Зарлаа.mn — Үл хөдлөх хөрөнгийн зар. Next.js + Supabase хувилбар.</p>
+              <p className="text-[13.5px]">🏠 ZARLAA.MN — Үл хөдлөх хөрөнгийн зар. Next.js + Supabase хувилбар.</p>
               {/* ⚠️ КОНТРАСТ ЗАСВАР: bg-gray-900 дээр text-gray-500 нь 3.55:1
                   байсан (AA 4.5:1-д хүрэхгүй). text-gray-400 → 7.41:1 ✅ */}
               <p className="mx-auto mt-2 max-w-[760px] text-[12px] leading-relaxed text-gray-400">
@@ -294,6 +338,106 @@ export default function AppProviders({ children }) {
               </p>
             </div>
           </footer>
+
+          {/* ===== 📱 МОБАЙЛ ДООД НАВИГАЦ (lg:hidden) — 2026-09-27 =====
+              ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Гар утасаар ороход Профайлыг БАРУУН
+                 ДООД буланд, Зар нэмэхийг ЗҮҮН ДООД буланд, Таалагдсаныг
+                 өмнөх 2-ийн ДУНД байрлуулах» ✓
+              📐 БАЙРЛАЛ (grid-cols-3 — DOM дараалал = харагдах дараалал):
+                    ┌──────────────┬───────────────┬──────────────┐
+                    │ ➕ Зар нэмэх │ ❤️ Таалагдсан │ 👤 Профайл    │
+                    │  (ЗҮҮН)      │   (ДУНД)      │  (БАРУУН)    │
+                    └──────────────┴───────────────┴──────────────┘
+              ⚠️ `fixed inset-x-0 bottom-0` — гүйлгэхэд байнга харагдана ✓
+              ⚠️ `env(safe-area-inset-bottom)` — iPhone-ийн доод зураас
+                 (home indicator) доор товчнууд дарагдахаас сэргийлнэ ✓
+              ⚠️ `z-40` — header (`z-50`) ба modal (`z-[1000]+`)-аас ДООР ✓
+                 (модал нээгдэхэд навигац дээр гарах ёсгүй ✓)
+              ⚠️ `lg:hidden` — desktop дээр header-ийн товчнууд хангалттай ✓ */}
+          <nav
+            aria-label="Мобайл доод цэс"
+            className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-3 border-t border-gray-200 bg-white/95 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] backdrop-blur-sm lg:hidden"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+          >
+            {/* ① ЗҮҮН ДООД — ➕ Зар нэмэх (гол үйлдэл → брэнд өнгө ✓) */}
+            <button
+              type="button"
+              onClick={openAdd}
+              className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 text-[11px] font-semibold text-primary transition active:bg-primary-light"
+            >
+              <span aria-hidden="true" className="text-[20px] leading-tight">➕</span>
+              Зар нэмэх
+            </button>
+
+            {/* ② ДУНД — ❤️ Таалагдсан (тоолууртай ✓) */}
+            <Link
+              href="/favorites"
+              onClick={closeUserMenus}
+              className="relative flex flex-col items-center justify-center gap-0.5 border-x border-gray-100 px-2 py-2 text-[11px] font-semibold text-gray-600 transition active:bg-gray-50"
+            >
+              <span aria-hidden="true" className="text-[20px] leading-tight">❤️</span>
+              Таалагдсан
+              {favoriteIds.length > 0 && (
+                <span className="absolute right-[calc(50%-30px)] top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+                  {favoriteIds.length}
+                </span>
+              )}
+            </Link>
+
+            {/* ③ БАРУУН ДООД — 👤 Профайл
+                ⚠️ Нэвтрээгүй бол `openAuth()` (нэвтрэх цонх ✓),
+                   нэвтэрсэн бол доод sheet (`mobileMenuOpen`) ✓ */}
+            <button
+              type="button"
+              onClick={() => (user ? setMobileMenuOpen((v) => !v) : openAuth())}
+              aria-haspopup="menu"
+              aria-expanded={user ? mobileMenuOpen : undefined}
+              className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 text-[11px] font-semibold text-gray-600 transition active:bg-gray-50"
+            >
+              <span aria-hidden="true" className="text-[20px] leading-tight">👤</span>
+              <span className="max-w-full truncate">{user ? (displayName || 'Профайл') : 'Профайл'}</span>
+            </button>
+          </nav>
+
+          {/* ===== 📱 МОБАЙЛ ХЭРЭГЛЭГЧИЙН ЦЭС (доод sheet) — 2026-09-27 =====
+              ⚠️ Desktop-ийн dropdown-той ИЖИЛ зүйлс (`userMenuItems` ✓) —
+                 зөвхөн хэлбэр нь өөр (мобайлд доороос гарна ✓).
+              ⚠️ `role="dialog"` + backdrop — гадна дарахад хаагдана ✓
+                 (ProfileModal/AuthModal-той ижил зан төлөв ✓) */}
+          {mobileMenuOpen && user && (
+            <>
+              <div
+                className="fixed inset-0 z-[1900] bg-black/40 lg:hidden"
+                onClick={closeUserMenus}
+                aria-hidden="true"
+              />
+              <div
+                role="dialog"
+                aria-label="Хэрэглэгчийн цэс"
+                className="fixed inset-x-0 bottom-0 z-[1950] max-h-[80vh] overflow-y-auto rounded-t-2xl border-t border-gray-200 bg-white shadow-card-hover lg:hidden"
+                style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 4.5rem)' }}
+              >
+                <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3">
+                  <span className="truncate text-sm font-bold text-gray-900">
+                    👤 {displayName || 'Хэрэглэгч'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={closeUserMenus}
+                    className="shrink-0 rounded-full border border-gray-200 px-2.5 py-1 text-[12px] font-semibold text-gray-500"
+                  >
+                    ✕ Хаах
+                  </button>
+                </div>
+                {userMenuItems.map((it) => (
+                  <div key={it.key}>
+                    {it.key === 'logout' && <div className="h-px bg-gray-200"></div>}
+                    <UserMenuItem item={it} onNavigate={closeUserMenus} />
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* ===== MODALS & TOAST ===== */}
           <AuthModal open={authOpen} onClose={closeAuth} />
@@ -310,7 +454,10 @@ export default function AppProviders({ children }) {
           {toast && (
             <div
               role="status"
-              className={`fixed bottom-6 right-6 z-[2000] animate-slide-in rounded-lg px-6 py-3 text-sm font-medium text-white shadow-card-hover ${
+              /* ⚠️ 2026-09-27: мобайл доод навигац (~64px) байгаа тул
+                 toast нь `bottom-20` (80px) — эс бөгөөс nav-ийн ард
+                 дарагдаж харагдахгүй ✗ (desktop дээр `lg:bottom-6` ✓) */
+              className={`fixed bottom-20 right-4 z-[2000] animate-slide-in rounded-lg px-6 py-3 text-sm font-medium text-white shadow-card-hover lg:bottom-6 lg:right-6 ${
                 toast.type === 'error' ? 'bg-red-600' : toast.type === 'info' ? 'bg-primary' : 'bg-secondary'
               }`}
             >
@@ -320,6 +467,40 @@ export default function AppProviders({ children }) {
         </UIContext.Provider>
       </ToastContext.Provider>
     </AuthContext.Provider>
+  );
+}
+
+/**
+ * 👤 ХЭРЭГЛЭГЧИЙН ЦЭСНИЙ НЭГ ЗҮЙЛ — desktop dropdown БА мобайл доод
+ * sheet ХОЁУЛАА энийг ашиглана (нэг эх сурвалж ✓ `userMenuItems`).
+ *
+ * ⚠️ `href` байвал `<Link>` (хуудас солих ✓), эс бөгөөс `<button>`
+ *    (үйлдэл гүйцэтгэнэ — ж: Профайл цонх нээх, Гарах ✓).
+ * ⚠️ `onNavigate` нь линк дээр дарахад цэсийг ХААНА ✓ — эс бөгөөс шинэ
+ *    хуудас нээгдсэн ч цэс нээлттэй үлдэж, буцаж ирэхэд дахин харагдана ✗
+ *
+ * @param {{ label:string, href?:string, onClick?:Function, tone?:'admin'|'primary' }} item
+ * @param {Function} onNavigate цэсийг хаах функц (`closeUserMenus`)
+ */
+function UserMenuItem({ item, onNavigate }) {
+  const cls = `flex w-full items-center gap-2 px-4 py-3 text-left text-sm transition ${
+    item.tone === 'admin'
+      ? 'font-semibold text-amber-800 hover:bg-amber-50'
+      : item.tone === 'primary'
+        ? 'font-semibold text-primary hover:bg-primary-light'
+        : 'text-gray-700 hover:bg-gray-50 hover:text-primary'
+  }`;
+  if (item.href) {
+    return (
+      <Link href={item.href} className={cls} onClick={onNavigate}>
+        {item.label}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" className={cls} onClick={item.onClick}>
+      {item.label}
+    </button>
   );
 }
 

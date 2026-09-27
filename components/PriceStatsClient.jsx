@@ -197,7 +197,7 @@ export default function PriceStatsClient() {
           {/* ===== ЭХ СУРВАЛЖ ===== */}
           <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-[12.5px] leading-relaxed text-gray-500">
             <p>
-              <b>Эх сурвалж:</b> Зарлаа.mn-ийн өөрийн зарууд — «зарах» категори, «Орон сууц» төрөл,
+              <b>Эх сурвалж:</b> ZARLAA.MN-ийн өөрийн зарууд — «зарах» категори, «Орон сууц» төрөл,
               талбай ба үнэ бүрэн бөглөгдсөн <b>{data.total}</b> зар
               {data.generatedAt ? ` (бодсон: ${new Date(data.generatedAt).toLocaleDateString('mn-MN')})` : ''}.
               ⚠️ Түүвэр бага (10-аас доош зар) үед дүн нь төлөөлөх чанар муу байж болно.

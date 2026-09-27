@@ -1,6 +1,6 @@
 import AdminDashboardClient from '../../components/AdminDashboardClient';
 
-export const metadata = { title: 'Админ — Хяналтын самбар (Зарлаа.mn)' };
+export const metadata = { title: 'Админ — Хяналтын самбар (ZARLAA.MN)' };
 
 export default function AdminDashboardPage() {
   return <AdminDashboardClient />;

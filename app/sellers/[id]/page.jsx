@@ -1,6 +1,6 @@
 import SellerListingsClient from '../../../components/SellerListingsClient';
 
-export const metadata = { title: 'Зар нийтлэгчийн зарууд — Зарлаа.mn' };
+export const metadata = { title: 'Зар нийтлэгчийн зарууд — ZARLAA.MN' };
 export const dynamic = 'force-dynamic';
 
 export default async function SellerPage({ params }) {

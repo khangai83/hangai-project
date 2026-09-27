@@ -490,24 +490,21 @@ export default function HomeClient() {
 
   return (
     <>
-      {/* HERO — фон нь Улаанбаатарын панорама зураг (`public/hero-ub.jpg`)
-          ⚠️ OVERLAY ЗААВАЛ: зураг нь маш тод (нар жаргах тэнгэр) тул overlay
-             байхгүй бол цагаан гарчиг уншигдахгүй. Доорх хар градиент нь
-             white текстэд ~12:1 контраст өгнө (WCAG AA-аас хол давсан).
-             `isolate` + `-z-10` нь overlay-г контентын АРД, гэхдээ хуудасны
-             дэвсгэрээс ГАДНА байлгана. */}
-      <section className="relative isolate overflow-hidden bg-primary-dark px-4 py-12 text-center text-white">
-        <span
-          aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url('/hero-ub.jpg')" }}
-        />
-        <span
-          aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-gradient-to-b from-black/70 via-black/55 to-black/75"
-        />
-        <h1 className="mb-2 text-3xl font-bold sm:text-4xl">🏠 Үл хөдлөх хөрөнгийн зар</h1>
-        <p className="mb-6 text-sm text-white/90 sm:text-base">Худалдаа, түрээсийн үл хөдлөх хөрөнгийн зарууд</p>
+      {/* HERO — 2026-09-27 (хэрэглэгчийн хүсэлт): «Хайх хэсгийг unegui.mn
+          шиг болгоод дэвсгэр зургийг байхгүй болгох» ✓
+          ⚠️ ХАСАГДСАН: `public/hero-ub.jpg` (334 KB панорама) БА түүний
+             хар overlay (цагаан текст уншигдахын тулд ЗААВАЛ байсан) ✗
+          ✅ ОДОО: ЦЭВЭР брэнд цэнхэр дэвсгэр — `bg-primary` (#2563eb) →
+             `bg-primary-dark` (#1d4ed8) градиент; unegui.mn-ийн товч
+             хэсэгтэй ижил хэв маяг ✓
+          ⚠️ ЦАГААН текстийн КОНТРАСТ: #2563eb дээр цагаан ≈ 4.6:1 (AA ✓),
+             #1d4ed8 дээр ≈ 6.4:1 (AAA ✓) — зураггүй тул overlay ХЭРЭГГҮЙ ✓
+          📱 МОБАЙЛ: `py-8` (нягт, unegui.mn шиг ✓) → `sm:py-12` (өргөн ✓)
+             Гарчиг нь `text-2xl` (мобайлд 2 мөр болж эвдрэхгүй ✓) → `sm:text-4xl`
+          ⚠️ `bg-gradient-to-b` нь Tailwind-ийн суурь класс (v3) ✓ */}
+      <section className="bg-gradient-to-b from-primary to-primary-dark px-4 py-8 text-center text-white sm:py-12">
+        <h1 className="mb-1.5 text-2xl font-bold sm:mb-2 sm:text-4xl">🏠 Үл хөдлөх хөрөнгийн зар</h1>
+        <p className="mb-5 text-[13px] text-white/90 sm:mb-6 sm:text-base">Худалдаа, түрээсийн үл хөдлөх хөрөнгийн зарууд</p>
 
         {/* ===== ЦОРЫН ГАНЦ ХАЙЛТЫН МӨР =====
             ⚠️ ЯАГААД НЭГ ВЭ: дараа нь «⚙️ Дэлгэрэнгүй хайлт» товчтой ЦАГААН
@@ -517,7 +514,7 @@ export default function HomeClient() {
             ⚠️ Товч нь .btn БИШ: container нь `rounded-xl overflow-hidden` тул
                дотроос нь брэнд градиентаар дүүрнэ (товчны pill хэлбэр хэрэггүй). */}
         <form
-          className="mx-auto flex w-full max-w-[620px] overflow-hidden rounded-xl bg-white shadow-card-hover ring-1 ring-black/10"
+          className="mx-auto flex w-full max-w-[620px] overflow-hidden rounded-xl bg-white shadow-card-hover"
           onSubmit={(e) => { e.preventDefault(); setQuery(search); }}
           role="search"
         >
