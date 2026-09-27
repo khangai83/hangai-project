@@ -14,16 +14,33 @@ import Link from 'next/link';
  *
  * 🔤 ФОНТ (2026-09-27, хэрэглэгчийн хүсэлт: «Бүх зар … фонтыг жаахан нэм»):
  *    `text-[13px]` → **`text-[14px]`** (nav дээр, мөр 32).
- *    ⚠️ Энэ компонент нь **3 газарт** хэрэглэгддэг — нүүр (`HomeClient` мөр 562),
+ *    ⚠️ Энэ компонент нь **3 газарт** хэрэглэгддэг — нүүр (`HomeClient` мөр 570),
  *    зарын дэлгэрэнгүй (`ListingDetailClient` мөр 226), нийтлэгчийн зарууд
  *    (`SellerListingsClient` мөр 134) → нэг засвар ГУРВУУЛАНД нь нөлөөлнө ✓
  *    (breadcrumb бол НЭГ систем элемент тул ижил хэмжээтэй байх ЁСТОЙ ✓).
  *    ⚠️ Сүүлийн (одоогийн) мөр нүүр хуудсан дээр ганцаараа байх үед
  *    «Бүх зар» гэж `font-semibold text-gray-500` (13px → ОДОО 14px) харагдана.
- *    🔧 Зөвхөн нүүрэн дээр өөрчлөхийг хүсвэл энэ nav-ыг биш, `HomeClient`-ийн
- *    `<Breadcrumb …>`-т `className` prop нэмэх шаардлагатай (одоо БАЙХГҮЙ).
+ *
+ * 🅑 BOLD (2026-09-27, хэрэглэгчийн хүсэлт: «home page дээр байгаа бүх зар гэсэн
+ *    үгийг bold болгох»): сүүлийн crumb-ийн ФОНТЫН ЖИНГ `lastClassName` prop-оор
+ *    солино (default нь хуучин `font-semibold text-gray-500` ✓ — бусад хуудас
+ *    ХӨНДӨӨГДӨХГҮЙ ✓). `HomeClient` (мөр 570) нь **`font-bold text-gray-500`**
+ *    дамжуулна → нүүрэн дээрх «Бүх зар» 600 → **700** болно.
+ *    ⚠️ ЯАГААД prop: сүүлийн crumb нь 3 хуудсанд өөр өөр ТЕКСТ байна — нүүр дээр
+ *    «Бүх зар», зарын дэлгэрэнгүйд зарын гарчиг, нийтлэгчийн заруудад нэр. Доорх
+ *    сүүлийн crumb-ийн мөрийг шууд `font-bold` болговол ТЭДГЭЭР ч bold болж,
+ *    хэрэглэгчийн хүсээгүй өөрчлөлт гарна ✗ (breadcrumb бол систем элемент тул
+ *    default-ыг хөндөхгүй ✓).
+ *    🎨 КОНТРАСТ: `text-gray-500` (#776F5E) цайвар дэвсгэр дээр **4.98:1 ✅ AA**;
+ *    14px bold нь «том текст» (≥18.66px bold) БИШ тул 4.5:1 шаардлага ХҮЧИНТЭЙ ✓
+ *    (жин нэмэх нь контрастыг өөрчлөхгүй).
  */
-export default function Breadcrumb({ items = [], onNavigate }) {
+export default function Breadcrumb({
+  items = [],
+  onNavigate,
+  // Сүүлийн crumb-ийн класс — зөвхөн нүүр хуудас bold (700) болгоно
+  lastClassName = 'font-semibold text-gray-500',
+}) {
   const list = items.filter((it) => it && it.label);
   if (!list.length) return null;
 
@@ -46,7 +63,7 @@ export default function Breadcrumb({ items = [], onNavigate }) {
                 {it.label}
               </Link>
             ) : (
-              <span className={isLast ? 'font-semibold text-gray-500' : undefined}>{it.label}</span>
+              <span className={isLast ? lastClassName : undefined}>{it.label}</span>
             )}
             {!isLast && <span className="text-gray-300" aria-hidden="true">›</span>}
           </span>

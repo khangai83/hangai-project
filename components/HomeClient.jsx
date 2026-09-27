@@ -558,7 +558,15 @@ export default function HomeClient() {
       <div className="page-container">
         {/* BREADCRUMB — хэрэглэгч хаана явж байгаа (unegui.mn загвар).
             ⚠️ Хайлт ХИЙГЭЭГҮЙ ч гэсэн харагдана («Бүх зар › Үл хөдлөх») —
-               байр суурь нь байнга мэдэгдэж байх ёстой. */}
+               байр суурь нь байнга мэдэгдэж байх ёстой.
+            🅑 ФОНТЫН ЖИН (2026-09-27, хэрэглэгчийн хүсэлт: «home page дээр байгаа
+               бүх зар гэсэн үгийг bold болгох»): сүүлийн crumb нь нүүрэн дээр
+               ганцаараа үлдэхдээ «Бүх зар» болдог → `lastClassName`-аар
+               **`font-bold` (700)** дамжуулав (өмнө нь `font-semibold` 600).
+               ⚠️ ЗӨВХӨН ЭНЭ ХУУДАС — `lastClassName` нь `Breadcrumb`-ийн
+               default-ыг (semibold) хөндөхгүй тул зарын дэлгэрэнгүй
+               (`ListingDetailClient`) ба нийтлэгчийн зарууд (`SellerListingsClient`)
+               дээр сүүлийн crumb (зарын гарчиг / нэр) ХУУЧИН хэвээрээ ✓ */}
         <Breadcrumb
           items={buildHomeBreadcrumb({
             category,
@@ -568,6 +576,7 @@ export default function HomeClient() {
             district: filters.district,
           })}
           onNavigate={goToCrumb}
+          lastClassName="font-bold text-gray-500"
         />
 
         {/* ===== ХЭСЭГ БА ДЭД ТӨРЛИЙН НАВИГАЦИ (0016) — DRILL-DOWN =====
@@ -699,12 +708,12 @@ export default function HomeClient() {
                   role="tab"
                   aria-selected={false}
                   onClick={() => setF('propertyType', t)}
-                  className="group flex w-full break-inside-avoid items-start gap-1.5 rounded-md px-2 py-1 text-left transition hover:bg-white"
+                  className="group flex w-full break-inside-avoid items-start gap-1.5 rounded-md px-2 py-1.5 text-left transition hover:bg-white"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0 opacity-30" aria-hidden="true">
                     <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                  <span className="line-clamp-2 overflow-hidden text-[14px] font-semibold text-ellipsis text-gray-900 group-hover:text-primary">
+                  <span className="line-clamp-2 overflow-hidden text-[14px] font-semibold tracking-[-0.01em] text-ellipsis text-gray-900 sm:text-[15px] group-hover:text-primary">
                     {getPropertyTypeLabel(t, category)}
                   </span>
                 </button>
@@ -731,14 +740,14 @@ export default function HomeClient() {
                   role="tab"
                   aria-selected={on}
                   onClick={() => changeSection(s.value)}
-                  className={`flex min-h-[28px] w-full flex-row items-center justify-center gap-1 rounded-lg border px-1 py-1 transition ${
+                  className={`flex min-h-[44px] w-full flex-row items-center justify-center gap-1.5 rounded-lg border px-1.5 py-1.5 transition ${
                     on
                       ? 'border-primary bg-primary-light'
                       : 'border-gray-200 bg-white hover:border-primary hover:bg-primary-light'
                   }`}
                 >
-                  <span className="shrink-0 text-[34px] leading-[1.4]">{s.icon}</span>
-                  <span className={`w-full text-left text-[16px] font-bold leading-snug ${on ? 'text-primary-dark' : 'text-gray-900'}`}>
+                  <span className="shrink-0 text-[30px] leading-[1.2] sm:text-[34px]">{s.icon}</span>
+                  <span className={`w-full text-left text-[15px] font-bold leading-snug sm:text-[16px] ${on ? 'text-primary-dark' : 'text-gray-900'}`}>
                     {s.label}
                   </span>
                 </button>
