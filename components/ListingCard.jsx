@@ -73,6 +73,29 @@ export default function ListingCard({ listing, author, attrsLine }) {
       </div>
       <div className="flex flex-1 flex-col justify-between overflow-hidden p-4">
         <div>
+          {/* ══════ 👤 ЗАР НИЙТЛЭГЧ — КАРТЫН БАРУУН ДЭЭД БУЛАНД ══════
+              (2026-09-27, хэрэглэгчийн хүсэлт: «Нэр болон Зургийг баруун
+               буланд, хүнд харагдахаар байрлуул»)
+              • `justify-end` → нэр + профайл зураг БАРУУН тийш тэгшилнэ ✓
+              • 🖼 Зураг нь `Avatar` **28px** (өмнө 20px — бүдэг байв)
+              • Текст нь `font-semibold text-gray-700` (өмнө `text-gray-500`
+                бүдэг байсан тул харагдахгүй байв ✗)
+              ⚠️ `show_identity = false` (0017) эсвэл 0015/0017 ороогүй бол
+                 `fetchProfilesByIds` нь `displayName`-ыг ХООСОН буцаана →
+                 энэ блок ОГТ ХАРАГДАХГҮЙ ✓
+              ⚠️ Нэр нь холбоос БИШ — карт бүхэлдээ зар руу линк (`<Link>`
+                 дотор `<Link>` хийх нь HTML-д хоригтой). */}
+          {author?.displayName && (
+            <div className="mb-1.5 flex items-center justify-end gap-2">
+              <span
+                className="truncate text-[12.5px] font-semibold text-gray-700"
+                title={author.displayName}
+              >
+                {author.displayName}
+              </span>
+              <Avatar src={author.avatarUrl} name={author.displayName} size={28} />
+            </div>
+          )}
           {/* ---------- ТӨРӨЛ — КАРТЫН ХАМГИЙН ЭХНИЙ МӨР ----------
               ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «Зар бүрийн доор харагдаж
                  байгаа Үл хөдлөх / Автомашин гэх мэтийг урд нь гарга» —
@@ -85,19 +108,9 @@ export default function ListingCard({ listing, author, attrsLine }) {
             {getPropertyIcon(listing.property_type, listing.section)} {listing.property_type}
           </div>
           {/* ---------- ЗАР НИЙТЛЭГЧ (нэр + профайл зураг) ----------
-              ⚠️ ЗАГВАР адил: зар дээр НЭР нь ЗААВАЛ, зураг нь СОНГОЛТОЙ.
-                 нэр (`display_name`) хоосон бол жинхэнэ нэр рүү fallback
-                 (`fetchProfilesByIds`), тэр ч хоосон бол блок харагдахгүй.
-              ⚠️ Нэр нь холбоос БИШ — карт бүхэлдээ зар руу линк байдаг тул
-                 (`<Link>` дотор `<Link>` хийх нь HTML-д хоригтой). */}
-          {author?.displayName && (
-            <div className="mb-1 flex items-center gap-1.5">
-              <Avatar src={author.avatarUrl} name={author.displayName} size={20} />
-              <span className="truncate text-[12px] font-medium text-gray-500">
-                {author.displayName}
-              </span>
-            </div>
-          )}
+              ⚠️ 2026-09-27: БАРУУН ДЭЭД БУЛАНД зөөгдсөн — доорх (картын
+                 эхний мөр) блокийг харна уу ↑ (justify-end). */}
+
           {/* ---------- ХЭСГИЙН НЭМЭЛТ МЭДЭЭЛЭЛ (0016) ----------
               ж: «Toyota Harrier, 2021 · 95,200 км · Автомат · 2.5 л · Хайбрид»
               ⚠️ `HomeClient` нь `formatAttrsLine()`-ээр бэлдэж дамжуулна
