@@ -4,7 +4,7 @@
 // Ажиллуулах:  npm run seed:sections
 //              npm run seed:sections -- 99112233   (өөр эзний нэр дээр)
 //
-// • 6 хэсэг × 60 дэд төрөл × 10 = 600+ зар (unegui.mn шиг олон төрөл)
+// • 7 хэсэг × дэд төрөл бүр × 10 зар (unegui.mn шиг олон төрөл)
 // • Хэсэг тус бүрд ТОХИРСОН талбарууд (`attrs` jsonb) —
 //   авто: брэнд/загвар/он/гүйлт/түлш; ажил: компани/цалин/туршлага;
 //   компьютер: CPU/RAM/SSD; бараа: материал/хэмжээ; үйлчилгээ: хэлбэр/цаг
@@ -166,6 +166,32 @@ const AUTO_SUBTYPE_PAIRS = {
   'Бусад': [['Toyota', 'Prius 30'], ['Nissan', 'X-Trail'], ['Hyundai', 'Santa Fe'], ['Kia', 'Sportage'], ['Toyota', 'Harrier']],
 };
 
+/** ⚠️ АМРАЛТ, СПОРТ, ХОББИ — брэнд+загвар — ДЭД ТӨРӨЛ тус бүрд
+ *  (хэрэглэгчийн хүсэлтээр нэмэгдсэн шинэ хэсэг, 2026-09-27).
+ *  ⚠️ «Унадаг дугуйны тавиур» нь «Хөгжмийн зэмсэг» төрөлд орохгүй байхын
+ *     тулд дэд төрөл тус бүрд ТОХИРСОН хосууд. */
+const HOBBY_SUBTYPE_PAIRS = {
+  'Аяллын хэрэгсэл': [['Samsonite', 'Чемодан 65 см'], ['Travel', 'Палатка 4 хүн'], ['Garmin', 'GPS навигац'], ['Osprey', 'Пластик уут 60 л'], ['Deuter', 'Явган аяллын цүнх']],
+  'Загас ан агнуур': [['Shimano', 'Catana 4000'], ['Daiwa', 'Crossfire LT'], ['Okuma', 'Ceymar'], ['Browning', 'BAR Mk3'], ['Simms', 'G4 Pro Boot'], ['Oros', 'Дуран 8×30']],
+  'Ном, сонин, сэтгүүл': [['Oxford', 'Сурах бичиг 12-р анги'], ['Монгол ном', 'Түүхэн роман'], ['Эрдэм', 'Хүүхдийн үлгэр'], ['National Geographic', 'Сэтгүүл 2024'], ['Cambridge', 'IELTS сурах бичиг']],
+  'Спортын хэрэгсэл': [['Spalding', 'Сагсан бөмбөг'], ['Star', 'Волейболын бөмбөг'], ['Tunturi', 'Фитнесс төхөөрөмж'], ['Wilson', 'Теннисний ракет'], ['Judo', 'Татами 2×2'], ['Nike', 'Гүйлтийн зам']],
+  'Хөгжмийн зэмсэг': [['Yamaha', 'P-45 дижитал пиано'], ['Casio', 'CT-S300'], ['Fender', 'Squier Affinity'], ['Yamaha', 'F310 гитар'], ['Беларусь', 'Төгөлдөр хуур'], ['Pearl', 'Бөмбөр иж бүрэн']],
+  'Цуглуулга': [['Монголбанк', 'Төгрөг 5000 (2013)'], ['Soviet', 'Мөнгөн зоос'], ['Чингис', 'Хөөрөгний даалин'], ['Улзы', 'Хүрэл цуглуулга'], ['Куба', 'Марк 1970']],
+  'Унадаг дугуй, сэлбэг': [['Giant', 'ATX 720 27.5'], ['Trek', 'Marlin 6'], ['Cube', 'Aim SL 29'], ['Merida', 'Big Nine 100'], ['XDS', 'AD 350'], ['Shimano', 'Дериллек 8 sp']],
+};
+
+/** «Амралт, спорт, хобби» — дэд төрөл тус бүрийн үнийн хязгаар (₮).
+ *  ⚠️ Ном 200 сая, дугуй 20 мянга байх нь төөрөгдүүлнэ → төрөл тус бүрд. */
+const HOBBY_PRICE = {
+  'Аяллын хэрэгсэл': [50e3, 2e6],
+  'Загас ан агнуур': [30e3, 3e6],
+  'Ном, сонин, сэтгүүл': [10e3, 250e3],
+  'Спортын хэрэгсэл': [50e3, 4e6],
+  'Хөгжмийн зэмсэг': [150e3, 8e6],
+  'Цуглуулга': [100e3, 5e6],
+  'Унадаг дугуй, сэлбэг': [150e3, 6e6],
+};
+
 /** ⚠️ КОМПЬЮТЕРИЙН брэнд+загвар — ДЭД ТӨРӨЛ тус бүрд */
 const PC_SUBTYPE_PAIRS = {
   'Зөөврийн компьютер': [['Apple', 'MacBook Pro 14'], ['Apple', 'MacBook Air M2'], ['Dell', 'XPS 15'], ['HP', 'Pavilion 15'], ['Lenovo', 'ThinkPad T14'], ['Asus', 'VivoBook 15'], ['Acer', 'Aspire 5'], ['MSI', 'Katana GF66'], ['Huawei', 'MateBook D15'], ['Xiaomi', 'RedmiBook 15']],
@@ -277,6 +303,20 @@ function makeAttrs(section, subtype) {
       delivery: pick(['Байгаа', 'Байгаа', 'Тохиролцоно', 'Байхгүй']),
     };
   }
+  if (section === 'hobby') {
+    const [brand, model] = pick(HOBBY_SUBTYPE_PAIRS[subtype] || HOBBY_SUBTYPE_PAIRS['Цуглуулга']);
+    return {
+      brand, model,
+      // ⚠️ Хэмжээ нь зөвхөн хэмжигдэхүйц төрөлд (дугуй: инч, чемодан: см/л)
+      size: subtype === 'Унадаг дугуй, сэлбэг'
+        ? pick(['26 инч', '27.5 инч', '29 инч', 'S', 'M', 'L'])
+        : subtype === 'Ном, сонин, сэтгүүл'
+          ? pick(['Халаасны', 'A4', 'A5', 'Хатуу хавтастай'])
+          : `${randInt(20, 180)}×${randInt(15, 120)} см`,
+      condition: pick(['Шинэ', 'Шинэ', 'Хэрэглэсэн — сайн', 'Хэрэглэсэн — хэвийн']),
+      delivery: pick(['Байгаа', 'Байгаа', 'Тохиролцоно', 'Байхгүй']),
+    };
+  }
   if (section === 'services') {
     return {
       company: pick(SERVICE_NAMES),
@@ -319,6 +359,13 @@ const TEXTS = {
     'Шинэ байдалтай, бага зэрэг хэрэглэсэн.',
     'Гэр бүлд тохиромжтой. Зарж байгаа шалтгаан нь нүүх.',
     'Чанартай материал, удаан эдэлгээтэй.',
+  ],
+  hobby: [
+    'Бага зэрэг хэрэглэсэн, асуудалгүй ажиллаж байгаа. Шалтгаан: шинэчилж байгаа.',
+    'Хотын төвөөс хүргэлт хийж өгнө. Үнэ тохиролцоно.',
+    'Шинэ байдалтай, баримт бичигтэй. Хайрцаг нь бий.',
+    'Цуглуулгадаа нэмэх эсвэл хэрэглэхэд тохиромжтой, чанартай.',
+    'Хоббидоо цаг гаргадаг хүнээс зарна. Асуулт байвал холбогдоно уу.',
   ],
   services: [
     'Туршлагатай мэргэжилтэн ажиллана. Үнийн санал үнэгүй.',
@@ -385,6 +432,11 @@ function buildRow(section, subtype, k) {
     price = money(tier[0], tier[1]);
   } else if (section === 'computers') {
     price = money(250e3, 12e6);
+  } else if (section === 'hobby') {
+    // ⚠️ Хобби/спортын барааны үнэ нь ТӨРЛӨӨС хэлбэлзэнэ (ном 10 мянга,
+    //    пиано 8 сая) → `HOBBY_PRICE` хүснэгтээс авна.
+    const [lo, hi] = HOBBY_PRICE[subtype] || [50e3, 3e6];
+    price = money(lo, hi);
   } else if (section === 'services') {
     price = money(50e3, 5e6);
   } else {
@@ -429,6 +481,7 @@ function buildRow(section, subtype, k) {
       ['auto', 'Суудлын машин', 0], ['auto', 'Жийп, SUV', 1],
       ['jobs', 'IT, программист', 0], ['computers', 'Зөөврийн компьютер', 0],
       ['home', 'Тавилга, буйдан', 0], ['services', 'Сантехник', 0],
+      ['hobby', 'Унадаг дугуй, сэлбэг', 0],
     ];
     for (const [s, st, k] of samples) {
       const r = buildRow(s, st, k);
@@ -476,7 +529,7 @@ function buildRow(section, subtype, k) {
     console.log(`🗑  Өмнөх ${old.length} demo зарыг устгав\n`);
   }
 
-  // 2) Мөрүүд үүсгэх — 6 хэсэг × дэд төрөл бүр × 10
+  // 2) Мөрүүд үүсгэх — 7 хэсэг × дэд төрөл бүр × 10
   const rows = [];
   const plan = [];
   for (const sec of SECTIONS) {
@@ -500,6 +553,12 @@ function buildRow(section, subtype, k) {
       console.error(`\n❌ Оруулахад алдаа (${i}-ээс):`, error.message);
       if (/column|schema cache/i.test(error.message)) {
         console.error('   → supabase/migrations/0016_listing_sections.sql-ийг ажиллуулна уу.');
+      }
+      // ⚠️ 2026-09-27: `hobby` хэсэг нэмэгдсэн — CHECK constraint хуучин бол
+      //    `23514 check constraint "listings_section_valid"` гэж гарна
+      if (/listings_section_valid|check constraint/i.test(error.message)) {
+        console.error('   → supabase/migrations/0019_section_hobby.sql-ийг ажиллуулна уу.'
+          + ' («Амралт, спорт, хобби» хэсгийг DB зөвшөөрөхгүй байна).');
       }
       process.exit(1);
     }
