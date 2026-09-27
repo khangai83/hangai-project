@@ -249,7 +249,21 @@ export default function AppProviders({ children }) {
             <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-center px-4 sm:px-6 lg:justify-between">
               <Link
                 href="/"
-                className="flex items-center gap-2 text-[22px] font-bold text-primary"
+                /* ⚠️ `gap-2` ХАСАГДСАН (2026-09-27, хэрэглэгчийн гомдол: «zarlaa.mn
+                   нь zarlaa .mn гэж харагдаад байх юм»).
+                   ШАЛТГААН: `display: flex` дотор `gap` нь ЗӨВХӨН flex item-үүдийн
+                   хооронд зай тавьдаг — «🏠 ZARLAA» текстийн зангилаа ба
+                   `<span>.MN</span>` хоёр нь ТУСДАА flex item болж,
+                   «ZARLAA» ба «.MN»-ийн хооронд ХИЙМЭЛ 8px зай үүсээд
+                   «ZARLAA .MN» гэж уншигдаж байв ✗
+                   (CDP хэмжилт: textEnd 138.6 → spanStart 146.6 = 8px).
+                   ✅ Одоо зайг ЗӨВХӨН текст дотрох ASCII space («🏠 ZARLAA»)
+                   өгнө — лого «🏠 ZARLAA.MN» гэж НЭГ ҮГ мэт харагдана ✓
+                   ⚠️ `flex items-center` нь VERTICAL төвлөрүүлэлтэд ЗААВАЛ
+                   хэрэгтэй (emoji 22px текстээс өндөр) — бүү хас.
+                   ⚠️ `gap` буцааж нэмэх бол дотоод `<span>`-ыг бүхэлд нь
+                   НЭГ элементээр ороох хэрэгтэй (эс бөгөөс алдаа буцаж гарна). */
+                className="flex items-center text-[22px] font-bold text-primary"
                 onClick={closeUserMenus}
               >
                 🏠 ZARLAA<span className="text-gray-900">.MN</span>
