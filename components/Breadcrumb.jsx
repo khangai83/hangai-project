@@ -24,7 +24,7 @@ import Link from 'next/link';
  * 🅑 BOLD (2026-09-27, хэрэглэгчийн хүсэлт: «home page дээр байгаа бүх зар гэсэн
  *    үгийг bold болгох»): сүүлийн crumb-ийн ФОНТЫН ЖИНГ `lastClassName` prop-оор
  *    солино (default нь хуучин `font-semibold text-gray-500` ✓ — бусад хуудас
- *    ХӨНДӨӨГДӨХГҮЙ ✓). `HomeClient` (мөр 570) нь **`font-bold text-gray-500`**
+ *    ХӨНДӨӨГДӨХГҮЙ ✓). `HomeClient` (мөр 588) нь **`font-bold text-gray-700`**
  *    дамжуулна → нүүрэн дээрх «Бүх зар» 600 → **700** болно.
  *    ⚠️ ЯАГААД prop: сүүлийн crumb нь 3 хуудсанд өөр өөр ТЕКСТ байна — нүүр дээр
  *    «Бүх зар», зарын дэлгэрэнгүйд зарын гарчиг, нийтлэгчийн заруудад нэр. Доорх
@@ -34,12 +34,32 @@ import Link from 'next/link';
  *    🎨 КОНТРАСТ: `text-gray-500` (#776F5E) цайвар дэвсгэр дээр **4.98:1 ✅ AA**;
  *    14px bold нь «том текст» (≥18.66px bold) БИШ тул 4.5:1 шаардлага ХҮЧИНТЭЙ ✓
  *    (жин нэмэх нь контрастыг өөрчлөхгүй).
+ *
+ * 🔵 ЛИНК — ЦЭНХЭР + BOLD (2026-09-27, хэрэглэгчийн хүсэлт: «“Бүх зар”-аас
+ *    “Автомашин” гэх мэт сонгоход “Бүх зар” гэсэн хэсгийг цэнхэр болсон bold
+ *    байгаасай»): хэсэг сонгомогц «Бүх зар» нь сүүлийн crumb БИШ болж,
+ *    `<Link className="text-primary hover:underline">` (линк нь мөр 76–82) хэлбэрээр
+ *    **цэнхэр** (#2563eb rgb(37,99,235)) гардаг байсан ч жин нь **400** (нимгэн)
+ *    байв → `font-bold` (**700**) нэмэв ✓ — ингэснээр сонгосон хэсэг (сүүлийн
+ *    crumb, мөн bold) ба буцах зам (линк, bold) хоёулаа ижил жинтэй, зөвхөн
+ *    өнгөөр ялгагдана (цэнхэр = дарж болно, саарал = одоогийн байрлал).
+ *    ⚙️ `linkClassName` prop-оор солигдоно (default `'text-primary hover:underline'`)
+ *    → `HomeClient` (мөр 589) `'font-bold text-primary hover:underline'` дамжуулна.
+ *    ⚠️ ЯАГААД prop: линк нь 3 хуудсанд байдаг (зарын дэлгэрэнгүй, нийтлэгчийн
+ *    зарууд) — тэнд хүсээгүй өөрчлөлт гарахаас сэргийлэв ✓ (`lastClassName`-тай
+ *    ижил арга).
+ *    🎨 КОНТРАСТ: #2563eb нь цайвар дэвсгэр (gray-100 #F4F1EA) дээр **4.58:1**,
+ *    хуудасны цайвар арын дэвсгэр дээр арай өндөр → **AA ✓** (14px bold нь «том
+ *    текст» БИШ тул 4.5:1 хэвээр; зөвхөн өнгө биш, ЖИН нэмэх нь харагдацыг
+ *    сайжруулна ✓).
  */
 export default function Breadcrumb({
   items = [],
   onNavigate,
   // Сүүлийн crumb-ийн класс — зөвхөн нүүр хуудас bold (700) болгоно
   lastClassName = 'font-semibold text-gray-500',
+  // Дарж болох линкүүдийн класс (цэнхэр) — нүүр хуудсанд bold (700) нэмнэ
+  linkClassName = 'text-primary hover:underline',
 }) {
   const list = items.filter((it) => it && it.label);
   if (!list.length) return null;
@@ -57,7 +77,7 @@ export default function Breadcrumb({
             {clickable ? (
               <Link
                 href={it.href}
-                className="text-primary hover:underline"
+                className={linkClassName}
                 onClick={onNavigate ? (e) => { e.preventDefault(); onNavigate(it); } : undefined}
               >
                 {it.label}

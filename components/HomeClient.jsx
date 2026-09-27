@@ -566,7 +566,16 @@ export default function HomeClient() {
                ⚠️ ЗӨВХӨН ЭНЭ ХУУДАС — `lastClassName` нь `Breadcrumb`-ийн
                default-ыг (semibold) хөндөхгүй тул зарын дэлгэрэнгүй
                (`ListingDetailClient`) ба нийтлэгчийн зарууд (`SellerListingsClient`)
-               дээр сүүлийн crumb (зарын гарчиг / нэр) ХУУЧИН хэвээрээ ✓ */}
+               дээр сүүлийн crumb (зарын гарчиг / нэр) ХУУЧИН хэвээрээ ✓
+            🔵 ЛИНК ЦЭНХЭР + BOLD (2026-09-27, хэрэглэгчийн хүсэлт: «“Бүх зар”-аас
+               “Автомашин” гэх мэт сонгоход “Бүх зар” гэсэн хэсгийг цэнхэр болсон
+               bold байгаасай»): хэсэг сонгомогц «Бүх зар» нь линк (буцах зам)
+               болдог → `linkClassName="font-bold text-primary hover:underline"`.
+               ⚠️ Линк нь өмнө нь цэнхэр (#2563eb) ч жин **400** (нимгэн) байв →
+               одоо **700**; ингэснээр «Бүх зар» (линк) ба «Автомашин» (сүүлийн
+               crumb, мөн 700) ижил жинтэй, зөвхөн өнгөөр ялгагдана (цэнхэр =
+               дарж болно, саарал = одоогийн байрлал) ✓
+               ⚠️ Мөн ЗӨВХӨН ЭНЭ ХУУДАС (бусад 2 хуудсанд линк хуучнаараа ✓) */}
         <Breadcrumb
           items={buildHomeBreadcrumb({
             category,
@@ -576,7 +585,8 @@ export default function HomeClient() {
             district: filters.district,
           })}
           onNavigate={goToCrumb}
-          lastClassName="font-bold text-gray-500"
+          lastClassName="font-bold text-gray-700"
+          linkClassName="font-bold text-primary hover:underline"
         />
 
         {/* ===== ХЭСЭГ БА ДЭД ТӨРЛИЙН НАВИГАЦИ (0016) — DRILL-DOWN =====
