@@ -605,26 +605,51 @@ export default function HomeClient() {
                 ⚠️ Линк бүр нь: chevron (›) + текст, hover-т bg-white
                 🔧 Баганын тоо: доорх `columns-1 sm:columns-2 lg:columns-4` */}
 
-            {/* ---------- ТОЛГОЙ: «бүх зарууд» + БУЦАХ ---------- */}
+            {/* ---------- ТОЛГОЙ: «бүх зарууд» + БУЦАХ ----------
+                🔤 ФОНТ (2026-09-27, хэрэглэгчийн хүсэлт: «“Автомашин” категорийн
+                   бүх зарууд, “Компьютер” категорийн бүх зарууд зэргийн фонтыг
+                   жаахан нэм»): толгойн товч `text-[13px]` → **`text-[14px]
+                   sm:text-[15px]`** — ⚠️ мобайлд 15px нь «“Компьютер” категорийн
+                   бүх зарууд 110» гэсэн мөрийг 2 болгож ХУГАЦАА ҮРЭГДҮҮЛЖ байв
+                   (CDP хэмжилт: товч 334×53) → мобайл 14px (1 мөр, 332×29 ✓),
+                   desktop (≥640px) 15px ✓;
+                   тоолуур `text-[12px]` → `text-[13px]`; «← Бүх хэсэг» чип
+                   `text-[12px]` → `text-[13px]` (мөн мөрөнд байгаа тул ижил
+                   хэмжээтэй байх ЁСТОЙ ✓).
+                🎨 КОНТРАСТ (панелийн дэвсгэр `bg-gray-100` #F4F1EA — CDP-ээр
+                   бодит хэмжилт): толгой `text-primary` #2563eb → **4.58:1 ✅ AA**
+                   (15px bold нь «том текст» (≥18.66px bold) БИШ тул 4.5:1
+                   шаардлага хүчинтэй — 4.58 нь АРАЙ л багтаж байна ⚠️);
+                   «← Бүх хэсэг» `text-gray-600` #5D5747 → **6.38:1 ✅ AA**.
+                ⚠️ ХАМТ ЗАССАН алдаа: тоолуур нь `text-gray-500` (#776F5E) байсан
+                   → gray-100 дэвсгэр дээр **4.41:1** буюу AA-д ХҮРЭХГҮЙ байв ✗
+                   → **`text-gray-600`** (#5D5747) болгов → **6.38:1 ✅ AA**.
+                ⚠️ Текстийн урт (ж: «“Автомашин” категорийн бүх зарууд 100») нь
+                   мобайлд багтахгүй бол `flex-wrap` + `justify-center` тул
+                   2 мөр болж ЗӨВ ХУВААГДАНА (товчны өндөр өснө) ✓
+                🔧 Толгойн фонтыг өөрчлөх: толгой мөр 639 (`text-[14px] sm:text-[15px]`),
+                   тоолуур мөр 646, «← Бүх хэсэг» чип мөр 652.
+                ⚠️ «Бүх зар» гэсэн BREADCRUMB нь ЭНЭ ФАЙЛД БИШ — `components/
+                   Breadcrumb.jsx` (мөр 32, `text-[14px]`, хамт зассан ✓). */}
             <div className="mb-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
               <button
                 type="button"
                 onClick={() => setSectionOpen(false)}
                 title="Энэ хэсгийн БҮХ зарыг харах"
-                className="flex items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[13px] font-bold text-primary transition hover:bg-white"
+                className="flex items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[14px] font-bold text-primary transition hover:bg-white sm:text-[15px]"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0 opacity-40" aria-hidden="true">
                   <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 «{sec.label}» категорийн бүх зарууд
                 {sectionTotal > 0 && (
-                  <span className="text-[12px] font-normal text-gray-500">{formatCount(sectionTotal)}</span>
+                  <span className="text-[13px] font-normal text-gray-600">{formatCount(sectionTotal)}</span>
                 )}
               </button>
               <button
                 type="button"
                 onClick={backToAllSections}
-                className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-1 text-[12px] font-semibold text-gray-600 transition hover:border-primary hover:text-primary"
+                className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-1 text-[13px] font-semibold text-gray-600 transition hover:border-primary hover:text-primary"
               >
                 ← Бүх хэсэг
               </button>

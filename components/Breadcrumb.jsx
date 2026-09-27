@@ -11,6 +11,17 @@ import Link from 'next/link';
  *    байдаг тул `<Link>`-ээр явахад Next.js нь компонентийг ДАХИН MOUNT
  *    ХИЙДЭГГҮЙ → шүүлт хуучнаараа үлддэг. Тиймээс линкийн үйлдлийг барьж аваад
  *    төлөвийг шууд өөрчилнө (URL-ийг HomeClient-ийн эффект өөрөө бичнэ).
+ *
+ * 🔤 ФОНТ (2026-09-27, хэрэглэгчийн хүсэлт: «Бүх зар … фонтыг жаахан нэм»):
+ *    `text-[13px]` → **`text-[14px]`** (nav дээр, мөр 32).
+ *    ⚠️ Энэ компонент нь **3 газарт** хэрэглэгддэг — нүүр (`HomeClient` мөр 562),
+ *    зарын дэлгэрэнгүй (`ListingDetailClient` мөр 226), нийтлэгчийн зарууд
+ *    (`SellerListingsClient` мөр 134) → нэг засвар ГУРВУУЛАНД нь нөлөөлнө ✓
+ *    (breadcrumb бол НЭГ систем элемент тул ижил хэмжээтэй байх ЁСТОЙ ✓).
+ *    ⚠️ Сүүлийн (одоогийн) мөр нүүр хуудсан дээр ганцаараа байх үед
+ *    «Бүх зар» гэж `font-semibold text-gray-500` (13px → ОДОО 14px) харагдана.
+ *    🔧 Зөвхөн нүүрэн дээр өөрчлөхийг хүсвэл энэ nav-ыг биш, `HomeClient`-ийн
+ *    `<Breadcrumb …>`-т `className` prop нэмэх шаардлагатай (одоо БАЙХГҮЙ).
  */
 export default function Breadcrumb({ items = [], onNavigate }) {
   const list = items.filter((it) => it && it.label);
@@ -18,7 +29,7 @@ export default function Breadcrumb({ items = [], onNavigate }) {
 
   return (
     <nav
-      className="flex flex-wrap items-center gap-1.5 py-3 text-[13px] text-gray-400"
+      className="flex flex-wrap items-center gap-1.5 py-3 text-[14px] text-gray-400"
       aria-label="Замчилсан цэс"
     >
       {list.map((it, i) => {
