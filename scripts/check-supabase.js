@@ -146,7 +146,7 @@ async function main() {
       file: '0014_listing_dedupe.sql',
     },
     {
-      label: '0015 — хоч нэр ба профайл зураг',
+      label: '0015 — нэр ба профайл зураг',
       cols: 'display_name,avatar_url',
       file: '0015_profiles_public.sql',
       table: 'profiles',

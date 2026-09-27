@@ -347,7 +347,11 @@ export default function AuthModal({ open, onClose }) {
           : 'Бүртгүүлэх';
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-5" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-5">
+      {/* ⚠️ ГАДНА ДАРАХАД ХААГДАХГҮЙ (2026-09-27): бүртгэлийн форм дээр
+          нэр/утас/нууц үг/checkbox бөглөж байхдаа санамсаргүй гадна дарвал
+          цонх хаагдаж БИЧСЭН ЗҮЙЛ АЛДАГДДАГ байв. Одоо зөвхөн «✕» эсвэл
+          «← Болих» товчоор хаагдана ✓ */}
       <div
         className="max-h-[90vh] w-full max-w-[520px] overflow-y-auto rounded-2xl bg-white shadow-card-hover"
         onClick={(e) => e.stopPropagation()}
@@ -612,7 +616,7 @@ export default function AuthModal({ open, onClose }) {
                 <span className="text-[12.5px] leading-relaxed text-gray-600">
                   <b className="text-gray-800">Зар дээр нэр, профайл зургаа харуулах</b>
                   <br />
-                  <b>☑ Тийм</b> — таны <b>хоч нэр</b> ба зураг зар болон «Нийтлэгчийн
+                  <b>☑ Тийм</b> — таны <b>нэр</b> ба зураг зар болон «Нийтлэгчийн
                   бусад зарууд» хуудсан дээр харагдана. <i>Бирж, агент, дэлгүүрүүд
                   ихэвчлэн үүнийг сонгодог.</i>
                   <br />

@@ -25,7 +25,7 @@ export default function ListingDetailClient({ id }) {
   const [phoneShown, setPhoneShown] = useState(false);
   const [views, setViews] = useState(null); // 👁 серверээс ирсэн «үзсэн» тоо (null = миграцгүй)
   const [sellerStats, setSellerStats] = useState(null); // 📋 зар нийтлэгчийн зарын тоо (Зарах/Түрээслэх)
-  const [author, setAuthor] = useState(null); // 👤 нийтлэгчийн профайл (хоч нэр + зураг)
+  const [author, setAuthor] = useState(null); // 👤 нийтлэгчийн профайл (нэр + зураг)
   const favoriteIds = useFavorites(); // ❤️ (дээрх hook-уудтай хамт дуудагдах ёстой)
   const likes = useLikeCount(id, listing ? listing.likes : 0); // ❤️ нийт хэдэн хүн дарсан
 
@@ -172,7 +172,7 @@ export default function ListingDetailClient({ id }) {
   ].filter(Boolean);
 
   // ---- ЗАР НИЙТЛЭГЧИЙН ХАРАГДАХ НЭР ----
-  // ⚠️ Дарааллаар: ХОЧ НЭР (`display_name`, нийтэд) → зарын холбоо барих нэр
+  // ⚠️ Дарааллаар: нэр (`display_name`, нийтэд) → зарын холбоо барих нэр
   // (`contact_name`) → ерөнхий төлөв. Жинхэнэ нэр (`profiles.name`) нь
   // НИЙТЭД ХАРАГДАХГҮЙ (хэрэглэгч нэрээ нууцалж чадна — 0015).
   const sellerName =

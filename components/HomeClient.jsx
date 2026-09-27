@@ -182,7 +182,7 @@ export default function HomeClient() {
 
   useEffect(() => { if (urlReady) load(); }, [load, urlReady]);
 
-  // ---- 👤 ЗАР НИЙТЛЭГЧДИЙН ХОЧ НЭР + ЗУРАГ ----
+  // ---- 👤 ЗАР НИЙТЛЭГЧДИЙН нэр + ЗУРАГ ----
   // ⚠️ `listings.user_id` нь `profiles` руу FK-ГҮЙ тул PostgREST join
   //    ажиллахгүй → 2 дахь query (`fetchProfilesByIds`) хийж нэгтгэнэ.
   useEffect(() => {

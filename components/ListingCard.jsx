@@ -7,7 +7,7 @@ import Avatar from './Avatar';
 
 /**
 * @param {{listing: object, author?: {displayName?: string, avatarUrl?: string|null}}} props
-* `author` — зар нийтлэгчийн НИЙТИЙН профайл (хоч нэр + зураг).
+* `author` — зар нийтлэгчийн НИЙТИЙН профайл (нэр + зураг).
 * ⚠️ Сонголтоор: `HomeClient` нь тусдаа query-ээр татаж дамжуулна
 * (`fetchProfilesByIds`). Байхгүй бол блок харагдахгүй.
 */
@@ -84,9 +84,9 @@ export default function ListingCard({ listing, author, attrsLine }) {
           <div className="mb-1.5 truncate text-[13px] font-semibold text-gray-800">
             {getPropertyIcon(listing.property_type, listing.section)} {listing.property_type}
           </div>
-          {/* ---------- ЗАР НИЙТЛЭГЧ (хоч нэр + профайл зураг) ----------
+          {/* ---------- ЗАР НИЙТЛЭГЧ (нэр + профайл зураг) ----------
               ⚠️ ЗАГВАР адил: зар дээр НЭР нь ЗААВАЛ, зураг нь СОНГОЛТОЙ.
-                 Хоч нэр (`display_name`) хоосон бол жинхэнэ нэр рүү fallback
+                 нэр (`display_name`) хоосон бол жинхэнэ нэр рүү fallback
                  (`fetchProfilesByIds`), тэр ч хоосон бол блок харагдахгүй.
               ⚠️ Нэр нь холбоос БИШ — карт бүхэлдээ зар руу линк байдаг тул
                  (`<Link>` дотор `<Link>` хийх нь HTML-д хоригтой). */}

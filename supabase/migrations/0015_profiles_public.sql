@@ -1,8 +1,8 @@
 -- ============================================================
--- 0015_profiles_public.sql — Профайл (хоч нэр + зураг) ба НУУЦ ҮГ СЭРГЭЭХ
+-- 0015_profiles_public.sql — Профайл (нэр + зураг) ба НУУЦ ҮГ СЭРГЭЭХ
 -- ============================================================
 -- 🎯 ЮУ ХИЙХ ВЭ:
---   1) `profiles.display_name` — ХОЧ НЭР. Зар дээр НИЙТЭД энэ харагдана.
+--   1) `profiles.display_name` — нэр. Зар дээр НИЙТЭД энэ харагдана.
 --      ⚠️ `name` (жинхэнэ нэр) нь ЗӨВХӨН дотоод/хувийн — UI дээр хэзээ ч
 --         нийтэд харуулахгүй (хэрэглэгч жинхэнэ нэрээ нууцалж чадна).
 --   2) `profiles.avatar_url` — профайлын зураг (сонголтоор).
@@ -16,13 +16,13 @@
 
 
 -- ============================================================
--- 1) profiles — ХОЧ НЭР (display_name) ба ПРОФАЙЛ ЗУРАГ (avatar_url)
+-- 1) profiles — нэр (display_name) ба ПРОФАЙЛ ЗУРАГ (avatar_url)
 -- ============================================================
 alter table public.profiles add column if not exists display_name text;
 alter table public.profiles add column if not exists avatar_url   text;
 
 comment on column public.profiles.display_name is
-  'НИЙТЭД харагдах ХОЧ НЭР (зар, нийтлэгчийн хуудсан дээр). Хоосон бол `name` '
+  'НИЙТЭД харагдах нэр (зар, нийтлэгчийн хуудсан дээр). Хоосон бол `name` '
   'руу fallback хийнэ. `name` нь хувийн — хэрэглэгч жинхэнэ нэрээ нууцалж болно.';
 comment on column public.profiles.avatar_url is
   'Профайлын зургийн нийтийн URL (avatars bucket). Сонголтоор.';
@@ -32,7 +32,7 @@ alter table public.profiles drop constraint if exists profiles_display_name_len;
 alter table public.profiles add constraint profiles_display_name_len
   check (display_name is null or char_length(btrim(display_name)) between 1 and 40);
 
--- Хуучин профайлуудын хоч нэрийг нэрээр нь бөглөх (хоосон харагдахаас сэргийлнэ)
+-- Хуучин профайлуудын нэрийг нэрээр нь бөглөх (хоосон харагдахаас сэргийлнэ)
 update public.profiles
    set display_name = btrim(name)
  where display_name is null

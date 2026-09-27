@@ -10,7 +10,7 @@ import Avatar from './Avatar';
 /**
  * 👤 ПРОФАЙЛ ЗАСАХ МОДАЛ
  *
- * • ХОЧ НЭР (`profiles.display_name`) — зар болон нийтлэгчийн хуудсан дээр
+ * • нэр (`profiles.display_name`) — зар болон нийтлэгчийн хуудсан дээр
  * НИЙТЭД харагдана. ⚠️ ЖИНХЭНЭ НЭР (`profiles.name`) нь ХАРАГДАХГҮЙ тул
  * хэрэглэгч нэрээ нууцалж чадна (0015_profiles_public.sql).
  * • ПРОФАЙЛ ЗУРАГ — `avatars` bucket. ⚠️ Зам нь `avatars/<user_id>/…` байх
@@ -46,7 +46,7 @@ export default function ProfileModal({ open, onClose }) {
         // ⚠️ ЗӨӨРИЙН профайлаа БҮРЭН уншина (`fetchProfile` → `select('*')`).
         //    `fetchProfilesByIds` нь `show_identity = false` үед нэр/зургийг
         //    ХООСОН буцаадаг (бусдын нүдээр) тул энд ТОХИРОХГҮЙ — эзэн
-        //    өөрийн хоч нэрээ харж, засах боломжтой байх ёстой.
+        //    өөрийн нэрээ харж, засах боломжтой байх ёстой.
         const p = await fetchProfile(user.id);
         if (!mounted) return;
         setDisplayName((p && (p.display_name || p.name)) || '');
@@ -81,7 +81,7 @@ export default function ProfileModal({ open, onClose }) {
     setError('');
     const name = displayName.trim();
     if (name.length > 40) {
-      setError('Хоч нэр хэт урт байна (40 тэмдэгт хүртэл).');
+      setError('нэр хэт урт байна (40 тэмдэгт хүртэл).');
       return;
     }
 
@@ -118,7 +118,11 @@ export default function ProfileModal({ open, onClose }) {
   const shown = preview || avatarUrl;
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-5" onClick={onClose}>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-5">
+      {/* ⚠️ ГАДНА ДАРАХАД ХААГДАХГҮЙ (хэрэглэгчийн хүсэлт, 2026-09-27):
+          өмнө нь `onClick={onClose}` байсан тул хоч нэр/зураг засаж байхдаа
+          санамсаргүй гадна дарвал цонх хаагдаж, БИЧСЭН ЗҮЙЛ АЛДАГДДАГ байв.
+          Одоо зөвхөн «✕» эсвэл «← Болих» товчоор хаагдана ✓ */}
       <div
         className="w-full max-w-[480px] overflow-hidden rounded-2xl bg-white shadow-card-hover"
         onClick={(e) => e.stopPropagation()}
@@ -169,10 +173,10 @@ export default function ProfileModal({ open, onClose }) {
                 </div>
               </div>
 
-              {/* ---------- ХОЧ НЭР ---------- */}
+              {/* ---------- нэр ---------- */}
               <div className="mb-3 flex flex-col gap-1">
                 <label className="mb-1 block text-[13px] font-semibold text-gray-700">
-                  Хоч нэр <span className="font-normal text-gray-400">(зар дээр нийтэд харагдана)</span>
+                  нэр <span className="font-normal text-gray-400">(зар дээр нийтэд харагдана)</span>
                 </label>
                 <input
                   className="form-input"
@@ -191,7 +195,7 @@ export default function ProfileModal({ open, onClose }) {
                   ⚠️ Хэрэглэгч бүртгэлийн үед сонгосон тохиргоогоо ЭНД сольж
                      болно. `false` үед зар дээр нэр, зураг ОГТ харагдахгүй
                      (зөвхөн утасны дугаар).
-                  ⚠️ Хоч нэрээ хоосон үлдээвэл — `show_identity = true` байсан ч
+                  ⚠️ нэрээ хоосон үлдээвэл — `show_identity = true` байсан ч
                      зар дээр нэр харагдахгүй (зураг л харагдана). */}
               <label className="mb-3 flex cursor-pointer items-start gap-2.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 transition hover:border-primary/40">
                 <input
@@ -203,7 +207,7 @@ export default function ProfileModal({ open, onClose }) {
                 <span className="text-[12.5px] leading-relaxed text-gray-600">
                   <b className="text-gray-800">Зар дээр нэр, зурагаа харуулах</b>
                   <br />
-                  <b>☑ Тийм</b> — хоч нэр ба зураг зарууд дээр харагдана.
+                  <b>☑ Тийм</b> — нэр ба зураг зарууд дээр харагдана.
                   <i> Агент, бирж, дэлгүүрүүд үүнийг асаадаг.</i>
                   <br />
                   <b>☐ Үгүй</b> — зөвхөн утасны дугаар харагдана (нэр, зураг харагдахгүй).
