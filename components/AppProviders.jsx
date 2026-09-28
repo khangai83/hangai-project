@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { getSupabase } from '../lib/supabaseClient';
 import { fetchProfile, upsertProfile } from '../lib/queries';
 import { normalizePhone } from '../lib/format';
@@ -73,6 +74,11 @@ export default function AppProviders({ children }) {
   const [profileOpen, setProfileOpen] = useState(false); // 👤 Профайл засах модал
   const [dataVersion, setDataVersion] = useState(0); // зарын шинэчлэлт дохио
   const [isAdmin, setIsAdmin] = useState(false); // app_metadata.is_admin
+  // 📱 2026-09-29 (Facebook-маягийн доод цэс): одоогийн зам → ИДЭВХТЭЙ таб ✓
+  //    ⚠️ Энэ нь App Router-ийн client hook — Next-ийн `<Link>`-ээр шилжих
+  //       БҮРД дахин рендер хийгдэж, «pill» зөв таб руу шууд шилжинэ ✓
+  //       (бүтэн хуудас дахин ачаалагдахгүй — Layout нь хэвээр үлдэнэ ✓)
+  const pathname = usePathname();
 
   const sb = getSupabase();
 
@@ -243,6 +249,12 @@ export default function AppProviders({ children }) {
 
   const displayName = profileName || user?.phone || '';
 
+  /** 📱 ИДЭВХТЭЙ таб эсэх (Facebook-маягийн доод цэс — 2026-09-29).
+   *  ⚠️ `startsWith` нь ДЭД ЗАМЫГ ч хамарна: `/messages/123` дээр
+   *     «✉️ Мессеж» таб идэвхтэй харагдана ✓ (`href` нь `/messages`)
+   *  ⚠️ `pathname === href` эхэндээ — `/messages` ба `/messages/` хоёулаа ✓ */
+  const isActive = (href) => pathname === href || (pathname || '').startsWith(`${href}/`);
+
   return (
     <AuthContext.Provider value={authValue}>
       <ToastContext.Provider value={toastValue}>
@@ -385,102 +397,96 @@ export default function AppProviders({ children }) {
             </div>
           </footer>
 
-          {/* ===== 📱 МОБАЙЛ ДООД НАВИГАЦ (lg:hidden) — 2026-09-27 =====
-              ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Гар утасаар ороход Профайлыг БАРУУН
-                 ДООД буланд, Зар нэмэхийг ЗҮҮН ДООД буланд, Таалагдсаныг
-                 өмнөх 2-ийн ДУНД байрлуулах» ✓
-              ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «Санал хүсэлтийг Профайл,
-                 Таалагдсан 2-ийн ДУНД оруул» → 💬 Санал хүсэлт нэмэгдэж
-                 `grid-cols-3` → **`grid-cols-4`** болов ✓
+          {/* ===== 📱 МОБАЙЛ ДООД НАВИГАЦ (lg:hidden) — FACEBOOK МАЯГИЙН 2026-09-29 =====
+              ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-09-29): «гар утас дээр доод хэсэгт
+                 байгаа Зар нэмэх, Таалагдсан, Санал хүсэлт, Мессеж, Профайлыг
+                 Facebook шиг design-тай болгож чадах уу» ✓
+              ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-09-27): «Гар утасаар ороход Профайлыг
+                 БАРУУН ДООД буланд, Зар нэмэхийг ЗҮҮН ДООД буланд,
+                 Таалагдсаныг өмнөх 2-ийн ДУНД байрлуулах» ✓ (БАЙРЛАЛ ХЭВЭЭР)
+              ⚠️ 2026-09-27: «Санал хүсэлтийг Профайл, Таалагдсан 2-ийн ДУНД
+                 оруул» → `grid-cols-3` → `grid-cols-4` ✓
                  (⚠️ өмнө нь /feedback нь зөвхөн FOOTER-т байсан — мобайлд
                   хүрэхийн тулд хуудсаа хамгийн доор гүйлгэх шаардлагатай байв)
-              📐 БАЙРЛАЛ (grid-cols-4 — DOM дараалал = харагдах дараалал):
-                 ┌───────────┬────────────┬─────────────┬──────────┐
-                 │ ➕ Зар    │ ❤️ Таалаг- │ 💬 Санал    │ 👤 Проф- │
-                 │ нэмэх     │ дсан       │ хүсэлт      │ айл      │
-                 │  (ЗҮҮН)   │            │             │ (БАРУУН) │
-                 └───────────┴────────────┴─────────────┴──────────┘
+              ⚠️ 2026-09-28: «✉️ Мессеж» нэмэгдэж `grid-cols-4` → **5** ✓
+              📐 БАЙРЛАЛ (grid-cols-5 — DOM дараалал = харагдах дараалал):
+                 ┌───────────┬────────────┬─────────────┬──────────┬───────────┐
+                 │ ➕ Зар    │ ❤️ Таалаг- │ 💬 Санал    │ ✉️ Мес-  │ 👤 Проф- │
+                 │ нэмэх     │ дсан       │ хүсэлт      │ сеж      │ айл       │
+                 │  (ЗҮҮН)   │            │             │          │ (БАРУУН)  │
+                 └───────────┴────────────┴─────────────┴──────────┴───────────┘
+              🎨 FACEBOOK-ИЙН 4 ШИНЖ (дэлгэрэнгүй тайлбар нь `MobileNavItem`-д ✓):
+                 ① ИДЭВХТЭЙ таб — ӨНГӨТЭЙ икон + брэнд өнгийн «pill» хүрээ
+                    (`usePathname()` + `isActive()` — доор ✓)
+                 ② ИДЭВХГҮЙ таб — `grayscale` икон (Facebook-ийн outline мэдрэмж ✓)
+                 ③ Хуваагч босоо зураас (`border-l`) БАЙХГҮЙ ✓
+                 ④ Дарахад `scale-90` хөдөлгөөн (хүрэлцэх мэдрэмж ✓)
               ⚠️ `fixed inset-x-0 bottom-0` — гүйлгэхэд байнга харагдана ✓
               ⚠️ `env(safe-area-inset-bottom)` — iPhone-ийн доод зураас
                  (home indicator) доор товчнууд дарагдахаас сэргийлнэ ✓
               ⚠️ `z-40` — header (`z-50`) ба modal (`z-[1000]+`)-аас ДООР ✓
                  (модал нээгдэхэд навигац дээр гарах ёсгүй ✓)
+              ⚠️ `bg-white` (өмнө нь `bg-white/95 backdrop-blur-sm` байв) —
+                 Facebook-ийн доод цэс тунгалаг БИШ, цул цагаан ✓
               ⚠️ `lg:hidden` — desktop дээр header-ийн товчнууд хангалттай ✓ */}
           <nav
             aria-label="Мобайл доод цэс"
             /* ⚠️ `grid-cols-5` (2026-09-28): «✉️ Мессеж» нэмэгдсэн тул 4 → 5
-               багана. Товчнууд нь `px-2` + `text-[11px]` тул нарийн дэлгэц
-               (320px) дээр ч 5 нь багтана ✓ */
-            className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-gray-200 bg-white/95 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] backdrop-blur-sm lg:hidden"
+               багана. Товчнууд нь `px-1` + `text-[10px] min-[360px]:text-[11px]`
+               (+ 19px икон) тул нарийн дэлгэц (320px) дээр ч 5 нь бүтэн багтана ✓ */
+            className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-gray-200 bg-white shadow-[0_-1px_3px_rgba(0,0,0,0.08)] lg:hidden"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
-            {/* ① ЗҮҮН ДООД — ➕ Зар нэмэх (гол үйлдэл → брэнд өнгө ✓) */}
-            <button
-              type="button"
-              onClick={openAdd}
-              className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 text-[11px] font-semibold text-primary transition active:bg-primary-light"
-            >
-              <span aria-hidden="true" className="text-[20px] leading-tight">➕</span>
-              Зар нэмэх
-            </button>
+            {/* ① ЗҮҮН ДООД — ➕ Зар нэмэх (ГОЛ үйлдэл → үргэлж брэнд өнгө ✓)
+                ⚠️ `addOpen` үед таб нь «pill»-тэй болно — Facebook-д таб нь
+                   нээгдсэн панелийнхээ турш тодорхой харагддагтай ИЖИЛ ✓ */}
+            <MobileNavItem onClick={openAdd} icon="➕" label="Зар нэмэх" active={addOpen} accent />
 
-            {/* ② — ❤️ Таалагдсан (тоолууртай ✓) */}
-            <Link
+            {/* ② — ❤️ Таалагдсан (`/favorites` дээр pill + тоолууртай ✓) */}
+            <MobileNavItem
               href="/favorites"
               onClick={closeUserMenus}
-              className="relative flex flex-col items-center justify-center gap-0.5 border-l border-gray-100 px-2 py-2 text-[11px] font-semibold text-gray-600 transition active:bg-gray-50"
-            >
-              <span aria-hidden="true" className="text-[20px] leading-tight">❤️</span>
-              Таалагдсан
-              {favoriteIds.length > 0 && (
-                <span className="absolute right-[calc(50%-30px)] top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
-                  {favoriteIds.length}
-                </span>
-              )}
-            </Link>
+              icon="❤️"
+              label="Таалагдсан"
+              active={isActive('/favorites')}
+              badge={favoriteIds.length}
+            />
 
             {/* ③ — 💬 Санал хүсэлт (2026-09-27, хэрэглэгчийн хүсэлт: «Профайл,
                 Таалагдсан 2-ийн дунд»). ⚠️ Footer-ийн холбоос ХЭВЭЭР ✓ —
                 энэ нь зөвхөн МОБАЙЛД хүртээмжтэй болгож байна. */}
-            <Link
+            <MobileNavItem
               href="/feedback"
               onClick={closeUserMenus}
-              className="flex flex-col items-center justify-center gap-0.5 border-l border-gray-100 px-2 py-2 text-[11px] font-semibold text-gray-600 transition active:bg-gray-50"
-            >
-              <span aria-hidden="true" className="text-[20px] leading-tight">💬</span>
-              Санал хүсэлт
-            </Link>
+              icon="💬"
+              label="Санал хүсэлт"
+              active={isActive('/feedback')}
+            />
 
             {/* ④ — ✉️ Мессеж (2026-09-28) — «Санал хүсэлт» ба «Профайл»-ийн
                 дунд (хэрэглэгчийн хүсэлт ✓). Unread badge нь «Таалагдсан»-тай
-                ИЖИЛ байрлалтай (`right-[calc(50%-30px)]`) ✓ */}
-            <Link
+                ИЖИЛ (Facebook маягийн тоолуур — `ring-2 ring-white` ✓) */}
+            <MobileNavItem
               href="/messages"
               onClick={closeUserMenus}
-              className="relative flex flex-col items-center justify-center gap-0.5 border-l border-gray-100 px-2 py-2 text-[11px] font-semibold text-gray-600 transition active:bg-gray-50"
-            >
-              <span aria-hidden="true" className="text-[20px] leading-tight">✉️</span>
-              Мессеж
-              {unreadMessages > 0 && (
-                <span className="absolute right-[calc(50%-30px)] top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
-                  {unreadMessages > 99 ? '99+' : unreadMessages}
-                </span>
-              )}
-            </Link>
+              icon="✉️"
+              label="Мессеж"
+              active={isActive('/messages')}
+              badge={unreadMessages}
+            />
 
             {/* ⑤ БАРУУН ДООД — 👤 Профайл
                 ⚠️ Нэвтрээгүй бол `openAuth()` (нэвтрэх цонх ✓),
-                   нэвтэрсэн бол доод sheet (`mobileMenuOpen`) ✓ */}
-            <button
-              type="button"
+                   нэвтэрсэн бол доод sheet (`mobileMenuOpen`) ✓
+                ⚠️ Доод sheet НЭЭЛТТЭЙ үед таб нь «pill»-тэй — Facebook-ийн
+                   идэвхтэй табтай ИЖИЛ мэдрэмж ✓ */}
+            <MobileNavItem
               onClick={() => (user ? setMobileMenuOpen((v) => !v) : openAuth())}
-              aria-haspopup="menu"
-              aria-expanded={user ? mobileMenuOpen : undefined}
-              className="flex flex-col items-center justify-center gap-0.5 border-l border-gray-100 px-2 py-2 text-[11px] font-semibold text-gray-600 transition active:bg-gray-50"
-            >
-              <span aria-hidden="true" className="text-[20px] leading-tight">👤</span>
-              <span className="max-w-full truncate">{user ? (displayName || 'Профайл') : 'Профайл'}</span>
-            </button>
+              icon="👤"
+              label={user ? displayName || 'Профайл' : 'Профайл'}
+              active={mobileMenuOpen}
+              aria={{ 'aria-haspopup': 'menu', 'aria-expanded': user ? mobileMenuOpen : undefined }}
+            />
           </nav>
 
           {/* ===== 📱 МОБАЙЛ ХЭРЭГЛЭГЧИЙН ЦЭС (доод sheet) — 2026-09-27 =====
@@ -584,6 +590,98 @@ function UserMenuItem({ item, onNavigate }) {
   return (
     <button type="button" className={cls} onClick={item.onClick}>
       {item.label}
+    </button>
+  );
+}
+
+/* ============================================================
+   📱 FACEBOOK-МАЯГИЙН МОБАЙЛ ДООД ЦЭСНИЙ НЭГ ТАБ — 2026-09-29
+   ------------------------------------------------------------
+   ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «гар утас дээр доод хэсэгт байгаа Зар нэмэх,
+      Таалагдсан, Санал хүсэлт, Мессеж, Профайлыг Facebook шиг design-тай
+      болгож чадах уу» ✓
+
+   FACEBOOK-ийн доод цэсний ГОЛ 4 ШИНЖ (энд бүгд хэрэгжсэн):
+     ① ИДЭВХТЭЙ таб нь ӨНГӨТЭЙ икон + эргэн тойронд нь брэнд өнгийн
+        «pill» (дугуй хүрээ) — аль хуудсан дээр байгаагаа нэг харцаар
+        мэднэ ✓. ⚠️ Урьд нь идэвхтэй таб гэж ОГТ байгаагүй (бүх таб
+        ижил саарал) → хэрэглэгч хаана байгаагаа мэдэхгүй байв ✗
+     ② ИДЭВХГҮЙ табны икон нь СААРАЛ (`grayscale`) — Facebook-ийн
+        «outline icon» мэдрэмж ✓. ⚠️ Иконууд нь EMOJI (өнгөт глиф) тул
+        саарал болгох цорын ганц арга нь CSS `filter: grayscale(1)` ✓
+     ③ Хуваагч босоо зураас (`border-l`) БАЙХГҮЙ — зөвхөн дээд хүрээ ✓
+     ④ Дарахад бага зэрэг жижигрэх хөдөлгөөн (`group-active:scale-90`) +
+        икон нь «pill» дотор — хүрэх талбар (48px+) хэвээр том ✓
+
+   ⚠️ ЯЛГАА (ЗОРИУД): ТЕКСТИЙГ ХАСААГҮЙ.
+      Facebook-д доод цэс зөвхөн иконтой (текстгүй) — гэвч манай 5 таб
+      (➕🙂❤️💬✉️👤) монгол хэрэглэгчид текстгүйгээр ойлгомжгүй болно
+      (ялангуяа «Санал хүсэлт» ба «Мессеж» — өөр өөр хуудас ✓).
+      Тиймээс Facebook-ийн ЗУРАГЛАЛ, ӨНГӨ, ХӨДӨЛГӨӨНИЙГ авч, текстээ
+      ХАРИУ ОРОХ хэмжээтэй үлдээв (320px → 10px, 360px+ → 11px ✓).
+      👉 Зөвхөн икон болгохыг хүсвэл `labelCls`-ийг `hidden` болгоход
+         хангалттай (нэг газарт тодорхойлогдсон ✓)
+
+   ⚠️ BADGE нь Facebook-ийн УЛААН биш `primary` (цэнхэр): tailwind.config.js
+      дээр улаан нь ЗӨВХӨН «алдаа»-ны семантик өнгө (1 акцент философи ✓).
+      ⚠️ `ring-2 ring-white` — badge нь иконоос цагаан зураасаар тусгаарлагдана
+         (Facebook-ийн мэдэгдлийн тоолууртай ижил ✓)
+
+   @param {Object}   p
+   @param {string}   [p.href]    байвал `<Link href>` (хуудас солих ✓)
+   @param {Function} [p.onClick] байвал `<button>` (модал / доод sheet нээх ✓)
+   @param {string}   p.icon      emoji икон
+   @param {string}   p.label     табны текст
+   @param {boolean}  [p.active]  идэвхтэй эсэх → pill + өнгөтэй икон ✓
+   @param {boolean}  [p.accent]  икон нь ҮРГЭЛЖ брэнд өнгөтэй (➕ Зар нэмэх)
+   @param {number}   [p.badge]   0-ээс их бол баруун дээд буланд тоолуур ✓
+   @param {Object}   [p.aria]    нэмэлт aria-* проп (ж: aria-haspopup ✓)
+   ============================================================ */
+function MobileNavItem({ href, onClick, icon, label, active = false, accent = false, badge = 0, aria = {} }) {
+  const iconCls = `grid h-7 w-12 place-items-center rounded-full text-[19px] leading-none transition-transform duration-150 ${
+    active
+      ? 'bg-primary/10 ring-2 ring-primary/60'
+      : accent
+        ? 'bg-primary/10'
+        : 'grayscale group-active:scale-90'
+  }`;
+  /* ⚠️ Текст нь ХАРИУ ОРОХ (responsive) хэмжээтэй — Facebook-д доод цэс
+     ТЕКСТГҮЙ тул бид хамгийн бага зай эзлэхийг зорьсон:
+       • 320px (iPhone SE 1st gen, хуучин Android) → `text-[10px]` — 5 таб
+         64px болж, «Зар нэмэх»/«Мессеж»/«Профайл» БҮТЭН багтана ✓
+       • 360px+ → `min-[360px]:text-[11px]` — бүх 5 текст БҮТЭН багтана ✓
+       • ⚠️ 320px дээр «Таалагдсан» (61px) ба «Санал хүсэлт» (69px) нь 64px
+         нүдэнд БАГТАХГҮЙ (хэмжиж баталсан) → `truncate` тул «Таалагдс…»
+         гэж «…»-ээр товчлогдоно. Энэ нь ЗОРИУД — хагас үсэг тасрахгүй,
+         хэвтээ скролл үүсэхгүй ✓ (Facebook-д текст огт байхгүй тул
+         320px дээр товчлол гарах нь хүлээн зөвшөөрөгдөх компромисс ✓)
+     (⚠️ `px-1` — 320px-д текстийн өргөн 56px; товчны хүрэх талбар нь БҮТЭН
+      нүд (64px) хэвээр — padding нь зөвхөн текстийн хайрцгийг нарийсгана ✓) */
+  const labelCls = `max-w-full truncate text-[10px] min-[360px]:text-[11px] leading-tight ${
+    active ? 'font-bold text-primary' : accent ? 'font-semibold text-primary' : 'font-medium text-gray-500'
+  }`;
+  const cls = 'group relative flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 transition active:bg-gray-50';
+  const inner = (
+    <>
+      <span aria-hidden="true" className={iconCls}>{icon}</span>
+      <span className={labelCls}>{label}</span>
+      {badge > 0 && (
+        <span className="absolute right-[calc(50%-27px)] top-0.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-white ring-2 ring-white">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
+    </>
+  );
+  if (href) {
+    return (
+      <Link href={href} onClick={onClick} aria-current={active ? 'page' : undefined} className={cls}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className={cls} {...aria}>
+      {inner}
     </button>
   );
 }
