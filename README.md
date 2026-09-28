@@ -1159,6 +1159,7 @@ Dashboard → SQL Editor-т дараах файлуудын агуулгыг о�
 | 13 | `supabase/migrations/0016_listing_sections.sql` | 🗂 **Зарын ХЭСГҮҮД** — `listings.section` (`real-estate`/`auto`/`jobs`/`computers`/`home`/`services`) + `listings.attrs` (jsonb — хэсэг тус бүрийн нэмэлт талбар: авто `brand`/`mileage`/`fuel`, ажил `company`/`salary`, компьютер `cpu`/`ram`…), `listings_section_valid` CHECK, `listings_section_idx` + `attrs` GIN ба expression индексүүд. ⚠️ `property_type` нь одоо **дэд төрөл**; `category` (`sell`/`rent`) ХЭВЭЭР |
 | 14 | `supabase/migrations/0018_auto_subtype_rename.sql` | ✏️ **Автомашины дэд төрлийн нэр солив** (хэрэглэгчийн хүсэлт: «хэтчбек ийг хасна уу, седан ийг суудлын машин болго»). `section = 'auto'` мөрүүдийн `property_type`: «Седан», «Хэтчбек» → **«Суудлын машин»**. ⚠️ Зар УСТГАХГҮЙ — зөвхөн нэр солино (нэр солихгүй бол хуучин зарууд дэд төрлийн тооноос гадуур орхигдоно). `lib/locationData.js` → `auto` нь одоо **9 дэд төрөл** (⚠️ 2026-09-28-нд «Авто түрээслүүлнэ» нэмэгдэж **10** болсон) |
 | 15 | `supabase/migrations/0019_section_hobby.sql` | ⚽ **ШИНЭ ХЭСЭГ: «Амралт, спорт, хобби»** (хэрэглэгчийн хүсэлт; unegui.mn-д `/hobbi-sport/` гэж байдаг). `listings_section_valid` CHECK-д **`'hobby'`** нэмэв → 7 утга (`real-estate`/`auto`/`jobs`/`computers`/`home`/**`hobby`**/`services`) + тайлбар. Дэд төрөл (7): Аяллын хэрэгсэл · Загас ан агнуур · Ном, сонин, сэтгүүл · Спортын хэрэгсэл · Хөгжмийн зэмсэг · Цуглуулга · Унадаг дугуй, сэлбэг. ⚠️ **ЭНЭ MIGRATION-ГҮЙ БОЛ** хэсэг нь харагдана ч (`SECTIONS`-ээс уншдаг) тэр хэсэгт **зар нэмэх/seed хийхэд `23514 check constraint` алдаа** гарна ✗ |
+| 16 | `supabase/migrations/0020_messages.sql` | ✉️ **МЕССЕЖ (хэрэглэгч хоорондын чат)** — `conversations` (buyer/seller + `listing_id`/`listing_title`, `last_message*`) ба `messages` (`body` 1–2000 тэмдэгт, `read_at`) хүснэгт; RLS нь **зөвхөн оролцогч хоёрт** (RLS рекурсээс зайлсхийх `security definer` туслах функц + `touch_conversation_on_message` триггер); `revoke`/`grant` — `messages` дээрх UPDATE эрх нь **зөвхөн `read_at` баганад** ✓ → `/messages`. ⚠️ **ЭНЭ MIGRATION-ГҮЙ БОЛ** «💬 Мессеж бичих» товч дарж чадахгүй (товч нь ойлгомжтой мессеж өгнө) |
 
 > ℹ️ `0013_favorites.sql` нь өмнө нь `0005_listings_update_policy.sql`-ийн доод
 > хэсэгт коммент болгон бэлдсэн `favorites` хүснэгтийн SQL-ийг ажиллуулах
@@ -1459,6 +1460,8 @@ npm run check:supabase   # Supabase + env + phone provider шалгах
 npm run report:usage     # 📊 DB мөр/хэмжээ, Storage хэрэглээ, планын багтаамж
 npm run feedback:setup   # 💬 «Санал хүсэлт» миграц (0008+0009) — clipboard + SQL Editor
 npm run feedback:check   # 💬 feedback хүснэгт/багана ажиллаж байгаа эсэх
+npm run messages:setup   # ✉️ «Мессеж» миграц (0020) — clipboard + SQL Editor
+npm run messages:check   # ✉️ conversations/messages хүснэгт + RLS функц байгаа эсэх
 npm run check:verify -- 99112233   # verify.mn-ээр БОДИТ SMS турших (150₮)
 npm run test:verify      # verify.mn offline тест (mock, 0₮)
 
@@ -1590,6 +1593,7 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 | `supabase/migrations/0011_listing_video.sql` | `listings.video_url text` багана |
 | `scripts/test-youtube.mjs` | **18 тест** — `npm run test:youtube` |
 | `scripts/test-filters.mjs` | **14 тест** — `npm run test:filters` (2026-09-28: attrFilters-ийн гэрээ — 🚙 Загвар текст, 📅/📥 оны хүрээ, `parseAttrRangeKey`, `formatAttrsLine`) |
+| `scripts/test-messages.mjs` | **24 тест** — `npm run test:messages` (2026-09-28: мессежийн логик — текст шалгалт/2000 хязгаар, нөгөө тал, уншаагүйн тоо, дараалал, `canMessage`, `?c=` линк, **0020_messages.sql-тай гэрээ** — CHECK урт ба `grant update (read_at)`) |
 
 #### Хадгалах утга нь КАНОНИК линк
 
@@ -2288,6 +2292,117 @@ phone · status · admin_note · created_at · handled_at` (RLS: insert/select �
 
 
 
+## ✉️ Мессеж — хэрэглэгч хоорондын чат (`/messages`)
+
+> **2026-09-28:** хэрэглэгчийн хүсэлт — «Профайл ба Санал хүсэлт 2-ын дунд ✉️ Мессеж
+> гэж оруулж өгнө үү» + зар нийтлэгчтэй **шууд мессежээр** харилцах боломж.
+> ⚠️ Өмнө нь зөвхөн **утасны дугаар** байсан — олон хэрэглэгч дугаараа оруулахыг
+> хүсдэггүй тул зар нийтлэгчтэй холбогдох цорын ганц зам нь утас байв ✗
+
+```
+Зар үзэгч                       ✉️ /messages                    Зар нийтлэгч
+   │   «💬 Мессеж бичих»              │                            │
+   └──► findOrCreateConversation ───► │ ◄── RLS: зөвхөн оролцогч ──┘
+        (buyer / seller + listing)   │      хоёр л харна ✓
+                                     └──► messages (read_at → ✓✓)
+```
+
+### Хаанаас эхэлнэ вэ (2 газар)
+
+| Газвар | Товч | Яриа |
+|---|---|---|
+| Зарын дэлгэрэнгүй (`/listings/[id]`) — баруун багана, «📞 Дугаар харах»-ын **ДООР** | `💬 Мессеж бичих` (`btn btn-outline`) | **Тухайн зартай** холбоотой яриа (`listing_id` + `listing_title`) → `/messages` дотор «🏷️ …» гэж харагдана ✓ |
+| Зар нийтлэгчийн хуудас (`/sellers/[id]`) — «📞 Холбоо барих»-ын хажууд | `💬 Мессеж бичих` (`btn btn-outline btn-sm`) | **Ерөнхий** яриа (`listing_id`-ГҮЙ) — хүн хоорондын нэг thread ✓ |
+
+⚠️ **ЯАГААД ЗАР ДЭЭР УТАСНЫ ДООР ВЭ:** «📞 Дугаар харах» нь ГОЛ үйлдэл
+(`btn-primary`) хэвээр — мессеж нь ХОЁРДОГЧ (outline) тул хэрэглэгч хоёуланг
+нь нэг дор харна, нүд рүү «товчны овоолго» болохгүй ✓
+⚠️ **Өөрийн зар дээр товч ХАРАГДАХГҮЙ** (`!user || user.id !== listing.user_id`) —
+`canMessage()` нь «Өөрийн зар руу мессеж бичих боломжгүй» гэж SQL-ийн
+`conversations_distinct` CHECK-тэй ИЖИЛ дүрмээр хамгаална (UI дээр DB алдаа
+биш ойлгомжтой toast ✓). **Нэвтрээгүй хэрэглэгчид ХАРАГДАНА** — дарвал
+нэвтрэх цонх нээгдэнэ (feedback-тэй ижил зам ✓).
+
+### `/messages` хуудас (master-detail)
+
+- **Десктоп (`lg+`):** зүүн талд **ярианы жагсаалт** (340px), баруун талд **чат**
+  (`h-[600px]`); нээсэн яриа нь `?c=<uuid>` — refresh/хуваалцахад ижил чат
+  нээгдэнэ ✓
+- **Мобайл:** нэг л багана — жагсаалт **ЭСВЭЛ** чат (`h-[65vh]`), чат дотроос `‹`
+  товчоор «Буцах» (URL нь `/messages` болно ✓)
+- **Дараалал:** `last_message_at` desc (шинээрээ эхэнд) · **уншаагүй** яриа нь
+  badge-тай · мессеж бүрд `mine`/`read` — өөрийнх нь баруун талд цэнхэр,
+  «✓ Илгээсэн» / «✓✓ Уншсан» ✓
+- **Polling:** 20 секунд тутам **чимээгүй** шинэчилнэ (spinner ДАХИН гарч
+  ирэхгүй, `document.visibilityState === 'hidden'` үед ХҮСЭЛТ ЯВАХГҮЙ ✓)
+- ⚠️ Яриа сонгохдоо `router.push` БИШ **`history.replaceState`** — хуудас дахин
+  render болж, чат дээшээ гүйлгэгдэх асуудлаас сэргийлнэ ✓
+- ⚠️ **Сервер талын route БАЙХГҮЙ** — бүх хамгаалалт нь **RLS** (зөвхөн
+  оролцогч хоёр `select`; insert нь зөвхөн өөрийн нэрээр). Сайт «миграцгүй ч
+  ажиллана» зарчмыг баримтална → ZAP/спам хамгаалалт нь `body` 1–2000 тэмдэгт,
+  секундэд 1 мессеж (UI-д `sending` төлөв) ✓
+  ⚠️ Яриаг НЭГ удаа үүсгэнэ: unique `(buyer_id, seller_id, coalesce(listing_id, null))`
+  + «хайж → олдохгүй бол insert → `23505` гарвал дахин хайж» зарчим (уралдааны
+  нөхцөлд ч давхар яриа үүсэхгүй ✓)
+
+
+### Файлууд
+
+| Файл | Үүрэг |
+|---|---|
+| `supabase/migrations/0020_messages.sql` | `conversations` + `messages` хүснэгт, RLS, `is_conversation_participant` (security definer), `touch_conversation_on_message` триггер, `revoke`/`grant` |
+| `lib/messages.mjs` | **Цэвэр** логик (импортгүй → Node тестэд шууд): `partnerId`, `myRole`, `conversationTitle`, `previewText`/`previewWithSender`, `validateMessageBody` (**MAX_MESSAGE_LENGTH = 2000**), `sortConversations`, `unreadByConversation`, `decorateThread`, `canMessage`, `readConversationParam`, `conversationHref` |
+| `lib/messagesClient.js` | `'use client'` — `notifyMessagesChanged()` (event) + `useUnreadMessages()` (60 сек polling + `focus`/event → nav badge) |
+| `lib/queries.js` | `fetchConversations`, `fetchConversation`, `fetchMessages`, `sendMessage`, `markConversationRead`, `fetchUnreadMessages`, `fetchUnreadCount`, `findOrCreateConversation` |
+| `components/MessagesClient.jsx` | `/messages` — master-detail чат (`hidden lg:block` жагсаалт, `h-[65vh] lg:h-[600px]` чат) |
+| `components/MessageButton.jsx` | «💬 Мессеж бичих» — 4 алхам (нэвтрэлт → өөрийн зар → яриа → `/messages?c=`) НЭГ газарт (хоёр хуудсанд хуулбарлахгүй ✓) |
+| `scripts/test-messages.mjs` | **24 тест** — `npm run test:messages` (⚠️ 0020-ийн `messages_body_len` CHECK ба `grant update (read_at)`-ийг SQL файлаас уншиж UI-тай харьцуулна ✓) |
+| `scripts/setup-messages.js` | `npm run messages:setup` (clipboard + SQL Editor) / `messages:check` |
+
+### Миграц ажиллуулах
+
+```bash
+npm run messages:setup     # 0020-ийн SQL-ийг clipboard-д + SQL Editor нээнэ
+npm run messages:check     # conversations/messages хүснэгт байгаа эсэх
+```
+
+> ⚠️ Supabase нь DDL-ийг зөвхөн SQL Editor эсвэл Management API (`sbp_…`)-аар
+> гүйцэтгэдэг — `service_role` түлхүүрээр PostgREST дамжиж `create table`
+> хийх БОЛОМЖГҮЙ (`scripts/setup-feedback.js`-тэй ижил зарчим ✓).
+> `.env.local` дотор `SUPABASE_ACCESS_TOKEN=sbp_…` байвал автоматаар ажиллана.
+
+Миграц ажиллаагүй бол `/messages` болон «💬 Мессеж бичих» товч нь «хүснэгт
+олдсонгүй» гэсэн ойлгомжтой алдаа өгнө — **сайт эвдрэхгүй** ✓
+
+### Хүснэгтүүд
+
+```
+conversations  id · listing_id (nullable) · listing_title · buyer_id · seller_id
+               last_message · last_sender_id · last_message_at · created_at
+               unique (buyer_id, seller_id, coalesce(listing_id, null))
+               check  (buyer_id <> seller_id)
+
+messages       id · conversation_id · sender_id · body (1–2000) · read_at · created_at
+               RLS select: оролцогч хоёр · insert: sender_id = auth.uid() + оролцогч
+               UPDATE эрх нь ЗӨВХӨН read_at баганад ✓ (текст дарж бичих боломжгүй)
+```
+
+### Навигац (AppProviders)
+
+- **Desktop:** header дээрх `✉️ Мессеж` мөр + профайлын цэс (`userMenuItems`) —
+  уншаагүй байвал `✉️ Мессеж (N)`; мобайл доод sheet дотор ч мөн адил
+- **Мобайл доод навигац:** `① ➕ Зар нэмэх · ② ❤️ Таалагдсан · ③ 💬 Санал хүсэлт ·
+  ④ ✉️ Мессеж (badge) · ⑤ 👤 Профайл` — `grid-cols-5` ✓
+- **Footer:** `✉️ Мессеж` холбоос ✓
+- ⚠️ Badge нь `useUnreadMessages()`-ээс уншина — мессеж илгээх/унших үед
+  `notifyMessagesChanged()` дуудагдаж ШУУД шинэчлэгдэнэ ✓
+
+**🧪 ТЕСТ (2026-09-28):** `npm run test:messages` → **24/24 ✓** (текст шалгалт,
+2000 хязгаар ба SQL CHECK-ийн гэрээ, нөгөө тал, уншаагүйн тоо, дараалал,
+`canMessage` (self/auth), `?c=` линк, `grant update (read_at)`); `npm run
+test:filters` → 14/14 ✓; `next build` ✓ цэвэр (`/messages` → 3.99 kB).
+
+
 ## 🏦 Ипотекийн тооцоолуур ба 📊 Үнийн статистик
 
 ### Ипотекийн тооцоолуур — `/mortgage` (+ зарын дэлгэрэнгүй хуудсанд)
@@ -2389,6 +2504,7 @@ app/
   stats/page.jsx             # үнийн статистик (₮/м²)
   terms/page.jsx             # үйлчилгээний нөхцөл (статик)
   feedback/page.jsx          # санал хүсэлт (бүртгэлтэй хэрэглэгч)
+  messages/page.jsx          # ✉️ мессеж / чат (бүртгэлтэй хэрэглэгч)
   admin/feedback/page.jsx    # админ — санал хүсэлт
   admin/listings/page.jsx    # админ — зарын удирдлага (ID-аар хайх + устгах)
   listings/[id]/page.jsx     # зарын дэлгэрэнгүй
@@ -2405,6 +2521,8 @@ components/
   HomeClient.jsx, ListingCard.jsx, ListingDetailClient.jsx
   SellerListingsClient.jsx   # /sellers/[id] — нэг хэрэглэгчийн зарууд (Бүгд/Зарах/Түрээслэх)
   FeedbackClient.jsx         # /feedback — санал хүсэлт (бүртгэлтэй хэрэглэгч)
+  MessagesClient.jsx         # /messages — ✉️ чат (master-detail: ярианы жагсаалт + мессежүүд)
+  MessageButton.jsx          # 💬 «Мессеж бичих» товч (зарын дэлгэрэнгүй + зар нийтлэгчийн хуудас)
   AdminFeedbackClient.jsx    # /admin/feedback — админы санал хүсэлтийн самбар
   AdminListingsClient.jsx    # /admin/listings — зарын хайлт (ID/утас/текст, ?userId=…) + ямар ч зарыг устгах
   AdminUsersClient.jsx       # /admin/users — хэрэглэгчид; нэр/утас/зарын тоо → түүний зарууд руу линк
@@ -2422,6 +2540,8 @@ lib/
   authServer.js              # Supabase Admin client + requestToken (HMAC) + хэрэглэгч үүсгэх
   authApi.js                 # клиент талаас /api/auth/* дуудах туслах
   breadcrumb.js              # breadcrumb-ийн мөрүүд + URL угсрах (buildListingBreadcrumb/buildHomeBreadcrumb)
+  messages.mjs               # ✉️ ЦЭВЭР мессежийн логик (нөгөө тал, уншаагүй, preview, шалгалт) — Node тестэд шууд
+  messagesClient.js          # ✉️ 'use client' — `notifyMessagesChanged()`, `useUnreadMessages()` (nav badge)
 supabase/migrations/0001_schema.sql, 0003_listing_details.sql, 0004_remove_listing_drafts.sql
 scripts/seed-supabase.js, check-supabase.js, check-verify-mn.js
 ```
@@ -2533,11 +2653,15 @@ scripts/seed-supabase.js, check-supabase.js, check-verify-mn.js
 | ① | **➕ Зар нэмэх** (брэнд цэнхэр, зүүн) | `openAdd()` — зар нэмэх форм |
 | ② | **❤️ Таалагдсан** (тоолууртай badge) | `/favorites` |
 | ③ | **💬 Санал хүсэлт** | `/feedback` |
-| ④ | **👤 Профайл** (баруун) | нэвтрээгүй → нэвтрэх цонх · нэвтэрсэн → доод sheet |
+| ④ | **✉️ Мессеж** (уншаагүй тоотой badge, 2026-09-28) | `/messages` |
+| ⑤ | **👤 Профайл** (баруун) | нэвтрээгүй → нэвтрэх цонх · нэвтэрсэн → доод sheet |
 
-`grid grid-cols-4` (DOM дараалал = харагдах дараалал), товч бүр `border-l`-ээр
+`grid grid-cols-5` (DOM дараалал = харагдах дараалал), товч бүр `border-l`-ээр
 тусгаарлагдсан. ⚠️ ⛔ «💬 Санал хүсэлт» нь **мобайлд** footer хүртэл гүйлгэх
 шаардлагагүй байх зорилгоор (2026-09-27) нэмэгдсэн; footer-ийн холбоос хэвээр.
+⚠️ **«✉️ Мессеж» товч** нь хэрэглэгчийн хүсэлтээр (2026-09-28) «Санал хүсэлт» ба
+«Профайл»-ын ЯГ ДУНД орсон — ингэснээр `grid-cols-4` → **`grid-cols-5`** болж,
+уншаагүй мессежийн тоо нь badge дээр шууд харагдана ✓
 
 
 

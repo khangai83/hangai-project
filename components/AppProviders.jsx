@@ -7,6 +7,7 @@ import { fetchProfile, upsertProfile } from '../lib/queries';
 import { normalizePhone } from '../lib/format';
 import { fetchAdminMe } from '../lib/adminApi';
 import { useFavorites } from '../lib/favorites';
+import { useUnreadMessages } from '../lib/messagesClient';
 import phoneEmail from '../lib/phoneEmail';
 import AuthModal from './AuthModal';
 import ProfileModal from './ProfileModal';
@@ -62,6 +63,9 @@ export default function AppProviders({ children }) {
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState(null); // засах горимд зарын объект
   const favoriteIds = useFavorites(); // ❤️ таалагдсан зарууд (localStorage)
+  // ✉️ Уншаагүй мессежийн тоо — nav-ийн badge (60с тутам + focus/event дээр ✓)
+  //    ⚠️ Миграц (0020) ороогүй бол `0` — апп эвдрэхгүй ✓ (queries.js-ийн graceful)
+  const unreadMessages = useUnreadMessages(user ? user.id : null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   // 📱 2026-09-27 (хэрэглэгчийн хүсэлт): мобайл доод навигацийн «👤 Профайл»
   //    товч нь доод хуудас (bottom sheet) нээнэ — desktop dropdown-той ИЖИЛ зүйлс ✓
@@ -202,6 +206,12 @@ export default function AppProviders({ children }) {
   const userMenuItems = useMemo(() => {
     const items = [
       { key: 'my-listings', label: '📋 Миний зарууд', href: '/my-listings' },
+      // ✉️ Мессеж — уншаагүй байвал тоог нь хаалтанд харуулна ✓
+      {
+        key: 'messages',
+        label: unreadMessages > 0 ? `✉️ Мессеж (${unreadMessages})` : '✉️ Мессеж',
+        href: '/messages',
+      },
     ];
     if (isAdmin) {
       items.push(
@@ -221,7 +231,7 @@ export default function AppProviders({ children }) {
       { key: 'logout', label: '🚪 Гарах', onClick: () => { closeUserMenus(); logout(); } }
     );
     return items;
-  }, [isAdmin, logout, closeUserMenus]);
+  }, [isAdmin, logout, closeUserMenus, unreadMessages]);
 
   const authValue = useMemo(() => ({ user, profileName, authLoading, signIn, saveName, logout }),
     [user, profileName, authLoading, signIn, saveName, logout]);
@@ -297,6 +307,21 @@ export default function AppProviders({ children }) {
                   )}
                 </Link>
 
+                {/* ---- ③ ✉️ Мессеж (уншаагүй тоотой badge) ---- */}
+                <Link
+                  href="/messages"
+                  className="btn btn-outline btn-sm"
+                  title="Мессеж — зар нийтлэгчтэй харилцах"
+                  onClick={closeUserMenus}
+                >
+                  ✉️ Мессеж
+                  {unreadMessages > 0 && (
+                    <span className="ml-1 rounded-full bg-primary px-1.5 py-px text-[11px] font-bold text-white">
+                      {unreadMessages > 99 ? '99+' : unreadMessages}
+                    </span>
+                  )}
+                </Link>
+
                 {/* ---- ① Нэвтрэх / Хэрэглэгчийн цэс ----
                     ⚠️ БАЙР СОЛИСОН: өмнө нь ЗҮҮН талд (хамгийн эхэнд) байсан.
                     Одоо баруун захад — Zillow шиг «хэрэглэгчийн цэс хамгийн
@@ -346,6 +371,7 @@ export default function AppProviders({ children }) {
                 <Link href="/stats" className="transition hover:text-white">📊 Үнийн статистик</Link>
                 <Link href="/terms" className="transition hover:text-white">📄 Үйлчилгээний нөхцөл</Link>
                 <Link href="/feedback" className="transition hover:text-white">💬 Санал хүсэлт</Link>
+                <Link href="/messages" className="transition hover:text-white">✉️ Мессеж</Link>
               </nav>
               <p className="text-[13.5px]">🏠 ZARLAA.MN — Үл хөдлөх хөрөнгийн зар. Next.js + Supabase хувилбар.</p>
               {/* ⚠️ КОНТРАСТ ЗАСВАР: bg-gray-900 дээр text-gray-500 нь 3.55:1
@@ -382,7 +408,10 @@ export default function AppProviders({ children }) {
               ⚠️ `lg:hidden` — desktop дээр header-ийн товчнууд хангалттай ✓ */}
           <nav
             aria-label="Мобайл доод цэс"
-            className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-gray-200 bg-white/95 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] backdrop-blur-sm lg:hidden"
+            /* ⚠️ `grid-cols-5` (2026-09-28): «✉️ Мессеж» нэмэгдсэн тул 4 → 5
+               багана. Товчнууд нь `px-2` + `text-[11px]` тул нарийн дэлгэц
+               (320px) дээр ч 5 нь багтана ✓ */
+            className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-gray-200 bg-white/95 shadow-[0_-2px_10px_rgba(0,0,0,0.06)] backdrop-blur-sm lg:hidden"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
             {/* ① ЗҮҮН ДООД — ➕ Зар нэмэх (гол үйлдэл → брэнд өнгө ✓) */}
@@ -422,7 +451,24 @@ export default function AppProviders({ children }) {
               Санал хүсэлт
             </Link>
 
-            {/* ④ БАРУУН ДООД — 👤 Профайл
+            {/* ④ — ✉️ Мессеж (2026-09-28) — «Санал хүсэлт» ба «Профайл»-ийн
+                дунд (хэрэглэгчийн хүсэлт ✓). Unread badge нь «Таалагдсан»-тай
+                ИЖИЛ байрлалтай (`right-[calc(50%-30px)]`) ✓ */}
+            <Link
+              href="/messages"
+              onClick={closeUserMenus}
+              className="relative flex flex-col items-center justify-center gap-0.5 border-l border-gray-100 px-2 py-2 text-[11px] font-semibold text-gray-600 transition active:bg-gray-50"
+            >
+              <span aria-hidden="true" className="text-[20px] leading-tight">✉️</span>
+              Мессеж
+              {unreadMessages > 0 && (
+                <span className="absolute right-[calc(50%-30px)] top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+                  {unreadMessages > 99 ? '99+' : unreadMessages}
+                </span>
+              )}
+            </Link>
+
+            {/* ⑤ БАРУУН ДООД — 👤 Профайл
                 ⚠️ Нэвтрээгүй бол `openAuth()` (нэвтрэх цонх ✓),
                    нэвтэрсэн бол доод sheet (`mobileMenuOpen`) ✓ */}
             <button

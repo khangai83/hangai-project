@@ -6,7 +6,8 @@ import MapView from './MapView';
 import MortgageCalculator from './MortgageCalculator';
 import ReportListingModal from './ReportListingModal';
 import Breadcrumb from './Breadcrumb';
-import { useToast } from './AppProviders';
+import MessageButton from './MessageButton';
+import { useAuth, useToast } from './AppProviders';
 import { fetchListingById, fetchSellerCategoryCounts, fetchProfilesByIds } from '../lib/queries';
 import Avatar from './Avatar';
 import VerifiedBadge from './VerifiedBadge';
@@ -19,6 +20,7 @@ import { parseYouTube } from '../lib/youtube.mjs';
 
 export default function ListingDetailClient({ id }) {
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [listing, setListing] = useState(null); // null = loading, false = not found
   const [loadError, setLoadError] = useState(null); // холболтын алдаа
   const [videoPlaying, setVideoPlaying] = useState(false); // 🎥 видеог дарж эхлүүлсэн эсэх
@@ -171,6 +173,12 @@ export default function ListingDetailClient({ id }) {
   const garageLabel = getGarageLabel(listing.has_garage);
   const isSell = listing.category === 'sell';
   const phoneDigits = String(listing.phone || '').replace(/^976/, '').replace(/^\+/, '');
+  // ✉️ Ярианы гарчиг болгон хадгалах шошго (зар дээрх 1-р мөртэй ижил формат)
+  const listingLabel = [typeLabel, address].filter(Boolean).join(', ');
+  // ⚠️ Өөрийн зар дээр «Мессеж бичих» товч ХАРАГДАХГҮЙ (`canMessage()` мөн
+  //    хамгаална — гэхдээ товчийг нуух нь илүү ойлгомжтой ✓). Нэвтрээгүй
+  //    хэрэглэгчид ХАРАГДАНА — дарвал нэвтрэх цонх нээгдэнэ ✓
+  const canShowMessage = Boolean(listing.user_id) && (!user || user.id !== listing.user_id);
 
   // 👁/❤️ — серверээс ирсэн тоо (миграц 0006 хийгээгүй бол 0 харагдана)
   const viewCount = views != null ? views : Number(listing.views) || 0;
@@ -483,6 +491,20 @@ export default function ListingDetailClient({ id }) {
                     📞 Дугаар харах
                   </button>
                 )
+              )}
+
+              {/* ===== ✉️ «МЕССЕЖ БИЧИХ» (2026-09-28) =====
+                  ⚠️ Утасны ДООР — «дугаар харах» нь гол үйлдэл (btn-primary)
+                     хэвээр, мессеж нь хоёрдогч (btn-outline) ✓
+                  ⚠️ Яриа нь `listing_id`-тай холбогдож, гарчиг нь `listingLabel`
+                     — дараа нь `/messages` дотор «🏷️ …» гэж харагдана ✓ */}
+              {canShowMessage && (
+                <MessageButton
+                  sellerId={listing.user_id}
+                  listingId={listing.id}
+                  listingTitle={listingLabel}
+                  className="btn btn-outline w-full"
+                />
               )}
             </div>
 

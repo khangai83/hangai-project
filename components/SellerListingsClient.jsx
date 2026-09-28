@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import ListingCard from './ListingCard';
 import Breadcrumb from './Breadcrumb';
+import MessageButton from './MessageButton';
 import { useAuth, useToast } from './AppProviders';
 import { fetchListingsBySeller, fetchProfile } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
@@ -67,6 +68,13 @@ export default function SellerListingsClient({ sellerId }) {
 
   const sellListings = useMemo(() => (listings || []).filter((l) => l.category === 'sell'), [listings]);
   const rentListings = useMemo(() => (listings || []).filter((l) => l.category === 'rent'), [listings]);
+
+  // ✉️ «Мессеж бичих» товч — зөвхөн БУСАД хүний профайл дээр ✓
+  //    (өөрийн профайл дээр `canMessage()` нь «Өөрийн зар руу…» алдаа өгөх
+  //     байсан → товчийг огт харуулахгүй ✓). Нэвтрээгүй хэрэглэгчид ХАРАГДАНА
+  //    — дарвал нэвтрэх цонх нээгдэнэ ✓
+  //    ⚠️ Энэ яриа нь `listing_id`-ГҮЙ (ерөнхий) — хүн хоорондын нэг thread ✓
+  const canMessageSeller = Boolean(sellerId) && (!user || user.id !== sellerId);
 
   /**
    * Нийтлэгчид ҮЛ ХӨДЛӨХ зар байгаа эсэх.
@@ -159,6 +167,10 @@ export default function SellerListingsClient({ sellerId }) {
             >
               📞 Холбоо барих
             </a>
+          )}
+          {/* ✉️ Утас байхгүй ч мессеж бичих боломжтой (утас нь заавал биш ✓) */}
+          {canMessageSeller && (
+            <MessageButton sellerId={sellerId} className="btn btn-outline btn-sm" />
           )}
         </div>
 

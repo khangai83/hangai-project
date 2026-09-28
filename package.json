@@ -14,6 +14,7 @@
     "test:activity": "node scripts/test-activity.mjs",
     "test:format": "node scripts/test-format.mjs",
     "test:filters": "node scripts/test-filters.mjs",
+    "test:messages": "node scripts/test-messages.mjs",
     "test:youtube": "node scripts/test-youtube.mjs",
     "migration:copy": "node scripts/setup-migration.js",
     "enable:phone-auth": "node scripts/enable-phone-auth.js",
@@ -28,6 +29,8 @@
     "stats:check": "node scripts/setup-stats.js --check",
     "feedback:setup": "node scripts/setup-feedback.js",
     "feedback:check": "node scripts/setup-feedback.js --check",
+    "messages:setup": "node scripts/setup-messages.js",
+    "messages:check": "node scripts/setup-messages.js --check",
     "report:usage": "node scripts/db-usage.js"
   },
   "dependencies": {
