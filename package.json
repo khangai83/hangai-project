@@ -13,6 +13,7 @@
     "test:verify": "node scripts/test-verify-mn.js",
     "test:activity": "node scripts/test-activity.mjs",
     "test:format": "node scripts/test-format.mjs",
+    "test:phone": "node scripts/test-phone.mjs",
     "test:filters": "node scripts/test-filters.mjs",
     "test:messages": "node scripts/test-messages.mjs",
     "test:youtube": "node scripts/test-youtube.mjs",

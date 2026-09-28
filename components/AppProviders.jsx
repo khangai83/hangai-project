@@ -13,6 +13,7 @@ import phoneEmail from '../lib/phoneEmail';
 import AuthModal from './AuthModal';
 import ProfileModal from './ProfileModal';
 import AddListingModal from './AddListingModal';
+import MessageIcon from './MessageIcon';
 
 /** Supabase-ийн user → '+976XXXXXXXX' (эсвэл null).
  *  Гурван эх сурвалжаас дарааллаар нь хайна:
@@ -213,10 +214,13 @@ export default function AppProviders({ children }) {
     const items = [
       { key: 'my-listings', label: '📋 Миний зарууд', href: '/my-listings' },
       // ✉️ Мессеж — уншаагүй байвал тоог нь хаалтанд харуулна ✓
+      // ⚠️ 2026-09-29: emoji (`✉️`) БИШ — орчин үеийн SVG икон (`MessageIcon`),
+      //    ингэснээр доод цэс/толгой/цэс БҮГД ижил иконтой болно ✓
       {
         key: 'messages',
-        label: unreadMessages > 0 ? `✉️ Мессеж (${unreadMessages})` : '✉️ Мессеж',
+        label: unreadMessages > 0 ? `Мессеж (${unreadMessages})` : 'Мессеж',
         href: '/messages',
+        icon: <MessageIcon className="h-[15px] w-[15px]" />,
       },
     ];
     if (isAdmin) {
@@ -326,7 +330,11 @@ export default function AppProviders({ children }) {
                   title="Мессеж — зар нийтлэгчтэй харилцах"
                   onClick={closeUserMenus}
                 >
-                  ✉️ Мессеж
+                  {/* ⚠️ 2026-09-29: emoji `✉️` → `MessageIcon` SVG (хэрэглэгчийн
+                      хүсэлт: «messege ийн symbol -ийг илүү орчин үеийн symbol
+                      болго») ✓ `.btn` нь `gap-2` учир зай автоматаар ✓ */}
+                  <MessageIcon className="h-[15px] w-[15px]" />
+                  Мессеж
                   {unreadMessages > 0 && (
                     <span className="ml-1 rounded-full bg-primary px-1.5 py-px text-[11px] font-bold text-white">
                       {unreadMessages > 99 ? '99+' : unreadMessages}
@@ -383,7 +391,12 @@ export default function AppProviders({ children }) {
                 <Link href="/stats" className="transition hover:text-white">📊 Үнийн статистик</Link>
                 <Link href="/terms" className="transition hover:text-white">📄 Үйлчилгээний нөхцөл</Link>
                 <Link href="/feedback" className="transition hover:text-white">💬 Санал хүсэлт</Link>
-                <Link href="/messages" className="transition hover:text-white">✉️ Мессеж</Link>
+                {/* ⚠️ 2026-09-29: `✉️` → `MessageIcon` (SVG нь `inline-flex`
+                    дотор тэгшилнэ — emoji шиг доош/дээш хөвөхгүй ✓) */}
+                <Link href="/messages" className="inline-flex items-center gap-1.5 transition hover:text-white">
+                  <MessageIcon className="h-[14px] w-[14px]" />
+                  Мессеж
+                </Link>
               </nav>
               <p className="text-[13.5px]">🏠 ZARLAA.MN — Үл хөдлөх хөрөнгийн зар. Next.js + Supabase хувилбар.</p>
               {/* ⚠️ КОНТРАСТ ЗАСВАР: bg-gray-900 дээр text-gray-500 нь 3.55:1
@@ -465,11 +478,14 @@ export default function AppProviders({ children }) {
 
             {/* ④ — ✉️ Мессеж (2026-09-28) — «Санал хүсэлт» ба «Профайл»-ийн
                 дунд (хэрэглэгчийн хүсэлт ✓). Unread badge нь «Таалагдсан»-тай
-                ИЖИЛ (Facebook маягийн тоолуур — `ring-2 ring-white` ✓) */}
+                ИЖИЛ (Facebook маягийн тоолуур — `ring-2 ring-white` ✓)
+                ⚠️ 2026-09-29: emoji `✉️` → `MessageIcon` SVG (хэрэглэгчийн
+                   хүсэлт: «messege ийн symbol -ийг илүү орчин үеийн symbol
+                   болго») — идэвхтэй үед БРЭНД өнгөтэй (`currentColor`) ✓ */}
             <MobileNavItem
               href="/messages"
               onClick={closeUserMenus}
-              icon="✉️"
+              icon={<MessageIcon className="h-[19px] w-[19px]" />}
               label="Мессеж"
               active={isActive('/messages')}
               badge={unreadMessages}
@@ -569,7 +585,11 @@ export default function AppProviders({ children }) {
  * ⚠️ `onNavigate` нь линк дээр дарахад цэсийг ХААНА ✓ — эс бөгөөс шинэ
  *    хуудас нээгдсэн ч цэс нээлттэй үлдэж, буцаж ирэхэд дахин харагдана ✗
  *
- * @param {{ label:string, href?:string, onClick?:Function, tone?:'admin'|'primary' }} item
+ * @param {{ label:string, href?:string, onClick?:Function, tone?:'admin'|'primary',
+ *           icon?:import('react').ReactNode }} item
+ *   ⚠️ `icon` (2026-09-29) — заавал биш SVG/элемент икон (ж: `MessageIcon`).
+ *      Label-ийн emoji-той ХАМТ хэрэглэж болно (📋 Миний зарууд) ч, emoji-гүй
+ *      текстэн дээр ч (Мессеж — орчин үеийн икон) ✓
  * @param {Function} onNavigate цэсийг хаах функц (`closeUserMenus`)
  */
 function UserMenuItem({ item, onNavigate }) {
@@ -580,16 +600,22 @@ function UserMenuItem({ item, onNavigate }) {
         ? 'font-semibold text-primary hover:bg-primary-light'
         : 'text-gray-700 hover:bg-gray-50 hover:text-primary'
   }`;
+  const inner = (
+    <>
+      {item.icon && <span aria-hidden="true" className="shrink-0">{item.icon}</span>}
+      {item.label}
+    </>
+  );
   if (item.href) {
     return (
       <Link href={item.href} className={cls} onClick={onNavigate}>
-        {item.label}
+        {inner}
       </Link>
     );
   }
   return (
     <button type="button" className={cls} onClick={item.onClick}>
-      {item.label}
+      {inner}
     </button>
   );
 }
@@ -630,7 +656,12 @@ function UserMenuItem({ item, onNavigate }) {
    @param {Object}   p
    @param {string}   [p.href]    байвал `<Link href>` (хуудас солих ✓)
    @param {Function} [p.onClick] байвал `<button>` (модал / доод sheet нээх ✓)
-   @param {string}   p.icon      emoji икон
+   @param {string|import('react').ReactNode} p.icon emoji эсвэл SVG элемент
+     ⚠️ 2026-09-29: SVG (`MessageIcon`) дамжуулж болно. Emoji нь өнгө
+        АВАХГҮЙ (глиф нь өөрийн өнгөтэй) тул идэвхтэй табыг зөвхөн `pill`-ээр
+        ялгадаг байв; SVG нь `currentColor`-оор брэнд өнгө авна ✓
+     ⚠️ SVG өгсөн үед хэмжээг ГАДНААС өгнө (ж: `className="h-[19px] w-[19px]"`)
+        — контейнерын `text-[19px]` нь SVG-д нөлөөлөхгүй ✓
    @param {string}   p.label     табны текст
    @param {boolean}  [p.active]  идэвхтэй эсэх → pill + өнгөтэй икон ✓
    @param {boolean}  [p.accent]  икон нь ҮРГЭЛЖ брэнд өнгөтэй (➕ Зар нэмэх)
@@ -638,12 +669,17 @@ function UserMenuItem({ item, onNavigate }) {
    @param {Object}   [p.aria]    нэмэлт aria-* проп (ж: aria-haspopup ✓)
    ============================================================ */
 function MobileNavItem({ href, onClick, icon, label, active = false, accent = false, badge = 0, aria = {} }) {
+  /* ⚠️ 2026-09-29: `text-primary`/`text-gray-500` нэмэгдэв — SVG икон
+     (`currentColor`) нь табны төлөвөөр ЗӨВ өнгөтэй болно ✓
+       • идэвхтэй/accent → `text-primary` (icon нь pill дотор цэнхэр)
+       • идэвхгүй        → `text-gray-500` + `grayscale` (emoji-д зориулсан
+         шүүлт — SVG-д нөлөөлөхгүй, өнгө нь `currentColor`-оос ✓) */
   const iconCls = `grid h-7 w-12 place-items-center rounded-full text-[19px] leading-none transition-transform duration-150 ${
     active
-      ? 'bg-primary/10 ring-2 ring-primary/60'
+      ? 'bg-primary/10 text-primary ring-2 ring-primary/60'
       : accent
-        ? 'bg-primary/10'
-        : 'grayscale group-active:scale-90'
+        ? 'bg-primary/10 text-primary'
+        : 'text-gray-500 grayscale group-active:scale-90'
   }`;
   /* ⚠️ Текст нь ХАРИУ ОРОХ (responsive) хэмжээтэй — Facebook-д доод цэс
      ТЕКСТГҮЙ тул бид хамгийн бага зай эзлэхийг зорьсон:

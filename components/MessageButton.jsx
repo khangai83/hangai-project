@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import MessageIcon from './MessageIcon';
 import { useAuth, useToast, useUI } from './AppProviders';
 import { findOrCreateConversation } from '../lib/queries';
 import { canMessage, conversationHref } from '../lib/messages.mjs';
@@ -27,7 +28,7 @@ export default function MessageButton({
   listingId = null,
   listingTitle = null,
   className = 'btn btn-outline w-full',
-  label = '💬 Мессеж бичих',
+  label = null,
 }) {
   const { user } = useAuth();
   const { openAuth } = useUI();
@@ -62,7 +63,19 @@ export default function MessageButton({
 
   return (
     <button type="button" onClick={handleClick} disabled={busy} className={className}>
-      {busy ? '⏳ Нээж байна...' : label}
+      {/* ⚠️ 2026-09-29 (хэрэглэгчийн хүсэлт: «messege ийн symbol -ийг илүү
+          орчин үеийн symbol болго»): `💬` emoji → `MessageIcon` SVG ✓
+          ⚠️ `.btn` нь `inline-flex` + `gap-2` учир икон ба текст тэгшилнэ ✓
+          ⚠️ `label` пропыг гаднаас өгсөн бол ТЕКСТ л харагдана (хуучин API
+             хэвээр) — икон хэрэгтэй бол `null` (анхдагч) үлдээнэ ✓ */}
+      {busy ? (
+        '⏳ Нээж байна...'
+      ) : label || (
+        <>
+          <MessageIcon className="h-[15px] w-[15px]" />
+          Мессеж бичих
+        </>
+      )}
     </button>
   );
 }

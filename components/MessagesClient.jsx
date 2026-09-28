@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Avatar from './Avatar';
+import MessageIcon from './MessageIcon';
 import { useAuth, useUI, useToast } from './AppProviders';
 import {
   fetchConversations, fetchConversation, fetchMessages, fetchProfilesByIds,
@@ -249,7 +250,10 @@ export default function MessagesClient() {
     return (
       <div className="page-container">
         <div className="mx-auto max-w-[560px] px-5 py-16 text-center">
-          <div className="mb-4 text-6xl">✉️</div>
+          {/* ⚠️ 2026-09-29: emoji `✉️` → `MessageIcon` (орчин үеийн SVG) */}
+          <div className="mb-4 flex justify-center text-primary/70">
+            <MessageIcon className="h-16 w-16" strokeWidth={1.4} />
+          </div>
           <h1 className="mb-2 text-2xl font-bold">Мессеж</h1>
           <p className="text-gray-500">
             Зар нийтлэгчтэй мессежээр харилцахад <b>бүртгэлтэй хэрэглэгч</b> байх
@@ -269,7 +273,12 @@ export default function MessagesClient() {
     <div className="page-container">
       <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">✉️ Мессеж</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 sm:text-3xl">
+            {/* ⚠️ 2026-09-29: emoji `✉️` → `MessageIcon` (SVG нь `currentColor`
+                тул text-gray-900-той хамт өнгөө авна ✓) */}
+            <MessageIcon className="h-6 w-6 text-primary sm:h-7 sm:w-7" />
+            Мессеж
+          </h1>
           <p className="mt-1 text-sm text-gray-500">
             Зар нийтлэгчтэй шууд харилцана — мессеж нь зөвхөн та хоёрын хооронд харагдана.
           </p>

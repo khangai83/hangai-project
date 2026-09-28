@@ -5,6 +5,7 @@ import Link from 'next/link';
 import ListingCard from './ListingCard';
 import Breadcrumb from './Breadcrumb';
 import MessageButton from './MessageButton';
+import CopyButton from './CopyButton';
 import { useAuth, useToast } from './AppProviders';
 import { fetchListingsBySeller, fetchProfile } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
@@ -156,7 +157,20 @@ export default function SellerListingsClient({ sellerId }) {
             </div>
             <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] text-gray-500">
               {seller.cities.length > 0 && <span>📍 {seller.cities.join(', ')}</span>}
-              {seller.phone && <span>📱 {seller.phone}</span>}
+              {/* 📱 Утас + 📋 COPY (2026-09-29, хэрэглэгчийн хүсэлт:
+                  «утасны дугаарын ард хэсэгт copy хийж авах боломжтой
+                  symbol») — мобайлд `btn`-ээс хурдан/жижиг ✓ */}
+              {seller.phone && (
+                <span className="inline-flex items-center gap-1.5">
+                  <span>📱 {seller.phone}</span>
+                  <CopyButton
+                    value={seller.phone}
+                    size="sm"
+                    label="Утасны дугаарыг хуулах"
+                    toastMsg="📋 Утасны дугаар хуулагдлаа"
+                  />
+                </span>
+              )}
               {seller.lastPost && <span>🕒 Сүүлд нийтэлсэн: {timeAgo(seller.lastPost)}</span>}
             </p>
           </div>

@@ -7,6 +7,7 @@ import MortgageCalculator from './MortgageCalculator';
 import ReportListingModal from './ReportListingModal';
 import Breadcrumb from './Breadcrumb';
 import MessageButton from './MessageButton';
+import CopyButton from './CopyButton';
 import { useAuth, useToast } from './AppProviders';
 import { fetchListingById, fetchSellerCategoryCounts, fetchProfilesByIds } from '../lib/queries';
 import Avatar from './Avatar';
@@ -103,7 +104,7 @@ export default function ListingDetailClient({ id }) {
     return () => { mounted = false; };
   }, [listing]);
 
- /**
+  /**
    * 👁 «Үзсэн» тоог +1.
    * ⚠️ Нэг browser session-д НЭГ л удаа — F5 дарах бүрд хөөрөгдөхгүй.
    *    (Шинэ tab/session нээхэд дахин тоолно — энэ нь зөв.)
@@ -482,10 +483,28 @@ export default function ListingDetailClient({ id }) {
 
               {listing.phone && (
                 phoneShown ? (
-                  <a href={`tel:+976${phoneDigits}`} className="flex items-center gap-3 rounded-lg bg-gray-50 p-3 transition hover:bg-gray-100">
-                    <span className="text-2xl">📱</span>
-                    <div className="text-base font-semibold text-primary">{listing.phone}</div>
-                  </a>
+                  /* ⚠️ ДУГААР ХАРАГДСАН үед: зүүн тал нь `tel:` холбоос
+                     (залгах ✓), баруун талд нь 📋 COPY товч (2026-09-29,
+                     хэрэглэгчийн хүсэлт: «утасны дугаарын ард хэсэгт copy
+                     хийж авах боломжтой symbol») ✓
+                     ⚠️ `<a>` дотор `<button>` ХИЙХГҮЙ (HTML-д хориотой) —
+                        тиймээс хоёр нь ЗЭРЭГЦЭЭ ах дүү элемент болно ✓ */
+                  <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-3">
+                    <a
+                      href={`tel:+976${phoneDigits}`}
+                      className="flex min-w-0 flex-1 items-center gap-3 transition hover:opacity-80"
+                      title="Залгах"
+                    >
+                      <span className="text-2xl">📱</span>
+                      <div className="truncate text-base font-semibold text-primary">{listing.phone}</div>
+                    </a>
+                    <CopyButton
+                      value={listing.phone}
+                      size="lg"
+                      label="Утасны дугаарыг хуулах"
+                      toastMsg="📋 Утасны дугаар хуулагдлаа"
+                    />
+                  </div>
                 ) : (
                   <button type="button" className="btn btn-primary w-full" onClick={() => setPhoneShown(true)}>
                     📞 Дугаар харах
