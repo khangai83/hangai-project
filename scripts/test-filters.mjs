@@ -31,7 +31,7 @@ const t = (name, fn) => {
 console.log('\n🧪 Шүүлтийн логик (lib/locationData.js)\n');
 
 // ---- ① 🚗 Автомашин: ЗАГВАР + ХОЁР ОН ----
-t("getAttrFilters('auto') — 7 шүүлт (Брэнд, Загвар, 2 он, хайрцаг, түлш, хөтлөгч)", () => {
+t("getAttrFilters('auto') — 7 шүүлт (Үйлдвэрлэгч, Загвар, 2 он, хайрцаг, түлш, хөтлөгч)", () => {
   const keys = getAttrFilters('auto').map((f) => f.key);
   assert.deepEqual(keys, ['brand', 'model', 'year', 'importYear', 'transmission', 'fuel', 'drive']);
 });
@@ -53,10 +53,12 @@ t('📅 Үйлдвэрлэсэн он ба 📥 Орж ирсэн он нь ХҮ
   }
 });
 
-t('🏷️ Брэнд нь хайлттай combobox хэвээр (регресс БАЙХГҮЙ)', () => {
+t('🏷️ Үйлдвэрлэгч нь хайлттай combobox хэвээр (регресс БАЙХГҮЙ)', () => {
   const f = getAttrFilters('auto').find((x) => x.key === 'brand');
   assert.equal(f.searchable, true);
   assert.equal(f.type, 'select');
+  // ⚠️ 2026-09-28: label «Брэнд» → «Үйлдвэрлэгч» (key нь `brand` ХЭВЭЭР)
+  assert.equal(f.label, 'Үйлдвэрлэгч');
   assert.ok(f.options.length >= 95); // 38 → 95 болж өргөжсөн
 });
 

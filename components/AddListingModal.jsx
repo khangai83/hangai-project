@@ -348,7 +348,7 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                 ⚠️ Хэсэг тус бүрд өөр (Авто: брэнд/он/гүйлт/түлш; Ажил: компани/
                    цалин; Компьютер: CPU/RAM …). `SECTIONS[].attrFields`-ээс
                    автоматаар үүснэ — шинэ талбар нэмэхэд код засахгүй.
-                🔎 `searchable: true` (ж: 🏷️ Брэнд — 38 сонголт) нь ХАЙЛТТАЙ
+                🔎 `searchable: true` (ж: 🏷️ Үйлдвэрлэгч — 95 сонголт) нь ХАЙЛТТАЙ
                    COMBOBOX: бичнэ → жагсаалт шүүгдэнэ; жагсаалтад байхгүй
                    брэндийг ГАРААР бичиж болно ✓ (хэрэглэгчийн хүсэлт). */}
             {attrFields.length > 0 && (
