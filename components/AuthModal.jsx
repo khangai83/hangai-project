@@ -44,6 +44,13 @@ export default function AuthModal({ open, onClose }) {
   // ⚠️ 0017: «Зар дээр нэр, зургаа харуулах уу» — бүртгэлийн үед АСУУНА.
   //    Анхдагч нь `false` (нууцлал) — хэрэглэгч өөрөө сонгоно.
   const [showIdentity, setShowIdentity] = useState(false);
+  // ⚠️ 2026-09-28 (хэрэглэгчийн хүсэлт): «Үйлчилгээний нөхцөл»-ийг ЗӨВХӨН
+  //    «Үргэлжлүүлэх» дарах замаар (далд) зөвшөөрдөг байсныг больж, хэрэглэгч
+  //    ӨӨРӨӨ ЗААВАЛ хайрцгийг тэмдэглэж зөвшөөрөх ёстой болов ✓
+  //    ⚠️ Анхдагч нь `false` — урьдчилан тэмдэглэхгүй (Хувь хүний мэдээллийн
+  //       хамгаалалтын тухай хуулиар зөвшөөрөл нь «чөлөөтэй, ухамсартай» байх
+  //       ёстой → checkbox нь хоосон эхэлж, хэрэглэгч өөрөө дарна).
+  const [agreeTerms, setAgreeTerms] = useState(false);
   const [session, setSession] = useState(null); // verify.mn session + requestToken
   const [remaining, setRemaining] = useState(0);
   const [statusText, setStatusText] = useState('');
@@ -62,6 +69,9 @@ export default function AuthModal({ open, onClose }) {
       setError('');
       setPassword('');
       setPassword2('');
+      // ⚠️ Нөхцөлийн зөвшөөрөл нь ХУУЧИН сессээс үлдэхгүй — дахин нээхэд
+      //    хайрцаг ХООСОН, хэрэглэгч дахин тэмдэглэнэ ✓ (ухамсартай зөвшөөрөл)
+      setAgreeTerms(false);
       setSession(null);
       setStatusText('');
       setRemaining(0);
@@ -245,6 +255,13 @@ export default function AuthModal({ open, onClose }) {
     }
     if (password !== password2) {
       setError('Нууц үг хоёр таарахгүй байна.');
+      return;
+    }
+    // ⚠️ 2026-09-28: нөхцөлийн зөвшөөрөл нь ЗААВАЛ — «Үргэлжлүүлэх» товч ч
+    //    идэвхгүй байна, гэхдээ Enter дарах/товшийг тойрох замаар
+    //    бүртгүүлэхээс сэргийлж ЭНД ч шалгана ✓
+    if (!agreeTerms) {
+      setError('Үйлчилгээний нөхцөл, хувийн мэдээллийн боловсруулалтыг зөвшөөрч, доорх хайрцгийг тэмдэглэнэ үү.');
       return;
     }
 
@@ -627,19 +644,43 @@ export default function AuthModal({ open, onClose }) {
               </label>
 
               {error && <p className="form-error">{error}</p>}
-              {/* ⚠️ Үйлчилгээний нөхцөл + хувийн мэдээллийн зөвшөөрөл (Хувь хүний
-                  мэдээллийн хамгаалалтын тухай хуулийн дагуу бүртгүүлэхээс өмнө
-                  мэдэгдэж, зөвшөөрөл авах ёстой). */}
-              <p className="mb-1 mt-2 rounded-lg bg-gray-50 px-3 py-2.5 text-[12px] leading-relaxed text-gray-500">
-                «Үргэлжлүүлэх» дарж бүртгүүлснээр та{' '}
-                <Link href="/terms" target="_blank" className="font-semibold text-primary hover:underline">
-                  Үйлчилгээний нөхцөл
-                </Link>
-                -ийг хүлээн зөвшөөрч, <b>утасны дугаар, нэр</b> зэрэг хувийн мэдээллийг
-                Монгол Улсын нутаг дэвсгэрээс гадна байрлах үүлэн серверт (Supabase/AWS)
-                хадгалах, боловсруулах <b>зөвшөөрлийг</b> олгож байна.
-              </p>
-              <button className="btn btn-primary mt-2 w-full" disabled={loading}>
+              {/* ══════════ ⚖️ ҮЙЛЧИЛГЭЭНИЙ НӨХЦӨЛИЙН ЗӨВШӨӨРӨЛ (2026-09-28) ══════════
+                  ⚠️ ХУУЧИН (хүчингүй) хэлбэр: «Үргэлжлүүлэх» дарж бүртгүүлснээр
+                     та … зөвшөөрлийг олгож байна» гэсэн ЗӨВХӨН ТЕКСТ байв —
+                     хэрэглэгч юу ч тэмдэглэхгүй, далд зөвшөөрөл өгөгдөж байсан ✗
+                  ✅ ОДОО: ЗААВАЛ тэмдэглэх checkbox (анхдагч ХООСОН) — тэмдэглэх
+                     хүртэл «Үргэлжлүүлэх» товч ИДЭВХГҮЙ (`disabled`) ✓
+                  ⚠️ Хувь хүний мэдээллийн хамгаалалтын тухай хууль: зөвшөөрөл нь
+                     «чөлөөтэй, тодорхой, ухамсартай» байх ёстой → урьдчилан
+                     тэмдэглэсэн (pre-checked) хайрцаг ХЭРЭГЛЭХГҮЙ ✓ */}
+              <label
+                htmlFor="signup-terms"
+                className="mb-1 mt-2 flex cursor-pointer items-start gap-2.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 transition hover:border-primary/40"
+              >
+                <input
+                  id="signup-terms"
+                  type="checkbox"
+                  checked={agreeTerms}
+                  onChange={(e) => setAgreeTerms(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                  aria-describedby="signup-terms-hint"
+                />
+                <span className="text-[12px] leading-relaxed text-gray-600">
+                  <b className="text-gray-800">
+                    ☑ Үйлчилгээний нөхцөл ба хувийн мэдээллийн боловсруулалтыг зөвшөөрч байна
+                  </b>{' '}
+                  <span className="font-semibold text-primary">(заавал тэмдэглэнэ)</span>
+                  <span id="signup-terms-hint" className="mt-1 block text-[11.5px] text-gray-500">
+                    <Link href="/terms" target="_blank" className="font-semibold text-primary hover:underline">
+                      Үйлчилгээний нөхцөл
+                    </Link>
+                    -ийг уншиж, ойлгосны үндсэн дээр <b>утасны дугаар, нэр</b> зэрэг хувийн
+                    мэдээллийг Монгол Улсын нутаг дэвсгэрээс гадна байрлах үүлэн серверт
+                    (Supabase/AWS) хадгалах, боловсруулахыг зөвшөөрч байна.
+                  </span>
+                </span>
+              </label>
+              <button className="btn btn-primary mt-2 w-full" disabled={loading || !agreeTerms}>
                 {loading ? 'Илгээж байна...' : 'Үргэлжлүүлэх → SMS баталгаажуулалт'}
               </button>
               <p className="mt-4 text-center text-[13px] text-gray-500">
