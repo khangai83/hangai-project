@@ -19,6 +19,7 @@ import {
 import { getCategoryLabel, getPropertyIcon, getPropertyTypeLabel, formatPrice, formatCount } from '../lib/format';
 import { buildHomeBreadcrumb } from '../lib/breadcrumb';
 import Breadcrumb from './Breadcrumb';
+import SearchableSelect from './SearchableSelect';
 
 // Нүүр хуудсны хайлтын анхдагч (хоосон) утга.
 // ⚠️ `khoroos` нь МАССИВ — хэрэглэгч ОЛОН хороог зэрэг сонгоно (unegui.mn-ийн
@@ -1174,18 +1175,34 @@ export default function HomeClient() {
                     ⚠️ Хэсэг тус бүрийн `attrFilters` (зөвхөн `select` төрөл) —
                        ж: Автомашин → Брэнд, Түлш, Хурдны хайрцаг, Хөтлөгч;
                        Ажлын зар → Ажлын төрөл, Туршлага, Ажлын хэлбэр.
-                    ⚠️ Утга нь `listings.attrs` (jsonb) дотор → `?attr_brand=Toyota` */}
+                    ⚠️ Утга нь `listings.attrs` (jsonb) дотор → `?attr_brand=Toyota`
+                    🔎 `searchable: true` (ж: 🏷️ Брэнд — 38 сонголт!) нь энгийн
+                       `<select>` БИШ, ХАЙЛТТАЙ COMBOBOX (`SearchableSelect`) —
+                       хэрэглэгчийн хүсэлт (2026-09-27): «Суудлын машин сонгоод
+                       брэндээс хайж олох төвөгтэй… гараас хайх боломжтой болго».
+                       ⚠️ Утга нь СОНГОХ/Enter/blur үед л хүчинтэй болно —
+                          үсэг бүрт query явахгүй ✓ (компонентийн тайлбарыг үзнэ үү) */}
                 {attrFilters.map((f) => (
                   <SideBlock key={f.key} label={`${f.icon ? `${f.icon} ` : ''}${f.label}`}>
-                    <select
-                      className="form-select"
-                      aria-label={f.label}
-                      value={attrValue(f.key)}
-                      onChange={(e) => setAttr(f.key, e.target.value)}
-                    >
-                      <option value="">Бүгд</option>
-                      {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
-                    </select>
+                    {f.searchable ? (
+                      <SearchableSelect
+                        value={attrValue(f.key)}
+                        options={f.options}
+                        onChange={(v) => setAttr(f.key, v)}
+                        placeholder="Бүгд — бичиж хайна"
+                        ariaLabel={f.label}
+                      />
+                    ) : (
+                      <select
+                        className="form-select"
+                        aria-label={f.label}
+                        value={attrValue(f.key)}
+                        onChange={(e) => setAttr(f.key, e.target.value)}
+                      >
+                        <option value="">Бүгд</option>
+                        {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                      </select>
+                    )}
                   </SideBlock>
                 ))}
 

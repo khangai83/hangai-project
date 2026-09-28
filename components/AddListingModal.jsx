@@ -7,6 +7,7 @@ import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, h
 import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice } from '../lib/format';
 import phoneEmail from '../lib/phoneEmail';
 import YouTubeField from './YouTubeField';
+import SearchableSelect from './SearchableSelect';
 import { parseYouTube } from '../lib/youtube.mjs';
 import { compressImages, formatBytes } from '../lib/imageUtils';
 
@@ -346,13 +347,28 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
             {/* ===== ХЭСГИЙН НЭМЭЛТ ТАЛБАРУУД (attrs jsonb, 0016) =====
                 ⚠️ Хэсэг тус бүрд өөр (Авто: брэнд/он/гүйлт/түлш; Ажил: компани/
                    цалин; Компьютер: CPU/RAM …). `SECTIONS[].attrFields`-ээс
-                   автоматаар үүснэ — шинэ талбар нэмэхэд код засахгүй. */}
+                   автоматаар үүснэ — шинэ талбар нэмэхэд код засахгүй.
+                🔎 `searchable: true` (ж: 🏷️ Брэнд — 38 сонголт) нь ХАЙЛТТАЙ
+                   COMBOBOX: бичнэ → жагсаалт шүүгдэнэ; жагсаалтад байхгүй
+                   брэндийг ГАРААР бичиж болно ✓ (хэрэглэгчийн хүсэлт). */}
             {attrFields.length > 0 && (
               <div className="form-row">
                 {attrFields.map((f) => (
                   <div key={f.key} className="form-group">
                     <label>{f.icon ? `${f.icon} ` : ''}{f.label}</label>
-                    {f.type === 'select' ? (
+                    {f.type === 'select' && f.searchable ? (
+                      // ⚠️ `commitOnType` — форм дотор сервер рүү query явахгүй
+                      //    тул бичих БҮРД хадгална (Enter дарахад «Хадгалах»-ыг
+                      //    дарахгүйн тулд компонент Enter-ийг зогсоодог ✓)
+                      <SearchableSelect
+                        value={(form.attrs || {})[f.key] || ''}
+                        options={f.options}
+                        onChange={(v) => setAttr(f.key, v)}
+                        placeholder="Бичиж хайх эсвэл өөрөө бичих"
+                        ariaLabel={f.label}
+                        commitOnType
+                      />
+                    ) : f.type === 'select' ? (
                       <select
                         value={(form.attrs || {})[f.key] || ''}
                         onChange={(e) => setAttr(f.key, e.target.value)}
