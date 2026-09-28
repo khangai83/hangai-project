@@ -14,12 +14,14 @@ import {
   CITIES, getDistricts, getKhoroos, ROOM_OPTIONS, formatRoomsLabel,
   hasRoomsFields, SECTIONS, getSection, getSubtypes, getSectionCategories,
   hasCategoryChoice, getAttrFilters, getAttrField, formatAttrsLine,
+  parseAttrRangeKey, getAttrRangeKeys,   // 📅 оны хүрээ (2026-09-28)
   getSubtypeGroups,   // 🛠 3 дахь түвшин (2026-09-27) — зөвхөн `services`
 } from '../lib/locationData';
 import { getCategoryLabel, getPropertyIcon, getPropertyTypeLabel, formatPrice, formatCount } from '../lib/format';
 import { buildHomeBreadcrumb } from '../lib/breadcrumb';
 import Breadcrumb from './Breadcrumb';
 import SearchableSelect from './SearchableSelect';
+import TextFilter from './TextFilter';
 
 // Нүүр хуудсны хайлтын анхдагч (хоосон) утга.
 // ⚠️ `khoroos` нь МАССИВ — хэрэглэгч ОЛОН хороог зэрэг сонгоно (unegui.mn-ийн
@@ -641,9 +643,33 @@ export default function HomeClient() {
     if (filters.propertyType) {
       chips.push({ key: 'propertyType', label: `${getPropertyIcon(filters.propertyType, section)} ${getPropertyTypeLabel(filters.propertyType, category)}` });
     }
-    // ⚠️ ATTR шүүлтүүд (0016) — ж: «🏷️ Toyota», «⛽ Хайбрид»
+    // ⚠️ 📅 ОНЫ ХҮРЭЭ (2026-09-28) нь ХОЁР түлхүүрээр (`year_from`/`year_to`)
+    //    хадгалагддаг тул НЭГ чип болгож нэгтгэнэ — эс бөгөөс «📅 2015» +
+    //    «📅 2020» гэсэн ойлгомжгүй ХОЁР чип гарна ✗
+    const rangeBases = new Set();
+    Object.keys(filters.attrs || {}).forEach((k) => {
+      const r = parseAttrRangeKey(k);
+      if (!r) return;
+      const base = getAttrField(section, r.base);
+      if (base && base.range) rangeBases.add(r.base);
+    });
+    rangeBases.forEach((base) => {
+      const keys = getAttrRangeKeys(base);
+      const from = (filters.attrs || {})[keys.from] || '';
+      const to = (filters.attrs || {})[keys.to] || '';
+      if (!from && !to) return;
+      const field = getAttrField(section, base);
+      const rangeLabel = from && to
+        ? `${from} — ${to}`
+        : from ? `${from} оноос` : `${to} он хүртэл`;
+      chips.push({ key: `attrRange_${base}`, label: `${(field && field.icon) || '📅'} ${rangeLabel}` });
+    });
+    // ⚠️ ATTR шүүлтүүд (0016) — ж: «🏷️ Toyota», «⛽ Хайбрид», «🚙 Prius»
     Object.entries(filters.attrs || {}).forEach(([k, v]) => {
       if (!v) return;
+      // Хүрээний түлхүүр (`*_from` / `*_to`) нь ДЭЭР нэг чип болсон → алгасна
+      const r = parseAttrRangeKey(k);
+      if (r && rangeBases.has(r.base)) return;
       const field = getAttrField(section, k);
       chips.push({ key: `attr_${k}`, label: `${(field && field.icon) || '🔎'} ${v}` });
     });
@@ -666,8 +692,20 @@ export default function HomeClient() {
 
   const activeFilterCount = activeFilterChips.length;
 
-  /** Нэг чипийг арилгах (`khoroos` нь массив; `attr_*` нь jsonb түлхүүр) */
+  /** Нэг чипийг арилгах (`khoroos` нь массив; `attr_*` нь jsonb түлхүүр;
+   *  📅 `attrRange_*` нь оны хүрээний ХОЁР түлхүүрийг хамт арилгана) */
   const removeFilterChip = (key) => {
+    if (key.startsWith('attrRange_')) {
+      const keys = getAttrRangeKeys(key.slice('attrRange_'.length));
+      setPage(1);
+      setFilters((f) => {
+        const attrs = { ...(f.attrs || {}) };
+        delete attrs[keys.from];
+        delete attrs[keys.to];
+        return { ...f, attrs };
+      });
+      return;
+    }
     if (key.startsWith('attr_')) { setAttr(key.slice(5), ''); return; }
     setF(key, key === 'khoroos' ? [] : '');
   };
@@ -1171,17 +1209,20 @@ export default function HomeClient() {
                     </p>
                   )}
                 </SideBlock>
-                {/* ===== ХЭСГИЙН ATTR ШҮҮЛТҮҮД (0016) =====
-                    ⚠️ Хэсэг тус бүрийн `attrFilters` (зөвхөн `select` төрөл) —
-                       ж: Автомашин → Брэнд, Түлш, Хурдны хайрцаг, Хөтлөгч;
-                       Ажлын зар → Ажлын төрөл, Туршлага, Ажлын хэлбэр.
-                    ⚠️ Утга нь `listings.attrs` (jsonb) дотор → `?attr_brand=Toyota`
-                    🔎 `searchable: true` (ж: 🏷️ Брэнд — 38 сонголт!) нь энгийн
-                       `<select>` БИШ, ХАЙЛТТАЙ COMBOBOX (`SearchableSelect`) —
-                       хэрэглэгчийн хүсэлт (2026-09-27): «Суудлын машин сонгоод
-                       брэндээс хайж олох төвөгтэй… гараас хайх боломжтой болго».
-                       ⚠️ Утга нь СОНГОХ/Enter/blur үед л хүчинтэй болно —
-                          үсэг бүрт query явахгүй ✓ (компонентийн тайлбарыг үзнэ үү) */}
+                {/* ===== ХЭСГИЙН ATTR ШҮҮЛТҮҮД (0016, өргөтгөсөн 2026-09-28) =====
+                    ⚠️ Хэсэг тус бүрийн `attrFilters` — оролтын төрөл 3:
+                      ① энгийн `<select>` (цөөн сонголт: Түлш, Хөтлөгч)
+                      ② 🔎 ХАЙЛТТАЙ COMBOBOX (`f.searchable`, ж: 🏷️ Брэнд — 95)
+                         хэрэглэгчийн хүсэлт (2026-09-27): «Суудлын машин
+                         сонгоод брэндээс хайж олох төвөгтэй… гараас хайх»
+                      ③ ✍️/📅 ГАРААР БИЧИХ ТЕКСТ (`f.filterable`) ба
+                         ОНЫ ХҮРЭЭ (`f.range`, «Эхлэх / Дуусах») —
+                         хэрэглэгчийн хүсэлт (2026-09-28): «хайлт дээр ЗАГВАР
+                         оруул; ҮЙЛДВЭРЛЭСЭН ОН, ОРЖ ИРСЭН ОНООР шүүдэг байх»
+                    ⚠️ Утга нь `listings.attrs` (jsonb) дотор → `?attr_brand=Toyota`,
+                       оны хүрээ нь `?attr_year_from=2015&attr_year_to=2020`
+                    ⚠️ Гараар бичих талбар нь ⏎/blur үед л хүчинтэй болно —
+                       үсэг бүрт query явахгүй ✓ (`TextFilter`, `SearchableSelect`) */}
                 {attrFilters.map((f) => (
                   <SideBlock key={f.key} label={`${f.icon ? `${f.icon} ` : ''}${f.label}`}>
                     {f.searchable ? (
@@ -1190,6 +1231,41 @@ export default function HomeClient() {
                         options={f.options}
                         onChange={(v) => setAttr(f.key, v)}
                         placeholder="Бүгд — бичиж хайна"
+                        ariaLabel={f.label}
+                      />
+                    ) : f.range ? (
+                      // 📅 ОНЫ ХҮРЭЭ — «Үнэ, ₮» блоктой ижил «Эхлэх / Дуусах» хос
+                      //    ⚠️ Утга нь `<key>_from` / `<key>_to` гэж хадгалагдана
+                      <div className="flex items-center gap-2">
+                        <input
+                          className="form-input"
+                          type="number"
+                          inputMode="numeric"
+                          min="1900"
+                          max="2100"
+                          placeholder="Эхлэх"
+                          aria-label={`${f.label} (эхлэх)`}
+                          value={attrValue(`${f.key}_from`)}
+                          onChange={(e) => setAttr(`${f.key}_from`, e.target.value)}
+                        />
+                        <input
+                          className="form-input"
+                          type="number"
+                          inputMode="numeric"
+                          min="1900"
+                          max="2100"
+                          placeholder="Дуусах"
+                          aria-label={`${f.label} (дуусах)`}
+                          value={attrValue(`${f.key}_to`)}
+                          onChange={(e) => setAttr(`${f.key}_to`, e.target.value)}
+                        />
+                      </div>
+                    ) : f.filterable ? (
+                      // ✍️ ЧӨЛӨӨТ ТЕКСТ шүүлт (ж: 🚙 Загвар) — бичиж хайна
+                      <TextFilter
+                        value={attrValue(f.key)}
+                        onChange={(v) => setAttr(f.key, v)}
+                        placeholder={f.placeholder || 'Бичиж хайна'}
                         ariaLabel={f.label}
                       />
                     ) : (

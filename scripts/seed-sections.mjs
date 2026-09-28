@@ -28,6 +28,23 @@ const PER_SUBTYPE = 10;
 const DEMO_PHONE = process.argv[2] || '88093663';
 const IMG_COUNT = 20; // public/uploads/property-N.svg
 
+/**
+ * `npm run seed:sections -- 88093663 --section=auto`
+ * → ЗӨВХӨН авто хэсгийн демо зарыг шинэчилнэ (2026-09-28).
+ * ⚠️ ЯАГААД: 7 хэсэг × дэд төрөл бүр × 10 ≈ 700 зарыг дахин үүсгэх шаардлагагүй —
+ *    шинэ дэд төрөл (ж: «Авто түрээслүүлнэ») эсвэл шинэ талбар (ж: 📥 орж
+ *    ирсэн он) нэмэгдсэн хэсгээ л шинэчилнэ → хурдан ба бусад демо өгөгдөл
+ *    ХӨНДӨГДӨХГҮЙ ✓
+ */
+const ONLY_SECTION = (process.argv.find((a) => a.startsWith('--section=')) || '').split('=')[1] || '';
+if (ONLY_SECTION && !SECTIONS.some((s) => s.value === ONLY_SECTION)) {
+  console.error(`❌ «${ONLY_SECTION}» гэсэн хэсэг байхгүй.`);
+  console.error(`   Боломжтой: ${SECTIONS.map((s) => s.value).join(', ')}`);
+  process.exit(1);
+}
+/** Шинэчлэх хэсгүүд (`--section=` байхгүй бол БҮГД) */
+const ACTIVE_SECTIONS = ONLY_SECTION ? SECTIONS.filter((s) => s.value === ONLY_SECTION) : SECTIONS;
+
 // ---- Туслах ------------------------------------------------------------
 const rand = () => Math.random();
 const randInt = (a, b) => a + Math.floor(rand() * (b - a + 1));
@@ -162,6 +179,10 @@ const AUTO_SUBTYPE_PAIRS = {
   'Автобус': [['Hyundai', 'County'], ['Isuzu', 'Journey'], ['Toyota', 'Coaster'], ['Higer', 'KLQ 6100'], ['Dongfeng', 'Экспресс']],
   'Мотоцикл': [['Honda', 'CBR 250'], ['Yamaha', 'R15'], ['Suzuki', 'Gixxer'], ['Kawasaki', 'Ninja 400'], ['Honda', 'Dio 35'], ['Yamaha', 'Nouvo']],
   'Трактор, хөдөө аж ахуй': [['YTO', 'MF 244'], ['John Deere', '5045E'], ['Беларус', '820'], ['MTZ', '892'], ['Zoomlion', 'RK 704'], ['Кировец', 'K-700']],
+  // 🚗 2026-09-28 (хэрэглэгчийн хүсэлт): «Авто түрээслүүлнэ» — түрээслэхэд
+  //    ТОХИРОМЖТОЙ (элэгдэл багатай, эрэлттэй) машид: Prius/Aqua (такси, цаг),
+  //    Hiace/Starex (ачаа, аялал), Camry/Elantra (гэрээт, бизнес).
+  'Авто түрээслүүлнэ': [['Toyota', 'Prius 30'], ['Toyota', 'Aqua'], ['Toyota', 'Camry'], ['Toyota', 'Hiace'], ['Hyundai', 'Starex'], ['Hyundai', 'Elantra'], ['Kia', 'K5'], ['Nissan', 'Teana'], ['Mitsubishi', 'Pajero'], ['Lexus', 'RX 450']],
   'Авто сэлбэг, хэрэгсэл': [['Toyota', 'Тосны шүүр'], ['Nissan', 'Тормозны колодко'], ['Bosch', 'Аккумулятор 60Ah'], ['Michelin', 'Дугуй 205/55 R16'], ['Osram', 'Гэрлийн чийдэн'], ['Icom', 'Радио']],
   'Бусад': [['Toyota', 'Prius 30'], ['Nissan', 'X-Trail'], ['Hyundai', 'Santa Fe'], ['Kia', 'Sportage'], ['Toyota', 'Harrier']],
 };
@@ -253,9 +274,18 @@ function makeAttrs(section, subtype) {
     if (subtype === 'Авто сэлбэг, хэрэгсэл') {
       return { brand, model, condition: pick(['Шинэ', 'Шинэ', 'Хэрэглэсэн — сайн']), warranty: pick(['Байгаа', 'Байхгүй']) };
     }
+    // ⚠️ `year` нь тусдаа хувьсагч БОЛОХ ЁСТОЙ: `importYear` нь түүнээс
+    //    хамаардаг тул объект дотроос `year`-ыг унших боломжгүй (TDZ алдаа) ✗
+    const year = randInt(2008, 2024);
     return {
       brand, model,
-      year: String(randInt(2008, 2024)),
+      year: String(year),
+      // 📥 ОРЖ ИРСЭН ОН (2026-09-28, хэрэглэгчийн хүсэлт) — Монголын зарын
+      //    ердийн үзүүлэлт: машин үйлдвэрлэгдсэнээс ХОЙШ гаальд ирнэ.
+      //    ⚠️ `year`-ээс багагүй байх ёстой (логик) → `max`, 2026 (энэ он)-аас
+      //       хэтрэхгүй ✓. Ингэснээр `?attr_importYear_from=2021` шүүлт
+      //       бодит үр дүн буцаана (эс бөгөөс он зөрүүтэй демо өгөгдөл үүснэ ✗)
+      importYear: String(Math.min(2026, year + randInt(0, 4))),
       mileage: String(randInt(0, 26) * 10000 + randInt(0, 9) * 1000),
       transmission: pick(['Автомат', 'Автомат', 'Механик', 'Хагас автомат', 'CVT']),
       engine: pick(['1.5', '1.8', '2.0', '2.4', '2.5', '3.0', '3.5', '4.0', '4.6']),
@@ -377,10 +407,26 @@ const TEXTS = {
 };
 
 /** Тайлбар (төгсгөлд нь MARKER — давхардалгүй дахин ажиллуулахын тулд) */
+/**
+ * 🚗 «АВТО ТҮРЭЭСЛҮҮЛНЭ» зарын ТАЙЛБАР (2026-09-28, хэрэглэгчийн хүсэлт).
+ * ⚠️ Энгийн автозарын текст («давхар дугуйтай, гааль…») нь ТҮРЭЭСИЙН зард
+ *    утгагүй (түрээслэгч үнэ/хугацаа/жолооч/баримт сонирхдог) ✗
+ */
+const RENTAL_TEXTS = [
+  'Өдөр болон сараар түрээслүүлнэ. Жолоочтой болон жолоочгүй сонголттой.',
+  'Хот дотор болон орон нутгийн аялалд түрээслүүлнэ. Даатгал, техникийн үзлэгтэй.',
+  'Гэрээт байгууллагад сарын хөлсөөр түрээслүүлнэ. НӨАТ-тай гэрээ хийж болно.',
+  'Барьцаа хөрөнгөтэй, шатахуун хэрэглэсэн хэмжээгээрээ төлнө. Бензин хийлгэж өгнө.',
+  'Аялал жуулчлалын улиралд хөлсөөр түрээслүүлнэ. Гадаад жуулчид тохиромжтой.',
+];
+
+/** Нэг зарын тайлбар (секц/дэд төрлөөс хамаарна) */
 function makeDescription(section, subtype) {
   const body = section === 'real-estate'
     ? pick((RE_CFG[subtype] || RE_CFG['Орон сууц']).texts)
-    : pick(TEXTS[section]);
+    : section === 'auto' && subtype === 'Авто түрээслүүлнэ'
+      ? pick(RENTAL_TEXTS)
+      : pick(TEXTS[section]);
   return `${body}\n\n${MARKER}`;
 }
 
@@ -421,15 +467,23 @@ function buildRow(section, subtype, k) {
     price = Number(attrs.salary);
     priceType = 'month';
   } else if (section === 'auto') {
-    // ⚠️ Үнэ нь МАШИНЫ ЗЭРЭГЛЭЛЭЭС хамаарна — «Mazda Demio» 300 сая байх нь
-    //    төөрөгдүүлнэ. Тиймээс загварын нэрээр 3 түвшинд хуваана.
-    const m = `${attrs.brand} ${attrs.model}`;
-    const tier = /Land Cruiser|LX \d|G \d|X5|Patrol|G80|Discovery|Highlander|Hilux|Model/.test(m)
-      ? [60e6, 400e6] // 🚙 Том жийп / премиум
-      : /Prius|Aqua|Fit|Demio|Swift|Niva|Cruze|Focus|Patriot|K5|Atenza|320i/.test(m)
-        ? [9e6, 55e6] // 🚗 Жижиг/хямд
-        : [22e6, 170e6]; // 🚙 Дунд зэрэглэл
-    price = money(tier[0], tier[1]);
+    // 🚗 ТҮРЭЭС (2026-09-28): «Авто түрээслүүлнэ» нь ЗАРАХ үнэ БИШ —
+    //    сарын хөлс (ж: Prius 1.2–2.5 сая ₮) байх ёстой, эс бөгөөс
+    //    «Prius 250 сая» гэж түрээсийн зар дээр гарч төөрөгдүүлнэ ✗
+    if (subtype === 'Авто түрээслүүлнэ') {
+      price = money(900e3, 6e6);
+      priceType = 'month';
+    } else {
+      // ⚠️ Үнэ нь МАШИНЫ ЗЭРЭГЛЭЛЭЭС хамаарна — «Mazda Demio» 300 сая байх нь
+      //    төөрөгдүүлнэ. Тиймээс загварын нэрээр 3 түвшинд хуваана.
+      const m = `${attrs.brand} ${attrs.model}`;
+      const tier = /Land Cruiser|LX \d|G \d|X5|Patrol|G80|Discovery|Highlander|Hilux|Model/.test(m)
+        ? [60e6, 400e6] // 🚙 Том жийп / премиум
+        : /Prius|Aqua|Fit|Demio|Swift|Niva|Cruze|Focus|Patriot|K5|Atenza|320i/.test(m)
+          ? [9e6, 55e6] // 🚗 Жижиг/хямд
+          : [22e6, 170e6]; // 🚙 Дунд зэрэглэл
+      price = money(tier[0], tier[1]);
+    }
   } else if (section === 'computers') {
     price = money(250e3, 12e6);
   } else if (section === 'hobby') {
@@ -470,7 +524,8 @@ function buildRow(section, subtype, k) {
   if (process.env.DRY_RUN === '1') {
     console.log('🧪 DRY RUN — DB-д юу ч бичихгүй\n');
     let total = 0;
-    for (const sec of SECTIONS) {
+    // ⚠️ `--section=` үед ЗӨВХӨН тэр хэсгийг харуулна (бодит бичилттэй ижил)
+    for (const sec of ACTIVE_SECTIONS) {
       const subtypes = getSubtypes(sec.value);
       total += subtypes.length * PER_SUBTYPE;
       console.log(`${sec.icon} ${sec.label} — ${subtypes.length} дэд төрөл × ${PER_SUBTYPE}`);
@@ -512,10 +567,11 @@ function buildRow(section, subtype, k) {
   console.log(`👤 Эзэн: ${(user.user_metadata && user.user_metadata.name) || '(нэргүй)'} (${DEMO_PHONE})\n`);
 
   // 1) Өмнөх demo заруудыг устгах (зөвхөн MARKER-тай → давхардахгүй)
-  const { data: old, error: findErr } = await admin
-    .from('listings')
-    .select('id')
-    .like('description', `%${MARKER}%`);
+  //    ⚠️ `--section=auto` үед ЗӨВХӨН авто хэсгийн демо заруудыг устгана
+  //       (бусад хэсгийн демо өгөгдөл хэвээр үлдэнэ ✓)
+  let findQ = admin.from('listings').select('id').like('description', `%${MARKER}%`);
+  if (ONLY_SECTION) findQ = findQ.eq('section', ONLY_SECTION);
+  const { data: old, error: findErr } = await findQ;
   if (findErr) {
     console.error('❌ Хуучин demo заруудыг хайхад алдаа:', findErr.message);
     process.exit(1);
@@ -532,7 +588,7 @@ function buildRow(section, subtype, k) {
   // 2) Мөрүүд үүсгэх — 7 хэсэг × дэд төрөл бүр × 10
   const rows = [];
   const plan = [];
-  for (const sec of SECTIONS) {
+  for (const sec of ACTIVE_SECTIONS) {
     const subtypes = getSubtypes(sec.value);
     plan.push({ section: sec.value, label: sec.label, icon: sec.icon, subtypes: subtypes.length });
     for (const st of subtypes) {
