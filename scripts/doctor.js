@@ -26,17 +26,87 @@ async function status(url) {
   }
 }
 
+/**
+ * HTTP сервер сонсож байгаа node процессуудын портууд.
+ *
+ * ЯАГААД ХЭРЭГТЭЙ ВЭ (2026-09-29, бодит тохиолдол): `npm run dev` дуудахад
+ * 3000 порт дүүрсэн байвал Next нь 3001 дээр АСААЛААД, browser нь хуучин
+ * (эвдэрсэн) 3000 дээрх хуудсаа харуулж «Заруудыг ачаалж байна...» дээр
+ * мөнхөрнө ✗. Chrome руу `localhost:3001` гэж зааж өгөхгүй бол хэрэглэгч
+ * ямар ч өөрчлөлт харахгүй ✓.
+ */
+function listeningPorts() {
+  try {
+    const { execSync } = require('child_process');
+    const out = execSync('lsof -nP -iTCP -sTCP:LISTEN', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const ports = new Set();
+    for (const line of out.split('\n')) {
+      if (!/^(node|next)/.test(line)) continue;
+      const m = line.match(/TCP\s+\S*:(\d+)\s+\(LISTEN\)/);
+      if (m) ports.add(Number(m[1]));
+    }
+    return [...ports].sort((a, b) => a - b);
+  } catch (e) {
+    return [];
+  }
+}
+
 (async () => {
   console.log('🩺 Зарлаа.mn — оношлогоо\n');
 
+  // ---------- 0. АЛЬ ПОРТ ДЭЭР SERVER АЖИЛЛАЖ БАЙНА (эхэнд нь!) ----------
+  // ⚠️ 3000 дүүрсэн үед Next нь 3001/3002 … рүү ШИЛЖДЭГ. Хэрэглэгч хуучин
+  //    (эвдэрсэн эсвэл өөр) порт дээрх хуудсаа харсаар байвал «яагаад удаад
+  //    байна / юу ч өөрчлөгдөхгүй байна» гэж бодно ✗ → эхэнд нь хэлнэ ✓.
+  const ports = listeningPorts().filter((p) => p >= 3000 && p <= 3010);
+  const basePort = Number(new URL(BASE).port || 80);
+
   // ---------- 1. Dev server ----------
+  // ⚠️ 2026-09-29 (бодит тохиолдол): `next build` нь АЖИЛЛАЖ БАЙГАА `next dev`-ийн
+  //    `.next`-ийг дарж бичдэг → dev server `_next/server/pages/_document.js`
+  //    олохгүй болж, БҮХ хуудас **500** буцаана ✗. Browser дээр HTML нь хуучин
+  //    хэвээрээ үлдэж «Заруудыг ачаалж байна...» дээр мөнхөрнө (client bundle
+  //    ачаалагдахгүй) → ХОЛБООНЫ алдаа мэт харагдана ✗.
+  //    Тиймээс `200` БИШ бүх статусыг АЛДАА гэж үзнэ ✓.
   const home = await status(`${BASE}/`);
   if (!home) {
-    row('❌', 'Dev server ажиллахгүй байна', `→ npm run dev  (эсвэл: pkill -f 'next dev' && npm run dev)`);
+    row('❌', `Dev server ажиллахгүй байна (${BASE})`);
+    if (ports.length) {
+      row('   ', `Харин порт ${ports.join(', ')} дээр server АЖИЛЛАЖ БАЙНА → browser дээр http://localhost:${ports[0]} нээгээрэй`);
+    } else {
+      row('   ', "→ npm run dev  (эсвэл: pkill -f 'next dev'; pkill -f 'next-server' && npm run dev)");
+    }
     problems += 1;
     process.exit(1);
   }
-  row('✅', `Dev server ажиллаж байна (/) → HTTP ${home}`);
+  if (home !== 200) {
+    const body = await fetch(`${BASE}/`, { cache: 'no-store' }).then((r) => r.text()).catch(() => '');
+    const enoent = (body.match(/ENOENT[^"\\]*/) || [])[0];
+    row('❌', `Dev server АЛДАА буцааж байна (/) → HTTP ${home}`);
+    if (enoent) {
+      row('   ', 'Шалтгаан: .next-ийг `next build` дарж бичсэн (dev server-ийн _document.js алга)');
+      row('   ', `Серверийн алдаа: ${enoent.slice(0, 120)}`);
+    }
+    row('   ', "Засвар: pkill -f 'next dev' && rm -rf .next && npm run dev  → дараа нь Cmd+Shift+R");
+    problems += 1;
+  } else {
+    row('✅', 'Dev server ажиллаж байна (/) → HTTP 200');
+  }
+
+  // ---------- 1б. ХЭД ХЭДЭН порт / буруу порт ----------
+  // (портуудыг дээр, §0-д аль хэдийн уншсан ✓)
+  if (ports.length > 1) {
+    row('⚠️ ', `ХЭД ХЭДЭН порт дээр server ажиллаж байна: ${ports.join(', ')}`);
+    row('   ', `→ Browser дээр НЭГ л хаяг нээгээрэй (шалгаж байгаа хаяг: ${BASE})`);
+    row('   ', "   Хуучин процессыг хаа: pkill -f 'next dev'; pkill -f 'next-server'");
+    problems += 1;
+  } else if (ports.length === 1 && ports[0] !== basePort) {
+    row('⚠️ ', `${BASE} дээр server БАЙХГҮЙ — харин порт ${ports[0]} дээр ажиллаж байна`);
+    row('   ', `→ Browser дээр http://localhost:${ports[0]} нээгээрэй (эсвэл хуучин процессыг хааж дахин эхлүүлээрэй)`);
+    problems += 1;
+  } else if (ports.length === 1) {
+    row('✅', `Зөвхөн 1 server ажиллаж байна (порт ${ports[0]})`);
+  }
 
   // ---------- 2. HTML-ийн дууддаг asset-ууд ----------
   const html = await (await fetch(`${BASE}/`, { cache: 'no-store' })).text();
@@ -111,7 +181,7 @@ async function status(url) {
   console.log('🔧 ЗАСВАР (дарааллаар нь ажиллуулна):');
   console.log('');
   console.log("   # 1) БҮХ dev server-ээ зогсоо (нэг л процесс ажиллах ёстой)");
-  console.log("   pkill -f 'next dev'");
+  console.log("   pkill -f 'next dev'; pkill -f 'next-server'");
   console.log('');
   console.log('   # 2) Эвдэрсэн кэшийг устга');
   console.log('   rm -rf .next');

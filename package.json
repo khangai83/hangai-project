@@ -32,7 +32,8 @@
     "feedback:check": "node scripts/setup-feedback.js --check",
     "messages:setup": "node scripts/setup-messages.js",
     "messages:check": "node scripts/setup-messages.js --check",
-    "report:usage": "node scripts/db-usage.js"
+    "report:usage": "node scripts/db-usage.js",
+    "normalize:condition": "node scripts/normalize-condition.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.114.0",

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from './AppProviders';
 import { fetchAdminListings, adminDeleteListing } from '../lib/adminApi';
-import { formatPrice, timeAgo } from '../lib/format';
+import { priceLabel, timeAgo } from '../lib/format';
 
 /** Огноо → '2026-09-19 16:36' */
 function fmtDate(value) {
@@ -73,7 +73,7 @@ export default function AdminListingsClient() {
   };
 
   const remove = async (row) => {
-    const label = `${row.property_type} · ${formatPrice(row.price)}₮ · ID:${String(row.id).slice(0, 8)}`;
+    const label = `${row.property_type} · ${priceLabel(row)} · ID:${String(row.id).slice(0, 8)}`;
     if (!window.confirm(`Энэ зарыг БҮРМӨСӨН устгах уу?\n\n${label}\n\n⚠️ Зургууд нь Storage-оос ч устгагдана. Буцаах боломжгүй.`)) return;
     setBusyId(row.id);
     setNotice('');
@@ -236,7 +236,7 @@ export default function AdminListingsClient() {
                   <span className="text-[13px] font-semibold text-gray-800">
                     {row.property_type}
                   </span>
-                  <span className="text-[14px] font-bold text-primary">₮{formatPrice(row.price)}</span>
+                  <span className="text-[14px] font-bold text-primary">{priceLabel(row)}</span>
                   <span className="font-mono text-[11.5px] text-gray-400" title={row.id}>
                     ID: {String(row.id).slice(0, 8)}
                   </span>

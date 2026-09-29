@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
-import { formatPrice } from '../lib/format';
+import { priceLabel } from '../lib/format';
 
 const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const MARKER_ICON = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png';
@@ -43,7 +43,7 @@ export default function MapView({ listings }) {
           <div class="min-w-[180px]">
             <a href="/listings/${l.id}" class="block no-underline">
               <strong class="block text-sm font-semibold text-gray-900">${l.property_type}</strong>
-              <span class="block text-base font-bold text-primary">₮${formatPrice(l.price)}</span>
+              <span class="block text-base font-bold text-primary">${priceLabel(l)}</span>
             </a>
           </div>`;
         const m = L.marker([l.latitude, l.longitude], { icon }).addTo(map).bindPopup(popup);

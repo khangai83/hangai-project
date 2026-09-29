@@ -14,7 +14,7 @@ import Avatar from './Avatar';
 import VerifiedBadge from './VerifiedBadge';
 import { trackListingView } from '../lib/statsClient';
 import { normalizeError } from '../lib/errors';
-import { formatPrice, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress } from '../lib/format';
+import { formatPrice, priceLabel, negotiableNote, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress } from '../lib/format';
 import { buildListingBreadcrumb } from '../lib/breadcrumb';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 import { parseYouTube } from '../lib/youtube.mjs';
@@ -103,6 +103,9 @@ export default function ListingDetailClient({ id }) {
       .catch((err) => console.warn(normalizeError(err)));
     return () => { mounted = false; };
   }, [listing]);
+
+  // ⚠️ 2026-09-29: 🕓 `recordRecentlyViewed(listing.id)` эффект ХАСАГДАВ
+  //    («Саяхан үзсэн» боломж бүхэлдээ хасагдсан — линк, хуудас, lib).
 
   /**
    * 👁 «Үзсэн» тоог +1.
@@ -425,7 +428,15 @@ export default function ListingDetailClient({ id }) {
         {/* ===== БАРУУН БАГАНА (ХОЛБОО БАРИХ) ===== */}
         <aside className="space-y-4 lg:sticky lg:top-[88px] lg:self-start">
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-card sm:p-6">
-            <div className="text-3xl font-bold text-primary">₮{formatPrice(listing.price)}</div>
+            <div className="text-3xl font-bold text-primary">{priceLabel(listing)}</div>
+            {/* 🤝 «Үнэ тохирно» — үнийн ЯГ ДОР (2026-09-29, хэрэглэгчийн
+                хүсэлт): үнэ БИЧСЭН + тэмдэглэсэн үед л гарна ✓ (үнэгүй үед
+                дээрх мөр өөрөө «Үнэ тохирно» тул давхардахгүй) */}
+            {negotiableNote(listing) && (
+              <div className="mt-1 text-[13px] font-semibold text-amber-700">
+                🤝 {negotiableNote(listing)}
+              </div>
+            )}
             {/* ⚠️ `price_type` («нийт» / «сард» / «м²») ЭНД ХАРАГДАХГҮЙ —
                 зөвхөн үнэ (бүх UI дээр нэгэн жигд хассан). */}
 

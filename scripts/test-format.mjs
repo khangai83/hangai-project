@@ -28,7 +28,7 @@ assert(!/^import /m.test(stripped), 'бүх import хасагдсан байх �
 const tmp = path.join(here, '..', '.format.test.tmp.mjs');
 fs.writeFileSync(tmp, stripped);
 
-const { formatThousands, digitCount, shortPrice } = await import(`${tmp}?t=${Date.now()}`);
+const { formatThousands, digitCount, shortPrice, isNegotiablePrice, priceLabel, hasRealPrice, negotiableNote, NEGOTIABLE_PRICE_LABEL } = await import(`${tmp}?t=${Date.now()}`);
 fs.unlinkSync(tmp);
 
 let passed = 0;
@@ -97,6 +97,83 @@ t("shortPrice: 0 / хоосон → '' (хоосон «≈ ₮» харуула�
   assert.equal(shortPrice('0'), '');
   assert.equal(shortPrice(''), '');
   assert.equal(shortPrice(null), '');
+});
+
+// ============================================================
+// 🤝 «ҮНЭ ТОХИРНО» (2026-09-29) — үнэ нь ЗААВАЛ БИШ болсон
+// ============================================================
+// ⚠️ ЯАГААД ТЕСТЛЭХ ВЭ: үнэ 0 байхад card/detail дээр «₮0» гэж харагдвал
+//    хэрэглэгч ҮНЭГҮЙ гэж ойлгоно ✗. Бүх 6 дэлгэц нэг `priceLabel`-ээр
+//    ажилладаг тул энэ тест бүх дэлгэцийг хамгаална ✓
+t('🤝 isNegotiablePrice: үнэ 0 / хоосон / null → true (үнэ тохирно)', () => {
+  assert.equal(isNegotiablePrice({ price: 0 }), true);
+  assert.equal(isNegotiablePrice({ price: '' }), true);
+  assert.equal(isNegotiablePrice({ price: null }), true);
+  assert.equal(isNegotiablePrice({}), true);
+  assert.equal(isNegotiablePrice(null), true);
+});
+
+t('🤝 isNegotiablePrice: үнэтэй зар → false', () => {
+  assert.equal(isNegotiablePrice({ price: 1500000 }), false);
+  assert.equal(isNegotiablePrice({ price: '250000' }), false);
+  assert.equal(isNegotiablePrice({ price: 1500000, attrs: { condition: 'Шинэ' } }), false);
+});
+
+t('🤝 isNegotiablePrice: attrs.negotiable байвал үнэ байсан ч true', () => {
+  assert.equal(isNegotiablePrice({ price: 1500000, attrs: { negotiable: 'yes' } }), true);
+  assert.equal(isNegotiablePrice({ price: 1500000, attrs: { negotiable: true } }), true);
+});
+
+t("🤝 priceLabel: '₮1,500,000' эсвэл 'Үнэ тохирно'", () => {
+  assert.equal(priceLabel({ price: 1500000 }), '₮1,500,000');
+  assert.equal(priceLabel({ price: 250000000 }), '₮250,000,000');
+  assert.equal(priceLabel({ price: 0 }), 'Үнэ тохирно');
+  assert.equal(priceLabel({ price: '' }), 'Үнэ тохирно');
+  assert.equal(priceLabel({}), 'Үнэ тохирно');
+  assert.equal(NEGOTIABLE_PRICE_LABEL, 'Үнэ тохирно');
+});
+
+t('🤝 priceLabel: үнэ БИЧСЭН бол «₮…» — «Үнэ тохирно» гэж ДАРАХГҮЙ ✓', () => {
+  // 2026-09-29 (хэрэглэгчийн шаардлага): «Үнэ тохирно» тэмдэглэсэн Ч үнэ
+  // бичсэн бол үнэ ХЭВЭЭР харагдана, тэмдэглэгч нь ДООР нь тусдаа мөр болно ✓
+  assert.equal(priceLabel({ price: 1500000, attrs: { negotiable: 'yes' } }), '₮1,500,000');
+  assert.equal(priceLabel({ price: 5000000, attrs: { negotiable: 'yes' } }), '₮5,000,000');
+});
+
+t('🤝 hasRealPrice: 0 / хоосон / null → false, тоо → true', () => {
+  assert.equal(hasRealPrice({ price: 1500000 }), true);
+  assert.equal(hasRealPrice({ price: '1500000' }), true);
+  assert.equal(hasRealPrice({ price: 0 }), false);
+  assert.equal(hasRealPrice({ price: '' }), false);
+  assert.equal(hasRealPrice({ price: null }), false);
+  assert.equal(hasRealPrice(null), false);
+});
+
+t('🤝 negotiableNote: ЗӨВХӨН (үнэ бичсэн + тэмдэглэсэн) үед «Үнэ тохирно»', () => {
+  // ① Үнэ + тэмдэглэсэн → үнийн ДОР нэмэлт мөр гарна ✓
+  assert.equal(negotiableNote({ price: 1500000, attrs: { negotiable: 'yes' } }), 'Үнэ тохирно');
+  // ② Үнэтэй, тэмдэглээгүй → нэмэлт мөр БАЙХГҮЙ ✓
+  assert.equal(negotiableNote({ price: 1500000 }), '');
+  assert.equal(negotiableNote({ price: 1500000, attrs: { condition: 'Шинэ' } }), '');
+  // ③ Үнэгүй → `priceLabel` өөрөө «Үнэ тохирно» болно, нэмэлт мөр ДАВХАРДАХГҮЙ ✓
+  assert.equal(negotiableNote({ price: 0, attrs: { negotiable: 'yes' } }), '');
+  assert.equal(negotiableNote({ price: 0 }), '');
+  // ④ Тэмдэглэл авах (чекбокс унтраах) → `attrs.negotiable` ХАСАГДАНА
+  const attrs = { negotiable: 'yes' };
+  delete attrs.negotiable;
+  assert.equal(negotiableNote({ price: 1500000, attrs }), '');
+});
+
+t('🤝 «Үнэ тохирно» → форм хоосон үнэ илгээнэ → DB-д 0 хадгална', () => {
+  // ⚠️ `listings.price` нь `not null default 0` — «үнэ байхгүй» гэдгийг
+  //    DB дээр ЗӨВХӨН 0-ээр илэрхийлнэ (NULL боломжгүй).
+  const toNumber = (value) => {
+    const n = Number(String(value == null ? '' : value).trim().replace(',', '.'));
+    return Number.isFinite(n) ? n : 0;
+  };
+  assert.equal(Math.trunc(toNumber('')), 0);
+  // Round-trip: DB-ээс 0 уншигдсанаа буцаад «Үнэ тохирно» болно ✓
+  assert.equal(isNegotiablePrice({ price: Math.trunc(toNumber('')) }), true);
 });
 
 t('⚠️ АЛДААНААС СЭРГИЙЛЭХ: queries.js → toNumber()', () => {

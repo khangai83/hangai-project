@@ -56,6 +56,41 @@ function parseListParam(raw) {
 }
 
 /**
+ * 🛠 ДЭД ТӨРЛИЙН НЭГ МӨР (chevron ›) + шошго — 3 газарт ижил markup
+ * хэрэглэгддэг тул НЭГ компонент болгов (2026-09-29):
+ *   ① энгийн дэд төрөл (`subtypes` — бусад хэсэг),
+ *   ② `services`-ийн бүлгийн ДОТОХ дэд төрөл,
+ *   ③ доод түвшингүй бүлэг (`items: []`) — өөрөө сонгогдоно.
+ * ⚠️ Классууд нь урьдны `HomeClient`-ийн markup-тай ЯГ ижил (харагдац
+ *    өөрчлөгдөхгүй) — зөвхөн давхардлыг арилгав.
+ * ⚠️ Компонент нь МОДУЛИЙН түвшинд (компонент дотор БИШ) — дотор нь
+ *    зарлавал render бүрд ШИНЭ тип болж, React төлөвийг алдаж unmount
+ *    хийнэ (`role="tab"`-ийн focus ч алдагдана) ✗
+ */
+function SubtypeRow({ label, onSelect, bold = false }) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={false}
+      onClick={onSelect}
+      className="group flex w-full break-inside-avoid items-start gap-1.5 rounded-md px-2 py-1.5 text-left transition hover:bg-white"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0 opacity-30" aria-hidden="true">
+        <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span
+        className={`line-clamp-2 overflow-hidden text-[14px] tracking-[-0.01em] text-ellipsis text-gray-900 sm:text-[15px] group-hover:text-primary ${
+          bold ? 'font-bold' : 'font-semibold'
+        }`}
+      >
+        {label}
+      </span>
+    </button>
+  );
+}
+
+/**
  * Sidebar-ийн НЭГ БЛОК — unegui.mn загвараар: дээрээ БОЛД гарчиг,
  * доор нь оролтууд. Блокууд нь `divide-y`-ээр тусгаарлагдана.
  */
@@ -215,9 +250,6 @@ export default function HomeClient() {
   // ⚠️ DRILL-DOWN: `false` → БҮХ хэсэг tile хэлбэрээр;
   //    `true` → зөвхөн тухайн хэсгийн ДОТООД (дэд төрөл) багана болж харагдана.
   const [sectionOpen, setSectionOpen] = useState(false);
-  // 🛠 3 ДАХЬ ТҮВШИН (2026-09-27) — нээлттэй БҮЛЭГ (`services`-д л байна).
-  //    `null` = бүлгийн жагсаалт харагдана; утга = тухайн бүлгийн дэд төрлүүд.
-  const [groupOpen, setGroupOpen] = useState(null);
   // ⚠️ ЭНД, бүх `useEffect`-ийн ӨМНӨ: эффектүүдийн deps массив РЕНДЕРИЙН ҮЕД
   //    үнэлэгддэг тул хойш зарлавал TDZ алдаа гарна.
   const noSection = section === 'all';
@@ -473,7 +505,6 @@ export default function HomeClient() {
     //    тухайн хэсгийн (ж: Автомашин) зарууд хэвээр үлддэг байв (АЛДАА).
     setSection('all');
     setSectionOpen(false);
-    setGroupOpen(null); // 🛠 нээлттэй бүлгийг ч хаана
     setFilters(emptyFilters()); // массив хуваалцахгүй
   };
 
@@ -483,7 +514,6 @@ export default function HomeClient() {
   const backToAllSections = () => {
     setSection('all');
     setSectionOpen(false);
-    setGroupOpen(null); // 🛠 нээлттэй бүлгийг хаана
     setCategory('all');
     setPage(1); // 📄 хэсэг арилсан → 1-р хуудас
     setFilters((f) => ({ ...f, propertyType: '', rooms: '', attrs: {} }));
@@ -498,8 +528,6 @@ export default function HomeClient() {
   const changeSection = (nextSection, { open = true } = {}) => {
     if (nextSection !== section) {
       setSection(nextSection);
-      // 🛠 өөр хэсэг → өмнөх хэсгийн НЭЭЛТТЭЙ БҮЛЭГ хүчингүй болно
-      setGroupOpen(null);
       // 📄 өөр хэсэг → өөр жагсаалт тул 1-р хуудас
       //    ⚠️ Ижил хэсэг дээр (зөвхөн нээх) дарах үед хуудсыг ХӨНДӨХГҮЙ ✓
       setPage(1);
@@ -540,15 +568,16 @@ export default function HomeClient() {
     // ⚠️ ХЭСЭГ (0016) — breadcrumb-ийн «Үл хөдлөх» / «Автомашин» линк.
     //    ⚠️ `nav.section` байхгүй бол хэсэг ХӨНДӨГДӨХГҮЙ
     if (nav.section !== undefined) { setSection(nav.section); setSectionOpen(false); }
-    // 🛠 БҮЛЭГ (3 дахь түвшин, 2026-09-27) — `nav.group` байвал тухайн бүлгийг
-    //    НЭЭНЭ, `null` бол хаана (`undefined` = хөндөхгүй).
+    // 🛠 БҮЛЭГ (3 дахь түвшин) — `nav.group` нь ОДОО зөвхөн «панель
+    //    нээлттэй байх ёстой» гэсэн утгатай (2026-09-29-ээс бүлгүүд ШУУД
+    //    нээлттэй харагддаг тул `groupOpen` төлөв ХЭРЭГГҮЙ болсон).
+    //    ⚠️ `undefined` = хөндөхгүй (жишээ нь хэсэг солих линк).
     // ⚠️ ЭНЭ БЛОК нь `nav.section`-ий ДАРАА байх ЁСТОЙ — эс бөгөөс дээрх
     //    `setSectionOpen(false)` нь drill-down-ыг дахин хааж, хэрэглэгч «бүлэг
     //    рүү буцсан» ч дахин хэсэг сонгох шаардлагатай болно (2 даралт ✗).
     // ⚠️ Хэсгийн линк (`group: null`) нь хуучин зан төлөвөөр бүх хэсгийн
     //    дэлгэц рүү буцна (sectionOpen=false) ✓
     if (nav.group !== undefined) {
-      setGroupOpen(nav.group || null);
       setSectionOpen(!!nav.group);
     }
     if (nav.category !== undefined) setCategory(nav.category);
@@ -591,20 +620,16 @@ export default function HomeClient() {
     [section, noSection]
   );
   /**
-   * 🛠 3 ДАХЬ ТҮВШИН (2026-09-27) — зөвхөн `services` хэсэгт бүлэг байна.
-   * ⚠️ `sectionOpen` ба `groupOpen` нь ХОЁР ӨӨР зүйл:
-   *    `sectionOpen=true, groupOpen=null`  → хэсгийн БҮЛГИЙН жагсаалт (7 групп)
-   *    `sectionOpen=true, groupOpen='x'`   → тухайн бүлгийн ДЭД ТӨРЛҮҮД
+   * 🛠 3 ДАХЬ ТҮВШИН — зөвхөн `services` хэсэгт бүлэг байна.
+   * ⚠️ 2026-09-29 (хэрэглэгчийн хүсэлт: «3р төвшинг заавал нээж харахгүй,
+   *    шууд харуулдаг болгоё») — бүлэг нь ОДОО ЗӨВХӨН ГАРЧИГ: бүх бүлэг ба
+   *    түүний дэд төрлүүд НЭГ ДОР ШУУД харагдана. `groupOpen` төлөв ба
+   *    «нээлттэй бүлэг» ойлголт ХАСАГДСАН ✓
    * ⚠️ Бүлэг нь ШҮҮЛТ БИШ — зөвхөн навигаци (хэрэглэгчийн сонголт ✓).
    */
   const subtypeGroups = useMemo(
     () => (noSection ? [] : getSubtypeGroups(section)),
     [section, noSection]
-  );
-  /** Нээлттэй бүлэг (олдохгүй бол `null` → бүлгийн жагсаалт харагдана) */
-  const activeGroup = useMemo(
-    () => subtypeGroups.find((g) => g.label === groupOpen) || null,
-    [subtypeGroups, groupOpen]
   );
   const sectionCategories = useMemo(() => getSectionCategories(section), [section]);
   const attrFilters = useMemo(() => getAttrFilters(section), [section]);
@@ -845,6 +870,11 @@ export default function HomeClient() {
           linkClassName="font-bold text-primary hover:underline"
         />
 
+        {/* ⚠️ 2026-09-29: `<RecentlyViewedStrip />` (🕓 «Саяхан үзсэн» картын
+            мөр) ХАСАГДАВ — хэрэглэгчийн хүсэлт: нүүр хуудсанд хэрэггүй.
+            Хамт хасагдсан: `/recent` хуудас, цэс/footer-ийн холбоос,
+            `lib/recentlyViewed*.js` ба `npm run test:recent` ✓ */}
+
         {/* ===== ХЭСЭГ БА ДЭД ТӨРЛИЙН НАВИГАЦИ (0016) — DRILL-DOWN =====
             ⚠️ ХОЁР ТӨЛӨВ:
               1) `sectionOpen = false` → БҮХ 7 ХЭСЭГ tile хэлбэрээр, БАГАНА болж
@@ -928,18 +958,6 @@ export default function HomeClient() {
               >
                 ← Бүх хэсэг
               </button>
-              {/* 🛠 БҮЛЭГ НЭЭЛТТЭЙ үед — бүлгийн жагсаалт руу буцах чип
-                  (хэрэглэгчийн сонголт: бүлэг нь шүүлт биш, зөвхөн нээгддэг) */}
-              {activeGroup && (
-                <button
-                  type="button"
-                  onClick={() => setGroupOpen(null)}
-                  title={`«${sec.label}» хэсгийн бүх бүлэг рүү буцах`}
-                  className="shrink-0 rounded-full border border-gray-200 bg-white px-3 py-1 text-[13px] font-semibold text-gray-600 transition hover:border-primary hover:text-primary"
-                >
-                  ← Бүх категори
-                </button>
-              )}
             </div>
 
             {/* ---------- SEPARATOR ---------- */}
@@ -976,75 +994,104 @@ export default function HomeClient() {
                    gray-700 #454037 → gray-900 #1B1815).
                 ⚠️ unegui-тэй ижил: дэд төрөл тус бүрийн ТОО ХАРАГДАХГҮЙ
                    (нийт тоо нь дээрх толгойд байна). Тоог буцаах бол
-                   доорх `<span>`-ы дараа `{typeCounts[t]}` badge нэмнэ.
+                   `SubtypeRow`-ы `<span>`-ы дараа `{typeCounts[t]}` badge нэмнэ.
+                🔧 Markup нь `SubtypeRow` (модулийн түвшний компонент) —
+                   өөрчлөхийг хүсвэл ТҮҮНИЙГ л засна ✓
                 🔧 Баганын тоо: `columns-1 sm:columns-2 lg:columns-4` */}
 
-            {/* ══════════ 🛠 3 ДАХЬ ТҮВШИН (`services`) — 2026-09-27 ══════════
-                Хэрэглэгчийн сонголт: «групп дээр дарахад ЗӨВХӨН доод item-үүд
-                нээгдэнэ, групп өөрөө шүүхгүй; доод түвшингүй групп (ж:
-                «Хэвлэл, реклам, медиа») нь ӨӨРӨӨ сонгогдоно».
-                ⚠️ Иймээс энэ блок гурван төлөвтэй:
-                    ① `activeGroup` → тухайн бүлгийн ДЭД ТӨРЛҮҮД (↓ доорх эхний блок)
-                    ② бүлэг байгаа ч нээгээгүй → БҮЛГИЙН жагсаалт (↓ 2 дахь блок)
-                    ③ бүлэг огт байхгүй (бусад хэсэг) → энгийн дэд төрлийн жагсаалт
-                ⚠️ Бүлэг дээр дарахад `setPage(1)` ХИЙХГҮЙ — хараахан шүүлт
-                   болоогүй (зөвхөн нээгдэж байна) ✓ */}
-
-            {/* ---------- ① / ③ ДЭД ТӨРӨЛ — unegui.mn шиг БАГАНА ---------- */}
-            {(!subtypeGroups.length || activeGroup) && (
+            {/* ---------- ① / ③ ДЭД ТӨРӨЛ — unegui.mn шиг БАГАНА ----------
+                ⚠️ ЭНЭ БЛОК зөвхөн бүлэггүй хэсгүүдэд (`services`-ээс бусад)
+                   харагдана — `services`-д ② блок бүх бүлгийг шууд нээнэ. */}
+            {!subtypeGroups.length && (
             <div className="columns-1 gap-x-6 sm:columns-2 lg:columns-4" role="tablist" aria-label="Зарын дэд төрөл">
-              {(activeGroup ? activeGroup.items : subtypes).map((t) => (
-                <button
+              {subtypes.map((t) => (
+                <SubtypeRow
                   key={t}
-                  type="button"
-                  role="tab"
-                  aria-selected={false}
-                  onClick={() => setF('propertyType', t)}
-                  className="group flex w-full break-inside-avoid items-start gap-1.5 rounded-md px-2 py-1.5 text-left transition hover:bg-white"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0 opacity-30" aria-hidden="true">
-                    <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <span className="line-clamp-2 overflow-hidden text-[14px] font-semibold tracking-[-0.01em] text-ellipsis text-gray-900 sm:text-[15px] group-hover:text-primary">
-                    {getPropertyTypeLabel(t, category)}
-                  </span>
-                </button>
+                  label={getPropertyTypeLabel(t, category)}
+                  onSelect={() => setF('propertyType', t)}
+                />
               ))}
             </div>
             )}
 
-            {/* ---------- ② БҮЛГИЙН ЖАГСААЛТ (зөвхөн `services`) ----------
-                ⚠️ Групп нь ХҮРЭЭТЭЙ TILE биш — дэд төрлийн жагсаалттай ИЖИЛ
-                   хэлбэр (unegui.mn-ийг дагасан), гэхдээ ФОНТ нь BOLD
-                   (хэрэглэгчийн жагсаалтад группийн нэр BOLD байсан ✓).
-                ⚠️ Доод түвшингүй бүлэг (`items: []`) нь шууд СОНГОГДОНО
-                   (тэр нь хамгийн доод түвшин) — chevron-гүй, ✔ icon-той. */}
-            {subtypeGroups.length > 0 && !activeGroup && (
-            <div className="columns-1 gap-x-6 sm:columns-2 lg:columns-4" role="tablist" aria-label="Үйлчилгээний бүлэг">
+            {/* ══════════ 🛠 3 ДАХЬ ТҮВШИН (`services`) — БҮГД ШУУД НЭЭЛТТЭЙ ══════════
+                ⚠️ 2026-09-29 (хэрэглэгчийн хүсэлт: «Үйлчилгээ хэсгийн
+                   subcategory-ийг 3р төвшинг заавал нээж харахгүй, шууд
+                   харуулдаг болгоё») — ӨМНӨ нь ① бүлгийн жагсаалт → дараа нь
+                   бүлэг дээр дарахад ② дэд төрлүүд гэсэн ХОЁР АЛХАМ байв ✗
+                   → ОДОО бүх бүлэг БА түүний дэд төрлүүд НЭГ ДОР харагдана ✓
+                   (нэг даралт хэмнэгдэж, хэрэглэгч юу байгааг бүхэлд нь харна).
+
+                🧱 БҮТЭЦ (нэг бүлэг = нэг баганын блок):
+                   • ГАРЧИГ (`items` байгаа үед) — BOLD, СААРАЛ, дарахгүй
+                     (`<p>`) — бүлэг нь ШҮҮЛТ БИШ (2026-09-27-ны шийдвэр ✓)
+                   • ДОТОХ ДЭД ТӨРЛҮҮД — `SubtypeRow` (chevron › + шошго)
+                   • `items: []` бүлэг — өөрөө хамгийн доод түвшин тул
+                     ГАРЧИГ БИШ, ШУУД СОНГОГДОХ мөр болно (chevron-той) ✓
+
+                ⚠️ CSS `columns-*` БИШ `grid` — `columns` нь нэг бүлгийн
+                   дэд төрлүүдийг хоёр баганад ТАСАЛЖ, аль нь аль бүлэгт
+                   хамаарахыг ойлгохгүй болгоно ✗. `grid` нь бүлгийг бүтэн
+                   байлгана ✓ (багана: 1 мобайл → 2 sm → 4 lg = урьдтай ижил).
+                🔤 ФОНТ (2026-09-29, хэрэглэгчийн хүсэлт: «Боловсрол &
+                   Сургалт зэрэг categorийн өнгийг тодруулж бага зэрэг
+                   томруулъя») — гарчиг `text-[13px] text-gray-600` →
+                   **`text-[15px] sm:text-[16px] text-primary-dark`**:
+                   • ӨНГӨ: `text-gray-600` (#5D5747) нь доорх дэд төрлийн
+                     мөрүүдийн `text-gray-900` (#1B1815)-тай бараг
+                     ЯЛГАРАХГҮЙ байв ✗ → **брэндийн цэнхэр** (#1d4ed8)
+                     болгов — панелийн толгойн (`text-primary`) аястай
+                     нийцэж, саармаг бараан мөрүүдээс ТОД ялгарна ✓
+                   • ХЭМЖЭЭ: 13px нь дэд төрлийн 14px-ЭЭС ЖИЖИГ байв
+                     (шатлал буруу ✗) → гарчиг 15px (мобайл) / 16px (≥640),
+                     дэд төрөл 14/15px ХЭВЭЭР → шатлал зөв ✓
+                   • ⚠️ ЯАГААД `text-primary` (#2563eb) БИШ: крем дэвсгэр
+                     (#F4F1EA) дээр **4.2:1** → 15px BOLD ч (≥18.66px bold
+                     «том текст» биш) AA-д ХҮРЭХГҮЙ ✗ → `primary-dark`
+                     (#1d4ed8) нь **5.94:1 ✅ AA** (16px дээр ч мөн адил,
+                     учир нь өнгө/дэвсгэр ижил).
+                   ℹ️ `items: []` leaf бүлэг (ж: «Хэвлэл, реклам, медиа»)
+                     нь ГАРЧИГ БИШ, ОНЦЛОХ ӨНГӨ АВАХГҮЙ — тэр нь ШҮҮЛТ
+                     (дарагддаг `role="tab"`), цэнхэр нь «линк» гэсэн
+                     хуурамч дохио өгөх байсан ✗.
+                ⚠️ ТОО ХАРАГДАХГҮЙ — нийт тоо нь дээрх толгойд (`sectionTotal`) ✓ */}
+            {subtypeGroups.length > 0 && (
+            <div className="grid grid-cols-1 items-start gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
               {subtypeGroups.map((g) => {
                 const leaf = g.items.length === 0; // доод түвшингүй → өөрөө сонгогдоно
+                if (leaf) {
+                  return (
+                    <div key={g.label} role="tablist" aria-label={g.label}>
+                      <SubtypeRow
+                        label={g.label}
+                        bold
+                        onSelect={() => setF('propertyType', g.label)}
+                      />
+                    </div>
+                  );
+                }
                 return (
-                  <button
-                    key={g.label}
-                    type="button"
-                    role="tab"
-                    aria-selected={false}
-                    onClick={() => (leaf ? setF('propertyType', g.label) : setGroupOpen(g.label))}
-                    className="group flex w-full break-inside-avoid items-start gap-1.5 rounded-md px-2 py-1.5 text-left transition hover:bg-white"
-                  >
-                    {leaf ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0 opacity-30" aria-hidden="true">
-                        <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    ) : (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0 opacity-30" aria-hidden="true">
-                        <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                    <span className="line-clamp-2 overflow-hidden text-[14px] font-bold tracking-[-0.01em] text-ellipsis text-gray-900 sm:text-[15px] group-hover:text-primary">
+                  <div key={g.label}>
+                    {/* БҮЛГИЙН ГАРЧИГ — БОЛД, ЦЭНХЭР (`text-primary-dark`), 15/16px.
+                        ⚠️ Дарахгүй (`<p>`) — бүлэг нь ШҮҮЛТ БИШ, зөвхөн
+                           навигацийн шошго (2026-09-27-ны шийдвэр ✓).
+                        🔤 2026-09-29: 13px/gray-600 → 15px (sm 16px)/primary-dark
+                           — хэрэглэгчийн хүсэлт («өнгийг тодруулж бага зэрэг
+                           томруулъя»). Контраст 5.94:1 ✅ AA. Дэлгэрэнгүйг
+                           дээрх тайлбараас үзнэ үү. */}
+                    <p className="px-2 pb-1 pt-2 text-[15px] font-bold tracking-[-0.01em] text-primary-dark sm:text-[16px]">
                       {g.label}
-                    </span>
-                  </button>
+                    </p>
+                    <div role="tablist" aria-label={g.label}>
+                      {g.items.map((t) => (
+                        <SubtypeRow
+                          key={t}
+                          label={getPropertyTypeLabel(t, category)}
+                          onSelect={() => setF('propertyType', t)}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 );
               })}
             </div>

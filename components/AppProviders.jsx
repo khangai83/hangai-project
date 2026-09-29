@@ -212,6 +212,9 @@ export default function AppProviders({ children }) {
 
   const userMenuItems = useMemo(() => {
     const items = [
+      // ⚠️ 2026-09-29: 🕓 «Саяхан үзсэн» (`/recent`) бүрэн ХАСАГДАВ
+      //    (хэрэглэгчийн хүсэлт) — цэс, толгойн товч, footer-ийн холбоос,
+      //    нүүр хуудасны картын мөр, `lib/recentlyViewed*.js` БҮГД хасагдав ✓
       { key: 'my-listings', label: '📋 Миний зарууд', href: '/my-listings' },
       // ✉️ Мессеж — уншаагүй байвал тоог нь хаалтанд харуулна ✓
       // ⚠️ 2026-09-29: emoji (`✉️`) БИШ — орчин үеийн SVG икон (`MessageIcon`),

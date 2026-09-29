@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useToast, useUI } from './AppProviders';
 import { createListing, updateListing, uploadImages } from '../lib/queries';
-import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSubtypes, hasCategoryChoice, getSubtypeGroups } from '../lib/locationData';
-import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice } from '../lib/format';
+import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, hasSimpleForm, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSubtypes, hasCategoryChoice, getSubtypeGroups } from '../lib/locationData';
+import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice, isNegotiablePrice, NEGOTIABLE_PRICE_LABEL } from '../lib/format';
 import phoneEmail from '../lib/phoneEmail';
 import YouTubeField from './YouTubeField';
 import SearchableSelect from './SearchableSelect';
@@ -26,6 +26,8 @@ function listingToForm(l) {
     khoroo: l.khoroo || '',
     addressDetail: l.address_detail || '',
     price: l.price ? String(l.price) : '',
+    // 🤝 «Үнэ тохирно» — үнэ 0/хоосон бол чекбокс асаалттай нээгдэнэ (lib/format.js)
+    negotiable: isNegotiablePrice(l),
     priceType: l.price_type || 'total',
     phone: phoneEmail.toLocalPhone(l.phone),
     contactName: l.contact_name || '',
@@ -62,6 +64,9 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
     khoroo: '',
     addressDetail: '',
     price: '',
+    // 🤝 «Үнэ тохирно» — үнэ нь ЗААВАЛ БИШ (2026-09-29). Шинэ зар дээр
+    //    анхдагчаар УНТРААЛТТАЙ (хэрэглэгч үнэ бичих нь элбэг ✓).
+    negotiable: false,
     priceType: 'total',
     // ⚠️ ЗАСВАР: өмнө нь энд `displayName` (хэрэглэгчийн НЭР) орж байсан нь алдаа байв —
     // «Холбоо барих утас» талбарт нэр бөглөгдөж харагддаг байсан.
@@ -147,6 +152,17 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
   /** Тухайн хэсгийн attr талбарүүд (форм автоматаар үүсгэнэ) */
   const attrFields = (SECTIONS.find((s) => s.value === (form.section || 'real-estate')) || SECTIONS[0]).attrFields || [];
 
+  /**
+   * ⚡ ХЯЛБАР ФОРМ (2026-09-29, хэрэглэгчийн хүсэлт) — `lib/locationData.js`
+   *    → `hasSimpleForm(section)`. Одоогоор зөвхөн ⚽ `hobby` (Аяллын хэрэгсэл…).
+   * ⚠️ Ийм хэсэгт форм нь ЗӨВХӨН байршил (хот+дүүрэг) · шинэ/хуучин · үнэ ·
+   *    утас · тайлбар · зураг асууна — хороо/дэлгэрэнгүй хаяг ба YouTube
+   *    видео линк ХАРАГДАХГҮЙ (хэрэглэгчийн хүсэлт: «зөвхөн … асуудаг байя»).
+   * ⚠️ ХАДГАЛАХ үед далд талбаруудын ХУУЧИН утга УСТАХГҮЙ (payload-д
+   *    `form`-оосоо хэвээр явна) — зөвхөн UI-д харагдахгүй ✓
+   */
+  const simpleForm = hasSimpleForm(form.section || 'real-estate');
+
   /** ATTR утга тавих/хоослох (хоосон бол `delete` — DB-д хог үлдээхгүй) */
   const setAttr = (key, value) => {
     setForm((f) => {
@@ -209,10 +225,19 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
     // ⚠️ Үнэ нь ЗӨВХӨН ЦИФР хэлбэрээр хадгалагдана (formatThousands нь зөвхөн
     //    ХАРАГДАЦЫГ таслалтай болгоно). quires.js → toNumber() нь «,»-г
     //    аравтын бутархай гэж үздэг тул таслалтай утга илгээвэл үнэ 0 болно.
+    // ⚠️ Үнэ нь ЗААВАЛ БИШ (2026-09-29): «🤝 Үнэ тохирно» тэмдэглэсэн бол
+    //    үнэ огт шаардахгүй — карт/дэлгэрэнгүй дээр «Үнэ тохирно» харагдана
+    //    (lib/format.js). ⚠️ Хэрэглэгчийн шаардлага: «Үнэ тохирно»-г
+    //    ТЭМДЭГЛЭСЭН Ч үнэ бичсэн бол утга нь ХЭВЭЭР хадгалагдана ✓
+    //    Бичсэн бол хуучин шалгалтууд ХЭВЭЭР (0, 15+ орон).
     const priceDigits = String(form.price || '').replace(/\D/g, '');
-    if (!priceDigits) { setError('Үнээ оруулна уу'); return; }
-    if (Number(priceDigits) <= 0) { setError('Үнэ 0-ээс их байх ёстой'); return; }
-    if (priceDigits.length > 15) { setError('Үнэ хэт урт байна (15 цифр хүртэл)'); return; }
+    if (priceDigits) {
+      if (Number(priceDigits) <= 0) { setError('Үнэ 0-ээс их байх ёстой'); return; }
+      if (priceDigits.length > 15) { setError('Үнэ хэт урт байна (15 цифр хүртэл)'); return; }
+    } else if (!form.negotiable) {
+      setError(`Үнээ оруулна уу (эсвэл «${NEGOTIABLE_PRICE_LABEL}»-г тэмдэглэнэ үү)`);
+      return;
+    }
     // 🎥 Видео линк: хоосон бол зүгээр; бичсэн бол YouTube линк БАЙХ ЁСТОЙ
     // (буруу линк хадгалагдвал дэлгэрэнгүй хуудас дээр видео харагдахгүй).
     if (form.videoUrl && form.videoUrl.trim() && !parseYouTube(form.videoUrl).ok) {
@@ -234,6 +259,17 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
         //    үл хөдлөх хэсэгт утгатай — бусад хэсэгт хоосон хадгална.
         rooms: showRooms ? form.rooms : '',
         area: isRealEstate ? form.area : '',
+        // 🤝 «Үнэ тохирно» — `attrs.negotiable = 'yes'` (jsonb, 0016) гэж
+        //    хадгална. ⚠️ Тусдаа багана нэмэхгүй (migration 0 ✓) ба үнэ
+        //    БИЧСЭН бол утга нь ХЭВЭЭР явна (`price: form.price`) ✓
+        //    Тэмдэглэл АВАХАД түлхүүрийг УСТГАНА (хуучин тэмдэг үлдэхгүй ✓).
+        attrs: (() => {
+          const a = { ...(form.attrs || {}) };
+          if (form.negotiable) a.negotiable = 'yes';
+          else delete a.negotiable;
+          return a;
+        })(),
+        price: form.price,
         // ⚠️ «Зарах / Түрээслэх» нь зөвхөн үл хөдлөхөд — бусад хэсэгт `sell`
         category: isRealEstate ? form.category : 'sell',
         buildYear: showApartment ? form.buildYear : '',
@@ -515,6 +551,10 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
               </div>
             </div>
 
+            {/* ⚡ ХЯЛБАР ФОРМ (hobby): хороо/дэлгэрэнгүй хаяг ХАРАГДАХГҮЙ —
+                байршил нь «Хот/Аймаг + Дүүрэг/Сум» хангалттай (хэрэглэгчийн хүсэлт).
+                ⚠️ Засах горимд хуучин утга нь `form` дотор хэвээр — устгагдахгүй ✓ */}
+            {!simpleForm && (
             <div className="form-row">
               <div className="form-group">
                 <label>Хороо</label>
@@ -528,10 +568,11 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                 <input type="text" value={form.addressDetail} onChange={(e) => set('addressDetail', e.target.value)} placeholder="Байр, гудамж, байшингийн дугаар" />
               </div>
             </div>
+            )}
 
             <div className="form-row">
               <div className="form-group">
-                <label>Үнэ *</label>
+                <label>Үнэ (сонголтоор)</label>
                 {/* ⚠️ type="number" БИШ: number input нь «250,000,000» гэсэн
                     таслалтай утгыг ХҮЛЭЭХГҮЙ (хоосон болгочихдог). Тиймээс
                     type="text" + inputMode="numeric" ашиглаж, бичих үед нь
@@ -541,7 +582,13 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                     specificity-ийн улмаас `.form-group :is(input…)` (0,1,1) нь
                     `.pl-7` (0,1,0)-г дардаг тул input-ийн padding-left 12px
                     хэвээр үлдэж, ₮ нь ЭХНИЙ ТООН ДЭЭР ДАВХАРЛАДАГ байв.
-                    Одоо ₮ нь хөрш элемент (input group) — давхарлах боломжгүй. */}
+                    Одоо ₮ нь хөрш элемент (input group) — давхарлах боломжгүй.
+
+                    🤝 «Үнэ тохирно» (2026-09-29): үнэ нь ЗААВАЛ БИШ тул чекбоксыг
+                    нэмэв. ⚠️ Хэрэглэгчийн шаардлага: чекбокс нь ҮНИЙГ
+                    УСТГАХГҮЙ / идэвхгүй болгохгүй ✗ — бичсэн үнэ ХЭВЭЭР
+                    үлдэж, зар дээр үнийн ЯГ ДОР нь «Үнэ тохирно» мөр нэмэгдэнэ
+                    (`negotiableNote`, lib/format.js) ✓ */}
                 <div className="flex items-stretch gap-2">
                   <span className="flex shrink-0 items-center rounded-lg border border-gray-200 bg-gray-100 px-3 text-sm font-bold text-gray-500">
                     ₮
@@ -554,19 +601,30 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                     value={formatThousands(form.price)}
                     onChange={(e) => set('price', e.target.value.replace(/\D/g, ''))}
                     placeholder="250,000,000"
-                    required
                   />
                 </div>
                 {/* Дээрх талбартай ДАВХАРДАХГҮЙ — зөвхөн нэмэлт мэдээлэл:
-                    хэдэн орон (тэг тоолох алдаа арилна) + «сая/тэрбум» уншилт */}
+                    хэдэн орон (тэг тоолох алдаа арилна) + «сая/тэрбум» уншилт.
+                    ⚠️ «Үнэ тохирно»-гийн талаарх ТАЙЛБАР ЭНД БАЙХГҮЙ —
+                       хэрэглэгчийн шаардлага: илүү тайлбар бүү оруул ✗ */}
                 {form.price ? (
                   <p className="form-hint">
                     {digitCount(form.price)} орон
                     {shortPrice(form.price) ? ` · ≈ ${shortPrice(form.price)} ₮` : ''}
                   </p>
-                ) : (
-                  <p className="form-hint">Мянгатаар автоматаар хуваагдана</p>
-                )}
+                ) : null}
+                {/* 🤝 Чекбокс — ЗӨВХӨН нэр, илүү тайлбаргүй (хэрэглэгчийн шаардлага).
+                    ⚠️ `price`-ыг ХӨНДӨХГҮЙ, input-ыг disabled БОЛГОХГҮЙ ✗ —
+                       хоёулаа зэрэг байж болно: «₮5,000,000» + «Үнэ тохирно» ✓ */}
+                <label className="mt-2 flex cursor-pointer items-center gap-2.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 transition hover:border-primary/40">
+                  <input
+                    type="checkbox"
+                    checked={form.negotiable}
+                    onChange={(e) => setForm((f) => ({ ...f, negotiable: e.target.checked }))}
+                    className="h-4 w-4 shrink-0 accent-primary"
+                  />
+                  <b className="text-[13px] text-gray-800">🤝 {NEGOTIABLE_PRICE_LABEL}</b>
+                </label>
               </div>
               {/* <div className="form-group">
                 <label>Үнийн төрөл</label>
@@ -592,11 +650,13 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
 
             <div className="form-group">
               <label>Нэмэлт тайлбар</label>
-              <textarea rows="4" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Үл хөдлөх хөрөнгийн дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..." />
+              <textarea rows="4" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Зарын дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..." />
             </div>
 
-            {/* 🎥 YouTube видео линк — Storage 0 MB (файл биш, линк хадгална) */}
-            <YouTubeField value={form.videoUrl} onChange={(v) => set('videoUrl', v)} />
+            {/* 🎥 YouTube видео линк — Storage 0 MB (файл биш, линк хадгална).
+                ⚡ ХЯЛБАР ФОРМ (hobby) дээр ХАРАГДАХГҮЙ — хэрэглэгчийн хүсэлт:
+                зөвхөн байршил · шинэ/хуучин · үнэ · утас · тайлбар. */}
+            {!simpleForm && <YouTubeField value={form.videoUrl} onChange={(v) => set('videoUrl', v)} />}
 
             {isEdit && existingImages.length > 0 && (
               <div className="form-group">

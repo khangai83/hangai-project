@@ -8,14 +8,16 @@ import { fetchListingsByIds } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
 import { useFavorites, removeFavorite, clearFavorites } from '../lib/favorites';
 import { downloadCsv, printTablePdf } from '../lib/exporters';
-import { formatPrice, getCategoryLabel, getFloorLabel } from '../lib/format';
+import { formatPrice, priceLabel, getCategoryLabel, getFloorLabel } from '../lib/format';
 
 /** Экспортод (Excel/PDF) гарах баганын тодорхойлолт */
 function exportColumns(origin) {
   return [
     { label: 'Төрөл', value: (l) => l.property_type || '' },
     { label: 'Зар/Түрээс', value: (l) => getCategoryLabel(l.category) },
-    { label: 'Үнэ', value: (l) => formatPrice(l.price) },
+    // 🤝 Үнэ тохиролцоно байвал «Үнэ тохирно» гэсэн ТЕКСТ — Excel/PDF дээр
+    //    «0» гэж харагдвал хэрэглэгч үнэгүй гэж буруу ойлгоно ✗
+    { label: 'Үнэ', value: (l) => priceLabel(l) },
     { label: 'Өрөө', value: (l) => (l.rooms > 0 ? l.rooms : '') },
     { label: 'Угаалгын өрөө', value: (l) => (l.bathrooms > 0 ? l.bathrooms : '') },
     { label: 'Талбай (м²)', value: (l) => (l.area > 0 ? l.area : '') },
@@ -163,9 +165,11 @@ export default function FavoritesClient() {
             Зар үзэхдээ зүрхэн дээр дарж «Таалагдсан»-д нэмээрэй — дараа нь эндээс бүгдийг нь хараад
             Excel/PDF болгон татаж авах боломжтой.
           </p>
-          <Link href="/" className="btn btn-primary mt-4">
-            🔍 Зар хайх
-          </Link>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <Link href="/" className="btn btn-primary">
+              🔍 Зар хайх
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-4">

@@ -20,7 +20,7 @@ import { useToast, useUI } from './AppProviders';
 import { fetchMyListingActivity } from '../lib/myStatsApi';
 import { fetchListingById } from '../lib/queries';
 import {
-  formatPrice,
+  priceLabel,
   formatCount,
   formatDayShort,
   getPropertyIcon,
@@ -471,7 +471,7 @@ export default function MyListingsStatsPanel() {
                 {top.area > 0 && ` · ${top.area} м²`}
               </p>
               <p className="text-[13px] text-gray-500">📍 {formatAddress(top) || '—'}</p>
-              <p className="text-[13px] font-semibold text-gray-700">💰 ₮{formatPrice(top.price)}</p>
+              <p className="text-[13px] font-semibold text-gray-700">💰 {priceLabel(top)}</p>
             </div>
             <div className="flex items-center gap-5">
               <div className="text-center">
@@ -551,7 +551,7 @@ export default function MyListingsStatsPanel() {
                   </p>
                   <p className="truncate text-[13px] text-gray-500">📍 {formatAddress(l) || '—'}</p>
                   <p className="text-[12px] text-gray-400">
-                    💰 ₮{formatPrice(l.price)} · 📅 {timeAgo(l.created_at)}
+                    💰 {priceLabel(l)} · 📅 {timeAgo(l.created_at)}
                   </p>
                 </div>
 

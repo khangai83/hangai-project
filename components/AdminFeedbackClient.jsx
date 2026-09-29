@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAuth } from './AppProviders';
 import { fetchAdminFeedback, updateFeedback, adminDeleteListing } from '../lib/adminApi';
 import { FEEDBACK_CATEGORIES, FEEDBACK_STATUSES } from '../lib/queries';
-import { timeAgo, formatPrice } from '../lib/format';
+import { timeAgo, priceLabel } from '../lib/format';
 
 const STATUS_MAP = Object.fromEntries(FEEDBACK_STATUSES.map((s) => [s.value, s]));
 const CATEGORY_MAP = Object.fromEntries(FEEDBACK_CATEGORIES.map((c) => [c.value, c]));
@@ -291,7 +291,7 @@ export default function AdminFeedbackClient() {
                       {linked ? (
                         <>
                           <span>
-                            {linked.property_type} · ₮{formatPrice(linked.price)} ·{' '}
+                            {linked.property_type} · {priceLabel(linked)} ·{' '}
                             📍 {[linked.city, linked.district].filter(Boolean).join(', ')}
                           </span>
                           <Link href={`/listings/${f.listing_id}`} target="_blank" className="font-semibold text-primary hover:underline">

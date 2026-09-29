@@ -272,7 +272,7 @@ function makeAttrs(section, subtype) {
     const [brand, model] = pick(AUTO_SUBTYPE_PAIRS[subtype] || CAR_PAIRS);
     // ⚠️ «Авто сэлбэг, хэрэгсэл» нь машин БИШ — он/гүйлт/хүрд хэрэггүй
     if (subtype === 'Авто сэлбэг, хэрэгсэл') {
-      return { brand, model, condition: pick(['Шинэ', 'Шинэ', 'Хэрэглэсэн — сайн']), warranty: pick(['Байгаа', 'Байхгүй']) };
+      return { brand, model, condition: pick(['Шинэ', 'Хуучин', 'Хуучин']), warranty: pick(['Байгаа', 'Байхгүй']) };
     }
     // ⚠️ `year` нь тусдаа хувьсагч БОЛОХ ЁСТОЙ: `importYear` нь түүнээс
     //    хамаардаг тул объект дотроос `year`-ыг унших боломжгүй (TDZ алдаа) ✗
@@ -291,7 +291,7 @@ function makeAttrs(section, subtype) {
       engine: pick(['1.5', '1.8', '2.0', '2.4', '2.5', '3.0', '3.5', '4.0', '4.6']),
       fuel: pick(['Бензин', 'Бензин', 'Бензин', 'Дизель', 'Хайбрид', 'Хайбрид', 'Цахилгаан', 'Хий']),
       drive: pick(['Урд', 'Хойд', 'Бүх']),
-      condition: pick(['Хэвийн', 'Хэвийн', 'Хэвийн', 'Шинэ', 'Засвар шаардлагатай']),
+      condition: pick(['Шинэ', 'Хуучин', 'Хуучин', 'Хуучин']),
     };
   }
   if (section === 'jobs') {
@@ -319,7 +319,7 @@ function makeAttrs(section, subtype) {
         storage: pick(['256 GB SSD', '512 GB SSD', '1 TB SSD', '512 GB SSD + 1 TB HDD']),
         screen: pick(['13', '14', '15', '15.6', '17']),
       } : subtype === 'Монитор' ? { screen: pick(['24', '27', '32']) } : {}),
-      condition: pick(['Шинэ', 'Шинэ', 'Хэрэглэсэн — сайн', 'Хэрэглэсэн — хэвийн']),
+      condition: pick(['Шинэ', 'Хуучин', 'Хуучин']),
       warranty: pick(['Байгаа', 'Байхгүй']),
     };
   }
@@ -329,7 +329,7 @@ function makeAttrs(section, subtype) {
       material: pick(['Мод', 'Мод', 'Даавуу', 'Металл', 'Шил', 'Арьс', 'Хуванцар']),
       size: `${randInt(40, 260)}×${randInt(30, 200)} см`,
       color: pick(['Цагаан', 'Хар', 'Саарал', 'Бор', 'Беж', 'Цэнхэр', 'Ногоон']),
-      condition: pick(['Шинэ', 'Шинэ', 'Хэрэглэсэн — сайн', 'Хэрэглэсэн — хэвийн']),
+      condition: pick(['Шинэ', 'Хуучин', 'Хуучин']),
       delivery: pick(['Байгаа', 'Байгаа', 'Тохиролцоно', 'Байхгүй']),
     };
   }
@@ -343,7 +343,7 @@ function makeAttrs(section, subtype) {
         : subtype === 'Ном, сонин, сэтгүүл'
           ? pick(['Халаасны', 'A4', 'A5', 'Хатуу хавтастай'])
           : `${randInt(20, 180)}×${randInt(15, 120)} см`,
-      condition: pick(['Шинэ', 'Шинэ', 'Хэрэглэсэн — сайн', 'Хэрэглэсэн — хэвийн']),
+      condition: pick(['Шинэ', 'Хуучин', 'Хуучин']),
       delivery: pick(['Байгаа', 'Байгаа', 'Тохиролцоно', 'Байхгүй']),
     };
   }

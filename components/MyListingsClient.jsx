@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAuth, useToast, useUI } from './AppProviders';
 import { fetchMyListings, deleteListing } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
-import { formatPrice, getPropertyIcon, timeAgo, getFloorLabel, getGarageLabel } from '../lib/format';
+import { priceLabel, negotiableNote, getPropertyIcon, timeAgo, getFloorLabel, getGarageLabel } from '../lib/format';
 import MyListingsStatsPanel from './MyListingsStatsPanel';
 
 /**
@@ -180,7 +180,11 @@ export default function MyListingsClient() {
                           {getPropertyIcon(l.property_type)} {l.property_type}
                         </h4>
                         <p className="text-[13px] text-gray-500">📍 {[l.city, l.district].filter(Boolean).join(', ')}</p>
-                        <p className="text-[13px] text-gray-500">💰 ₮{formatPrice(l.price)}</p>
+                        <p className="text-[13px] text-gray-500">💰 {priceLabel(l)}</p>
+                        {/* 🤝 «Үнэ тохирно» — үнийн ЯГ ДОР (2026-09-29) */}
+                        {negotiableNote(l) && (
+                          <p className="text-[12px] font-semibold text-amber-700">🤝 {negotiableNote(l)}</p>
+                        )}
                         {l.rooms > 0 && <p className="text-[13px] text-gray-500">🛏 {l.rooms} өрөө</p>}
                         {l.bathrooms > 0 && <p className="text-[13px] text-gray-500">🚿 {l.bathrooms} угаалгын өрөө</p>}
                         {l.area > 0 && <p className="text-[13px] text-gray-500">📐 {l.area} м²</p>}

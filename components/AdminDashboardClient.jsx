@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from './AppProviders';
 import { fetchAdminStats } from '../lib/adminApi';
-import { formatPrice, timeAgo } from '../lib/format';
+import { priceLabel, timeAgo } from '../lib/format';
 import AdminNav from './AdminNav';
 
 /** 97688093663 / +97688093663 → 88093663 */
@@ -299,7 +299,7 @@ export default function AdminDashboardClient() {
                     <Link href={`/listings/${t.id}`} className="min-w-0 flex-1 truncate text-[13px] font-medium text-gray-800 hover:text-primary">
                       {t.title || 'Зар'}
                     </Link>
-                    <span className="shrink-0 text-[12px] font-semibold text-gray-700">₮{formatPrice(t.price)}</span>
+                    <span className="shrink-0 text-[12px] font-semibold text-gray-700">{priceLabel(t)}</span>
                     <span className="w-14 shrink-0 text-right text-[12px] font-bold tabular-nums text-primary">👁 {num(t.views)}</span>
                   </li>
                 ))}

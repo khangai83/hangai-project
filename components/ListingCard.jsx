@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { formatPrice, getPropertyIcon, firstImage, getFloorLabel, timeAgo, formatAddress } from '../lib/format';
+import { priceLabel, negotiableNote, getPropertyIcon, firstImage, getFloorLabel, timeAgo, formatAddress } from '../lib/format';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 import Avatar from './Avatar';
 import VerifiedBadge from './VerifiedBadge';
@@ -168,8 +168,19 @@ export default function ListingCard({ listing, author, attrsLine }) {
                  MapView — бүх UI дээр хассан.)
               ⚠️ `getPriceTypeLabel` импорт ч хасагдсан (unused import → ESLint). */}
           <div className="mb-0.5 text-lg font-bold text-gray-900">
-            ₮{formatPrice(listing.price)}
+            {/* 🤝 Үнэ 0/хоосон бол «Үнэ тохирно» — бүх дэлгэц дээр нэгэн жигд
+                (lib/format.js → priceLabel). ⚠️ `₮0` гэж ХАРАГДАХГҮЙ ✓ */}
+            {priceLabel(listing)}
           </div>
+          {/* 🤝 «Үнэ тохирно» — үнийн ЯГ ДОР (2026-09-29, хэрэглэгчийн хүсэлт):
+              үнэ БИЧСЭН бөгөөд «Үнэ тохирно» тэмдэглэсэн үед л гарна ✓
+              (үнэ байхгүй бол дээрх мөр өөрөө «Үнэ тохирно» болдог тул
+               давхар гарахгүй — `negotiableNote` хоосон буцаана) */}
+          {negotiableNote(listing) && (
+            <div className="mb-1 text-[12px] font-semibold text-amber-700">
+              🤝 {negotiableNote(listing)}
+            </div>
+          )}
           {/* ---------- 📍 ХАЯГ + 🕒 НИЙТЭЛСЭН (2 мөр, ЗҮҮН тийш) ----------
               ⚠️ Хаяг эхний мөрөнд, огноо нь ЯГ ДООР нь — хоёулаа ЗҮҮН тийш
                  зэрэгцсэн (`justify-between` БИШ).

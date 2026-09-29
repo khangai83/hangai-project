@@ -18,7 +18,7 @@
 import assert from 'node:assert/strict';
 import {
   SECTIONS, getSubtypes, getAttrFilters, getAttrField,
-  parseAttrRangeKey, getAttrRangeKeys, formatAttrsLine, getSection,
+  parseAttrRangeKey, getAttrRangeKeys, formatAttrsLine, getSection, hasSimpleForm,
 } from '../lib/locationData.js';
 
 let passed = 0;
@@ -138,6 +138,71 @@ t("formatAttrsLine: «Toyota Harrier, 2018 · 📥 2021 онд орж ирсэн
 t('formatAttrsLine: importYear хоосон бол мөрөнд ОРОХГҮЙ (хоосон таслалтгүй)', () => {
   const line = formatAttrsLine('auto', { brand: 'Nissan', model: 'X-Trail', importYear: '' });
   assert.equal(line, 'Nissan X-Trail');
+});
+
+// ---- ⑤ ⚽ Аяллын хэрэгсэл (hobby): ХЯЛБАР ФОРМ (2026-09-29) ----
+// Хэрэглэгчийн хүсэлт: «зөвхөн байршил, шинэ эсвэл хуучин, үнэ, утас, тайлбар
+// асуудаг байя». ⚠️ Энэ тест нь form/шүүлт/`simpleForm` гэрээг түгждэг.
+t('⚽ hobby: ЗӨВХӨН «Шинэ / Хуучин» (condition) шүүлттэй', () => {
+  const keys = getAttrFilters('hobby').map((f) => f.key);
+  assert.deepEqual(keys, ['condition']);
+  const f = getAttrFilters('hobby')[0];
+  assert.equal(f.label, 'Шинэ / Хуучин');
+  // ✅ 2026-09-29 (хэрэглэгчийн шаардлага): ЯГ 2 сонголт — өмнө нь 4 байв ✗
+  assert.deepEqual(f.options, ['Шинэ', 'Хуучин']);
+});
+
+// ---- ⑤б ✅ «ШИНЭ / ХУУЧИН» — БҮХ хэсэгт НЭГ ижил (2026-09-29) ----
+// Хэрэглэгчийн шаардлага: «Шинэ / Хуучин гэж нэрлээд энэ 2 л сонголтыг оруул».
+// ⚠️ ӨМНӨ нь хэсэг тус бүрд `Төлөв` / `Шинэ эсвэл хуучин` гэж ЯЛГААТАЙ нэрээр,
+//    4 сонголттой байв (Хэрэглэсэн — сайн / — хэвийн / Засвар шаардлагатай) ✗
+t('✅ Форм (attrFields) ба шүүлт (attrFilters) — condition нь 2 сонголттой', () => {
+  const sections = SECTIONS.filter((s) => s.attrFields.some((f) => f.key === 'condition'));
+  assert.ok(sections.length >= 2, 'condition талбартай хэсэг байх ёстой');
+  sections.forEach((s) => {
+    const field = getAttrField(s.value, 'condition');
+    assert.equal(field.label, 'Шинэ / Хуучин', `${s.value}: формоны нэр`);
+    assert.deepEqual(field.options, ['Шинэ', 'Хуучин'], `${s.value}: формоны сонголт`);
+    // Шүүлтэд харагдах хувилбар нь МӨН ижил байх ёстой (нэг эх сурвалж ✓)
+    const filter = getAttrFilters(s.value).find((f) => f.key === 'condition');
+    if (filter) {
+      assert.equal(filter.label, 'Шинэ / Хуучин', `${s.value}: шүүлтийн нэр`);
+      assert.deepEqual(filter.options, ['Шинэ', 'Хуучин'], `${s.value}: шүүлтийн сонголт`);
+    }
+  });
+});
+
+t('🚫 «Хэрэглэсэн — сайн/хэвийн», «Засвар шаардлагатай» сонголтууд БҮРЭН ХАСАГДСАН', () => {
+  SECTIONS.forEach((s) => {
+    const field = s.attrFields.find((f) => f.key === 'condition');
+    if (!field) return;
+    ['Хэрэглэсэн — сайн', 'Хэрэглэсэн — хэвийн', 'Засвар шаардлагатай', 'Хэвийн', 'Төлөв', 'Шинэ эсвэл хуучин']
+      .forEach((bad) => {
+        assert.ok(!field.options.includes(bad), `${s.value}: «${bad}» сонголт үлдсэн ✗`);
+        assert.notEqual(field.label, bad, `${s.value}: хуучин нэр «${bad}» үлдсэн ✗`);
+      });
+  });
+});
+
+t('⚽ hobby: форм дээр зөвхөн condition талбар (brand/model/size/delivery ХАСАГДСАН)', () => {
+  const keys = getSection('hobby').attrFields.map((f) => f.key);
+  assert.deepEqual(keys, ['condition']);
+  // ⚠️ Хуучин талбарууд getAttrField-ээр ч ОЛДОХГҮЙ (форм автоматаар үүсдэг)
+  for (const k of ['brand', 'model', 'size', 'delivery']) {
+    assert.equal(getAttrField('hobby', k), null);
+  }
+  // ⚠️ Гэхдээ `formatAttrsLine` нь `field.icon` байхгүй үед ч эвдрэхгүй
+  //    (`hobby` нь CARD_ATTR_ORDER-д байхгүй тул үр дүн нь '' хэвээр ✓)
+  assert.equal(formatAttrsLine('hobby', { brand: 'Giant', condition: 'Шинэ' }), '');
+});
+
+t('⚡ hasSimpleForm: ЗӨВХӨН hobby (бусад 6 хэсэгт false)', () => {
+  assert.equal(hasSimpleForm('hobby'), true);
+  for (const s of ['real-estate', 'auto', 'jobs', 'computers', 'home', 'services']) {
+    assert.equal(hasSimpleForm(s), false, `${s} нь хялбар форм БИШ`);
+  }
+  // ⚠️ Танихгүй утга → `getSection` нь `real-estate` руу буулгана (crash БАЙХГҮЙ)
+  assert.equal(hasSimpleForm('unknown-section'), false);
 });
 
 console.log(`\n✅ БҮГД ОК: ${passed} тест\n`);
