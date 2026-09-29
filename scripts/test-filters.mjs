@@ -62,11 +62,13 @@ t('🏷️ Үйлдвэрлэгч нь хайлттай combobox хэвээр (�
   assert.ok(f.options.length >= 95); // 38 → 95 болж өргөжсөн
 });
 
-t("Бусад хэсгийн шүүлт ХЭВЭЭР (jobs: 3, computers: 3, home: 2, services: 3)", () => {
+t("Бусад хэсгийн шүүлт (jobs: 3, computers: 3, home: 1, services: 3)", () => {
   const count = (s) => getAttrFilters(s).length;
   assert.equal(count('jobs'), 3);
   assert.equal(count('computers'), 3);
-  assert.equal(count('home'), 2);
+  // ⚡ 2026-09-29: `home` (Гэр ахуйн бараа) мөн ХЯЛБАР ФОРМ болсон тул
+  //    `📦 Хүргэлт` ХАСАГДАВ — зөвхөн `✅ Шинэ / Хуучин` үлдэнэ (2 → 1) ✓
+  assert.equal(count('home'), 1);
   assert.equal(count('services'), 3);
 });
 
@@ -196,9 +198,40 @@ t('⚽ hobby: форм дээр зөвхөн condition талбар (brand/model
   assert.equal(formatAttrsLine('hobby', { brand: 'Giant', condition: 'Шинэ' }), '');
 });
 
-t('⚡ hasSimpleForm: ЗӨВХӨН hobby (бусад 6 хэсэгт false)', () => {
+// ---- ⑤в 🛋️ Гэр ахуйн бараа (home): МӨН ХЯЛБАР ФОРМ (2026-09-29) ----
+// Хэрэглэгчийн хүсэлт: «Гэр ахуйн барааг мөн адил ийм форматтай болго, хурдан хий».
+t('🛋️ home: ЗӨВХӨН «Шинэ / Хуучин» шүүлттэй — 🚚 Хүргэлт ХАСАГДСАН', () => {
+  const keys = getAttrFilters('home').map((f) => f.key);
+  assert.deepEqual(keys, ['condition']);
+  const f = getAttrFilters('home')[0];
+  assert.equal(f.label, 'Шинэ / Хуучин');
+  assert.deepEqual(f.options, ['Шинэ', 'Хуучин']);
+});
+
+t('🛋️ home: форм дээр зөвхөн condition (brand/material/size/color/delivery ХАСАГДСАН)', () => {
+  const keys = getSection('home').attrFields.map((f) => f.key);
+  assert.deepEqual(keys, ['condition']);
+  // ⚠️ Хуучин талбарууд getAttrField-ээр ч ОЛДОХГҮЙ (форм автоматаар үүсдэг)
+  for (const k of ['brand', 'material', 'size', 'color', 'delivery']) {
+    assert.equal(getAttrField('home', k), null, `${k} формоос хасагдсан байх ёстой ✗`);
+  }
+  // ⚠️ ХУУЧИН заруудын карт мөр ХЭВЭЭР харагдана (CARD_ATTR_ORDER.home-д
+  //    түлхүүрүүд байсаар байна + DB-д attrs нь устдаггүй ✓)
+  assert.equal(
+    formatAttrsLine('home', { brand: 'IKEA', size: '200×90 см', condition: 'Хуучин' }),
+    'IKEA · 200×90 см · ✅ Хуучин',
+  );
+  // ⚠️ ШИНЭ зар (зөвхөн condition) → мөр богиносно, эвдрэхгүй ✓
+  assert.equal(formatAttrsLine('home', { condition: 'Хуучин' }), '✅ Хуучин');
+  assert.equal(formatAttrsLine('home', {}), '');
+});
+
+t('⚡ hasSimpleForm: ⚽ hobby БА 🛋️ home (бусад 5 хэсэгт false)', () => {
   assert.equal(hasSimpleForm('hobby'), true);
-  for (const s of ['real-estate', 'auto', 'jobs', 'computers', 'home', 'services']) {
+  // ⚡ 2026-09-29 (хэрэглэгчийн хүсэлт): «Гэр ахуйн барааг мөн адил ийм форматтай
+  //    болго» → 🛋️ `home` мөн хялбар форм болов ✓
+  assert.equal(hasSimpleForm('home'), true);
+  for (const s of ['real-estate', 'auto', 'jobs', 'computers', 'services']) {
     assert.equal(hasSimpleForm(s), false, `${s} нь хялбар форм БИШ`);
   }
   // ⚠️ Танихгүй утга → `getSection` нь `real-estate` руу буулгана (crash БАЙХГҮЙ)
