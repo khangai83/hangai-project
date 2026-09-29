@@ -91,6 +91,45 @@ function SubtypeRow({ label, onSelect, bold = false }) {
 }
 
 /**
+ * 🗂 БҮЛГИЙН ГАРЧИГ — 2 ХЭЛБЭРТЭЙ (2026-09-29):
+ *   ① `collapsible=false` (анхдагч) → энгийн `<p>`: бүлэг нь ЗӨВХӨН шошго,
+ *      дарахгүй (2026-09-27-ны шийдвэр хэвээр ✓)
+ *   ② `collapsible=true` (`collapsed: true` бүлэг — 💻 компьютерийн 4 бүлэг) →
+ *      ДАРАГДДАГ товч: дарвал дотрох дэд төрлүүд нээгдэж/хаагдана ✓
+ *      (`aria-expanded` + chevron ▶ → ▼ эргэлдэнэ)
+ * 🔤 Харагдац нь урьдны `<p>`-тэй ЯГ ИЖИЛ (15/16px, bold, `primary-dark`) —
+ *    зөвхөн chevron нэмэгдэнэ, фонт/хэмжээ/өнгө өөрчлөгдөхгүй ✓
+ * ⚠️ Модулийн түвшинд (компонент дотор БИШ) — `SubtypeRow`-тай ижил шалтгаан
+ *    (дотор нь зарлавал render бүрд шинэ тип болж, төлөв/focus алдагдана ✗)
+ */
+function GroupHeading({ label, collapsible = false, open = false, onToggle }) {
+  const text = 'text-[15px] font-bold tracking-[-0.01em] text-primary-dark sm:text-[16px]';
+  if (!collapsible) return <p className={`px-2 pb-1 pt-2 ${text}`}>{label}</p>;
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      title={open ? 'Дэд төрлүүдийг хаах' : 'Дэд төрлүүдийг харах'}
+      className={`flex w-full items-center gap-1 rounded-md px-2 pb-1 pt-2 text-left transition hover:bg-white ${text}`}
+    >
+      {/* chevron — хаалттай үед ▶, нээлттэй үед ▼ (эргэлдэнэ ✓) */}
+      <svg
+        width="13"
+        height="13"
+        viewBox="0 0 24 24"
+        fill="none"
+        className={`shrink-0 opacity-60 transition-transform duration-150 ${open ? 'rotate-90' : ''}`}
+        aria-hidden="true"
+      >
+        <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      {label}
+    </button>
+  );
+}
+
+/**
  * Sidebar-ийн НЭГ БЛОК — unegui.mn загвараар: дээрээ БОЛД гарчиг,
  * доор нь оролтууд. Блокууд нь `divide-y`-ээр тусгаарлагдана.
  */
@@ -250,6 +289,13 @@ export default function HomeClient() {
   // ⚠️ DRILL-DOWN: `false` → БҮХ хэсэг tile хэлбэрээр;
   //    `true` → зөвхөн тухайн хэсгийн ДОТООД (дэд төрөл) багана болж харагдана.
   const [sectionOpen, setSectionOpen] = useState(false);
+  // 🗂 БҮЛГИЙН ACCORDION (2026-09-29) — `collapsed: true` бүлгүүд (💻 компьютерийн
+  //    доод түвшинтэй 4 бүлэг):
+  //    `null` = бүх бүлэг анхдагч төлөвтөө (дотрох дэд төрлүүд ХААЛТТАЙ ✓);
+  //    утга нь НЭЭЛТТЭЙ бүлгийн нэр (`'Notebook'`) — нэг удаад НЭГ бүлэг нээлттэй.
+  //    ⚠️ `sectionOpen`-ээс ЯЛГААТАЙ — хэсэг НЭЭЛТТЭЙ хэвээр байна, зөвхөн
+  //       тухайн бүлгийн дотрох дэд төрлүүд харагдана ✓
+  const [groupOpen, setGroupOpen] = useState(null);
   // ⚠️ ЭНД, бүх `useEffect`-ийн ӨМНӨ: эффектүүдийн deps массив РЕНДЕРИЙН ҮЕД
   //    үнэлэгддэг тул хойш зарлавал TDZ алдаа гарна.
   const noSection = section === 'all';
@@ -505,6 +551,7 @@ export default function HomeClient() {
     //    тухайн хэсгийн (ж: Автомашин) зарууд хэвээр үлддэг байв (АЛДАА).
     setSection('all');
     setSectionOpen(false);
+    setGroupOpen(null); // 🗂 бүлгийн accordion ч анхдагч төлөвтөө (хаалттай)
     setFilters(emptyFilters()); // массив хуваалцахгүй
   };
 
@@ -514,6 +561,7 @@ export default function HomeClient() {
   const backToAllSections = () => {
     setSection('all');
     setSectionOpen(false);
+    setGroupOpen(null); // 🗂 бүлгийн accordion ч анхдагч төлөвтөө
     setCategory('all');
     setPage(1); // 📄 хэсэг арилсан → 1-р хуудас
     setFilters((f) => ({ ...f, propertyType: '', rooms: '', attrs: {} }));
@@ -534,6 +582,8 @@ export default function HomeClient() {
       // ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд
       setCategory((c) => (hasCategoryChoice(nextSection) && c !== 'all' ? c : 'all'));
       setFilters((f) => ({ ...f, propertyType: '', rooms: '', attrs: {} }));
+      // 🗂 өөр хэсэг = өөр бүлгүүд → accordion анхдагчдаа (хаалттай) ✓
+      setGroupOpen(null);
       // ⚠️ 2026-09-27: `setFiltersOpen(false)` ХАСАГДСАН — панель үргэлж
       //    нээлттэй тул хаах ойлголт байхгүй ✓ (хэсэг солиход панель ХЭВЭЭР ✓)
     }
@@ -579,6 +629,16 @@ export default function HomeClient() {
     //    дэлгэц рүү буцна (sectionOpen=false) ✓
     if (nav.group !== undefined) {
       setSectionOpen(!!nav.group);
+      // 🗂 `collapsed: true` бүлэг (💻 Notebook) — breadcrumb-ийн «Notebook» /
+      //    «Apple» линк дээр дарахад (`nav.filters` нь `propertyType`-ийг
+      //    цэвэрлэнэ ✓) панель эргэн гарч ирэхдээ тэр бүлэг НЭЭЛТТЭЙ байна ✓
+      //    — эс бөгөөс хэрэглэгч «Apple хаана байна?» гэж хайх байсан ✗
+      //    ⚠️ Туггүй бүлэгт энэ нь ХОР ХӨНӨӨГҮЙ (тэд үргэлж нээлттэй).
+      //    `null` (хэсгийн линк) → бүх бүлэг анхдагч төлөвтөө.
+      //    ℹ️ `?type=Apple` гэсэн ШУУД линкээр орж ирэхэд панель өөрөө
+      //       ХАРАГДАХГҮЙ (`!filters.propertyType`) тул бүлгийг нээх шаардлага
+      //       байхгүй — тиймээс URL-ээс `groupOpen` тавих код БАЙХГҮЙ ✓
+      setGroupOpen(nav.group);
     }
     if (nav.category !== undefined) setCategory(nav.category);
     if (nav.filters) setFilters((f) => ({ ...f, ...nav.filters }));
@@ -620,11 +680,18 @@ export default function HomeClient() {
     [section, noSection]
   );
   /**
-   * 🛠 3 ДАХЬ ТҮВШИН — зөвхөн `services` хэсэгт бүлэг байна.
+   * 🛠 3 ДАХЬ ТҮВШИН — бүлэг нь `services` ба `computers` хэсэгт байна.
    * ⚠️ 2026-09-29 (хэрэглэгчийн хүсэлт: «3р төвшинг заавал нээж харахгүй,
-   *    шууд харуулдаг болгоё») — бүлэг нь ОДОО ЗӨВХӨН ГАРЧИГ: бүх бүлэг ба
-   *    түүний дэд төрлүүд НЭГ ДОР ШУУД харагдана. `groupOpen` төлөв ба
+   *    шууд харуулдаг болгоё») — бүлэг нь АНХДАГЧААР зөвхөн ГАРЧИГ: бүх бүлэг
+   *    ба түүний дэд төрлүүд НЭГ ДОР ШУУД харагдана. `groupOpen` төлөв ба
    *    «нээлттэй бүлэг» ойлголт ХАСАГДСАН ✓
+   * 🆕 2026-09-29 (💻 компьютерийн 4 бүлэг) — `collapsed: true` тугтай бүлэг
+   *    дээр энэ дүрэм БУЦАЖ ирэв: тэр бүлгийн дэд төрлүүд нь ШУУД
+   *    ХАРАГДАХГҮЙ, гарчиг нь дарж нээгддэг (`groupOpen`), нээгдэхэд
+   *    панелийн бүтэн өргөнөөр 4 БАГАНААР гарна.
+   *    ⚠️ Туг нь `lib/locationData.js` дээрх бүлэг тус бүрийн тохиргоо —
+   *       компонентод хатуу бичсэн нэр БАЙХГҮЙ ✓ (services-д туг байхгүй тул
+   *       тэнд 2026-09-29-ний «бүгд шууд нээлттэй» дүрэм хэвээр ✓)
    * ⚠️ Бүлэг нь ШҮҮЛТ БИШ — зөвхөн навигаци (хэрэглэгчийн сонголт ✓).
    */
   const subtypeGroups = useMemo(
@@ -1070,27 +1137,58 @@ export default function HomeClient() {
                     </div>
                   );
                 }
+                // 🗂 `collapsed: true` бүлэг (💻 компьютерийн 4 бүлэг) — дотрох
+                //    дэд төрлүүд нь анхдагчаар ХАРАГДАХГҮЙ; гарчиг нь дарж
+                //    нээгддэг ✓ (доод түвшингүй бүлэгт туг байхгүй → шууд мөр)
+                const collapsible = !!g.collapsed;
+                const open = collapsible && groupOpen === g.label;
                 return (
-                  <div key={g.label}>
+                  <div
+                    key={g.label}
+                    // Нээлттэй үед бүлэг нь БҮТЭН ӨРГӨНӨӨР сунах ёстой —
+                    // эс бөгөөс 4 багана нь нэг баганын дотор багтахгүй ✗
+                    className={open ? 'sm:col-span-2 lg:col-span-4' : undefined}
+                  >
                     {/* БҮЛГИЙН ГАРЧИГ — БОЛД, ЦЭНХЭР (`text-primary-dark`), 15/16px.
-                        ⚠️ Дарахгүй (`<p>`) — бүлэг нь ШҮҮЛТ БИШ, зөвхөн
-                           навигацийн шошго (2026-09-27-ны шийдвэр ✓).
+                        ⚠️ Анхдагчаар ДАРАХГҮЙ (`<p>`) — бүлэг нь ШҮҮЛТ БИШ,
+                           зөвхөн навигацийн шошго (2026-09-27-ны шийдвэр ✓).
+                        🆕 `collapsed: true` бүлэг дээр ДАРАГДДАГ товч болов
+                           (`GroupHeading` — 2026-09-29, хэрэглэгчийн хүсэлт
+                           «Notebook рүүгээ дараад орход харагддаг байя») ✓
                         🔤 2026-09-29: 13px/gray-600 → 15px (sm 16px)/primary-dark
                            — хэрэглэгчийн хүсэлт («өнгийг тодруулж бага зэрэг
-                           томруулъя»). Контраст 5.94:1 ✅ AA. Дэлгэрэнгүйг
-                           дээрх тайлбараас үзнэ үү. */}
-                    <p className="px-2 pb-1 pt-2 text-[15px] font-bold tracking-[-0.01em] text-primary-dark sm:text-[16px]">
-                      {g.label}
-                    </p>
-                    <div role="tablist" aria-label={g.label}>
-                      {g.items.map((t) => (
-                        <SubtypeRow
-                          key={t}
-                          label={getPropertyTypeLabel(t, category)}
-                          onSelect={() => setF('propertyType', t)}
-                        />
-                      ))}
-                    </div>
+                           томруулъя»). Контраст 5.94:1 ✅ AA.
+                           ⚠️ Харагдац нь товч болсны дараа ч ИЖИЛ хэвээр
+                              (`GroupHeading` дотор нэг л класс) ✓ */}
+                    <GroupHeading
+                      label={g.label}
+                      collapsible={collapsible}
+                      open={open}
+                      onToggle={() => setGroupOpen(open ? null : g.label)}
+                    />
+                    {/* Дотрох дэд төрлүүд: туггүй бүлэг → үргэлж; `collapsed`
+                        бүлэг → зөвхөн нээлттэй үед. Нээлттэй үед 4 БАГАНА
+                        (`lg:grid-cols-4` — панелийн баганын тоотой ижил ✓),
+                        мобайл 1, sm 2 багана (бусад жагсаалттай ижил зарчим). */}
+                    {(!collapsible || open) && (
+                      <div
+                        role="tablist"
+                        aria-label={g.label}
+                        className={
+                          collapsible
+                            ? 'grid grid-cols-1 gap-x-2 sm:grid-cols-2 lg:grid-cols-4'
+                            : undefined
+                        }
+                      >
+                        {g.items.map((t) => (
+                          <SubtypeRow
+                            key={t}
+                            label={getPropertyTypeLabel(t, category)}
+                            onSelect={() => setF('propertyType', t)}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}

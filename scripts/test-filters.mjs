@@ -311,6 +311,31 @@ t('💻 findSubtypeGroup: «Apple» → Notebook; leaf групп («Чихэв�
   assert.equal(findSubtypeGroup('computers', 'Бусад').label, 'Notebook');
 });
 
+t('💻 Доод түвшинтэй БҮХ 4 бүлэг `collapsed: true` — 3 дахь түвшин 2 дахь дээр ХАРАГДАХГҮЙ', () => {
+  const groups = getSubtypeGroups('computers');
+  // Хэрэглэгчийн хүсэлт (2026-09-29): «Notebook ний дотрох хэсгийг
+  // харагдуулахгүй болгоё, Notebook рүүгээ дараад орход харагддаг байя,
+  // ингэхдээ 4н баганад хуваан харуулаарай» + «Компьютер, Дагалдах
+  // хэрэгсэл-ийн 3-р түвшний subcategory-г ч бас 2-р түвшин дээр
+  // харуулахгүй болгоё»
+  assert.deepEqual(groups.filter((g) => g.collapsed).map((g) => g.label), [
+    'Суурин компьютер', 'Notebook', 'PS, XBox, Nintendo', 'Дагалдах хэрэгсэл',
+  ]);
+  // ⚠️ Доод түвшингүй бүлэг (`items: []`) нь ӨӨРӨӨ дэд төрөл тул панель дээр
+  //    ШУУД СОНГОГДОХ мөрөөр ҮЛДЭНЭ — туг нь `false` ✓
+  assert.equal(groups.filter((g) => g.collapsed).length, 4);
+  assert.ok(groups.filter((g) => g.items.length === 0).every((g) => !g.collapsed));
+  assert.equal(groups.find((g) => g.label === 'Notebook').items.length, 22);
+});
+
+t('🛠 services: бүлгүүдэд `collapsed` туг БАЙХГҮЙ (бүгд ШУУД нээлттэй хэвээр)', () => {
+  // ⚠️ Regress-ийн хамгаалалт: 2026-09-29-ний хүсэлтээр services дээр бүх бүлэг
+  //    шууд нээлттэй байх ёстой — компьютерийн accordion тэнд ХҮРЭХГҮЙ ✓
+  const groups = getSubtypeGroups('services');
+  assert.equal(groups.length, 7);
+  assert.equal(groups.filter((g) => g.collapsed).length, 0);
+});
+
 t('🛠/💻 Ерөнхий гэрээ: бүх бүлгийн leaf нь `getSubtypes`-д ЗААВАЛ байна', () => {
   const withGroups = SECTIONS.filter((s) => getSubtypeGroups(s.value).length > 0);
   // ⚠️ Одоо 2 хэсэг: 🛠️ services (2026-09-27) ба 💻 computers (2026-09-29) ✓
