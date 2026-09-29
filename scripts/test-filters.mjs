@@ -19,6 +19,7 @@ import assert from 'node:assert/strict';
 import {
   SECTIONS, getSubtypes, getAttrFilters, getAttrField,
   parseAttrRangeKey, getAttrRangeKeys, formatAttrsLine, getSection, hasSimpleForm,
+  getSubtypeGroups, findSubtypeGroup,   // 🛠/💻 3 дахь түвшин (2026-09-27, 2026-09-29)
 } from '../lib/locationData.js';
 
 let passed = 0;
@@ -236,6 +237,91 @@ t('⚡ hasSimpleForm: ⚽ hobby БА 🛋️ home (бусад 5 хэсэгт fal
   }
   // ⚠️ Танихгүй утга → `getSection` нь `real-estate` руу буулгана (crash БАЙХГҮЙ)
   assert.equal(hasSimpleForm('unknown-section'), false);
+});
+
+// ---- ⑥ 💻 «Компьютер, Дагалдах хэрэгсэл»: 3 ТҮВШНИЙ МОД (2026-09-29) ----
+// Хэрэглэгчийн хүсэлт: «Компьютер гэдэг хэсгийг Компьютер, Дагалдах хэрэгсэл
+// гэж нэрлээд доорх модоор … Үйлчилгээ категори шиг болго».
+// ⚠️ Энэ тест нь хэрэглэгчийн ӨГСӨН МОДЫГ ЯГ түгждэг — санамсаргүй өөрчлөлт,
+//    мөн «групп нь өөрөө сонгогдох» алдааг барьж өгнө ✓
+t("💻 Хэсгийн нэр «Компьютер, Дагалдах хэрэгсэл» (value нь `computers` ХЭВЭЭР)", () => {
+  const sec = getSection('computers');
+  assert.equal(sec.label, 'Компьютер, Дагалдах хэрэгсэл');
+  assert.equal(sec.value, 'computers');   // ⚠️ DB/URL/CHECK хөндөгдөөгүй ✓
+  assert.equal(sec.icon, '💻');
+});
+
+t('💻 9 бүлэг — 4 нь доод түвшинтэй, 5 нь ӨӨРӨӨ сонгогдоно', () => {
+  const groups = getSubtypeGroups('computers');
+  assert.equal(groups.length, 9);
+  assert.deepEqual(groups.map((g) => g.label), [
+    'Суурин компьютер', 'Notebook', 'PS, XBox, Nintendo', 'Дагалдах хэрэгсэл',
+    'Чихэвч', 'Принтер, Хувилагч, Сканнер, Ламинатор', 'iPad, Tablet, Kindle',
+    'Принтер, Хувилагчийн хор', 'Бусад сэлбэг',
+  ]);
+  assert.equal(groups.filter((g) => g.items.length > 0).length, 4);
+  assert.equal(groups.filter((g) => g.items.length === 0).length, 5);
+});
+
+t('💻 Бүлгүүдийн дэд төрлүүд хэрэглэгчийн жагсаалттай ЯГ ТААРНА', () => {
+  const byLabel = (l) => getSubtypeGroups('computers').find((g) => g.label === l).items;
+  assert.deepEqual(byLabel('Суурин компьютер'),
+    ['Иж бүрэн компьютер', 'Дэлгэц', 'Процессор, сервер', 'Mouse', 'Keyboard']);
+  assert.deepEqual(byLabel('Notebook'),
+    ['Apple', 'Acer', 'Asus', 'Toshiba', 'Compaq', 'Dell', 'Dere', 'Evoo', 'Fujitsu',
+      'Gateway', 'Haier', 'HP', 'Lenovo', 'LG', 'Microsoft Surface', 'MSI', 'Samsung',
+      'Sony', 'Redmi', 'Razer Blade', 'Huawei', 'Бусад']);
+  assert.deepEqual(byLabel('PS, XBox, Nintendo'),
+    ['Xbox', 'Xbox-ын тоглоомууд', 'Playstation', 'Playstation-ийн тоглоомууд',
+      'Nintendo, Тоглоомууд', 'PS, XBox, Nintendo тоглоом суулгана', 'Бусад']);
+  assert.deepEqual(byLabel('Дагалдах хэрэгсэл'),
+    ['Зөөврийн хард, флаш', 'Модем', 'Свич', 'Проектор', 'Тог баригч',
+      'Audio Video', 'Notebook цүнх', 'Бусад']);
+});
+
+t('💻 getSubtypes: 45 дэд төрөл, ДАВХАРДАЛГҮЙ (3 «Бусад» нэг утга болов)', () => {
+  const subtypes = getSubtypes('computers');
+  assert.equal(subtypes.length, 45);
+  assert.equal(new Set(subtypes).size, subtypes.length);
+  assert.equal(subtypes.filter((t) => t === 'Бусад').length, 1);
+  // Доод түвшингүй бүлгүүд нь ӨӨРӨӨ дэд төрөл (сонгогдоно) ✓
+  ['Чихэвч', 'Принтер, Хувилагч, Сканнер, Ламинатор', 'iPad, Tablet, Kindle',
+    'Принтер, Хувилагчийн хор', 'Бусад сэлбэг'].forEach((l) => assert.ok(subtypes.includes(l), l));
+});
+
+t('💻 Доод түвшинтэй бүлэг (Notebook, Суурин компьютер) ЗАР болж ХАДГАЛАГДАХГҮЙ', () => {
+  const subtypes = getSubtypes('computers');
+  ['Notebook', 'Суурин компьютер', 'PS, XBox, Nintendo', 'Дагалдах хэрэгсэл']
+    .forEach((g) => assert.ok(!subtypes.includes(g), `«${g}» групп нь шүүлт БИШ ✗`));
+});
+
+t('💻 Хуучин 11 хавтгай дэд төрөл БҮРЭН ХАСАГДСАН', () => {
+  const subtypes = getSubtypes('computers');
+  ['Зөөврийн компьютер', 'Монитор', 'Принтер, сканнер', 'Сүлжээ, роутер',
+    'Хадгалах сан, SSD', 'Эд анги, сэлбэг', 'Гар, хулгана, хэрэгсэл', 'Тоглоом, консол',
+    'Програм хангамж'].forEach((t) => assert.ok(!subtypes.includes(t), `хуучин «${t}» үлдсэн ✗`));
+});
+
+t('💻 findSubtypeGroup: «Apple» → Notebook; leaf групп («Чихэвч») → null', () => {
+  assert.equal(findSubtypeGroup('computers', 'Apple').label, 'Notebook');
+  assert.equal(findSubtypeGroup('computers', 'Тог баригч').label, 'Дагалдах хэрэгсэл');
+  // ⚠️ Доод түвшингүй групп нь item БИШ (өөрөө дэд төрөл) → breadcrumb-д нэмэгдэхгүй
+  assert.equal(findSubtypeGroup('computers', 'Чихэвч'), null);
+  // ⚠️ 3 бүлэгт давхардсан «Бусад» → ЭХНИЙ бүлэг (Notebook) буцаана (баримтжуулсан ✓)
+  assert.equal(findSubtypeGroup('computers', 'Бусад').label, 'Notebook');
+});
+
+t('🛠/💻 Ерөнхий гэрээ: бүх бүлгийн leaf нь `getSubtypes`-д ЗААВАЛ байна', () => {
+  const withGroups = SECTIONS.filter((s) => getSubtypeGroups(s.value).length > 0);
+  // ⚠️ Одоо 2 хэсэг: 🛠️ services (2026-09-27) ба 💻 computers (2026-09-29) ✓
+  assert.deepEqual(withGroups.map((s) => s.value), ['computers', 'services']);
+  withGroups.forEach((s) => {
+    const subtypes = getSubtypes(s.value);
+    getSubtypeGroups(s.value).forEach((g) => {
+      const leaves = g.items.length ? g.items : [g.label];
+      leaves.forEach((l) => assert.ok(subtypes.includes(l), `${s.value}: «${l}» дэд төрөлд алга ✗`));
+    });
+  });
 });
 
 console.log(`\n✅ БҮГД ОК: ${passed} тест\n`);

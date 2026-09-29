@@ -18,6 +18,7 @@
 import { createRequire } from 'node:module';
 import {
   SECTIONS, getSubtypes, CAR_BRANDS, CITIES, getDistricts, getKhoroos,
+  COMPUTER_SUBTYPE_GROUPS,   // 💻 Notebook бүлгийн брэндүүд (2026-09-29)
 } from '../lib/locationData.js';
 
 const require = createRequire(import.meta.url);
@@ -116,17 +117,16 @@ const CAR_PAIRS = [
   ['Haval', 'H6'], ['UAZ', 'Patriot'], ['Lada', 'Niva'], ['Genesis', 'G80'],
 ];
 
-/** Компьютерийн брэнд+загвар */
+/** Компьютерийн брэнд+загвар — ЕРӨНХИЙ нөөц (дэд төрөл тус бүрийн хүснэгтэд
+ *  байхгүй утгад, ж: 3 бүлэгт давхардсан «Бусад») */
 const PC_PAIRS = [
-  ['Apple', 'MacBook Pro 14'], ['Apple', 'MacBook Air M2'], ['Apple', 'iMac 24'],
-  ['Dell', 'XPS 15'], ['Dell', 'Latitude 5420'], ['Dell', 'Inspiron 3510'],
-  ['HP', 'Pavilion 15'], ['HP', 'EliteBook 840'], ['Lenovo', 'ThinkPad T14'],
-  ['Lenovo', 'IdeaPad 3'], ['Asus', 'VivoBook 15'], ['Asus', 'ROG Strix G15'],
-  ['Acer', 'Aspire 5'], ['Acer', 'Nitro 5'], ['MSI', 'Katana GF66'],
-  ['Samsung', 'Odyssey G5'], ['Samsung', 'Galaxy Book2'], ['LG', 'UltraGear 27'],
-  ['Sony', 'PlayStation 5'], ['Intel', 'Core i7-12700K'], ['AMD', 'Ryzen 7 5800X'],
+  ['Logitech', 'MX Master 3'], ['Logitech', 'K380'], ['A4Tech', 'Bloody V7'],
+  ['Razer', 'BlackWidow V3'], ['HyperX', 'Cloud II'], ['TP-Link', 'Archer C6'],
   ['Kingston', 'A2000 1TB'], ['Canon', 'PIXMA G3411'], ['Epson', 'L3250'],
-  ['Huawei', 'MateBook D15'], ['Xiaomi', 'RedmiBook 15'],
+  ['Samsung', 'Odyssey G5'], ['Dell', 'OptiPlex 7090'], ['Lenovo', 'ThinkPad T14'],
+  ['Huawei', 'MateBook D15'], ['Xiaomi', 'RedmiBook 15'], ['Intel', 'Core i7-12700K'],
+  ['AMD', 'Ryzen 7 5800X'], ['Sony', 'PlayStation 5'], ['Nintendo', 'Switch OLED'],
+  ['Targus', 'TBB565'], ['Sony', 'WH-1000XM4'],
 ];
 
 /** Компани + албан тушаал (ажлын зар) */
@@ -213,20 +213,103 @@ const HOBBY_PRICE = {
   'Унадаг дугуй, сэлбэг': [150e3, 6e6],
 };
 
-/** ⚠️ КОМПЬЮТЕРИЙН брэнд+загвар — ДЭД ТӨРӨЛ тус бүрд */
+/**
+ * 💻 «Notebook» бүлгийн БРЭНД дэд төрлүүд (2026-09-29) — `lib/locationData.js`-ийн
+ * `COMPUTER_SUBTYPE_GROUPS`-ээс АВТОМАТААР уншина (нэг эх сурвалж ✓).
+ * ⚠️ Эдгээр дэд төрөлд `attrs.brand` нь дэд төрлийн нэртэй ЯГ ИЖИЛ байх ёстой
+ *    (эс бөгөөс «Apple» төрөлд «Dell XPS» гэж гарч төөрөгдүүлнэ ✗)
+ */
+const PC_NOTEBOOK_BRANDS = new Set(
+  ((COMPUTER_SUBTYPE_GROUPS.find((g) => g.label === 'Notebook') || { items: [] }).items)
+    .filter((b) => b !== 'Бусад')
+);
+
+/** ⚠️ КОМПЬЮТЕРИЙН брэнд+загвар — ДЭД ТӨРӨЛ тус бүрд (2026-09-29: шинэ мод) */
 const PC_SUBTYPE_PAIRS = {
-  'Зөөврийн компьютер': [['Apple', 'MacBook Pro 14'], ['Apple', 'MacBook Air M2'], ['Dell', 'XPS 15'], ['HP', 'Pavilion 15'], ['Lenovo', 'ThinkPad T14'], ['Asus', 'VivoBook 15'], ['Acer', 'Aspire 5'], ['MSI', 'Katana GF66'], ['Huawei', 'MateBook D15'], ['Xiaomi', 'RedmiBook 15']],
-  'Суурин компьютер': [['Dell', 'OptiPlex 7090'], ['HP', 'ProDesk 400'], ['Lenovo', 'ThinkCentre M70'], ['Asus', 'ROG Strix G15'], ['Acer', 'Nitro 5'], ['Intel', 'Core i7-12700K'], ['AMD', 'Ryzen 7 5800X']],
-  'Монитор': [['Samsung', 'Odyssey G5 27"'], ['LG', 'UltraGear 27"'], ['Dell', 'P2419H 24"'], ['Acer', 'KG241 24"'], ['MSI', 'Optix G24'], ['Asus', 'VP249 24"']],
-  'Принтер, сканнер': [['Canon', 'PIXMA G3411'], ['Epson', 'L3250'], ['HP', 'LaserJet M15'], ['Brother', 'DCP-T520W'], ['Canon', 'MF3010']],
-  'Сүлжээ, роутер': [['TP-Link', 'Archer C6'], ['Mikrotik', 'hAP ac2'], ['D-Link', 'DIR-825'], ['Ubiquiti', 'UniFi AC Lite'], ['Huawei', 'AX3 Pro']],
-  'Хадгалах сан, SSD': [['Kingston', 'A2000 1TB'], ['Samsung', '980 PRO 500GB'], ['WD', 'Blue 2TB HDD'], ['Seagate', 'Barracuda 1TB'], ['Crucial', 'P3 1TB']],
-  'Эд анги, сэлбэг': [['Intel', 'Core i5-12400F'], ['AMD', 'Ryzen 5 5600'], ['Asus', 'Prime B660M'], ['MSI', 'B550 Tomahawk'], ['Kingston', 'Fury 16GB DDR4']],
-  'Гар, хулгана, хэрэгсэл': [['Logitech', 'MX Master 3'], ['Razer', 'BlackWidow V3'], ['A4Tech', 'Bloody V7'], ['Logitech', 'K380'], ['HyperX', 'Cloud II']],
-  'Тоглоом, консол': [['Sony', 'PlayStation 5'], ['Sony', 'PlayStation 4 Pro'], ['Microsoft', 'Xbox Series X'], ['Nintendo', 'Switch OLED']],
-  'Програм хангамж': [['Microsoft', 'Office 365'], ['Adobe', 'Creative Cloud'], ['Autodesk', 'AutoCAD 2024'], ['Kaspersky', 'Total Security'], ['1C', 'Нягтлан бодох']],
+  // ---------- 🖥 Суурин компьютер ----------
+  'Иж бүрэн компьютер': [['Dell', 'OptiPlex 7090'], ['HP', 'ProDesk 400 G7'], ['Lenovo', 'ThinkCentre M70'], ['Acer', 'Aspire TC-1760'], ['Asus', 'ExpertCenter D500'], ['Apple', 'iMac 24'], ['Intel', 'NUC 12 Pro']],
+  'Дэлгэц': [['Samsung', 'Odyssey G5 27"'], ['LG', 'UltraGear 27"'], ['Dell', 'P2419H 24"'], ['Acer', 'KG241 24"'], ['MSI', 'Optix G24'], ['Asus', 'VP249 24"'], ['BenQ', 'GW2480 24"']],
+  'Процессор, сервер': [['Intel', 'Xeon E-2336'], ['AMD', 'EPYC 7302'], ['Dell', 'PowerEdge T40'], ['HP', 'ProLiant ML30'], ['Intel', 'Core i7-12700K'], ['AMD', 'Ryzen 7 5800X']],
+  'Mouse': [['Logitech', 'MX Master 3S'], ['Logitech', 'G102 Lightsync'], ['A4Tech', 'Bloody V7'], ['Razer', 'DeathAdder V2'], ['Microsoft', 'Wireless 1850']],
+  'Keyboard': [['Logitech', 'K380'], ['Razer', 'BlackWidow V3'], ['A4Tech', 'Bloody B120'], ['HyperX', 'Alloy Origins'], ['Apple', 'Magic Keyboard']],
+  // ---------- 🏷 Notebook (брэнд бүр өөрийн загвартай) ----------
+  'Apple': [['Apple', 'MacBook Pro 14'], ['Apple', 'MacBook Air M2'], ['Apple', 'MacBook Pro 16 M3']],
+  'Acer': [['Acer', 'Aspire 5'], ['Acer', 'Nitro 5']],
+  'Asus': [['Asus', 'VivoBook 15'], ['Asus', 'ROG Strix G15']],
+  'Toshiba': [['Toshiba', 'Satellite C55'], ['Toshiba', 'Portégé X30']],
+  'Compaq': [['Compaq', 'Presario CQ58'], ['Compaq', 'Presario V3000']],
+  'Dell': [['Dell', 'XPS 15'], ['Dell', 'Latitude 5420'], ['Dell', 'Inspiron 3510']],
+  'Dere': [['Dere', 'R14 Pro'], ['Dere', 'M15']],
+  'Evoo': [['Evoo', 'EVOO 14"'], ['Evoo', 'EVOO 15.6"']],
+  'Fujitsu': [['Fujitsu', 'LifeBook A357'], ['Fujitsu', 'LifeBook U938']],
+  'Gateway': [['Gateway', 'GWNC21524'], ['Gateway', 'GWTN141-10']],
+  'Haier': [['Haier', 'Y11B'], ['Haier', 'Laptop 15 Pro']],
+  'HP': [['HP', 'Pavilion 15'], ['HP', 'EliteBook 840'], ['HP', 'ProBook 450']],
+  'Lenovo': [['Lenovo', 'ThinkPad T14'], ['Lenovo', 'IdeaPad 3'], ['Lenovo', 'Legion 5']],
+  'LG': [['LG', 'Gram 16'], ['LG', 'Ultra PC 15']],
+  'Microsoft Surface': [['Microsoft', 'Surface Laptop 5'], ['Microsoft', 'Surface Pro 9']],
+  'MSI': [['MSI', 'Katana GF66'], ['MSI', 'Modern 14']],
+  'Samsung': [['Samsung', 'Galaxy Book2'], ['Samsung', 'Galaxy Book3 Pro']],
+  'Sony': [['Sony', 'VAIO E Series'], ['Sony', 'VAIO Pro 13']],
+  'Redmi': [['Redmi', 'RedmiBook 15'], ['Redmi', 'RedmiBook Pro 14']],
+  'Razer Blade': [['Razer', 'Blade 15'], ['Razer', 'Blade 14']],
+  'Huawei': [['Huawei', 'MateBook D15'], ['Huawei', 'MateBook X Pro']],
+  // ---------- 🎮 PS, XBox, Nintendo ----------
+  'Xbox': [['Microsoft', 'Xbox Series X'], ['Microsoft', 'Xbox Series S'], ['Microsoft', 'Xbox One S']],
+  'Xbox-ын тоглоомууд': [['Microsoft', 'Halo Infinite'], ['Microsoft', 'Forza Horizon 5'], ['Microsoft', 'Gears 5'], ['Microsoft', 'EA FC 24']],
+  'Playstation': [['Sony', 'PlayStation 5'], ['Sony', 'PlayStation 4 Pro'], ['Sony', 'PlayStation 4 Slim']],
+  'Playstation-ийн тоглоомууд': [['Sony', 'The Last of Us Part II'], ['Sony', 'God of War Ragnarök'], ['Sony', 'Gran Turismo 7'], ['Sony', 'Spider-Man 2']],
+  'Nintendo, Тоглоомууд': [['Nintendo', 'Switch OLED'], ['Nintendo', 'Switch Lite'], ['Nintendo', 'Mario Kart 8 Deluxe'], ['Nintendo', 'Zelda: Tears of the Kingdom']],
+  'PS, XBox, Nintendo тоглоом суулгана': [['PlayStation', 'Тоглоом суулгах үйлчилгээ'], ['Xbox', 'Тоглоом суулгах үйлчилгээ'], ['Nintendo', 'Тоглоом суулгах үйлчилгээ']],
+  // ---------- 🖱 Дагалдах хэрэгсэл ----------
+  'Зөөврийн хард, флаш': [['Kingston', 'A2000 1TB'], ['Samsung', '980 PRO 500GB'], ['WD', 'Blue 2TB HDD'], ['Seagate', 'Barracuda 1TB'], ['SanDisk', 'Cruzer Blade 64GB'], ['Crucial', 'P3 1TB']],
+  'Модем': [['TP-Link', 'Archer C6'], ['Mikrotik', 'hAP ac2'], ['D-Link', 'DIR-825'], ['Huawei', 'AX3 Pro'], ['ZTE', 'MF286R']],
+  'Свич': [['TP-Link', 'TL-SG108'], ['D-Link', 'DGS-108'], ['Cisco', 'SG110-16'], ['Ubiquiti', 'UniFi Switch Lite 8']],
+  'Проектор': [['Epson', 'EB-X06'], ['BenQ', 'MX560'], ['ViewSonic', 'PA503S'], ['Xiaomi', 'Mi Smart Projector 2']],
+  'Тог баригч': [['Sony', 'DualSense'], ['Microsoft', 'Xbox Wireless Controller'], ['Nintendo', 'Switch Pro Controller'], ['Logitech', 'F710']],
+  'Audio Video': [['Logitech', 'Z313'], ['HyperX', 'Cloud II'], ['JBL', 'Flip 6'], ['Sony', 'WH-CH510'], ['LG', 'Soundbar SN4']],
+  'Notebook цүнх': [['Targus', 'TBB565'], ['HP', 'Prelude 15'], ['Xiaomi', 'Mi Business Backpack'], ['Dell', 'EcoLoop Pro']],
+  // ---------- 🎧 Доод түвшингүй бүлгүүд (өөрсдөө дэд төрөл) ----------
+  'Чихэвч': [['Apple', 'AirPods Pro 2'], ['Sony', 'WH-1000XM4'], ['HyperX', 'Cloud II'], ['Samsung', 'Galaxy Buds2'], ['JBL', 'Tune 510BT']],
+  'Принтер, Хувилагч, Сканнер, Ламинатор': [['Canon', 'PIXMA G3411'], ['Epson', 'L3250'], ['HP', 'LaserJet M15'], ['Brother', 'DCP-T520W'], ['Fellowes', 'Lunar A3']],
+  'iPad, Tablet, Kindle': [['Apple', 'iPad 10.9'], ['Samsung', 'Galaxy Tab A8'], ['Xiaomi', 'Pad 6'], ['Amazon', 'Kindle Paperwhite'], ['Huawei', 'MatePad 11']],
+  'Принтер, Хувилагчийн хор': [['Canon', 'GI-490'], ['Epson', '003'], ['HP', '415A'], ['Brother', 'TN-1075'], ['Canon', 'Cartridge 725']],
+  'Бусад сэлбэг': [['Intel', 'Core i5-12400F'], ['AMD', 'Ryzen 5 5600'], ['Asus', 'Prime B660M'], ['MSI', 'B550 Tomahawk'], ['Kingston', 'Fury 16GB DDR4'], ['AeroCool', 'VX Plus 500W']],
+  // ⚠️ «Бусад» нь 3 бүлэгт давхардсан НЭГ утга (Notebook · PS/XBox/Nintendo ·
+  //    Дагалдах хэрэгсэл) → аль ч тохиолдолд ерөнхий нөөцөөс авна ✓
   'Бусад': PC_PAIRS,
 };
+
+/** 💻 Компьютерийн дэд төрөл тус бүрийн үнийн хязгаар (₮) — 2026-09-29.
+ *  ⚠️ Хулгана 12 сая, ноутбук 250 мянга байх нь төөрөгдүүлнэ → төрөл тус бүрд
+ *     (🚗 авто, ⚽ хобби-той ижил зарчим). Тодорхойгүй бол `PC_PRICE_DEFAULT`
+ *     — Notebook брэндүүд ба «Бусад» (ноутбукийн үнэ) ✓ */
+const PC_PRICE = {
+  'Иж бүрэн компьютер': [1.5e6, 12e6],
+  'Дэлгэц': [350e3, 3.5e6],
+  'Процессор, сервер': [1.2e6, 15e6],
+  'Mouse': [30e3, 400e3],
+  'Keyboard': [50e3, 600e3],
+  'Xbox': [800e3, 3e6],
+  'Xbox-ын тоглоомууд': [80e3, 350e3],
+  'Playstation': [1e6, 3.5e6],
+  'Playstation-ийн тоглоомууд': [80e3, 400e3],
+  'Nintendo, Тоглоомууд': [90e3, 500e3],
+  'PS, XBox, Nintendo тоглоом суулгана': [20e3, 150e3],
+  'Зөөврийн хард, флаш': [40e3, 1.2e6],
+  'Модем': [80e3, 1.2e6],
+  'Свич': [150e3, 2.5e6],
+  'Проектор': [700e3, 6e6],
+  'Тог баригч': [120e3, 700e3],
+  'Audio Video': [60e3, 3e6],
+  'Notebook цүнх': [40e3, 400e3],
+  'Чихэвч': [60e3, 1.5e6],
+  'Принтер, Хувилагч, Сканнер, Ламинатор': [400e3, 6e6],
+  'Принтер, Хувилагчийн хор': [40e3, 300e3],
+  'iPad, Tablet, Kindle': [300e3, 4e6],
+  'Бусад сэлбэг': [80e3, 2e6],
+};
+const PC_PRICE_DEFAULT = [1.2e6, 12e6];
 
 
 /** Үйлчилгээний компаниуд */
@@ -307,18 +390,24 @@ function makeAttrs(section, subtype) {
     };
   }
   if (section === 'computers') {
+    // ⚠️ 2026-09-29: дэд төрөл нь 3 ТҮВШНИЙ мод болов (`COMPUTER_SUBTYPE_GROUPS`)
+    //    — Notebook бүлэгт брэнд нь ӨӨРӨӨ дэд төрөл тул `attrs.brand` нь
+    //    дэд төрлийн нэртэй ЯГ ИЖИЛ байх ёстой ✓
     const [brand, model] = pick(PC_SUBTYPE_PAIRS[subtype] || PC_PAIRS);
-    // ⚠️ CPU/RAM/SSD нь зөвхөн КОМПЬЮТЕРТ (ноутбук, суурин, эд анги) хамаарна —
-    //    хулгана/принтер/програмд эдгээр талбар утгагүй.
-    const isComputer = ['Зөөврийн компьютер', 'Суурин компьютер', 'Эд анги, сэлбэг'].includes(subtype);
+    // ⚠️ CPU/RAM/SSD/Дэлгэц нь зөвхөн КОМПЬЮТЕРТ (ноутбук, суурин, сервер,
+    //    эд анги) хамаарна — хулгана/чихэвч/тонер/тоглоомд утгагүй ✗
+    const isComputer = PC_NOTEBOOK_BRANDS.has(subtype)
+      || ['Иж бүрэн компьютер', 'Процессор, сервер', 'Бусад сэлбэг'].includes(subtype);
     return {
-      brand, model,
+      brand: PC_NOTEBOOK_BRANDS.has(subtype) ? subtype : brand,
+      model,
       ...(isComputer ? {
         cpu: pick(['Intel Core i5', 'Intel Core i7', 'Intel Core i9', 'AMD Ryzen 5', 'AMD Ryzen 7', 'Apple M1', 'Apple M2']),
         ram: pick(['8 GB', '16 GB', '16 GB', '32 GB']),
         storage: pick(['256 GB SSD', '512 GB SSD', '1 TB SSD', '512 GB SSD + 1 TB HDD']),
         screen: pick(['13', '14', '15', '15.6', '17']),
-      } : subtype === 'Монитор' ? { screen: pick(['24', '27', '32']) } : {}),
+      } : subtype === 'Дэлгэц' || subtype === 'Проектор'
+        ? { screen: pick(['24', '27', '32']) } : {}),
       condition: pick(['Шинэ', 'Хуучин', 'Хуучин']),
       warranty: pick(['Байгаа', 'Байхгүй']),
     };
@@ -485,7 +574,11 @@ function buildRow(section, subtype, k) {
       price = money(tier[0], tier[1]);
     }
   } else if (section === 'computers') {
-    price = money(250e3, 12e6);
+    // 💻 2026-09-29: үнэ нь дэд төрлөөс хамаарна (хулгана 40 мянга ↔ сервер
+    //    15 сая) → `PC_PRICE` хүснэгтээс; Notebook брэнд ба «Бусад» нь
+    //    `PC_PRICE_DEFAULT` (ноутбукийн үнэ) ✓
+    const [lo, hi] = PC_PRICE[subtype] || PC_PRICE_DEFAULT;
+    price = money(lo, hi);
   } else if (section === 'hobby') {
     // ⚠️ Хобби/спортын барааны үнэ нь ТӨРЛӨӨС хэлбэлзэнэ (ном 10 мянга,
     //    пиано 8 сая) → `HOBBY_PRICE` хүснэгтээс авна.
@@ -534,7 +627,8 @@ function buildRow(section, subtype, k) {
     const samples = [
       ['real-estate', 'Орон сууц', 0], ['real-estate', 'Орон сууц', 1],
       ['auto', 'Суудлын машин', 0], ['auto', 'Жийп, SUV', 1],
-      ['jobs', 'IT, программист', 0], ['computers', 'Зөөврийн компьютер', 0],
+      ['jobs', 'IT, программист', 0], ['computers', 'Apple', 0],
+      ['computers', 'Иж бүрэн компьютер', 1], ['computers', 'Чихэвч', 2],
       ['home', 'Тавилга, буйдан', 0], ['services', 'Сантехник', 0],
       ['hobby', 'Унадаг дугуй, сэлбэг', 0],
     ];
@@ -622,9 +716,23 @@ function buildRow(section, subtype, k) {
   }
 
   // 4) Дүн — DB-ээс бодит тоог дахин уншина
-  const { data: all } = await admin.from('listings').select('section, property_type, category');
+  // ⚠️ 2026-09-29: PostgREST нь нэг хүсэлтэд ХАМГИЙН ИХ 1000 мөр буцаана
+  //    (анхдагч `max-rows`) — `select()`-ийг нэг удаа дуудвал 1000+ зартай үед
+  //    дүн ХУДАЛ гарна (ж: 450 зартай 💻 хэсэг «118 зар (14 дэд төрөл)» ✗).
+  //    Тиймээс `.range()`-ээр ХУУДАСЛАЖ бүх мөрийг уншина ✓
+  const all = [];
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data: page, error } = await admin
+      .from('listings')
+      .select('section, property_type, category')
+      .range(from, from + PAGE - 1);
+    if (error) { console.error('❌ Дүн уншихад алдаа:', error.message); process.exit(1); }
+    all.push(...(page || []));
+    if (!page || page.length < PAGE) break;
+  }
   const stat = {};
-  for (const r of all || []) {
+  for (const r of all) {
     const s = r.section || 'real-estate';
     stat[s] = stat[s] || { total: 0, types: {} };
     stat[s].total += 1;
@@ -635,7 +743,7 @@ function buildRow(section, subtype, k) {
     const v = stat[sec.value] || { total: 0, types: {} };
     console.log(`  ${sec.icon} ${sec.label.padEnd(16)} ${String(v.total).padStart(4)} зар (${Object.keys(v.types).length} дэд төрөл)`);
   }
-  console.log(`\n🎉 DB-д нийт ${(all || []).length} зар байна`);
+  console.log(`\n🎉 DB-д нийт ${all.length} зар байна`);
   console.log('👉 http://localhost:3000 — хэсэг дээр дарж дэд төрлүүдийн тоог харна уу');
   process.exit(0);
 })().catch((err) => {
