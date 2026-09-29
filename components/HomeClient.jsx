@@ -613,17 +613,24 @@ export default function HomeClient() {
     setPage(1);
     // ⚠️ ХЭСЭГ (0016) — breadcrumb-ийн «Үл хөдлөх» / «Автомашин» линк.
     //    ⚠️ `nav.section` байхгүй бол хэсэг ХӨНДӨГДӨХГҮЙ
-    if (nav.section !== undefined) { setSection(nav.section); setSectionOpen(false); }
-    // 🛠 БҮЛЭГ (3 дахь түвшин) — `nav.group` нь ОДОО зөвхөн «панель
-    //    нээлттэй байх ёстой» гэсэн утгатай (2026-09-29-ээс бүлгүүд ШУУД
-    //    нээлттэй харагддаг тул `groupOpen` төлөв ХЭРЭГГҮЙ болсон).
-    //    ⚠️ `undefined` = хөндөхгүй (жишээ нь хэсэг солих линк).
-    // ⚠️ ЭНЭ БЛОК нь `nav.section`-ий ДАРАА байх ЁСТОЙ — эс бөгөөс дээрх
-    //    `setSectionOpen(false)` нь drill-down-ыг дахин хааж, хэрэглэгч «бүлэг
-    //    рүү буцсан» ч дахин хэсэг сонгох шаардлагатай болно (2 даралт ✗).
-    // ⚠️ Хэсгийн линк (`group: null`) нь хуучин зан төлөвөөр бүх хэсгийн
-    //    дэлгэц рүү буцна (sectionOpen=false) ✓
-    if (nav.group !== undefined) {
+    if (nav.section !== undefined) setSection(nav.section);
+    /* 🎯 ПАНЕЛЬ НЭЭЛТТЭЙ БАЙХ ЭСЭХ — 3 ТОХИОЛДОЛ (2026-09-30):
+         ① `nav.keepOpen` — хэсгийн crumb (💻 «Компьютер, Дагалдах хэрэгсэл»)
+            → панель НЭЭЛТТЭЙ + FOCUS хаагдана (`groupOpen = null`): хэсгийн
+            ЭНГИЙН харагдац (бүх бүлэг + хэсгийн зарууд) — хэрэглэгчийн хүсэлт:
+            «Notebook хэсэгт орсон байлаад ... “Компьютер, Дагалдах хэрэгсэл”
+            дээр дархад ... зарууд руу шилждэг байх» ✓
+            ⚠️ ЭНЭ блок нь доорх `nav.group`-ООС ӨМНӨ байх ЁСТОЙ: хэсгийн
+               crumb-ийн `group: null` нь (хуучин дүрмээр) панелийг хааж,
+               7 tile дэлгэц рүү шидэх байсан ✗
+         ② `nav.group` — 3 дахь түвшин («Notebook», «Apple»): панель НЭЭЛТТЭЙ
+            (`!!nav.group`) ба тэр бүлэг НЭЭЛТТЭЙ байна ✓
+         ③ Бусад (хуучин хэсгийн/category crumb) — панель ХААГДАЖ 7 tile
+            дэлгэц гарна (2026-09-27-оос хойшхи зан төлөв ХЭВЭЭР ✓) */
+    if (nav.keepOpen) {
+      setSectionOpen(true);
+      setGroupOpen(null);
+    } else if (nav.group !== undefined) {
       setSectionOpen(!!nav.group);
       // 🗂 `collapsed: true` бүлэг (💻 Notebook) — breadcrumb-ийн «Notebook» /
       //    «Apple» линк дээр дарахад (`nav.filters` нь `propertyType`-ийг
@@ -635,6 +642,9 @@ export default function HomeClient() {
       //       ХАРАГДАХГҮЙ (`!filters.propertyType`) тул бүлгийг нээх шаардлага
       //       байхгүй — тиймээс URL-ээс `groupOpen` тавих код БАЙХГҮЙ ✓
       setGroupOpen(nav.group);
+    } else if (nav.section !== undefined) {
+      // ⚠️ ③ хуучин зан төлөв: хэсгийн deep crumb (ж: «Үл хөдлөх») → 7 tile
+      setSectionOpen(false);
     }
     if (nav.category !== undefined) setCategory(nav.category);
     if (nav.filters) setFilters((f) => ({ ...f, ...nav.filters }));
@@ -704,6 +714,13 @@ export default function HomeClient() {
    *    (🛠 services-ийн drill-down-тай ижил зарчим; 🗑 2026-09-29-ээс буцах чип
    *    («← Бүх бүлэг») ХАСАГДАВ — буцах нь бүлгийн ГАРЧИГ дээр дарах (chevron ▼),
    *    панелийн гарчиг дээр дарах (7 tile) эсвэл breadcrumb ✓)
+   *    🆕 BREADCRUMB-ИЙН ХЭСГИЙН ЛИНК (2026-09-30): FOCUS үед хэсгийн нэр
+   *    («Компьютер, Дагалдах хэрэгсэл») нь сүүлийн crumb ч ЛИНК болж
+   *    (`lib/breadcrumb.js` → `linkLast: focus` + `nav.keepOpen`), дарахад
+   *    «Notebook» FOCUS хаагдаж хэсгийн ЭНГИЙН харагдац (бүх бүлэг +
+   *    хэсгийн зарууд, панель НЭЭЛТТЭЙ) гарна ✓ — хэрэглэгчийн хүсэлт:
+   *    «Notebook хэсэгт орсон байлаад ... “Компьютер, Дагалдах хэрэгсэл” дээр
+   *    дархад “Компьютер, Дагалдах хэрэгсэл”-ийн зарууд руу шилждэг байх»
    * ⚠️ Утга нь ТУХАЙН ХЭСЭГТ БАЙГАА тугтай бүлгийн нэр — `groupOpen` шууд
    *    хэрэглэвэл хуучирсан нэр үлдэхэд (ж: хэсэг солиод) БҮХ бүлэг алга
    *    болж, панель хоосон харагдах байсан ✗ (хамгаалалт ✓)
@@ -950,6 +967,11 @@ export default function HomeClient() {
             propertyType: filters.propertyType,
             rooms: filters.rooms,
             district: filters.district,
+            /* 🎯 FOCUS (2026-09-30) — «Notebook» гэх мэт `collapsed` бүлэг
+               НЭЭЛТТЭЙ бол хэсгийн crumb нь линк болно (`linkLast`) ✓
+               ⚠️ `focusedGroup` нь ДЭЭР (мөр 713) бодогдсон — панелийн
+                  drill-down төлөв (URL-д ОРОХГҮЙ) */
+            focus: !!focusedGroup,
           })}
           onNavigate={goToCrumb}
           lastClassName="font-bold text-gray-700"
