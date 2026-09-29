@@ -698,6 +698,28 @@ export default function HomeClient() {
     () => (noSection ? [] : getSubtypeGroups(section)),
     [section, noSection]
   );
+  /**
+   * 🎯 FOCUS ГОРИМ (2026-09-29, 2 дахь хэрэглэгчийн хүсэлт: «Жишээ нь: Notebook
+   *    дээр дараад орход Notebook ний дотрох 3-р түвшиний Subcategory-ууд
+   *    харагдаад бусад 2-р түвшиний category ууд нь харагдахаа больдог байя»):
+   *    `collapsed: true` бүлэг НЭЭЛТТЭЙ үед бусад 2-р түвшин (БҮХ бүлэг —
+   *    гарчигтай БОЛОН `items: []` leaf мөрүүд) БҮРЭН АЛГА БОЛЖ, зөвхөн
+   *    ТУХАЙН бүлэг ба түүний дэд төрлүүд (**4 БАГАНА**) харагдана ✓
+   *    (🛠 services-ийн drill-down-тай ижил зарчим; буцах нь «← Бүх бүлэг»
+   *    чип эсвэл гарчиг дээр дарах ✓)
+   * ⚠️ Утга нь ТУХАЙН ХЭСЭГТ БАЙГАА тугтай бүлгийн нэр — `groupOpen` шууд
+   *    хэрэглэвэл хуучирсан нэр үлдэхэд (ж: хэсэг солиод) БҮХ бүлэг алга
+   *    болж, панель хоосон харагдах байсан ✗ (хамгаалалт ✓)
+   * ⚠️ FOCUS нь ЗӨВХӨН `collapsed` тугтай бүлэгт — 🛠 services-д туг байхгүй
+   *    тул тэнд бүх бүлэг ХЭВЭЭР харагдана ✓ (тестээр түгжсэн).
+   */
+  const focusedGroup = useMemo(
+    () =>
+      groupOpen && subtypeGroups.some((g) => g.collapsed && g.label === groupOpen)
+        ? groupOpen
+        : null,
+    [groupOpen, subtypeGroups]
+  );
   const sectionCategories = useMemo(() => getSectionCategories(section), [section]);
   const attrFilters = useMemo(() => getAttrFilters(section), [section]);
   /** «Зарах / Түрээслэх» сонголт харагдах эсэх — ⚠️ ЗӨВХӨН үл хөдлөхөд */
@@ -1121,11 +1143,34 @@ export default function HomeClient() {
                      нь ГАРЧИГ БИШ, ОНЦЛОХ ӨНГӨ АВАХГҮЙ — тэр нь ШҮҮЛТ
                      (дарагддаг `role="tab"`), цэнхэр нь «линк» гэсэн
                      хуурамч дохио өгөх байсан ✗.
-                ⚠️ ТОО ХАРАГДАХГҮЙ — нийт тоо нь дээрх толгойд (`sectionTotal`) ✓ */}
+                ⚠️ ТОО ХАРАГДАХГҮЙ — нийт тоо нь дээрх толгойд (`sectionTotal`) ✓
+
+                🎯 FOCUS ГОРИМ (2026-09-29, 2 дахь хэрэглэгчийн хүсэлт: «Notebook
+                   дээр дараад орход Notebook ний дотрох 3-р түвшиний
+                   Subcategory-ууд харагдаад бусад 2-р түвшиний category ууд нь
+                   харагдахаа больдог байя») — `collapsed: true` бүлэг нээгдэхэд
+                   **бусад БҮХ 2-р түвшин (гарчигтай бүлэг ба `items: []`
+                   мөрүүд) БҮРЭН АЛГА БОЛНО** ✓ (`focusedGroup && !open` →
+                   `return null`, ⚠️ leaf-ийн `return`-оос ӨМНӨ байрлана).
+                   Буцах зам: 🆕 «← Бүх бүлэг» чип эсвэл гарчиг дээр дарах.
+                   ⚠️ `services`-д `collapsed` туг байхгүй → тэнд FOCUS
+                   ажиллахгүй, 7 бүлэг/28 мөр ШУУД хэвээр ✓ */}
             {subtypeGroups.length > 0 && (
             <div className="grid grid-cols-1 items-start gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
               {subtypeGroups.map((g) => {
                 const leaf = g.items.length === 0; // доод түвшингүй → өөрөө сонгогдоно
+                // 🗂 `collapsed: true` бүлэг (💻 компьютерийн 4 бүлэг) — дотрох
+                //    дэд төрлүүд нь анхдагчаар ХАРАГДАХГҮЙ; гарчиг нь дарж
+                //    нээгддэг ✓ (доод түвшингүй бүлэгт туг байхгүй → шууд мөр)
+                const collapsible = !!g.collapsed;
+                const open = collapsible && focusedGroup === g.label;
+                // 🎯 FOCUS (2026-09-29, хэрэглэгчийн хүсэлт): нэг бүлэг нээлттэй
+                //    үед БУСАД 2-р түвшин БҮРЭН АЛГА → зөвхөн нээлттэй бүлэг ба
+                //    түүний дэд төрлүүд (4 БАГАНА) үлдэнэ ✓
+                // ⚠️ ЗААВАЛ leaf-ийн `if`-ээс ӨМНӨ — эс бөгөөс доод түвшингүй
+                //    5 бүлэг («Чихэвч», «Бусад сэлбэг» …) харагдсаар байх
+                //    байсан ✗ (тэдгээр нь `return`-оор дээгүүр гардаг)
+                if (focusedGroup && !open) return null;
                 if (leaf) {
                   return (
                     <div key={g.label} role="tablist" aria-label={g.label}>
@@ -1137,11 +1182,6 @@ export default function HomeClient() {
                     </div>
                   );
                 }
-                // 🗂 `collapsed: true` бүлэг (💻 компьютерийн 4 бүлэг) — дотрох
-                //    дэд төрлүүд нь анхдагчаар ХАРАГДАХГҮЙ; гарчиг нь дарж
-                //    нээгддэг ✓ (доод түвшингүй бүлэгт туг байхгүй → шууд мөр)
-                const collapsible = !!g.collapsed;
-                const open = collapsible && groupOpen === g.label;
                 return (
                   <div
                     key={g.label}
@@ -1149,6 +1189,25 @@ export default function HomeClient() {
                     // эс бөгөөс 4 багана нь нэг баганын дотор багтахгүй ✗
                     className={open ? 'sm:col-span-2 lg:col-span-4' : undefined}
                   >
+                    {/* 🎯 FOCUS горим дахь БУЦАХ ЗАМ — «← Бүх бүлэг» чип
+                        (`text-[13px]`, панелийн толгойн «← Бүх хэсэг» чиптэй
+                        ЯГ ижил харагдац ✓). ℹ️ Гарчиг (`GroupHeading`) дээр
+                        дарахад ч хаагдана — гэхдээ буцах зам нь ЦОРЫН НЭГ
+                        байх ёстой тул чип нэмэв (2026-09-29, хэрэглэгчийн
+                        хүсэлт: «бусад 2-р түвшиний category ууд нь
+                        харагдахаа больдог байя»). */}
+                    {open && (
+                      <div className="mb-1 flex items-center px-2">
+                        <button
+                          type="button"
+                          onClick={() => setGroupOpen(null)}
+                          title="Бүх бүлгийг харах"
+                          className="rounded-full border border-gray-200 bg-white px-3 py-0.5 text-[13px] font-semibold text-gray-600 transition hover:border-primary hover:text-primary"
+                        >
+                          ← Бүх бүлэг
+                        </button>
+                      </div>
+                    )}
                     {/* БҮЛГИЙН ГАРЧИГ — БОЛД, ЦЭНХЭР (`text-primary-dark`), 15/16px.
                         ⚠️ Анхдагчаар ДАРАХГҮЙ (`<p>`) — бүлэг нь ШҮҮЛТ БИШ,
                            зөвхөн навигацийн шошго (2026-09-27-ны шийдвэр ✓).
