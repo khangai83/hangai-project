@@ -64,7 +64,7 @@ t('🏷️ Үйлдвэрлэгч нь хайлттай combobox хэвээр (�
   assert.ok(f.options.length >= 95); // 38 → 95 болж өргөжсөн
 });
 
-t("Бусад хэсгийн шүүлт (jobs: 3, computers: 3, home: 1, electric: 1, 🧱 1, 🏭 1, services: 3)", () => {
+t("Бусад хэсгийн шүүлт (jobs: 3, computers: 3, furniture/home/travel: 1, electric: 1, 🧱 1, 🏭 1, services: 3)", () => {
   const count = (s) => getAttrFilters(s).length;
   assert.equal(count('jobs'), 3);
   assert.equal(count('computers'), 3);
@@ -78,6 +78,10 @@ t("Бусад хэсгийн шүүлт (jobs: 3, computers: 3, home: 1, electri
   //    ⚠️ Дэд төрөл нь ХАВТГАЙ (23 ба 20) — самбар дээр бүгд шууд харагдана ✓
   assert.equal(count('construction'), 1);
   assert.equal(count('equipment'), 1);
+  // 🛋️/🧳 2026-09-30 (5): 2 ШИНЭ 1-Р ТҮВШНИЙ хэсэг — мөн 1 л шүүлт
+  //    (дэд төрөл нь ХАВТГАЙ: 13 ба 12 — 🧱/🏭-ийн ЯГ ИЖИЛ хялбар форм ✓)
+  assert.equal(count('furniture'), 1);
+  assert.equal(count('travel'), 1);
   assert.equal(count('services'), 3);
 });
 
@@ -207,6 +211,86 @@ t('⚽ hobby: форм дээр зөвхөн condition талбар (brand/model
   assert.equal(formatAttrsLine('hobby', { brand: 'Giant', condition: 'Шинэ' }), '');
 });
 
+// ---- ⑤г ⚽ Аялал, Спорт, Хобби: 6 ХАВТГАЙ дэд төрөл (2026-09-30 (5)) ----
+// 🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Тавилга болон Аяллын хэрэгсэл -ийг 1-р Category
+// болго. Аяллын хэрэгсэл -ийг Аяны бараа нэртэй болго» → «Аяллын хэрэгсэл»
+// (12 дэд төрөл) нь 🧳 `travel` («Аяны бараа») ТУСДАА ХЭСЭГ болов.
+// ⇒ ЭНД үлдсэн 6 нь ШУУД (2 дахь түвшин) — 3 дахь түвшин (бүлэг) БАЙХГҮЙ ✓
+t('⚽ Хэсгийн нэр «Аялал, Спорт, Хобби» (value нь `hobby` ХЭВЭЭР)', () => {
+  const sec = getSection('hobby');
+  assert.equal(sec.label, 'Аялал, Спорт, Хобби');
+  assert.equal(sec.value, 'hobby');   // ⚠️ DB/URL/CHECK хөндөгдөөгүй ✓
+  assert.equal(sec.icon, '⚽');
+  // ⚠️ ХУУЧИН нэр хаана ч үлдэхгүй (2026-09-30 (4)-д солигдсон)
+  assert.notEqual(sec.label, 'Амралт, спорт, хобби');
+});
+
+t('⚽ hobby: 6 дэд төрөл — 3 дахь түвшин (бүлэг) БҮРЭН ХАСАГДСАН', () => {
+  // ⚠️ 2026-09-30 (5): өмнө нь 7 бүлэг (1 нь 12 item-тай) байв — «Аяллын
+  //    хэрэгсэл» бүлэг нь 🧳 `travel` тусдаа хэсэг болж ГАРСНЫ дараа бүлэг
+  //    үлдэхгүй (subtypeGroups ХАСАГДАВ) → панельд 6 мөр ШУУД харагдана ✓
+  assert.deepEqual(getSubtypeGroups('hobby'), []);
+  const subtypes = getSubtypes('hobby');
+  assert.deepEqual(subtypes, [
+    'Загас ан агнуур', 'Ном, сонин, сэтгүүл', 'Спортын хэрэгсэл',
+    'Хөгжмийн зэмсэг', 'Цуглуулга', 'Унадаг дугуй, сэлбэг',
+  ]);
+  assert.equal(new Set(subtypes).size, 6);   // ⚠️ давхардал 0
+  // ⚠️ Бүлгийн ГАРЧИГ ба «хэрэглэгчийн 12 дэд төрөл» ЭНД БАЙХГҮЙ (🧳 рүү шилжив)
+  assert.ok(!subtypes.includes('Аяллын хэрэгсэл'));
+  assert.ok(!subtypes.includes('Майхан, сүүдрэвч'));
+  // ⚠️ «Бусад» ⚽ hobby-д БАЙХГҮЙ — 🧳 `travel`-д (2026-09-30 (5)) ✓
+  assert.ok(!subtypes.includes('Бусад'));
+});
+
+t('⚽ hobby: бүлэггүй тул breadcrumb 2 түвшинтэй (findSubtypeGroup → null)', () => {
+  for (const s of getSubtypes('hobby')) {
+    assert.equal(findSubtypeGroup('hobby', s), null, `«${s}» → null байх ёстой`);
+  }
+  // ⚠️ Хуучин бүлгийн гарчиг ч item БИШ (DB-д тийм `property_type` үүсэхгүй ✓)
+  assert.equal(findSubtypeGroup('hobby', 'Аяллын хэрэгсэл'), null);
+});
+
+// ---- ⑤д 🧳 «АЯНЫ БАРАА» — ШИНЭ 1-Р ТҮВШНИЙ ХЭСЭГ (2026-09-30 (5)) ----
+// 🎯 Хэрэглэгчийн хүсэлт: «Аяллын хэрэгсэл -ийг Аяны бараа нэртэй болго» +
+// «1-р Category болго» → ⚽ hobby-гийн 3 дахь түвшний «Аяллын хэрэгсэл» бүлэг
+// (12 item, `collapsed: true`) нь ТУСДАА хэсэг болж, 12 нэр нь ШУУД дэд төрөл
+// (2 дахь түвшин) болов ✓ — 🧱 construction/🏭 equipment-ийн ЯГ ИЖИЛ хавтгай мод.
+t('🧳 travel: нэр «Аяны бараа», icon 🧳, value `travel` (DB-д ШИНЭ утга)', () => {
+  const sec = getSection('travel');
+  assert.equal(sec.label, 'Аяны бараа');
+  assert.equal(sec.value, 'travel');
+  assert.equal(sec.icon, '🧳');
+  // ✏️ ХУУЧИН нэр «Аяллын хэрэгсэл» нь ОДОО хэсгийн нэр БИШ ✓
+  assert.notEqual(sec.label, 'Аяллын хэрэгсэл');
+  // ⚠️ DB-д хадгалахын тулд `listings_section_valid` CHECK-д 'travel' нэмэх
+  //    ЁСТОЙ → `0026_furniture_travel_sections.sql` (доор шалгана ✓)
+  assert.equal(hasSimpleForm('travel'), true);
+  assert.deepEqual(getAttrFilters('travel').map((f) => f.key), ['condition']);
+  assert.deepEqual(getSection('travel').attrFields.map((f) => f.key), ['condition']);
+});
+
+t('🧳 travel: 12 дэд төрөл — хэрэглэгчийн жагсаалтын ЯГ дарааллаар', () => {
+  const subtypes = getSubtypes('travel');
+  assert.equal(subtypes.length, 12);
+  assert.equal(new Set(subtypes).size, 12);   // ⚠️ давхардал 0
+  assert.deepEqual(subtypes, [
+    'Аяны гэрэл, power bank', 'Аяны хоолны хэрэгсэл', 'Аяны ор гудас',
+    'Аяны ширээ сандал', 'Аяны цүнх, чемодан', 'Аяны цахилгаан хэрэгсэл',
+    'Бассейн, зөөврийн душ', 'Завь ба дагалдах хэрэгсэл',
+    'Майхан, сүүдрэвч', 'Нүдний дуран, телескоп', 'Уулын хэрэгсэл', 'Бусад',
+  ]);
+  // ⚠️ Бүлгийн гарчиг нь дэд төрөл БИШ (панельд «Аяллын хэрэгсэл»-ээр
+  //    шүүх боломжгүй — тэр нь зөвхөн хуучин навигацийн гарчиг байв) ✓
+  assert.ok(!subtypes.includes('Аяллын хэрэгсэл'));
+  // ⚠️ «Бусад» нь ЗӨВХӨН 1 удаа (12 дахь мөр) ✓
+  assert.equal(subtypes.filter((s) => s === 'Бусад').length, 1);
+  // ⚠️ 3 дахь түвшин (бүлэг) БАЙХГҮЙ → `getSubtypeGroups` → [] ✓
+  assert.deepEqual(getSubtypeGroups('travel'), []);
+  assert.equal(findSubtypeGroup('travel', 'Майхан, сүүдрэвч'), null);
+  assert.equal(findSubtypeGroup('travel', 'Бусад'), null);
+});
+
 // ---- ⑤в 🛋️ Гэр ахуйн бараа (home): МӨН ХЯЛБАР ФОРМ (2026-09-29) ----
 // Хэрэглэгчийн хүсэлт: «Гэр ахуйн барааг мөн адил ийм форматтай болго, хурдан хий».
 t('🛋️ home: ЗӨВХӨН «Шинэ / Хуучин» шүүлттэй — 🚚 Хүргэлт ХАСАГДСАН', () => {
@@ -235,14 +319,18 @@ t('🛋️ home: форм дээр зөвхөн condition (brand/material/size/c
   assert.equal(formatAttrsLine('home', {}), '');
 });
 
-t('⚡ hasSimpleForm: ⚽ hobby, 🛋️ home ба ⚡ electric (бусад 5 хэсэгт false)', () => {
+t('⚡ hasSimpleForm: ⚽ hobby, 🧺 home, 🛋️ furniture, 🧳 travel ба ⚡ electric (бусад 5 хэсэгт false)', () => {
   assert.equal(hasSimpleForm('hobby'), true);
   // ⚡ 2026-09-29 (хэрэглэгчийн хүсэлт): «Гэр ахуйн барааг мөн адил ийм форматтай
-  //    болго» → 🛋️ `home` мөн хялбар форм болов ✓
+  //    болго» → 🧺 `home` мөн хялбар форм болов ✓
   assert.equal(hasSimpleForm('home'), true);
   // ⚡ 2026-09-30 (хэрэглэгчийн хүсэлт): ⚡ «Цахилгаан бараа» — шинэ хэсэг,
-  //    🛋️ home-той ижил хялбар форм (форм зөвхөн «Шинэ / Хуучин» асууна) ✓
+  //    🧺 home-той ижил хялбар форм (форм зөвхөн «Шинэ / Хуучин» асууна) ✓
   assert.equal(hasSimpleForm('electric'), true);
+  // 🛋️/🧳 2026-09-30 (5): 2 ШИНЭ хэсэг мөн хялбар форм (🧺 home-той ЯГ ИЖИЛ) —
+  //    дэд төрөл нь хавтгай (13 ба 12) тул форм урт болохгүй ✓
+  assert.equal(hasSimpleForm('furniture'), true);
+  assert.equal(hasSimpleForm('travel'), true);
   for (const s of ['real-estate', 'auto', 'jobs', 'computers', 'services']) {
     assert.equal(hasSimpleForm(s), false, `${s} нь хялбар форм БИШ`);
   }
@@ -347,12 +435,15 @@ t('🛠 services: бүлгүүдэд `collapsed` туг БАЙХГҮЙ (бүгд
   assert.equal(groups.filter((g) => g.collapsed).length, 0);
 });
 
-t('🛠/💻/⚡/🛋️ Ерөнхий гэрээ: бүх бүлгийн leaf нь `getSubtypes`-д ЗААВАЛ байна', () => {
+t('🛠/💻/⚡ Ерөнхий гэрээ: бүх бүлгийн leaf нь `getSubtypes`-д ЗААВАЛ байна', () => {
   const withGroups = SECTIONS.filter((s) => getSubtypeGroups(s.value).length > 0);
-  // ⚠️ Одоо 4 хэсэг: 💻 computers (2026-09-29), 🛋️ home (2026-09-30),
-  //    ⚡ electric (2026-09-30) ба 🛠️ services (2026-09-27)
-  //    — `SECTIONS`-ийн дарааллаар ✓
-  assert.deepEqual(withGroups.map((s) => s.value), ['computers', 'home', 'electric', 'services']);
+  // ⚠️ Одоо 3 хэсэг: 💻 computers (2026-09-29), ⚡ electric (2026-09-30) ба
+  //    🛠️ services (2026-09-27) — `SECTIONS`-ийн дарааллаар ✓
+  //    ℹ️ 2026-09-30 (5): 🧺 home, ⚽ hobby (бүлэг нь тусдаа хэсэг болов) ба
+  //    🛋️ furniture/🧳 travel (ШИНЭ, хавтгай) — `subtypeGroups`-гүй ✓
+  assert.deepEqual(withGroups.map((s) => s.value),
+    ['computers', 'electric', 'services']);
+  assert.equal(withGroups.length, 3);
   withGroups.forEach((s) => {
     const subtypes = getSubtypes(s.value);
     getSubtypeGroups(s.value).forEach((g) => {
@@ -429,24 +520,27 @@ t('⚡ electric: Гэр ахуйн бараанаас «Цахилгаан ба�
   //    хуучин заруудыг `electric`/«Бусад» руу шилжүүлнэ ✓)
   assert.ok(!getSubtypes('home').includes('Цахилгаан бараа'));
   // ⚠️ 2026-09-30 (2 дахь хүсэлт): `home` нь 3 ТҮВШНИЙ МОД болж 10 → **22**
-  //    дэд төрөл болов («Тавилга» 13 + «Гэр ахуйн бараа» 9) — доорх ⑧-д
-  //    дэлгэрэнгүй ✓
-  assert.equal(getSubtypes('home').length, 22);
+  //    дэд төрөл болсон БОЛОВЧ ⚠️ 2026-09-30 (5)-д «Тавилга» (13) нь 🛋️
+  //    `furniture` ТУСДАА хэсэг болж ГАРСАН тул энд 9 ХАВТГАЙ дэд төрөл ҮЛДЭВ
+  //    (доорх ⑧ ба ⑪-д дэлгэрэнгүй ✓)
+  assert.equal(getSubtypes('home').length, 9);
   // ⚠️ ХЭСГИЙН НЭР нь «Цахилгаан бараа» — дэд төрөл нь хэзээ ч хэсгийн нэртэй
   //    ижил байх ёсгүй (төөрөгдөл ✗)
   assert.ok(!getSubtypes('electric').includes('Цахилгаан бараа'));
   assert.equal(getSection('electric').label, 'Цахилгаан бараа');
   assert.equal(getSection('electric').icon, '⚡');
-  // ⚠️ Байрлал: 🛋️ home ба ⚽ hobby-гийн ХООРОНД (SECTIONS-ийн дараалал) ✓
-  //    ℹ️ 2026-09-30 (2 дахь хүсэлт): 🧱 construction + 🏭 equipment нэмэгдэж
-  //    8 → 10 хэсэг болов — тэдгээр нь ⚡-ийн ДАРАА, ⚽-гийн ӨМНӨ (доорх ⑨) ✓
+  // ⚠️ Байрлал: 🛋️ furniture → 🧺 home → ⚡ electric (SECTIONS-ийн дараалал) ✓
+  //    ℹ️ 2026-09-30 (2): 🧱 construction + 🏭 equipment нэмэгдэж 8 → 10 хэсэг
+  //    ℹ️ 2026-09-30 (5): 🛋️ furniture + 🧳 travel нэмэгдэж 10 → **12** хэсэг
+  //    болов — 🛋️ нь 💻 компьютерийн ДАРАА, 🧳 нь 🏭-ийн ДАРАА · ⚽-гийн ӨМНӨ ✓
   assert.deepEqual(
     SECTIONS.map((s) => s.value),
     [
-      'real-estate', 'auto', 'jobs', 'computers', 'home', 'electric',
-      'construction', 'equipment', 'hobby', 'services',
+      'real-estate', 'auto', 'jobs', 'computers', 'furniture', 'home',
+      'electric', 'construction', 'equipment', 'travel', 'hobby', 'services',
     ],
   );
+  assert.equal(SECTIONS.length, 12);
 });
 
 t('⚡ electric: картын мөр (CARD_ATTR_ORDER) — брэнд, загвар, хэмжээ, төлөв', () => {
@@ -459,46 +553,70 @@ t('⚡ electric: картын мөр (CARD_ATTR_ORDER) — брэнд, загв�
   assert.equal(formatAttrsLine('electric', {}), '');
 });
 
-// ---- ⑧ 🛋️ ГЭР АХУЙН БАРАА — 3 ТҮВШНИЙ МОД (2026-09-30) ----
-// Хэрэглэгчийн хүсэлт: «Гэсэн 2 category оруулж өгнө үү, Гэр ахуйн барааны
-// категорийг шинэчлэх, Тавилга-ыг гэр ахуйн барааны өмнө оруулаарай».
-// Бүтэц нь 💻 computers/⚡ electric/🛠️ services-ийн ЯГ ИЖИЛ мод.
-t('🛋️ home: 2 бүлэг — «Тавилга» (13) ЭХЭНД, «Гэр ахуйн бараа» (9) ДАРАА нь', () => {
-  const groups = getSubtypeGroups('home');
-  assert.equal(groups.length, 2);
-  // ⚠️ ДАРААЛАЛ нь хэрэглэгчийн шаардлага («Тавилга-ыг гэр ахуйн барааны
-  //    өмнө оруулаарай») — UI ба форм (`<optgroup>`) үүнийг шууд дагана ✓
-  assert.deepEqual(groups.map((g) => g.label), ['Тавилга', 'Гэр ахуйн бараа']);
-  assert.equal(groups[0].items.length, 13);
-  assert.equal(groups[1].items.length, 9);
-  // 🗂 Хоёр бүлэг хоёулаа доод түвшинтэй → панель дээр АНХДАГЧААР ХААЛТТАЙ
-  //    (дарж нээхэд 4 БАГАНААР, 🎯 FOCUS — 💻/⚡-тэй ижил зан төлөв)
-  assert.deepEqual(groups.filter((g) => g.collapsed).map((g) => g.label), [
-    'Тавилга', 'Гэр ахуйн бараа',
-  ]);
-  // ⚠️ `items: []` (өөрөө сонгогдох) бүлэг БАЙХГҮЙ — 2 бүлэг хоёулаа ГАРЧИГ
-  assert.equal(groups.filter((g) => g.items.length === 0).length, 0);
+// ---- ⑧ 🛋️ «ТАВИЛГА» — ШИНЭ 1-Р ТҮВШНИЙ ХЭСЭГ (2026-09-30 (5)) ----
+// 🎯 Хэрэглэгчийн хүсэлт: «Тавилга болон Аяллын хэрэгсэл -ийг 1-р Category болго».
+// ⚠️ «Тавилга» нь 2026-09-30 (2)-д 🧺 `home` хэсгийн 3 дахь түвшний БҮЛЭГ
+//    (13 item, `collapsed: true`) байв → ОДОО тусдаа 1-р түвшний хэсэг бөгөөд
+//    13 нэр нь ШУУД дэд төрөл (2 дахь түвшин) болов ✓
+t('🛋️ furniture: нэр «Тавилга», icon 🛋️, value `furniture` (DB-д ШИНЭ утга)', () => {
+  const sec = getSection('furniture');
+  assert.equal(sec.label, 'Тавилга');
+  assert.equal(sec.value, 'furniture');
+  assert.equal(sec.icon, '🛋️');   // ⚠️ icon нь 🧺 home-оос ШИЛЖЭВ (тэр нь 🧺 болов)
+  // ⚠️ DB-д хадгалахын тулд `listings_section_valid` CHECK-д 'furniture' нэмэх
+  //    ЁСТОЙ → `0026_furniture_travel_sections.sql` (доор шалгана ✓)
+  assert.equal(hasSimpleForm('furniture'), true);
+  assert.deepEqual(getAttrFilters('furniture').map((f) => f.key), ['condition']);
+  assert.deepEqual(getSection('furniture').attrFields.map((f) => f.key), ['condition']);
+  // ⚠️ ХЭСГИЙН НЭР «Тавилга» нь дэд төрөл БИШ (DB-д тийм `property_type`
+  //    хэзээ ч үүсэхгүй — 2026-09-30 (2)-ын дүрэм ХЭВЭЭР ✓)
+  assert.ok(!getSubtypes('furniture').includes('Тавилга'));
 });
 
-t('🛋️ home: модны item-үүд нь хэрэглэгчийн жагсаалттай ЯГ таарах', () => {
-  const groups = getSubtypeGroups('home');
-  assert.deepEqual(groups[0].items, [
+t('🛋️ furniture: 13 дэд төрөл — хэрэглэгчийн жагсаалтын ЯГ дарааллаар', () => {
+  const subtypes = getSubtypes('furniture');
+  assert.equal(subtypes.length, 13);
+  assert.equal(new Set(subtypes).size, 13);   // ⚠️ давхардал 0
+  assert.deepEqual(subtypes, [
     'Зочны өрөөний', 'Унтлагын өрөөний', 'Гал тогооны', 'Үүдний өрөөний',
     'Оффисын тавилга', 'Буйдан, кресло', 'Ор, матрас', 'Шкаф, комод, авдар',
     'Ширээ, сандал', 'Тавиур, полк', 'Толь', 'Сейф', 'Бусад',
   ]);
-  assert.deepEqual(groups[1].items, [
+  // ⚠️ «Бусад» нь ЗӨВХӨН 1 удаа (13 дахь мөр) ✓
+  assert.equal(subtypes.filter((s) => s === 'Бусад').length, 1);
+  // ⚠️ 3 дахь түвшин (бүлэг) БАЙХГҮЙ → `getSubtypeGroups` → [] ✓
+  assert.deepEqual(getSubtypeGroups('furniture'), []);
+  assert.equal(findSubtypeGroup('furniture', 'Буйдан, кресло'), null);
+  assert.equal(findSubtypeGroup('furniture', 'Гэр ахуйн бараа'), null);
+});
+
+t('🧺 home: 9 дэд төрөл (ХАВТГАЙ) — «Тавилга» 13 нь ⚠️ ГАРСАН', () => {
+  const subtypes = getSubtypes('home');
+  assert.equal(subtypes.length, 9);
+  assert.equal(new Set(subtypes).size, 9);   // ⚠️ давхардал 0
+  assert.deepEqual(subtypes, [
     'Абажур, гэрэл, чийдэн', 'Угаалгын өрөө, цэвэрлэгээний хэрэгсэл',
     'Гал тогооны хэрэгсэл, сав суулга', 'Гэрийн чимэглэл, тохижилт',
     'Хивс, дорож, дэвсгэр', 'Цагаан хэрэглэл, хөнжил, дэр',
     'Хөшиг, тюль, бүтээлэг', 'Зуух, пийшин', 'Өлгүүр',
   ]);
+  // ⚠️ ОДОО 3 дахь түвшин (бүлэг) БАЙХГҮЙ — өмнөх 2 бүлгийн нэг («Тавилга») нь
+  //    🛋️ `furniture` хэсэг болов; үлдсэн ганц бүлгийн нэр нь хэсгийн нэртэй
+  //    ЯГ ИЖИЛ тул бүлэг нь зөвхөн илүүц алхам + breadcrumb давхардал болно ✗
+  assert.deepEqual(getSubtypeGroups('home'), []);
+  assert.equal(findSubtypeGroup('home', 'Хивс, дорож, дэвсгэр'), null);
+  // ⚠️ Бүлгийн гарчиг («Тавилга», «Гэр ахуйн бараа») нь дэд төрөл БИШ ✓
+  assert.ok(!subtypes.includes('Тавилга'));
+  assert.ok(!subtypes.includes('Гэр ахуйн бараа'));
+  // ⚠️ «Тавилга»-гийн 13 дэд төрөл ЭНД БАЙХГҮЙ (🛋️ furniture-т ✓)
+  ['Буйдан, кресло', 'Ор, матрас', 'Шкаф, комод, авдар', 'Толь', 'Сейф']
+    .forEach((s) => assert.ok(!subtypes.includes(s), `«${s}» home-д үлдсэн ✗`));
+  // ⚠️ «Бусад» нь home-д БАЙХГҮЙ (🧺 home-ийн жагсаалтад ч байгаагүй) ✓
+  assert.ok(!subtypes.includes('Бусад'));
 });
 
-t('🛋️ home: 22 дэд төрөл ДАВХАРДАЛГҮЙ + хуучин 10 хавтгай нэр БҮРЭН ХАСАГДСАН', () => {
+t('🧺 home: хуучин 10 хавтгай нэр БҮРЭН ХАСАГДСАН (regress-ийн хамгаалалт)', () => {
   const subtypes = getSubtypes('home');
-  assert.equal(subtypes.length, 22); // 13 + 9 (давхардсан item байхгүй)
-  assert.equal(new Set(subtypes).size, 22); // ⚠️ давхардал 0
   // ⚠️ Хуучин 10 хавтгай дэд төрөл — «Тавилга, буйдан» … «Хадгалах шүүгээ,
   //    тавиур». Үлдвэл хуучин зарууд дэд төрлийн тооноос гадуур орхигдоно ✗
   [
@@ -506,27 +624,11 @@ t('🛋️ home: 22 дэд төрөл ДАВХАРДАЛГҮЙ + хуучин 10
     'Гэрэлтүүлэг', 'Хивс, дэвсгэр', 'Ор, унтлагын хэрэгсэл',
     'Цэвэрлэгээ, угаалга', 'Чимэглэл, зураг', 'Хадгалах шүүгээ, тавиур',
   ].forEach((t) => assert.ok(!subtypes.includes(t), `хуучин «${t}» үлдсэн ✗`));
-  // ⚠️ Группын ГАРЧИГ нь дэд төрөл БИШ (DB-д тийм зар хэзээ ч үүсэхгүй)
-  assert.ok(!subtypes.includes('Тавилга'));
-  // ⚠️ «Бусад» нь ЗӨВХӨН «Тавилга» бүлэгт (хэрэглэгчийн жагсаалт) — 1 л утга
-  assert.equal(subtypes.filter((s) => s === 'Бусад').length, 1);
-  assert.equal(getSubtypeGroups('home')[1].items.includes('Бусад'), false);
+  // ⚠️ «Цахилгаан бараа» нь ⚡ electric хэсэг рүү 2026-09-30-нд шилжсэн ✓
+  assert.ok(!subtypes.includes('Цахилгаан бараа'));
 });
 
-t('🛋️ home: бүлэг → дэд төрлийн зам (breadcrumb) ба «Бусад»', () => {
-  assert.equal(findSubtypeGroup('home', 'Буйдан, кресло').label, 'Тавилга');
-  assert.equal(findSubtypeGroup('home', 'Зочны өрөөний').label, 'Тавилга');
-  assert.equal(findSubtypeGroup('home', 'Хивс, дорож, дэвсгэр').label, 'Гэр ахуйн бараа');
-  assert.equal(findSubtypeGroup('home', 'Зуух, пийшин').label, 'Гэр ахуйн бараа');
-  // ⚠️ «Бусад» нь 1 бүлэгт л байгаа тул ЭХНИЙ бүлгийн дүрэм хэрэггүй — тодорхой
-  assert.equal(findSubtypeGroup('home', 'Бусад').label, 'Тавилга');
-  // ⚠️ Группын гарчиг нь item БИШ → breadcrumb-д нэмэгдэхгүй ✓
-  assert.equal(findSubtypeGroup('home', 'Тавилга'), null);
-  // ⚠️ Хуучин нэрээр хадгалагдсан зар (migration хийгээгүй бол) → `null`
-  assert.equal(findSubtypeGroup('home', 'Гэрэлтүүлэг'), null);
-});
-
-t('🛋️ home: картын мөр (CARD_ATTR_ORDER) ХЭВЭЭР — брэнд, материал, хэмжээ, өнгө, төлөв', () => {
+t('🧺 home: картын мөр (CARD_ATTR_ORDER) ХЭВЭЭР — брэнд, материал, хэмжээ, өнгө, төлөв', () => {
   assert.equal(
     formatAttrsLine('home', { brand: 'IKEA', material: 'Мод', size: '120×60 см', color: 'Хар', condition: 'Хуучин' }),
     'IKEA · Мод · 120×60 см · Хар · ✅ Хуучин',
@@ -534,11 +636,12 @@ t('🛋️ home: картын мөр (CARD_ATTR_ORDER) ХЭВЭЭР — брэн
   // ⚠️ ХЯЛБАР ФОРМ-той ШИНЭ зар (зөвхөн condition) → мөр богиносно, эвдрэхгүй ✓
   assert.equal(formatAttrsLine('home', { condition: 'Шинэ' }), '✅ Шинэ');
   assert.equal(formatAttrsLine('home', {}), '');
-  // ⚠️ Шүүлт/форм нь ХЭВЭЭР (зөвхөн `condition`) — мод нэмэгдсэнээс үл хамаарна ✓
+  // ⚠️ Шүүлт/форм нь ХЭВЭЭР (зөвхөн `condition`) — хэсэг хуваагдаад ч өөрчлөгдөхгүй ✓
   assert.equal(getAttrFilters('home').map((f) => f.key).join(','), 'condition');
   assert.equal(hasSimpleForm('home'), true);
   assert.equal(getSection('home').label, 'Гэр ахуйн бараа');
-  assert.equal(getSection('home').icon, '🛋️');
+  // ✏️ 2026-09-30 (5): 🛋️ → 🧺 (🛋️ нь «Тавилга» хэсэгт шилжсэн) ✓
+  assert.equal(getSection('home').icon, '🧺');
 });
 
 
@@ -546,11 +649,12 @@ t('🛋️ home: картын мөр (CARD_ATTR_ORDER) ХЭВЭЭР — брэн
 // Хэрэглэгчийн хүсэлт: «Барилгын материал … Тоног төхөөрөмж … ийм 2 category
 // орууж өгөөрэй». ⚠️ Жагсаалтын ЭХНИЙ мөр (гарчиг) нь КАТЕГОРИЙН НЭР — дэд
 // төрөл БИШ ✓ Дэд төрөл нь ХАВТГАЙ (2 түвшин) — бүлэг (3 дахь түвшин) БАЙХГҮЙ ✓
-t('🧱/🏭 Шинэ 2 хэсэг: SECTIONS-д 10 хэсэг болов, ⚡-ийн ДАРАА · ⚽-ийн ӨМНӨ', () => {
+t('🧱/🏭 Шинэ 2 хэсэг: SECTIONS-д 12 хэсэг болов, ⚡-ийн ДАРАА · ⚽-гийн ӨМНӨ', () => {
   assert.deepEqual(SECTIONS.map((s) => s.value), [
-    'real-estate', 'auto', 'jobs', 'computers', 'home', 'electric',
-    'construction', 'equipment', 'hobby', 'services',
+    'real-estate', 'auto', 'jobs', 'computers', 'furniture', 'home',
+    'electric', 'construction', 'equipment', 'travel', 'hobby', 'services',
   ]);
+  assert.equal(SECTIONS.length, 12);   // ⚠️ 2026-09-30 (5): 10 → 12 хэсэг боллоо
   // ⚠️ `labels` нь хэрэглэгчийн жагсаалтын ГАРЧИГТАЙ ЯГ таарах ёстой
   assert.equal(getSection('construction').label, 'Барилгын материал');
   assert.equal(getSection('construction').icon, '🧱');
@@ -597,17 +701,20 @@ t('🏭 equipment: 20 дэд төрөл — «Тоног төхөөрөмж» н
 });
 
 t('🧱/🏭 Хавтгай хэсэг: `getSubtypeGroups` → [], бүлэг дээр дарах мөр БАЙХГҮЙ', () => {
-  for (const s of ['construction', 'equipment']) {
+  // ⚠️ 2026-09-30 (5): 🛋️ `furniture`, 🧺 `home`, 🧳 `travel` ба ⚽ `hobby`
+  //    мөн ХАВТГАЙ болов (дэд төрөл нь ШУУД) → тэдгээрийг ч хамт шалгана ✓
+  for (const s of ['construction', 'equipment', 'furniture', 'home', 'travel', 'hobby']) {
     assert.deepEqual(getSubtypeGroups(s), []);
     assert.equal(getSubtypeGroups(s).length, 0);
-    // ⚠️ `findSubtypeGroup` нь `null` буцаана → breadcrumb 3 түвшинтэй ХЭВЭЭР:
+    // ⚠️ `findSubtypeGroup` нь `null` буцаана → breadcrumb 2 түвшинтэй:
     //    «Бүх зар › 🧱 Барилгын материал › Тоосго, бетон, блок» ✓
     assert.equal(findSubtypeGroup(s, getSubtypes(s)[0]), null);
-    // ⚠️ Regress-ийн хамгаалалт: бүлэгтэй 4 хэсэг ХӨНДӨГДӨӨГҮЙ ✓
   }
+  // ⚠️ Regress-ийн хамгаалалт: бүлэгтэй 3 хэсэг ХӨНДӨГДӨӨГҮЙ ✓
   const withGroups = SECTIONS.filter((s) => getSubtypeGroups(s.value).length > 0);
-  assert.deepEqual(withGroups.map((s) => s.value), ['computers', 'home', 'electric', 'services']);
-  assert.equal(withGroups.length, 4);
+  assert.deepEqual(withGroups.map((s) => s.value),
+    ['computers', 'electric', 'services']);
+  assert.equal(withGroups.length, 3);
 });
 
 t('🧱/🏭 Хялбар форм (🛋️/⚡/⚽-той ижил): зөвхөн «Шинэ / Хуучин» шүүлт', () => {
@@ -683,11 +790,15 @@ t('💼 jobs: хуучин 15 нэр БҮГД хасагдав (зөвхөн н�
 });
 
 t('💼 jobs: «Бусад» нь БУСАД хэсэгт ХЭВЭЭР (regress-ийн хамгаалалт)', () => {
-  // ⚠️ Зөвхөн jobs-оос хассан — 🛋️ home / ⚡ electric / 🧱 construction
-  //    дээр «Бусад» хэвээр байх ЁСТОЙ ✓
-  assert.ok(getSubtypes('home').includes('Бусад'));
+  // ⚠️ Зөвхөн jobs-оос хассан — 🛋️ furniture / ⚡ electric / 🧱 construction
+  //    дээр «Бусад» хэвээр байх ЁСТОЙ ✓ (🧳 travel ч 2026-09-30 (5)-д нэмэгдэв)
+  assert.ok(getSubtypes('furniture').includes('Бусад'));
+  assert.ok(getSubtypes('travel').includes('Бусад'));
   assert.ok(getSubtypes('electric').includes('Бусад'));
   assert.ok(getSubtypes('construction').includes('Бусад'));
+  // ⚠️ Харин 🧺 home ба ⚽ hobby-д «Бусад» БАЙХГҮЙ ✓
+  assert.ok(!getSubtypes('home').includes('Бусад'));
+  assert.ok(!getSubtypes('hobby').includes('Бусад'));
 });
 
 t('💼 jobs: зөвхөн 2 нэр 🛠️ services-тэй ДАВХАРДАЖ байна (section нь ялгана ✓)', () => {
@@ -743,6 +854,47 @@ t('💼 0024 migration: 15 хуучин нэр солигдож, 26 шинэ н�
   assert.ok(!/\bdelete\s+from\b/i.test(sql), '⚠️ зар УСТГАХГҮЙ (зөвхөн нэр солино)');
 });
 
+
+t('🛋️/🧳 0026 migration: CHECK 12 утга + home→furniture / hobby→travel шилжүүлэлт', () => {
+  const sql = readFileSync(
+    new URL('../supabase/migrations/0026_furniture_travel_sections.sql', import.meta.url), 'utf8',
+  );
+  // ① CHECK constraint: 12 утга — `SECTIONS`-ийн БҮХ `value` байх ЁСТОЙ
+  //    (эс бөгөөс seed/form дээр `23514 check constraint` алдаа гарна ✗)
+  assert.ok(/drop constraint if exists listings_section_valid/.test(sql));
+  assert.ok(/add constraint listings_section_valid/.test(sql));
+  SECTIONS.forEach((s) => assert.ok(sql.includes(`'${s.value}'`), `CHECK-д «${s.value}» алга ✗`));
+  // ⚠️ ШИНЭ 2 утга (`furniture`, `travel`) нь ЗААВАЛ нэмэгдсэн байх ЁСТОЙ ✓
+  assert.ok(sql.includes("'furniture'"));
+  assert.ok(sql.includes("'travel'"));
+
+  // ② 🛋️ `home` → `furniture`: 13 дэд төрөл БҮГД шилжинэ (зар УСТГАХГҮЙ)
+  const furnitureBlock = sql.match(/set section = 'furniture'[\s\S]*?\n\s*\);/)[0];
+  assert.ok(/where section = 'home'/.test(furnitureBlock));
+  getSubtypes('furniture')
+    .forEach((s) => assert.ok(furnitureBlock.includes(`'${s}'`), `②-т «${s}» алга ✗`));
+  // ⚠️ 🧺 `home`-ийн 9 дэд төрөл ШИЛЖИХГҮЙ (тэдгээр нь `home`-д ҮЛДЭНЭ ✓)
+  getSubtypes('home')
+    .forEach((s) => assert.ok(!furnitureBlock.includes(`'${s}'`), `«${s}» шилжих ёсгүй ✗`));
+
+  // ③ 🧳 `hobby` → `travel`: 12 дэд төрөл БҮГД шилжинэ
+  const travelBlock = sql.match(/set section = 'travel'\n[\s\S]*?\n\s*\);/)[0];
+  assert.ok(/where section = 'hobby'/.test(travelBlock));
+  getSubtypes('travel')
+    .forEach((s) => assert.ok(travelBlock.includes(`'${s}'`), `③-т «${s}» алга ✗`));
+  // ⚠️ ⚽ `hobby`-д ҮЛДСЭН 6 дэд төрөл ШИЛЖИХГҮЙ (тэдгээр нь hobby хэвээр ✓)
+  getSubtypes('hobby')
+    .forEach((s) => assert.ok(!travelBlock.includes(`'${s}'`), `«${s}» шилжих ёсгүй ✗`));
+
+  // ④ Хуучин ХАВТГАЙ «Аяллын хэрэгсэл» (0025-ыг орлоно) → «Бусад»/`travel`
+  assert.ok(/set section = 'travel', property_type = 'Бусад'/.test(sql));
+  assert.ok(/property_type = 'Аяллын хэрэгсэл'/.test(sql));
+
+  // ⚠️ ЗАР УСТГАХГҮЙ (зөвхөн `section`/`property_type` шилжинэ) — 0016/0019/
+  //    0021/0023-ын ЯГ ИЖИЛ зарчим ✓
+  assert.ok(!/\bdelete\s+from\b/i.test(sql));
+  assert.ok(!/\btruncate\b/i.test(sql));
+});
 
 console.log(`\n✅ БҮГД ОК: ${passed} тест\n`);
 

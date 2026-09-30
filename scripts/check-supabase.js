@@ -148,8 +148,9 @@ async function main() {
       cols: 'dedupe_key',
       file: '0014_listing_dedupe.sql',
       hint: '⚠️ 0014-ийг ХАМГИЙН СҮҮЛД ажиллуулна (0022 → home seed → 0023 →\n' +
-        '     construction/equipment seed → 0014). Учир нь түүний `before insert`\n' +
-        '     триггер «24 цагт 3 зар» хязгаартай тул demo seed-ийг блоклоно.',
+        '     construction/equipment seed → 0026 → furniture/travel seed → 0014).\n' +
+        '     Учир нь түүний `before insert` триггер «24 цагт 3 зар» хязгаартай тул\n' +
+        '     demo seed-ийг блоклоно.',
     },
     {
       label: '0015 — нэр ба профайл зураг',
@@ -201,11 +202,15 @@ async function main() {
   //    зар байгаа бол `section='construction'` утга constraint-д ЗӨВШӨӨРӨГДСӨН ✓.
   const sectionSeeds = [
     { s: 'jobs', label: '💼 Ажлын зар (26 дэд төрөл)' },
-    { s: 'home', label: '🛋️ Гэр ахуйн бараа (2 бүлэг / 22 дэд төрөл)' },
+    // 🛋️/🧳 2026-09-30 (5): «Тавилга» (13) ба «Аяны бараа» (12) нь ТУСДАА
+    //    1-Р ТҮВШНИЙ хэсэг болов (`0026_furniture_travel_sections.sql`) ✓
+    { s: 'furniture', label: '🛋️ Тавилга (13 дэд төрөл)' },
+    { s: 'home', label: '🧺 Гэр ахуйн бараа (9 дэд төрөл)' },
     { s: 'construction', label: '🧱 Барилгын материал (23 дэд төрөл)' },
     { s: 'equipment', label: '🏭 Тоног төхөөрөмж (20 дэд төрөл)' },
     { s: 'electric', label: '⚡ Цахилгаан бараа' },
-    { s: 'hobby', label: '⚽ Амралт, спорт, хобби' },
+    { s: 'travel', label: '🧳 Аяны бараа (12 дэд төрөл)' },
+    { s: 'hobby', label: '⚽ Аялал, Спорт, Хобби (6 дэд төрөл)' },
   ];
   for (const { s, label } of sectionSeeds) {
     try {

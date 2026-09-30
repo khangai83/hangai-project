@@ -1273,27 +1273,57 @@ export default function HomeClient() {
             )}
           </>
         ) : (
-          /* ---------- БҮХ ХЭСЭГ — tile сүлжээ (багана) ----------
-             ⚠️ 2 → 3 → 8 → 5/10 багана. Сонгогдсон хэсэг нь онцлогдож харагдана.
-                ⚠️ 2026-09-27: «Амралт, спорт, хобби» нэмэгдэж 6 → 7 хэсэг
-                   болсон тул `lg:grid-cols-6` → `lg:grid-cols-7` болов.
-                ⚠️ 2026-09-30: ⚡ «Цахилгаан бараа» нэмэгдэж 7 → 8 хэсэг болсон
-                   тул `lg:grid-cols-7` → `lg:grid-cols-8` (нэг мөрөнд бүгд
-                   багтана ✓). Мобайл 2, `sm` 3 багана ХЭВЭЭР.
-                ⚠️ 2026-09-30 (2): 🧱 «Барилгын материал» + 🏭 «Тоног төхөөрөмж»
-                   нэмэгдэж 8 → 10 хэсэг болов → `lg:grid-cols-8` нь lg дээр
-                   хэт нарийн (102px) болж шошго 3-4 мөр болно ✗. Тиймээс
-                   `lg:grid-cols-5` (2 мөр: 5 + 5, ~190px) ба
-                   `xl:grid-cols-10` (нэг мөр, ≥1280px) — ⚠️ зөвхөн 1 мөр
-                   байлгахын тулд 10-ыг `xl` руу шилжүүлэв ✓
-             ⚠️ `min-h-[88px]` → бүх tile ИЖИЛ өндөртэй (шошго 1-2 мөр ч).
-             🔤 ФОНТ (2026-09-27, хэрэглэгчийн хүсэлт «жаахан томруулж, илүү
-                хар өнгөтэй»): `text-[14px] font-semibold` → `text-[16px] font-bold`;
-                сонгоогүй үед `text-gray-700` (#454037) → `text-gray-900` (#1B1815);
-                СОНГОСОН үед `text-primary` → `text-primary-dark` — ⚠️ учир нь
-                primary (#2563eb) нь primary-light (#dbeafe) дэвсгэр дээр 4.03:1
-                → AA-д ХҮРЭХГҮЙ; primary-dark (#1d4ed8) нь 5.55:1 ✅ AA. */
-          <div className="tile-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10" role="tablist" aria-label="Зарын хэсэг">
+          /* ---------- БҮХ ХЭСЭГ — tile сүлжээ (КАРТ) ----------
+             ⚠️ 2 → 3 → 4 → 5 багана. Сонгогдсон хэсэг нь онцлогдож харагдана.
+                ⚠️ 2026-09-27: «Амралт, спорт, хобби» нэмэгдэж 6 → 7 хэсэг болов.
+                ✏️ 2026-09-30 (4): уг хэсгийн нэр нь **«Аялал, Спорт, Хобби»** болов
+                   (⚠️ шошго нь `getSection(value).label`-аас уншигдана → tile дээр
+                   шууд шинэ нэрээр харагдана ✓; `section` утга `'hobby'` ХЭВЭЭР).
+                ⚠️ 2026-09-30 (2): ⚡ + 🧱 + 🏭 нэмэгдэж нийт **10 хэсэг** болов →
+                   тэр үед `xl:grid-cols-10` (≥1280px дээр БҮГД нэг мөрөнд) гэж
+                   тааруулсан БАЙВ.
+             🔴 2026-09-30 (3) ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «1-р категориуд маань картаасаа
+                илүү гараад онцгүй харагдаад байна, компьютерээс ороход» —
+                ⚠️ CDP-ээр ХЭМЖИЖ БАТЛАВ (`/tmp/zar_tiles_cdp.mjs`): 1280px+ дээр
+                10 багана → tile ердөө **86px** (icon 34px + gap 6px + padding 12px
+                → шошгонд 57-72px л үлдэнэ); flex мөрийн анхдагч `min-width: auto`
+                нь хамгийн урт үгнээс («Автомашин» 94px, «Үйлчилгээ» 85px) бага
+                шахагдаж ЧАДАХГҮЙ тул **БҮХ 10 шошго хүрээнээсээ +7…+19px ГАРСАН**
+                байв ✗ (мөн шошго 3 мөр болж, картууд тэгш бус = «онцгүй»).
+             ✅ ШИЙДЭЛ — 3 зүйл:
+                ① БАГАНА: `xl:grid-cols-10` ХАСАГДАВ → хамгийн ихдээ
+                   `xl:grid-cols-5` (⚠️ 2026-09-30 (5): 12 хэсэг болсон тул
+                   xl дээр **3 мөр: 5 + 5 + 2**, lg (1024-1279px) дээр
+                   **4 + 4 + 4** — 📸 CDP (1280px, grid 1202px): tile
+                   **210px**, хамгийн урт шошго 2 мөр, **overflow 0px** ✓
+                   ℹ️ 6 багана болговол 169px ба 6 + 6 болно — мөн overflow
+                   0px ✓ боловч tile жижигрэх тул 5 ХЭВЭЭР үлдээв);
+                   ⚠️ tile ≈ 217px буюу 210px болж, хамгийн урт нэр ч
+                   2 мөрөнд БҮРЭН багтана ✓
+                   ⚠️ `lg:grid-cols-4` (1024-1279px, ~215px) — `md` БИШ `lg`
+                      учраас 640-1023px хооронд **3 багана** (768px дээр ~225px)
+                      хэвээр байж, «Компьютер, Дагалдах хэрэгсэл» ТОВЧЛОГДОХГҮЙ ✓
+                      (⚠️ `md:grid-cols-4` байхад 768px дээр tile 152px болж
+                       3 мөр шаардаж, `line-clamp-2` нь «…» болгож байв ✗)
+                ② КАРТ БОСОО БОЛОВ: icon нь `h-11 w-11` дугуй дэвсгэрт
+                   (`bg-gray-100`, сонгосон үед `bg-white`) ороод ДЭЭД талд,
+                   шошго доор нь голлон — хэвтээ (icon + текст зэрэгцээ) байснаас
+                   цэвэрхэн, «ангилал» карт мэт харагдана ✓
+                ③ ХАМГААЛАЛТ (дахин хэзээ ч цааснаас гарахгүй): шошгонд
+                   `min-w-0` (flex-ийн `min-width: auto`-г дарж ШАХАГДАХ боломж
+                   өгнө — ⚠️ ГОЛ ШАЛТГААН энэ байв) + `line-clamp-2` (дээд тал нь
+                   2 мөр, илүү бол «…») + `break-words` (нэг урт үг ч хүрээг
+                   цуулахгүй) ✓
+                   ⚠️ `auto-rows-fr` + `h-full` → 1 мөртэй, 2 мөртэй картууд ИЖИЛ
+                      өндөртэй (эгнээ эгц, эмх цэгцтэй) ✓
+             🔤 ФОНТ (2026-09-27 хэвээр): `font-bold`; сонгоогүй → `text-gray-900`
+                (#1B1815), сонгосон → `text-primary-dark` (#1d4ed8, primary-light
+                дээр 5.55:1 ✅ AA — `text-primary` #2563eb нь 4.03:1 тул ХҮРЭХГҮЙ ✗).
+             ⚠️ Сонгосон карт дээр ГАРАХ ЗҮЙЛС: primary хүрээ + `ring-1` + цэнхэр
+                дэвсгэр + icon badge цагаан + баруун дээд буланд ✓ badge.
+             🔗 `title={s.label}` — `line-clamp-2`-оос болж товчлогдсон урт нэрийг
+                хулганаа дээр нь аваачахад бүтнээр нь харуулна ✓ */
+          <div className="tile-grid grid auto-rows-fr grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" role="tablist" aria-label="Зарын хэсэг">
             {SECTIONS.map((s) => {
               const on = s.value === section;
               return (
@@ -1303,16 +1333,36 @@ export default function HomeClient() {
                   role="tab"
                   aria-selected={on}
                   onClick={() => changeSection(s.value)}
-                  className={`flex min-h-[44px] w-full flex-row items-center justify-center gap-1.5 rounded-lg border px-1.5 py-1.5 transition ${
+                  title={s.label}
+                  className={`relative flex h-full min-h-[100px] w-full flex-col items-center justify-center gap-2 rounded-xl border px-3 py-3 text-center transition ${
                     on
-                      ? 'border-primary bg-primary-light'
-                      : 'border-gray-200 bg-white hover:border-primary hover:bg-primary-light'
+                      ? 'border-primary bg-primary-light shadow-card ring-1 ring-primary'
+                      : 'border-gray-200 bg-white hover:-translate-y-0.5 hover:border-primary/60 hover:bg-primary-light/40 hover:shadow-card'
                   }`}
                 >
-                  <span className="shrink-0 text-[30px] leading-[1.2] sm:text-[34px]">{s.icon}</span>
-                  <span className={`w-full text-left text-[15px] font-bold leading-snug sm:text-[16px] ${on ? 'text-primary-dark' : 'text-gray-900'}`}>
+                  <span
+                    aria-hidden="true"
+                    className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-[24px] leading-none transition ${
+                      on ? 'bg-white' : 'bg-gray-100'
+                    }`}
+                  >
+                    {s.icon}
+                  </span>
+                  <span
+                    className={`line-clamp-2 w-full min-w-0 break-words text-[13.5px] font-bold leading-snug sm:text-[14.5px] ${
+                      on ? 'text-primary-dark' : 'text-gray-900'
+                    }`}
+                  >
                     {s.label}
                   </span>
+                  {on && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute right-2 top-2 grid h-4 w-4 place-items-center rounded-full bg-primary text-[10px] font-bold leading-none text-white"
+                    >
+                      ✓
+                    </span>
+                  )}
                 </button>
               );
             })}
