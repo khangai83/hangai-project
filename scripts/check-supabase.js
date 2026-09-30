@@ -141,9 +141,15 @@ async function main() {
       file: '0012_listing_bathrooms.sql',
     },
     {
+      // ⚠️ 0014 нь БУСДААС ЯЛГААТАЙ: түүний `before insert` триггер нь
+      //    «24 цагт 3 зар» SPAM хязгаартай тул demo seed-ийг БЛОКЛОНО.
+      //    Тиймээс 0014-ийг ХАМГИЙН СҮҮЛД (seed-ийн ДАРАА) ажиллуулна.
       label: '0014 — давхардлын хамгаалалт (dedupe_key)',
       cols: 'dedupe_key',
       file: '0014_listing_dedupe.sql',
+      hint: '⚠️ 0014-ийг ХАМГИЙН СҮҮЛД ажиллуулна (0022 → home seed → 0023 →\n' +
+        '     construction/equipment seed → 0014). Учир нь түүний `before insert`\n' +
+        '     триггер «24 цагт 3 зар» хязгаартай тул demo seed-ийг блоклоно.',
     },
     {
       label: '0015 — нэр ба профайл зураг',
@@ -179,10 +185,45 @@ async function main() {
         const body = await res.text();
         report(false, `${c.label} АЛГА (${c.file} ороогүй)`,
           `HTTP ${res.status}: ${body.slice(0, 200)}\n` +
-          `     → supabase/migrations/${c.file}-ийг Supabase SQL Editor-т ажиллуулна уу.`);
+          `     → supabase/migrations/${c.file}-ийг Supabase SQL Editor-т ажиллуулна уу.` +
+          (c.hint ? `\n     ${c.hint}` : ''));
       }
     } catch (e) {
       report(false, `${c.label} шалгахад алдаа`, e.message);
+    }
+  }
+
+  // ---------- 4.55. Хэсгүүдийн зар (seed орсон эсэх) ----------
+  // ⚠️ ШИНЭ хэсэг/дэд төрөл нэмэхэд SQL migration-ийг ТУСДАА шалгах боломжгүй
+  //    (CHECK constraint нь PostgREST-ээр харагдахгүй: `information_schema` нь
+  //    зөвхөн service_role-той SQL Editor-т нээлттэй). Гэхдээ «зар байгаа эсэх»
+  //    нь seed болон constraint хоёулаа зөв эсэхийг ШУУД батална:
+  //    зар байгаа бол `section='construction'` утга constraint-д ЗӨВШӨӨРӨГДСӨН ✓.
+  const sectionSeeds = [
+    { s: 'home', label: '🛋️ Гэр ахуйн бараа (2 бүлэг / 22 дэд төрөл)' },
+    { s: 'construction', label: '🧱 Барилгын материал (23 дэд төрөл)' },
+    { s: 'equipment', label: '🏭 Тоног төхөөрөмж (20 дэд төрөл)' },
+    { s: 'electric', label: '⚡ Цахилгаан бараа' },
+    { s: 'hobby', label: '⚽ Амралт, спорт, хобби' },
+  ];
+  for (const { s, label } of sectionSeeds) {
+    try {
+      const res = await fetch(`${url}/rest/v1/listings?select=id&section=eq.${s}&limit=1`, {
+        headers: { ...headers, Prefer: 'count=exact' },
+      });
+      if (res.status !== 200 && res.status !== 206) {
+        report(null, `${label} — тоо уншиж чадсангүй (HTTP ${res.status})`,
+          `section='${s}' → ${(await res.text()).slice(0, 200)}`);
+        continue;
+      }
+      const n = Number((res.headers.get('content-range') || '').split('/')[1] || 0);
+      report(
+        n > 0 ? true : null, // зар 0 нь алдаа БИШ — зүгээр «seed дутуу» анхааруулга
+        `${label}: ${n} зар${n > 0 ? '' : ' — seed ажиллуулаагүй байна'}`,
+        n > 0 ? null : `npm run seed:sections -- <USER_ID> --section=${s}`
+      );
+    } catch (e) {
+      report(null, `${label} — шалгахад алдаа`, e.message);
     }
   }
 
