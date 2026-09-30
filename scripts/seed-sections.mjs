@@ -36,6 +36,10 @@ import { createRequire } from 'node:module';
 import {
   SECTIONS, getSubtypes, CAR_BRANDS, CITIES, getDistricts, getKhoroos,
   COMPUTER_SUBTYPE_GROUPS,   // 💻 Notebook бүлгийн брэндүүд (2026-09-29)
+  // 💻 2026-09-30 (6): Notebook-ийн 4 үзүүлэлт — форм дээрх СОНГОЛТУУД нь
+  //    ЭНД ХАДГАЛАГДСАН демо утгуудтай ЯГ ИЖИЛ байх ЁСТОЙ (доорх шалгалт ✓)
+  NOTEBOOK_BRANDS, PC_SPEC_SUBTYPES,
+  NOTEBOOK_SCREEN_OPTIONS, NOTEBOOK_CPU_OPTIONS, NOTEBOOK_RAM_OPTIONS, NOTEBOOK_STORAGE_OPTIONS,
   FURNITURE_SUBTYPES,        // 🛋️ «Тавилга» хэсгийн 13 дэд төрөл (2026-09-30 (5))
 } from '../lib/locationData.js';
 
@@ -495,11 +499,58 @@ const HOBBY_SIZE_DEFAULT = ['Стандарт хэмжээ', 'Иж бүрэн', 
  * `COMPUTER_SUBTYPE_GROUPS`-ээс АВТОМАТААР уншина (нэг эх сурвалж ✓).
  * ⚠️ Эдгээр дэд төрөлд `attrs.brand` нь дэд төрлийн нэртэй ЯГ ИЖИЛ байх ёстой
  *    (эс бөгөөс «Apple» төрөлд «Dell XPS» гэж гарч төөрөгдүүлнэ ✗)
+ * ⚠️ 2026-09-30 (6): унших логик нь `lib/locationData.js` → `NOTEBOOK_BRANDS`
+ *    болж ЗӨӨРӨВ (форм дээрх `PC_SPEC_SUBTYPES` ч мөн адил) — энд зөвхөн
+ *    `Set` болгож хөрвүүлнэ ✓
  */
-const PC_NOTEBOOK_BRANDS = new Set(
-  ((COMPUTER_SUBTYPE_GROUPS.find((g) => g.label === 'Notebook') || { items: [] }).items)
-    .filter((b) => b !== 'Бусад')
-);
+const PC_NOTEBOOK_BRANDS = new Set(NOTEBOOK_BRANDS);
+
+/**
+ * ⚠️ 💻 Notebook/суурин компьютер/серверт л `attrs.screen|cpu|ram|storage`
+ *    үүснэ (2026-09-30 (6)) — формын `PC_SPEC_SUBTYPES`-тай ЯГ ИЖИЛ жагсаалт ✓
+ *    (Mouse/Keyboard/тонер/тоглоом/чихэвч дээр эдгээр талбар форм дээр
+ *     ХАРАГДАХГҮЙ болсон тул демо өгөгдөл ч үүсгэхгүй ✓)
+ */
+const PC_SPEC = new Set(PC_SPEC_SUBTYPES);
+
+/**
+ * 💻 Notebook-ийн демо утгууд — ⚠️ ЗОРИУДААР жигнэсэн (бодит зах зээлд
+ * дийлэнх нь i5/i7, 16 GB, 512 GB байдаг тул тэр утгууд давтагдана ✓).
+ *
+ * ⚠️ Эдгээр утга нь форм дээрх СОНГОЛТЫН ЖАГСААЛТАД ЗААВАЛ байх ЁСТОЙ —
+ *    эс бөгөөс зар нэмэх/засах үед утга нь «сонголтгүй» болж, хэрэглэгч
+ *    өөрчилбөл хуучин утга алга болно ✗ (доорх шалгалт барьж, зогсооно ✓)
+ */
+const PC_SCREEN_POOL = ['12.5" - 13.3"', '14.0"', '14.0"', '15.6"', '15.6"', '15.6"', '16.0"', '17.3"'];
+const PC_CPU_POOL = [
+  'Intel Core i3', 'Intel Core i5', 'Intel Core i5', 'Intel Core i5', 'Intel Core i7',
+  'Intel Core i7', 'Intel Core Ultra', 'AMD Ryzen 3', 'AMD Ryzen 5', 'AMD Ryzen 5',
+  'AMD Ryzen 7', 'AMD Ryzen AI', 'Apple M1', 'Apple M2', 'Apple M3', 'Apple M4 / M5',
+  'Snapdragon X Plus / Elite',
+];
+const PC_RAM_POOL = ['4 GB', '8 GB', '8 GB', '16 GB', '16 GB', '16 GB', '32 GB', '64 GB'];
+const PC_STORAGE_POOL = ['128 GB', '256 GB', '256 GB', '512 GB', '512 GB', '512 GB', '1 TB', '2 TB'];
+
+/**
+ * ⚠️ НЭГ ЭХ СУРВАЛЖ-ИЙН ШАЛГАЛТ (2026-09-30 (6)): демо pool-ийн утга бүр нь
+ *    форм дээрх option жагсаалтад БАЙГАА эсэхийг seed эхлэхээс ӨМНӨ шалгана.
+ * ЯАГААД: `lib/locationData.js`-д утга солигдоход (ж: «Apple M2» → «Apple M2 / M3»)
+ *    seed нь форм дээр СОНГОГДОХГҮЙ демо зар үүсгэж, карт/шүүлт дээр
+ *    зөрүүтэй харагдана ✗ — алдааг чимээгүй өнгөрүүлэхгүй, ШУУД зогсооно ✓
+ */
+for (const [name, pool, options] of [
+  ['📺 screen', PC_SCREEN_POOL, NOTEBOOK_SCREEN_OPTIONS],
+  ['⚙️ cpu', PC_CPU_POOL, NOTEBOOK_CPU_OPTIONS],
+  ['🧠 ram', PC_RAM_POOL, NOTEBOOK_RAM_OPTIONS],
+  ['💾 storage', PC_STORAGE_POOL, NOTEBOOK_STORAGE_OPTIONS],
+]) {
+  const missing = [...new Set(pool)].filter((v) => !options.includes(v));
+  if (missing.length) {
+    console.error(`❌ ${name}: форм дээрх сонголтод БАЙХГҮЙ демо утга → ${missing.join(' | ')}`);
+    console.error('   ⚠️ `lib/locationData.js`-ийн NOTEBOOK_*_OPTIONS-той нийцүүлнэ үү.');
+    process.exit(1);
+  }
+}
 
 /** ⚠️ КОМПЬЮТЕРИЙН брэнд+загвар — ДЭД ТӨРӨЛ тус бүрд (2026-09-29: шинэ мод) */
 const PC_SUBTYPE_PAIRS = {
@@ -1084,20 +1135,26 @@ function makeAttrs(section, subtype) {
     //    — Notebook бүлэгт брэнд нь ӨӨРӨӨ дэд төрөл тул `attrs.brand` нь
     //    дэд төрлийн нэртэй ЯГ ИЖИЛ байх ёстой ✓
     const [brand, model] = pick(PC_SUBTYPE_PAIRS[subtype] || PC_PAIRS);
-    // ⚠️ CPU/RAM/SSD/Дэлгэц нь зөвхөн КОМПЬЮТЕРТ (ноутбук, суурин, сервер,
-    //    эд анги) хамаарна — хулгана/чихэвч/тонер/тоглоомд утгагүй ✗
-    const isComputer = PC_NOTEBOOK_BRANDS.has(subtype)
-      || ['Иж бүрэн компьютер', 'Процессор, сервер', 'Бусад сэлбэг'].includes(subtype);
+    /**
+     * ⚠️ 2026-09-30 (6): Дэлгэц/CPU/RAM/Хард нь ЗӨВХӨН `PC_SPEC_SUBTYPES`
+     *    (Notebook-ийн 21 брэнд + «Иж бүрэн компьютер» + «Процессор, сервер»)
+     *    дэд төрөлд үүснэ — форм дээр ч ЯГ тэнд л харагдана ✓.
+     * ⚠️ Урьд нь «Бусад сэлбэг» ч багтаж байв (форм дээр CPU гэж байхгүй ✗);
+     *    «Дэлгэц»/«Проектор»-ын `screen` нь ХЭВЭЭР (зөвхөн demo өгөгдөл —
+     *    форм дээр хэмжээний сонголт байхгүй, картын мөрөнд ч ороогүй ✓)
+     */
     return {
       brand: PC_NOTEBOOK_BRANDS.has(subtype) ? subtype : brand,
       model,
-      ...(isComputer ? {
-        cpu: pick(['Intel Core i5', 'Intel Core i7', 'Intel Core i9', 'AMD Ryzen 5', 'AMD Ryzen 7', 'Apple M1', 'Apple M2']),
-        ram: pick(['8 GB', '16 GB', '16 GB', '32 GB']),
-        storage: pick(['256 GB SSD', '512 GB SSD', '1 TB SSD', '512 GB SSD + 1 TB HDD']),
-        screen: pick(['13', '14', '15', '15.6', '17']),
-      } : subtype === 'Дэлгэц' || subtype === 'Проектор'
-        ? { screen: pick(['24', '27', '32']) } : {}),
+      ...(PC_SPEC.has(subtype)
+        ? {
+          screen: pick(PC_SCREEN_POOL),
+          cpu: pick(PC_CPU_POOL),
+          ram: pick(PC_RAM_POOL),
+          storage: pick(PC_STORAGE_POOL),
+        }
+        : subtype === 'Дэлгэц' || subtype === 'Проектор'
+          ? { screen: pick(['24', '27', '32']) } : {}),
       condition: pick(['Шинэ', 'Хуучин', 'Хуучин']),
       warranty: pick(['Байгаа', 'Байхгүй']),
     };

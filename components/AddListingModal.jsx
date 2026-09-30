@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useToast, useUI } from './AppProviders';
 import { createListing, updateListing, uploadImages } from '../lib/queries';
-import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, hasSimpleForm, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSubtypes, hasCategoryChoice, getSubtypeGroups } from '../lib/locationData';
+import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, hasSimpleForm, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSubtypes, hasCategoryChoice, getSubtypeGroups, getAttrFields } from '../lib/locationData';
 import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice, isNegotiablePrice, NEGOTIABLE_PRICE_LABEL } from '../lib/format';
 import phoneEmail from '../lib/phoneEmail';
 import YouTubeField from './YouTubeField';
@@ -153,8 +153,15 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
   const subtypeGroups = getSubtypeGroups(form.section || 'real-estate');
   /** «Зарах / Түрээслэх» сонголт харагдах эсэх — ⚠️ ЗӨВХӨН үл хөдлөхөд */
   const showCategoryChoice = hasCategoryChoice(form.section || 'real-estate');
-  /** Тухайн хэсгийн attr талбарүүд (форм автоматаар үүсгэнэ) */
-  const attrFields = (SECTIONS.find((s) => s.value === (form.section || 'real-estate')) || SECTIONS[0]).attrFields || [];
+  /**
+   * Тухайн хэсгийн attr талбарууд (форм автоматаар үүсгэнэ).
+   *
+   * ⚠️ 2026-09-30 (6): `getAttrFields(section, subtype)` — талбар нь
+   *    `onlySubtypes` жагсаалттай бол ЗӨВХӨН тэр дэд төрөлд харагдана
+   *    (💻 Notebook-ийн Дэлгэц/CPU/RAM/Хард — хэрэглэгчийн хүсэлт ✓).
+   *    `onlySubtypes` байхгүй талбар нь өмнөх шигээ бүх дэд төрөлд ✓
+   */
+  const attrFields = getAttrFields(form.section || 'real-estate', form.propertyType);
 
   /**
    * ⚡ ХЯЛБАР ФОРМ (2026-09-29, хэрэглэгчийн хүсэлт; ⚠️ 2026-09-30 (5)-д өргөжсөн) —
@@ -391,14 +398,33 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
 
             {/* ===== ХЭСГИЙН НЭМЭЛТ ТАЛБАРУУД (attrs jsonb, 0016) =====
                 ⚠️ Хэсэг тус бүрд өөр (Авто: брэнд/он/гүйлт/түлш; Ажил: компани/
-                   цалин; Компьютер: CPU/RAM …). `SECTIONS[].attrFields`-ээс
-                   автоматаар үүснэ — шинэ талбар нэмэхэд код засахгүй.
+                   цалин; Компьютер: дэд төрлөөс хамаарч — 💻 Notebook-ийн
+                   Дэлгэц/CPU/RAM/Хард, 2026-09-30 (6)). `attrFields`-ээс
+                   автоматаар үүснэ — шинэ талбар нэмэхэд код засахгүй ✓
+                ⚠️ ХАРАГДАХ талбарууд нь `getAttrFields(section, subtype)`-ээр
+                   шүүгдэнэ: `onlySubtypes` БАЙХГҮЙ талбар нь бүх дэд төрөлд ✓,
+                   байгаа бол ЗӨВХӨН тэр дэд төрөлд (ж: 💻 Notebook-ийн 21 брэнд,
+                   «Иж бүрэн компьютер», «Процессор, сервер») ✓
                 🔎 `searchable: true` (ж: 🏷️ Үйлдвэрлэгч — 95 сонголт) нь ХАЙЛТТАЙ
                    COMBOBOX: бичнэ → жагсаалт шүүгдэнэ; жагсаалтад байхгүй
                    брэндийг ГАРААР бичиж болно ✓ (хэрэглэгчийн хүсэлт). */}
             {attrFields.length > 0 && (
               <div className="form-row">
-                {attrFields.map((f) => (
+                {attrFields.map((f) => {
+                  const value = (form.attrs || {})[f.key] || '';
+                  /**
+                   * ⚠️ ХУУЧИН/ГАРААР бичсэн утга (2026-09-30 (6)) — 💻
+                   *    Дэлгэц/CPU/RAM/Хард нь ЧӨЛӨӨТ ТЕКСТ байснаа СОНГОЛТ
+                   *    болсон тул хуучин зар дээр «512 GB SSD + 1 TB HDD» шиг
+                   *    жагсаалтад БАЙХГҮЙ утга байж болно. `<select>`-д
+                   *    таарах `<option>` байхгүй бол браузер «Сонгох»-ыг
+                   *    харуулж, ХАДГАЛАХ үед утга АЛГА БОЛНО ✗ → тэр утгыг
+                   *    нэмэлт `option` болгож харуулна (хэрэглэгч өөр сонголт
+                   *    хийхгүй бол ХУУЧИН утга ХЭВЭЭР үлдэнэ ✓)
+                   */
+                  const legacy = f.type === 'select' && value && !(f.options || []).includes(value)
+                    ? value : '';
+                  return (
                   <div key={f.key} className="form-group">
                     <label>{f.icon ? `${f.icon} ` : ''}{f.label}</label>
                     {f.type === 'select' && f.searchable ? (
@@ -406,7 +432,7 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                       //    тул бичих БҮРД хадгална (Enter дарахад «Хадгалах»-ыг
                       //    дарахгүйн тулд компонент Enter-ийг зогсоодог ✓)
                       <SearchableSelect
-                        value={(form.attrs || {})[f.key] || ''}
+                        value={value}
                         options={f.options}
                         onChange={(v) => setAttr(f.key, v)}
                         placeholder="Бичиж хайх эсвэл өөрөө бичих"
@@ -415,22 +441,33 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                       />
                     ) : f.type === 'select' ? (
                       <select
-                        value={(form.attrs || {})[f.key] || ''}
+                        value={value}
                         onChange={(e) => setAttr(f.key, e.target.value)}
                       >
                         <option value="">Сонгох</option>
-                        {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                        {/* ⚠️ Хуучин утга (жагсаалтад байхгүй) — дээрх тайлбар */}
+                        {legacy && <option value={legacy}>{legacy}</option>}
+                        {(f.options || []).map((o) => <option key={o} value={o}>{o}</option>)}
                       </select>
                     ) : (
                       <input
                         type={f.type === 'number' ? 'number' : 'text'}
-                        value={(form.attrs || {})[f.key] || ''}
+                        value={value}
                         onChange={(e) => setAttr(f.key, e.target.value)}
                         placeholder={f.placeholder || ''}
                       />
                     )}
                   </div>
-                ))}
+                  );
+                })}
+                {/* ⚠️ Дэд төрөлд нь хамаарах талбар байгаа үед л тэмдэглэл —
+                    «заавал биш» гэдгийг ойлгуулна (хэрэглэгчийн хүсэлт:
+                    «аль нэгийг эсвэл хэд хэдийг сонгож болно») */}
+                {attrFields.some((f) => Array.isArray(f.onlySubtypes)) && (
+                  <p className="form-hint sm:col-span-2">
+                    💻 Notebook-ийн үзүүлэлтүүд — заавал биш: дээрээс мэдэх хэсгээ л сонгоно уу
+                  </p>
+                )}
               </div>
             )}
 

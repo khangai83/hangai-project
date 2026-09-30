@@ -1197,7 +1197,7 @@ npm run seed:bathrooms     # угаалгын өрөөний дата
 | 🏠 `real-estate` | 8 төрөл (хэвээр) | ✅ **ТИЙМ** | — (өрөө/талбай нь багана) |
 | 🚗 `auto` | **10 дэд төрөл** (Суудлын машин, Жийп/SUV…, **Авто түрээслүүлнэ**) | ❌ | **Брэнд 🔎**, **Загвар ✍️**, **📅 Үйлдвэрлэсэн он (хүрээ)**, **📥 Орж ирсэн он (хүрээ)**, Хурдны хайрцаг, Түлш, Хөтлөгч |
 | 💼 `jobs` | **26 дэд төрөл — ХАВТГАЙ (2 түвшин)**: Авто үйлчилгээ, засвар · Аялал жуулчлал, зочид буудал · Банк, санхүү, нябо, нярав · … · Гүйцэтгэх удирдлага · Цагийн ажил · Хөгжлийн бэрхшээлтэй иргэн ажиллах боломжтой (🆕 2026-09-30 — хуучин 15 нэр Солигдож, «Бусад» ХАСАГДАВ; ⚠️ `0024_jobs_subtype_rename.sql`) | ❌ | Ажлын төрөл, Туршлага, Ажлын хэлбэр |
-| 💻 `computers` | **9 БҮЛЭГ → 45 дэд төрөл** (Суурин компьютер · Notebook · PS, XBox, Nintendo · Дагалдах хэрэгсэл · Чихэвч · … ) — 3 түвшин | ❌ | **Брэнд 🔎**, **✅ Шинэ / Хуучин**, Баталгаа |
+| 💻 `computers` | **9 БҮЛЭГ → 45 дэд төрөл** (Суурин компьютер · Notebook · PS, XBox, Nintendo · Дагалдах хэрэгсэл · Чихэвч · … ) — 3 түвшин | ❌ | **Брэнд 🔎**, **✅ Шинэ / Хуучин**, Баталгаа + 🆕 **(формд) 📺 Дэлгэц · ⚙️ CPU · 🧠 RAM · 💾 HDD/SSD — ЗӨВХӨН Notebook-ийн 21 брэнд, «Иж бүрэн компьютер» ба «Процессор, сервер» дэд төрөлд** (2026-09-30 (6); ⚠️ шүүлтэд ОРООГҮЙ) |
 | 🛋️ `furniture` 🆕 | **13 дэд төрөл — ХАВТГАЙ (2 түвшин)**: Зочны өрөөний · Унтлагын өрөөний · Гал тогооны · Үүдний өрөөний · Оффисын тавилга · Буйдан, кресло · Ор, матрас · Шкаф, комод, авдар · Ширээ, сандал · Тавиур, полк · Толь · Сейф · Бусад (🆕 2026-09-30 (5) — 🛋️ `home`-ийн бүлэг байснаа ТУСДАА хэсэг болов; ⚠️ `0026_furniture_travel_sections.sql` ЗААВАЛ) | ❌ | **✅ Шинэ / Хуучин** (⚡ ХЯЛБАР ФОРМ) |
 | 🧺 `home` | **9 дэд төрөл — ХАВТГАЙ (2 түвшин)** (Абажур, гэрэл, чийдэн · Угаалгын өрөө, цэвэрлэгээний хэрэгсэл · Гал тогооны хэрэгсэл, сав суулга · Гэрийн чимэглэл, тохижилт · Хивс, дорож, дэвсгэр · Цагаан хэрэглэл, хөнжил, дэр · Хөшиг, тюль, бүтээлэг · Зуух, пийшин · Өлгүүр) — ⚠️ 2026-09-30 (5): 22 → **9** (3 дахь түвшин ХАСАГДАВ) | ❌ | **✅ Шинэ / Хуучин** ⚡ (Хүргэлт нь 2026-09-29-нд ХАСАГДСАН) |
 | ⚡ `electric` | **8 БҮЛЭГ → 26 дэд төрөл** (ТВ, Аудио + Видео · Хөргөгч, хөлдөөгч · Гал тогооны цахилгаан бараа · Дижитал аппарат, Видео камер · Угаалгын машин · Тоос сорогч, Хивс угаагч · Агаар шүүгч · ТЭН, Халаагуур) — 3 түвшин (**3 бүлэг ACCORDION**) | ❌ | **✅ Шинэ / Хуучин** (⚡ ХЯЛБАР ФОРМ; ⚠️ `0021_section_electric.sql` ЗААВАЛ) |
@@ -1712,7 +1712,7 @@ UI  (CDP):     ?q=88093663             → «нийт 1,242» ✓ ЯГ ТААР�
 **🧪 ТЕСТ (2026-09-28 · ⚡ 2026-09-30-нд шинэчлэв):**
 
 ```bash
-npm run test:filters     # ✅ 61 тест — attrFilters-ийн гэрээ (загвар/хүрээ/түлхүүр + ✅ Шинэ/Хуучин + ⚡ electric + 🧱 construction/🏭 equipment + 🆕 12 хэсэг/12 утга CHECK, 🛋️ furniture 13 + 🧳 travel 12 + 🧺 home 9 + ⚽ hobby 6 (хавтгай) ба 0026 migration-ийн гэрээ)
+npm run test:filters     # ✅ 68 тест — attrFilters-ийн гэрээ (загвар/хүрээ/түлхүүр + ✅ Шинэ/Хуучин + ⚡ electric + 🧱 construction/🏭 equipment + 🆕 12 хэсэг/12 утга CHECK, 🛋️ furniture 13 + 🧳 travel 12 + 🧺 home 9 + ⚽ hobby 6 (хавтгай) ба 0026 migration-ийн гэрээ + 🆕 💻 Notebook-ийн 📺/⚙️/🧠/💾 сонголт ба `onlySubtypes`)
 npm run lint:migrations  # ✅ 25/25 файл · 256 statement — migration SQL-ийн БҮТЭЦ (① хаалт ② ишлэл/`$$` хаагдсан эсэх ③ `;`-гүй хөвөгч текст ④ statement ишлэл/тооны дараа ШУУД эхэлсэн эсэх) — DB ХОЛБОГДОХГҮЙ ✓
 node /tmp/cdp_verify_car_filters.mjs   # ✅ 22/22 бодит Chrome (CDP) дээр
 next build                             # ✓ цэвэр
@@ -2018,6 +2018,114 @@ breadcrumb-аар буцаж нээгдэх, `?type=Apple` шууд линк, п
 🗑 буцах товч 0) ✓
 
 
+##### 💻 Notebook-ийн НЭМЭЛТ ТАЛБАР — 📺 Дэлгэц · ⚙️ CPU · 🧠 RAM · 💾 HDD/SSD СОНГОЛТТОЙ БОЛОВ (2026-09-30 (6))
+
+Хэрэглэгчийн хүсэлт: «Компьютер, Дагалдах хэрэгсэл → **Notebook** … сонгосон үед
+Дэлгэцийн хэмжээ, CPU, RAM, HDD/SSD гэсэн талбарууд **сонгодог** байх» — ⚠️ бүгд
+**ЗААВАЛ БИШ** (аль нэгийг эсвэл хэд хэдийг л сонгож болно).
+
+| | ӨМНӨ ✗ | ОДОО ✓ |
+|---|---|---|
+| Хэлбэр | **ЧӨЛӨӨТ ТЕКСТ** (`txt`) — «i7 8-р үе»/«i7-8550U»/«core i7» гэж ОЛОН хэлбэрээр хадгалагдана | **`<select>` СОНГОЛТ** (нэг утга = нэг бичиглэл) |
+| 📺 Нэр | `Дэлгэцийн хэмжээ` | **`Дэлгэцийн хэмжээ (инч)`** |
+| ⚙️ Нэр | `CPU` | **`Процессор (CPU)`** |
+| 🧠 Нэр | `RAM` | **`Санах ой (RAM)`** |
+| 💾 Нэр | `HDD/SSD` | **`Хард диск (SSD / HDD)`** |
+| Хэн хардаг | 💻 хэсгийн **БҮХ** дэд төрөл (Mouse/тонер/тоглоом дээр ч ✗) | ЗӨВХӨН **`PC_SPEC_SUBTYPES`** (доорх хүснэгт ✓) |
+
+**🎛 Сонголтууд** (нэг эх сурвалж — `lib/locationData.js`; форм ба seed хоёулаа авна):
+
+| Талбар (`key`) | Шошго | 🎛 Сонголт | Жишээ |
+|---|---|---|---|
+| `screen` | 📺 Дэлгэцийн хэмжээ (инч) | **7** | `11.6" болон доош` · `12.5" - 13.3"` · `14.0"` · `15.6"` · `16.0"` · `17.3"` · `18.0" ба түүнээс дээш` |
+| `cpu` | ⚙️ Процессор (CPU) | **19** | `Intel Celeron / Pentium / Atom` · `Intel Core i3` → `i9` · `Intel Core Ultra` · `AMD Athlon / A-Series` · `AMD Ryzen 3` → `Ryzen 9` · `AMD Ryzen AI` · `Apple M1` → `Apple M4 / M5` · `Apple Intel` · `Snapdragon X Plus / Elite` · `Бусад` |
+| `ram` | 🧠 Санах ой (RAM) | **13** | `4 GB` · `8 GB` · `12 GB` · `16 GB` · `24 GB` · `32 GB` · `48 GB` · `64 GB` · `96 GB` · `128 GB` · `192 GB` · `256 GB` · `512 GB` |
+| `storage` | 💾 Хард диск (SSD / HDD) | **6** | `128 GB` · `256 GB` · `512 GB` · `1 TB` · `2 TB` · `4 TB` |
+
+ℹ️ 💾 нь **зөвхөн БАГТААМЖ** (SSD эсэх нь тусдаа талбар БИШ) — хуучин
+«512 GB SSD + 1 TB HDD» гэх мэт утга нь хослол байсан тул задалж бичих
+боломжгүй ✓ Харин форм дээр **алга болохгүй** (доорх `legacy`) ✓
+
+```js
+// lib/locationData.js — сонголтууд (форм + seed НЭГ эх сурвалж)
+export const NOTEBOOK_BRANDS = COMPUTER_SUBTYPE_GROUPS.find((g) => g.label === 'Notebook')
+  .items.filter((v) => v !== 'Бусад');                 // → 21 брэнд (⚠️ «Бусад» ХАСАГДСАН)
+export const PC_SPEC_SUBTYPES = [...NOTEBOOK_BRANDS,   // 21 Notebook брэнд +
+  'Иж бүрэн компьютер', 'Процессор, сервер'];          // 2 хэмжигдэхүүнтэй төрөл = 23
+…
+sel('screen',  'Дэлгэцийн хэмжээ (инч)', NOTEBOOK_SCREEN_OPTIONS,  '📺', { onlySubtypes: PC_SPEC_SUBTYPES }),
+sel('cpu',     'Процессор (CPU)',        NOTEBOOK_CPU_OPTIONS,     '⚙️', { onlySubtypes: PC_SPEC_SUBTYPES }),
+sel('ram',     'Санах ой (RAM)',         NOTEBOOK_RAM_OPTIONS,     '🧠', { onlySubtypes: PC_SPEC_SUBTYPES }),
+sel('storage', 'Хард диск (SSD / HDD)',  NOTEBOOK_STORAGE_OPTIONS, '💾', { onlySubtypes: PC_SPEC_SUBTYPES }),
+```
+
+**🖥 Форм (`components/AddListingModal.jsx`) — 1 мөр өөрчлөгдөв:**
+
+```js
+// lib/locationData.js → getAttrFields(section, subtype)
+//   f.onlySubtypes БАЙХГҮЙ  → ХУУЧИН зан төлөв (бүх дэд төрөлд) ✓
+//   f.onlySubtypes-тай      → ЗӨВХӨН тэр жагсаалтад байгаа дэд төрөлд ✓
+//   ⚠️ subtype ХООСОН (дэд төрөл сонгоогүй) бол `onlySubtypes` талбарууд
+//      ХАРАГДАХГҮЙ — хэрэглэгч эхлээд дэд төрлөө сонгоно ✓
+const fields = getAttrFields(section, form.propertyType);   // ← өмнө нь section.attrFields
+```
+
+⚠️ **«Бусад» нь 3 бүлэгт давхарддаг** (Notebook · PS, XBox, Nintendo · Дагалдах
+хэрэгсэл) ба `property_type` нь зөвхөн нэрээр хадгалагддаг тул форм нь
+«Бусад»-ыг алийн ч бүлэгт хамааруулж чадахгүй → **Notebook-ийн 4 талбар
+ХАРАГДАХГҮЙ** ✓ (хэрэглэгч «Apple»/«Dell»… гэж тодорхой сонгосон үед л гарна).
+
+| Дэд төрөл | 📺/⚙️/🧠/💾 |
+|---|---|
+| **21 Notebook брэнд** (`NOTEBOOK_BRANDS` — Apple · Acer · Asus · Dell · HP · Huawei · Lenovo · MSI · Samsung… «Бусад»-ГҮЙ) | ✅ ГАРНА |
+| **Иж бүрэн компьютер** · **Процессор, сервер** | ✅ ГАРНА (CPU/RAM/хард нь ХЭМЖИГДЭНЭ ✓) |
+| Notebook бүлгийн «Бусад» | ❌ (3 бүлэгт давхардсан) |
+| Суурин компьютер · Дагалдах хэрэгсэл · PS, XBox, Nintendo ба бүх leaf (Mouse, Keyboard, Xbox, Чихэвч, Дэлгэц, Проектор, тонер…) | ❌ 4 талбар ХАРАГДАХГҮЙ |
+| Дэд төрөл **сонгоогүй** (`type` хоосон) | ❌ |
+
+⚠️ **Шүүлт (`attrFilters`) ХӨНДӨӨГДӨӨГҮЙ** — `?brand=` · `?condition=` ·
+`?warranty=` гурав л хэвээр ✓ Учир нь CPU нь **19 сонголттой** тул sidebar-д
+шүүлт болговол панель хэт урт болно ✗ (хэрэглэгчийн хүсэлт зөвхөн **ФОРМЫН**
+талбарт хамаарна). ℹ️ `getAttrField(section, key)` (картын мөр ба sidebar) нь
+`onlySubtypes`-ыг **шалгахгүй** — хуучин заруудын `attrs` нь DB-д хэвээр байгаа
+тул картын мөр/шүүлт нь талбарыг үргэлжлүүлэн харна ✓
+(📇 картын мөр: `Lenovo ThinkPad T14 · ⚙️ Intel Core i5 · 16 GB · 512 GB · ✅ Шинэ`
+— ⚠️ 📺 Дэлгэц нь картын мөрөнд **ОРООГҮЙ**, `CARD_ATTR_ORDER` ХЭВЭЭР ✓)
+
+⚠️ **ХУУЧИН утга АЛДАХГҮЙ (`legacy`)** — форм нь `attrs.cpu`-д жагсаалтад
+БАЙХГҮЙ утга (ж: «i7 8-р үе») байвал `<select>`-ийн ЭХЭНД нэмэлт
+`<option value={legacy}>` гаргаж, зарах үед утга нь хадгалагдана ✓
+
+**🌱 Seed (`scripts/seed-sections.mjs`) — demo утгууд формтой нийцэв:**
+
+```js
+import { NOTEBOOK_BRANDS, PC_SPEC_SUBTYPES, NOTEBOOK_SCREEN_OPTIONS,
+         NOTEBOOK_CPU_OPTIONS, NOTEBOOK_RAM_OPTIONS, NOTEBOOK_STORAGE_OPTIONS }
+  from '../lib/locationData.js';
+const PC_SPEC = new Set(PC_SPEC_SUBTYPES);       // ⚠️ формтой ЯГ ИЖИЛ дүрэм
+// 💻 makeAttrs: CPU/RAM/хард/дэлгэц нь ЗӨВХӨН PC_SPEC дэд төрөлд нэмэгдэнэ
+// ✅ FAIL-FAST: demo pool-ийн утга бүр форм дээрх сонголтод байх ЁСТОЙ —
+//    байхгүй бол `process.exit(1)` (форм дээр «сонголтгүй» утга үүсэхээс сэргийлнэ ✓)
+```
+
+🧪 `npm run test:filters` — 🆕 **7 тест** нэмэгдэж **68/68 ✓**
+(① 4 талбарын дараалал/`select`/сонголтын тоо-эхний-сүүлийн утга/давхардал 0 ②
+талбар нь ЗӨВХӨН `PC_SPEC_SUBTYPES`-д (21 + 2) ③ «Бусад»/leaf/хоосон дэд төрөлд
+ХАРАГДАХГҮЙ ④ `getAttrField` нь `onlySubtypes`-ээс хамаарахгүй + бусад 11 хэсэг
+хөндөгдөөгүй ⑤ картын мөр (📺 нь мөрөнд орохгүй, 1 талбар бөглөхөд хоосон
+таслалтгүй) ⑥ хуучин/demo утга бүр шинэ сонголтод багтсан ⑦ форм + seed-ийн
+гэрээ (`getAttrFields(section, form.propertyType)`, `legacy`, `PC_SPEC`, fail-fast))
+ℹ️ DB **MIGRATION ШААРДЛАГАГҮЙ** — багана/CHECK/`section`/`property_type` БҮГД
+хөндөгдөөгүй, зөвхөн формд гарах ТАЛБАР + demo заруудын `attrs` өөрчлөгдөв ✓
+
+| Файл | Юу өөрчлөгдөв |
+|---|---|
+| `lib/locationData.js` | 🆕 `NOTEBOOK_BRANDS` (21) · `PC_SPEC_SUBTYPES` (23) · 4 сонголтын жагсаалт · `getAttrFields(section, subtype)`; 💻-ийн `screen`/`cpu`/`ram`/`storage` нь `txt` → `sel({ onlySubtypes })` |
+| `components/AddListingModal.jsx` | `attrFields` → `getAttrFields(section, form.propertyType)`; 🆕 жагсаалтад байхгүй утгын `legacy` option (хуучин утга хадгалагдана ✓) + «заавал биш» сануулга |
+| `scripts/seed-sections.mjs` | Option-уудыг `lib/locationData.js`-ээс import; `PC_SPEC` set → specs зөвхөн тэр дэд төрөлд; ⚠️ демо утгын FAIL-FAST шалгалт |
+| `scripts/test-filters.mjs` | 🆕 **7 тест** — нийт **68/68** ✓ |
+| `README.md` · `docs/IMPROVEMENTS.md` | 📚 🆕 «💻 Notebook-ийн НЭМЭЛТ ТАЛБАР» хэсэг, хэсгийн хүснэгтийн 💻 мөр, тестийн тоо 61 → **68** |
+
 ##### ⚡ «Цахилгаан бараа» — БҮТЭЦ ба өгөгдөл (2026-09-30)
 
 Хэрэглэгчийн хүсэлт: «**Цахилгаан бараа** гэсэн категори нэм, бас тэр категори
@@ -2274,7 +2382,7 @@ breadcrumb нь `Бүх зар › 🧱 Барилгын материал › Т
 > Монголын барилга/аж үйлдвэрийн хэлэнд түгээмэл хэрэглэгддэг орос нэр тул
 > ХЭВЭЭР ✓; бусад 42 нэр ЯГ хэвээр.
 
-> 📸 **Бодит шалгалт:** `npm run test:filters` → **48/48 ✓** (⚠️ одоо **61/61** — 💼/⚽
+> 📸 **Бодит шалгалт:** `npm run test:filters` → **48/48 ✓** (⚠️ одоо **68/68** — 💼/⚽
 > ба 🆕 2026-09-30 (5)-ийн 12 хэсэг/🛋️/🧳 тестүүд нэмэгдсэн ✓);
 > `DRY_RUN=1 npm run seed:sections -- 88093663 --section=construction` →
 > 23 × 10 = **230 зар**, `--section=equipment` → **200 зар** (брэнд/загвар/хэмжээ
@@ -2699,7 +2807,7 @@ npm run check:verify -- 99112233   # verify.mn-ээр БОДИТ SMS турши�
 npm run test:verify      # verify.mn offline тест (mock, 0₮)
 npm run test:phone       # 📞 утасны дугаараар хайх дүрэм (11 тест, 0₮)
 npm run test:format      # 💰 үнэ/мянгатын таслалт + 🤝 «Үнэ тохирно» (20 тест, 0₮)
-npm run test:filters     # 🔎 attrFilters-ийн гэрээ + 🧳 travel/🧺 home/🛋️ furniture/⚡ electric/⚽ hobby хялбар форм (61 тест, 0₮)
+npm run test:filters     # 🔎 attrFilters-ийн гэрээ + 🧳 travel/🧺 home/🛋️ furniture/⚡ electric/⚽ hobby хялбар форм + 🆕 💻 Notebook-ийн 📺/⚙️/🧠/💾 сонголт (68 тест, 0₮)
 npm run test:rooms       # 🛏 ӨРӨӨНИЙ ТОО — олон сонголт (42 тест, 0₮) — URL/DB/breadcrumb ГУРВУУЛАА нэг модулиас ✓
 npm run test:search      # 🔢 тооны хүрээ (цэгээр бүлэглэлт) + 🔀 эрэмбэлэлт (49 тест, 0₮)
 npm run cdp:rooms        # 🐍 БОДИТ Chrome (:9222) дээр өрөөний олон сонголт — 45 шалгалт
@@ -2866,7 +2974,7 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 | `scripts/cdp-range.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:range` (2026-09-30: 🔢 тооны хүрээний 33 шалгалт: бичих ЯВЦАД цэг (`3000000` → `3.000.000`), ⏎/blur = 1 query, Esc буцаалт, талбай `1.234,5`, түргэн хүрээ toggle, ✕ арилгах, оны хүрээ `attrs->>year`, `?sort=` → `order`, hero 13 option, слайдер БАЙХГҮЙ — ⚠️ ижил нөхцөл) |
 | `scripts/test-rooms.mjs` | **42 тест** — `npm run test:rooms` (2026-09-30: 🛏 өрөөний тооны ОЛОН сонголт — `ROOM_VALUES`/`normalizeRoomValue` (`'5+'`/`+5`/`5` → `'5'`)/`parseRoomList` (эвдэрсэн `abc` хасаж, өсөх эрэмбээр)/`toggleRoomValue`/`isRoomsEmpty`/`countRooms`/`roomsUrlValue`/`roomsFilterLabel`/`roomsFilterDescriptor` ба `applyRoomFilter` fake builder-ээр — **`['5']`→`gte 5`, `['3']`→`in ['3']` (хуучин үр дүнтэй ЯГ ижил)**, `['4','5']`→`gte 4`, `['1','5']`→`or(…)`; `lib/locationData.js`-ийн `ROOM_OPTIONS` нь модулиас үүснэ; `queries.js`/`HomeClient.jsx`/`breadcrumb.js` нь дүрмийг ДАХИН бичихгүй модулиар ажиллана) |
 | `scripts/test-search.mjs` | **49 тест** — `npm run test:search` (2026-09-30: 🔢 `lib/rangeFilter.mjs` (`groupDigits`/`parseNum`/`formatGroupedInput`/`clampNum`/`snapNum`/`toFilterPair`/`isRangeActive`/`rangeLabel`/`priceQuickPicks`/`yearBounds`) + 🔀 `lib/sortOptions.mjs` (`SORT_OPTIONS`/`normalizeSort`/`sortOrders`/`sortLabel`) — `order=price.asc.nullslast,id.desc` ба HomeClient/queries-ийн гэрээ ✓; 📌 регресс: ① слайдер (`RangeSlider`/`rangeSlider.mjs`/`role="slider"`/pointer handler) ХААНА Ч БАЙХГҮЙ ② он БҮЛЭГЛЭГДЭХГҮЙ («2.026» ✗) ③ «1.234,5» → `1234.5` ✓ ④ хил дээрх `0` → «₮0 – ₮5 тэрбум» (өмнө нь «₮ – …» хоосон ✗)) |
-| `scripts/test-filters.mjs` | **61 тест** — `npm run test:filters` (2026-09-28: attrFilters-ийн гэрээ — 🚙 Загвар текст, 📅/📥 оны хүрээ, `parseAttrRangeKey`, `formatAttrsLine`; 2026-09-29: ⚽ hobby — `attrFilters`/`attrFields` зөвхөн `condition`, `hasSimpleForm`; **✅ «Шинэ / Хуучин» — attrFields ба attrFilters ХОЁУЛАА яг 2 сонголттой, хуучин 4 утга (Хэрэглэсэн — сайн/хэвийн, Засвар шаардлагатай, Хэвийн) БҮРЭН ХАСАГДСАН**; 2026-09-30: ⚡ electric — 8 бүлэг/26 дэд төрөл, 3 бүлэг `collapsed`, 4 дэх түвшин БАЙХГҮЙ, 🛋️ home-оос ХАСАГДСАН; 🆕 2026-09-30: 🛋️ home — 2 бүлэг (**«Тавилга» ЭХЭНД**)/22 дэд төрөл, хоёулаа `collapsed`, хуучин 9 хавтгай нэр ХАСАГДСАН, breadcrumb, картын мөр/шүүлт ХЭВЭЭР — ⚠️ 2026-09-30 (5)-д энэ мод ХУВААГДАВ; 🆕 2026-09-30 (5): **12 хэсэг ба ЯГ дараалал** (`SECTIONS.length === 12`), 🛋️ `furniture` 13 / 🧳 `travel` 12 / 🧺 `home` 9 / ⚽ `hobby` 6 дэд төрөл ЯГ таарах, дөрвүүлээ **ХАВТГАЙ** (`getSubtypeGroups` → `[]`), `hasSimpleForm` нь ⚽/🧺/⚡/🛋️/🧳 дээр `true` ба real-estate/auto/jobs/computers/services дээр `false` (тестээр түгжсэн 10 хэсэг), «Бусад» нь furniture/travel/electric/construction-д байгаа ба home/hobby-д **БАЙХГҮЙ**, ба `0026_furniture_travel_sections.sql`-ийн гэрээ (CHECK 12 утга, `home`→`furniture` 13, `hobby`→`travel` 12, «Аяллын хэрэгсэл» → «Бусад»/`travel`, `delete`/`truncate` БАЙХГҮЙ ✓) |
+| `scripts/test-filters.mjs` | **68 тест** — `npm run test:filters` (2026-09-28: attrFilters-ийн гэрээ — 🚙 Загвар текст, 📅/📥 оны хүрээ, `parseAttrRangeKey`, `formatAttrsLine`; 2026-09-29: ⚽ hobby — `attrFilters`/`attrFields` зөвхөн `condition`, `hasSimpleForm`; **✅ «Шинэ / Хуучин» — attrFields ба attrFilters ХОЁУЛАА яг 2 сонголттой, хуучин 4 утга (Хэрэглэсэн — сайн/хэвийн, Засвар шаардлагатай, Хэвийн) БҮРЭН ХАСАГДСАН**; 2026-09-30: ⚡ electric — 8 бүлэг/26 дэд төрөл, 3 бүлэг `collapsed`, 4 дэх түвшин БАЙХГҮЙ, 🛋️ home-оос ХАСАГДСАН; 2026-09-30: 🛋️ home — 2 бүлэг (**«Тавилга» ЭХЭНД**)/22 дэд төрөл, хоёулаа `collapsed`, хуучин 9 хавтгай нэр ХАСАГДСАН, breadcrumb, картын мөр/шүүлт ХЭВЭЭР — ⚠️ 2026-09-30 (5)-д энэ мод ХУВААГДАВ; 2026-09-30 (5): **12 хэсэг ба ЯГ дараалал** (`SECTIONS.length === 12`), 🛋️ `furniture` 13 / 🧳 `travel` 12 / 🧺 `home` 9 / ⚽ `hobby` 6 дэд төрөл ЯГ таарах, дөрвүүлээ **ХАВТГАЙ** (`getSubtypeGroups` → `[]`), `hasSimpleForm` нь ⚽/🧺/⚡/🛋️/🧳 дээр `true` ба real-estate/auto/jobs/computers/services дээр `false` (тестээр түгжсэн 10 хэсэг), «Бусад» нь furniture/travel/electric/construction-д байгаа ба home/hobby-д **БАЙХГҮЙ**, ба `0026_furniture_travel_sections.sql`-ийн гэрээ (CHECK 12 утга, `home`→`furniture` 13, `hobby`→`travel` 12, «Аяллын хэрэгсэл» → «Бусад»/`travel`, `delete`/`truncate` БАЙХГҮЙ ✓); 🆕 **2026-09-30 (6): 💻 Notebook-ийн 📺/⚙️/🧠/💾 — 4 талбар `txt` → `sel`** (дараалал `brand·model·screen·cpu·ram·storage·condition·warranty`, сонголт 7/19/13/6, давхардал 0, `required` БАЙХГҮЙ, `attrFilters` `brand·condition·warranty` ХЭВЭЭР; талбар нь **ЗӨВХӨН** `PC_SPEC_SUBTYPES` = 21 Notebook брэнд (⚠️ «Бусад»-ГҮЙ) + «Иж бүрэн компьютер» + «Процессор, сервер» = **23** дэд төрөлд, харин «Бусад»/Mouse/Keyboard/Xbox/Чихэвч/тонер/Проектор/Дэлгэц/хоосон дэд төрөлд **ХАРАГДАХГҮЙ**; `getAttrField` нь `onlySubtypes`-аас ХАМААРАХГҮЙ (картын мөр/шүүлтэд хуучин утга харагдана ✓) ба бусад 11 хэсэгт талбар ХАСАГДАХГҮЙ; картын мөр `Lenovo ThinkPad T14 · ⚙️ Intel Core i5 · 16 GB · 512 GB · ✅ Шинэ` (📺 ОРООГҮЙ); хуучин/demo cpu (`Intel Core i5`…`Apple M2`) ба ram утга бүр шинэ сонголтод БАГТСАН, «512 GB SSD + 1 TB HDD» нь БАГТААГҮЙ (`legacy`-ээр хамгаалагдана); `AddListingModal.jsx`/`seed-sections.mjs`-ийн гэрээ) |
 | `scripts/test-format.mjs` | **20 тест** — `npm run test:format` (2026-09-29: 🤝 `hasRealPrice` / `priceLabel` (үнэ БИЧСЭН бол «₮…» — ДАРАХГҮЙ) / `negotiableNote` (зөвхөн үнэтэй + тэмдэглэсэн үед) + `toNumber('250,000,000') → 0` регресс) |
 | `scripts/normalize-condition.mjs` | 🩹 **DRY RUN** (`npm run normalize:condition`) — хуучин `attrs.condition` утгуудыг «Хуучин» болгож нэгтгэнэ; `-- --apply` бичих үед **227/227** (390 = 163 «Шинэ» + 227 «Хуучин») ✓ |
 | `scripts/test-phone.mjs` | **11 тест** — `npm run test:phone` (2026-09-29: 📞 утасны дугаараар хайх дүрэм — зөвхөн цифр, сүүлийн 8 орон, DB-ийн `97699112233`/`99112233` хоёр хэлбэрт таарах, 6-аас богино цифр хайхгүй + `toLocalPhone`/`isValidMnPhone`/`phoneToEmail` регресс) |

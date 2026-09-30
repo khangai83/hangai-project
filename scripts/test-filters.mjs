@@ -21,6 +21,9 @@ import {
   SECTIONS, getSubtypes, getAttrFilters, getAttrField,
   parseAttrRangeKey, getAttrRangeKeys, formatAttrsLine, getSection, hasSimpleForm,
   getSubtypeGroups, findSubtypeGroup,   // 🛠/💻/⚡/🛋️ 3 дахь түвшин (2026-09-27, -29, -30)
+  // 💻 2026-09-30 (6): Notebook-ийн нэмэлт талбар (`onlySubtypes` + сонголтууд)
+  getAttrFields, NOTEBOOK_BRANDS, PC_SPEC_SUBTYPES,
+  NOTEBOOK_SCREEN_OPTIONS, NOTEBOOK_CPU_OPTIONS, NOTEBOOK_RAM_OPTIONS, NOTEBOOK_STORAGE_OPTIONS,
 } from '../lib/locationData.js';
 
 let passed = 0;
@@ -425,6 +428,136 @@ t('💻 Доод түвшинтэй БҮХ 4 бүлэг `collapsed: true` — 3 
   assert.equal(groups.filter((g) => g.collapsed).length, 4);
   assert.ok(groups.filter((g) => g.items.length === 0).every((g) => !g.collapsed));
   assert.equal(groups.find((g) => g.label === 'Notebook').items.length, 22);
+});
+
+// ---- ⑥-b 💻 NOTEBOOK-ИЙН НЭМЭЛТ ТАЛБАР (2026-09-30 (6), хэрэглэгчийн хүсэлт) ----
+// «Компьютер, Дагалдах хэрэгсэл → Notebook … сонгосон үед Дэлгэцийн хэмжээ,
+//  CPU, RAM, HDD/SSD … сонгодог байх» — ⚠️ бүгд ЗААВАЛ БИШ (аль нэгийг,
+//  эсвэл хэд хэдийг л сонгож болно).
+//  🔴 ШАЛТГААН: 4 талбар нь ЧӨЛӨӨТ ТЕКСТ байсан тул «i7 8-р үе»/«i7-8550U»/
+//  «core i7» гэж олон хэлбэрээр хадгалагдаж, карт/шүүлт дээр зөрүүтэй
+//  харагдана ✗ ба МӨН Mouse/тонер/тоглоом дээр ч харагдаж байв ✗
+
+t('💻 Notebook: 4 үзүүлэлт нь СОНГОЛТТОЙ болов (📺 Дэлгэц · ⚙️ CPU · 🧠 RAM · 💾 Хард)', () => {
+  // ⚠️ Формд гарах дараалал: брэнд → загвар → Дэлгэц → CPU → RAM → Хард → төлөв
+  assert.deepEqual(getAttrFields('computers', 'Apple').map((f) => f.key),
+    ['brand', 'model', 'screen', 'cpu', 'ram', 'storage', 'condition', 'warranty']);
+  const expected = [
+    ['screen', NOTEBOOK_SCREEN_OPTIONS, 7, '11.6" болон доош', '18.0" ба түүнээс дээш'],
+    ['cpu', NOTEBOOK_CPU_OPTIONS, 19, 'Intel Celeron / Pentium / Atom', 'Бусад'],
+    ['ram', NOTEBOOK_RAM_OPTIONS, 13, '4 GB', '512 GB'],
+    ['storage', NOTEBOOK_STORAGE_OPTIONS, 6, '128 GB', '4 TB'],
+  ];
+  for (const [key, options, len, first, last] of expected) {
+    const f = getAttrField('computers', key);
+    assert.equal(f.type, 'select', `${key}: ТЕКСТ байсаар байна ✗`);
+    assert.equal(f.options, options, `${key}: options нь lib-ийн экспорттой ижил объект биш`);
+    assert.equal(f.options.length, len, `${key}: сонголтын тоо`);
+    assert.equal(f.options[0], first, `${key}: эхний утга`);
+    assert.equal(f.options.at(-1), last, `${key}: сүүлийн утга`);
+    // ⚠️ Давхардсан утга байх ЁСТОЙ (жагсаалтад 2 ижил мөр харагдана ✗)
+    assert.equal(new Set(f.options).size, len, `${key}: давхардсан утга байна`);
+    // ⚠️ Бүгд ЗААВАЛ БИШ — талбарт `required` гэсэн ойлголт ороогүй ✓
+    assert.equal(f.required, undefined, `${key}: заавал болгож БОЛОХГҮЙ ✗`);
+  }
+  // ⚠️ Шүүлт (`attrFilters`) ХӨНДӨГДӨӨГҮЙ — CPU/RAM нь хүрээ/шүүлт БИШ ✓
+  //    (хэрэглэгчийн хүсэлт зөвхөн ФОРМЫН талбарт хамаарна)
+  assert.deepEqual(getAttrFilters('computers').map((f) => f.key), ['brand', 'condition', 'warranty']);
+});
+
+t('💻 Notebook-ийн талбар нь ЗӨВХӨН `PC_SPEC_SUBTYPES`-д харагдана (21 + 2)', () => {
+  // 21 Notebook брэнд (⚠️ «Бусад» ХАСАГДСАН — 3 бүлэгт давхарддаг тул)
+  assert.equal(NOTEBOOK_BRANDS.length, 21);
+  assert.ok(!NOTEBOOK_BRANDS.includes('Бусад'));
+  // + «Иж бүрэн компьютер» ба «Процессор, сервер» (CPU/RAM/хард ХЭМЖИГДЭНЭ ✓)
+  assert.equal(PC_SPEC_SUBTYPES.length, 23);
+  assert.deepEqual(PC_SPEC_SUBTYPES.slice(-2), ['Иж бүрэн компьютер', 'Процессор, сервер']);
+  const spec = ['screen', 'cpu', 'ram', 'storage'];
+  for (const sub of ['Apple', 'Dell', 'Lenovo', 'Huawei', 'Иж бүрэн компьютер', 'Процессор, сервер']) {
+    const keys = getAttrFields('computers', sub).map((f) => f.key).filter((k) => spec.includes(k));
+    assert.deepEqual(keys, spec, `${sub}: Notebook-ийн 4 талбар бүрэн гарах ёстой`);
+  }
+});
+
+t('⚠️ «Бусад»/дэд төрөл СОНГООГҮЙ үед Notebook-ийн талбар ХАРАГДАХГҮЙ', () => {
+  // ⚠️ «Бусад» нь Notebook · PS,XBox,Nintendo · Дагалдах хэрэгсэл 3 бүлэгт
+  //    давхарддаг ба DB-д зөвхөн НЭРЭЭР хадгалагддаг → форм нь алийг нь ч
+  //    төлөөлж чадахгүй тул Notebook-ийн талбарыг ХАРУУЛАХГҮЙ ✓
+  const base = ['brand', 'model', 'condition', 'warranty'];
+  for (const sub of [
+    '', 'Бусад', 'Mouse', 'Keyboard', 'Xbox', 'Playstation',
+    'Чихэвч', 'Принтер, Хувилагч, Сканнер, Ламинатор', 'Принтер, Хувилагчийн хор',
+    'iPad, Tablet, Kindle', 'Зөөврийн хард, флаш', 'Модем', 'Дэлгэц', 'Проектор', 'Бусад сэлбэг',
+  ]) {
+    assert.deepEqual(getAttrFields('computers', sub).map((f) => f.key), base, `«${sub || '(хоосон)'}»`);
+  }
+});
+
+t('⚠️ `getAttrField` (картын мөр/шүүлт) нь `onlySubtypes`-аас ХАМААРАХГҮЙ + бусад 11 хэсэг хөндөгдөөгүй', () => {
+  // ⚠️ Хуучин заруудын `attrs` нь DB-д хэвээр → карт/шүүлт нь ТАЛБАРЫГ
+  //    үргэлжлүүлэн харна (картын мөр/шүүлт алга болохгүй ✓)
+  assert.equal(getAttrField('computers', 'cpu').label, 'Процессор (CPU)');
+  // ⚠️ Зөвхөн 💻 хэсгийн 4 талбарт `onlySubtypes` байна — бусад 11 хэсэгт
+  //    ямар ч талбар ХАСАГДАХГҮЙ (форм нь хэвээр бүгдийг харуулна ✓)
+  let flagged = 0;
+  for (const s of SECTIONS) {
+    const fields = s.attrFields || [];
+    const shown = getAttrFields(s.value, getSubtypes(s.value)[0] || '');
+    if (s.value === 'computers') {
+      flagged = fields.filter((f) => Array.isArray(f.onlySubtypes)).length;
+      assert.equal(flagged, 4);
+      continue;
+    }
+    assert.equal(shown.length, fields.length, `${s.value}: талбар хасагдаж байна ✗`);
+    fields.forEach((f) => assert.equal(f.onlySubtypes, undefined, `${s.value}.${f.key}`));
+  }
+  assert.equal(flagged, 4);
+});
+
+t('💻 Картын мөр: шинэ СОНГОЛТЫН утгууд хэвээр гарна (📺 Дэлгэц мөрөнд ОРООГҮЙ)', () => {
+  assert.equal(
+    formatAttrsLine('computers', {
+      brand: 'Lenovo', model: 'ThinkPad T14', screen: '14.0"',
+      cpu: 'Intel Core i5', ram: '16 GB', storage: '512 GB', condition: 'Шинэ',
+    }),
+    'Lenovo ThinkPad T14 · ⚙️ Intel Core i5 · 16 GB · 512 GB · ✅ Шинэ',
+  );
+  // ⚠️ Хэрэглэгч зөвхөн 1 талбар бөглөсөн ч мөр ХООСОН таслалтгүй гарна ✓
+  assert.equal(formatAttrsLine('computers', { ram: '24 GB' }), '24 GB');
+});
+
+t('⚠️ Хуучин/demo утга нь ШИНЭ сонголтод багтсан (форм дээр алга болохгүй ✓)', () => {
+  // 2026-09-30-ны өмнөх demo утгууд — эдгээр нь DB-д байж болзошгүй тул
+  // ⚠️ сонголтын жагсаалтад ЗААВАЛ байх ЁСТОЙ (эс бөгөөс `<select>` дээр
+  //    утга нь «Сонгох» болж, хадгалахад АЛГА БОЛНО ✗)
+  const cpu = getAttrField('computers', 'cpu').options;
+  ['Intel Core i5', 'Intel Core i7', 'Intel Core i9', 'AMD Ryzen 5', 'AMD Ryzen 7', 'Apple M1', 'Apple M2']
+    .forEach((v) => assert.ok(cpu.includes(v), `cpu: «${v}» алга ✗`));
+  const ram = getAttrField('computers', 'ram').options;
+  ['8 GB', '16 GB', '32 GB'].forEach((v) => assert.ok(ram.includes(v), `ram: «${v}» алга ✗`));
+  const storage = getAttrField('computers', 'storage').options;
+  ['128 GB', '256 GB', '512 GB', '1 TB'].forEach((v) => assert.ok(storage.includes(v), `storage: «${v}» алга ✗`));
+  // ⚠️ Хуучин «512 GB SSD + 1 TB HDD» нь ЗОРИУДААР багтаагүй (багтаамж л
+  //    хадгална) → форм нь `legacy` option-оор харуулж, утгыг АЛДАХГҮЙ ✓
+  assert.ok(!storage.includes('512 GB SSD + 1 TB HDD'));
+});
+
+t('💻 ГЭРЭЭ: форм (`AddListingModal`) + seed нь нэг эх сурвалжийг барина', () => {
+  const modal = readFileSync(new URL('../components/AddListingModal.jsx', import.meta.url), 'utf8');
+  // ① Форм нь ЗӨВХӨН `getAttrFields(section, subtype)`-ээр талбараа сонгоно
+  assert.ok(/getAttrFields\(form\.section \|\| 'real-estate', form\.propertyType\)/.test(modal),
+    'форм `getAttrFields`-ийг дэд төрөлтэй дуудах ёстой ✗');
+  // ② ⚠️ Жагсаалтад БАЙХГҮЙ хуучин утга нь `<select>`-д алга болохгүй
+  assert.ok(/const legacy = f\.type === 'select'/.test(modal));
+  assert.ok(/\{legacy && <option value=\{legacy\}>/.test(modal));
+
+  const seed = readFileSync(new URL('./seed-sections.mjs', import.meta.url), 'utf8');
+  // ③ Seed нь формтой ЯГ ИЖИЛ дэд төрлийн жагсаалт + option-уудыг ашиглана
+  assert.ok(/const PC_SPEC = new Set\(PC_SPEC_SUBTYPES\)/.test(seed));
+  assert.ok(/const PC_NOTEBOOK_BRANDS = new Set\(NOTEBOOK_BRANDS\)/.test(seed));
+  // ④ Demo pool нь форм дээрх сонголтод байхгүй бол seed ЗОГСОНО (fail-fast ✓)
+  assert.ok(/форм дээрх сонголтод БАЙХГҮЙ демо утга/.test(seed));
+  assert.ok(/NOTEBOOK_SCREEN_OPTIONS, NOTEBOOK_CPU_OPTIONS, NOTEBOOK_RAM_OPTIONS, NOTEBOOK_STORAGE_OPTIONS/.test(seed));
 });
 
 t('🛠 services: бүлгүүдэд `collapsed` туг БАЙХГҮЙ (бүгд ШУУД нээлттэй хэвээр)', () => {
