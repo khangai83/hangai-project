@@ -2,19 +2,23 @@
 // test-search.mjs — ХАЙЛТЫН UI-ийн ЦЭВЭР логикийн тест
 //
 // ХАМРАХ ХҮРЭЭ:
-//   ① `lib/rangeSlider.mjs`  — чирдэг хүрээний математик (үнэ/талбай/он)
+//   ① `lib/rangeFilter.mjs`  — доод/дээд ТООНЫ хүрээний логик: монгол
+//      тооны бичлэг → тоо, ЦЭГЭЭР бүлэглэх, хил, түргэн хүрээ
 //   ② `lib/sortOptions.mjs`  — эрэмбэлэх сонголт (eBay-ийн «Sort: …»)
 //   ③ ГЭРЭЭ: `components/HomeClient.jsx` + `lib/queries.js` нь дээрх
 //      модулиудыг ХЭРЭГЛЭЖ байгаа эсэх (эх файлыг шууд уншина)
 //
 // ЯАГААД ХЭРЭГТЭЙ ВЭ:
-//   Слайдер буруу тооцоолбол хэрэглэгч «250 сая» гэж чирээд DB руу
-//   25 мянга явна (эсвэл from > to болж query хоосон болно). Тэр эрсдэлийг
-//   энэ тест бариулна. Мөн `?sort=xxx` гэсэн танихгүй утга PostgREST руу
-//   БАЙХГҮЙ багана болж явахгүй (normalizeSort) гэдгийг түгжинэ ✓
+//   Хэрэглэгч «1.500.000» гэж цэгтэй бичихэд «1.5» эсвэл «1500000000» гэж
+//   уншигдвал DB руу БУРУУ query явна («₮1.5-аас дээш» гэж хайвал бүх зар
+//   гарна ✗). Мөн `?sort=xxx` гэсэн танихгүй утга PostgREST руу БАЙХГҮЙ
+//   багана болж явахгүй (normalizeSort) гэдгийг түгжинэ ✓
 //
 // АЖИЛЛУУЛАХ:  npm run test:search
-// ⚠️ DB/React ХОЛБОГДОХГҮЙ — зөвхөн Node (2 модуль нь импортгүй цэвэр).
+// ⚠️ DB/React ХОЛБОГДОХГҮЙ — зөвхөн Node (модуль нь импортгүй цэвэр).
+//    🎚 Чирдэг слайдер (RangeSlider) 2026-09-30-нд ХАСАГДСАН тул
+//    `valueToPct`/`pctToValue`/`moveHandle`/`nearestHandle`/`keyboardValue`/
+//    `activePair`/`withDynamicBounds`-ийн тестүүд ч хасагдав ✓
 // ============================================================
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,10 +27,10 @@ import assert from 'node:assert/strict';
 
 import {
   AREA_BOUNDS, PRICE_BOUNDS, YEAR_START,
-  activePair, clampNum, isRangeActive, keyboardValue, moveHandle, nearestHandle,
-  parseNum, pctToValue, priceBounds, priceQuickPicks, rangeLabel, snapNum,
-  toFilterPair, valueToPct, withDynamicBounds, yearBounds,
-} from '../lib/rangeSlider.mjs';
+  clampNum, formatGroupedInput, groupDigits, isRangeActive,
+  parseNum, priceBounds, priceQuickPicks, rangeLabel, snapNum,
+  toFilterPair, yearBounds,
+} from '../lib/rangeFilter.mjs';
 import {
   DEFAULT_SORT, SORT_OPTIONS, normalizeSort, sortLabel, sortOrders,
 } from '../lib/sortOptions.mjs';
@@ -49,7 +53,7 @@ const short = (n) => {
   return String(v);
 };
 
-console.log('\n🧪 Хайлтын UI — чирдэг хүрээ (lib/rangeSlider.mjs)\n');
+console.log('\n🧪 Хайлтын UI — тооны хүрээ ба эрэмбэлэлт (lib/rangeFilter.mjs)\n');
 
 // ---------- ① parseNum — монгол тооны бичлэг ----------
 t("parseNum: хоосон утгууд → null ('' · null · undefined · 'abc')", () => {
@@ -118,123 +122,80 @@ t('snapNum: алхам 0/эвдэрсэн бол 1 болгож ажиллана
   assert.equal(snapNum(7.4, { min: 0, max: 10, step: 0 }), 7);
 });
 
-// ---------- ③ withDynamicBounds (гараар бичсэн утга АЛДАГДАХГҮЙ) ----------
-t('withDynamicBounds: утга БАЙХГҮЙ бол хил ХӨНДӨГДӨХГҮЙ (хуулбар)', () => {
-  const b = withDynamicBounds(AREA_BOUNDS, '', null, undefined);
-  assert.deepEqual(b, AREA_BOUNDS);
-  assert.notEqual(b, AREA_BOUNDS); // ⚠️ мутацлахаас сэргийлж ХУУЛБАР
+// ---------- ③ formatGroupedInput · groupDigits (тоо ЦЭГЭЭР тусгаарлагдана) ----------
+t('groupDigits: 3-аар бүлэглэж ЦЭГЭЭР тусгаарлана', () => {
+  assert.equal(groupDigits('250000000'), '250.000.000');
+  assert.equal(groupDigits('1000'), '1.000');
+  assert.equal(groupDigits('100'), '100');
+  assert.equal(groupDigits('0'), '0');
+  assert.equal(groupDigits(2500000), '2.500.000'); // тоо (number) ч зөв
 });
 
-t('withDynamicBounds: бичсэн утга хилээс ГАРВАЛ сунана', () => {
-  assert.deepEqual(withDynamicBounds(AREA_BOUNDS, '1200', '').max, 1200);
-  assert.deepEqual(withDynamicBounds(AREA_BOUNDS, '', '300').max, AREA_BOUNDS.max);
-  assert.deepEqual(withDynamicBounds({ min: 100, max: 200, step: 1 }, '50', '').min, 50);
+t('groupDigits: хогтой текст ч зөв — цифрээс өөр БҮГД алгасна', () => {
+  assert.equal(groupDigits('₮ 250 000 000'), '250.000.000');
+  assert.equal(groupDigits('1,500,000'), '1.500.000'); // таслалттай буулгасан
+  assert.equal(groupDigits('12abc345'), '12.345');
+  assert.equal(groupDigits('abc'), '');
+  assert.equal(groupDigits(''), '');
 });
 
-t('withDynamicBounds: «250,000,000» мөр ч тоо болж уншигдана', () => {
-  assert.equal(withDynamicBounds(AREA_BOUNDS, '250,000,000', '').max, 250_000_000);
+t('groupDigits: эхний тэг хасагдана, ганц «0» үлдэнэ', () => {
+  assert.equal(groupDigits('0007'), '7');
+  assert.equal(groupDigits('000'), '0');
 });
 
-// ---------- ④ pct ↔ утга (чирэх байрлал) ----------
-t('valueToPct: хил дээр 0% / 100%, дунд нь 50%', () => {
-  assert.equal(valueToPct(0, PRICE_BOUNDS.realEstate), 0);
-  assert.equal(valueToPct(5_000_000_000, PRICE_BOUNDS.realEstate), 100);
-  assert.equal(valueToPct(2_500_000_000, PRICE_BOUNDS.realEstate), 50);
+t('groupDigits: 15+ цифрт цифр АЛДАГДАХГҮЙ (Number-ээр яваагүй ✓)', () => {
+  assert.equal(groupDigits('1234567890123456'), '1.234.567.890.123.456');
 });
 
-t('pctToValue: 50% → 250 сая (0–500 сая хүрээ)', () => {
-  assert.equal(pctToValue(50, PRICE_BOUNDS.default), 250_000_000);
+t("formatGroupedInput(int): бичих ЯВЦАД цэг гарч ирнэ ('3000000' → '3.000.000')", () => {
+  assert.equal(formatGroupedInput('3'), '3');
+  assert.equal(formatGroupedInput('30'), '30');
+  assert.equal(formatGroupedInput('300'), '300');
+  assert.equal(formatGroupedInput('3000'), '3.000');
+  assert.equal(formatGroupedInput('3000000'), '3.000.000');
+  assert.equal(formatGroupedInput('250000000'), '250.000.000');
 });
 
-t('pctToValue: 0-100-аас гарсан pct нь ХААГДАНА (гадуур чирэхэд эвдрэхгүй)', () => {
-  assert.equal(pctToValue(-20, PRICE_BOUNDS.default), 0);
-  assert.equal(pctToValue(180, PRICE_BOUNDS.default), 500_000_000);
+t('formatGroupedInput(int): макс 12 цифр (хэт урт утга хязгаарлагдана)', () => {
+  assert.equal(formatGroupedInput('1234567890123456'), '123.456.789.012');
 });
 
-t('round-trip: pctToValue(valueToPct(v)) === v (алхмын үржвэр утгад)', () => {
-  [0, 250_000_000, 2_500_000_000, 5_000_000_000].forEach((v) => {
-    assert.equal(pctToValue(valueToPct(v, PRICE_BOUNDS.realEstate), PRICE_BOUNDS.realEstate), v);
+t('formatGroupedInput(decimal): бутархай нь «,», бүхэл хэсэг нь цэгээр бүлэглэгдэнэ', () => {
+  assert.equal(formatGroupedInput('75,5', { mode: 'decimal' }), '75,5');
+  assert.equal(formatGroupedInput('75.5', { mode: 'decimal' }), '75,5'); // цэгэн бутархай → «,»
+  assert.equal(formatGroupedInput('1234,5', { mode: 'decimal' }), '1.234,5');
+  assert.equal(formatGroupedInput('1.234,56', { mode: 'decimal' }), '1.234,56');
+  // ⚠️ «1.234» нь 3 орон тул МЯНГАТ (1234) — бутархай гэж уншигдахгүй ✓
+  assert.equal(formatGroupedInput('1234', { mode: 'decimal' }), '1.234');
+});
+
+t('formatGroupedInput(decimal): бичиж байхдаа «75,» гэсэн «,» ХАДГАЛАГДАНА', () => {
+  // ⚠️ «,» арилбал хэрэглэгч бутархай бичиж ЧАДАХГҮЙ болно ✗
+  assert.equal(formatGroupedInput('75,', { mode: 'decimal' }), '75,');
+  assert.equal(formatGroupedInput('75.0', { mode: 'decimal' }), '75,0');
+  assert.equal(formatGroupedInput('1234,', { mode: 'decimal' }), '1.234,');
+});
+
+t('📌 РЕГРЕСС formatGroupedInput(year): ОНЫГ БҮЛЭГЛЭХГҮЙ («2.026» болохгүй ✓)', () => {
+  assert.equal(formatGroupedInput('2026', { mode: 'year' }), '2026');
+  assert.equal(formatGroupedInput('2.026', { mode: 'year' }), '2026');
+  assert.equal(formatGroupedInput('20261', { mode: 'year' }), '2026'); // макс 4 орон
+});
+
+t("parseNum: '1.234,5' → 1234.5 (цэг нь МЯНГАТ, таслал нь БУТАРХАЙ ✓)", () => {
+  assert.equal(parseNum('1.234,5'), 1234.5);
+  assert.equal(parseNum(formatGroupedInput('1234.5', { mode: 'decimal' })), 1234.5);
+});
+
+t('round-trip: бүлэглэсэн утга → parseNum ИЖИЛ тоо (DB руу хог явахгүй ✓)', () => {
+  ['3000', '250000000', '999', '0'].forEach((d) => {
+    assert.equal(parseNum(formatGroupedInput(d)), Number(d), d);
   });
 });
 
-t('valueToPct: min === max хүрээнд 0 (тэгд хуваахгүй)', () => {
-  assert.equal(valueToPct(5, { min: 5, max: 5, step: 1 }), 0);
-});
 
-// ---------- ⑤ activePair (③ буруу утгыг ЗАСНА) ----------
-t("activePair: '' → бүтэн хүрээ (шүүлт байхгүй)", () => {
-  assert.deepEqual(activePair('', '', AREA_BOUNDS), { from: 0, to: 600 });
-});
-
-t('activePair: нэг талын утга л байвал нөгөө нь ХИЛ хэвээр', () => {
-  assert.deepEqual(activePair('45', '', AREA_BOUNDS), { from: 45, to: 600 });
-  assert.deepEqual(activePair('', '120', AREA_BOUNDS), { from: 0, to: 120 });
-});
-
-t('activePair: from > to (буруу бичсэн) → from нь to руу ЗАСАГДАНА', () => {
-  assert.deepEqual(activePair('300', '100', AREA_BOUNDS), { from: 100, to: 100 });
-});
-
-t('activePair: хилээс гарсан утга ХИЛ дээр хайчилна', () => {
-  assert.deepEqual(activePair('9999', '', AREA_BOUNDS), { from: 600, to: 600 });
-});
-
-t('activePair: «75,5» м² бутархай зөв уншигдана', () => {
-  assert.deepEqual(activePair('75,5', '', AREA_BOUNDS), { from: 75.5, to: 600 });
-});
-
-// ---------- ⑥ nearestHandle · moveHandle (① ГАРАЛЦАХГҮЙ) ----------
-t('nearestHandle: ойрхон талыг сонгоно, тэнцүү бол from', () => {
-  assert.equal(nearestHandle(10, 0, 100), 'from');
-  assert.equal(nearestHandle(90, 0, 100), 'to');
-  assert.equal(nearestHandle(50, 0, 100), 'from');
-});
-
-t('moveHandle: «to»-г from-оос доош чирвэл ГАРАЛЦАХГҮЙ (from дээр тухлав)', () => {
-  assert.deepEqual(moveHandle('to', 10, 100, 300, AREA_BOUNDS), { from: 10, to: 10 });
-});
-
-t('moveHandle: «from»-ыг to-оос дээш чирвэл to нь ХАМТ зөөгдөнө (гаралцахгүй)', () => {
-  assert.deepEqual(moveHandle('from', 500, 100, 300, AREA_BOUNDS), { from: 500, to: 500 });
-});
-
-t('moveHandle: хилээс гадна чирсэн ч хил дотор тогтоно', () => {
-  assert.deepEqual(moveHandle('from', -50, 0, 600, AREA_BOUNDS), { from: 0, to: 600 });
-  assert.deepEqual(moveHandle('to', 9000, 0, 600, AREA_BOUNDS), { from: 0, to: 600 });
-});
-
-// ---------- ⑦ keyboardValue (a11y — зөвхөн хулганаар биш) ----------
-t('keyboardValue: ←↓ нэг алхам, →↑ нэг алхам (хил дотор)', () => {
-  const b = PRICE_BOUNDS.default;
-  assert.equal(keyboardValue('ArrowLeft', 100_000_000, b), 95_000_000);
-  assert.equal(keyboardValue('ArrowDown', 100_000_000, b), 95_000_000);
-  assert.equal(keyboardValue('ArrowRight', 100_000_000, b), 105_000_000);
-  assert.equal(keyboardValue('ArrowUp', 100_000_000, b), 105_000_000);
-});
-
-t('keyboardValue: PageUp/PageDown 10 алхам', () => {
-  const b = PRICE_BOUNDS.default;
-  assert.equal(keyboardValue('PageUp', 100_000_000, b), 150_000_000);
-  assert.equal(keyboardValue('PageDown', 100_000_000, b), 50_000_000);
-});
-
-t('keyboardValue: Home → min, End → max', () => {
-  const b = PRICE_BOUNDS.realEstate;
-  assert.equal(keyboardValue('Home', 1_000_000_000, b), 0);
-  assert.equal(keyboardValue('End', 1_000_000_000, b), 5_000_000_000);
-});
-
-t('keyboardValue: танихгүй товч → null (өөрчлөлт БАЙХГҮЙ)', () => {
-  assert.equal(keyboardValue('a', 100, AREA_BOUNDS), null);
-  assert.equal(keyboardValue('Escape', 100, AREA_BOUNDS), null);
-});
-
-t('keyboardValue: хил дээр тогтоно (0-ээс доош / max-аас дээш гарахгүй)', () => {
-  assert.equal(keyboardValue('ArrowLeft', 0, AREA_BOUNDS), 0);
-  assert.equal(keyboardValue('ArrowRight', 600, AREA_BOUNDS), 600);
-});
-
-// ---------- ⑧ toFilterPair · isRangeActive (② ХИЛ = ШҮҮЛТГҮЙ) ----------
+// ---------- ④ toFilterPair · isRangeActive (② ХИЛ = ШҮҮЛТГҮЙ) ----------
 t("toFilterPair: хил дээр байгаа тал → '' (шүүлт БАЙХГҮЙ)", () => {
   assert.deepEqual(toFilterPair(0, 600, AREA_BOUNDS), { from: '', to: '' });
   assert.deepEqual(toFilterPair(0, 120, AREA_BOUNDS), { from: '', to: '120' });
@@ -245,13 +206,15 @@ t('toFilterPair: дунд утгууд → МӨР (URL/DB-д тэгж бичиг
   assert.deepEqual(toFilterPair(45, 120, AREA_BOUNDS), { from: '45', to: '120' });
 });
 
-t('toFilterPair: өргөссөн хил дээр ч АНХДАГЧ хилээр харьцуулна (шүүлт АРИЛАХГҮЙ)', () => {
-  // Хэрэглэгч 1200 м² бичсэн → слайдер сунасан ч утга нь ХЭВЭЭР байх ёстой
-  const dyn = withDynamicBounds(AREA_BOUNDS, '1200', '');
-  assert.deepEqual(toFilterPair(dyn.max, dyn.max, AREA_BOUNDS), { from: '1200', to: '1200' });
-  // ⚠️ Хэрэв ӨРГӨССӨН хилээр харьцуулбал `to` нь '' болж, хэрэглэгчийн бичсэн
-  //    1200 гэсэн хязгаар ЧИМЭЭГҮЙ АРИЛНА ✗ — тест нь ЯГ тэр алдааг бариулна
-  assert.equal(toFilterPair(dyn.max, dyn.max, dyn).to, '');
+t('toFilterPair: ХИЛЭЭС ГАРСАН утга ХЯЗГААРЛАГДАХГҮЙ (чирдэг слайдер хасагдсан ✓)', () => {
+  // Хэрэглэгч 1200 м² (хил 600) бичвэл утга нь БҮРЭН хэвээр DB руу явна —
+  // өмнөх слайдер нь хилийг динамикаар өргөтгөх шаардлагатай байв
+  assert.deepEqual(toFilterPair(1200, 1200, AREA_BOUNDS), { from: '1200', to: '1200' });
+  // ₮6 тэрбум (хил 5 тэрбум) — мөн адил хязгаарлагдахгүй ✓
+  assert.deepEqual(
+    toFilterPair(6_000_000_000, 6_000_000_000, PRICE_BOUNDS.realEstate),
+    { from: '6000000000', to: '6000000000' }
+  );
 });
 
 t('isRangeActive: хоёр тал хоосон бол идэвхгүй', () => {
@@ -260,7 +223,7 @@ t('isRangeActive: хоёр тал хоосон бол идэвхгүй', () => {
   assert.equal(isRangeActive('', '0'), true);
 });
 
-// ---------- ⑨ rangeLabel · priceQuickPicks ----------
+// ---------- ⑤ rangeLabel · priceQuickPicks ----------
 t('rangeLabel: ₮ нь товч форматтай («₮150 сая – ₮1 тэрбум»)', () => {
   assert.equal(rangeLabel(150_000_000, 1_000_000_000, { unit: '₮', short }), '₮150 сая – ₮1 тэрбум');
 });
@@ -275,7 +238,7 @@ t('📌 РЕГРЕСС rangeLabel: хил дээрх 0 нь «₮ – ₮5 тэ�
   assert.equal(rangeLabel(0, 5_000_000_000, { unit: '₮', short }), '₮0 – ₮5 тэрбум');
   // Талбайн 0 нь өөрчлөгдөхгүй (short дамжуулаагүй үед)
   assert.equal(rangeLabel(0, 600, { unit: 'м²' }), '0 – 600 м²');
-  // Толгойн aria-valuetext нэг утгатай дуудагдана → «₮0»
+  // Шүүлт идэвхтэй үед гарах жижиг шошго (`RangeInput → data-range-label`) ✓
   assert.equal(rangeLabel(0, 0, { unit: '₮', short }), '₮0 – ₮0');
 });
 
@@ -295,7 +258,7 @@ t('priceQuickPicks: шошго нь ₮-тэй ба «хүртэл / -с дээ�
   assert.match(p[1].label, /^₮.+ – ₮/);
 });
 
-t('priceQuickPicks: утгууд нь алхмын үржвэр (слайдер дээр яг таарна)', () => {
+t('priceQuickPicks: утгууд нь алхмын үржвэр (товчнууд нь дугуй тоо гаргана ✓)', () => {
   const b = PRICE_BOUNDS.realEstate;
   priceQuickPicks(b, short).forEach((x) => {
     assert.equal(x.from % b.step, 0, `from=${x.from}`);
@@ -303,7 +266,7 @@ t('priceQuickPicks: утгууд нь алхмын үржвэр (слайдер 
   });
 });
 
-// ---------- ⑩ Хилийн тогтмолууд ----------
+// ---------- ⑥ Хилийн тогтмолууд ----------
 t('priceBounds: үл хөдлөх нь ИЛҮҮ ӨРГӨН (5 тэрбум) ба хуулбар буцаана', () => {
   assert.ok(PRICE_BOUNDS.realEstate.max > PRICE_BOUNDS.default.max);
   const a = priceBounds(true);
@@ -324,7 +287,7 @@ t('yearBounds(2026): 1990–2026, алхам 1 · эвдэрсэн онд ч э�
 
 console.log('\n🧪 Эрэмбэлэх сонголт (lib/sortOptions.mjs)\n');
 
-// ---------- ⑪ SORT_OPTIONS · normalizeSort ----------
+// ---------- ⑦ SORT_OPTIONS · normalizeSort ----------
 t('SORT_OPTIONS: 3 сонголт, утга нь ДАВХАЛДАХГҮЙ, анхдагч нь жагсаалтад байна', () => {
   assert.equal(SORT_OPTIONS.length, 3);
   const values = SORT_OPTIONS.map((o) => o.value);
@@ -379,24 +342,38 @@ t('sortLabel: уншигдах шошго буцаана (танихгүй ут�
   assert.equal(sortLabel('zzz'), sortLabel(DEFAULT_SORT));
 });
 
-// ---------- ⑫ ГЭРЭЭ (эх файлыг уншиж түгжинэ — санамсаргүй салгахаас) ----------
+// ---------- ⑧ ГЭРЭЭ (эх файлыг уншиж түгжинэ — санамсаргүй салгахаас) ----------
 const readSrc = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
-t('ГЭРЭЭ: HomeClient нь RangeSlider-ийг импортолж, хил 3-ыг бүгдийг хэрэглэнэ', () => {
+t('ГЭРЭЭ: HomeClient нь RangeInput-ийг импортолж, хил 3-ыг бүгдийг хэрэглэнэ', () => {
   const src = readSrc('components/HomeClient.jsx');
-  assert.match(src, /import RangeSlider from '\.\/RangeSlider'/);
+  assert.match(src, /import RangeInput from '\.\/RangeInput'/);
+  assert.match(src, /from '\.\.\/lib\/rangeFilter\.mjs'/);
   assert.match(src, /priceBounds\(/, 'үнийн хил (хэсгээс хамаарна)');
   assert.match(src, /yearBounds\(/, ' оны хил (одоогийн он)');
   assert.match(src, /AREA_BOUNDS/, 'талбайн хил');
 });
 
-t('ГЭРЭЭ: RangeSlider нь data-slider/data-handle-тай (CDP шалгалт ба a11y)', () => {
-  const src = readSrc('components/RangeSlider.jsx');
-  assert.match(src, /data-slider=\{label\}/);
-  assert.match(src, /data-handle="from"/);
-  assert.match(src, /data-handle="to"/);
-  assert.match(src, /role="slider"/);
-  assert.match(src, /touch-none/, '⚠️ мобайлд чирэхэд хуудас гүйлгэхгүй байх ёстой');
+t('📌 РЕГРЕСС: ЧИРДЭГ слайдер БҮРЭН хасагдсан (хэрэглэгчийн хүсэлт ✓)', () => {
+  // ⚠️ Хэрэглэгч «дээд доод үнэ, талбай дээр чирдэгээ больё» гэсэн тул
+  //    зам/толгой/handle/pointerCapture БАЙХ ЁСГҮЙ ✗
+  const ui = readSrc('components/RangeInput.jsx');
+  assert.doesNotMatch(ui, /role="slider"/);
+  assert.doesNotMatch(ui, /data-slider/);
+  assert.doesNotMatch(ui, /data-handle/);
+  assert.doesNotMatch(ui, /onPointerDown/);
+  assert.doesNotMatch(ui, /touch-none/);
+  // Хуучин файлууд БҮРЭН устасан (слайдерийн математик ч хамт ✓)
+  assert.equal(fs.existsSync(path.join(ROOT, 'components/RangeSlider.jsx')), false);
+  assert.equal(fs.existsSync(path.join(ROOT, 'lib/rangeSlider.mjs')), false);
+});
+
+t('ГЭРЭЭ: RangeInput нь data-range-input/quick-pick-тай бөгөөд ЦЭГЭЭР бүлэглэнэ', () => {
+  const src = readSrc('components/RangeInput.jsx');
+  assert.match(src, /data-range-input="from"/);
+  assert.match(src, /data-range-input="to"/);
+  assert.match(src, /data-quick-pick=\{p\.key\}/);
+  assert.match(src, /formatGroupedInput\(/, 'бичих ЯВЦАД цэгээр тусгаарлана');
 });
 
 t('ГЭРЭЭ: queries.js нь sortOrders-оор эрэмбэлнэ (хатуу бичсэн created_at БАЙХГҮЙ)', () => {
@@ -406,8 +383,16 @@ t('ГЭРЭЭ: queries.js нь sortOrders-оор эрэмбэлнэ (хатуу 
   assert.doesNotMatch(src, /\.order\('created_at', \{ ascending: false \}\)\s*\n\s*\/\/ ⚠️ 2 ДАХЬ/);
 });
 
-t('ГЭРЭЭ: layout/SSR эвдрэхгүй — RangeSlider нь client компонент', () => {
-  assert.match(readSrc('components/RangeSlider.jsx'), /^'use client';/);
+t('ГЭРЭЭ: layout/SSR эвдрэхгүй — RangeInput нь client компонент', () => {
+  assert.match(readSrc('components/RangeInput.jsx'), /^'use client';/);
 });
 
-console.log(`\n✅ Нийт ${passed} тест амжилттай — чирдэг хүрээ + эрэмбэлэлт\n`);
+t('ГЭРЭЭ: устгасан `rangeSlider.mjs`-ийг ХААНА Ч импортлохгүй (үлдэгдэл БАЙХГҮЙ ✓)', () => {
+  // ⚠️ Хуучин модулийг дурдсан мөр үлдвэл дараагийн хүн ТӨӨРЧ байгаа файл
+  //    хайж цаг алдана ✗ — гурван гол хэрэглэгчийг шалгана
+  ['components/HomeClient.jsx', 'lib/queries.js', 'scripts/cdp-range.mjs'].forEach((f) => {
+    assert.doesNotMatch(readSrc(f), /rangeSlider/, f);
+  });
+});
+
+console.log(`\n✅ Нийт ${passed} тест амжилттай — тооны хүрээ (цэгээр бүлэглэлт) + эрэмбэлэлт\n`);

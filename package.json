@@ -19,7 +19,7 @@
     "test:search": "node scripts/test-search.mjs",
     "test:rooms": "node scripts/test-rooms.mjs",
     "cdp:rooms": "node scripts/cdp-rooms.mjs",
-    "cdp:slider": "node scripts/cdp-slider.mjs",
+    "cdp:range": "node scripts/cdp-range.mjs",
     "test:messages": "node scripts/test-messages.mjs",
     "test:youtube": "node scripts/test-youtube.mjs",
     "migration:copy": "node scripts/setup-migration.js",

@@ -5,6 +5,14 @@
  *   → чип дарж 1, 3, «+5»-ыг ЗЭРЭГ сонгоно; URL `?rooms=1,3`; DB дээр
  *     `rooms=in.(1,3)`, завсартай үед `or=(rooms.in.(…),rooms.gte.5)` ✓
  *
+ * 🆕 2026-09-30 (2 дахь хүсэлт) — энэ скриптэд 2 шинэ шаардлага нэмэгдэв:
+ *   ① «хайлтын Өрөөний тоо оруулах хэсгийг хамгийн эхэнд оруулчих»
+ *      → sidebar-ийн ХАМГИЙН ЭХНИЙ блок нь «🛏 Өрөөний тоо»,
+ *        «Байршил» нь түүний ДАРАА байх ёстой (DOM дарааллаар шалгана ✓)
+ *   ② «өрөөний тооны хойно зарын тоо харуулдаг аа больчих»
+ *      → чип дээр цифр ОГТ байхгүй + `fetchRoomCounts`-ийн HEAD query
+ *        сүлжээнд ОГТ явахгүй (ачаалалт хэмнэгдсэн ✓)
+ *
  * ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
  *   1) `npm run build && npm run start` — сервер http://localhost:3000 дээр
  *   2) Chrome-ыг алсын дебагттайгаар нээсэн байх:
@@ -36,31 +44,94 @@ const rpcOf = (ws) => {
 };
 
 const list = await (await fetch('http://127.0.0.1:9222/json/list')).json();
-const page = list.find((t) => t.type === 'page');
+// ⚠️ Chrome-д олон таб нээлттэй байвал (туршилтын үед 17 таб байсан) хуучин
+//    таб нь `Runtime.evaluate`-д хариу өгөхгүй hang болдог ✗
+//    → хамгийн найдвартай нь ШИНЭ таб нээж (PUT /json/new) түүн дээр ажиллах ✓
+let page = null;
+try {
+  const created = await fetch(`http://127.0.0.1:9222/json/new?${encodeURIComponent('about:blank')}`, { method: 'PUT' });
+  if (created.ok) page = await created.json();
+} catch { /* хуучин Chrome (PUT дэмжихгүй) → доорх нөөц зам ✓ */ }
+let ownTab = !list.some((t) => t.id === page?.id);
+if (!page?.webSocketDebuggerUrl) {
+  const pages = list.filter((t) => t.type === 'page' && !t.url.startsWith('chrome://'));
+  page = pages.find((t) => t.url.includes('localhost:3000')) || pages[0];
+  ownTab = false;
+}
+if (!page?.webSocketDebuggerUrl) throw new Error('CDP: нээлттэй `page` target олдсонгүй — Chrome-ыг --remote-debugging-port=9222-оор нээнэ үү');
+// ⚠️ `PUT /json/new` нь табыг BACKGROUND-д нээдэг → идэвхгүй табын renderer
+//    хүйтэн болж `Runtime.evaluate` нь 30с timeout болдог ✗
+//    → ① HTTP `GET /json/activate/<id>` (табыг/цонхыг front-д гаргана)
+//      ② доор `Page.bringToFront` (CDP) — давхар хамгаалалт ✓
+try { await fetch(`http://127.0.0.1:9222/json/activate/${page.id}`); } catch { /* алгасна */ }
 const ws = new WebSocket(page.webSocketDebuggerUrl);
+/** ℹ️ Скрипт дуусахад (амжилттай ч, алдаатай ч) өөрөө нээсэн табаа ХААНА ✓ */
+const closeOwnTab = async () => {
+  if (!ownTab) return;
+  try { await fetch(`http://127.0.0.1:9222/json/close/${page.id}`); } catch { /* алгасна */ }
+};
+// ⚠️ Top-level await-ийн алдаа эсвэл Ctrl+C (SIGTERM) үед ч таб үлдэхгүй байх ёстой ✗
+//    → гарах бүх замаар `closeOwnTab()` дуудна ✓ (эс бөгөөс Chrome-д хог таб хуримтлагдана)
+let exiting = false;
+const hardExit = async (code) => {
+  if (exiting) return;
+  exiting = true;
+  await closeOwnTab();
+  process.exit(code);
+};
+process.on('uncaughtException', (e) => { console.error(e); hardExit(1); });
+process.on('unhandledRejection', (e) => { console.error(e); hardExit(1); });
+process.on('SIGINT', () => hardExit(130));
+process.on('SIGTERM', () => hardExit(143));
 await new Promise((r) => ws.addEventListener('open', r, { once: true }));
 const rpc = rpcOf(ws);
 
 const exceptions = [];
 const listingReqs = [];
+// 🆕 2026-09-30: чип дээрх «зарын тоо» (fetchRoomCounts) ХАСАГДСАН тул
+//    тэр query ОГТ явахгүй болсныг шалгана. ⚠️ Тэр query нь
+//    `count: 'exact', head: true` → HTTP МЕТОД нь **HEAD** (GET биш!)
+//    тул `listingReqs` дотор ОРОХГҮЙ ✗ — тусдаа массив хэрэгтэй ✓
+//    ⚠️ HEAD query-г ЗӨВХӨН өрөөгөөр шүүнэ: `fetchPropertyTypeCounts` ч
+//       HEAD ашигладаг (төрөл тус бүрийн тоо) — тэр нь ХЭВЭЭР байх ёстой ✓
+const roomCountReqs = [];
 ws.addEventListener('message', (ev) => {
   const m = JSON.parse(ev.data);
   if (m.method === 'Runtime.exceptionThrown') exceptions.push(m.params.exceptionDetails.text);
   if (m.method === 'Network.requestWillBeSent') {
     const r = m.params.request;
     if (r.url.includes('/rest/v1/listings') && r.method === 'GET') listingReqs.push(r.url);
+    if (r.url.includes('/rest/v1/listings') && r.method === 'HEAD') roomCountReqs.push(r.url);
   }
 });
 
 await rpc('Runtime.enable');
 await rpc('Network.enable');
 await rpc('Page.enable');
+// ⚠️ `PUT /json/new` нь табыг BACKGROUND-д нээдэг → Chrome нь идэвхгүй табын
+//    renderer-ийг хүйтэн болгоход `Runtime.evaluate` hang (30с timeout) болдог ✗
+//    → табаа FRONT-д гаргаж тэр эрсдэлийг арилгана ✓
+await rpc('Page.bringToFront');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+/**
+ * ⚠️ Chrome-д олон таб нээлттэй үед (эсвэл renderer ачаалалтай үед) хааяа
+ *    `Runtime.evaluate` нь 30с timeout болдог ✗ → НЭГ удаа дахин оролдоно ✓
+ *    (rpc нь id-г өөрөө нэмдэг тул давхар listener-ийн эрсдэл байхгүй ✓)
+ */
 const evalJs = async (expression) => {
-  const r = await rpc('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
-  if (r.exceptionDetails) throw new Error('eval: ' + JSON.stringify(r.exceptionDetails.text));
-  return r.result.value;
+  const call = async () => {
+    const r = await rpc('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
+    if (r.exceptionDetails) throw new Error('eval: ' + JSON.stringify(r.exceptionDetails.text));
+    return r.result.value;
+  };
+  try {
+    return await call();
+  } catch (err) {
+    if (!/timeout/.test(String(err.message))) throw err;
+    await sleep(1500);
+    return call();
+  }
 };
 /** Нөхцөл биелэх хүртэл хүлээнэ (тогтмол `sleep`-ээс найдвартай ✓) */
 const waitFor = async (expression, ms = 9000) => {
@@ -114,11 +185,24 @@ console.log('\n🛏 CDP — өрөөний тоо (олон сонголт)\n');
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1280, height: 1400, deviceScaleFactor: 1, mobile: false });
 
 // ═══════ ① ТӨРӨЛ СОНГООГҮЙ Ч ӨРӨӨНИЙ ХАЙЛТ ХАРАГДАНА (шинэ) ═══════
+roomCountReqs.length = 0;
 await go(`${BASE}/?section=real-estate`);
 const row0 = await blockInfo(SCOPE.row);
+// ⚠️ Чип дээр зарын ТОО байхгүй гэдгийг шалгах regex — зөвхөн «N өрөө» эсвэл
+//    «+5 өрөө» л зөвшөөрнө («1 өрөө21» гэх мэт ДУГААР нэмэгдсэн нь ✗)
+const ROOM_LABEL_ONLY = /^(\+\d|\d) өрөө$/;
 check('📊 Төрөл сонгоогүй ч үр дүнгийн мөрөнд 5 өрөөний сонголт гарлаа', row0?.n === 5,
   JSON.stringify(row0?.text || []));
-check('📊 Чип бүр дээр зарын ТОО харагдана (ж: «21»)', /^1 өрөө\d+$/.test(row0?.text?.[0] || ''), row0?.text?.[0]);
+// 🆕 2026-09-30 (хэрэглэгчийн хүсэлт): «өрөөний тооны хойно зарын тоо харуулдаг
+//    аа больчих» → чип дээр ЗӨВХӨН шошго, зарын тоо БАЙХГҮЙ ✓
+check('📊 Чип дээр ЗАРЫН ТОО ГАРАХГҮЙ (зөвхөн «1 өрөө» … «+5 өрөө») ✓',
+  JSON.stringify(row0?.text) === JSON.stringify(['1 өрөө', '2 өрөө', '3 өрөө', '4 өрөө', '+5 өрөө']),
+  JSON.stringify(row0?.text || []));
+check('📊 Чип дээр илүү ЦИФР алга (regex-ээр давхар шалгав ✓)',
+  (row0?.text || []).every((t) => ROOM_LABEL_ONLY.test(t)), (row0?.text || []).join(' · '));
+check('📊 Зарын тоо татдаг `rooms=` HEAD query ОГТ ЯВАХГҮЙ (ачаалалт хэмнэгдэв ✓)',
+  roomCountReqs.filter((u) => u.includes('rooms=')).length === 0,
+  `${roomCountReqs.filter((u) => u.includes('rooms=')).length} rooms-query (нийт ${roomCountReqs.length} HEAD)`);
 check('📊 Төрөл сонгоогүй үед хажуугийн панель нээгдээгүй (progressive disclosure ✓)',
   (await blockInfo(SCOPE.side)) === null);
 
@@ -126,6 +210,16 @@ check('📊 Төрөл сонгоогүй үед хажуугийн панель
 await go(`${BASE}/?section=real-estate&type=${encodeURIComponent('Орон сууц')}`);
 const side0 = await blockInfo(SCOPE.side);
 check('🧭 Хажуугийн панельд «Өрөөний тоо» чипүүд (хороо шиг загвар ✓)', side0?.n === 5);
+check('🧭 Хажуугийн чип дээр ч ЗАРЫН ТОО ГАРАХГҮЙ ✓',
+  (side0?.text || []).every((t) => ROOM_LABEL_ONLY.test(t)), (side0?.text || []).join(' · '));
+// 🆕 2026-09-30 (хэрэглэгчийн хүсэлт): «хайлтын Өрөөний тоо оруулах хэсгийг
+//    хамгийн эхэнд оруулчих» → sidebar-ийн ХАМГИЙН ЭХНИЙ блок байх ёстой
+const sideLabels = await evalJs(`[...document.querySelectorAll('aside .divide-y > div')]
+  .map((b) => (b.firstElementChild?.textContent || '').trim())`);
+check('🧭 Sidebar-ийн ХАМГИЙН ЭХНИЙ блок нь «🛏 Өрөөний тоо» ✓',
+  /Өрөөний тоо/.test(sideLabels[0] || ''), sideLabels.join(' → '));
+check('🧭 «Байршил» нь өрөөний тооны ДАРАА (2 дахь) ✓',
+  /Байршил/.test(sideLabels[1] || ''), sideLabels.slice(1, 3).join(' → '));
 check('🧭 Хоёр газарт ижил сонголт (нэг эх сурвалж): ' + JSON.stringify(side0?.on),
   JSON.stringify(side0?.on) === JSON.stringify((await blockInfo(SCOPE.row))?.on));
 
@@ -242,6 +336,7 @@ check('🍞 Чипүүд ч цэвэрлэгдэв', (await blockInfo(SCOPE.row)
 check('🧯 Консол дээр exception ГАРАГҮЙ', exceptions.length === 0, exceptions.slice(0, 2).join(' | '));
 console.log(`\n${fail === 0 ? '✅' : '❌'} CDP — ${pass} OK, ${fail} FAIL\n`);
 ws.close();
+await closeOwnTab();
 process.exit(fail === 0 ? 0 : 1);
 
 

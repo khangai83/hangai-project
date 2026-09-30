@@ -6,7 +6,7 @@ import ListingCard from './ListingCard';
 import MapView from './MapView';
 import { useToast, useUI } from './AppProviders';
 import {
-  fetchListings, fetchPropertyTypeCounts, fetchRoomCounts, fetchProfilesByIds,
+  fetchListings, fetchPropertyTypeCounts, fetchProfilesByIds,
   LISTINGS_PAGE_SIZE,
 } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
@@ -22,11 +22,14 @@ import { buildHomeBreadcrumb } from '../lib/breadcrumb';
 import Breadcrumb from './Breadcrumb';
 import SearchableSelect from './SearchableSelect';
 import TextFilter from './TextFilter';
-import RangeSlider from './RangeSlider';
-// 🎚 Чирдэг хүрээний хилүүд (2026-09-30) — цэвэр математик нь `lib/rangeSlider.mjs`
+import RangeInput from './RangeInput';
+// 🔢 Доод/дээд ТООНЫ хүрээний логик (2026-09-30) — цэвэр функцууд нь
+//    `lib/rangeFilter.mjs`
+//    ⚠️ Чирдэг слайдер БАЙХГҮЙ (хэрэглэгчийн хүсэлтээр хасагдсан) — зөвхөн
+//       хоёр оролт + цэгээр тусгаарлагдсан тоо + ₮-д 4 түргэн хүрээ товч
 //    ⚠️ Хил нь ХЭСГЭЭС хамаарна: 🏠 үл хөдлөх нь 5 тэрбум хүртэл, бусад нь
-//       500 сая (Улаанбаатарт 1-3 тэрбумын орон сууц бодит байдаг ✓)
-import { AREA_BOUNDS, priceBounds, yearBounds } from '../lib/rangeSlider.mjs';
+//       500 сая — «түргэн хүрээ» товчнуудыг бодоход л хэрэглэгдэнэ ✓
+import { AREA_BOUNDS, formatGroupedInput, priceBounds, yearBounds } from '../lib/rangeFilter.mjs';
 // 🔀 Эрэмбэлэх сонголт (eBay-ийн «Sort: Best Match ▾» шиг) — цэвэр логик нь
 //    `lib/sortOptions.mjs`, DB тал нь `lib/queries.js → sortOrders()`
 import { DEFAULT_SORT, SORT_OPTIONS, normalizeSort } from '../lib/sortOptions.mjs';
@@ -308,7 +311,10 @@ export default function HomeClient() {
   const [loadError, setLoadError] = useState(null); // холболтын алдаа (UI-д тусдаа харуулна)
   const [urlReady, setUrlReady] = useState(false); // URL-ийн хайлтыг уншсан эсэх
   const [typeCounts, setTypeCounts] = useState({}); // төрөл тус бүрийн зарын тоо
-  const [roomCounts, setRoomCounts] = useState({}); // өрөө тус бүрийн зарын тоо (unegui.mn загвар)
+  // 🆕 2026-09-30 (хэрэглэгчийн хүсэлт: «өрөөний тооны хойно зарын тоо
+  //    харуулдаг аа больчих») → `roomCounts` state + `fetchRoomCounts`
+  //    дуудалт БҮГД ХАСАГДАВ ✓ (чип дээр тоо харагдахгүй болсон тул
+  //    тэр query нь зөвхөн дэмий ачаалал болно ✗)
   // ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «Дэлгэрэнгүй хайлт»-ИЙГ ҮРГЭЛЖ
   //    НЭЭЛТТЭЙ болгов → `filtersOpen` төлөв ХЭРЭГГҮЙ болсон тул ХАСАВ ✓
   //    (өмнө нь мобайл дээр «⚙️ Дэлгэрэнгүй хайлт» товчоор нээгддэг байв ✗)
@@ -490,38 +496,13 @@ export default function HomeClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlReady, category, section, noSection, dataVersion]);
 
-  // ---- Өрөө тус бүрийн зарын тоо (unegui.mn загварын «1 өрөө 1,088» мөр) ----
-  // ⚠️ Зөвхөн КАТЕГОРИ + ТӨРӨЛ өөрчлөгдөхөд дахин татна — бусад шүүлт
-  //    (үнэ, байршил г.м.) нөлөөлөхгүй (`lib/queries.js` → `fetchRoomCounts`).
-  useEffect(() => {
-    if (!urlReady) return;
-    // ⚠️ «Өрөө» тоо нь ЗӨВХӨН үл хөдлөхөд (0016) — бусад хэсэгт өрөө гэж байхгүй
-    // 🆕 2026-09-30: ТӨРӨЛ СОНГООГҮЙ үед Ч тоог татна (бүх үл хөдлөхийн дунд
-    //    «1 өрөө хэдэн зартай вэ») — «хайлт хэсэг» нь төрөл сонгохоос
-    //    өмнө ч харагдана ✓. Зөвхөн «Өрөө» талбаргүй төрөл (Газар, Оффис…)
-    //    сонгосон үед л тоо хэрэггүй болно.
-    if (section !== 'real-estate'
-        || (filters.propertyType && !hasRoomsFields(filters.propertyType))) {
-      setRoomCounts({});
-      return;
-    }
-    let mounted = true;
-    (async () => {
-      try {
-        const counts = await fetchRoomCounts({
-          category,
-          propertyType: filters.propertyType || undefined,
-        });
-        if (mounted) setRoomCounts(counts || {});
-      } catch (err) {
-        // Тоо харуулахгүй — үндсэн жагсаалтад нөлөөлөхгүй
-        console.warn(normalizeError(err));
-        if (mounted) setRoomCounts({});
-      }
-    })();
-    return () => { mounted = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlReady, category, section, filters.propertyType, dataVersion]);
+  // ---- 🆕 2026-09-30: «Өрөө тус бүрийн зарын тоо» ХАСАГДАВ --------------
+  // Хэрэглэгчийн хүсэлт: «өрөөний тооны хойно зарын тоо харуулдаг аа больчих»
+  // ⚠️ Урьд нь энд `fetchRoomCounts` дуудаж, чип бүрийн баруун талд
+  //    «1 өрөө 1,088» гэж харуулдаг байв (unegui.mn загвар) ✗
+  //    → одоо чип дээр ЗӨВХӨН «1 өрөө» гарах тул тэр query бүрэн ХЭРЭГГҮЙ ✓
+  //    (ачаалалт бүрд 1 DB query хэмнэгдэв; `lib/queries.js → fetchRoomCounts`
+  //     функц нь өөрөө хэвээр үлдэв — гадаад хэрэглээ/тестэд нээлттэй API ✓)
 
   // ---- Хайлт өөрчлөгдөхөд URL-ийг шинэчлэх (хуваалцах боломжтой болгох) ----
   useEffect(() => {
@@ -688,7 +669,7 @@ export default function HomeClient() {
 
   /**
    * 📅 ХҮРЭЭНИЙ ATTR (оны хүрээ) — ХОЁР түлхүүрийг НЭГ дор тавина
-   * (`<key>_from` ба `<key>_to`) — `components/RangeSlider.jsx` үүнийг дуудна.
+   * (`<key>_from` ба `<key>_to`) — `components/RangeInput.jsx` үүнийг дуудна.
    *
    * ⚠️ Хоосон талыг `delete` хийнэ — эс бөгөөс `?attr_year_from=` гэсэн
    *    ХООСОН түлхүүр URL-д үлдэж, `lib/queries.js` нь `attrs->>year`-ыг
@@ -784,11 +765,12 @@ export default function HomeClient() {
   const isRealEstate = section === 'real-estate';
 
   /**
-   * 🎚 ҮНИЙ слайдерийн хил (2026-09-30) — ХЭСГЭЭС хамаарна:
-   *   🏠 үл хөдлөх → 0–5 тэрбум (алхам 50 сая) ;
-   *   бусад → 0–500 сая (алхам 5 сая)
-   * ⚠️ `useMemo` — объект нь render бүрд ШИНЭ болвол `RangeSlider`-ийн
-   *    `useMemo`-ууд (шошго/түргэн хүрээ) дэмий дахин бодогдоно ✗
+   * 🔢 ҮНИЙ хил (2026-09-30) — ХЭСГЭЭС хамаарна: 🏠 үл хөдлөх → 5 тэрбум,
+   *   бусад → 500 сая.
+   * ⚠️ Одоо энэ нь ЗӨВХӨН «түргэн хүрээ» товчнуудыг бодоход хэрэглэгдэнэ
+   *    (чирдэг слайдер хасагдсан) — хэрэглэгчийн бичсэн утгыг ХЯЗГААРЛАХГҮЙ ✓
+   * ⚠️ `useMemo` — объект нь render бүрд ШИНЭ болвол `RangeInput`-ийн
+   *    `useMemo` (түргэн хүрээнүүд) дэмий дахин бодогдоно ✗
    */
   const priceLimit = useMemo(() => priceBounds(isRealEstate), [isRealEstate]);
 
@@ -943,8 +925,11 @@ export default function HomeClient() {
     }
     if (filters.minPrice) chips.push({ key: 'minPrice', label: `₮${formatPrice(filters.minPrice)}-с дээш` });
     if (filters.maxPrice) chips.push({ key: 'maxPrice', label: `₮${formatPrice(filters.maxPrice)} хүртэл` });
-    if (filters.minArea) chips.push({ key: 'minArea', label: `${filters.minArea} м²-с дээш` });
-    if (filters.maxArea) chips.push({ key: 'maxArea', label: `${filters.maxArea} м² хүртэл` });
+    // 📐 Талбай нь бутархай байж болно («75,5») — chip дээр ч цэгээр бүлэглэж,
+    //    бутархайг «,»-ээр харуулна (URL-д «1234.5» хэлбэрээр хадгалагдана ✓
+    //    — `lib/queries.js → toNumber` тэр хэлбэрийг зөв уншина)
+    if (filters.minArea) chips.push({ key: 'minArea', label: `${formatGroupedInput(filters.minArea, { mode: 'decimal' })} м²-с дээш` });
+    if (filters.maxArea) chips.push({ key: 'maxArea', label: `${formatGroupedInput(filters.maxArea, { mode: 'decimal' })} м² хүртэл` });
     return chips;
   }, [filters, category, section]);
 
@@ -1582,6 +1567,68 @@ export default function HomeClient() {
               </div>
 
               <div className="divide-y divide-gray-100 px-4">
+                {/* ===== 🛏 ӨРӨӨНИЙ ТОО — САЙДБАРЫН ХАМГИЙН ЭХЭНД (2026-09-30) =====
+                    🆕 Хэрэглэгчийн хүсэлт: «хайлтын Өрөөний тоо оруулах хэсгийг
+                       хамгийн эхэнд оруулчих» → «Байршил»-ийн ӨМНӨ, sidebar-ийн
+                       ХАМГИЙН ЭХНИЙ блок болов ✓ (хамгийн түгээмэл шүүлт тул
+                       хэрэглэгч хамгийн түрүүнд харна)
+                    🆕 Хэрэглэгчийн хүсэлт: «өрөөний тооны хойно зарын тоо
+                       харуулдаг аа больчих» → чип дээрх ТОО ХАСАГДАВ ✓
+                       (`roomCounts` state + `fetchRoomCounts` дуудалт БҮГД
+                       хасагдав → хуудас ачаалах бүрд 1 DB query ХЭМНЭГДЭВ ✓)
+                    Анхны хүсэлт: «өрөөг хороо шиг сонгодог байвал зүгээр
+                    юм уу» → яг ХОРООНЫ блоктой ижил: `chip-toggle` чипүүд,
+                    `✓` тэмдэг, «N сонгосон» тоолуур ✓ — нэг л харагдац
+                    (UX-ийн нэгдэл: аль ч олон сонголт нэг хэв маягтай) ✓
+                    ⚠️ Утгууд нь `lib/roomFilter.mjs → ROOM_VALUES` (1,2,3,4,+5)
+                    ⚠️ Утга нь МАССИВ (`['1','3']`) → `?rooms=1,3` ба DB дээр
+                       `rooms IN (1,3)` / завсартай бол `.or()` (`lib/queries.js`)
+                    ⚠️ `showRooms` — үл хөдлөх БА (төрөл сонгоогүй эсвэл
+                       өрөөтэй төрөл). Газар/Оффис/Үйлдвэрт өрөө гэж байхгүй ✗ */}
+                {showRooms && (
+                  <SideBlock label="🛏 Өрөөний тоо">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[12px] font-semibold text-gray-500">
+                        Өрөө
+                        {filters.rooms.length > 0 && (
+                          <span className="ml-1.5 rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
+                            {filters.rooms.length} сонгосон
+                          </span>
+                        )}
+                      </span>
+                      <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-2" data-room-filter role="group" aria-label="Өрөөний тоо">
+                        <div className="flex flex-wrap gap-1.5">
+                          {ROOM_OPTIONS.map((r) => {
+                            const on = filters.rooms.includes(r.value);
+                            return (
+                              <button
+                                key={r.value}
+                                type="button"
+                                aria-pressed={on}
+                                data-room-value={r.value}
+                                onClick={() => toggleRooms(r.value)}
+                                className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                              >
+                                {on && <span aria-hidden="true">✓</span>}
+                                {r.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      {filters.rooms.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={clearRooms}
+                          className="self-start text-[12px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                        >
+                          ✕ Цуцлах
+                        </button>
+                      )}
+                    </div>
+                  </SideBlock>
+                )}
+
                 {/* ===== БАЙРШИЛ — Хот/Аймаг · Дүүрэг · ХОРОО =====
                     ⚠️ «Төрөл» энд БАЙХГҮЙ — төрлийг BREADCRUMB-ээс сольж буцаана
                        (төрөл сонгосон үед дээрх табууд хаагддаг тул).
@@ -1676,11 +1723,13 @@ export default function HomeClient() {
                         ariaLabel={f.label}
                       />
                     ) : f.range ? (
-                      // 📅 ОНЫ ХҮРЭЭ (2026-09-30-нд 🎚 RangeSlider болгов) — чирж
-                      //    тохируулна; утга нь `<key>_from` / `<key>_to` хэвээр
-                      //    ⚠️ Хил нь 1990 – ОДООГИЙН ОН (`yearBounds()`), алхам 1
-                      //       → «2015 — 2020» гэж нэг чирэлтээр сонгоно ✓
-                      <RangeSlider
+                      // 📅 ОНЫ ХҮРЭЭ — 2026-09-30: чирдэг хүрээ ХАСАГДАВ (хэрэглэгчийн
+                      //    хүсэлт), одоо зөвхөн «Эхлэх / Дуусах» тоон оролт
+                      //    ⚠️ Утга нь `<key>_from` / `<key>_to` хэвээр
+                      //       (ж: `?attr_year_from=2015&attr_year_to=2020`)
+                      //    ⚠️ `mode="year"` — он нь цэгээр БҮЛЭГЛЭГДЭХГҮЙ
+                      //       («2.026» гэж харагдвал он биш, бутархай мэт ✗)
+                      <RangeInput
                         label={f.label}
                         unit="он"
                         mode="year"
@@ -1711,17 +1760,22 @@ export default function HomeClient() {
                   </SideBlock>
                 ))}
 
-                {/* ===== ҮНЭ, ₮ — 2026-09-30-нд 🎚 ЧИРДЭГ ХҮРЭЭ болгов =====
-                    ⚠️ Хоёр тоон оролт (Эхлэх / Дуусах) ХЭВЭЭР байна (гараар
-                       яг таг бичих боломж ✓) — түүний доор слайдер нэмэгдэв.
-                    ⚠️ ХИЛ нь ХЭСГЭЭС хамаарна: 🏠 үл хөдлөх 5 тэрбум,
-                       бусад 500 сая (`priceBounds(isRealEstate)`) — эс бөгөөс
-                       УБ-ын 1.5 тэрбумын орон сууцыг чирж хүрэх боломжгүй ✗
-                    ⚠️ Шүүлт нь ЗӨВХӨН хулганаа СУЛЛАХ үед хүчинтэй болно
-                       (`RangeSlider` дотор тайлбарласан) — чирэх бүрд query
-                       явуулбал DB хэт ачаалагдана ✗ */}
+                {/* ===== ҮНЭ, ₮ — 2026-09-30: ЧИРДЭГ ХҮРЭЭ ХАСАГДАВ =====
+                    ⚠️ Хэрэглэгчийн хүсэлт: «дээд доод үнэ, талбай дээр чирдэгээ
+                       больё, харин оруул байгаа тоог цэгээр тусгаарладаг
+                       болгоод өгчих» → слайдер/толгой/зам БҮГД хасагдав ✓
+                    ⚠️ Оруулж байгаа тоо нь ЦЭГЭЭР тусгаарлагдана:
+                       «3000000» → «3.000.000» (`lib/rangeFilter.mjs →
+                       formatGroupedInput`) — бичиж байхдаа ШУУД ✓
+                    ⚠️ Шүүлт нь ⏎ (Enter) эсвэл талбараас ГАРАХ үед л хүчинтэй
+                       болно (`components/RangeInput.jsx`) — эс бөгөөс
+                       «250000000» бичихэд 9 query явж DB дэмий ачаалагдана ✗
+                    ⚠️ ХИЛ нь ХЭСГЭЭС хамаарна: 🏠 үл хөдлөх 5 тэрбум, бусад
+                       500 сая (`priceBounds(isRealEstate)`) — гэхдээ энэ нь
+                       ЗӨВХӨН доорх 4 «түргэн хүрээ» товчийг бодоход хэрэглэгдэнэ,
+                       хэрэглэгчийн бичсэн утгыг ХЯЗГААРЛАХГҮЙ ✓ */}
                 <SideBlock label="Үнэ, ₮">
-                  <RangeSlider
+                  <RangeInput
                     label="Үнэ"
                     unit="₮"
                     mode="int"
@@ -1734,17 +1788,17 @@ export default function HomeClient() {
                   />
                 </SideBlock>
 
-                {/* ===== ТАЛБАЙ, м² — 2026-09-30-нд 🎚 ЧИРДЭГ ХҮРЭЭ болгов =====
+                {/* ===== ТАЛБАЙ, м² — 2026-09-30: ЧИРДЭГ ХҮРЭЭ ХАСАГДАВ =====
                     ⚠️ «Талбай» нь ЗӨВХӨН үл хөдлөх хэсэгт (0016) — автомашин/
                        ажил/компьютер/бараа/үйлчилгээнд талбай гэдэг ойлголт байхгүй.
-                    ⚠️ Хил нь 0–600 м², алхам 5 — хэрэглэгч түүнээс ТОМ утга
-                       бичвэл слайдер ДИНАМИКААР сунана (`withDynamicBounds`),
-                       бичсэн утга нь ХАДГАЛАГДАНА ✓
+                    ⚠️ Хил (0–600 м²) нь зөвхөн түргэн хүрээнд — хэрэглэгч
+                       түүнээс ТОМ утга бичихэд ЯМАР Ч саад байхгүй ✓
                     ⚠️ `mode="decimal"` — «75,5» монгол бутархайг зөвшөөрнө
-                       (`lib/queries.js → toNumber`-тай ижил дүрэм ✓) */}
+                       (`lib/queries.js → toNumber`-тай ижил дүрэм ✓); мөнгөн
+                       бүлэглэлт нь ЦЭГЭЭР: «1.234,5» ✓ */}
                 {isRealEstate && (
                 <SideBlock label="Талбай, м²">
-                  <RangeSlider
+                  <RangeInput
                     label="Талбай"
                     unit="м²"
                     mode="decimal"
@@ -1756,67 +1810,6 @@ export default function HomeClient() {
                 </SideBlock>
                 )}
 
-                {/* ===== 🛏 ӨРӨӨНИЙ ТОО — ХОРОО ШИГ ОЛОН СОНГОЛТ (2026-09-30) =====
-                    Хэрэглэгчийн хүсэлт: «өрөөг хороо шиг сонгодог байвал зүгээр
-                    юм уу» → яг ХОРООНЫ блоктой ижил: `chip-toggle` чипүүд,
-                    `✓` тэмдэг, «N сонгосон» тоолуур ✓ — нэг л харагдац
-                    (UX-ийн нэгдэл: аль ч олон сонголт нэг хэв маягтай) ✓
-                    ⚠️ Утгууд нь `lib/roomFilter.mjs → ROOM_VALUES` (1,2,3,4,+5)
-                    ⚠️ Утга нь МАССИВ (`['1','3']`) → `?rooms=1,3` ба DB дээр
-                       `rooms IN (1,3)` / завсартай бол `.or()` (`lib/queries.js`)
-                    ⚠️ Баруун талын тоо (`roomCounts`) — тухайн ангиллын НИЙТ
-                       зар (`fetchRoomCounts`), шүүлт тавихад өөрчлөгдөхгүй ✓
-                    ⚠️ `showRooms` — үл хөдлөх БА (төрөл сонгоогүй эсвэл
-                       өрөөтэй төрөл). Газар/Оффис/Үйлдвэрт өрөө гэж байхгүй ✗ */}
-                {showRooms && (
-                  <SideBlock label="🛏 Өрөөний тоо">
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[12px] font-semibold text-gray-500">
-                        Өрөө
-                        {filters.rooms.length > 0 && (
-                          <span className="ml-1.5 rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
-                            {filters.rooms.length} сонгосон
-                          </span>
-                        )}
-                      </span>
-                      <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-2" data-room-filter role="group" aria-label="Өрөөний тоо">
-                        <div className="flex flex-wrap gap-1.5">
-                          {ROOM_OPTIONS.map((r) => {
-                            const on = filters.rooms.includes(r.value);
-                            const c = roomCounts[r.value];
-                            return (
-                              <button
-                                key={r.value}
-                                type="button"
-                                aria-pressed={on}
-                                data-room-value={r.value}
-                                onClick={() => toggleRooms(r.value)}
-                                className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
-                              >
-                                {on && <span aria-hidden="true">✓</span>}
-                                {r.label}
-                                {typeof c === 'number' && (
-                                  <span className={`text-[11px] ${on ? 'opacity-80' : 'text-gray-500'}`}>
-                                    {formatCount(c)}
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      {filters.rooms.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={clearRooms}
-                          className="self-start text-[12px] font-semibold text-gray-500 hover:text-primary hover:underline"
-                        >
-                          ✕ Цуцлах
-                        </button>
-                      )}
-                    </div>
-                  </SideBlock>
-                )}
               </div>
 
               {/* Доод хэсэг — unegui.mn-ийн «N зар харуулах» хэсэг.
@@ -1947,18 +1940,18 @@ export default function HomeClient() {
               </div>
             </div>
 
-            {/* ===== ӨРӨӨНИЙ ТООТОЙ МӨР (unegui.mn загвар) =====
+            {/* ===== ӨРӨӨНИЙ ТООНЫ МӨР (үр дүнгийн толгойн доор) =====
                 ⚠️ unegui.mn нь «1 өрөө 1,088 · 2 өрөө 6,509 …» гэж ТООТОЙ линк
-                   хэлбэрээр харуулдаг. Тоо нь тухайн ангиллын НИЙТ тоо
-                   (`fetchRoomCounts` — зөвхөн категори + төрлийг харгалзана)
-                   тул «аль өрөө хэдэн зартай вэ» гэдгээ нэг харцаар мэднэ.
-                🆕 2026-09-30 (хэрэглэгчийн хүсэлт: «өрөөг хороо шиг сонгодог
-                   байвал зүгээр юм уу») — энэ мөр ч ОЛОН СОНГОЛТТОЙ болов:
+                   хэлбэрээр харуулдаг байсан ч 🆕 2026-09-30-нд ХЭРЭГЛЭГЧИЙН
+                   хүсэлтээр ТООГ БҮРЭН ХАСАВ: «өрөөний тооны хойно зарын тоо
+                   харуулдаг аа больчих» → одоо зөвхөн «1 өрөө · 2 өрөө …» ✓
+                🆕 (хэрэглэгчийн хүсэлт: «өрөөг хороо шиг сонгодог байвал
+                   зүгээр юм уу») — энэ мөр ч ОЛОН СОНГОЛТТОЙ:
                    «1 өрөө» + «3 өрөө»-г зэрэг дарж `?rooms=1,3` болно ✓
-                   ⚠️ Сонгосон нь `✓` тэмдэгтэй + BOLD доогуур зураастай
-                      (sidebar чиптэй ижил утга, зөвхөн харагдац нь мөр хэлбэр)
-                   ⚠️ `aria-pressed` нь дэлгэц уншигчид «сонгосон/сонгоогүй»-г
-                      хэлнэ (checkbox мэт семантик) ✓
+                ⚠️ Сонгосон нь `✓` тэмдэгтэй + BOLD доогуур зураастай
+                   (sidebar чиптэй ижил утга, зөвхөн харагдац нь мөр хэлбэр)
+                ⚠️ `aria-pressed` нь дэлгэц уншигчид «сонгосон/сонгоогүй»-г
+                   хэлнэ (checkbox мэт семантик) ✓
                 ⚠️ `showRooms` — «Худалдаа, үйлчилгээний талбай» / Оффис /
                    Газар / Үйлдвэр зэрэг төрөлд өрөө гэсэн ойлголт БАЙХГҮЙ
                    тул мөр бүрэн харагдахгүй. */}
@@ -1966,7 +1959,6 @@ export default function HomeClient() {
               <div className="mb-3 flex flex-wrap items-baseline gap-x-5 gap-y-2" data-room-filter>
                 {ROOM_OPTIONS.map((r) => {
                   const on = filters.rooms.includes(r.value);
-                  const c = roomCounts[r.value];
                   return (
                     <button
                       key={r.value}
@@ -1980,11 +1972,6 @@ export default function HomeClient() {
                     >
                       {on && <span aria-hidden="true">✓</span>}
                       {r.label}
-                      {typeof c === 'number' && (
-                        <span className={`text-[13px] ${on ? 'font-semibold text-primary' : 'font-normal text-gray-500'}`}>
-                          {formatCount(c)}
-                        </span>
-                      )}
                     </button>
                   );
                 })}
