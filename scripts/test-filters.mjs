@@ -19,7 +19,7 @@ import assert from 'node:assert/strict';
 import {
   SECTIONS, getSubtypes, getAttrFilters, getAttrField,
   parseAttrRangeKey, getAttrRangeKeys, formatAttrsLine, getSection, hasSimpleForm,
-  getSubtypeGroups, findSubtypeGroup,   // 🛠/💻 3 дахь түвшин (2026-09-27, 2026-09-29)
+  getSubtypeGroups, findSubtypeGroup,   // 🛠/💻/⚡ 3 дахь түвшин (2026-09-27, -29, -30)
 } from '../lib/locationData.js';
 
 let passed = 0;
@@ -63,13 +63,16 @@ t('🏷️ Үйлдвэрлэгч нь хайлттай combobox хэвээр (�
   assert.ok(f.options.length >= 95); // 38 → 95 болж өргөжсөн
 });
 
-t("Бусад хэсгийн шүүлт (jobs: 3, computers: 3, home: 1, services: 3)", () => {
+t("Бусад хэсгийн шүүлт (jobs: 3, computers: 3, home: 1, electric: 1, services: 3)", () => {
   const count = (s) => getAttrFilters(s).length;
   assert.equal(count('jobs'), 3);
   assert.equal(count('computers'), 3);
   // ⚡ 2026-09-29: `home` (Гэр ахуйн бараа) мөн ХЯЛБАР ФОРМ болсон тул
   //    `📦 Хүргэлт` ХАСАГДАВ — зөвхөн `✅ Шинэ / Хуучин` үлдэнэ (2 → 1) ✓
   assert.equal(count('home'), 1);
+  // ⚡ 2026-09-30: `electric` (Цахилгаан бараа) — ШИНЭ хэсэг, мөн 1 шүүлт
+  //    (хэсэг + бүлэг + дэд төрөл нь самбар дээрээ, sidebar-д «Шинэ / Хуучин») ✓
+  assert.equal(count('electric'), 1);
   assert.equal(count('services'), 3);
 });
 
@@ -227,11 +230,14 @@ t('🛋️ home: форм дээр зөвхөн condition (brand/material/size/c
   assert.equal(formatAttrsLine('home', {}), '');
 });
 
-t('⚡ hasSimpleForm: ⚽ hobby БА 🛋️ home (бусад 5 хэсэгт false)', () => {
+t('⚡ hasSimpleForm: ⚽ hobby, 🛋️ home ба ⚡ electric (бусад 5 хэсэгт false)', () => {
   assert.equal(hasSimpleForm('hobby'), true);
   // ⚡ 2026-09-29 (хэрэглэгчийн хүсэлт): «Гэр ахуйн барааг мөн адил ийм форматтай
   //    болго» → 🛋️ `home` мөн хялбар форм болов ✓
   assert.equal(hasSimpleForm('home'), true);
+  // ⚡ 2026-09-30 (хэрэглэгчийн хүсэлт): ⚡ «Цахилгаан бараа» — шинэ хэсэг,
+  //    🛋️ home-той ижил хялбар форм (форм зөвхөн «Шинэ / Хуучин» асууна) ✓
+  assert.equal(hasSimpleForm('electric'), true);
   for (const s of ['real-estate', 'auto', 'jobs', 'computers', 'services']) {
     assert.equal(hasSimpleForm(s), false, `${s} нь хялбар форм БИШ`);
   }
@@ -336,10 +342,11 @@ t('🛠 services: бүлгүүдэд `collapsed` туг БАЙХГҮЙ (бүгд
   assert.equal(groups.filter((g) => g.collapsed).length, 0);
 });
 
-t('🛠/💻 Ерөнхий гэрээ: бүх бүлгийн leaf нь `getSubtypes`-д ЗААВАЛ байна', () => {
+t('🛠/💻/⚡ Ерөнхий гэрээ: бүх бүлгийн leaf нь `getSubtypes`-д ЗААВАЛ байна', () => {
   const withGroups = SECTIONS.filter((s) => getSubtypeGroups(s.value).length > 0);
-  // ⚠️ Одоо 2 хэсэг: 🛠️ services (2026-09-27) ба 💻 computers (2026-09-29) ✓
-  assert.deepEqual(withGroups.map((s) => s.value), ['computers', 'services']);
+  // ⚠️ Одоо 3 хэсэг: 💻 computers (2026-09-29), ⚡ electric (2026-09-30) ба
+  //    🛠️ services (2026-09-27) — `SECTIONS`-ийн дарааллаар ✓
+  assert.deepEqual(withGroups.map((s) => s.value), ['computers', 'electric', 'services']);
   withGroups.forEach((s) => {
     const subtypes = getSubtypes(s.value);
     getSubtypeGroups(s.value).forEach((g) => {
@@ -347,6 +354,95 @@ t('🛠/💻 Ерөнхий гэрээ: бүх бүлгийн leaf нь `getSubt
       leaves.forEach((l) => assert.ok(subtypes.includes(l), `${s.value}: «${l}» дэд төрөлд алга ✗`));
     });
   });
+});
+
+// ---- ⑦ ⚡ ЦАХИЛГААН БАРАА — ШИНЭ ХЭСЭГ (2026-09-30) ----
+// Хэрэглэгчийн хүсэлт: «Цахилгаан бараа гэсэн категори нэм, бас тэр категори
+// болон subcategory-тай шүү». Бүтэц нь 💻 computers/🛠️ services-ийн ЯГ ИЖИЛ мод.
+t('⚡ electric: 8 бүлэг — 3 нь доод түвшинтэй (accordion), 5 нь өөрөө дэд төрөл', () => {
+  const groups = getSubtypeGroups('electric');
+  assert.equal(groups.length, 8);
+  assert.deepEqual(groups.map((g) => g.label), [
+    'ТВ, Аудио + Видео', 'Хөргөгч, хөлдөөгч', 'Гал тогооны цахилгаан бараа',
+    'Дижитал аппарат, Видео камер', 'Угаалгын машин', 'Тоос сорогч, Хивс угаагч',
+    'Агаар шүүгч', 'ТЭН, Халаагуур',
+  ]);
+  // 🗂 Доод түвшинтэй 3 бүлэг нь панель дээр анхдагчаар ХААЛТТАЙ (accordion)
+  assert.deepEqual(groups.filter((g) => g.collapsed).map((g) => g.label), [
+    'ТВ, Аудио + Видео', 'Гал тогооны цахилгаан бараа', 'Дижитал аппарат, Видео камер',
+  ]);
+  // ⚠️ Доод түвшингүй бүлэг нь ӨӨРӨӨ сонгогдох дэд төрөл — `collapsed` туг
+  //    нь УТГАГҮЙ (тиймээс `false` байх ЁСТОЙ, эс бөгөөс дарж нээх мөр үүснэ ✗)
+  const leaves = groups.filter((g) => g.items.length === 0);
+  assert.equal(leaves.length, 5);
+  assert.equal(leaves.filter((g) => g.collapsed).length, 0);
+  // 🤝 `services` (7 бүлэг, бүгд нээлттэй) ХӨНДӨГДӨӨГҮЙ — regress-ийн хамгаалалт
+  assert.equal(getSubtypeGroups('services').filter((g) => g.collapsed).length, 0);
+});
+
+t('⚡ electric: телевизорын 3 хэмжээ нь дэд төрөл (4 дэх түвшин БАЙХГҮЙ)', () => {
+  const tv = getSubtypeGroups('electric').find((g) => g.label === 'ТВ, Аудио + Видео');
+  assert.deepEqual(tv.items, [
+    'Телевизор (55 ба доош инч)', 'Телевизор (65 инч)', 'Телевизор (75 ба дээш инч)',
+    'Аудио төхөөрөмж, Өсгөгч', 'Пянз, кассет тоглуулагч',
+    'Хөгжим, Home theater, Караоке', 'Бусад',
+  ]);
+  // ⚠️ Телевизорын хэмжээ нь ЗААВАЛ `property_type` болж хадгалагдана (DB-д
+  //    4 дэх түвшин байхгүй) → `getSubtypes`-д БАЙХ ЁСТОЙ ✓
+  const subtypes = getSubtypes('electric');
+  ['Телевизор (55 ба доош инч)', 'Телевизор (65 инч)', 'Телевизор (75 ба дээш инч)']
+    .forEach((t) => assert.ok(subtypes.includes(t), `«${t}» дэд төрөлд алга ✗`));
+  // ⚠️ «Телевизор» гэсэн ТУСДАА дэд төрөл БАЙХГҮЙ (хэмжээгүйгээр хадгалбал
+  //    хэмжээний шүүлт хоосон үр дүн буцаана ✗)
+  assert.ok(!subtypes.includes('Телевизор'));
+});
+
+t('⚡ electric: «Бусад» 2 бүлэгт давхардсан ч `getSubtypes`-д 1 л удаа (26)', () => {
+  const groups = getSubtypeGroups('electric');
+  assert.equal(groups.filter((g) => g.items.includes('Бусад')).length, 2);
+  const subtypes = getSubtypes('electric');
+  assert.equal(subtypes.filter((t) => t === 'Бусад').length, 1);
+  // 3 бүлгийн item (7 + 8 + 7 = 22) + 5 leaf = 27 → давхардсан «Бусад» хасгдаж 26
+  assert.equal(subtypes.length, 26);
+});
+
+t('⚡ electric: бүлэг → дэд төрлийн зам (breadcrumb) ба бүлэггүй leaf', () => {
+  assert.equal(findSubtypeGroup('electric', 'Телевизор (65 инч)').label, 'ТВ, Аудио + Видео');
+  assert.equal(findSubtypeGroup('electric', 'Кофе чанагч').label, 'Гал тогооны цахилгаан бараа');
+  assert.equal(findSubtypeGroup('electric', 'Дрон, дроны хэрэгсэл').label, 'Дижитал аппарат, Видео камер');
+  // ⚠️ Доод түвшингүй бүлэг (өөрөө дэд төрөл) → `null` (breadcrumb 2 түвшин) ✓
+  assert.equal(findSubtypeGroup('electric', 'Угаалгын машин'), null);
+  assert.equal(findSubtypeGroup('electric', 'Бусад').label, 'ТВ, Аудио + Видео');
+  assert.equal(findSubtypeGroup('computers', 'Угаалгын машин'), null);
+});
+
+t('⚡ electric: Гэр ахуйн бараанаас «Цахилгаан бараа» ГАРСАН (давхардал БАЙХГҮЙ)', () => {
+  // ⚠️ ЯАГААД: ⚡ нь одоо ТУСДАА хэсэг → `home` дотор үлдвэл хэрэглэгч 2 газар
+  //    харж, `property_type='Цахилгаан бараа'` гэсэн зар аль ч хэсгийн дэд
+  //    төрлийн жагсаалтад орохгүй болно ✗ (`0021_section_electric.sql` нь
+  //    хуучин заруудыг `electric`/«Бусад» руу шилжүүлнэ ✓)
+  assert.ok(!getSubtypes('home').includes('Цахилгаан бараа'));
+  assert.equal(getSubtypes('home').length, 10); // 11 → 10 болов
+  // ⚠️ ХЭСГИЙН НЭР нь «Цахилгаан бараа» — дэд төрөл нь хэзээ ч хэсгийн нэртэй
+  //    ижил байх ёсгүй (төөрөгдөл ✗)
+  assert.ok(!getSubtypes('electric').includes('Цахилгаан бараа'));
+  assert.equal(getSection('electric').label, 'Цахилгаан бараа');
+  assert.equal(getSection('electric').icon, '⚡');
+  // ⚠️ Байрлал: 🛋️ home ба ⚽ hobby-гийн ХООРОНД (SECTIONS-ийн дараалал) ✓
+  assert.deepEqual(
+    SECTIONS.map((s) => s.value),
+    ['real-estate', 'auto', 'jobs', 'computers', 'home', 'electric', 'hobby', 'services'],
+  );
+});
+
+t('⚡ electric: картын мөр (CARD_ATTR_ORDER) — брэнд, загвар, хэмжээ, төлөв', () => {
+  assert.equal(
+    formatAttrsLine('electric', { brand: 'Samsung', model: 'QE65Q60B', size: '65 инч', condition: 'Хуучин' }),
+    'Samsung QE65Q60B · 65 инч · ✅ Хуучин',
+  );
+  // ⚠️ ХЯЛБАР ФОРМ-той ШИНЭ зар (зөвхөн condition) → мөр богиносно, эвдрэхгүй ✓
+  assert.equal(formatAttrsLine('electric', { condition: 'Шинэ' }), '✅ Шинэ');
+  assert.equal(formatAttrsLine('electric', {}), '');
 });
 
 console.log(`\n✅ БҮГД ОК: ${passed} тест\n`);
