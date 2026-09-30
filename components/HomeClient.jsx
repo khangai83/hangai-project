@@ -56,13 +56,19 @@ function parseListParam(raw) {
 }
 
 /**
- * 🛠 ДЭД ТӨРЛИЙН НЭГ МӨР (chevron ›) + шошго — 3 газарт ижил markup
- * хэрэглэгддэг тул НЭГ компонент болгов (2026-09-29):
+ * 🛠 ДЭД ТӨРЛИЙН НЭГ МӨР + шошго — 3 газарт ижил markup хэрэглэгддэг тул
+ * НЭГ компонент болгов (2026-09-29):
  *   ① энгийн дэд төрөл (`subtypes` — бусад хэсэг),
  *   ② `services`-ийн бүлгийн ДОТОХ дэд төрөл,
  *   ③ доод түвшингүй бүлэг (`items: []`) — өөрөө сонгогдоно.
- * ⚠️ Классууд нь урьдны `HomeClient`-ийн markup-тай ЯГ ижил (харагдац
- *    өөрчлөгдөхгүй) — зөвхөн давхардлыг арилгав.
+ * 🗑 CHEVRON (›) ХАСАГДАВ (2026-09-30, хэрэглэгчийн хүсэлт: «category-уудын
+ *    урд байгаа > энэ тэмдэгийг болъё») — ⚠️ ЗӨВХӨН чимэглэлийн `<svg>`
+ *    (`opacity-30`) арилав; шошго/фонт/жин/hover (`hover:bg-white`,
+ *    `group-hover:text-primary`)/padding (`px-2 py-1.5`)/`break-inside-avoid`
+ *    БҮГД ХЭВЭЭР ✓. Тиймээс мөр бүр одоо ЗҮҮН захаас `px-2`-оос эхэлнэ.
+ *    ℹ️ `GroupHeading`-ийн ▶/▼ chevron нь ҮЙЛДЛИЙН ДОХИО (нээх/хаах,
+ *    `aria-expanded`) тул ХАСАГДААГҮЙ ✓; breadcrumb-ийн `›` нь
+ *    ТУСГААРЛАГЧ (`components/Breadcrumb.jsx`) тул мөн хэвээр.
  * ⚠️ Компонент нь МОДУЛИЙН түвшинд (компонент дотор БИШ) — дотор нь
  *    зарлавал render бүрд ШИНЭ тип болж, React төлөвийг алдаж unmount
  *    хийнэ (`role="tab"`-ийн focus ч алдагдана) ✗
@@ -74,11 +80,8 @@ function SubtypeRow({ label, onSelect, bold = false }) {
       role="tab"
       aria-selected={false}
       onClick={onSelect}
-      className="group flex w-full break-inside-avoid items-start gap-1.5 rounded-md px-2 py-1.5 text-left transition hover:bg-white"
+      className="group flex w-full break-inside-avoid items-start rounded-md px-2 py-1.5 text-left transition hover:bg-white"
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="mt-0.5 shrink-0 opacity-30" aria-hidden="true">
-        <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
       <span
         className={`line-clamp-2 overflow-hidden text-[14px] tracking-[-0.01em] text-ellipsis text-gray-900 sm:text-[15px] group-hover:text-primary ${
           bold ? 'font-bold' : 'font-semibold'
@@ -1017,7 +1020,8 @@ export default function HomeClient() {
                    • SEPARATOR (1px зураас)
                    • БАГАНУУД: `columns-*` — CSS multi-column нь дээшээс
                      доош дүүргэж, дараа нь ДАРААГИЙН багана руу шилжинэ
-                ⚠️ Линк бүр нь: chevron (›) + текст, hover-т bg-white
+                ⚠️ Линк бүр нь: ЗӨВХӨН текст (chevron › 2026-09-30-нд ХАСАГДАВ),
+                   hover-т bg-white
                 🔧 Баганын тоо: доорх `columns-1 sm:columns-2 lg:columns-4` */}
 
             {/* ---------- ТОЛГОЙ: ХЭСГИЙН НЭР + ТОО ----------
@@ -1065,9 +1069,6 @@ export default function HomeClient() {
                 title="Энэ хэсгийн БҮХ зарыг харах"
                 className="flex items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[14px] font-bold text-primary transition hover:bg-white sm:text-[15px]"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="shrink-0 opacity-40" aria-hidden="true">
-                  <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
                 {sec.label}
                 {sectionTotal > 0 && (
                   <span className="text-[13px] font-normal text-gray-600">{formatCount(sectionTotal)}</span>
@@ -1140,9 +1141,10 @@ export default function HomeClient() {
                 🧱 БҮТЭЦ (нэг бүлэг = нэг баганын блок):
                    • ГАРЧИГ (`items` байгаа үед) — BOLD, СААРАЛ, дарахгүй
                      (`<p>`) — бүлэг нь ШҮҮЛТ БИШ (2026-09-27-ны шийдвэр ✓)
-                   • ДОТОХ ДЭД ТӨРЛҮҮД — `SubtypeRow` (chevron › + шошго)
+                   • ДОТОХ ДЭД ТӨРЛҮҮД — `SubtypeRow` (шошго; chevron ›
+                     2026-09-30-нд ХАСАГДАВ)
                    • `items: []` бүлэг — өөрөө хамгийн доод түвшин тул
-                     ГАРЧИГ БИШ, ШУУД СОНГОГДОХ мөр болно (chevron-той) ✓
+                     ГАРЧИГ БИШ, ШУУД СОНГОГДОХ мөр болно (chevron-гүй) ✓
 
                 ⚠️ CSS `columns-*` БИШ `grid` — `columns` нь нэг бүлгийн
                    дэд төрлүүдийг хоёр баганад ТАСАЛЖ, аль нь аль бүлэгт
