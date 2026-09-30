@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:migrations": "node scripts/lint-migrations.mjs",
     "check:supabase": "node scripts/check-supabase.js",
     "check:verify": "node scripts/check-verify-mn.js",
     "test:verify": "node scripts/test-verify-mn.js",

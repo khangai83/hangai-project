@@ -66,6 +66,14 @@ comment on column public.listings.section is
   'computers | home | electric | hobby | services | construction | equipment | '
   'furniture | travel. ⚠️ 🛋️ «Тавилга» (furniture) ба 🧳 «Аяны бараа» (travel) '
   'нь 0026-д нэмэгдэв. Утгууд нь `lib/locationData.js` → SECTIONS-тэй ЯГ '
+  'ТААРАХ ёстой.';
+-- ⚠️ 2026-09-30 (5) ЗАСВАР: дээрх `comment on column … is '…'`-ийн хамгийн сүүлийн
+--    мөр ТАСАРСАН байв (өгүүлбэрийн үлдэгдэл «ТААРАХ ёстой.» ба төгсгөлийн `;`
+--    алга) → Postgres дараагийн `update public.listings`-ийг холгож уншаад
+--    `ERROR: 42601: syntax error at or near "update"` (LINE 73 — АРДЫН
+--    комментийн мөр!) гэж мэдээлж байсан ✗
+--    → `npm run lint:migrations` нь энэ ангиллын алдааг COMMIT-ИЙН ӨМНӨ барина ✓
+
 -- ---------- ② 🛋️ «ТАВИЛГА»: home → furniture (13 дэд төрөл) ----------
 -- ⚠️ `property_type` НЭР ХЭВЭЭР — зөвхөн `section` шилжинэ. `dedupe_key`
 --    (0014) нь `section`-ыг АГУУЛДАГГҮЙ (`property_type|city|district|khoroo|

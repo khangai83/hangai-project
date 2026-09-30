@@ -1261,6 +1261,7 @@ listings.category →  ХЭВЭЭР ('sell'/'rent') — үл хөдлөх ба �
    **`section`-оор ЗААВАЛ хязгаарлагдана** — эс бөгөөс тоо холилдоно.
 
 ```bash
+npm run lint:migrations                              # → ✅ 25/25 файл — бүтэц (`;`, хаалт, ишлэл) зөв ✓
 npm run migration:copy 0016_listing_sections.sql     # → SQL Editor → Run
 npm run migration:copy 0019_section_hobby.sql        # → SQL Editor → Run (⚽ hobby)
 npm run migration:copy 0021_section_electric.sql     # → SQL Editor → Run (⚡ electric, 2026-09-30)
@@ -1643,6 +1644,7 @@ UI  (CDP):     ?q=88093663             → «нийт 1,242» ✓ ЯГ ТААР�
 
 ```bash
 npm run test:filters     # ✅ 61 тест — attrFilters-ийн гэрээ (загвар/хүрээ/түлхүүр + ✅ Шинэ/Хуучин + ⚡ electric + 🧱 construction/🏭 equipment + 🆕 12 хэсэг/12 утга CHECK, 🛋️ furniture 13 + 🧳 travel 12 + 🧺 home 9 + ⚽ hobby 6 (хавтгай) ба 0026 migration-ийн гэрээ)
+npm run lint:migrations  # ✅ 25/25 файл · 256 statement — migration SQL-ийн БҮТЭЦ (① хаалт ② ишлэл/`$$` хаагдсан эсэх ③ `;`-гүй хөвөгч текст ④ statement ишлэл/тооны дараа ШУУД эхэлсэн эсэх) — DB ХОЛБОГДОХГҮЙ ✓
 node /tmp/cdp_verify_car_filters.mjs   # ✅ 22/22 бодит Chrome (CDP) дээр
 next build                             # ✓ цэвэр
 ```
@@ -2789,6 +2791,7 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 | `scripts/normalize-condition.mjs` | 🩹 **DRY RUN** (`npm run normalize:condition`) — хуучин `attrs.condition` утгуудыг «Хуучин» болгож нэгтгэнэ; `-- --apply` бичих үед **227/227** (390 = 163 «Шинэ» + 227 «Хуучин») ✓ |
 | `scripts/test-phone.mjs` | **11 тест** — `npm run test:phone` (2026-09-29: 📞 утасны дугаараар хайх дүрэм — зөвхөн цифр, сүүлийн 8 орон, DB-ийн `97699112233`/`99112233` хоёр хэлбэрт таарах, 6-аас богино цифр хайхгүй + `toLocalPhone`/`isValidMnPhone`/`phoneToEmail` регресс) |
 | `scripts/test-messages.mjs` | **24 тест** — `npm run test:messages` (2026-09-28: мессежийн логик — текст шалгалт/2000 хязгаар, нөгөө тал, уншаагүйн тоо, дараалал, `canMessage`, `?c=` линк, **0020_messages.sql-тай гэрээ** — CHECK урт ба `grant update (read_at)`) |
+| `scripts/lint-migrations.mjs` | 🧪 **Migration SQL-ийн БҮТЦИЙН lint** — `npm run lint:migrations` (2026-09-30 (5): `0026`-ын `comment on column … is '…'` statement-ийн сүүлийн мөр ТАСАРСан байснаас SQL Editor-т `42601: syntax error at or near "update"` гарсны дараа бий болсон; ① `(`/`)` тэнцэл ② `'…'`/`"…"`/`$$…$$`/`/*…*/` хаагдсан эсэх ③ `;`-ээс хойшхи хөвөгч текст ④ ишлэл/тооны дараа ШУУД эхэлсэн statement — 4 дүрмээр **25 файл / 256 statement**-ыг DB ХОЛБОГДОХГҮЙ, 1 секундэд шалгана; алдаатай жишээ дээр зөв унадаг нь regression тестээр батлагдсан ✓) |
 
 #### Хадгалах утга нь КАНОНИК линк
 
