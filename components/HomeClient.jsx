@@ -1274,12 +1274,18 @@ export default function HomeClient() {
           </>
         ) : (
           /* ---------- БҮХ ХЭСЭГ — tile сүлжээ (багана) ----------
-             ⚠️ 2 → 3 → 8 багана. Сонгогдсон хэсэг нь онцлогдож харагдана.
+             ⚠️ 2 → 3 → 8 → 5/10 багана. Сонгогдсон хэсэг нь онцлогдож харагдана.
                 ⚠️ 2026-09-27: «Амралт, спорт, хобби» нэмэгдэж 6 → 7 хэсэг
                    болсон тул `lg:grid-cols-6` → `lg:grid-cols-7` болов.
                 ⚠️ 2026-09-30: ⚡ «Цахилгаан бараа» нэмэгдэж 7 → 8 хэсэг болсон
                    тул `lg:grid-cols-7` → `lg:grid-cols-8` (нэг мөрөнд бүгд
                    багтана ✓). Мобайл 2, `sm` 3 багана ХЭВЭЭР.
+                ⚠️ 2026-09-30 (2): 🧱 «Барилгын материал» + 🏭 «Тоног төхөөрөмж»
+                   нэмэгдэж 8 → 10 хэсэг болов → `lg:grid-cols-8` нь lg дээр
+                   хэт нарийн (102px) болж шошго 3-4 мөр болно ✗. Тиймээс
+                   `lg:grid-cols-5` (2 мөр: 5 + 5, ~190px) ба
+                   `xl:grid-cols-10` (нэг мөр, ≥1280px) — ⚠️ зөвхөн 1 мөр
+                   байлгахын тулд 10-ыг `xl` руу шилжүүлэв ✓
              ⚠️ `min-h-[88px]` → бүх tile ИЖИЛ өндөртэй (шошго 1-2 мөр ч).
              🔤 ФОНТ (2026-09-27, хэрэглэгчийн хүсэлт «жаахан томруулж, илүү
                 хар өнгөтэй»): `text-[14px] font-semibold` → `text-[16px] font-bold`;
@@ -1287,7 +1293,7 @@ export default function HomeClient() {
                 СОНГОСОН үед `text-primary` → `text-primary-dark` — ⚠️ учир нь
                 primary (#2563eb) нь primary-light (#dbeafe) дэвсгэр дээр 4.03:1
                 → AA-д ХҮРЭХГҮЙ; primary-dark (#1d4ed8) нь 5.55:1 ✅ AA. */
-          <div className="tile-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8" role="tablist" aria-label="Зарын хэсэг">
+          <div className="tile-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10" role="tablist" aria-label="Зарын хэсэг">
             {SECTIONS.map((s) => {
               const on = s.value === section;
               return (
