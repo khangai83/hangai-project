@@ -200,6 +200,7 @@ async function main() {
   //    нь seed болон constraint хоёулаа зөв эсэхийг ШУУД батална:
   //    зар байгаа бол `section='construction'` утга constraint-д ЗӨВШӨӨРӨГДСӨН ✓.
   const sectionSeeds = [
+    { s: 'jobs', label: '💼 Ажлын зар (26 дэд төрөл)' },
     { s: 'home', label: '🛋️ Гэр ахуйн бараа (2 бүлэг / 22 дэд төрөл)' },
     { s: 'construction', label: '🧱 Барилгын материал (23 дэд төрөл)' },
     { s: 'equipment', label: '🏭 Тоног төхөөрөмж (20 дэд төрөл)' },

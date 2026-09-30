@@ -16,6 +16,7 @@
 //    DB дээр шалгана (`README.md` → «🔎 Хайлттай сонголт» хэсгийн тестийн лог).
 // ============================================================
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';   // 💼 0024 migration-ийг шалгах (2026-09-30)
 import {
   SECTIONS, getSubtypes, getAttrFilters, getAttrField,
   parseAttrRangeKey, getAttrRangeKeys, formatAttrsLine, getSection, hasSimpleForm,
@@ -635,5 +636,116 @@ t('🧱/🏭 Картын мөр: «Knauf Gyproc GK · 1.2×2.4 м · ✅ Шин
 });
 
 
+// ---- ⑩ 💼 АЖЛЫН ЗАР — ДЭД ТӨРӨЛ 15 → 26 БОЛОВ (2026-09-30) ----
+// Хэрэглэгчийн хүсэлт: «Ажлын зар -ын subcategory дараах байдлаар өөрчил».
+// ⚠️ Жагсаалтын ДАРААЛАЛ нь хэрэглэгчийн илгээсэн ЯГ дараалал — цагаан толгойн
+//    дараалал БИШ (ж: «Туслах ажилчин» нь «Уул уурхай»-н ӨМНӨ, «Үйлдвэрлэл» нь
+//    «Цагийн ажил»-ын өмнө) — тиймээс `deepEqual`-ээр бүтэн жагсаалтыг түгжив ✓
+const OLD_JOB_SUBTYPES = [
+  'IT, программист', 'Борлуулалт, маркетинг', 'Нягтлан бодох, санхүү',
+  'Инженер, техник', 'Барилга, засвар', 'Үйлчилгээ, үйлдвэрлэл',
+  'Хүний нөөц, захиргаа', 'Жолооч', 'Хамгаалалт', 'Худалдаа, касс',
+  'Боловсрол, сургалт', 'Эрүүл мэнд', 'Ресторан, зочид буудал',
+  'Хөдөө аж ахуй', 'Бусад',
+];
+
+t('💼 jobs: 26 дэд төрөл — хэрэглэгчийн жагсаалтын ЯГ дарааллаар', () => {
+  const subtypes = getSubtypes('jobs');
+  assert.equal(subtypes.length, 26);
+  assert.equal(new Set(subtypes).size, 26); // ⚠️ давхардал 0
+  assert.deepEqual(subtypes, [
+    'Авто үйлчилгээ, засвар', 'Аялал жуулчлал, зочид буудал',
+    'Банк, санхүү, нябо, нярав', 'Барилга, дэд бүтэц',
+    'Боловсрол, шинжлэх ухаан', 'Борлуулалт, худалдаа',
+    'Гоо сайхан, фитнес, спорт', 'Гүйцэтгэх удирдлага',
+    'Дизайн, урлаг, уран сайхан', 'Захиргаа, Хүний нөөц',
+    'Маркетинг, PR менежмент', 'МТ, харилцаа холбоо',
+    'Менежер, төлөөлөгч', 'Ресторан, кафе, паб',
+    'Сэтгүүлч, редактор', 'Тээвэр, гааль, агуулах',
+    'Туслах ажилчин', 'Уул уурхай', 'Харуул хамгаалалт',
+    'ХАА, Байгаль экологи', 'Хууль, эрх зүй', 'Эрүүл мэнд, эм зүй',
+    'Үйлдвэрлэл', 'Үйлчилгээ', 'Цагийн ажил',
+    'Хөгжлийн бэрхшээлтэй иргэн ажиллах боломжтой',
+  ]);
+  // ⚠️ Гарчиг/хэсгийн нэр нь дэд төрөл БИШ (DB-д тийм `property_type` үүсэхгүй)
+  assert.ok(!subtypes.includes('Ажлын зар'));
+});
+
+t('💼 jobs: хуучин 15 нэр БҮГД хасагдав (зөвхөн нэр нь Солигдсон)', () => {
+  const subtypes = getSubtypes('jobs');
+  assert.deepEqual(OLD_JOB_SUBTYPES.filter((o) => subtypes.includes(o)), []);
+  assert.ok(!subtypes.includes('Бусад'));
+  // ⚠️ «Банк, санхүү, нябо, нярав» — «нябо» нь хэрэглэгчийн бичсэнээр
+  //    (нягтлан бодогчийн товчлол, unegui.mn-ийн хэв маяг) ХЭВЭЭР ✓
+  assert.ok(subtypes.includes('Банк, санхүү, нябо, нярав'));
+  // ⚠️ Монгол «Ресторан» — ЛАТИН «P» БИШ (хэрэглэгчийн бичлэгийн typo зассан ✓)
+  assert.ok(!subtypes.includes('Pесторан, кафе, паб'));
+});
+
+t('💼 jobs: «Бусад» нь БУСАД хэсэгт ХЭВЭЭР (regress-ийн хамгаалалт)', () => {
+  // ⚠️ Зөвхөн jobs-оос хассан — 🛋️ home / ⚡ electric / 🧱 construction
+  //    дээр «Бусад» хэвээр байх ЁСТОЙ ✓
+  assert.ok(getSubtypes('home').includes('Бусад'));
+  assert.ok(getSubtypes('electric').includes('Бусад'));
+  assert.ok(getSubtypes('construction').includes('Бусад'));
+});
+
+t('💼 jobs: зөвхөн 2 нэр 🛠️ services-тэй ДАВХАРДАЖ байна (section нь ялгана ✓)', () => {
+  const others = new Set(
+    SECTIONS.filter((s) => s.value !== 'jobs').flatMap((s) => getSubtypes(s.value)),
+  );
+  // ⚠️ «Уул уурхай» ба «Харуул хамгаалалт» нь 🛠️ services-ийн («Технологи &
+  //    Авто засвар», «Бизнес, Санхүү & Хууль» бүлэг) дэд төрөлд ч байдаг —
+  //    ⚠️ ЭНЭ нь АСУУДАЛ БИШ: DB-д `section` ба `property_type` ХОЁУЛАА
+  //    хадгалагддаг, icon нь `getPropertyIcon(type, section)`-ээр хэсгээс
+  //    тодорхойлогддог (💼 vs 🛠️), шүүлт нь `?section=jobs&type=…` гэж явдаг
+  //    тул хөндлөн холилдохгүй ✓ (ℹ️ «Бусад» нь 3+ хэсэгт давхарддаг нь
+  //    ижил зарчим — `lib/locationData.js`)
+  assert.deepEqual(
+    getSubtypes('jobs').filter((s) => others.has(s)),
+    ['Уул уурхай', 'Харуул хамгаалалт'],
+  );
+  // ⚠️ Үлдсэн 24 нь ЦОРЫН ГАНЦ (өөр хэсэгт давхардахгүй) ✓
+  assert.equal(getSubtypes('jobs').length - 2, 24);
+});
+
+t('💼 jobs: форм/шүүлт/бүтэц ХӨНДӨӨГДӨӨГҮЙ (2 түвшин, 3 шүүлт, хялбар форм БИШ)', () => {
+  assert.equal(getSection('jobs').label, 'Ажлын зар');
+  assert.equal(getSection('jobs').icon, '💼');
+  assert.deepEqual(getAttrFilters('jobs').map((f) => f.key), ['jobType', 'experience', 'workMode']);
+  assert.equal(hasSimpleForm('jobs'), false);
+  assert.deepEqual(getSubtypeGroups('jobs'), []); // ⚠️ бүлэг (3 дахь түвшин) БАЙХГҮЙ
+  assert.equal(findSubtypeGroup('jobs', getSubtypes('jobs')[0]), null);
+});
+
+t('💼 jobs: картын мөр — компани · албан тушаал · цалин · ажлын төрөл', () => {
+  assert.equal(
+    formatAttrsLine('jobs', {
+      company: 'Мобиком', position: 'Программист', salary: '2500000',
+      jobType: 'Бүтэн цаг', experience: '3+ жил', workMode: 'Хибрид',
+    }),
+    'Мобиком · Программист · ₮2,500,000 · 🕒 Бүтэн цаг · 📊 3+ жил · 🏠 Хибрид',
+  );
+  // ⚠️ Компани хоосон бол «Ажилд авна» тэргүүлнэ (хуучин зан ХЭВЭЭР ✓)
+  assert.equal(formatAttrsLine('jobs', { salary: '2000000' }), 'Ажилд авна · ₮2,000,000');
+});
+
+t('💼 0024 migration: 15 хуучин нэр солигдож, 26 шинэ нэр бүрэн хамрагдсан', () => {
+  const sql = readFileSync(
+    new URL('../supabase/migrations/0024_jobs_subtype_rename.sql', import.meta.url), 'utf8',
+  );
+  // ⚠️ §1-ийн VALUES-д 15 хуучин нэр БҮГД байх ЁСТОЙ (`('IT, программист',`)
+  OLD_JOB_SUBTYPES.forEach((o) => assert.ok(sql.includes(`('${o}'`), `§1-д «${o}» алга ✗`));
+  // ⚠️ §2-ын сүлжээний жагсаалтад 26 шинэ нэр БҮГД байх ЁСТОЙ (гадуур утга
+  //    үлдэхгүй — эс бөгөөс тэр зар шүүлт/тооллоос хасагдана ✗)
+  getSubtypes('jobs').forEach((s) => assert.ok(sql.includes(`'${s}'`), `§2-д «${s}» алга ✗`));
+  assert.ok(/section = 'jobs'/.test(sql), 'зөвхөн jobs хэсэгт хүрэх ёстой');
+  assert.ok(!/\bdelete\s+from\b/i.test(sql), '⚠️ зар УСТГАХГҮЙ (зөвхөн нэр солино)');
+});
+
+
 console.log(`\n✅ БҮГД ОК: ${passed} тест\n`);
+
+
+
 
