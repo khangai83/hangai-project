@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  formatGroupedInput, isRangeActive, parseNum, priceQuickPicks, rangeLabel, toFilterPair,
+  formatGroupedInput, isRangeActive, parseNum, rangeLabel, toFilterPair,
 } from '../lib/rangeFilter.mjs';
 
 /**
- * 🔢 RangeInput — «ДООД / ДЭЭД» ХОС ТООН ОРОЛТ (2026-09-30, хоёр дахь эргэлт).
+ * 🔢 RangeInput — «ДООД / ДЭЭД» ХОС ТООН ОРОЛТ (2026-09-30, гурав дахь эргэлт).
  *
  * ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (ЧУХАЛ): «энэ дээд доод үнэ, талбай дээр чирдэгээ
  *    больё, харин оруул байгаа тоог цэгээр тусгаарладаг болгоод өгчих»
@@ -16,14 +16,26 @@ import {
  *      «3000000» → «3.000.000» (`formatGroupedInput` — цэвэр логик нь
  *      `lib/rangeFilter.mjs`, тестээр түгжсэн ✓)
  *
+ * ⚠️ 2026-09-30 (3) — хэрэглэгчийн хүсэлт: «Орон сууц хайлтын **Үнэ** дээр
+ *    эхлэх дуусах биш **Дээд Доод** гэе. Бас тэр доор нь санал болгоод байгаа
+ *    тоог байхгүй болго»:
+ *      ① 🏷 ШОШГО: «Эхлэх / Дуусах» → **«Доод / Дээд»** (placeholder ба
+ *         aria-label ХОЁУЛАА; CDP-ээр DOM дээр батлагдсан ✓)
+ *         ⚠️ ЗҮҮН тал нь `from` = ХАМГИЙН БАГА үнэ (`price=gte.…`),
+ *            БАРУУН тал нь `to` = ХАМГИЙН ИХ үнэ (`price=lte.…`) — утгын
+ *            утга ХЭВЭЭР, зөвхөн ШОШГО солигдов ✓
+ *      ② 🗑 Оролтын доорх «түргэн хүрээ» 4 тоон товч (`₮25 сая хүртэл` …)
+ *         БҮРЭН ХАСАГДАВ — `priceQuickPicks()` ба `quickPicks` проп ч хамт
+ *         (өөр хэрэглэгч байхгүй байв). Одоо оролтын доор ЗӨВХӨН шүүлт
+ *         идэвхтэй үеийн уншигдах шошго + `✕ арилгах` гарна ✓
+ *         ⇒ Sidebar нь 2 мөр тоон оролт + (идэвхтэй үед) 1 мөр шошго —
+ *           «санал болгосон тоо» ямар ч хэлбэрээр БАЙХГҮЙ ✓
+ *
  * ⚠️ ЯАГААД ХҮРЭЭГ ТООНЫ ОРЛОТ ХЭВЭЭР Л БАЙЛГАВ:
  *    ① Гараар «1.250.000» гэж бичих нь чирэхээс ХУРДАН бөгөөд ЯГ ТАГ утга
  *       өгнө (слайдер нь «2.950.000» гэх мэт дугуй бус утга руу чирдэг) ✓
  *    ② Мобайл дээр чирэх нь хуудас гүйлгэх/сонгохтой мөргөлддөг байв ✗
  *    ③ a11y: текст оролт нь ямар ч браузер/дэлгэц уншигчид дэмжигдэнэ ✓
- *    ⚠️ 4 «түргэн хүрээ» товч (₮-д) ХЭВЭЭР — тэр нь чирэх биш, НЭГ ДАРЖ
- *       сонгох товч тул хэрэглэгчийн хүсэлтэд харшилдахгүй ✓ (eBay-ийн
- *       «Under ₮…» мөртэй ижил)
  *
  * ⚠️ ШҮҮЛТ БИЧИХ ЯВЦАД ЯВАХГҮЙ:
  *    ⏎ (Enter) эсвэл талбараас ГАРАХ үед (blur) л `onChange` дуудагдана —
@@ -31,20 +43,21 @@ import {
  *    (`components/TextFilter.jsx`-ийн адил дүрэм ✓)
  * ⚠️ Esc → бичсэнээ БОЛИХ (өмнөх утга буцна); ✕ → шүүлтийг бүрэн арилгана
  *    (зөвхөн шүүлт идэвхтэй үед харагдана)
- * ⚠️ ХИЛ (`bounds`) нь ЗӨВХӨН түргэн хүрээг бодох ба «хязгааргүй» талыг
- *    тодорхойлоход хэрэглэгдэнэ — хэрэглэгчийн бичсэн утгыг ХЭЗЭЭ Ч
- *    хязгаарлахгүй ✓ (ж: 5 тэрбумын хил дээр 6 тэрбум бичиж болно)
+ * ⚠️ ХИЛ (`bounds`) нь ЗӨВХӨН «хязгааргүй ТАЛ»-ыг тодорхойлоход хэрэглэгдэнэ —
+ *    тухайн талын утга хилтэйгээ тэнцвэл `''` (шүүлт БАЙХГҮЙ), мөн хоосон
+ *    оролтын уншигдах шошгыг бодоход ✓; хэрэглэгчийн бичсэн утгыг ХЭЗЭЭ Ч
+ *    хязгаарлахгүй (ж: 5 тэрбумын хил дээр 6 тэрбум бичиж болно ✓)
  *
  * @param {object} props
  * @param {string} props.label      Блокийн нэр (aria-label-д)
  * @param {string} props.from       Одоогийн доод хязгаар (`''` = хязгааргүй)
  * @param {string} props.to         Одоогийн дээд хязгаар (`''` = хязгааргүй)
  * @param {(from:string, to:string)=>void} props.onChange Commit (шүүлт тавих)
- * @param {{min:number,max:number,step:number}} props.bounds Анхдагч хил
+ * @param {{min:number,max:number}} props.bounds Анхдагч хил
  * @param {string} [props.unit]     Нэгж: `'₮'`, `'м²'`, `'он'`
  * @param {'int'|'decimal'|'year'} [props.mode] Оролтын төрөл
- * @param {(n:number)=>string} [props.short] Товч форматлагч (`shortPrice`)
- * @param {boolean} [props.quickPicks] Түргэн сонгох хүрээнүүд (₮-д тохирно)
+ * @param {(n:number)=>string} [props.short] Шошго форматлагч (`shortPrice`) —
+ *        зөвхөн ИДЭВХТЭЙ шүүлтийн уншигдах хүрээг бодоход (товч БАЙХГҮЙ ✓)
  */
 export default function RangeInput({
   label,
@@ -55,14 +68,13 @@ export default function RangeInput({
   unit = '',
   mode = 'int',
   short,
-  quickPicks = false,
 }) {
   /** Зөвхөн энэ хоёр талын бичсэн текст (`null` = бичихгүй, гаднаас удирдана) */
   const [typing, setTyping] = useState(null);
 
   /**
    * ⚠️ Гаднаас утга солигдвол (chip ✕, «Хайлтыг цэвэрлэх», URL-аас ирсэн
-   *    шүүлт, түргэн хүрээ) бичсэн текстийг ЗААВАЛ арилгана — эс бөгөөс
+   *    шүүлт) бичсэн текстийг ЗААВАЛ арилгана — эс бөгөөс
    *    талбарт хуучин тоо үлдэж, хэрэглэгч шүүлт арилсныг мэдэхгүй ✗
    */
   useEffect(() => { setTyping(null); }, [from, to]);
@@ -109,18 +121,6 @@ export default function RangeInput({
   /** ✕ — хоёр талыг НЭГ дор арилгана (шүүлт байхгүй болно) */
   const clear = () => { setTyping(null); onChange('', ''); };
 
-  /** ₮-ийн 4 түргэн хүрээ — НЭГ ДАРЖ сонгоно (идэвхтэйг дарахад арилна) */
-  const picks = useMemo(
-    () => (quickPicks ? priceQuickPicks(bounds, short || ((n) => String(n))) : []),
-    [quickPicks, bounds, short]
-  );
-  const curFrom = from || '';
-  const curTo = to || '';
-  const isPickOn = (p) => {
-    const f = toFilterPair(p.from, p.to, bounds);
-    return f.from === curFrom && f.to === curTo;
-  };
-
   const active = isRangeActive(from, to);
   /** Шүүлт идэвхтэй үед л уншигдах шошго харуулна (хоосон үед дуу чимээ) */
   const hint = active
@@ -136,8 +136,8 @@ export default function RangeInput({
           type="text"
           autoComplete="off"
           inputMode={mode === 'decimal' ? 'decimal' : 'numeric'}
-          placeholder="Эхлэх"
-          aria-label={`${label} (эхлэх)`}
+          placeholder="Доод"
+          aria-label={`${label} (доод хязгаар)`}
           data-range-input="from"
           value={textOf('from')}
           onChange={onInput('from')}
@@ -149,8 +149,8 @@ export default function RangeInput({
           type="text"
           autoComplete="off"
           inputMode={mode === 'decimal' ? 'decimal' : 'numeric'}
-          placeholder="Дуусах"
-          aria-label={`${label} (дуусах)`}
+          placeholder="Дээд"
+          aria-label={`${label} (дээд хязгаар)`}
           data-range-input="to"
           value={textOf('to')}
           onChange={onInput('to')}
@@ -172,37 +172,6 @@ export default function RangeInput({
           >
             ✕ арилгах
           </button>
-        </div>
-      )}
-
-      {/* ---- ③ ₮-ийн түргэн хүрээнүүд (нэг дарж — eBay-ийн «Under ₮…») ---- */}
-      {picks.length > 0 && (
-        <div className="grid grid-cols-2 gap-1">
-          {picks.map((p) => {
-            const on = isPickOn(p);
-            return (
-              <button
-                key={p.key}
-                type="button"
-                aria-pressed={on}
-                data-quick-pick={p.key}
-                onClick={() => {
-                  const f = toFilterPair(p.from, p.to, bounds);
-                  // ⚠️ Идэвхтэй товчийг дахин дарвал шүүлт АРИЛНА (toggle —
-                  //    бусад чипүүдтэй нэг дүрэм ✓)
-                  if (on) onChange('', '');
-                  else onChange(f.from, f.to);
-                }}
-                className={`rounded-md border px-1.5 py-1 text-[11px] font-semibold leading-tight transition ${
-                  on
-                    ? 'border-primary bg-primary text-white'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-primary/60 hover:text-primary'
-                }`}
-              >
-                {p.label}
-              </button>
-            );
-          })}
         </div>
       )}
     </div>

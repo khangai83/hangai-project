@@ -3,7 +3,7 @@
 //
 // ХАМРАХ ХҮРЭЭ:
 //   ① `lib/rangeFilter.mjs`  — доод/дээд ТООНЫ хүрээний логик: монгол
-//      тооны бичлэг → тоо, ЦЭГЭЭР бүлэглэх, хил, түргэн хүрээ
+//      тооны бичлэг → тоо, ЦЭГЭЭР бүлэглэх, хил
 //   ② `lib/sortOptions.mjs`  — эрэмбэлэх сонголт (eBay-ийн «Sort: …»)
 //   ③ ГЭРЭЭ: `components/HomeClient.jsx` + `lib/queries.js` нь дээрх
 //      модулиудыг ХЭРЭГЛЭЖ байгаа эсэх (эх файлыг шууд уншина)
@@ -28,7 +28,7 @@ import assert from 'node:assert/strict';
 import {
   AREA_BOUNDS, PRICE_BOUNDS, YEAR_START,
   clampNum, formatGroupedInput, groupDigits, isRangeActive,
-  parseNum, priceBounds, priceQuickPicks, rangeLabel, snapNum,
+  parseNum, priceBounds, rangeLabel, snapNum,
   toFilterPair, yearBounds,
 } from '../lib/rangeFilter.mjs';
 import {
@@ -37,6 +37,15 @@ import {
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(here, '..');
+
+/** 📄 Эх файлыг унших (ГЭРЭЭ/регрессийн шалгалтад — санамсаргүй салгахаас) */
+const readSrc = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+
+/** Комментгүй ЦЭВЭР КОД — «хасагдсан» гэсэн ТАЙЛБАР нь зүй ёсны тул
+ *  шалгалтыг зөвхөн кодын мөрүүд дээр хийнэ (хуурамч улаан гарахгүй ✓) */
+const codeOnly = (src) => src
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 let passed = 0;
 const t = (name, fn) => {
@@ -223,7 +232,7 @@ t('isRangeActive: хоёр тал хоосон бол идэвхгүй', () => {
   assert.equal(isRangeActive('', '0'), true);
 });
 
-// ---------- ⑤ rangeLabel · priceQuickPicks ----------
+// ---------- ⑤ rangeLabel (одоогийн утгын шошго) ----------
 t('rangeLabel: ₮ нь товч форматтай («₮150 сая – ₮1 тэрбум»)', () => {
   assert.equal(rangeLabel(150_000_000, 1_000_000_000, { unit: '₮', short }), '₮150 сая – ₮1 тэрбум');
 });
@@ -242,28 +251,41 @@ t('📌 РЕГРЕСС rangeLabel: хил дээрх 0 нь «₮ – ₮5 тэ�
   assert.equal(rangeLabel(0, 0, { unit: '₮', short }), '₮0 – ₮0');
 });
 
-t('priceQuickPicks: 4 утга, эхлэл/төгсгөл нь ЯГ хил, давхцалгүй өсөх', () => {
-  const p = priceQuickPicks(PRICE_BOUNDS.default, short);
-  assert.equal(p.length, 4);
-  assert.equal(p[0].from, PRICE_BOUNDS.default.min);
-  assert.equal(p[3].to, PRICE_BOUNDS.default.max);
-  for (let i = 1; i < p.length; i += 1) assert.equal(p[i].from, p[i - 1].to, `давхцал ${i}`);
-  p.forEach((x) => assert.ok(x.to > x.from, 'хүрээ хоосон байх ёсгүй'));
+// ---------- ⑤ 🗑 «ТҮРГЭН ХҮРЭЭ» ХАСАГДСАН ЭСЭХ (регресс) ----------
+// ⚠️ Хэрэглэгчийн хүсэлт (2026-09-30 (3)): «Орон сууц хайлтын Үнэ дээр
+//    эхлэх дуусах биш Дээд Доод гэе. Бас тэр доор нь санал болгоод байгаа
+//    тоог байхгүй болго» → ① шошго нь «Доод / Дээд» ② оролтын доорх 4 тоон
+//    товч (`₮25 сая хүртэл` …) БҮРЭН ХАСАГДАВ ✓
+t('📌 РЕГРЕСС: `priceQuickPicks()` БҮРЭН ХАСАГДСАН (эскпорт БАЙХГҮЙ ✓)', () => {
+  const lib = codeOnly(readSrc('lib/rangeFilter.mjs'));
+  assert.doesNotMatch(lib, /priceQuickPicks/, 'товчны логик үлдэгдэл');
+  // ⚠️ Үлдсэн ЦЭВЭР туслах функц `snapNum` нь тестээр хамгаалагдсан хэвээр ✓
+  assert.match(lib, /export function snapNum\(/);
 });
 
-t('priceQuickPicks: шошго нь ₮-тэй ба «хүртэл / -с дээш» гэж уншигдана', () => {
-  const p = priceQuickPicks(PRICE_BOUNDS.default, short);
-  assert.match(p[0].label, /^₮.+ хүртэл$/);
-  assert.match(p[3].label, /^₮.+-с дээш$/);
-  assert.match(p[1].label, /^₮.+ – ₮/);
+t('📌 РЕГРЕСС: DOM-д «түргэн хүрээ» товч БАЙХГҮЙ (`data-quick-pick` · `quickPicks`)', () => {
+  // ⚠️ Гурван газар БҮГД цэвэр байх ЁСТОЙ: UI компонент, проп дамжуулалт, CDP шалгалт
+  const ui = codeOnly(readSrc('components/RangeInput.jsx'));
+  assert.doesNotMatch(ui, /data-quick-pick/);
+  assert.doesNotMatch(ui, /quickPicks/);
+  assert.doesNotMatch(ui, /aria-pressed/, 'товч идэвхтэй эсэхийн төлөв ч хасагдав');
+  assert.doesNotMatch(codeOnly(readSrc('components/HomeClient.jsx')), /quickPicks/);
+  // CDP скрипт нь одоо «0 товч» гэж ШАЛГАДАГ болсон ✓ (зовхисон товч байхгүй)
+  const cdp = readSrc('scripts/cdp-range.mjs');
+  assert.match(cdp, /data-quick-pick/, 'DOM-д байхгүйг CDP-ээр шалгана');
+  assert.match(cdp, /=== 0/, 'товшны тоо ЯГ 0 байх ёстой');
+  assert.doesNotMatch(cdp, /\[data-quick-pick\]\[0\]/, 'товч дарах код үлдэх ёсгүй');
 });
 
-t('priceQuickPicks: утгууд нь алхмын үржвэр (товчнууд нь дугуй тоо гаргана ✓)', () => {
-  const b = PRICE_BOUNDS.realEstate;
-  priceQuickPicks(b, short).forEach((x) => {
-    assert.equal(x.from % b.step, 0, `from=${x.from}`);
-    assert.equal(x.to % b.step, 0, `to=${x.to}`);
-  });
+t('🏷 ШОШГО: оролт нь «Доод / Дээд» («Эхлэх / Дуусах» ХААНА Ч БАЙХГҮЙ ✓)', () => {
+  const ui = readSrc('components/RangeInput.jsx');
+  assert.match(ui, /placeholder="Доод"/);
+  assert.match(ui, /placeholder="Дээд"/);
+  assert.match(ui, /\(доод хязгаар\)/, 'aria-label — дэлгэц уншигчид');
+  assert.match(ui, /\(дээд хязгаар\)/, 'aria-label — дэлгэц уншигчид');
+  // ⚠️ Зөвхөн комментод биш, КОД дээр ч хуучин үг үлдэхгүй (ж: title/aria)
+  assert.doesNotMatch(codeOnly(ui), /Эхлэх|Дуусах/);
+  assert.doesNotMatch(codeOnly(readSrc('components/HomeClient.jsx')), /Эхлэх|Дуусах/);
 });
 
 // ---------- ⑥ Хилийн тогтмолууд ----------
@@ -343,8 +365,6 @@ t('sortLabel: уншигдах шошго буцаана (танихгүй ут�
 });
 
 // ---------- ⑧ ГЭРЭЭ (эх файлыг уншиж түгжинэ — санамсаргүй салгахаас) ----------
-const readSrc = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
-
 t('ГЭРЭЭ: HomeClient нь RangeInput-ийг импортолж, хил 3-ыг бүгдийг хэрэглэнэ', () => {
   const src = readSrc('components/HomeClient.jsx');
   assert.match(src, /import RangeInput from '\.\/RangeInput'/);
@@ -368,12 +388,13 @@ t('📌 РЕГРЕСС: ЧИРДЭГ слайдер БҮРЭН хасагдса�
   assert.equal(fs.existsSync(path.join(ROOT, 'lib/rangeSlider.mjs')), false);
 });
 
-t('ГЭРЭЭ: RangeInput нь data-range-input/quick-pick-тай бөгөөд ЦЭГЭЭР бүлэглэнэ', () => {
+t('ГЭРЭЭ: RangeInput нь data-range-input-тай бөгөөд ЦЭГЭЭР бүлэглэнэ', () => {
   const src = readSrc('components/RangeInput.jsx');
   assert.match(src, /data-range-input="from"/);
   assert.match(src, /data-range-input="to"/);
-  assert.match(src, /data-quick-pick=\{p\.key\}/);
   assert.match(src, /formatGroupedInput\(/, 'бичих ЯВЦАД цэгээр тусгаарлана');
+  // ⚠️ 2026-09-30 (3): «түргэн хүрээ» товч БАЙХГҮЙ — зөвхөн 2 блок (оролт + шошго)
+  assert.doesNotMatch(src, /data-quick-pick/);
 });
 
 t('ГЭРЭЭ: queries.js нь sortOrders-оор эрэмбэлнэ (хатуу бичсэн created_at БАЙХГҮЙ)', () => {

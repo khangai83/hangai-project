@@ -18,8 +18,9 @@
  *    слайдер DOM-оос бүрэн арилсан. Оронд нь:
  *      ① бичих ЯВЦАД тоо нь ЦЭГЭЭР тусгаарлагдах (гол шаардлага ✓)
  *      ② ⏎ / blur дээр Л НЭГ query явах (бичих бүрд явахгүй ✓)
- *      ③ ⌨️ Esc → буцах, ✕ → арилгах, ₮-ийн 4 түргэн хүрээ
+ *      ③ ⌨️ Esc → буцах, ✕ → арилгах, 🏷 шошго нь «Доод / Дээд»
  *      ④ оноор БҮЛЭГЛЭХГҮЙ («2.015» бичихэд «2015» болно ✓)
+ *      ⑤ 🗑 оролтын доорх «санал болгосон тоо» товч БАЙХГҮЙ (DOM-д 0 ✓)
  *    (Хуучин скрипт хэрэгтэй бол: `git show f326ca0:scripts/cdp-slider.mjs`)
  */
 const BASE = process.argv[2] || 'http://localhost:3000';
@@ -141,6 +142,9 @@ const focusInput = (id, block, side) => evalJs(id,
   `(() => { const el = document.querySelector(${inputSel(block, side)}); if (!el) return false; el.focus(); return document.activeElement === el; })()`);
 const inputValue = (id, block, side) => evalJs(id,
   `(() => { const el = document.querySelector(${inputSel(block, side)}); return el ? el.value : null; })()`);
+/** 🏷 Шошгыг DOM дээр түгжинэ — `'placeholder'` / `'aria-label'` */
+const inputAttr = (id, block, side, attr) => evalJs(id,
+  `(() => { const el = document.querySelector(${inputSel(block, side)}); return el ? (el.getAttribute(${Q(attr)}) || '') : null; })()`);
 const selectAll = (id) => rpc(ws, id, 'Input.dispatchKeyEvent', {
   type: 'rawKeyDown', key: 'a', code: 'KeyA', modifiers: 4, windowsVirtualKeyCode: 65, nativeVirtualKeyCode: 65,
 });
@@ -244,25 +248,30 @@ check('🗄 DB query нь `area=gte.1234.5` болов', /area=gte\.1234\.5\b/.t
 check('📐 Chip дээр талбай нь «1.234,5 м²» гэж харагдав',
   /1\.234,5 м²/.test(await evalJs(35, `document.body.innerText`)));
 
-// ═══════ ⑦ ⚡ ₮-ИЙН ТҮРГЭН ХҮРЭЭ (нэг дарж — toggle) ═══════
+// ═══════ ⑦ 🏷 ШОШГО «Доод / Дээд» + 🗑 «САНАЛ БОЛГОСОН ТОО» БАЙХГҮЙ ═══════
+//    ⚠️ 2026-09-30 (3) — хэрэглэгчийн хүсэлт: «Орон сууц хайлтын Үнэ дээр
+//       эхлэх дуусах биш Дээд Доод гэе. Бас тэр доор нь санал болгоод байгаа
+//       тоог байхгүй болго» → ① шошго нь «Доод / Дээд» (placeholder + aria)
+//       ② оролтын доорх 4 тоон товч (`₮25 сая хүртэл` …) DOM-д БАЙХГҮЙ (0 ✓)
 //    ⚠️ «Бүгдийг цэвэрлэх» БИШ — тэр нь section/type-ыг ч арилгаж (resetAll)
 //       sidebar-ыг бүхэлд нь хаана ✗ → цэвэр URL руу шилжинэ ✓
 await go(36, `${BASE}/?section=real-estate&type=${encodeURIComponent('Орон сууц')}`);
 listingReqs.length = 0;
 const pickN = await evalJs(37, `document.querySelectorAll('[data-quick-pick]').length`);
-check('⚡ Үнийн 4 түргэн хүрээ товч гарлаа', pickN === 4, `${pickN} товч`);
-const pickClick = (id) => evalJs(id, `(() => { const b = document.querySelectorAll('[data-quick-pick]')[0]; if (!b) return false; b.click(); return true; })()`);
-await pickClick(38);
-await sleep(2500);
-const qPick = await url(39);
-check('⚡ Нэг даралтад `maxPrice=250000000` болов', /maxPrice=250000000/.test(qPick), qPick);
-check('🗄 DB query нь `price=lte.250000000` болов', /price=lte\.250000000\b/.test(lastQuery()), lastQuery().slice(0, 110));
-check('🎨 Идэвхтэй товч нь aria-pressed=true болов',
-  (await evalJs(40, `(() => { const b = document.querySelectorAll('[data-quick-pick]')[0]; return b ? b.getAttribute('aria-pressed') : null; })()`)) === 'true');
-await pickClick(41);
-await sleep(2500);
-const qUnpick = await url(42);
-check('🔁 Идэвхтэй товчийг дахин дарахад шүүлт АРИЛАВ (toggle ✓)', !/maxPrice/.test(qUnpick), qUnpick);
+check('🗑 «Санал болгосон тоо» товч БАЙХГҮЙ (DOM-д ЯГ 0 ✓)', pickN === 0, `${pickN} товч`);
+const phFrom = await inputAttr(38, 'Үнэ', 'from', 'placeholder');
+const phTo = await inputAttr(39, 'Үнэ', 'to', 'placeholder');
+check('🏷 ЗҮҮН оролт нь «Доод» (placeholder ✓)', phFrom === 'Доод', String(phFrom));
+check('🏷 БАРУУН оролт нь «Дээд» (placeholder ✓)', phTo === 'Дээд', String(phTo));
+const arFrom = await inputAttr(40, 'Үнэ', 'from', 'aria-label');
+const arTo = await inputAttr(41, 'Үнэ', 'to', 'aria-label');
+check('🗣 aria-label нь «Үнэ (доод хязгаар)» · «Үнэ (дээд хязгаар)»',
+  arFrom === 'Үнэ (доод хязгаар)' && arTo === 'Үнэ (дээд хязгаар)', `${arFrom} · ${arTo}`);
+const oldWord = await evalJs(42, `(() => {
+  const box = document.querySelector('[data-range-filter="Үнэ"]');
+  return box ? /Эхлэх|Дуусах/.test(box.innerText) : true;
+})()`);
+check('🚫 «Эхлэх / Дуусах» гэсэн үг DOM-д БАЙХГҮЙ', oldWord === false, String(oldWord));
 
 // ═══════ ⑧ ✕ «арилгах» товч ═══════
 await typeInto(43, 'Үнэ', 'to', '4000000');
