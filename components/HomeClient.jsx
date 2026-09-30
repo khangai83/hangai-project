@@ -11,30 +11,46 @@ import {
 } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
 import {
-  CITIES, getDistricts, getKhoroos, ROOM_OPTIONS, formatRoomsLabel,
+  CITIES, getDistricts, getKhoroos, ROOM_OPTIONS,
   hasRoomsFields, SECTIONS, getSection, getSubtypes, getSectionCategories,
   hasCategoryChoice, getAttrFilters, getAttrField, formatAttrsLine,
   parseAttrRangeKey, getAttrRangeKeys,   // 📅 оны хүрээ (2026-09-28)
   getSubtypeGroups,   // 🛠 3 дахь түвшин (2026-09-27) — зөвхөн `services`
 } from '../lib/locationData';
-import { getCategoryLabel, getPropertyIcon, getPropertyTypeLabel, formatPrice, formatCount } from '../lib/format';
+import { getCategoryLabel, getPropertyIcon, getPropertyTypeLabel, formatPrice, formatCount, shortPrice } from '../lib/format';
 import { buildHomeBreadcrumb } from '../lib/breadcrumb';
 import Breadcrumb from './Breadcrumb';
 import SearchableSelect from './SearchableSelect';
 import TextFilter from './TextFilter';
+import RangeSlider from './RangeSlider';
+// 🎚 Чирдэг хүрээний хилүүд (2026-09-30) — цэвэр математик нь `lib/rangeSlider.mjs`
+//    ⚠️ Хил нь ХЭСГЭЭС хамаарна: 🏠 үл хөдлөх нь 5 тэрбум хүртэл, бусад нь
+//       500 сая (Улаанбаатарт 1-3 тэрбумын орон сууц бодит байдаг ✓)
+import { AREA_BOUNDS, priceBounds, yearBounds } from '../lib/rangeSlider.mjs';
+// 🔀 Эрэмбэлэх сонголт (eBay-ийн «Sort: Best Match ▾» шиг) — цэвэр логик нь
+//    `lib/sortOptions.mjs`, DB тал нь `lib/queries.js → sortOrders()`
+import { DEFAULT_SORT, SORT_OPTIONS, normalizeSort } from '../lib/sortOptions.mjs';
+// 🛏 ӨРӨӨНИЙ ТОО — ОЛОН СОНГОЛТ (2026-09-30) — цэвэр логик нь
+//    `lib/roomFilter.mjs` (URL, DB, breadcrumb бүгд тэр модулийг хэрэглэнэ) ✓
+import {
+  parseRoomList, roomsUrlValue, roomsFilterLabel, toggleRoomValue,
+} from '../lib/roomFilter.mjs';
 
 // Нүүр хуудсны хайлтын анхдагч (хоосон) утга.
 // ⚠️ `khoroos` нь МАССИВ — хэрэглэгч ОЛОН хороог зэрэг сонгоно (unegui.mn-ийн
 //    «олон хайлт»). Массивыг санамсаргүй ХУВААЛЦАХААС сэргийлж `EMPTY_FILTERS`-ийг
 //    шууд хэрэглэхгүй — `emptyFilters()`-ээр шинэ хуулбар авна.
+// 🆕 `rooms` нь БАС МАССИВ (2026-09-30, хэрэглэгчийн хүсэлт: «өрөөний тоог
+//    олон сонголттой болго») — ж: `['1','3']` = «1 эсвэл 3 өрөөтэй».
+//    ⚠️ Хоосон утга нь `''` БИШ `[]` — эс бөгөөс `.length`/`.includes` унана ✗
 // ℹ️ `district` нь НЭГ утга (string) — олон дүүрэг зэрэг сонгох нь ХАСАГДСАН.
 const EMPTY_FILTERS = {
-  propertyType: '', rooms: '', city: '', district: '', khoroos: [], attrs: {},
+  propertyType: '', rooms: [], city: '', district: '', khoroos: [], attrs: {},
   minPrice: '', maxPrice: '', minArea: '', maxArea: '',
 };
 
 /** Массив талбаруудыг ХУВААЛЦАХГҮЙ шинэ хоосон хайлт буцаана */
-const emptyFilters = () => ({ ...EMPTY_FILTERS, khoroos: [], attrs: {} });
+const emptyFilters = () => ({ ...EMPTY_FILTERS, rooms: [], khoroos: [], attrs: {} });
 
 /**
  * Шүүлт «хоосон» эсэх.
@@ -270,6 +286,17 @@ export default function HomeClient() {
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState(() => emptyFilters());
   const [view, setView] = useState('list');
+  /**
+   * 🔀 ЭРЭМБЭЛЭХ (2026-09-30) — eBay-ийн «Sort: Best Match ▾» шиг.
+   * ⚠️ Урьд нь дараалал нь `lib/queries.js` дотор ХАТУУ бичсэн байв
+   *    (`created_at desc`) → хэрэглэгч «хамгийн хямдаас» эхлэхийг сонгох
+   *    боломжгүй байсан ✗
+   * ⚠️ Утга нь ЗААВАЛ `normalizeSort()`-оор шүүгдэнэ — `?sort=xxx` гэсэн
+   *    танихгүй утга PostgREST руу БАЙХГҮЙ багана болж явахгүй ✓
+   * ⚠️ Энэ нь ШҮҮЛТ БИШ (үр дүнгийн БҮРЭН ижил, зөвхөн дараалал) тул
+   *    чипүүдийн тоонд ОРОХГҮЙ, харин URL-д хадгалагдана (`?sort=price_asc`)
+   */
+  const [sort, setSort] = useState(DEFAULT_SORT);
   // 📄 ХУУДАСЛАЛТ (2026-09-27, хэрэглэгчийн хүсэлт) — нэг хуудсанд
   //    `LISTINGS_PAGE_SIZE` (50) зар; бусад нь `?page=N` болж хуваагдана.
   //    ⚠️ `total` нь БҮХ хуудасны нийт тоо (`fetchListings().total`) — гарчигт
@@ -327,6 +354,8 @@ export default function HomeClient() {
     const q = sp.get('q') || sp.get('search') || '';
     if (q) { setSearch(q); setQuery(q); }
     if (sp.get('view') === 'map') setView('map');
+    // 🔀 ЭРЭМБЭЛЭХ — `?sort=price_asc` (танихгүй утга нь АНХДАГЧ болно ✓)
+    if (sp.get('sort')) setSort(normalizeSort(sp.get('sort')));
 
     // ---- 📄 ХУУДАС (`?page=2`) — хуваалцсан линк зөв хуудсыг нээнэ ✓ ----
     // ⚠️ 1-ээс бага / тоо биш / бутархай утгыг алгасна (эвдэрсэн линкээс сэргийлэв)
@@ -338,14 +367,17 @@ export default function HomeClient() {
 
     const next = emptyFilters(); // массив хуваалцахгүй
     if (sp.get('type')) next.propertyType = sp.get('type');
-    if (sp.get('rooms')) next.rooms = sp.get('rooms');
+    // 🛏 ӨРӨӨНИЙ ТОО — ОЛОН СОНГОЛТ: `?rooms=1,3,5` (таслалаар).
+    //    ⚠️ Хуучин НЭГ утгатай линк (`?rooms=3`) ч зөв уншигдана ✓
+    //    ⚠️ Хүчингүй утгууд (`?rooms=abc`) ЧИМЭЭГҮЙ хасагдана (`parseRoomList`)
+    if (sp.get('rooms')) next.rooms = parseRoomList(sp.get('rooms'));
     // ⚠️ «Өрөө» талбаргүй төрөлд (ж: Худалдаа, үйлчилгээний талбай) өрөөний
     //    хайлт нь утгагүй тул хуучин линкээс ирсэн ч орхигдуулна.
-    if (next.propertyType && !hasRoomsFields(next.propertyType)) next.rooms = '';
+    if (next.propertyType && !hasRoomsFields(next.propertyType)) next.rooms = [];
     // ⚠️ Тухайн ХЭСЭГТ тохирохгүй дэд төрлийг орхино (ж: авто хэсэгт «Орон сууц»)
     if (next.propertyType && !getSubtypes(secParam).includes(next.propertyType)) {
       next.propertyType = '';
-      next.rooms = '';
+      next.rooms = [];
     }
     // ---- ATTR шүүлтүүд — `?attr_brand=Toyota&attr_fuel=Хайбрид` ----
     const attrs = {};
@@ -382,7 +414,8 @@ export default function HomeClient() {
         attrs: Object.keys(filters.attrs || {}).length ? filters.attrs : undefined,
         search: query,
         propertyType: filters.propertyType || undefined,
-        rooms: filters.rooms || undefined,
+        // 🛏 ОЛОН СОНГОЛТ — `['1','3']`; хоосон бол шүүлт хийхгүй (`undefined`)
+        rooms: filters.rooms.length ? filters.rooms : undefined,
         city: filters.city || undefined,
         district: filters.district || undefined,
         khoroos: filters.khoroos.length ? filters.khoroos : undefined,
@@ -390,7 +423,7 @@ export default function HomeClient() {
         maxPrice: filters.maxPrice || undefined,
         minArea: filters.minArea || undefined,
         maxArea: filters.maxArea || undefined,
-      }, { page });
+      }, { page, sort });
 
       // 📄 ХЭТ ӨНДӨР ХУУДАС (`?page=999`) → ХАМГИЙН СҮҮЛИЙН хуудас руу засна.
       //    ⚠️ Эс бөгөөс хэрэглэгч «Зарууд олдсонгүй» дэлгэц дээр гацаж,
@@ -414,7 +447,7 @@ export default function HomeClient() {
       showToast(e.message, 'error');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, section, query, filters, page, dataVersion]);
+  }, [category, section, query, filters, page, dataVersion, sort]);
 
   useEffect(() => { if (urlReady) load(); }, [load, urlReady]);
 
@@ -463,7 +496,12 @@ export default function HomeClient() {
   useEffect(() => {
     if (!urlReady) return;
     // ⚠️ «Өрөө» тоо нь ЗӨВХӨН үл хөдлөхөд (0016) — бусад хэсэгт өрөө гэж байхгүй
-    if (section !== 'real-estate' || !hasRoomsFields(filters.propertyType)) {
+    // 🆕 2026-09-30: ТӨРӨЛ СОНГООГҮЙ үед Ч тоог татна (бүх үл хөдлөхийн дунд
+    //    «1 өрөө хэдэн зартай вэ») — «хайлт хэсэг» нь төрөл сонгохоос
+    //    өмнө ч харагдана ✓. Зөвхөн «Өрөө» талбаргүй төрөл (Газар, Оффис…)
+    //    сонгосон үед л тоо хэрэггүй болно.
+    if (section !== 'real-estate'
+        || (filters.propertyType && !hasRoomsFields(filters.propertyType))) {
       setRoomCounts({});
       return;
     }
@@ -494,7 +532,9 @@ export default function HomeClient() {
     // ⚠️ Хэсэг (0016) — `'all'` (сонгоогүй) нь URL-д БИЧИГДЭХГҮЙ (цэвэр линк)
     if (section && section !== 'all') params.set('section', section);
     if (filters.propertyType) params.set('type', filters.propertyType);
-    if (filters.rooms) params.set('rooms', filters.rooms);
+    // 🛏 ӨРӨӨНИЙ ТОО — ОЛОН СОНГОЛТ: `?rooms=1,3` (эсвэл `['5']` → `?rooms=5`)
+    //    ⚠️ Хоосон үед БИЧИХГҮЙ (цэвэр линк ✓)
+    if (filters.rooms.length) params.set('rooms', roomsUrlValue(filters.rooms));
     // ⚠️ ATTR шүүлтүүд — `attr_brand=Toyota` (jsonb)
     Object.entries(filters.attrs || {}).forEach(([k, v]) => {
       if (v) params.set(`attr_${k}`, v);
@@ -507,6 +547,8 @@ export default function HomeClient() {
     if (filters.minArea) params.set('minArea', filters.minArea);
     if (filters.maxArea) params.set('maxArea', filters.maxArea);
     if (view === 'map') params.set('view', 'map');
+    // 🔀 ЭРЭМБЭЛЭХ — анхдагч («шинээр») нь URL-д БИЧИГДЭХГҮЙ (цэвэр линк ✓)
+    if (sort !== DEFAULT_SORT) params.set('sort', sort);
     // 📄 ХУУДАС — 1-р хуудас нь URL-д БИЧИГДЭХГҮЙ (цэвэр линк ✓)
     if (page > 1) params.set('page', String(page));
 
@@ -514,7 +556,7 @@ export default function HomeClient() {
     const next = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
     const current = `${window.location.pathname}${window.location.search}`;
     if (next !== current) router.replace(next, { scroll: false });
-  }, [urlReady, category, section, query, filters, view, page, router]);
+  }, [urlReady, category, section, query, filters, view, page, sort, router]);
 
   /**
    * Шүүлт тавих/солих (талбарууд нь sidebar + чипүүд).
@@ -533,10 +575,27 @@ export default function HomeClient() {
       // Дүүрэг солигдвол хороодын жагсаалт өөр болно
       if (k === 'district') { next.khoroos = []; }
       // «Өрөө» талбаргүй төрөл сонговол өрөөний хайлтыг цэвэрлэнэ (ж: Худалдаа…)
-      if (k === 'propertyType' && v && !hasRoomsFields(v)) next.rooms = '';
+      if (k === 'propertyType' && v && !hasRoomsFields(v)) next.rooms = [];
       return next;
     });
   };
+
+  /**
+   * 🛏 ОЛОН ӨРӨӨ — нэг дарж нэмэх/хасах (checkbox мэт, 2026-09-30).
+   * Хэрэглэгчийн хүсэлт: «өрөөний тоог олон сонголт хийх боломжтой байх» →
+   *   [1 өрөө] [2 өрөө] [3 өрөө] дарж `?rooms=1,2,3` болно (OR — аль ч).
+   * ⚠️ Дүрэм нь `lib/roomFilter.mjs → toggleRoomValue()` (нэг эх сурвалж):
+   *    шинэ массив буцаана, хүчингүй утгыг алгасна, давхцуулахгүй ✓
+   * ⚠️ 📄 1-р хуудас руу буцна — эс бөгөөс шүүсэн үр дүн цөөн байхад
+   *    «хоосон» хуудас харагдана ✗ (`setF`-тэй ижил зарчим)
+   */
+  const toggleRooms = (value) => {
+    setPage(1);
+    setFilters((f) => ({ ...f, rooms: toggleRoomValue(f.rooms, value) }));
+  };
+
+  /** 🛏 Сонгосон бүх өрөөг арилгах («✕ Цуцлах») */
+  const clearRooms = () => setF('rooms', []);
 
   /** ОЛОН ХОРОО — нэг дарж нэмэх/хасах (checkbox мэт) */
   const toggleKhoroo = (k) => {
@@ -550,6 +609,10 @@ export default function HomeClient() {
   const resetAll = () => {
     setCategory('all'); setQuery(''); setSearch('');
     setPage(1); // 📄 бүх шүүлт арилсан → 1-р хуудас
+    // 🔀 Эрэмбэлэлт ч анхдагчдаа буцна («Бүгдийг цэвэрлэх» = үр дүнгийн
+    //    харагдац БҮРЭН анхдагч болно — эс бөгөөс «цэвэрлэсэн» ч дараалал
+    //    хуучнаараа үлдэж, хэрэглэгчид ойлгомжгүй байв ✗)
+    setSort(DEFAULT_SORT);
     // 🛠 ХЭСЭГ ба drill-down-ыг ч сэргээнэ — эс бөгөөс «Бүх зар» дарсан ч
     //    тухайн хэсгийн (ж: Автомашин) зарууд хэвээр үлддэг байв (АЛДАА).
     setSection('all');
@@ -566,6 +629,26 @@ export default function HomeClient() {
         тэр үйлдлийг хийнэ (хэсэг/категори/дэд төрөл/бүлэг бүгд цэвэрлэгдэнэ ✓)
         — тиймээс товч нь ДАВХАР буцах зам байсан. */
 
+  /** 🔀 Эрэмбэлэлт солих — үр дүнгийн БАГЦ ЭХНЭЭСЭЭ харагдах ёстой (1-р хуудас) */
+  const changeSort = (value) => {
+    setSort(normalizeSort(value));
+    setPage(1);
+  };
+
+  /**
+   * 🔍 HERO-ийн «Бүх хэсэг ▾» (eBay-ийн «All Categories» сонголт шиг, 2026-09-30).
+   *
+   * ⚠️ «Бүх хэсэг» (`all`) сонгоход `sectionOpen` нь ЗААВАЛ `false` байх ёстой
+   *    — `resetAll()` ч яг тэгж хийдэг: `section='all'` + панель НЭЭЛТТЭЙ
+   *    гэсэн хослол нь байхгүй (тэр үед `getSection('all')` нь ЭХНИЙ хэсгийн
+   *    дэд төрлүүдийг харуулж, хэрэглэгчийг төөрөгдүүлнэ ✗)
+   * ⚠️ Хайлтын үг (`query`) ХӨНДӨГДӨХГҮЙ — зөвхөн хэсгийн хүрээ солигдоно
+   *    (eBay дээр «All Categories» солиход бичсэн үг үлддэгтэй ижил ✓)
+   */
+  const changeHeroSection = (value) => {
+    changeSection(value, { open: value !== 'all' });
+  };
+
   /**
    * ХЭСЭГ солих (0016) — дэд төрөл/attr/өрөө бүгд ХҮЧИНГҮЙ болно.
    * ⚠️ DRILL-DOWN: хэсэг дээр дарах нь түүнийг НЭЭНЭ (`sectionOpen = true`) —
@@ -580,7 +663,7 @@ export default function HomeClient() {
       setPage(1);
       // ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд
       setCategory((c) => (hasCategoryChoice(nextSection) && c !== 'all' ? c : 'all'));
-      setFilters((f) => ({ ...f, propertyType: '', rooms: '', attrs: {} }));
+      setFilters((f) => ({ ...f, propertyType: '', rooms: [], attrs: {} }));
       // 🗂 өөр хэсэг = өөр бүлгүүд → accordion анхдагчдаа (хаалттай) ✓
       setGroupOpen(null);
       // ⚠️ 2026-09-27: `setFiltersOpen(false)` ХАСАГДСАН — панель үргэлж
@@ -602,6 +685,27 @@ export default function HomeClient() {
 
   /** Хэсгийн attr шүүлтийн одоогийн утга */
   const attrValue = (key) => (filters.attrs || {})[key] || '';
+
+  /**
+   * 📅 ХҮРЭЭНИЙ ATTR (оны хүрээ) — ХОЁР түлхүүрийг НЭГ дор тавина
+   * (`<key>_from` ба `<key>_to`) — `components/RangeSlider.jsx` үүнийг дуудна.
+   *
+   * ⚠️ Хоосон талыг `delete` хийнэ — эс бөгөөс `?attr_year_from=` гэсэн
+   *    ХООСОН түлхүүр URL-д үлдэж, `lib/queries.js` нь `attrs->>year`-ыг
+   *    `''`-тай харьцуулж БҮХ зарыг хааж/нээж эвдрэнэ ✗
+   *    (`setAttr` нь нэг түлхүүрт яг үүнийг хийдэг — энэ нь ХОСООНЫ хувилбар ✓)
+   */
+  const setAttrPair = (base, fromV, toV) => {
+    setPage(1); // 📄 шүүлт өөрчлөгдсөн → 1-р хуудас
+    setFilters((f) => {
+      const attrs = { ...(f.attrs || {}) };
+      [[`${base}_from`, fromV], [`${base}_to`, toV]].forEach(([k, v]) => {
+        if (v) attrs[k] = String(v);
+        else delete attrs[k];
+      });
+      return { ...f, attrs };
+    });
+  };
 
   /** Breadcrumb-ийн линк дээр дарахад тухайн түвшин рүү буцаана.
    *  ⚠️ `<Link>`-ээр ЯВАХГҮЙ: бүх линк нь `/` зам дээр байдаг тул Next.js
@@ -679,9 +783,29 @@ export default function HomeClient() {
   const sec = getSection(noSection ? 'real-estate' : section);
   const isRealEstate = section === 'real-estate';
 
-  /** «Өрөө» мөр ба тоо харагдах эсэх.
-   *  ⚠️ ЗӨВХӨН үл хөдлөх хэсэгт (0016) БА төрөл «Өрөө» талбартай үед. */
-  const showRooms = isRealEstate && hasRoomsFields(filters.propertyType);
+  /**
+   * 🎚 ҮНИЙ слайдерийн хил (2026-09-30) — ХЭСГЭЭС хамаарна:
+   *   🏠 үл хөдлөх → 0–5 тэрбум (алхам 50 сая) ;
+   *   бусад → 0–500 сая (алхам 5 сая)
+   * ⚠️ `useMemo` — объект нь render бүрд ШИНЭ болвол `RangeSlider`-ийн
+   *    `useMemo`-ууд (шошго/түргэн хүрээ) дэмий дахин бодогдоно ✗
+   */
+  const priceLimit = useMemo(() => priceBounds(isRealEstate), [isRealEstate]);
+
+  /**
+   * «Өрөө» мөр/хэсэг харагдах эсэх.
+   * ⚠️ ЗӨВХӨН үл хөдлөх хэсэгт (0016) БА төрөл «Өрөө» талбартай (эсвэл
+   *    төрөл СОНГООГҮЙ) үед.
+   * 🆕 2026-09-30 (хэрэглэгчийн хүсэлт: «үл хөдлөх дээр өрөөний тоог хайлт
+   *    хэсэг оруул») — ӨМНӨ нь төрөл сонгосны ДАРАА л гардаг байв
+   *    (`hasRoomsFields('')` → `false`) → одоо «Орон сууц»-ыг сонгохоос
+   *    өмнө ч хайлтын хэсэгт харагдана ✓
+   * ⚠️ «Өрөө» ойлголтгүй төрөл (Газар, Оффис, Худалдааны талбай, Үйлдвэр …)
+   *    сонгосон үед нуугдана — тэнд өрөөний шүүлт нь утгагүй ✗
+   *    (`lib/locationData.js → PROPERTY_TYPE_DEFS` дэх `rooms: true` туг)
+   */
+  const showRooms = isRealEstate
+    && (!filters.propertyType || hasRoomsFields(filters.propertyType));
 
   // ⚠️ Хэсэг сонгоогүй бол дэд төрөл БАЙХГҮЙ (дэмий query явуулахгүй)
   const subtypes = useMemo(
@@ -804,7 +928,10 @@ export default function HomeClient() {
       const field = getAttrField(section, k);
       chips.push({ key: `attr_${k}`, label: `${(field && field.icon) || '🔎'} ${v}` });
     });
-    if (filters.rooms) chips.push({ key: 'rooms', label: `🛏 ${formatRoomsLabel(filters.rooms)}` });
+    // 🛏 ӨРӨӨ — ОЛОН СОНГОЛТ (2026-09-30): чип нь сонгосон БҮХ утгыг харуулна
+    //    (`1, 2 өрөө` / `+5 өрөө` / `1, 5+ өрөө`) — хэдэн шүүлт тавснаа
+    //    чип дээрээс шууд харна ✓. ⚠️ Шошго нь `lib/roomFilter.mjs` (нэг эх сурвалж)
+    if (filters.rooms.length) chips.push({ key: 'rooms', label: `🛏 ${roomsFilterLabel(filters.rooms)}` });
     if (filters.city) chips.push({ key: 'city', label: `🏙 ${filters.city}` });
     if (filters.district) chips.push({ key: 'district', label: `📍 ${filters.district}` });
     // ⚠️ Хороо: 1 сонгосон бол нэрийг, олон бол «N хороо» гэж товчлон харуулна
@@ -823,8 +950,10 @@ export default function HomeClient() {
 
   const activeFilterCount = activeFilterChips.length;
 
-  /** Нэг чипийг арилгах (`khoroos` нь массив; `attr_*` нь jsonb түлхүүр;
-   *  📅 `attrRange_*` нь оны хүрээний ХОЁР түлхүүрийг хамт арилгана) */
+  /** Нэг чипийг арилгах (`khoroos`/`rooms` нь массив; `attr_*` нь jsonb түлхүүр;
+   *  📅 `attrRange_*` нь оны хүрээний ХОЁР түлхүүрийг хамт арилгана)
+   *  ⚠️ `rooms` (2026-09-30) — ОЛОН СОНГОЛТТОЙ болсон тул хоослох утга нь
+   *     `''` БИШ `[]` (эс бөгөөс `filters.rooms.length` унана ✗) */
   const removeFilterChip = (key) => {
     if (key.startsWith('attrRange_')) {
       const keys = getAttrRangeKeys(key.slice('attrRange_'.length));
@@ -838,7 +967,7 @@ export default function HomeClient() {
       return;
     }
     if (key.startsWith('attr_')) { setAttr(key.slice(5), ''); return; }
-    setF(key, key === 'khoroos' ? [] : '');
+    setF(key, key === 'khoroos' || key === 'rooms' ? [] : '');
   };
 
   // ---- ⚙️ «Дэлгэрэнгүй хайлт» панель — МОБАЙЛ дээр АВТОМАТААР НЭЭГДЭХГҮЙ ----
@@ -915,12 +1044,39 @@ export default function HomeClient() {
                дээр хайлт нэг л удаа харагдана. Хайлтын мөр нь `<form>` тул
                Enter дарахад ч, товч дарахад ч ИЖИЛ ажиллана (a11y дээр зөв).
             ⚠️ Товч нь .btn БИШ: container нь `rounded-xl overflow-hidden` тул
-               дотроос нь брэнд градиентаар дүүрнэ (товчны pill хэлбэр хэрэггүй). */}
+               дотроос нь брэнд градиентаар дүүрнэ (товчны pill хэлбэр хэрэггүй).
+            🆕 2026-09-30 (хэрэглэгчийн хүсэлт: «зар хайх хэсэг eBay их таалагдлаа,
+               үүнээс сурацаад хийж өгөөч») — eBay-ийн хайлтын мөр нь
+               `[ All Categories ▾ ][ бичих хэсэг ][ 🔍 Search ]` гэсэн
+               ГУРВАН хэсэгтэй. Тийнхүү зүүн талд «Бүх хэсэг ▾» сонголт нэмэв ✓
+               ⚠️ Сонголт нь ХЭСЭГ солино (`changeHeroSection()`) — хэрэглэгч
+                  «Автомашин» гэж сонгоод «prius» бичихэд зөвхөн авто дотроос
+                  хайна (хайлтын үг ХӨНДӨГДӨХГҮЙ ✓)
+               ⚠️ Мобайлд (`sm`-ээс доош) НУУГДАНА — 390px дээр хайлтын бичих
+                  талбар хэт нарийсах байсан ✗ (eBay-ийн мобайл дээр ч нуугддаг)
+               ⚠️ Брэнд нэг л байх ёстой: сонголт нь `text-gray-700` +
+                  `font-semibold` (цэнхэр нь ЗӨВХӨН «🔍 Хайх» товчид ✓) */}
         <form
-          className="mx-auto flex w-full max-w-[620px] overflow-hidden rounded-xl bg-white shadow-card-hover"
+          className="mx-auto flex w-full max-w-[680px] overflow-hidden rounded-xl bg-white shadow-card-hover"
           onSubmit={(e) => { e.preventDefault(); setPage(1); setQuery(search); }}
           role="search"
         >
+          <label className="sr-only" htmlFor="home-search-section">Хэсэг сонгох</label>
+          <select
+            id="home-search-section"
+            aria-label="Хэсэг сонгох"
+            data-hero-section
+            value={section}
+            onChange={(e) => changeHeroSection(e.target.value)}
+            className="hidden shrink-0 border-none bg-transparent py-3.5 pl-4 pr-2 text-[13px] font-semibold text-gray-700 outline-none sm:block"
+          >
+            <option value="all">🔎 Бүх хэсэг</option>
+            {SECTIONS.map((s) => (
+              <option key={s.value} value={s.value}>{s.icon} {s.label}</option>
+            ))}
+          </select>
+          {/* Тусгаарлагч зураас (eBay-ийн сонголт ба бичих хэсгийн хооронд ✓) */}
+          <span aria-hidden="true" className="my-3 hidden w-px shrink-0 bg-gray-200 sm:block" />
           <label className="sr-only" htmlFor="home-search">Зар хайх</label>
           <input
             id="home-search"
@@ -1520,32 +1676,19 @@ export default function HomeClient() {
                         ariaLabel={f.label}
                       />
                     ) : f.range ? (
-                      // 📅 ОНЫ ХҮРЭЭ — «Үнэ, ₮» блоктой ижил «Эхлэх / Дуусах» хос
-                      //    ⚠️ Утга нь `<key>_from` / `<key>_to` гэж хадгалагдана
-                      <div className="flex items-center gap-2">
-                        <input
-                          className="form-input"
-                          type="number"
-                          inputMode="numeric"
-                          min="1900"
-                          max="2100"
-                          placeholder="Эхлэх"
-                          aria-label={`${f.label} (эхлэх)`}
-                          value={attrValue(`${f.key}_from`)}
-                          onChange={(e) => setAttr(`${f.key}_from`, e.target.value)}
-                        />
-                        <input
-                          className="form-input"
-                          type="number"
-                          inputMode="numeric"
-                          min="1900"
-                          max="2100"
-                          placeholder="Дуусах"
-                          aria-label={`${f.label} (дуусах)`}
-                          value={attrValue(`${f.key}_to`)}
-                          onChange={(e) => setAttr(`${f.key}_to`, e.target.value)}
-                        />
-                      </div>
+                      // 📅 ОНЫ ХҮРЭЭ (2026-09-30-нд 🎚 RangeSlider болгов) — чирж
+                      //    тохируулна; утга нь `<key>_from` / `<key>_to` хэвээр
+                      //    ⚠️ Хил нь 1990 – ОДООГИЙН ОН (`yearBounds()`), алхам 1
+                      //       → «2015 — 2020» гэж нэг чирэлтээр сонгоно ✓
+                      <RangeSlider
+                        label={f.label}
+                        unit="он"
+                        mode="year"
+                        bounds={yearBounds()}
+                        from={attrValue(`${f.key}_from`)}
+                        to={attrValue(`${f.key}_to`)}
+                        onChange={(a, b) => setAttrPair(f.key, a, b)}
+                      />
                     ) : f.filterable ? (
                       // ✍️ ЧӨЛӨӨТ ТЕКСТ шүүлт (ж: 🚙 Загвар) — бичиж хайна
                       <TextFilter
@@ -1568,59 +1711,111 @@ export default function HomeClient() {
                   </SideBlock>
                 ))}
 
-                {/* ===== ҮНЭ, ₮ — unegui.mn-ийн «Эхлэх / Дуусах» хос оролт ===== */}
+                {/* ===== ҮНЭ, ₮ — 2026-09-30-нд 🎚 ЧИРДЭГ ХҮРЭЭ болгов =====
+                    ⚠️ Хоёр тоон оролт (Эхлэх / Дуусах) ХЭВЭЭР байна (гараар
+                       яг таг бичих боломж ✓) — түүний доор слайдер нэмэгдэв.
+                    ⚠️ ХИЛ нь ХЭСГЭЭС хамаарна: 🏠 үл хөдлөх 5 тэрбум,
+                       бусад 500 сая (`priceBounds(isRealEstate)`) — эс бөгөөс
+                       УБ-ын 1.5 тэрбумын орон сууцыг чирж хүрэх боломжгүй ✗
+                    ⚠️ Шүүлт нь ЗӨВХӨН хулганаа СУЛЛАХ үед хүчинтэй болно
+                       (`RangeSlider` дотор тайлбарласан) — чирэх бүрд query
+                       явуулбал DB хэт ачаалагдана ✗ */}
                 <SideBlock label="Үнэ, ₮">
-                  <div className="flex items-center gap-2">
-                    <input
-                      className="form-input"
-                      type="number"
-                      min="0"
-                      placeholder="Эхлэх"
-                      aria-label="Үнэ (эхлэх)"
-                      value={filters.minPrice}
-                      onChange={(e) => setF('minPrice', e.target.value)}
-                    />
-                    <input
-                      className="form-input"
-                      type="number"
-                      min="0"
-                      placeholder="Дуусах"
-                      aria-label="Үнэ (дуусах)"
-                      value={filters.maxPrice}
-                      onChange={(e) => setF('maxPrice', e.target.value)}
-                    />
-                  </div>
+                  <RangeSlider
+                    label="Үнэ"
+                    unit="₮"
+                    mode="int"
+                    bounds={priceLimit}
+                    short={shortPrice}
+                    quickPicks
+                    from={filters.minPrice}
+                    to={filters.maxPrice}
+                    onChange={(a, b) => { setF('minPrice', a); setF('maxPrice', b); }}
+                  />
                 </SideBlock>
 
-                {/* ===== ТАЛБАЙ, м² =====
-                    ⚠️ `inputMode="decimal"` + «75,5» хэлбэрийн монгол бутархайг
-                       зөвшөөрнө (`lib/queries.js` → `toNumber`). */}
-                {/* ===== ТАЛБАЙ, м² =====
+                {/* ===== ТАЛБАЙ, м² — 2026-09-30-нд 🎚 ЧИРДЭГ ХҮРЭЭ болгов =====
                     ⚠️ «Талбай» нь ЗӨВХӨН үл хөдлөх хэсэгт (0016) — автомашин/
-                       ажил/компьютер/бараа/үйлчилгээнд талбай гэдэг ойлголт байхгүй. */}
+                       ажил/компьютер/бараа/үйлчилгээнд талбай гэдэг ойлголт байхгүй.
+                    ⚠️ Хил нь 0–600 м², алхам 5 — хэрэглэгч түүнээс ТОМ утга
+                       бичвэл слайдер ДИНАМИКААР сунана (`withDynamicBounds`),
+                       бичсэн утга нь ХАДГАЛАГДАНА ✓
+                    ⚠️ `mode="decimal"` — «75,5» монгол бутархайг зөвшөөрнө
+                       (`lib/queries.js → toNumber`-тай ижил дүрэм ✓) */}
                 {isRealEstate && (
                 <SideBlock label="Талбай, м²">
-                  <div className="flex items-center gap-2">
-                    <input
-                      className="form-input"
-                      type="text"
-                      inputMode="decimal"
-                      placeholder="Эхлэх"
-                      aria-label="Талбай (эхлэх)"
-                      value={filters.minArea}
-                      onChange={(e) => setF('minArea', e.target.value.replace(/[^\d.,]/g, ''))}
-                    />
-                    <input
-                      className="form-input"
-                      type="text"
-                      inputMode="decimal"
-                      placeholder="Дуусах"
-                      aria-label="Талбай (дуусах)"
-                      value={filters.maxArea}
-                      onChange={(e) => setF('maxArea', e.target.value.replace(/[^\d.,]/g, ''))}
-                    />
-                  </div>
+                  <RangeSlider
+                    label="Талбай"
+                    unit="м²"
+                    mode="decimal"
+                    bounds={AREA_BOUNDS}
+                    from={filters.minArea}
+                    to={filters.maxArea}
+                    onChange={(a, b) => { setF('minArea', a); setF('maxArea', b); }}
+                  />
                 </SideBlock>
+                )}
+
+                {/* ===== 🛏 ӨРӨӨНИЙ ТОО — ХОРОО ШИГ ОЛОН СОНГОЛТ (2026-09-30) =====
+                    Хэрэглэгчийн хүсэлт: «өрөөг хороо шиг сонгодог байвал зүгээр
+                    юм уу» → яг ХОРООНЫ блоктой ижил: `chip-toggle` чипүүд,
+                    `✓` тэмдэг, «N сонгосон» тоолуур ✓ — нэг л харагдац
+                    (UX-ийн нэгдэл: аль ч олон сонголт нэг хэв маягтай) ✓
+                    ⚠️ Утгууд нь `lib/roomFilter.mjs → ROOM_VALUES` (1,2,3,4,+5)
+                    ⚠️ Утга нь МАССИВ (`['1','3']`) → `?rooms=1,3` ба DB дээр
+                       `rooms IN (1,3)` / завсартай бол `.or()` (`lib/queries.js`)
+                    ⚠️ Баруун талын тоо (`roomCounts`) — тухайн ангиллын НИЙТ
+                       зар (`fetchRoomCounts`), шүүлт тавихад өөрчлөгдөхгүй ✓
+                    ⚠️ `showRooms` — үл хөдлөх БА (төрөл сонгоогүй эсвэл
+                       өрөөтэй төрөл). Газар/Оффис/Үйлдвэрт өрөө гэж байхгүй ✗ */}
+                {showRooms && (
+                  <SideBlock label="🛏 Өрөөний тоо">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[12px] font-semibold text-gray-500">
+                        Өрөө
+                        {filters.rooms.length > 0 && (
+                          <span className="ml-1.5 rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
+                            {filters.rooms.length} сонгосон
+                          </span>
+                        )}
+                      </span>
+                      <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-2" data-room-filter role="group" aria-label="Өрөөний тоо">
+                        <div className="flex flex-wrap gap-1.5">
+                          {ROOM_OPTIONS.map((r) => {
+                            const on = filters.rooms.includes(r.value);
+                            const c = roomCounts[r.value];
+                            return (
+                              <button
+                                key={r.value}
+                                type="button"
+                                aria-pressed={on}
+                                data-room-value={r.value}
+                                onClick={() => toggleRooms(r.value)}
+                                className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                              >
+                                {on && <span aria-hidden="true">✓</span>}
+                                {r.label}
+                                {typeof c === 'number' && (
+                                  <span className={`text-[11px] ${on ? 'opacity-80' : 'text-gray-500'}`}>
+                                    {formatCount(c)}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      {filters.rooms.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={clearRooms}
+                          className="self-start text-[12px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                        >
+                          ✕ Цуцлах
+                        </button>
+                      )}
+                    </div>
+                  </SideBlock>
                 )}
               </div>
 
@@ -1705,6 +1900,31 @@ export default function HomeClient() {
                     БАЙСАН — өрөөний тоотой мөрийн ДООР зөөгдсөн ✓
                     (мобайл: [гарчиг] → [өрөөний мөр] → [товч] боллов) */}
 
+                {/* 🔀 ЭРЭМБЭЛЭХ (2026-09-30) — eBay-ийн «Sort: Best Match ▾» шиг
+                    ⚠️ ЗААВАЛ «Харах горим»-ООС ӨМНӨ: eBay дээр ч дараалал нь
+                       зүүн талд, харах горим нь баруун захад байдаг ✓
+                    ⚠️ Утга нь `normalizeSort()`-оор шүүгдэнэ (`?sort=xxx` →
+                       анхдагч) — PostgREST руу танихгүй багана явахгүй ✓
+                    ⚠️ Энэ нь ШҮҮЛТ БИШ (үр дүнгийн тоо өөрчлөгдөхгүй) тул
+                       чипүүдийн тоонд ОРОХГҮЙ — зөвхөн дараалал солино ✓
+                    ⚠️ Сонголт солиход `?page=1` руу буцна (`changeSort`) —
+                       эс бөгөөс 3-р хуудсан дээр дараалал солиход «дунд»
+                       байрлалд орж, хэрэглэгч төөрнө ✗ */}
+                <label className="flex items-center gap-1.5" htmlFor="listing-sort">
+                  <span className="text-[12.5px] font-semibold text-gray-500">Эрэмбэлэх</span>
+                  <select
+                    id="listing-sort"
+                    data-listing-sort
+                    className="form-select w-auto py-1.5 text-[13px] font-semibold"
+                    value={sort}
+                    onChange={(e) => changeSort(e.target.value)}
+                  >
+                    {SORT_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.icon} {o.label}</option>
+                    ))}
+                  </select>
+                </label>
+
                 {/* Харах горим — `.segmented` */}
                 <div className="segmented" role="group" aria-label="Харах горим">
             <button
@@ -1732,24 +1952,33 @@ export default function HomeClient() {
                    хэлбэрээр харуулдаг. Тоо нь тухайн ангиллын НИЙТ тоо
                    (`fetchRoomCounts` — зөвхөн категори + төрлийг харгалзана)
                    тул «аль өрөө хэдэн зартай вэ» гэдгээ нэг харцаар мэднэ.
+                🆕 2026-09-30 (хэрэглэгчийн хүсэлт: «өрөөг хороо шиг сонгодог
+                   байвал зүгээр юм уу») — энэ мөр ч ОЛОН СОНГОЛТТОЙ болов:
+                   «1 өрөө» + «3 өрөө»-г зэрэг дарж `?rooms=1,3` болно ✓
+                   ⚠️ Сонгосон нь `✓` тэмдэгтэй + BOLD доогуур зураастай
+                      (sidebar чиптэй ижил утга, зөвхөн харагдац нь мөр хэлбэр)
+                   ⚠️ `aria-pressed` нь дэлгэц уншигчид «сонгосон/сонгоогүй»-г
+                      хэлнэ (checkbox мэт семантик) ✓
                 ⚠️ `showRooms` — «Худалдаа, үйлчилгээний талбай» / Оффис /
                    Газар / Үйлдвэр зэрэг төрөлд өрөө гэсэн ойлголт БАЙХГҮЙ
                    тул мөр бүрэн харагдахгүй. */}
             {showRooms && (
-              <div className="mb-3 flex flex-wrap items-baseline gap-x-5 gap-y-2">
+              <div className="mb-3 flex flex-wrap items-baseline gap-x-5 gap-y-2" data-room-filter>
                 {ROOM_OPTIONS.map((r) => {
-                  const on = filters.rooms === r.value;
+                  const on = filters.rooms.includes(r.value);
                   const c = roomCounts[r.value];
                   return (
                     <button
                       key={r.value}
                       type="button"
                       aria-pressed={on}
-                      onClick={() => setF('rooms', on ? '' : r.value)}
+                      data-room-value={r.value}
+                      onClick={() => toggleRooms(r.value)}
                       className={`inline-flex items-baseline gap-1.5 text-[15px] transition ${
                         on ? 'font-bold text-primary underline' : 'font-medium text-primary hover:underline'
                       }`}
                     >
+                      {on && <span aria-hidden="true">✓</span>}
                       {r.label}
                       {typeof c === 'number' && (
                         <span className={`text-[13px] ${on ? 'font-semibold text-primary' : 'font-normal text-gray-500'}`}>
@@ -1759,11 +1988,11 @@ export default function HomeClient() {
                     </button>
                   );
                 })}
-                {filters.rooms && (
+                {filters.rooms.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => setF('rooms', '')}
-                    className="text-[12px] font-semibold text-gray-500 hover:underline"
+                    onClick={clearRooms}
+                    className="text-[12px] font-semibold text-gray-500 hover:text-primary hover:underline"
                   >
                     ✕ Цуцлах
                   </button>
@@ -1787,10 +2016,16 @@ export default function HomeClient() {
                    useState(false)` төлөв + `${filtersOpen ? '' : 'hidden'}`
                    класс + энэ товчийг буцааж нэмнэ. */}
 
-            {/* Идэвхтэй хайлтууд — «чип» хэлбэрээр (✕ дарж ТУС ТУСАД нь арилгана). */}
+            {/* Идэвхтэй хайлтууд — «чип» хэлбэрээр (✕ дарж ТУС ТУСАД нь арилгана).
+                🆕 2026-09-30: толгойд нь ТОО нэмэгдэв («Хайлт (3)») — eBay-ийн
+                   «N filters applied» мөр шиг хэрэглэгч хэдэн нөхцөл тавснаа
+                   нэг харцаар мэдэнэ ✓ (товчны тоо нь sidebar-ийн badge-тай
+                   ИЖИЛ `activeFilterCount` — хоёр газар хоёр өөр тоо гарахгүй ✓) */}
             {activeFilterChips.length > 0 && (
           <div className="mb-5 flex flex-wrap items-center gap-1.5">
-            <span className="mr-0.5 text-[12px] font-semibold uppercase tracking-wide text-gray-400">Хайлт</span>
+            <span className="mr-0.5 text-[12px] font-semibold uppercase tracking-wide text-gray-400">
+              Хайлт{activeFilterCount > 0 && ` (${activeFilterCount})`}
+            </span>
             {activeFilterChips.map((chip) => (
               <span
                 key={chip.key}
