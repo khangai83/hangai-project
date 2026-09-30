@@ -1,5 +1,5 @@
 // ============================================================
-// test-rooms.mjs — «ӨРӨӨНИЙ ТОО» шүүлтийн тест (ОЛОН СОНГОЛТ, 2026-09-30)
+// test-rooms.mjs — «ӨРӨӨНИЙ ТОО» шүүлтийн тест (2026-09-30)
 //
 // ХАМРАХ ХҮРЭЭ:
 //   ① `lib/roomFilter.mjs` — цэвэр логик (normalize/parse/toggle/шошго/DB дүрэм)
@@ -7,6 +7,14 @@
 //   ③ `lib/locationData.js`— `ROOM_OPTIONS` / `formatRoomsLabel` гэрээ (регресс)
 //   ④ ЭХ ФАЙЛЫН ГЭРЭЭ: `HomeClient.jsx`, `breadcrumb.js` нь `roomFilter.mjs`-ийг
 //      хэрэглэж, хоосон утга нь `''` БИШ `[]` байгаа эсэх
+//
+// ⚠️🗑 2026-09-30 (4) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «1 өрөө … +5 өрөө» ТОВЧНУУД
+//    хуудсанд харагдахгүй байх → `components/HomeClient.jsx`-ийн өрөө сонгох
+//    UI (sidebar-ийн блок БА үр дүнгийн мөр) БҮРЭН ХАСАГДАВ.
+//    ⚠️ Гэхдээ модуль/URL/DB/breadcrumb БҮГД ХЭВЭЭР: `?rooms=1,3` линк
+//    уншигдаж, DB дээр `rooms IN (1,3)` болж, breadcrumb «1, 3 өрөө» гэж
+//    харуулсаар байна — ТИЙМЭЭС доорх тестүүд утгаа ХАДГАЛСАН ✓
+//    (⑩ хэсэгт «UI байхгүй» гэсэн РЕГРЕСС тестүүд нэмэгдэв)
 //
 // ЯАГААД ХЭРЭГТЭЙ ВЭ:
 //   Олон сонголт нь 3 газарт нэгэн зэрэг бичигддэг: UI (чип), URL (`?rooms=1,3`)
@@ -68,6 +76,12 @@ const callsFor = (list) => {
 };
 
 const readSrc = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+
+/** Комментгүй ЦЭВЭР КОД — «хасагдсан» гэсэн ТАЙЛБАР нь зүй ёсны тул
+ *  шалгалтыг зөвхөн кодын мөрүүд дээр хийнэ (хуурамч улаан гарахгүй ✓) */
+const codeOnly = (src) => src
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 console.log('\n🧪 Өрөөний тоо — олон сонголттой шүүлт (lib/roomFilter.mjs)\n');
 
@@ -270,6 +284,10 @@ t('ROOM_OPTIONS нь roomFilter.mjs-ээс үүснэ (нэг эх сурвал�
   assert.deepEqual(ROOM_OPTIONS.map((o) => o.value), ROOM_VALUES);
   assert.deepEqual(ROOM_OPTIONS.map((o) => o.label),
     ['1 өрөө', '2 өрөө', '3 өрөө', '4 өрөө', '+5 өрөө']);
+  // ⚠️ Эхний сонголт нь ЗААВАЛ «1 өрөө» — «2 өрөө» болж хувирвал
+  //    хэрэглэгч 1 өрөөтэй зарыг сонгож чадахгүй болно ✗ (2026-09-30 (4)-д
+  //    тестэд гарсан алдаа: хүлээлт нь '2 өрөө', '2 өрөө' гэж бичигдсэн байв)
+  assert.equal(ROOM_OPTIONS[0].label, '1 өрөө');
 });
 
 t('formatRoomsLabel нь ХУУЧИН гэрээгээ хадгална (5 → «+5 өрөө»)', () => {
@@ -296,19 +314,34 @@ t('lib/queries.js: `applyRoomFilter`-ийг хэрэглэнэ (дүрмийг �
   assert.ok(!/Number\(value\) >= 5/.test(src), 'хуучин давхар дүрэм үлдсэн ✗');
 });
 
-t('components/HomeClient.jsx: олон сонголтын UI ба URL нь модулиар ажиллана', () => {
-  const src = readSrc('components/HomeClient.jsx');
-  assert.match(src, /from '\.\.\/lib\/roomFilter\.mjs'/, 'импорт алга ✗');
-  assert.match(src, /rooms: \[\]/, 'хоосон утга нь массив байх ёстой ✗');
-  assert.match(src, /parseRoomList\(sp\.get\('rooms'\)\)/, 'URL-аас унших ✗');
-  assert.match(src, /roomsUrlValue\(filters\.rooms\)/, 'URL-д бичих ✗');
-  assert.match(src, /toggleRoomValue\(f\.rooms, value\)/, 'нэмэх/хасах ✗');
-  assert.match(src, /roomsFilterLabel\(filters\.rooms\)/, 'чипийн шошго ✗');
-  assert.match(src, /onClick=\{\(\) => toggleRooms\(r\.value\)\}/, 'чип дарж сонгох ✗');
-  assert.match(src, /const clearRooms = \(\) => setF\('rooms', \[\]\)/, '«Цуцлах» ✗');
+t('🗑 РЕГРЕСС: HomeClient.jsx-д өрөө сонгох UI (товч) БАЙХГҮЙ — 2026-09-30 (4)', () => {
+  // Хэрэглэгчийн хүсэлт: «1 өрөө … +5 өрөө» товчнууд хуудсанд харагдахгүй байх
+  const ui = codeOnly(readSrc('components/HomeClient.jsx'));
+  assert.doesNotMatch(ui, /data-room-filter/, 'өрөөний блок DOM-д үлдсэн ✗');
+  assert.doesNotMatch(ui, /data-room-value/, 'өрөөний чип үлдсэн ✗');
+  assert.doesNotMatch(ui, /ROOM_OPTIONS/, 'ROOM_OPTIONS импорт үлдсэн ✗');
+  assert.doesNotMatch(ui, /toggleRooms|clearRooms/, 'чип дарах/цуцлах функц үлдсэн ✗');
+  assert.doesNotMatch(ui, /toggleRoomValue/, 'toggleRoomValue импорт үлдсэн ✗');
+  assert.doesNotMatch(ui, /showRooms/, 'showRooms нөхцөл үлдсэн ✗');
+  assert.doesNotMatch(ui, /Өрөөний тоо/, '«Өрөөний тоо» блокын шошго үлдсэн ✗');
+});
+
+t('✅ ХАДГАЛАГДСАН: URL ба DB нь `rooms`-ыг ХЭВЭЭР дэмжинэ (хуучин линк эвдрэхгүй)', () => {
+  const ui = readSrc('components/HomeClient.jsx');
+  assert.match(ui, /rooms: \[\]/, 'хоосон утга нь массив байх ёстой ✗');
+  assert.match(ui, /parseRoomList\(sp\.get\('rooms'\)\)/, 'URL-аас унших ✗');
+  assert.match(ui, /roomsUrlValue\(filters\.rooms\)/, 'URL-д бичих ✗');
+  assert.match(ui, /roomsFilterLabel\(filters\.rooms\)/, '«идэвхтэй шүүлт» чипийн шошго ✗');
   // ⚠️ Хуучин НЭГ утгатай (текст) логик үлдэх ЁСТОЙ
-  assert.ok(!/setF\('rooms', ''\)/.test(src), 'хуучин нэг утгатай цэвэрлэлт үлдсэн ✗');
-  assert.ok(!/filters\.rooms ===/.test(src), 'хуучин `===` харьцуулалт үлдсэн ✗');
+  assert.ok(!/setF\('rooms', ''\)/.test(ui), 'хуучин нэг утгатай цэвэрлэлт үлдсэн ✗');
+  assert.ok(!/filters\.rooms ===/.test(ui), 'хуучин `===` харьцуулалт үлдсэн ✗');
+});
+
+t('🐍 CDP скрипт нь «DOM-д өрөөний товч ЯГ 0» гэж шалгана (дарах код үлдэхгүй)', () => {
+  const cdp = readSrc('scripts/cdp-rooms.mjs');
+  assert.match(cdp, /data-room-filter/, 'DOM-д байхгүйг CDP-ээр шалгана ✗');
+  assert.match(cdp, /=== 0/, 'товшны тоо ЯГ 0 байх ёстой ✗');
+  assert.doesNotMatch(cdp, /clickRoom\(/, 'чип дарах код үлдэх ёсгүй ✗');
 });
 
 t('lib/breadcrumb.js: URL ба «хоослох» нь модулиар (rooms: [] / isRoomsEmpty)', () => {
