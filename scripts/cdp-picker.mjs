@@ -31,7 +31,7 @@
  *       (⚠️ өмнө нь дээд хэсэгт «Ангилал · Дэлгэрэнгүй · Байршил · Үнэ · Зураг»
  *          табууд байсан — 2026-10-01-нд ХАСАГДАВ ✓)
  *
- * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (76 шалгалт):
+ * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (78 шалгалт):
  *   ① Үл хөдлөх: 3 багана (12 хэсэг · sell/rent · 8 төрөл)
  *      ⚠️ 2026-10-01 (**4 дэх засвар**): баганын ДЭЭД ТОЛГОЙ (`[data-picker-title]`)
  *      БҮХЭЛДЭЭ ХАСАГДАВ (сонгосон утга нь доорх мөртэй давхардаж байв ✗) →
@@ -68,8 +68,12 @@
  *      олж, түүний `select` нь «Сонгох» + **7** утгатай (1.5л хүртэл …
  *      Цахилгаан (EV)) ✓ ② «Хөтлөгч» гэсэн талбар форм дээр **0** ✓
  *      ③ «Өнгө» 10 сонголттой ✓ ④ sidebar (`select[aria-label]`) — «Өнгө» бий,
- *      «Хөтлөгч» **0** ✓ ⇒ `lib/locationData.js`-ийн `ENGINE_OPTIONS` /
- *      `AUTO_COLOR_OPTIONS` / `attrFilters` гэрээг БОДИТ DOM дээр батална ✓
+ *      «Хөтлөгч» **0** ✓ ⑤ 🆕 **2026-10-01 (2): «Өнгө» нь «Загвар»-ын ЯГ дараа**
+ *      (форм БА sidebar — хоёуланд нь DOM дарааллаар шалгана; ⚠️ sidebar-д
+ *      «Загвар» нь `input`, «Өнгө» нь `select` тул `aside [aria-label]`-аас
+ *      уншина ✓) ⇒ `lib/locationData.js`-ийн `ENGINE_OPTIONS` /
+ *      `AUTO_COLOR_OPTIONS` / `attrFields` · `attrFilters` / `CARD_ATTR_ORDER`
+ *      гэрээг БОДИТ DOM дээр батална ✓
  *
  * ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
  *   1) сервер http://localhost:3000 (`npm run dev` эсвэл `npm run build && npm run start`)
@@ -590,6 +594,14 @@ ok('🎨 «Өнгө» нэмэгдэв (10 сонголт + хоосон «Со�
 ok('🔀 «Хөтлөгч» форм дээр БАЙХГҮЙ (0 талбар)',
   !attrs3.some((g) => g.label.includes('Хөтлөгч')),
   JSON.stringify(attrs3.map((g) => g.label)));
+// ⚠️ 2026-10-01 (2) (хэрэглэгчийн хүсэлт): «Өнгө» нь «Загвар»-ын ЯГ дараа —
+//    БОДИТ DOM-ийн дарааллаар шалгана (форм нь `attrFields.map()`-ээр зурагдана ✓)
+//    ⚠️ Label нь дүрстэй («🚙 Загвар») тул `includes`-ээр хайна ✓
+const attrLabels3 = attrs3.map((g) => g.label);
+const modelAt = attrLabels3.findIndex((l) => l.includes('Загвар'));
+const colorAt = attrLabels3.findIndex((l) => l.includes('Өнгө'));
+ok('🎨 форм: «Өнгө» нь «Загвар»-ын ЯГ дараа (талбаруудын дараалал)',
+  modelAt >= 0 && colorAt === modelAt + 1, JSON.stringify(attrLabels3));
 
 // ⬅️ SIDEBAR (HomeClient) — ижил 2 компонент, ижил класс
 /**
@@ -621,6 +633,18 @@ ok('sidebar: 🎨 «Өнгө» шүүлт бий (10 сонголт + «Бүгд
 ok('sidebar: 🔀 «Хөтлөгч» шүүлт БАЙХГҮЙ (0 талбар)',
   !sideSelects.some((s) => s.aria === 'Хөтлөгч'),
   JSON.stringify(sideSelects.map((s) => s.aria)));
+
+// ⚠️ 2026-10-01 (2): sidebar (`attrFilters`) ч формой ИЖИЛ дараалалтай —
+//    🎨 «Өнгө» нь 🚙 «Загвар»-ын ЯГ дараа (DOM дараалал: `aside [aria-label]`)
+//    ⚠️ «Загвар» нь ТЕКСТ талбар (`input`), «Өнгө» нь `<select>` тул дээрх
+//       `select[aria-label]` дангаараа ХАНГАЛТГҮЙ ✗ → бүх aria-label уншина ✓
+const SIDE_ORDER = `(() => [...document.querySelectorAll('aside [aria-label]')]
+  .map((el) => (el.getAttribute('aria-label') || '').trim()).filter(Boolean))()`;
+const sideOrder = await evaluate(SIDE_ORDER);
+const sideModelAt = sideOrder.indexOf('Загвар');
+const sideColorAt = sideOrder.indexOf('Өнгө');
+ok('sidebar: 🎨 «Өнгө» нь «Загвар»-ын ЯГ дараа (шүүлтүүдийн дараалал)',
+  sideModelAt >= 0 && sideColorAt === sideModelAt + 1, JSON.stringify(sideOrder));
 
 console.log('\n── ⑧ CONSOLE / EXCEPTION ──');
 ok('JS exception / console.error БАЙХГҮЙ (picker + Үйлдвэрлэгч форм)',

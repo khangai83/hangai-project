@@ -36,11 +36,14 @@ const t = (name, fn) => {
 console.log('\n🧪 Шүүлтийн логик (lib/locationData.js)\n');
 
 // ---- ① 🚗 Автомашин: ЗАГВАР + ХОЁР ОН ----
-t("getAttrFilters('auto') — 7 шүүлт (Үйлдвэрлэгч, Загвар, 2 он, хайрцаг, түлш, өнгө)", () => {
+t("getAttrFilters('auto') — 7 шүүлт (Үйлдвэрлэгч, Загвар, Өнгө, 2 он, хайрцаг, түлш)", () => {
   const keys = getAttrFilters('auto').map((f) => f.key);
   // 🎨 2026-10-01 (хэрэглэгчийн хүсэлт): 🔀 «Хөтлөгч» (`drive`) ХАСАГДАЖ,
   //    «Өнгө» (`color`) нэмэгдэв — ⚠️ `drive` буцаж ОРОХГҮЙ ✓
-  assert.deepEqual(keys, ['brand', 'model', 'year', 'importYear', 'transmission', 'fuel', 'color']);
+  //    ⚠️ 2026-10-01 (2) (хэрэглэгчийн хүсэлт): «Өнгө» нь «Загвар»-ын ЯГ
+  //       дараа — формтой ИЖИЛ дараалал (sidebar нь `attrFilters`-ийн
+  //       дарааллаар, форм нь `attrFields`-ийн дарааллаар зурагдана ✓)
+  assert.deepEqual(keys, ['brand', 'model', 'color', 'year', 'importYear', 'transmission', 'fuel']);
   assert.ok(!keys.includes('drive'));
 });
 
@@ -105,6 +108,18 @@ t('🔧 Картын мөр: хүрээний утга нэгжээ өөрөө �
   assert.equal(formatAttrsLine('auto', { engine: 'Цахилгаан (EV)' }), 'Цахилгаан (EV)');
 });
 
+t('🚗 Картын мөр: «Өнгө» нь толгойн (Загвар/он) ДАРАА, ГҮЙЛТИЙН ӨМНӨ (2026-10-01 (2))', () => {
+  const line = formatAttrsLine('auto', {
+    brand: 'Toyota', model: 'Prius', year: '2021', importYear: '2022', color: 'Цагаан',
+    mileage: '95200', transmission: 'Автомат', engine: '1.5л - 2.0л', fuel: 'Хайбрид',
+  });
+  // ⚠️ Толгой нь «брэнд + загвар + он» НЭГ хэсэг тул «Өнгө» нь толгойн
+  //    ДАРААХ эхний үзүүлэлт болно (`CARD_ATTR_ORDER.auto` — color нь model-ийн
+  //    дараа, year нь `skip`-д байдаг тул мөрөнд ДАХИН гарахгүй ✓)
+  assert.equal(line,
+    'Toyota Prius, 2021 · 🎨 Цагаан · 📥 2022 онд орж ирсэн · 95,200 км · ⚙️ Автомат · 1.5л - 2.0л · ⛽ Хайбрид');
+});
+
 t('🚙 Загвар нь ЧӨЛӨӨТ ТЕКСТ шүүлт (filterable, select БИШ)', () => {
   const f = getAttrFilters('auto').find((x) => x.key === 'model');
   assert.equal(f.type, 'text');
@@ -161,12 +176,17 @@ t('Шүүлтэд ороогүй талбар (mileage, engine) ГООЛДОХГ
   assert.ok(getAttrField('auto', 'engine'));
 });
 
-t('⚙️ ФОРМ-ын талбар дараалал: brand → model → year → importYear → mileage', () => {
+t('⚙️ ФОРМ-ын талбар дараалал: brand → model → color → year → importYear', () => {
   const sec = getSection('auto');
   assert.deepEqual(
     sec.attrFields.slice(0, 5).map((f) => f.key),
-    ['brand', 'model', 'year', 'importYear', 'mileage'],
+    ['brand', 'model', 'color', 'year', 'importYear'],
   );
+  // ⚠️ 2026-10-01 (2) (хэрэглэгчийн хүсэлт): 🎨 «Өнгө» нь 🚙 «Загвар»-ын ЯГ
+  //    дараа — форм нь `attrFields.map()`-ээр массивын дарааллаар ЗУРДАГ тул
+  //    массивыг өөрчлөхөд форм дээрх байршил автоматаар солигдоно ✓
+  const keys = sec.attrFields.map((f) => f.key);
+  assert.equal(keys.indexOf('color'), keys.indexOf('model') + 1);
 });
 
 // ---- ② 🚗 «Авто түрээслүүлнэ» дэд төрөл ----
