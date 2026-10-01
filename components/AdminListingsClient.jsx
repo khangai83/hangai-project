@@ -247,7 +247,6 @@ export default function AdminListingsClient() {
 
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-gray-600">
                   <span>📍 {[row.city, row.district, row.khoroo].filter(Boolean).join(', ') || '—'}</span>
-                  {row.address_detail && <span>🏠 {row.address_detail}</span>}
                   {row.rooms > 0 && <span>🛏 {row.rooms} өрөө</span>}
                   {row.bathrooms > 0 && <span>🚿 {row.bathrooms} угаалгын өрөө</span>}
                   {row.area > 0 && <span>📐 {row.area} м²</span>}

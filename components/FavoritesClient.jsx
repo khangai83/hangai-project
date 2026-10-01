@@ -26,7 +26,6 @@ function exportColumns(origin) {
     { label: 'Хот', value: (l) => l.city || '' },
     { label: 'Дүүрэг', value: (l) => l.district || '' },
     { label: 'Хороо', value: (l) => l.khoroo || '' },
-    { label: 'Хаяг', value: (l) => l.address_detail || '' },
     { label: 'Утас', value: (l) => l.phone || '' },
     { label: 'Нийтэлсэн', value: (l) => (l.created_at ? new Date(l.created_at).toLocaleDateString('mn-MN') : '') },
     { label: 'Холбоос', value: (l) => `${origin}/listings/${l.id}` },
