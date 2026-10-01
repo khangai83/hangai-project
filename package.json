@@ -18,6 +18,7 @@
     "test:filters": "node scripts/test-filters.mjs",
     "test:search": "node scripts/test-search.mjs",
     "test:rooms": "node scripts/test-rooms.mjs",
+    "test:breadcrumb": "node scripts/test-breadcrumb.mjs",
     "cdp:rooms": "node scripts/cdp-rooms.mjs",
     "cdp:range": "node scripts/cdp-range.mjs",
     "cdp:picker": "node scripts/cdp-picker.mjs",

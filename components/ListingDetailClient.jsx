@@ -176,6 +176,13 @@ export default function ListingDetailClient({ id }) {
   const typeLabel = getPropertyTypeLabel(listing.property_type, listing.category);
   const garageLabel = getGarageLabel(listing.has_garage);
   const isSell = listing.category === 'sell';
+  // ⚠️ «Зарах / Түрээслэх» badge, ₮/м², ипотекийн тооцоолуур нь ЗӨВХӨН
+  //    үл хөдлөхөд утга учиртай — бусад хэсэгт (авто/ажил/компьютер…)
+  //    ХАРАГДАХГҮЙ (`ListingCard.jsx` мөр 27-ийн ижил конвенц ✓).
+  //    ⚠️ Үл хөдлөхийн бус зард `category` нь DB-ийн default `sell` байдаг тул
+  //       зөвхөн `isSell`-ээр шалгавал машин зар дээр «Зарах» badge ба
+  //       ипотекийн тооцоолуур БУРУУ гарна ✗ (хэрэглэгчийн гомдол: 2026-10-01)
+  const isRealEstate = (listing.section || 'real-estate') === 'real-estate';
   const phoneDigits = String(listing.phone || '').replace(/^976/, '').replace(/^\+/, '');
   // ✉️ Ярианы гарчиг болгон хадгалах шошго (зар дээрх 1-р мөртэй ижил формат)
   const listingLabel = [typeLabel, address].filter(Boolean).join(', ');
@@ -207,9 +214,9 @@ export default function ListingDetailClient({ id }) {
     listing.build_year > 0 && { label: 'Ашиглалтанд орсон он', value: `${listing.build_year} Он` },
     listing.balconies > 0 && { label: 'Тагт', value: `${listing.balconies} Тагттай` },
     garageLabel && { label: 'Гараж', value: garageLabel },
-    // ₮/м² — үнэ ÷ талбай (зөвхөн «зарах» ба талбайтай үед). Үнэ харьцуулахад
-    // хамгийн хэрэгтэй үзүүлэлт тул шинж чанарын хүснэгтэд шууд харуулна.
-    isSell && listing.area > 0 && listing.price > 0 && {
+    // ₮/м² — үнэ ÷ талбай (зөвхөн «зарах» ба талбайтай ҮЛ ХӨДЛӨХӨД). Үнэ
+    // харьцуулахад хамгийн хэрэгтэй үзүүлэлт тул шинж чанарын хүснэгтэд шууд.
+    isRealEstate && isSell && listing.area > 0 && listing.price > 0 && {
       label: 'Үнэ / м²',
       value: `₮${formatPrice(Math.round(Number(listing.price) / Number(listing.area)))}`,
     },
@@ -242,11 +249,14 @@ export default function ListingDetailClient({ id }) {
              ДОР (доорх Gallery картын footer) байрлана. */}
       <header className="mb-5">
         <div className="mb-2 flex flex-wrap items-center gap-2">
-          <span className={`badge ${isSell ? 'badge-sell' : 'badge-rent'}`}>{getCategoryLabel(listing.category)}</span>
+          {/* ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд (`ListingCard`-ийн ижил) */}
+          {isRealEstate && (
+            <span className={`badge ${isSell ? 'badge-sell' : 'badge-rent'}`}>{getCategoryLabel(listing.category)}</span>
+          )}
           <span className="text-[13px] text-gray-400">ID: {listing.id}</span>
         </div>
         <h1 className="mb-1.5 text-2xl font-bold leading-snug text-gray-900 sm:text-[28px]">
-          {getPropertyIcon(listing.property_type)} {typeLabel}
+          {getPropertyIcon(listing.property_type, listing.section)} {typeLabel}
         </h1>
         {/* ===== 📍 БАЙРШИЛ (1-р мөр) + 📅 НИЙТЭЛСЭН (2-р мөр) =====
             ⚠️ Хаяг эхний мөрөнд, огноо нь ЯГ ДООРХ мөрөнд — хоёулаа ЗҮҮН тийш.
@@ -295,7 +305,7 @@ export default function ListingDetailClient({ id }) {
                 </>
               ) : (
                 <div className="flex h-[280px] w-full items-center justify-center bg-gray-100 text-7xl">
-                  {getPropertyIcon(listing.property_type)}
+                  {getPropertyIcon(listing.property_type, listing.section)}
                 </div>
               )}
             </div>
@@ -544,13 +554,14 @@ export default function ListingDetailClient({ id }) {
             <ReportListingModal listing={listing} />
           </div>
 
-          {/* ===== 🏦 ИПОТЕКИЙН ТООЦООЛУУР (зөвхөн «зарах» зарт) =====
+          {/* ===== 🏦 ИПОТЕКИЙН ТООЦООЛУУР (зөвхөн ҮЛ ХӨДЛӨХ «зарах» зарт) =====
               ⚠️ `details/summary` — ЭВХЭГДДЭГ ба **АНХДАГЧААР ХААЛТТАЙ**.
                  Хэрэглэгч өөрөө хүсвэл дарж нээнэ (opt-in).
                  ⚠️ УРЬД НЬ `open` атрибуттай байсан → байр үзэхээр ороход
                     тооцоолуур ШУУД БААГААД гарч ирдэг байв (хүчээр).
-                 ⚠️ Зээлийн тооцоолол зөвхөн «зарах» зарт утга учиртай. */}
-          {isSell && (
+                 ⚠️ Зээлийн тооцоолол зөвхөн үл хөдлөхийн «зарах» зарт утга
+                    учиртай — машин/ажлын зарт ГАРАХГҮЙ (`isRealEstate` ✓). */}
+          {isRealEstate && isSell && (
             <details className="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card">
               <summary className="flex cursor-pointer select-none list-none items-center justify-between gap-2 px-5 py-3.5 text-[14px] font-semibold text-gray-700 transition hover:bg-gray-50 hover:text-primary [&::-webkit-details-marker]:hidden">
                 <span>🏦 Ипотекийн тооцоолуур</span>
