@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useToast, useUI } from './AppProviders';
-import { createListing, updateListing, uploadImages } from '../lib/queries';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth, useToast, useUI } from './AppProviders';
+import { createListing, updateListing, uploadImages, fetchListingById } from '../lib/queries';
 import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, hasSimpleForm, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSubtypes, hasCategoryChoice, getSubtypeGroups, getAttrFields } from '../lib/locationData';
 import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice, isNegotiablePrice, NEGOTIABLE_PRICE_LABEL } from '../lib/format';
 import phoneEmail from '../lib/phoneEmail';
@@ -10,6 +12,36 @@ import YouTubeField from './YouTubeField';
 import SearchableSelect from './SearchableSelect';
 import { parseYouTube } from '../lib/youtube.mjs';
 import { compressImages, formatBytes } from '../lib/imageUtils';
+
+/**
+ * 🪜 «ЗАР НЭМЭХ» — ТУСДАА ХУУДАС (`/listings/new`) + АЛХАМТ ФОРМ (2026-10-01)
+ *
+ *  Хэрэглэгчийн хүсэлт: «бүх мэдээлэл оруулах талбарыг нэг дор харуулахгүй,
+ *  хэсэг хэсгээр ойлгомжтой харуулах» ба «хэрэглэгчид ХААНА ЯВААГАА мэдэгдүүлэх»
+ *  (unegui.mn / eBay загвар).
+ *
+ *  ⚠️ ӨМНӨ МОДАЛ байсан (`AddListingModal`) — одоо ТУСДАА ХУУДАС:
+ *     • «хаана явж байна» нь URL (`/listings/new?step=2`) + breadcrumb +
+ *       алхмын заагч (stepper) дээр ГУРВАНААС харагдана ✓
+ *     • refresh / линк хуваалцсан ч тухайн алхам дээр нээгдэнэ ✓
+ *     • засах горим: `/listings/new?edit=<id>` — зарыг id-аар татаж бөглөнө ✓
+ *     • мобайл доод цэс / header товч нь `openAdd()` → энэ хуудас руу шилжүүлнэ
+ *       (`AppProviders` → `router.push('/listings/new')`) ✓
+ *
+ *  ⚠️ Алхмууд нь ТОГТМОЛ 5 — хэсэг/дэд төрөл солигдоход тоо нь ХӨДӨЛӨХГҮЙ
+ *     (тиймээс `form`-оос хамаарахгүй). «Дэлгэрэнгүй» алхам дээр тухайн хэсэгт
+ *     тохирох талбарууд л харагдана; тохирох талбаргүй бол «Үргэлжлүүлэх»
+ *     дарж болно (алдаа ГАРАХГҮЙ ✓).
+ *  ⚠️ «Одоогийн алхам» нь URL-аас уншигдана (`step`), `setStep` гэж БАЙХГҮЙ ✓
+ *     Дууссан алхам дээр дарж ХОЙШ буцаж болно (зөвхөн `i < step`).
+ */
+const STEPS = [
+  { key: 'category', label: 'Ангилал',     short: 'Юу зарах вэ?' },
+  { key: 'details',  label: 'Дэлгэрэнгүй', short: 'Үндсэн үзүүлэлт' },
+  { key: 'location', label: 'Байршил',     short: 'Хаана байрлах вэ?' },
+  { key: 'price',    label: 'Үнэ',         short: 'Үнэ ба тайлбар' },
+  { key: 'media',    label: 'Зураг',       short: 'Зураг ба холбоо' },
+];
 
 /** Зарын DB мөр → форм (засах горимд) */
 function listingToForm(l) {
@@ -45,10 +77,28 @@ function listingToForm(l) {
   };
 }
 
-export default function AddListingModal({ open, onClose, userId, displayName, userPhone, editing }) {
+export default function AddListingClient() {
+  const { user, profileName, authLoading } = useAuth();
   const { showToast } = useToast();
-  const { notifyListingsChanged } = useUI();
+  const { openAuth, notifyListingsChanged } = useUI();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
+  // 🪜 URL-ААР УДИРДАНА: `/listings/new?step=2` (засах: `?edit=<id>`).
+  //    ⚠️ Ингэснээр «хаана явж байна» нь ХАЯГ дээр ч харагдана, refresh хийсэн ч,
+  //    линк хуваалцсан ч тухайн алхам дээр нээгдэнэ ✓ (модал байсан үеийн
+  //    хэрэглэгчид хаана байгаагаа мэдэхгүй байсан гол дутагдлыг зассан)
+  const editId = searchParams.get('edit') || '';
+  const stepRaw = Number(searchParams.get('step') || '1');
+  const step = Math.min(STEPS.length - 1, Math.max(0, (Number.isFinite(stepRaw) ? stepRaw : 1) - 1));
+
+  const userId = user ? user.id : null;
+  const displayName = profileName || (user && user.phone) || '';
+  const userPhone = (user && user.phone) || '';
+
+  // Засах горимд зарыг id-аар татна (шууд линк/refresh ч ажиллана)
+  const [editing, setEditing] = useState(null);
+  const [loadingEdit, setLoadingEdit] = useState(!!editId);
   const isEdit = !!(editing && editing.id);
 
   const emptyForm = () => ({
@@ -95,16 +145,47 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
   const [error, setError] = useState('');
   const baselineRef = useRef(''); // анхны төлөв (өөрчлөгдсөн эсэхийг шалгах)
 
+  // 🪜 Хуудас ачаалахад: нэвтэрсэн бол шинэ/засах формыг бэлдэнэ.
+  //    «Одоогийн алхам» нь URL-аас (`?step=`) уншигдана — энд `setStep` БАЙХГҮЙ ✓
   useEffect(() => {
-    if (!open) return;
-    const initial = isEdit ? listingToForm(editing) : emptyForm();
-    setForm(initial);
-    setPending([]);
-    setExistingImages(isEdit && Array.isArray(editing.images) ? editing.images : []);
-    setError('');
-    baselineRef.current = JSON.stringify(initial);
+    if (authLoading || !userId) return undefined;
+
+    if (!editId) {
+      const initial = emptyForm();
+      setEditing(null);
+      setForm(initial);
+      setPending([]);
+      setExistingImages([]);
+      setError('');
+      baselineRef.current = JSON.stringify(initial);
+      setLoadingEdit(false);
+      return undefined;
+    }
+
+    let mounted = true;
+    setLoadingEdit(true);
+    (async () => {
+      try {
+        const l = await fetchListingById(editId);
+        if (!mounted) return;
+        if (!l) { setError('Зар олдсонгүй эсвэл устгагдсан байна.'); return; }
+        if (l.user_id !== userId) { setError('Энэ зарыг засах эрх танд байхгүй.'); return; }
+        setEditing(l);
+        const initial = listingToForm(l);
+        setForm(initial);
+        setPending([]);
+        setExistingImages(Array.isArray(l.images) ? l.images : []);
+        setError('');
+        baselineRef.current = JSON.stringify(initial);
+      } catch (err) {
+        if (mounted) setError((err && err.message) || 'Зарыг татахад алдаа гарлаа');
+      } finally {
+        if (mounted) setLoadingEdit(false);
+      }
+    })();
+    return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, editing]);
+  }, [authLoading, userId, editId]);
 
   const originalImageCount = isEdit && Array.isArray(editing.images) ? editing.images.length : 0;
   const isDirty = () =>
@@ -113,15 +194,17 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
     existingImages.length !== originalImageCount;
 
   /**
-   * Цонх хаах. ⚠️ Гадна (хар дэвсгэр) дарж санамсаргүй хаагдаж, оруулсан
-   * мэдээлэл алдагдахаас сэргийлж: өөрчлөлт байвал баталгаажуулна.
+   * Хуудсаас гарах. ⚠️ Оруулсан мэдээлэл алдагдахаас сэргийлж: өөрчлөлт байвал
+   * баталгаажуулна. ⚠️ Модал байсан тул `onClose()` байсныг ОДОО NAVIGATION
+   * болгосон (`/my-listings` эсвэл нүүр хуудас) ✓
    */
-  const requestClose = () => {
+  const goHome = () => router.push(isEdit ? '/my-listings' : '/');
+  const requestCancel = () => {
     if (submitting) return;
     if (isDirty() && !window.confirm('Оруулсан мэдээлэл хадгалагдахгүй УСТАНА. Гарахдаа итгэлтэй байна уу?')) {
       return;
     }
-    onClose();
+    goHome();
   };
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
@@ -233,34 +316,98 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
 
   const removeImage = (idx) => setPending((p) => p.filter((_, i) => i !== idx));
 
+  /**
+   * 🪜 Тухайн алхмын шалгалт → алдааны мессеж (эсвэл '').
+   * ⚠️ «Үнэ» ба «Зураг» (media)-ийн шалгалт нь `handleSubmit`-ийн
+   *    ЕРӨНХИЙ шалгалттай ЯГ ИЖИЛ — давхардсан логик үлдээхгүйн тулд
+   *    хоёулаа ЭНЭ функцээр дамжина ✓
+   */
+  const validateStep = (i) => {
+    const key = (STEPS[i] || {}).key;
+    if (key === 'category') {
+      if (!form.propertyType) return 'Зарын төрлөө сонгоно уу';
+      return '';
+    }
+    if (key === 'location') {
+      if (!form.city) return 'Хот/Аймгаа сонгоно уу';
+      return '';
+    }
+    if (key === 'price') {
+      // ⚠️ Үнэ нь ЗӨВХӨН ЦИФР хэлбэрээр хадгалагдана (formatThousands нь зөвхөн
+      //    ХАРАГДАЦЫГ таслалтай болгоно). lib/queries.js → toNumber() нь «,»-г
+      //    аравтын бутархай гэж үздэг тул таслалтай утга илгээвэл үнэ 0 болно.
+      // ⚠️ Үнэ нь ЗААВАЛ БИШ (2026-09-29): «Үнэ тохирно» тэмдэглэсэн бол үнэ
+      //    огт шаардахгүй — карт/дэлгэрэнгүй дээр «Үнэ тохирно» харагдана
+      //    (lib/format.js). ⚠️ Хэрэглэгчийн шаардлага: «Үнэ тохирно»-г
+      //    ТЭМДЭГЛЭСЭН Ч үнэ бичсэн бол утга нь ХЭВЭЭР хадгалагдана ✓
+      const priceDigits = String(form.price || '').replace(/\D/g, '');
+      if (priceDigits) {
+        if (Number(priceDigits) <= 0) return 'Үнэ 0-ээс их байх ёстой';
+        if (priceDigits.length > 15) return 'Үнэ хэт урт байна (15 цифр хүртэл)';
+      } else if (!form.negotiable) {
+        return `Үнээ оруулна уу (эсвэл «${NEGOTIABLE_PRICE_LABEL}»-г тэмдэглэнэ үү)`;
+      }
+      // 🎥 Видео линк: хоосон бол зүгээр; бичсэн бол YouTube линк БАЙХ ЁСТОЙ
+      // (буруу линк хадгалагдвал дэлгэрэнгүй хуудас дээр видео харагдахгүй).
+      if (form.videoUrl && form.videoUrl.trim() && !parseYouTube(form.videoUrl).ok) {
+        return 'YouTube линк буруу байна. Жишээ: https://youtu.be/dQw4w9WgXcQ';
+      }
+      return '';
+    }
+    if (key === 'media') {
+      if (!form.phone) return 'Холбоо барих утас оруулна уу';
+      return '';
+    }
+    return '';
+  };
+
+  /** Бүх алхмаас ЭХНИЙ алдаатайг олно — `handleSubmit`-д хэрэглэнэ ✓ */
+  const firstInvalidStep = () => {
+    for (let i = 0; i < STEPS.length; i += 1) {
+      const msg = validateStep(i);
+      if (msg) return { index: i, msg };
+    }
+    return null;
+  };
+
+  /**
+   * 🪜 URL-ийн `?step=`-ийг солино (scroll-гүй). ⚠️ Алхам нь URL-д 1-based —
+   *    хэрэглэгчид «2/5» гэж ойлгомжтой, хаяг дээр ч тодорхой харагдана ✓
+   */
+  const gotoStep = (n) => {
+    const qs = new URLSearchParams();
+    if (editId) qs.set('edit', editId);
+    qs.set('step', String(n + 1));
+    router.replace(`/listings/new?${qs.toString()}`, { scroll: false });
+  };
+
+  /** 🪜 Дараагийн алхам — эхлээд ОДООГИЙН алхмаа шалгана */
+  const goNext = () => {
+    const msg = validateStep(step);
+    if (msg) { setError(msg); return; }
+    setError('');
+    gotoStep(Math.min(step + 1, STEPS.length - 1));
+  };
+
+  /** 🪜 Буцах — эхний алхамд байвал хуудсаас гарна (цуцлах) */
+  const goBack = () => {
+    if (submitting) return;
+    setError('');
+    if (step === 0) { requestCancel(); return; }
+    gotoStep(Math.max(step - 1, 0));
+  };
+
+  /** 🪜 Дууссан алхам руу ҮСРЭХ (зөвхөн хойш — `i < step`) */
+  const goToStep = (i) => {
+    if (i < step) { setError(''); gotoStep(i); }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!form.propertyType) { setError('Зарын төрлөө сонгоно уу'); return; }
-    if (!form.city) { setError('Хот/Аймгаа сонгоно уу'); return; }
-    // ⚠️ Үнэ нь ЗӨВХӨН ЦИФР хэлбэрээр хадгалагдана (formatThousands нь зөвхөн
-    //    ХАРАГДАЦЫГ таслалтай болгоно). quires.js → toNumber() нь «,»-г
-    //    аравтын бутархай гэж үздэг тул таслалтай утга илгээвэл үнэ 0 болно.
-    // ⚠️ Үнэ нь ЗААВАЛ БИШ (2026-09-29): «🤝 Үнэ тохирно» тэмдэглэсэн бол
-    //    үнэ огт шаардахгүй — карт/дэлгэрэнгүй дээр «Үнэ тохирно» харагдана
-    //    (lib/format.js). ⚠️ Хэрэглэгчийн шаардлага: «Үнэ тохирно»-г
-    //    ТЭМДЭГЛЭСЭН Ч үнэ бичсэн бол утга нь ХЭВЭЭР хадгалагдана ✓
-    //    Бичсэн бол хуучин шалгалтууд ХЭВЭЭР (0, 15+ орон).
-    const priceDigits = String(form.price || '').replace(/\D/g, '');
-    if (priceDigits) {
-      if (Number(priceDigits) <= 0) { setError('Үнэ 0-ээс их байх ёстой'); return; }
-      if (priceDigits.length > 15) { setError('Үнэ хэт урт байна (15 цифр хүртэл)'); return; }
-    } else if (!form.negotiable) {
-      setError(`Үнээ оруулна уу (эсвэл «${NEGOTIABLE_PRICE_LABEL}»-г тэмдэглэнэ үү)`);
-      return;
-    }
-    // 🎥 Видео линк: хоосон бол зүгээр; бичсэн бол YouTube линк БАЙХ ЁСТОЙ
-    // (буруу линк хадгалагдвал дэлгэрэнгүй хуудас дээр видео харагдахгүй).
-    if (form.videoUrl && form.videoUrl.trim() && !parseYouTube(form.videoUrl).ok) {
-      setError('YouTube линк буруу байна. Жишээ: https://youtu.be/dQw4w9WgXcQ');
-      return;
-    }
-    if (!form.phone) { setError('Холбоо барих утас оруулна уу'); return; }
+    // 🪜 Бүх алхмыг шалгана — алдаатай бол ТЭР алхам руу шилжиж, мессеж харуулна
+    const invalid = firstInvalidStep();
+    if (invalid) { setError(invalid.msg); gotoStep(invalid.index); return; }
 
     setSubmitting(true);
     try {
@@ -305,7 +452,7 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
 
       notifyListingsChanged();
       showToast(isEdit ? 'Зар амжилттай засагдлаа ✅' : 'Зар амжилттай нийтлэгдлээ ✅');
-      onClose();
+      router.push('/my-listings');
     } catch (err) {
       setError(err.message || (isEdit ? 'Зар засахад алдаа гарлаа' : 'Зар нэмэхэд алдаа гарлаа'));
     } finally {
@@ -313,27 +460,151 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
     }
   };
 
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-5" onClick={requestClose}>
-      <div
-        className="max-h-[90vh] w-full max-w-[760px] overflow-y-auto rounded-2xl bg-white shadow-card-hover"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-5">
-          <h2 className="text-xl font-semibold">{isEdit ? '✏️ Зарыг засах' : '➕ Зар нэмэх'}</h2>
-          <button
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-lg transition hover:bg-gray-200"
-            onClick={requestClose}
-            aria-label="Хаах"
-          >
-            ×
+  // ===== ⛔ ХАМГААЛАЛТ: ачаалж байна / нэвтрээгүй =====
+  if (authLoading) {
+    return (
+      <div className="page-container">
+        <div className="px-5 py-16 text-center">
+          <div className="spinner"></div>
+          <p>Ачаалж байна...</p>
+        </div>
+      </div>
+    );
+  }
+  if (!userId) {
+    return (
+      <div className="page-container">
+        <div className="mx-auto mt-6 max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-card">
+          <div className="mb-4 text-6xl">🔑</div>
+          <h1 className="text-xl font-semibold">Зар оруулахын тулд нэвтрэх шаардлагатай</h1>
+          <p className="mt-2 text-[13px] text-gray-500">
+            Утасны дугаараараа нэвтэрсний дараа зарыг үргэлжлүүлэн оруулна.
+          </p>
+          <button type="button" className="btn btn-primary btn-lg mt-6" onClick={openAuth}>
+            Нэвтрэх
           </button>
+          <div className="mt-4">
+            <Link href="/" className="text-[13px] font-semibold text-primary hover:underline">
+              ← Нүүр хуудас
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (loadingEdit) {
+    return (
+      <div className="page-container">
+        <div className="px-5 py-16 text-center">
+          <div className="spinner"></div>
+          <p>Зарыг ачаалж байна...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const currentStep = STEPS[step];
+
+  return (
+    <div className="page-container">
+      {/* 🧭 БАЙРШЛЫН ЗААЛТ (breadcrumb) — «хаана явж байна» */}
+      <nav aria-label="Breadcrumb" className="mb-4 flex flex-wrap items-center gap-1.5 text-[13px] text-gray-500">
+        <Link href="/" className="hover:text-primary hover:underline">Нүүр</Link>
+        <span className="text-gray-300">›</span>
+        {isEdit ? (
+          <>
+            <Link href="/my-listings" className="hover:text-primary hover:underline">Миний зарууд</Link>
+            <span className="text-gray-300">›</span>
+            <span className="font-semibold text-gray-800">Зарыг засах</span>
+          </>
+        ) : (
+          <>
+            <span>Зар нэмэх</span>
+            <span className="text-gray-300">›</span>
+            <span className="font-semibold text-gray-800">{step + 1}. {currentStep.label}</span>
+          </>
+        )}
+      </nav>
+
+      <div className="mx-auto w-full max-w-3xl">
+        <div className="section-card !p-0">
+          {/* Толгой + алхмын заагч — гүйлгэх үед дээгүүрээ наалдана (sticky) */}
+          <div className="sticky top-16 z-20 rounded-t-xl border-b border-gray-200 bg-white/95 backdrop-blur">
+            <div className="flex items-center justify-between px-6 py-5">
+              <div>
+                <h1 className="text-xl font-bold">{isEdit ? '✏️ Зарыг засах' : '➕ Зар нэмэх'}</h1>
+                <p className="mt-0.5 text-[12.5px] text-gray-500">
+                  {step + 1}/{STEPS.length} · {currentStep.label}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-lg transition hover:bg-gray-200"
+                onClick={requestCancel}
+                aria-label="Цуцлах"
+                title="Цуцлах"
+              >
+                ×
+              </button>
+            </div>
+
+          {/* 🪜 АЛХМЫН ЗААГЧ — дууссан алхам дээр дарж буцаж болно */}
+          <div className="px-4 pb-4 sm:px-6" aria-label="Зарын алхмууд">
+            <div className="flex items-start justify-between gap-1">
+              {STEPS.map((s, i) => {
+                const done = i < step;
+                const active = i === step;
+                return (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => goToStep(i)}
+                    disabled={!done}
+                    aria-current={active ? 'step' : undefined}
+                    className={`flex flex-1 flex-col items-center gap-1.5 ${done ? 'cursor-pointer' : 'cursor-default'}`}
+                  >
+                    <span
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] font-bold transition-all duration-150 ${
+                        done || active ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'
+                      } ${active ? 'ring-4 ring-primary-light' : ''}`}
+                    >
+                      {done ? '✓' : i + 1}
+                    </span>
+                    <span
+                      className={`text-center text-[10px] font-semibold leading-tight sm:text-[11px] ${
+                        active ? 'text-primary' : done ? 'text-gray-600' : 'text-gray-400'
+                      }`}
+                    >
+                      {s.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {/* Дэвшлийн зурвас */}
+            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-300"
+                style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
+              />
+            </div>
+          </div>
         </div>
         <div className="p-6">
           <form onSubmit={handleSubmit}>
             {error && <div className="mb-3 rounded-lg bg-red-50 p-2.5 text-red-800">{error}</div>}
 
+            {/* 🪜 Алхмын гарчиг — энэ алхамд юу асуухыг товч тайлбарлана */}
+            <div className="mb-4">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                {step + 1}/{STEPS.length}-р алхам
+              </p>
+              <h3 className="text-lg font-semibold text-gray-900">{STEPS[step].label}</h3>
+              <p className="text-[13px] text-gray-500">{STEPS[step].short}</p>
+            </div>
+
+            {/* ═══ 1-р алхам · АНГИЛАЛ (хэсэг · дэд төрөл · зарах/түрээслэх) ═══ */}
+            {step === 0 && (
             <div className="form-row">
               {/* ===== ХЭСЭГ (0016) — Автомашин / Ажлын зар / Компьютер … =====
                   ⚠️ Хэсэг солиход дэд төрөл (propertyType) ба attr утгууд нь
@@ -395,7 +666,18 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
               </div>
               )}
             </div>
+            )}
 
+            {/* ═══ 2-р алхам · ДЭЛГЭРЭНГҮЙ (үндсэн үзүүлэлт ба нэмэлт талбарууд) ═══ */}
+            {step === 1 && (
+            <>
+            {/* ⚠️ Энэ хэсэг/төрөлд тохирох нэмэлт талбар БАЙХГҮЙ бол
+                хэрэглэгчид ойлгуулна (ж: «Газар» төрөлд өрөө/давхар байхгүй) ✓ */}
+            {!(showRooms || showFloors || showApartment || showBathrooms || attrFields.length > 0) && (
+              <p className="mb-3 rounded-lg bg-gray-50 p-3 text-[13px] text-gray-500">
+                Энэ төрөлд нэмэлт талбар байхгүй — «Үргэлжлүүлэх» дээр дарна уу.
+              </p>
+            )}
             {/* ===== ХЭСГИЙН НЭМЭЛТ ТАЛБАРУУД (attrs jsonb, 0016) =====
                 ⚠️ Хэсэг тус бүрд өөр (Авто: брэнд/он/гүйлт/түлш; Ажил: компани/
                    цалин; Компьютер: дэд төрлөөс хамаарч — 💻 Notebook-ийн
@@ -580,7 +862,12 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                 </div>
               </div>
             )}
+            </>
+            )}
 
+            {/* ═══ 3-р алхам · БАЙРШИЛ (хот · дүүрэг · хороо · хаяг) ═══ */}
+            {step === 2 && (
+            <>
             <div className="form-row">
               <div className="form-group">
                 <label>Хот / Аймаг *</label>
@@ -615,7 +902,12 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
               </div>
             </div>
             )}
+            </>
+            )}
 
+            {/* ═══ 4-р алхам · ҮНЭ ба ТАЙЛБАР (үнэ · үнэ тохирно · тайлбар · видео) ═══ */}
+            {step === 3 && (
+            <>
             <div className="form-row">
               <div className="form-group">
                 <label>Үнэ </label>
@@ -691,7 +983,12 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                 </select>
               </div> */}
             </div>
+            </>
+            )}
 
+            {/* ═══ 5-р алхам · ЗУРАГ ба ХОЛБОО (утас · зураг) ═══ */}
+            {step === 4 && (
+            <>
             <div className="form-row">
               <div className="form-group">
                 <label>Холбоо барих утас *</label>
@@ -702,7 +999,12 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                 <input type="text" value={form.contactName} onChange={(e) => set('contactName', e.target.value)} placeholder="Таны нэр" />
               </div> */}
             </div>
+            </>
+            )}
 
+            {/* ═══ 4-р алхам (үргэлжлэл) · ТАЙЛБАР + видео ═══ */}
+            {step === 3 && (
+            <>
             <div className="form-group">
               <label>Нэмэлт тайлбар</label>
               <textarea rows="4" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Зарын дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..." />
@@ -712,7 +1014,12 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                 ⚡ ХЯЛБАР ФОРМ (hobby) дээр ХАРАГДАХГҮЙ — хэрэглэгчийн хүсэлт:
                 зөвхөн байршил · шинэ/хуучин · үнэ · утас · тайлбар. */}
             {!simpleForm && <YouTubeField value={form.videoUrl} onChange={(v) => set('videoUrl', v)} />}
+            </>
+            )}
 
+            {/* ═══ 5-р алхам (үргэлжлэл) · ЗУРАГ — одоогийн ба шинэ зураг ═══ */}
+            {step === 4 && (
+            <>
             {isEdit && existingImages.length > 0 && (
               <div className="form-group">
                 <label>Одоогийн зурагнууд ({existingImages.length})</label>
@@ -790,15 +1097,35 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                 </div>
               )}
             </div>
+            </>
+            )}
 
-            <button type="submit" className="btn btn-primary btn-lg mt-4 w-full" disabled={submitting || compressing}>
-              {compressing
-                ? '🗜 Зургуудыг шахаж байна...'
-                : submitting
-                  ? isEdit ? 'Хадгалж байна...' : 'Нийтэлж байна...'
-                  : isEdit ? '💾 Өөрчлөлтийг хадгалах' : '✅ Зар нийтлэх'}
-            </button>
+            {/* 🪜 АЛХМЫН НАВИГАЦ — Буцах / Үргэлжлүүлэх / Нийтлэх */}
+            <div className="mt-6 flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
+              <button
+                type="button"
+                onClick={goBack}
+                className="btn btn-ghost"
+                disabled={submitting || compressing}
+              >
+                {step === 0 ? 'Цуцлах' : '← Буцах'}
+              </button>
+              {step < STEPS.length - 1 ? (
+                <button type="button" onClick={goNext} className="btn btn-primary btn-lg">
+                  Үргэлжлүүлэх →
+                </button>
+              ) : (
+                <button type="submit" className="btn btn-primary btn-lg" disabled={submitting || compressing}>
+                  {compressing
+                    ? '🗜 Зургуудыг шахаж байна...'
+                    : submitting
+                      ? isEdit ? 'Хадгалж байна...' : 'Нийтэлж байна...'
+                      : isEdit ? '💾 Өөрчлөлтийг хадгалах' : '✅ Зар нийтлэх'}
+                </button>
+              )}
+            </div>
           </form>
+          </div>
         </div>
       </div>
     </div>

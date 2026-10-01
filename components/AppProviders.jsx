@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { getSupabase } from '../lib/supabaseClient';
 import { fetchProfile, upsertProfile } from '../lib/queries';
 import { normalizePhone } from '../lib/format';
@@ -12,7 +12,6 @@ import { useUnreadMessages } from '../lib/messagesClient';
 import phoneEmail from '../lib/phoneEmail';
 import AuthModal from './AuthModal';
 import ProfileModal from './ProfileModal';
-import AddListingModal from './AddListingModal';
 import MessageIcon from './MessageIcon';
 
 /** Supabase-ийн user → '+976XXXXXXXX' (эсвэл null).
@@ -62,8 +61,8 @@ export default function AppProviders({ children }) {
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
   const [authOpen, setAuthOpen] = useState(false);
-  const [addOpen, setAddOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState(null); // засах горимд зарын объект
+  // 🪜 «Зар нэмэх / засах» нь ОДОО ТУСДАА ХУУДАС (`/listings/new`) — модал
+  //    төлөв (`addOpen`/`editTarget`) ХҮЧИНГҮЙ болсон тул ХАСАГДАВ ✓
   const favoriteIds = useFavorites(); // ❤️ таалагдсан зарууд (localStorage)
   // ✉️ Уншаагүй мессежийн тоо — nav-ийн badge (60с тутам + focus/event дээр ✓)
   //    ⚠️ Миграц (0020) ороогүй бол `0` — апп эвдрэхгүй ✓ (queries.js-ийн graceful)
@@ -80,6 +79,7 @@ export default function AppProviders({ children }) {
   //       БҮРД дахин рендер хийгдэж, «pill» зөв таб руу шууд шилжинэ ✓
   //       (бүтэн хуудас дахин ачаалагдахгүй — Layout нь хэвээр үлдэнэ ✓)
   const pathname = usePathname();
+  const router = useRouter();
 
   const sb = getSupabase();
 
@@ -176,18 +176,20 @@ export default function AppProviders({ children }) {
     showToast('Амжилттай гарлаа');
   }, [showToast]);
 
-  const openAuth = useCallback(() => { setAddOpen(false); setAuthOpen(true); }, []);
+  const openAuth = useCallback(() => setAuthOpen(true), []);
   const closeAuth = useCallback(() => setAuthOpen(false), []);
+  // 🪜 «Зар нэмэх» нь ОДОО ТУСДАА ХУУДАС (`/listings/new`) — модал БИШ.
+  //    ⚠️ Ингэснээр хэрэглэгч хаана явж байгаа нь URL + breadcrumb + алхмаар
+  //    тодорхой харагдана ✓ (модал дотор байсан үед мэдэгдэхгүй байв)
   const openAdd = useCallback(() => {
     if (!user) { showToast('Эхлээд нэвтрэх шаардлагатай', 'error'); setAuthOpen(true); return; }
-    setAuthOpen(false); setEditTarget(null); setAddOpen(true);
-  }, [user, showToast]);
-  // Засах горим: ижил цонх, гэхдээ утгууд урьдчилан бөглөгдөнө
+    router.push('/listings/new');
+  }, [user, showToast, router]);
+  // Засах горим: ижил хуудас, гэхдээ `?edit=<id>` — утгууд урьдчилан бөглөгдөнө
   const openEdit = useCallback((listing) => {
     if (!user) { showToast('Эхлээд нэвтрэх шаардлагатай', 'error'); setAuthOpen(true); return; }
-    setAuthOpen(false); setEditTarget(listing); setAddOpen(true);
-  }, [user, showToast]);
-  const closeAdd = useCallback(() => { setAddOpen(false); setEditTarget(null); }, []);
+    if (listing && listing.id) router.push(`/listings/new?edit=${listing.id}`);
+  }, [user, showToast, router]);
   const notifyListingsChanged = useCallback(() => setDataVersion((v) => v + 1), []);
 
   // ---------- 👤 ХЭРЭГЛЭГЧИЙН ЦЭСНИЙ ЗҮЙЛС (нэг эх сурвалж) ----------
@@ -250,8 +252,8 @@ export default function AppProviders({ children }) {
     [user, profileName, authLoading, signIn, saveName, logout]);
   const toastValue = useMemo(() => ({ showToast }), [showToast]);
   const uiValue = useMemo(
-    () => ({ openAuth, openAdd, openEdit, closeAdd, dataVersion, notifyListingsChanged }),
-    [openAuth, openAdd, openEdit, closeAdd, dataVersion, notifyListingsChanged]
+    () => ({ openAuth, openAdd, openEdit, dataVersion, notifyListingsChanged }),
+    [openAuth, openAdd, openEdit, dataVersion, notifyListingsChanged]
   );
 
   const displayName = profileName || user?.phone || '';
@@ -454,9 +456,9 @@ export default function AppProviders({ children }) {
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
             {/* ① ЗҮҮН ДООД — ➕ Зар нэмэх (ГОЛ үйлдэл → үргэлж брэнд өнгө ✓)
-                ⚠️ `addOpen` үед таб нь «pill»-тэй болно — Facebook-д таб нь
-                   нээгдсэн панелийнхээ турш тодорхой харагддагтай ИЖИЛ ✓ */}
-            <MobileNavItem onClick={openAdd} icon="➕" label="Зар нэмэх" active={addOpen} accent />
+                ⚠️ `/listings/new` зам дээр таб нь «pill»-тэй болно (`isActive`) —
+                   Facebook-д таб нь нээгдсэн хуудсандаа тодорхой харагддагтай ИЖИЛ ✓ */}
+            <MobileNavItem onClick={openAdd} icon="➕" label="Зар нэмэх" active={isActive('/listings/new')} accent />
 
             {/* ② — ❤️ Таалагдсан (`/favorites` дээр pill + тоолууртай ✓) */}
             <MobileNavItem
@@ -551,14 +553,7 @@ export default function AppProviders({ children }) {
           {/* ===== MODALS & TOAST ===== */}
           <AuthModal open={authOpen} onClose={closeAuth} />
           <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
-          <AddListingModal
-            open={addOpen}
-            onClose={closeAdd}
-            userId={user?.id || null}
-            displayName={displayName}
-            userPhone={user?.phone || ''}
-            editing={editTarget}
-          />
+          {/* 🪜 «Зар нэмэх / засах» нь тусдаа хуудас (`/listings/new`) — модал БАЙХГҮЙ ✓ */}
 
           {toast && (
             <div
