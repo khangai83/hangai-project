@@ -755,7 +755,7 @@ export default function AddListingClient() {
                 onPick={pickSection}
                 className="bg-white"
               />
-              {/* ② «Зарах / Түрээслэх» (зөвхөн үл хөдлөх) эсвэл БҮЛЭГ эсвэл дэд төрөл */}
+              {/* ② «Зарах / Түрээслэх» (зөвхөн үл хөдлөх) эсвэл Дэд бүлэг эсвэл Төрөл */}
               <PickerColumn
                 pickRole="level2"
                 title={level2Title}
@@ -767,7 +767,7 @@ export default function AddListingClient() {
                 className="bg-white"
               />
               {/* ③ LEAF ТӨРӨЛ — хавтгай хэсэгт ГАРАХГҮЙ (2 багана) ✓
-                  ⚠️ Толгойн улаан зурвас ГАРАХГҮЙ (unegui.mn-тэй ижил) — сонгосон
+                  ⚠️ Толгойн цэнхэр зурвас ГАРАХГҮЙ (unegui.mn-тэй ижил) — сонгосон
                      зам нь доорх «Сонгосон: …» мөрөнд бүтнээр харагдана ✓ */}
               {hasThirdColumn && (
                 <PickerColumn
