@@ -569,10 +569,6 @@ export default function AddListingClient() {
     gotoStep(Math.max(step - 1, 0));
   };
 
-  /** 🪜 Дууссан алхам руу ҮСРЭХ (зөвхөн хойш — `i < step`) */
-  const goToStep = (i) => {
-    if (i < step) { setError(''); gotoStep(i); }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -700,76 +696,22 @@ export default function AddListingClient() {
 
       <div className="mx-auto w-full max-w-3xl">
         <div className="section-card !p-0">
-          {/* Толгой + алхмын заагч — гүйлгэх үед дээгүүрээ наалдана (sticky) */}
-          <div className="sticky top-16 z-20 rounded-t-xl border-b border-gray-200 bg-white/95 backdrop-blur">
-            <div className="flex items-center justify-between px-6 py-5">
-              <div>
-                <h1 className="text-xl font-bold">{isEdit ? '✏️ Зарыг засах' : '➕ Зар нэмэх'}</h1>
-                <p className="mt-0.5 text-[12.5px] text-gray-500">
-                  {step + 1}/{STEPS.length} · {currentStep.label}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-lg transition hover:bg-gray-200"
-                onClick={requestCancel}
-                aria-label="Цуцлах"
-                title="Цуцлах"
-              >
-                ×
-              </button>
-            </div>
-
-          {/* 🪜 АЛХМЫН ТАБУУД — «Ангилал · Дэлгэрэнгүй · Байршил · Үнэ · Зураг» нь
-              хуудасны ДЭЭД ХЭСЭГТ дандаа харагдана (2026-10-01, хэрэглэгчийн
-              хүсэлт: «дээр нь ангилал, дэлгэрэнгүй, байршил … харуул» — unegui.mn
-              загвар). ⚠️ Дууссан алхам дээр ДАРЖ БУЦАЖ болно (`goToStep`, зөвхөн
-              `i < step`) — дараагийн алхам руу ҮСРЭХГҮЙ (дутуу мэдээллээр
-              нийтлэхээс сэргийлнэ ✓) */}
-          <div aria-label="Зарын алхмууд" role="tablist" className="flex items-stretch gap-0.5 overflow-x-auto px-1.5 sm:px-3">
-            {STEPS.map((s, i) => {
-              const done = i < step;
-              const active = i === step;
-              return (
-                <button
-                  key={s.key}
-                  type="button"
-                  role="tab"
-                  data-step-tab={s.key}
-                  aria-selected={active}
-                  onClick={() => goToStep(i)}
-                  disabled={!done}
-                  title={s.short}
-                  className={`shrink-0 whitespace-nowrap border-b-2 px-1.5 pb-2 pt-1 text-[11px] font-semibold transition sm:px-3 sm:text-[12.5px] ${
-                    active
-                      ? 'border-primary text-primary'
-                      : done
-                        ? 'border-transparent text-gray-600 hover:border-gray-300 hover:text-primary'
-                        : 'border-transparent text-gray-400'
-                  }`}
-                >
-                  <span className="mr-0.5 text-[10px] sm:mr-1 sm:text-[11px]">
-                    {done ? '✓' : <span className="hidden sm:inline">{`${i + 1}.`}</span>}
-                  </span>
-                  {s.label}
-                </button>
-              );
-            })}
-          </div>
-          {/* Дэвшлийн зурвас */}
-          <div className="h-1.5 w-full bg-gray-100">
-            <div
-              className="h-full bg-primary transition-all duration-300"
-              style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
-            />
-          </div>
-        </div>
+          {/* ⚠️ 2026-10-01 (хэрэглэгчийн хүсэлт «Зар нэмэхэд энийг харуулахгүй»):
+              ДЭЭД ТОЛГОЙ БҮХЭЛДЭЭ ХАСАГДАВ — «➕ Зар нэмэх» гарчиг · «1/5 · …»
+              заагч · 5 АЛХМЫН ТАБ · дэвшлийн цэнхэр зурвас. ⚠️ `goToStep` ч
+              хасагдсан (табуудгүй бол ашиглагдахгүй → eslint no-unused-vars ✗).
+              ℹ️ Алхам нь одоо ① дээд breadcrumb (`{step + 1}. {label}`) ба
+                 ② доорх `[data-step-heading]` («1/5-Р АЛХАМ · Ангилал»)
+                 гарчигаар харагдана. Навигаци: «← Буцах» (нэг алхам) /
+                 0-р алхам дээр «Цуцлах» ✓ */}
         <div className="p-6">
           <form onSubmit={handleSubmit}>
             {error && <div className="mb-3 rounded-lg bg-red-50 p-2.5 text-red-800">{error}</div>}
 
-            {/* 🪜 Алхмын гарчиг — энэ алхамд юу асуухыг товч тайлбарлана */}
-            <div className="mb-4">
+            {/* 🪜 Алхмын гарчиг — энэ алхамд юу асуухыг товч тайлбарлана
+                ⚠️ `data-step-heading` — CDP тестийн тогтвортой selector ✓ (толгойн
+                   табууд 2026-10-01-нд хасагдсан тул одоогийн алхмыг ЭНДЭЭС уншина) */}
+            <div data-step-heading className="mb-4">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
                 {step + 1}/{STEPS.length}-р алхам
               </p>

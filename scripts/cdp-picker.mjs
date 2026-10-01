@@ -1,6 +1,11 @@
 /**
  * 🗂 CDP ШАЛГАЛТ — «ЗАР НЭМЭХ» → 1-Р АЛХАМ: 3 БАГАНАТ «Категорио сонгоно уу»
- *    + ДЭЭД ХЭСГИЙН АЛХМЫН ТАБУУД (2026-10-01)
+ * ⚠️ 2026-10-01 (хэрэглэгчийн хүсэлт «Зар нэмэхэд энийг харуулахгүй»): ДЭЭД ТОЛГОЙ
+ *    (➕ Зар нэмэх · «1/5 · …» заагч · 5 АЛХМЫН ТАБ · дэвшлийн зурвас)
+ *    `AddListingClient.jsx`-ээс БҮХЭЛДЭЭ ХАСАГДАВ → энэ скрипт одоо:
+ *    ⓐ `role="tablist"` (алхмын таб) **0** байхыг шалгана
+ *    ⓑ одоогийн алхмыг `[data-step-heading]`-ээс уншина
+ *    ⓒ алхам солихдоо `?step=N` руу URL-аар шилжинэ (`gotoStepUrl`) ✓
  *
  * Хэрэглэгчийн хүсэлт: «Эхний хэсгийг ийм болго» (`unegui.mn/post_ad/`) —
  *   ① 1-р алхам нь 3 БАГАНАТ сонголт (Хэсэг → «Зарах/Түрээслэх»/БҮЛЭГ → Дэд төрөл)
@@ -12,7 +17,8 @@
  *   ③ ХАВТГАЙ хэсэг (🚗 auto) → багана 3 АРИЛНА (2 багана) + хуучин сонголт цэвэрлэгдэнэ
  *   ④ БҮЛЭГТЭЙ хэсэг (💻 computers) → 9 бүлэг, «Notebook» → 22 брэнд (3 багана)
  *   ⑤ ДООД ТҮВШИНГҮЙ бүлэг (💻 Чихэвч) нь ӨӨРӨӨ leaf болж хадгалагдана
- *   ⑥ Алхмын табууд: 5 таб, идэвхтэй нь `aria-selected`, дууссан дээр дарж буцна
+ *   ⑥ Толгойн АЛХМЫН ТАБ ГАРАХГҮЙ (0 `role="tab"`) + «Үргэлжлүүлэх» → 2-р алхам
+ *      (`[data-step-heading]` = «Дэлгэрэнгүй» + URL `?step=2`) ✓
  *   ⑦ 🔎 ДҮРС ТЕКСТЭЭС ХҮРЭХГҮЙ — 🏷️ Үйлдвэрлэгчийн `combo`/текст талбарт
  *      (`!pl-9` = 36px, зай ≥ 6px) + ✕ товч (`!pr-10`) + sidebar-ийн 2 талбар
  *   ⑧ JS exception / `console.error` 0 (сүлжээний 401 нь Supabase session — тооцохгүй)
@@ -29,7 +35,7 @@
  *
  *  ⚠️ Тогтвортой selector-ууд (`AddListingClient.jsx` дотор):
  *     `[data-picker="section|level2|level3"]` · `button[data-picker-value="…"]`
- *     `[data-picker-summary]` · `[data-step-tab="…"]` ✓
+ *     `[data-picker-summary]` · `[data-step-heading]` ✓
  */
 const BASE = process.argv[2] || 'http://localhost:3000';
 const CDP = `http://127.0.0.1:${process.env.CDP_PORT || 9222}`;
@@ -111,8 +117,11 @@ const PROBE = `(() => {
   return {
     gate: document.body.innerText.includes('нэвтрэх шаардлагатай'),
     title: document.body.innerText.includes('Категорио сонгоно уу'),
+    // ⚠️ 2026-10-01: толгойн АЛХМЫН ТАБУУД хасагдсан → одоогийн алхмыг
+    //    [data-step-heading] («1/5-Р АЛХАМ · Ангилал»)-ээс уншина ✓
+    stepHeading: (document.querySelector('[data-step-heading] h3') || {}).innerText || '',
+    stepIndex: (document.querySelector('[data-step-heading] p') || {}).innerText || '',
     tabs: [...document.querySelectorAll('[role="tablist"] [role="tab"]')].map((b) => (b.innerText || '').trim()),
-    activeTab: (document.querySelector('[role="tab"][aria-selected="true"]') || {}).innerText || '',
     summary: (document.querySelector('[data-picker-summary]') || {}).innerText || '',
     colCount: document.querySelectorAll('[data-picker]').length,
     cols,
@@ -125,16 +134,25 @@ const click = async (sel) => {
   await wait(350);
   return res;
 };
+/**
+ * 🪜 Алхмыг URL-аар солих — ⚠️ 2026-10-01-нд толгойн АЛХМЫН ТАБУУД хасагдсан
+ *    тул `[data-step-tab="…"]` дарах боломжгүй болсон → `?step=N` руу шууд
+ *    шилжинэ (бүтэн ачаалал тул форм цэвэрлэгдэнэ — дараа нь дахин сонгоно ✓)
+ */
+const gotoStepUrl = async (n) => {
+  await evaluate(`location.href = ${JSON.stringify(`${BASE}/listings/new?step=${n}`)}`);
+  await wait(3000);
+};
 
 
 console.log('\n── ① НЭВТЭРСЭН ТӨЛӨВ + АНХДАГЧ (🏠 Үл хөдлөх) ──');
 const p0 = await probe();
 ok('нэвтрэх хаалт ГАРАХГҮЙ (session ажиллаж байна)', p0.gate === false);
 ok('«Категорио сонгоно уу» гарчиг байна', p0.title === true);
-ok('дээд хэсэгт 5 АЛХМЫН ТАБ байна',
-  p0.tabs.length === 5 && p0.tabs.join('|').includes('Ангилал') && p0.tabs.join('|').includes('Байршил'),
-  JSON.stringify(p0.tabs));
-ok('1-р таб идэвхтэй (Ангилал)', String(p0.activeTab).includes('Ангилал'), JSON.stringify(p0.activeTab));
+ok('дээд хэсэгт АЛХМЫН ТАБ ГАРАХГҮЙ (2026-10-01-нд хасагдсан ✓)', p0.tabs.length === 0, JSON.stringify(p0.tabs));
+ok('1-р алхам: «1/5-Р АЛХАМ · Ангилал» (`[data-step-heading]`)',
+  String(p0.stepHeading).includes('Ангилал') && String(p0.stepIndex).includes('1/5'),
+  JSON.stringify([p0.stepIndex, p0.stepHeading]));
 ok('3 багана харагдаж байна (Үл хөдлөх)', p0.colCount === 3, `colCount=${p0.colCount}`);
 ok('багана 1: 12 ХЭСЭГ', p0.cols.section?.items.length === 12, String(p0.cols.section?.items.length));
 ok('багана 1 толгой = «🏠 Үл хөдлөх»', (p0.cols.section?.title || '').includes('Үл хөдлөх'), p0.cols.section?.title);
@@ -191,14 +209,16 @@ ok('дүгнэлтэд «Чихэвч» (бүлэг=leaf) 1 УДАА — дав�
   (p8.summary || '').includes('Чихэвч') && !(p8.summary || '').includes('Apple')
   && (p8.summary || '').split('Чихэвч').length - 1 === 1, p8.summary);
 
-console.log('\n── ⑥ АЛХМЫН ТАБУУД + ДАРААГИЙН АЛХАМ ──');
+console.log('\n── ⑥ АЛХМЫН ТАБ ХАСАГДСАН + ДАРААГИЙН АЛХАМ ──');
 await click('[data-picker="section"] button[data-picker-value="real-estate"]');
 await click('[data-picker="level3"] button[data-picker-value="Орон сууц"]');
 const plusOk = await evaluate(`(() => { const b = [...document.querySelectorAll('form button')].find((x) => (x.innerText||'').includes('Үргэлжлүүлэх')); if (!b) return 'NOT_FOUND'; b.click(); return 'OK'; })()`);
 await wait(700);
 const p9 = await probe();
 ok('«Үргэлжлүүлэх» товч ажилласан', plusOk === 'OK', plusOk);
-ok('2-Р АЛХАМ руу шилжив (Дэлгэрэнгүй идэвхтэй)', String(p9.activeTab).includes('Дэлгэрэнгүй'), JSON.stringify(p9.activeTab));
+ok('2-Р АЛХАМ руу шилжив (гарчиг = «Дэлгэрэнгүй»)',
+  String(p9.stepHeading).includes('Дэлгэрэнгүй'),
+  JSON.stringify([p9.stepIndex, p9.stepHeading]));
 const search = await evaluate('location.search');
 ok('URL нь `?step=2` болов', String(search).includes('step=2'), search);
 
@@ -244,7 +264,8 @@ const ICON_PROBE = `(() => {
 })()`;
 
 // 🚗 Автомашин → Суудлын машин → 2-Р АЛХАМ (Үйлдвэрлэгч тэнд байна)
-await click('[data-step-tab="category"]');
+// ⚠️ Табууд хасагдсан → 1-р алхам руу URL-аар буцна (`?step=1`)
+await gotoStepUrl(1);
 await click('[data-picker="section"] button[data-picker-value="auto"]');
 await waitForSel('[data-picker="level2"] button[data-picker-value="Суудлын машин"]');
 await click('[data-picker="level2"] button[data-picker-value="Суудлын машин"]');
