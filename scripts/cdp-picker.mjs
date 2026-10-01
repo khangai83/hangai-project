@@ -31,7 +31,7 @@
  *       (⚠️ өмнө нь дээд хэсэгт «Ангилал · Дэлгэрэнгүй · Байршил · Үнэ · Зураг»
  *          табууд байсан — 2026-10-01-нд ХАСАГДАВ ✓)
  *
- * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (65 шалгалт):
+ * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (70 шалгалт):
  *   ① Үл хөдлөх: 3 багана (12 хэсэг · sell/rent · 8 төрөл)
  *      ⚠️ 2026-10-01 (**4 дэх засвар**): баганын ДЭЭД ТОЛГОЙ (`[data-picker-title]`)
  *      БҮХЭЛДЭЭ ХАСАГДАВ (сонгосон утга нь доорх мөртэй давхардаж байв ✗) →
@@ -58,6 +58,10 @@
  *      (`!pl-9` = 36px, зай ≥ 6px) + ✕ товч (`!pr-10`) + sidebar-ийн 2 талбар
  *      ⚠️ «🏷️ Үйлдвэрлэгч» нь 3-р алхамд (хуучнаар 2-р) → `clickNext()` ХОЁР УДАА ✓
  *   ⑧ JS exception / `console.error` 0 (сүлжээний 401 нь Supabase session — тооцохгүй)
+ *   ⑨ 🆕 **3-Р АЛХАМ (📋 Дэлгэрэнгүй) — ТАЛБАРУУД ЦУВАА = 1 БАГАНА**
+ *      (2026-10-01, 5 дахь засвар): мөр бүр `.form-row-single` +
+ *      `[data-form-row="details"]` → grid track **ЯГ 1**, хүүхдүүд ИЖИЛ x-т
+ *      (зэрэг БИШ), талбар бүр мөрийнхөө БҮТЭН өргөнийг эзэлнэ; 📱 390px дээр ч ✓
  *
  * ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
  *   1) сервер http://localhost:3000 (`npm run dev` эсвэл `npm run build && npm run start`)
@@ -193,6 +197,31 @@ const PROBE = `(() => {
     // ⚠️ 2026-10-01 (4 дэх засвар): баганын ДЭЭД ЦЭНХЭР ТОЛГОЙ БҮХЭЛДЭЭ
     //    ХАСАГДСАН (сонгосон утгатай давхардаж байв ✗) → DOM-д ЯГ 0 байх ёстой ✓
     pickerTitles: document.querySelectorAll('[data-picker-title]').length,
+    /**
+     * 🆕 2026-10-01 (**5 дахь засвар**, хэрэглэгчийн хүсэлт: «Дэлгэрэнгүй хэсгийн
+     *    мэдээллийг оруулах хэсгийг ЦУВАА буюу 1 БАГАНА болго») → 3-Р АЛХМЫН
+     *    (📋 Дэлгэрэнгүй) мөр БҮР нь [data-form-row="details"] атрибуттай
+     *    (.form-row-single, globals.css) болов. Инвариантууд:
+     *      ① cols = grid track-ийн ТОО → ЯГ 1 (.form-row-ийн sm:grid-cols-2
+     *         байсан үед 2 байв ✗)
+     *      ② stacked = хүүхдүүд НЭГ x-т (зүүн ирмэг) → зэрэг БИШ, ЦУВАА ✓
+     *      ③ full = хүүхэд бүр мөрийнхөө БҮТЭН өргөнийг эзэлнэ (хагас биш ✓)
+     *    ⚠️ Энэ template literal дотор backtick / долларын буржгар хаалт БИЧИХГҮЙ
+     */
+    detailsRows: [...document.querySelectorAll('[data-form-row="details"]')].map((r) => {
+      const rr = r.getBoundingClientRect();
+      const kids = [...r.children].map((c) => {
+        const k = c.getBoundingClientRect();
+        return { x: +k.left.toFixed(1), w: +k.width.toFixed(1) };
+      });
+      return {
+        cols: getComputedStyle(r).gridTemplateColumns.split(' ').filter(Boolean).length,
+        rowW: +rr.width.toFixed(1),
+        kids: kids.length,
+        stacked: kids.length < 2 || kids.every((k) => Math.abs(k.x - kids[0].x) <= 1),
+        full: kids.length === 0 || kids.every((k) => Math.abs(k.w - rr.width) <= 1),
+      };
+    }),
     cols,
   };
 })()`;
@@ -395,6 +424,41 @@ ok('3-Р АЛХАМ руу шилжив (breadcrumb = «3. Дэлгэрэнгү�
   JSON.stringify(p13.stepLabel));
 const search3 = await evaluate('location.search');
 ok('URL нь `?step=3` болов', String(search3).includes('step=3'), search3);
+
+console.log('\n── ⑥‴ 3-Р АЛХАМ (📋 Дэлгэрэнгүй): ТАЛБАРУУД ЦУВАА = 1 БАГАНА ──');
+/**
+ * ⚠️ 2026-10-01 (**5 дахь засвар**, хэрэглэгчийн хүсэлт): «Дэлгэрэнгүй хэсгийн
+ *    мэдээллийг оруулах хэсгийг ЦУВАА буюу 1 БАГАНА болго» → 3-р алхмын мөр
+ *    бүр `[data-form-row="details"]` (`.form-row-single`, globals.css) болов
+ *    (`sm:grid-cols-2` БҮРЭН ХАСАГДАВ) тул 1440px дээр Ч талбарууд ЦУВАА ✓
+ *    өмнө нь «Өрөө | Талбай», «Ашиглалтанд орсон он | Барилгын нийт давхар»
+ *    зэрэг мөрүүд `sm`-ээс хойш ХОЁР багана болж ЗЭРЭГ харагдаж байв ✗
+ *    ℹ️ Хэмжилт нь CSS-ийг БОДИТООР уншина: ① grid track-ийн тоо (ЯГ 1)
+ *    ② хүүхдүүдийн x (ижил = зэрэг БИШ) ③ өргөн (мөрийнхөө бүтэн өргөн)
+ *    ⇒ класс/стиль өөрчлөгдсөн ч зөрчил баригдана ✓
+ */
+const dr = p13.detailsRows || [];
+ok('3-Р АЛХАМ: мөр бүр ЦУВАА — grid track ЯГ 1 (2 багана биш ✓)',
+  dr.length >= 3 && dr.every((r) => r.cols === 1),
+  JSON.stringify(dr.map((r) => r.cols)));
+ok('3-Р АЛХАМ: талбарууд ЗЭРЭГ БИШ — бүгд ИЖИЛ x-т (зүүн ирмэгээрээ ✓)',
+  dr.length >= 3 && dr.every((r) => r.stacked),
+  JSON.stringify(dr.map((r) => ({ kids: r.kids, stacked: r.stacked }))));
+ok('3-Р АЛХАМ: талбар бүр мөрийнхөө БҮТЭН өргөнийг эзэлнэ (хагас биш ✓)',
+  dr.length >= 3 && dr.every((r) => r.full),
+  JSON.stringify(dr.map((r) => ({ rowW: r.rowW, full: r.full }))));
+ok('3-Р АЛХАМ: 2+ талбартай мөр («Өрөө» + «Талбай» …) Ч ЦУВАА (зэрэгцэхгүй ✓)',
+  dr.filter((r) => r.kids >= 2).length >= 2,
+  JSON.stringify(dr.map((r) => r.kids)));
+// 📱 Мобайл (390px) дээр Ч 1 БАГАНА хэвээр — regression байхгүй гэдгийг батлана ✓
+await rpc('Emulation.setDeviceMetricsOverride', { width: 390, height: 1400, deviceScaleFactor: 1, mobile: false });
+await wait(600);
+const drM = (await probe()).detailsRows || [];
+ok('📱 390px (мобайл) дээр Ч ЦУВАА = 1 БАГАНА (regression үгүй ✓)',
+  drM.length >= 3 && drM.every((r) => r.cols === 1 && r.stacked),
+  JSON.stringify(drM.map((r) => ({ cols: r.cols, stacked: r.stacked }))));
+await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1400, deviceScaleFactor: 1, mobile: false });
+await wait(600);
 
 console.log('\n── ⑦ 🔎 ДҮРС ТЕКСТЭЭС ХҮРЭХГҮЙ (§ «Үйлдвэрлэгч» combobox + sidebar) ──');
 /**

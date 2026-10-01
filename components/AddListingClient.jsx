@@ -952,7 +952,12 @@ export default function AddListingClient() {
                    COMBOBOX: бичнэ → жагсаалт шүүгдэнэ; жагсаалтад байхгүй
                    брэндийг ГАРААР бичиж болно ✓ (хэрэглэгчийн хүсэлт). */}
             {attrFields.length > 0 && (
-              <div className="form-row">
+              /* ⚠️ 2026-10-01 (5 дахь засвар): «Дэлгэрэнгүй хэсгийн мэдээллийг
+                 оруулах хэсгийг ЦУВАА буюу 1 БАГАНА болго» → 3-р алхмын БҮХ
+                 мөр нь `form-row-single` (globals.css) — `sm`-ээс хойш Ч
+                 2 багана БОЛОХГҮЙ, талбарууд ЦУВАА байрлана ✓
+                 (`data-form-row="details"` = CDP-ийн тогтвортой selector) */
+              <div className="form-row-single" data-form-row="details">
                 {attrFields.map((f) => {
                   const value = (form.attrs || {})[f.key] || '';
                   /**
@@ -1007,14 +1012,17 @@ export default function AddListingClient() {
                     «заавал биш» гэдгийг ойлгуулна (хэрэглэгчийн хүсэлт:
                     «аль нэгийг эсвэл хэд хэдийг сонгож болно») */}
                 {attrFields.some((f) => Array.isArray(f.onlySubtypes)) && (
-                  <p className="form-hint sm:col-span-2">
+                  /* ⚠️ 5 дахь засвар: мөр нь 1 БАГАНАТ (`form-row-single`) тул
+                     `sm:col-span-2` ХЭРЭГГҮЙ — үлдээвэл grid дотор ДАЛД 2 дахь
+                     track үүсгэж, «бүтэн өргөн» гэсэн утга алдагдана ✗ */
+                  <p className="form-hint">
                     💻 Notebook-ийн үзүүлэлтүүд — заавал биш: дээрээс мэдэх хэсгээ л сонгоно уу
                   </p>
                 )}
               </div>
             )}
 
-            <div className="form-row">
+            <div className="form-row-single" data-form-row="details">
               {/* «Өрөө» нь зөвхөн Орон сууц, АОС/хаус төрөлд харагдана (lib/locationData.js) */}
               {showRooms && (
                 <div className="form-group">
@@ -1024,7 +1032,10 @@ export default function AddListingClient() {
               )}
               {/* ⚠️ «Талбай» нь ЗӨВХӨН үл хөдлөх хэсэгт (0016) */}
               {isRealEstate && (
-              <div className={`form-group ${showRooms ? '' : 'sm:col-span-2'}`}>
+              /* ⚠️ 5 дахь засвар: мөр 1 БАГАНАТ болов → `sm:col-span-2` ХАСАГДАВ
+                 (үлдээвэл grid дотор ДАЛД 2 дахь track үүснэ) — «Талбай» нь
+                 «Өрөө»-ний ЯГ ДООР бүтэн өргөнөө эзэлнэ ✓ */
+              <div className="form-group">
                 <label>Талбай (м²)</label>
                 <input
                   type="text"
@@ -1041,7 +1052,7 @@ export default function AddListingClient() {
                 АОС/хаус төрөлд ҮРГЭЛЖ, мөн 3 ба түүнээс олон өрөөтэй зарт
                 харагдана (lib/locationData.js → hasBathroomFields). */}
             {showBathrooms && (
-              <div className="form-row">
+              <div className="form-row-single" data-form-row="details">
                 <div className="form-group">
                   <label>Угаалгын өрөө</label>
                   <input
@@ -1059,7 +1070,7 @@ export default function AddListingClient() {
 
             {/* ===== Орон сууцны нэмэлт мэдээлэл (зөвхөн Орон сууц сонгосон үед) ===== */}
             {showFloors && (
-              <div className="form-row">
+              <div className="form-row-single" data-form-row="details">
                 {showApartment && (
                   <div className="form-group">
                     <label>Ашиглалтанд орсон ооон</label>
@@ -1088,7 +1099,7 @@ export default function AddListingClient() {
             )}
 
             {showFloors && (
-              <div className="form-row">
+              <div className="form-row-single" data-form-row="details">
                 <div className="form-group">
                   <label>Тухайн байрны давхар</label>
                   <input
@@ -1113,7 +1124,7 @@ export default function AddListingClient() {
             )}
 
             {showApartment && (
-              <div className="form-row">
+              <div className="form-row-single" data-form-row="details">
                 <div className="form-group">
                   <label>Гараж</label>
                   <select value={form.hasGarage} onChange={(e) => set('hasGarage', e.target.value)}>

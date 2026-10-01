@@ -235,6 +235,22 @@
   .form-row {
     @apply mb-3 grid grid-cols-1 gap-4 sm:grid-cols-2;
   }
+  /**
+   * 🆕 2026-10-01 (5 дахь засвар, хэрэглэгчийн хүсэлт: «Дэлгэрэнгүй хэсгийн
+   *    мэдээллийг оруулах хэсгийг ЦУВАА буюу 1 БАГАНА болго») →
+   *    **3-Р АЛХАМ (📋 Дэлгэрэнгүй) дээрх БҮХ мөр** нь энэ класс +
+   *    `data-form-row="details"` атрибуттай: `sm` (640px)-ээс ХОЙШ Ч
+   *    `sm:grid-cols-2` БОЛОХГҮЙ — талбарууд ЦУВАА, нэг нэгнийхээ ДООР ✓
+   *    ⚠️ `.form-row`-ийн `sm:grid-cols-2`-ыг Tailwind utility-ээр дарж болдог ч
+   *       (components → utilities давхаргын дараалал) ИЛҮҮ ТОДОРХОЙ байхын
+   *       тулд ТУСДАА класс ашиглав — CDP (`scripts/cdp-picker.mjs`) нь
+   *       `[data-form-row="details"]` мөр бүрийн grid track-ийн ТОО (1) ба
+   *       хүүхдүүдийн x-координат (зэрэг БИШ) ба өргөнийг (бүтэн) хэмжинэ ✓
+   *    🔍 Хайх үг: form-row-single, data-form-row, detailsRows
+   */
+  .form-row-single {
+    @apply mb-3 grid grid-cols-1 gap-4;
+  }
   .form-group {
     @apply flex flex-col gap-1;
   }
