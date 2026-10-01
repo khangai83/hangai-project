@@ -22,6 +22,11 @@ import { buildHomeBreadcrumb } from '../lib/breadcrumb';
 import Breadcrumb from './Breadcrumb';
 import SearchableSelect from './SearchableSelect';
 import TextFilter from './TextFilter';
+// 🚗🌈 БРЭНДЭЭС ХАМААРАХ ЗАГВАР (2026-10-01, хэрэглэгчийн хүсэлт) — sidebar-д
+//    шүүлт тавих горимд: `lookupMap` (сонголтууд) ба `cascadeAttrs`
+//    (брэнд солигдоход хуучирсан загварын шүүлтийг цэвэрлэх) ✓
+//    ⚠️ Форм (`AddListingClient.jsx`) ЯГ ИЖИЛ 2 туслахыг ашиглана ✓
+import { lookupMap, cascadeAttrs } from '../lib/carModels.mjs';
 import RangeInput from './RangeInput';
 // 🔢 Доод/дээд ТООНЫ хүрээний логик (2026-09-30) — цэвэр функцууд нь
 //    `lib/rangeFilter.mjs`
@@ -653,14 +658,25 @@ export default function HomeClient() {
     if (open) setSectionOpen(true);
   };
 
-  /** ATTR шүүлт (jsonb) — утга тавих / хоослох (`delete` тул URL/DB цэвэр) */
+  /**
+   * ATTR шүүлт (jsonb) — утга тавих / хоослох (`delete` тул URL/DB цэвэр).
+   *
+   * 🔗 2026-10-01: «эцэг» шүүлт (ж: 🏷️ Үйлдвэрлэгч) солигдоход түүнээс хамаарах
+   *    «хүү» шүүлтийн (ж: 🚙 Загвар) ХУУЧИРСАН утгыг ЦЭВЭРЛЭНЭ — эс бөгөөс
+   *    `?attr_brand=Nissan&attr_model=Prius 30` гэсэн ЗӨРЧСӨН шүүлт үлдэж,
+   *    хэрэглэгч «0 үр дүн» гэж гайхана ✗ (формтой ЯГ ИЖИЛ дүрэм:
+   *    `lib/carModels.mjs → cascadeAttrs`; гараар бичсэн утга ХӨНДӨГДӨХГҮЙ ✓)
+   */
   const setAttr = (key, value) => {
     setPage(1); // 📄 шүүлт өөрчлөгдсөн → 1-р хуудас
     setFilters((f) => {
-      const attrs = { ...(f.attrs || {}) };
+      const prev = f.attrs || {};
+      const attrs = { ...prev };
       if (value) attrs[key] = value;
       else delete attrs[key];
-      return { ...f, attrs };
+      // ⚠️ `attrFilters` нь доор (useMemo) тодорхойлогдоно — гэхдээ энэ нь
+      //    ЗӨВХӨН event handler дотор дуудагдах тул аюулгүй ✓
+      return { ...f, attrs: cascadeAttrs(attrs, prev, key, attrFilters) };
     });
   };
 
@@ -1640,11 +1656,24 @@ export default function HomeClient() {
                          ОНЫ ХҮРЭЭ (`f.range`, «Доод / Дээд») —
                          хэрэглэгчийн хүсэлт (2026-09-28): «хайлт дээр ЗАГВАР
                          оруул; ҮЙЛДВЭРЛЭСЭН ОН, ОРЖ ИРСЭН ОНООР шүүдэг байх»
+                      ④ 🌈 БРЭНДЭЭС ХАМААРАХ СОНГОЛТ (`f.optionsFrom`, 2026-10-01,
+                         хэрэглэгчийн хүсэлт): брэнд сонгосон үед 🚙 «Загвар» нь
+                         тухайн брэндийн загваруудтай ХАЙЛТТАЙ combo болно
+                         (брэнд сонгоогүй бол ③ — чөлөөт текст хэвээр ✓)
                     ⚠️ Утга нь `listings.attrs` (jsonb) дотор → `?attr_brand=Toyota`,
                        оны хүрээ нь `?attr_year_from=2015&attr_year_to=2020`
                     ⚠️ Гараар бичих талбар нь ⏎/blur үед л хүчинтэй болно —
                        үсэг бүрт query явахгүй ✓ (`TextFilter`, `SearchableSelect`) */}
-                {attrFilters.map((f) => (
+                {attrFilters.map((f) => {
+                  /**
+                   * 🌈 БРЭНДЭЭС ХАМААРАХ СОНГОЛТУУД (`f.optionsFrom` = 'brand') —
+                   *    СОНГОСОН брэндийн загварууд; хоосон бол ③ (TextFilter) ✓
+                   *    ⚠️ Формтой ЯГ ИЖИЛ туслах (`lib/carModels.mjs → lookupMap`)
+                   */
+                  const depOptions = f.optionsFrom
+                    ? lookupMap(f.optionsMap, attrValue(f.optionsFrom))
+                    : [];
+                  return (
                   <SideBlock key={f.key} label={`${f.icon ? `${f.icon} ` : ''}${f.label}`}>
                     {f.searchable ? (
                       <SearchableSelect
@@ -1652,6 +1681,16 @@ export default function HomeClient() {
                         options={f.options}
                         onChange={(v) => setAttr(f.key, v)}
                         placeholder="Бүгд — бичиж хайна"
+                        ariaLabel={f.label}
+                      />
+                    ) : depOptions.length > 0 ? (
+                      // 🌈 Брэндийн загварууд (шүүлт горим — ⏎/сонголт/blur үед л
+                      //    хүчинтэй болно: `commitOnType` анхдагчаар `false` ✓)
+                      <SearchableSelect
+                        value={attrValue(f.key)}
+                        options={depOptions}
+                        onChange={(v) => setAttr(f.key, v)}
+                        placeholder={`${attrValue(f.optionsFrom)} загвар — хайна`}
                         ariaLabel={f.label}
                       />
                     ) : f.range ? (
@@ -1671,7 +1710,9 @@ export default function HomeClient() {
                         onChange={(a, b) => setAttrPair(f.key, a, b)}
                       />
                     ) : f.filterable ? (
-                      // ✍️ ЧӨЛӨӨТ ТЕКСТ шүүлт (ж: 🚙 Загвар) — бичиж хайна
+                      // ✍️ ЧӨЛӨӨТ ТЕКСТ шүүлт — ⚠️ 2026-10-01: 🚙 «Загвар» нь
+                      //    брэнд сонгосон үед дээшээ (🌈 combo) явдаг тул энд
+                      //    зөвхөн брэнд сонгоогүй/жагсаалтгүй үед үлдэнэ ✓
                       <TextFilter
                         value={attrValue(f.key)}
                         onChange={(v) => setAttr(f.key, v)}
@@ -1690,7 +1731,8 @@ export default function HomeClient() {
                       </select>
                     )}
                   </SideBlock>
-                ))}
+                  );
+                })}
 
                 {/* ===== ҮНЭ, ₮ — 2026-09-30: ЧИРДЭГ ХҮРЭЭ БА ТҮРГЭН ХҮРЭЭ ХАСАГДАВ =====
                     ⚠️ Хэрэглэгчийн хүсэлт (1): «дээд доод үнэ, талбай дээр чирдэгээ

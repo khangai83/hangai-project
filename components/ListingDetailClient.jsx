@@ -16,6 +16,7 @@ import { trackListingView } from '../lib/statsClient';
 import { normalizeError } from '../lib/errors';
 import { formatPrice, priceLabel, negotiableNote, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress } from '../lib/format';
 import { buildListingBreadcrumb } from '../lib/breadcrumb';
+import { getAttrRows } from '../lib/locationData';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 import { parseYouTube } from '../lib/youtube.mjs';
 
@@ -182,7 +183,9 @@ export default function ListingDetailClient({ id }) {
   //    ⚠️ Үл хөдлөхийн бус зард `category` нь DB-ийн default `sell` байдаг тул
   //       зөвхөн `isSell`-ээр шалгавал машин зар дээр «Зарах» badge ба
   //       ипотекийн тооцоолуур БУРУУ гарна ✗ (хэрэглэгчийн гомдол: 2026-10-01)
-  const isRealEstate = (listing.section || 'real-estate') === 'real-estate';
+  // 🧩 Хэсэг (`listings.section` — 0016). ⚠️ ХООСОН бол `real-estate` (хуучин зар)
+  const section = listing.section || 'real-estate';
+  const isRealEstate = section === 'real-estate';
   const phoneDigits = String(listing.phone || '').replace(/^976/, '').replace(/^\+/, '');
   // ✉️ Ярианы гарчиг болгон хадгалах шошго (зар дээрх 1-р мөртэй ижил формат)
   const listingLabel = [typeLabel, address].filter(Boolean).join(', ');
@@ -213,17 +216,41 @@ export default function ListingDetailClient({ id }) {
     listing.total_floors > 0 && { label: 'Барилгын давхар', value: `${listing.total_floors} Давхар` },
     listing.build_year > 0 && { label: 'Ашиглалтанд орсон он', value: `${listing.build_year} Он` },
     listing.balconies > 0 && { label: 'Тагт', value: `${listing.balconies} Тагттай` },
-    garageLabel && { label: 'Гараж', value: garageLabel },
+    // ⚠️ 🏠 «Гараж» нь ЗӨВХӨН ҮЛ ХӨДЛӨХӨД (`isRealEstate`) — DB-ийн `has_garage`
+    //    нь бусад хэсэгт `false` (default) тул 💻 Notebook/💼 ажил дээр
+    //    «Гараж: Байхгүй» гэсэн УТГАГҮЙ мөр гарч байв ✗ (2026-10-01 (16)-д
+    //    карт эдгээр хэсэгт ГАРАХ болсноор илэрсэн — зассан ✓)
+    isRealEstate && garageLabel && { label: 'Гараж', value: garageLabel },
     // ₮/м² — үнэ ÷ талбай (зөвхөн «зарах» ба талбайтай ҮЛ ХӨДЛӨХӨД). Үнэ
     // харьцуулахад хамгийн хэрэгтэй үзүүлэлт тул шинж чанарын хүснэгтэд шууд.
     isRealEstate && isSell && listing.area > 0 && listing.price > 0 && {
       label: 'Үнэ / м²',
       value: `₮${formatPrice(Math.round(Number(listing.price) / Number(listing.area)))}`,
     },
+    // ===== 📋 ХЭСГИЙН ҮЗҮҮЛЭЛТҮҮД (`attrs` — 0016) =====
+    // 🆕 2026-10-01 (16), хэрэглэгчийн хүсэлт: «Автомашин руу орход дэлгэрэнгүй
+    //    мэдээлэл харуулаачээ, 2 багана болгоод оруулаарай».
+    // ⛔ Өмнө нь энэ массив нь ЗӨВХӨН ҮЛ ХӨДЛӨХИЙН талбаруудтай байв → 🚗 машин
+    //    (мөн 💼 ажил, 💻 компьютер, 🛠️ үйлчилгээ …) зарууд дээр ХООСОН болж,
+    //    доорх `features.length > 0` шалгалтаар «Зарын дэлгэрэнгүй» карт ОГТ
+    //    ГАРАХГҮЙ байв ✗ (🚗 Toyota Sai руу ороход зөвхөн «Тайлбар» байсан).
+    // ✅ Одоо `attrs` (🏷️ Үйлдвэрлэгч · 🚙 Загвар · 🎨 Өнгө · 📅 он · 📥 орж
+    //    ирсэн он · 🛣️ гүйлт · ⚙️ хайрцаг · 🔧 хөдөлгүүр · ⛽ түлш …) нь хэсгийн
+    //    `attrFields`-ийн шошго/icon/дарааллаар мөр болно (`getAttrRows`).
+    // ⚠️ Дараалал: ҮЛ ХӨДЛӨХИЙН талбарууд ЭХЭНД, `attrs` тэдний ДАРАА — 2 хэсэг
+    //    нэг зар дээр давхардахгүй (RE зард `attrFields` огт байхгүй → 0 мөр ✓)
+    // ⚠️ `subtype` = `listing.property_type` — 💻 Notebook-ийн 📺/⚙️/🧠/💾
+    //    талбарууд ЗӨВХӨН Notebook дээр гарах `onlySubtypes` шүүлт ажиллана ✓
+    ...getAttrRows(section, listing.attrs, listing.property_type),
  /*{ label: 'Зарын төрөл', value: getCategoryLabel(listing.category) },*/
  /*{ label: 'Нийтэлсэн', value: timeAgo(listing.created_at) },*/
     // { label: 'Зарын дугаар', value: `ID: ${listing.id}` },
-    { label: 'Байршил', value: address || 'Тодорхойгүй' },
+    // ⚠️ «Байршил» мөр ЭНДЭЭС ХАСАГДАВ (2026-10-01) — хаяг нь галерей картын
+    //    дотоод footer-т, 👁/🤍 («үзсэн/таалагдсан») мөрийн ЯГ АРААС, 📅
+    //    нийтэлсэн огноотой НЭГ МӨРӨНД харагдана (дээрх Gallery карт).
+    //    Хоёулаа байвал 8px-ийн зайтай ДАВХАРДАНА ✗ (хэрэглэгчийн хүсэлт ✓)
+    // ⚠️ Хэрэв энэ массив ХООСОН бол «Зарын дэлгэрэнгүй» карт ОГТ ГАРАХГҮЙ
+    //    (доорх `features.length > 0` шалгалт) — гарчиг дангаараа үлдэхгүй ✓
     // 👁/❤️ статистик (listings.views / listings.likes — 0006_listing_stats.sql)
     // { label: 'Үзсэн', value: `${viewCount} удаа` },
     // { label: 'Таалагдсан', value: `${likeCount} хүн` },
@@ -255,10 +282,24 @@ export default function ListingDetailClient({ id }) {
           )}
           <span className="text-[13px] text-gray-400">ID: {listing.id}</span>
         </div>
-        <h1 className="mb-1.5 text-2xl font-bold leading-snug text-gray-900 sm:text-[28px]">
+        {/* ===== 🚫 ХАРАГДАХ ГАРЧИГ (H1) БАЙХГҮЙ (2026-10-01) =====
+            Хэрэглэгчийн хүсэлт: «Суудлын машин руу ороод тухайн зарын дэлгэрэнгүй
+            үзэхэд 🚗 Суудлын машин гэж … харуулмааргүй байна. Бүх зар › Автомашин ›
+            Суудлын машин гээд харагдаж байхад хангалттай».
+            ⚠️ ХАРАГДАХ H1 нь breadcrumb-ийн СҮҮЛИЙН мөртэй ЯГ давхарддаг байв
+               (`lib/breadcrumb.js` → ижил `getPropertyTypeLabel`) ✗ — тиймээс хасав.
+               ⚠️ Энэ давхардал нь БҮХ хэсэгт ижил (ж: «🏠 Орон сууц зарна») ✓
+            🔒 `sr-only` H1 ҮЛДЭВ — НҮДЭНД ХАРАГДАХГҮЙ ч дэлгэц уншигч (screen
+               reader) ба SEO-д хуудасны гарчиг ЗААВАЛ байх ёстой ✓ */}
+        <h1 className="sr-only">
           {getPropertyIcon(listing.property_type, listing.section)} {typeLabel}
+          {address ? ` — ${address}` : ''}
         </h1>
         {/* ===== 📍 БАЙРШИЛ (1-р мөр) + 📅 НИЙТЭЛСЭН (2-р мөр) =====
+            ⚠️ 2026-10-01 (14) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТЭЭР ГАЛЕРЕЙ КАРТЫН footer-оос
+               ЭНД БУЦАЖ ИРЭВ («📍 … · 📅 … энийгээ буцаагаад байранд нь тавия»).
+               ⛔ (12)-д 👁/🤍 мөрийн ЯГ АРААС, картын дотоод 1 МӨРӨНД шилжүүлсэн
+                  байв — хэрэглэгчид тохирохгүй байсан тул буцаав ✓
             ⚠️ Хаяг эхний мөрөнд, огноо нь ЯГ ДООРХ мөрөнд — хоёулаа ЗҮҮН тийш.
                (`flex`/`justify-between` БИШ — тусдаа block div-үүд.) */}
         <div className="text-sm text-gray-600">
@@ -334,6 +375,9 @@ export default function ListingDetailClient({ id }) {
                 ⚠️ Өмнө нь «таалагдсан» ХОЁР газарт (зүүн талд тоо + баруун талд
                    том товч) харагддаг байсныг нэгтгэв — duplicate байхгүй.
                 ⚠️ Зурган дээр ямар ч тэмдэглээ байхгүй (карттай ижил дүрэм).
+                ⚠️ 2026-10-01 (14): 📍/📅 нь ЭНЭ footer-ийн 2 дахь мөрөөс ХАСАГДАЖ,
+                   толгойн доорх (`<header>`) 📍 1-р мөр / 📅 2-р мөр рүү БУЦАЖ
+                   байрлав ✓ — карт дотор ЗӨВХӨН энэ (👁/🤍) мөр үлдэв
                 ⚠️ Тоо нь серверээс (listings.views / listings.likes — 0007). */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-gray-100 px-4 py-3 text-[13px] text-gray-500">
               <span title="Энэ зарыг хэдэн хүн үзсэн" className="font-semibold tabular-nums">
@@ -410,21 +454,40 @@ export default function ListingDetailClient({ id }) {
             </section>
           )}
 
-          {/* ===== ШИНЖ ЧАНАР — <section data-component="AdvertFeaturesApp" class="mt-6"> хэсэгтэй ижил загвар ===== */}
-          <section data-component="AdvertFeaturesApp" className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white">
-            <h2 className="border-b border-gray-100 px-5 py-4 text-base font-semibold text-gray-800">Зарын дэлгэрэнгүй</h2>
-            <dl className="grid grid-cols-1 sm:grid-cols-2">
-              {features.map((f) => (
-                <div
-                  key={f.label}
-                  className="flex items-baseline gap-3 border-b border-gray-100 px-5 py-3 text-sm last:border-b-0 ]:border-r sm:[&:nth-last-child(-n+2)]:border-b-0"
-                >
-                  <dt className="w-[45%] shrink-0 text-gray-500">{f.label}:</dt>
-                  <dd className="min-w-0 flex-1 font-medium text-gray-900">{f.value}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
+          {/* ===== ШИНЖ ЧАНАР — <section data-component="AdvertFeaturesApp"> хэсэгтэй ижил загвар =====
+              ⚠️ `mt-6` — карт хоорондын зай (видео/Тайлбар хэсгүүдтэй ЯГ ижил) ✓
+              ⚠️ `features.length > 0` — хоосон («Зарын дэлгэрэнгүй» гэсэн гарчиг
+                 дангаараа харагдах) карт ГАРАХГҮЙ (2026-10-01). Шалтгаан: хаяг
+                 нь хүснэгтээс хасагдсанаар шинж чанаргүй зар дээр карт ХООСОН
+                 болсон ✗. `&&` дүрэм нь «Тайлбар» хэсэгтэй ЯГ ижил
+                 (`listing.description &&`) ✓
+              🆕 2026-10-01 (16): машин/ажил/компьютер … зарууд ч мөртэй болов
+                 (`features`-д `attrs` нэмэгдэв — `lib/locationData.js → getAttrRows`)
+                 → тэдгээр дэлгэрэнгүй хуудсанд ч ЭНЭ 2 БАГАНАТ хүснэгт гарна ✓
+              ⚠️ ХҮРЭЭНИЙ ДҮРЭМ (`sm:` = 2 багана): сүүлийн МӨРИЙН 2 нүд доод
+                 хүрээгээ алдана. Мөр дүүрэн бол (`features.length % 2 === 0`)
+                 тэр нь `:nth-last-child(-n+2)`; гэхдээ СОНДГОЙ тоо (ж: 🚗 9 мөр)
+                 үед 8 дахь (зүүн багана) нь 9 дэхтэй НЭГ МӨРӨНД байдаг тул
+                 зөвхөн `:last-child`-д хүрээ үлдэхгүй байх ЁСТОЙ — эс бөгөөс
+                 мөр дунд ганц 1px зураас үлдэнэ ✗ (2026-10-01 (16)-д зассан) */}    
+          {features.length > 0 && (
+            <section data-component="AdvertFeaturesApp" className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white">
+              <h2 className="border-b border-gray-100 px-5 py-4 text-base font-semibold text-gray-800">Зарын дэлгэрэнгүй</h2>
+              <dl className="grid grid-cols-1 sm:grid-cols-2">
+                {features.map((f) => (
+                  <div
+                    key={f.key || f.label}
+                    className={`flex items-baseline gap-3 border-b border-gray-100 px-5 py-3 text-sm last:border-b-0 ${
+                      features.length % 2 === 0 ? 'sm:[&:nth-last-child(-n+2)]:border-b-0' : 'sm:[&:last-child]:border-b-0'
+                    }`}
+                  >
+                    <dt className="w-[45%] shrink-0 text-gray-500">{f.icon ? `${f.icon} ${f.label}` : f.label}:</dt>
+                    <dd className="min-w-0 flex-1 font-medium text-gray-900">{f.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </section>
+          )}
 
           {/* ===== ТАЙЛБАР ===== */}
           {listing.description && (

@@ -31,7 +31,7 @@
  *       (⚠️ өмнө нь дээд хэсэгт «Ангилал · Дэлгэрэнгүй · Байршил · Үнэ · Зураг»
  *          табууд байсан — 2026-10-01-нд ХАСАГДАВ ✓)
  *
- * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (78 шалгалт):
+ * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (98 шалгалт):
  *   ① Үл хөдлөх: 3 багана (12 хэсэг · sell/rent · 8 төрөл)
  *      ⚠️ 2026-10-01 (**4 дэх засвар**): баганын ДЭЭД ТОЛГОЙ (`[data-picker-title]`)
  *      БҮХЭЛДЭЭ ХАСАГДАВ (сонгосон утга нь доорх мөртэй давхардаж байв ✗) →
@@ -62,12 +62,24 @@
  *      (2026-10-01, 5 дахь засвар): мөр бүр `.form-row-single` +
  *      `[data-form-row="details"]` → grid track **ЯГ 1**, хүүхдүүд ИЖИЛ x-т
  *      (зэрэг БИШ), талбар бүр мөрийнхөө БҮТЭН өргөнийг эзэлнэ; 📱 390px дээр ч ✓
+ *   ⑨′ 🆕 **3-Р АЛХАМ: НЭР нь ОРОЛТЫН ЗҮҮН талд (хэвтээ) — ТОМ ДЭЛГЭЦ (1440px)**
+ *      (2026-10-01, 6 дахь засвар, хэрэглэгчийн хүсэлт: «Дэлгэрэнгүй мэдээлэл
+ *      оруулах нэрнүүдийг дээр нь биш, зүүн талд нь гаргаад өгөөч»): `.form-group`
+ *      бүр `sm` (640px)-ээс хойш grid болж, нэр зүүн / оролт баруун баганад.
+ *      Геометрээр батална (нэрийн x < оролтын x, хоёулаа НЭГ мөрийн бүсэд) ✓
+ *   ⑨″ 🆕 **📱 МОБАЙЛ (390px): ТАЛБАР БҮР НЭГ НЭГЭЭРЭЭ** (2026-10-01,
+ *      17 дахь засвар, хэрэглэгчийн хүсэлт: «Гар утсаас зар нэмэхэд оруулж
+ *      байгаа зүйлсийг нэг нэгээр нь харуулдаг болгох. Зөвхөн гар утас шүү»):
+ *      640px-ээс ДООШ нэр нь оролтын ДЭЭР, оролт нь мөрийнхөө БҮТЭН өргөнийг
+ *      эзэлнэ ✓ — ① ИЖИЛ x (зэрэгцэхгүй) ② нэр оролтын дээд ирмэгээс ДЭЭШ
+ *      ③ оролт бүтэн өргөн (`globals.css` → `@media (min-width: 640px)`)
+ *      ⚠️ (6 дахь засварын «мобайлд ч нэр зүүн талд» шийдэл ЭСРЭГЭЭРЭЭ БОЛОВ)
  *   ⑩ 🆕 **АВТО ФОРМ — 🔧 «Хөдөлгүүр» СОНГОЛТ + 🎨 «Өнгө» нэмэгдэж, 🔀 «Хөтлөгч»
  *      ХАСАГДАВ** (2026-10-01, хэрэглэгчийн хүсэлт; 3-р алхмын DOM-оос уншина):
  *      ① `[data-form-row="details"] .form-group`-ийн `label`-ээр «Хөдөлгүүр»-ыг
  *      олж, түүний `select` нь «Сонгох» + **7** утгатай (1.5л хүртэл …
  *      Цахилгаан (EV)) ✓ ② «Хөтлөгч» гэсэн талбар форм дээр **0** ✓
- *      ③ «Өнгө» 10 сонголттой ✓ ④ sidebar (`select[aria-label]`) — «Өнгө» бий,
+ *      ③ «Өнгө» **12** сонголттой ✓ ④ sidebar (`select[aria-label]`) — «Өнгө» бий,
  *      «Хөтлөгч» **0** ✓ ⑤ 🆕 **2026-10-01 (2): «Өнгө» нь «Загвар»-ын ЯГ дараа**
  *      (форм БА sidebar — хоёуланд нь DOM дарааллаар шалгана; ⚠️ sidebar-д
  *      «Загвар» нь `input`, «Өнгө» нь `select` тул `aside [aria-label]`-аас
@@ -472,6 +484,86 @@ ok('📱 390px (мобайл) дээр Ч ЦУВАА = 1 БАГАНА (regressio
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1400, deviceScaleFactor: 1, mobile: false });
 await wait(600);
 
+// ── ⑥⁗ 🆕 2026-10-01 (6 дахь засвар) — НЭР ОРОЛТЫН ЗҮҮН ТАЛД (хэвтээ) ──
+/**
+ * 🆕 Хэрэглэгчийн хүсэлт: «Зар нэмэх хэсгийн Дэлгэрэнгүй мэдээлэл оруулах
+ *    нэрнүүдийг дээр нь биш, ЗҮҮН талд нь гаргаад өгөөч» → 3-р алхмын
+ *    `.form-group` бүр ХЭВТЭЭ болов (`globals.css`,
+ *    `[data-form-row="details"] > .form-group` = grid). БОДИТ Chrome дээр
+ *    геометрээр батална (класс/стиль өөрчлөгдсөн ч зөрчил баригдана ✓):
+ *      ① `label` ба түүний ЭХНИЙ оролт (input/select/textarea/div.relative)
+ *         хоёулаа БАЙНА
+ *      ② нэр нь оролтын ЗҮҮН талд: `labX < ctrlX − 6` (6px tolerance)
+ *      ③ хоёулаа НЭГ мөрийн бүсэд: нэрийн төв `y` нь оролтын дээд/доод дотор
+ *    ⚠️ Энэ template literal дотор backtick / долларын буржгар хаалт БИЧИХГҮЙ
+ */
+const DETAILS_TWO_COL = `(() => [...document.querySelectorAll('[data-form-row="details"] > .form-group')]
+  .map((g) => {
+    const lab = g.querySelector('label');
+    const ctrl = g.querySelector('input, select, textarea, div');
+    const lr = lab ? lab.getBoundingClientRect() : null;
+    const cr = ctrl ? ctrl.getBoundingClientRect() : null;
+    return {
+      label: ((lab || {}).textContent || '').trim(),
+      labX: lr ? +lr.left.toFixed(1) : null,
+      labMidY: lr ? +(lr.top + lr.height / 2).toFixed(1) : null,
+      ctrlX: cr ? +cr.left.toFixed(1) : null,
+      ctrlTop: cr ? +cr.top.toFixed(1) : null,
+      ctrlBot: cr ? +cr.bottom.toFixed(1) : null,
+    };
+  }))()`;
+const dtc = await evaluate(DETAILS_TWO_COL);
+ok('3-Р АЛХАМ: талбар бүр НЭР + ОРОЛТтой (хоёулаа DOM-д ✓)',
+  dtc.length >= 3 && dtc.every((r) => r.labX !== null && r.ctrlX !== null),
+  JSON.stringify(dtc.map((r) => r.label)));
+ok('3-Р АЛХАМ: НЭР оролтын ЗҮҮН талд (labX < ctrlX ✓)',
+  dtc.length >= 3 && dtc.every((r) => r.labX < r.ctrlX - 6),
+  JSON.stringify(dtc.map((r) => ({ l: r.labX, c: r.ctrlX }))));
+ok('3-Р АЛХАМ: НЭР ба ОРОЛТ НЭГ мөрөнд (нэрийн төв нь оролтын босоо мужид ✓)',
+  dtc.length >= 3 && dtc.every((r) => r.labMidY >= r.ctrlTop - 2 && r.labMidY <= r.ctrlBot + 2),
+  JSON.stringify(dtc.map((r) => ({ y: r.labMidY, t: r.ctrlTop, b: r.ctrlBot }))));
+// 📱 2026-10-01 (17 дахь засвар) — МОБАЙЛ (390px): талбар бүр НЭГ НЭГЭЭРЭЭ
+/**
+ * 🎯 Хэрэглэгчийн хүсэлт: «Гар утсаас зар нэмэхэд оруулж байгаа зүйлсийг нэг
+ *    нэгээр нь харуулдаг болгох. Зөвхөн гар утас шүү» → `globals.css`-д
+ *    хэвтээ дүрэм нь `@media (min-width: 640px)` ДОТОР оров ⇒ 640px-ээс
+ *    доош нэр нь оролтын ДЭЭР, оролт нь мөрийн БҮТЭН өргөнөө эзэлнэ ✓
+ *    ⚠️ (6 дахь засварын «мобайлд ч нэр зүүн талд» шийдэл ЭСРЭГЭЭРЭЭ БОЛОВ)
+ *    Геометрээр 3 инвариантыг батална (класс/стиль өөрчлөгдсөн ч баригдана ✓):
+ *      ① нэр ба оролт ИЖИЛ x-т (зэрэгцээгүй = цуваа ✓)
+ *      ② нэр нь оролтын ДЭЭД ирмэгээс ДЭЭШ (доод ирмэг ≤ дээд ирмэг + 2px ✓)
+ *      ③ оролт нь `.form-group`-ийнхөө БҮТЭН өргөнийг эзэлнэ (хагас биш ✓)
+ * ⚠️ Энэ template literal дотор backtick / долларын буржгар хаалт БИЧИХГҮЙ
+ */
+const DETAILS_STACK_MOBILE = `(() => [...document.querySelectorAll('[data-form-row="details"] > .form-group')]
+  .map((g) => {
+    const lab = g.querySelector('label');
+    const ctrl = g.querySelector('input, select, textarea, div');
+    const gr = g.getBoundingClientRect();
+    const lr = lab ? lab.getBoundingClientRect() : null;
+    const cr = ctrl ? ctrl.getBoundingClientRect() : null;
+    return {
+      label: ((lab || {}).textContent || '').trim(),
+      sameX: lr && cr ? Math.abs(lr.left - cr.left) <= 1 : false,
+      above: lr && cr ? lr.bottom <= cr.top + 2 : false,
+      full: cr ? Math.abs(cr.width - gr.width) <= 1 : false,
+    };
+  }))()`;
+await rpc('Emulation.setDeviceMetricsOverride', { width: 390, height: 1400, deviceScaleFactor: 1, mobile: false });
+await wait(600);
+const dtcM = await evaluate(DETAILS_STACK_MOBILE);
+ok('📱 390px (мобайл): НЭГ НЭГЭЭРЭЭ — нэр ба оролт ИЖИЛ x-т (зэрэгцэхгүй ✓)',
+  dtcM.length >= 3 && dtcM.every((r) => r.sameX),
+  JSON.stringify(dtcM.map((r) => ({ l: r.label, sameX: r.sameX }))));
+ok('📱 390px (мобайл): нэр нь оролтын ДЭЭР (цуваа байрлал ✓)',
+  dtcM.length >= 3 && dtcM.every((r) => r.above),
+  JSON.stringify(dtcM.map((r) => ({ l: r.label, above: r.above }))));
+ok('📱 390px (мобайл): оролт мөрийнхөө БҮТЭН өргөнийг эзэлнэ (бүтэн өргөн ✓)',
+  dtcM.length >= 3 && dtcM.every((r) => r.full),
+  JSON.stringify(dtcM.map((r) => ({ l: r.label, full: r.full }))));
+await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1400, deviceScaleFactor: 1, mobile: false });
+await wait(600);
+
 console.log('\n── ⑦ 🔎 ДҮРС ТЕКСТЭЭС ХҮРЭХГҮЙ (§ «Үйлдвэрлэгч» combobox + sidebar) ──');
 /**
  * 🔴 АСУУДАЛ (2026-10-01, хэрэглэгчийн гомдол): «🔎 нь text-ийнхээ эхний үсэгтэй
@@ -588,8 +680,9 @@ ok('🔧 хөдөлгүүрийн 7 утга ЯГ дарааллаараа (1.5�
     && JSON.stringify(engineField.options.slice(1)) === JSON.stringify(ENGINE7),
   JSON.stringify(engineField && engineField.options));
 const colorField = attrs3.find((g) => g.label.includes('Өнгө'));
-ok('🎨 «Өнгө» нэмэгдэв (10 сонголт + хоосон «Сонгох» мөр)',
-  Boolean(colorField) && colorField.options.length === 11,
+// ⚠️ 2026-10-01 (13): `AUTO_COLOR_OPTIONS` 10 → 12 ⇒ «Сонгох»-той нийлээд 13 option
+ok('🎨 «Өнгө» нэмэгдэв (12 сонголт + хоосон «Сонгох» мөр)',
+  Boolean(colorField) && colorField.options.length === 13,
   JSON.stringify(colorField));
 ok('🔀 «Хөтлөгч» форм дээр БАЙХГҮЙ (0 талбар)',
   !attrs3.some((g) => g.label.includes('Хөтлөгч')),
@@ -602,6 +695,128 @@ const modelAt = attrLabels3.findIndex((l) => l.includes('Загвар'));
 const colorAt = attrLabels3.findIndex((l) => l.includes('Өнгө'));
 ok('🎨 форм: «Өнгө» нь «Загвар»-ын ЯГ дараа (талбаруудын дараалал)',
   modelAt >= 0 && colorAt === modelAt + 1, JSON.stringify(attrLabels3));
+
+// ── ⑦″ 🌈 БРЭНД → ЗАГВАР (cascading) — 2026-10-01 (хэрэглэгчийн хүсэлт) ──
+/**
+ * 🎯 «Автошин дээр Үйлдвэрлэгчийг сонгоход түүний үйлдвэрлэсэн машинуудыг
+ *    Загвар дээр нь гаргаад ирж чадах уу» → БОДИТ DOM дээр батална:
+ *      ① 🏷️ «Үйлдвэрлэгч» = «Toyota» болмогц 🚙 «Загвар» нь ЧӨЛӨӨТ ТЕКСТ БИШ,
+ *         `role="combobox"` (хайлттай жагсаалт) болов ✓
+ *      ② Жагсаалтад тухайн брэндийн загварууд байна (Prius 30, Harrier,
+ *         Land Cruiser 200) ✓ — `lib/carModels.mjs → CAR_MODELS`
+ *      ③ «Prius 30» сонгоод брэндээ «Nissan» болговол загвар ЦЭВЭРЛЭГДЭНЭ ✓
+ *         (`cascadeAttrs` — `{brand:'Nissan', model:'Prius 30'}` үлдэхгүй)
+ *      ④ Сэлбэгийн брэнд («Bosch») → жагсаалтгүй тул ЧӨЛӨӨТ ТЕКСТ болж буцна ✓
+ *
+ * ⚠️ Энэ нь `lib/locationData.js`-ийн `optionsFrom` мета + `lib/carModels.mjs`
+ *    + 2 компонентийн гэрээг БОДИТ Chrome дээр түгждэг ✓
+ * ⚠️ Пробын мөр дотор backtick/доллар-бүслүүр БИЧИХГҮЙ (template literal ✓)
+ */
+const DEP_STATE = `(() => [...document.querySelectorAll('[data-form-row="details"] .form-group')]
+  .map((g) => {
+    const lab = (((g.querySelector('label') || {}).textContent) || '').trim();
+    const el = g.querySelector('input, select');
+    return {
+      label: lab,
+      tag: el ? el.tagName.toLowerCase() : '',
+      role: el ? (el.getAttribute('role') || '') : '',
+      value: el ? el.value : null,
+      ph: el ? el.placeholder : null,
+    };
+  }))()`;
+const depRow = (rows, t) => rows.find((r) => r.label.includes(t)) || {};
+/** 🏷️ Брэндэд утга бичих (combobox нь `commitOnType` тул формоо шууд шинэчилнэ) */
+const typeBrand = async (v) => {
+  await evaluate(`(() => {
+    const i = [...document.querySelectorAll('input[role="combobox"]')]
+      .find((x) => ((x.getAttribute('aria-label') || '').includes('Үйлдвэрлэгч')));
+    if (!i) return 'NO_BRAND';
+    i.focus();
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    setter.call(i, ${JSON.stringify(v)});
+    i.dispatchEvent(new Event('input', { bubbles: true }));
+    return 'OK';
+  })()`);
+  await wait(500);
+};
+/** 🚙 Загварын хайрцгийг нээж, `[role="option"]`-уудыг уншина.
+ *  ⚠️ `focus()` нь headless горимд `onFocus`-ыг ӨДӨӨХГҮЙ (listbox нээгдэхгүй ✗) →
+ *     компонентийн `onClick={() => setOpen(true)}`-ыг `click()`-ээр дуудна ✓ */
+const modelOptions = async () => {
+  await evaluate(`(() => {
+    const m = [...document.querySelectorAll('input[role="combobox"]')]
+      .find((x) => ((x.getAttribute('aria-label') || '').includes('Загвар')));
+    if (m) m.click();
+    return m ? (m.getAttribute('aria-expanded') || '') : 'NO_MODEL';
+  })()`);
+  await wait(400);
+  return evaluate(`(() => {
+    const m = [...document.querySelectorAll('input[role="combobox"]')]
+      .find((x) => ((x.getAttribute('aria-label') || '').includes('Загвар')));
+    const box = m ? m.parentElement.parentElement.querySelector('[role="listbox"]') : null;
+    return box ? [...box.querySelectorAll('[role="option"]')].map((b) => (b.innerText || '').trim()) : [];
+  })()`);
+};
+
+// ① «Toyota» (дээр бичигдсэн) → загвар нь combo болсон эсэх
+const dep1 = await evaluate(DEP_STATE);
+const m1 = depRow(dep1, 'Загвар');
+ok('🌈 🏷️ «Үйлдвэрлэгч»-ээ сонгоход 🚙 «Загвар» нь COMBOBOX болов (чөлөөт текст БИШ)',
+  depRow(dep1, 'Үйлдвэрлэгч').value === 'Toyota' && m1.role === 'combobox' && m1.tag === 'input',
+  JSON.stringify({ brand: depRow(dep1, 'Үйлдвэрлэгч').value, model: m1 }));
+ok('🌈 загварын placeholder нь брэндийн нэрийг агуулна',
+  String(m1.ph || '').includes('Toyota'), JSON.stringify(m1.ph));
+const hint1 = await evaluate(`(() => {
+  const p = [...document.querySelectorAll('[data-form-row="details"] .form-hint')]
+    .map((x) => (x.textContent || '').trim()).find((t) => t.includes('загвар'));
+  return p || '';
+})()`);
+ok('🌈 чиглүүлэг нь «Toyota»-гийн загварын тоог хэлнэ (…-ийн N загвар)',
+  hint1.includes('Toyota') && /\d+ загвар/.test(hint1), hint1);
+
+// ② Жагсаалтын агуулга — Toyota-гийн загварууд
+const toyOpts = await modelOptions();
+ok('🌈 жагсаалтад тухайн брэндийн загварууд (Prius 30 · Harrier · Land Cruiser 200)',
+  ['Prius 30', 'Harrier', 'Land Cruiser 200'].every((x) => toyOpts.includes(x)),
+  JSON.stringify({ first: toyOpts.slice(0, 6), n: toyOpts.length }));
+ok('🌈 Toyota-гийн олон загвар харагдана (maxVisible = 60)',
+  toyOpts.length >= 20, String(toyOpts.length));
+
+// ③ «Prius 30» сонгох — ⚠️ мөр нь `onMouseDown`-аар commit хийдэг тул mousedown ✓
+const pickRes = await evaluate(`(() => {
+  const m = [...document.querySelectorAll('input[role="combobox"]')]
+    .find((x) => ((x.getAttribute('aria-label') || '').includes('Загвар')));
+  const box = m ? m.parentElement.parentElement.querySelector('[role="listbox"]') : null;
+  const opt = box ? [...box.querySelectorAll('[role="option"]')]
+    .find((b) => ((b.innerText || '').trim() === 'Prius 30')) : null;
+  if (!opt) return 'NO_OPTION';
+  opt.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+  return 'OK';
+})()`);
+await wait(500);
+const dep2 = await evaluate(DEP_STATE);
+ok('🌈 «Prius 30» сонгогдов (формд утга хадгалагдав)',
+  pickRes === 'OK' && depRow(dep2, 'Загвар').value === 'Prius 30',
+  JSON.stringify({ pickRes, model: depRow(dep2, 'Загвар').value }));
+
+// ④ Брэндээ «Nissan» болговол Toyota-гийн загвар ЦЭВЭРЛЭГДЭНЭ (cascade ✓)
+await typeBrand('Nissan');
+const dep3 = await evaluate(DEP_STATE);
+ok('🌈 брэнд «Nissan» болоход «Prius 30» ЦЭВЭРЛЭГДЭВ (зөрчсөн хос үлдэхгүй ✓)',
+  depRow(dep3, 'Үйлдвэрлэгч').value === 'Nissan' && depRow(dep3, 'Загвар').value === '',
+  JSON.stringify({ brand: depRow(dep3, 'Үйлдвэрлэгч').value, model: depRow(dep3, 'Загвар').value }));
+const nisOpts = await modelOptions();
+ok('🌈 жагсаалт нь ШИНЭ брэндийн (Nissan) загварууд болов (X-Trail · Teana · Patrol)',
+  ['X-Trail', 'Teana', 'Patrol'].every((x) => nisOpts.includes(x)) && !nisOpts.includes('Prius 30'),
+  JSON.stringify(nisOpts.slice(0, 6)));
+
+// ⑤ Сэлбэгийн брэнд («Bosch») → жагсаалтгүй тул ЧӨЛӨӨТ ТЕКСТ болж буцав ✓
+await typeBrand('Bosch');
+const dep4 = await evaluate(DEP_STATE);
+const m4 = depRow(dep4, 'Загвар');
+ok('🌈 сэлбэгийн брэнд («Bosch») → «Загвар» нь ЧӨЛӨӨТ ТЕКСТ (combobox биш ✓)',
+  depRow(dep4, 'Үйлдвэрлэгч').value === 'Bosch' && m4.role === '' && m4.tag === 'input',
+  JSON.stringify({ brand: depRow(dep4, 'Үйлдвэрлэгч').value, model: m4 }));
 
 // ⬅️ SIDEBAR (HomeClient) — ижил 2 компонент, ижил класс
 /**
@@ -627,8 +842,9 @@ ok('sidebar: бүх 🔎 талбарын зай ≥ 6px (дүрс текстэ�
 const SIDE_SELECTS = `(() => [...document.querySelectorAll('select[aria-label]')]
   .map((s) => ({ aria: (s.getAttribute('aria-label') || '').trim(), n: s.options.length })))()`;
 const sideSelects = await evaluate(SIDE_SELECTS);
-ok('sidebar: 🎨 «Өнгө» шүүлт бий (10 сонголт + «Бүгд» мөр)',
-  sideSelects.some((s) => s.aria === 'Өнгө' && s.n === 11),
+// ⚠️ 2026-10-01 (13): `AUTO_COLOR_OPTIONS` 10 → 12 ⇒ «Бүгд»-тэй нийлээд 13 option
+ok('sidebar: 🎨 «Өнгө» шүүлт бий (12 сонголт + «Бүгд» мөр)',
+  sideSelects.some((s) => s.aria === 'Өнгө' && s.n === 13),
   JSON.stringify(sideSelects));
 ok('sidebar: 🔀 «Хөтлөгч» шүүлт БАЙХГҮЙ (0 талбар)',
   !sideSelects.some((s) => s.aria === 'Хөтлөгч'),
@@ -645,6 +861,105 @@ const sideModelAt = sideOrder.indexOf('Загвар');
 const sideColorAt = sideOrder.indexOf('Өнгө');
 ok('sidebar: 🎨 «Өнгө» нь «Загвар»-ын ЯГ дараа (шүүлтүүдийн дараалал)',
   sideModelAt >= 0 && sideColorAt === sideModelAt + 1, JSON.stringify(sideOrder));
+
+// ── ⑦‴ 🌈 SIDEBAR: 🏷️ «Үйлдвэрлэгч» сонгоход 🚙 «Загвар» нь тухайн брэндийн combo ──
+/**
+ * ⚠️ Sidebar нь ШҮҮЛТ тавих горим (`commitOnType` БАЙХГҮЙ) — тиймээс утга нь
+ *    сонголт дарах / ⏎ / гадна дарах (blur) үед л хүчинтэй болно ✓
+ *    Мөн брэнд солигдоход хуучирсан загварын шүүлт URL-аас АРИЛНА
+ *    (`cascadeAttrs` — формтой ЯГ ИЖИЛ дүрэм ✓)
+ *
+ * ⚠️ 2026-10-01: `&type=…` ЗААВАЛ хэрэгтэй — sidebar нь PROGRESSIVE DISCLOSURE:
+ *    `<aside>` нь ЗӨВХӨН ТӨРӨЛ сонгосон үед render болно
+ *    (`HomeClient.jsx`: `{filters.propertyType && (<aside …>)}`).
+ *    `?section=auto&attr_brand=Toyota` (type-ГҮЙ) дээр `aside` ОГТ БАЙХГҮЙ тул
+ *    бүх sidebar шалгалт хуурамчаар ✗ болно ✗ (дээрх TӨРӨЛ сонгосон URL-тай
+ *    ЯГ ИЖИЛ байх ёстой ✓)
+ */
+await rpc('Page.navigate', { url: `${BASE}/?section=auto&category=all&type=${encodeURIComponent('Суудлын машин')}&attr_brand=Toyota` });
+await wait(3500);
+/**
+ * ⚠️ dev сервер дээр энэ нь ШИНЭ хуудас (эхний compile удаан байж болно) тул
+ *    sidebar бүрэн ачаалагдсаныг ХҮЛЭЭНЭ ✓ (эс бөгөөд `aside` хоосон байж,
+ *    дараагийн бүх шалгалт хуурамчаар ✗ болно)
+ */
+const sideReady = await waitForSel('aside input[aria-label="Үйлдвэрлэгч"]', 25000);
+ok('🌈 sidebar: хуудас ачаалагдав (🏷️ Үйлдвэрлэгч шүүлт DOM-д бий)', sideReady === true);
+
+const SIDE_DEP = `(() => {
+  const as = [...document.querySelectorAll('aside [aria-label]')];
+  const get = (t) => as.find((el) => ((el.getAttribute('aria-label') || '').trim() === t));
+  const brand = get('Үйлдвэрлэгч');
+  const model = get('Загвар');
+  return {
+    brandTag: brand ? brand.tagName.toLowerCase() : 'MISSING',
+    brandValue: brand ? brand.value : null,
+    modelTag: model ? model.tagName.toLowerCase() : 'MISSING',
+    modelRole: model ? (model.getAttribute('role') || '') : '',
+  };
+})()`;
+const sd1 = await evaluate(SIDE_DEP);
+ok('🌈 sidebar: `?attr_brand=Toyota` үед 🚙 «Загвар» нь COMBOBOX болов',
+  sd1.brandValue === 'Toyota' && sd1.modelTag === 'input' && sd1.modelRole === 'combobox',
+  JSON.stringify(sd1));
+
+/** ⚠️ `click()` (headless-д `focus()` нь `onFocus` өдөөхгүй ✓) */
+await evaluate(`(() => {
+  const m = [...document.querySelectorAll('aside input[role="combobox"]')]
+    .find((x) => ((x.getAttribute('aria-label') || '').trim() === 'Загвар'));
+  if (m) m.click();
+  return 'OK';
+})()`);
+await wait(500);
+const sideOpts = await evaluate(`(() => {
+  const m = [...document.querySelectorAll('aside input[role="combobox"]')]
+    .find((x) => ((x.getAttribute('aria-label') || '').trim() === 'Загвар'));
+  const box = m ? m.parentElement.parentElement.querySelector('[role="listbox"]') : null;
+  return box ? [...box.querySelectorAll('[role="option"]')].map((b) => (b.innerText || '').trim()) : [];
+})()`);
+ok('🌈 sidebar: жагсаалтад Toyota-гийн загварууд (Prius 30 · Harrier · Camry)',
+  ['Prius 30', 'Harrier', 'Camry'].every((x) => sideOpts.includes(x)),
+  JSON.stringify(sideOpts.slice(0, 6)));
+
+// Сонголт дарах → `?attr_model=…` URL-д орно (шүүлт хүчинтэй болов)
+await evaluate(`(() => {
+  const m = [...document.querySelectorAll('aside input[role="combobox"]')]
+    .find((x) => ((x.getAttribute('aria-label') || '').trim() === 'Загвар'));
+  const box = m ? m.parentElement.parentElement.querySelector('[role="listbox"]') : null;
+  const opt = box ? [...box.querySelectorAll('[role="option"]')]
+    .find((b) => ((b.innerText || '').trim() === 'Prius 30')) : null;
+  if (!opt) return 'NO_OPTION';
+  opt.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+  return 'OK';
+})()`);
+await wait(1200);
+// ⚠️ `decodeURIComponent(location.search)` нь `+`-ыг ЗАЙ болгохгүй, харин
+//    `URLSearchParams` нь зайг `+` болгож бичдэг (`attr_model=Prius+30`) — тиймээс
+//    `includes('attr_model=Prius 30')` нь буруу ✗. Параметрээр ШУУД уншина ✓
+const modelAfterPick = await evaluate(`new URLSearchParams(location.search).get('attr_model')`);
+ok('🌈 sidebar: «Prius 30» сонгоход `?attr_model=Prius 30` (шүүлт хүчинтэй болов)',
+  modelAfterPick === 'Prius 30', JSON.stringify({ model: modelAfterPick }));
+
+// 🏷️ Брэндээ «Nissan» болгох (commit → cascade) → хуучирсан загвар АРИЛНА ✓
+//    ⚠️ `blur()` нь headless горимд React-ийн `onBlur`-ыг ӨДӨӨХГҮЙ (React нь
+//       `onBlur`-ыг `focusout` үйл явдалд холбодог) → `focusout`-ыг ШУУД илгээнэ ✓
+await evaluate(`(() => {
+  const b = [...document.querySelectorAll('aside input[role="combobox"]')]
+    .find((x) => ((x.getAttribute('aria-label') || '').trim() === 'Үйлдвэрлэгч'));
+  if (!b) return 'NO_BRAND';
+  b.focus();
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  setter.call(b, 'Nissan');
+  b.dispatchEvent(new Event('input', { bubbles: true }));
+  b.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+  return 'OK';
+})()`);
+await wait(1500);
+const brandAfter = await evaluate(`new URLSearchParams(location.search).get('attr_brand')`);
+const modelAfterBrand = await evaluate(`new URLSearchParams(location.search).get('attr_model')`);
+ok('🌈 sidebar: брэнд «Nissan» болоход `attr_model` АРИЛАВ (зөрчсөн шүүлт үлдэхгүй ✓)',
+  brandAfter === 'Nissan' && !modelAfterBrand,
+  JSON.stringify({ brand: brandAfter, model: modelAfterBrand }));
 
 console.log('\n── ⑧ CONSOLE / EXCEPTION ──');
 ok('JS exception / console.error БАЙХГҮЙ (picker + Үйлдвэрлэгч форм)',

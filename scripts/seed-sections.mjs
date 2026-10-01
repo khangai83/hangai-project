@@ -46,6 +46,9 @@ import {
   ENGINE_OPTIONS, AUTO_COLOR_OPTIONS,
   FURNITURE_SUBTYPES,        // 🛋️ «Тавилга» хэсгийн 13 дэд төрөл (2026-09-30 (5))
 } from '../lib/locationData.js';
+// 🚗🌈 2026-10-01: 🏷️ «Үйлдвэрлэгч» → 🚙 «Загвар» — форм дээрх хайлттай жагсаалт
+//    (`CAR_MODELS`) ба демо хосууд ЯГ ИЖИЛ байх ёстой (доорх fail-fast шалгалт ✓)
+import { getCarModels } from '../lib/carModels.mjs';
 
 const require = createRequire(import.meta.url);
 const { getAdminClient, findUserByPhone } = require('../lib/authServer');
@@ -354,6 +357,42 @@ const AUTO_SUBTYPE_PAIRS = {
   'Авто сэлбэг, хэрэгсэл': [['Toyota', 'Тосны шүүр'], ['Nissan', 'Тормозны колодко'], ['Bosch', 'Аккумулятор 60Ah'], ['Michelin', 'Дугуй 205/55 R16'], ['Osram', 'Гэрлийн чийдэн'], ['Icom', 'Радио']],
   'Бусад': [['Toyota', 'Prius 30'], ['Nissan', 'X-Trail'], ['Hyundai', 'Santa Fe'], ['Kia', 'Sportage'], ['Toyota', 'Harrier']],
 };
+
+/**
+ * ⚠️ НЭГ ЭХ СУРВАЛЖ-ИЙН ШАЛГАЛТ (2026-10-01): 🚗 АВТО-ийн демо (брэнд, загвар)
+ *    хосууд нь форм дээрх 🌈 «Брэнд → Загвар» ХАЙЛТТАЙ ЖАГСААЛТАД
+ *    (`lib/carModels.mjs → CAR_MODELS`) БАЙХ ЁСТОЙ.
+ *
+ * ЯАГААД: брэнд сонгоод загвар нь жагсаалтад байхгүй бол хэрэглэгч засаж
+ *    хадгалах үед утга нь «сонголтгүй» болж, өөр юм сонгоход хуучин утга
+ *    АЛГА БОЛНО ✗ — алдааг чимээгүй өнгөрүүлэхгүй, ШУУД зогсооно ✓
+ *    (дээрх 💻 Notebook-ийн `PC_*_POOL` шалгалттай ЯГ ИЖИЛ зарчим)
+ *
+ * ⚠️ «Авто сэлбэг, хэрэгсэл» дэд төрөл ХАСААГДАНА — тэнд «загвар» нь БАРААНЫ
+ *    НЭР («Тосны шүүр», «Дугуй 205/55 R16») тул жагсаалтгүй, чөлөөт текст ✓
+ * ⚠️ Жагсаалтгүй брэнд (ж: «Бусад») ч шалгагдахгүй — `getCarModels()` → `[]` ✓
+ */
+function assertAutoModels() {
+  const bad = [];
+  const check = (label, pairs) => {
+    for (const [brand, model] of pairs) {
+      const models = getCarModels(brand);
+      if (models.length && !models.includes(model)) bad.push(`${label}: ${brand} → ${model}`);
+    }
+  };
+  check('CAR_PAIRS', CAR_PAIRS);
+  for (const [subtype, pairs] of Object.entries(AUTO_SUBTYPE_PAIRS)) {
+    if (subtype === 'Авто сэлбэг, хэрэгсэл') continue;
+    check(subtype, pairs);
+  }
+  if (bad.length) {
+    console.error('❌ Авто демо (брэнд, загвар) нь `lib/carModels.mjs`-ийн CAR_MODELS-д БАЙХГҮЙ:');
+    bad.forEach((b) => console.error(`   • ${b}`));
+    console.error('   ⚠️ CAR_MODELS-той нийцүүлнэ үү (эс бөгөөс форм дээр сонгогдохгүй ✗).');
+    process.exit(1);
+  }
+}
+assertAutoModels();
 
 /**
  * 🧳 «АЯНЫ БАРАА» — брэнд+загвар — ДЭД ТӨРӨЛ тус бүрд — 2026-09-30 (5).
@@ -1080,7 +1119,9 @@ function makeAttrs(section, subtype) {
     const [brand, model] = pick(AUTO_SUBTYPE_PAIRS[subtype] || CAR_PAIRS);
     // ⚠️ «Авто сэлбэг, хэрэгсэл» нь машин БИШ — он/гүйлт/хүрд хэрэггүй
     if (subtype === 'Авто сэлбэг, хэрэгсэл') {
-      return { brand, model, condition: pick(['Шинэ', 'Хуучин', 'Хуучин']), warranty: pick(['Байгаа', 'Байхгүй']) };
+      // 🛡️ 2026-10-01 (18): `warranty` нь форм/шүүлтээс ХАСАГДСАН тул демо
+      //    `attrs`-д ч ҮҮСГЭХГҮЙ ✓ (форм дээр сонгогдохгүй талбар)
+      return { brand, model, condition: pick(['Шинэ', 'Хуучин', 'Хуучин']) };
     }
     // ⚠️ `year` нь тусдаа хувьсагч БОЛОХ ЁСТОЙ: `importYear` нь түүнээс
     //    хамаардаг тул объект дотроос `year`-ыг унших боломжгүй (TDZ алдаа) ✗
@@ -1171,7 +1212,7 @@ function makeAttrs(section, subtype) {
         : subtype === 'Дэлгэц' || subtype === 'Проектор'
           ? { screen: pick(['24', '27', '32']) } : {}),
       condition: pick(['Шинэ', 'Хуучин', 'Хуучин']),
-      warranty: pick(['Байгаа', 'Байхгүй']),
+      // 🛡️ 2026-10-01 (18): `warranty` ХАСАГДСАН (форм/шүүлт/карт) → демо ч үгүй ✓
     };
   }
   if (section === 'electric') {

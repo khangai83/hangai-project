@@ -12,6 +12,10 @@ import YouTubeField from './YouTubeField';
 import SearchableSelect from './SearchableSelect';
 import { parseYouTube } from '../lib/youtube.mjs';
 import { compressImages, formatBytes } from '../lib/imageUtils';
+// 🚗🌈 БРЭНДЭЭС ХАМААРАХ ЗАГВАР (2026-10-01) — зөвхөн ЭНЭ модулийн туслахууд:
+//    `lookupMap` (талбарын `optionsMap`-аас сонголт), `cascadeAttrs`
+//    (брэнд солигдоход хуучирсан загварыг цэвэрлэх НЭГ дүрэм — sidebar-тай ижил) ✓
+import { lookupMap, cascadeAttrs } from '../lib/carModels.mjs';
 
 /**
  * 🪜 «ЗАР НЭМЭХ» — ТУСДАА ХУУДАС (`/listings/new`) + АЛХАМТ ФОРМ (2026-10-01)
@@ -488,13 +492,33 @@ export default function AddListingClient() {
    */
   const simpleForm = hasSimpleForm(form.section || 'real-estate');
 
-  /** ATTR утга тавих/хоослох (хоосон бол `delete` — DB-д хог үлдээхгүй) */
-  const setAttr = (key, value) => {
+  /**
+   * 🔗 ХАМААРАЛТАЙ (cascading) attr утга тавих — 🚗 форм (2026-10-01).
+   *
+   * ⚠️ Форм дээрх БҮХ attr талбар энэ функцээр утгаа тавина (энгийн `setAttr`
+   *    БАЙХГҮЙ — `optionsFrom` БАЙХГҮЙ талбарт нь дээрх «хүү» давталт хоосон
+   *    ажиллаад ЗӨВХӨН өөрийн утгаа тавина ✓, тул нэг л зам байх нь
+   *    зөрүү үүсгэхгүй).
+   *
+   * 🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «автошин дээр Үйлдвэрлэгчийг сонгоход түүний
+   *    үйлдвэрлэсэн машинуудыг Загвар дээр нь гаргаад ирж чадах уу».
+   *
+   * ⚠️ ЯАГААД ШУУД `attrs[key] = value` ХИЙХГҮЙ ВЭ: «эцэг» талбар (`f.optionsFrom`,
+   *    ж: 🏷️ Үйлдвэрлэгч) солигдоход «хүү» талбарын (ж: 🚙 Загвар) ХУУЧИН утга
+   *    шинэ жагсаалтад БАЙХГҮЙ бол ЦЭВЭРЛЭНЭ — эс бөгөөс DB-д
+   *    `{ brand: 'Nissan', model: 'Prius 30' }` гэсэн ЗӨРЧСӨН зар хадгалагдана ✗
+   * ⚠️ ГАРААР бичсэн загвар (аль ч жагсаалтад байхгүй, ж: «Тосны шүүр») ба
+   *    шинэ брэндэд жагсаалт байхгүй тохиолдолд утга ХӨНДӨГДӨХГҮЙ ✓
+   *    (дүрэм нь `lib/carModels.mjs → keepDependentValue` — тестээр түгжсэн ✓)
+   */
+  const setAttrCascade = (field, value) => {
     setForm((f) => {
-      const attrs = { ...(f.attrs || {}) };
-      if (value !== '') attrs[key] = value;
-      else delete attrs[key];
-      return { ...f, attrs };
+      const prev = f.attrs || {};
+      const attrs = { ...prev };
+      if (value !== '') attrs[field.key] = value;
+      else delete attrs[field.key];
+      // 🔗 Энэ талбараас хамаарах «хүү» талбаруудыг (ж: Загвар ← Брэнд) цэвэрлэнэ
+      return { ...f, attrs: cascadeAttrs(attrs, prev, field.key, attrFields) };
     });
   };
 
@@ -956,10 +980,28 @@ export default function AddListingClient() {
                  оруулах хэсгийг ЦУВАА буюу 1 БАГАНА болго» → 3-р алхмын БҮХ
                  мөр нь `form-row-single` (globals.css) — `sm`-ээс хойш Ч
                  2 багана БОЛОХГҮЙ, талбарууд ЦУВАА байрлана ✓
-                 (`data-form-row="details"` = CDP-ийн тогтвортой selector) */
+                 (`data-form-row="details"` = CDP-ийн тогтвортой selector)
+                 🆕 (6 дахь засвар, 2026-10-01): «Дэлгэрэнгүй мэдээлэл оруулах
+                 НЭРНҮҮДИЙГ дээр нь биш, ЗҮҮН талд нь гаргаад өгөөч» → энэ мөр
+                 доторх `.form-group` бүр ХЭВТЭЭ (нэр зүүн багана, оролт баруун
+                 багана) — ЗӨВХӨН CSS-ээр шийдэв (`globals.css`,
+                 `[data-form-row="details"] > .form-group`), JSX-ийн бүтэц
+                 ХӨНДӨГДӨӨГҮЙ ✓ (4/5-р алхам хэвээр — нэр нь оролтын дээр) */
               <div className="form-row-single" data-form-row="details">
                 {attrFields.map((f) => {
                   const value = (form.attrs || {})[f.key] || '';
+                  /**
+                   * 🌈 БРЭНДЭЭС ХАМААРАХ СОНГОЛТУУД (cascading, 2026-10-01) —
+                   *    `f.optionsFrom` ('brand') талбарт: СОНГОСОН брэндийн
+                   *    загварууд (`f.optionsMap` = `CAR_MODELS`).
+                   * ⚠️ Хоосон массив байх 2 тохиолдол БИЙ — хоёуланд нь доорх
+                   *    ЧӨЛӨӨТ ТЕКСТ хэвээр үлдэнэ ✓:
+                   *      ① брэнд сонгоогүй (эхлээд Үйлдвэрлэгчээ сонгоно)
+                   *      ② брэнд нь жагсаалтгүй (сэлбэг: Bosch…, «Бусад», шинэ брэнд)
+                   */
+                  const depOptions = f.optionsFrom
+                    ? lookupMap(f.optionsMap, (form.attrs || {})[f.optionsFrom])
+                    : [];
                   /**
                    * ⚠️ ХУУЧИН/ГАРААР бичсэн утга (2026-09-30 (6)) — 💻
                    *    Дэлгэц/CPU/RAM/Хард нь ЧӨЛӨӨТ ТЕКСТ байснаа СОНГОЛТ
@@ -972,6 +1014,8 @@ export default function AddListingClient() {
                    */
                   const legacy = f.type === 'select' && value && !(f.options || []).includes(value)
                     ? value : '';
+                  /** 🏷️ «эцэг» талбарын одоогийн утга (ж: «Toyota») — зөвхөн hint-д */
+                  const depValue = f.optionsFrom ? ((form.attrs || {})[f.optionsFrom] || '') : '';
                   return (
                   <div key={f.key} className="form-group">
                     <label>{f.icon ? `${f.icon} ` : ''}{f.label}</label>
@@ -982,15 +1026,27 @@ export default function AddListingClient() {
                       <SearchableSelect
                         value={value}
                         options={f.options}
-                        onChange={(v) => setAttr(f.key, v)}
+                        onChange={(v) => setAttrCascade(f, v)}
                         placeholder="Хайх..."
+                        ariaLabel={f.label}
+                        commitOnType
+                      />
+                    ) : depOptions.length > 0 ? (
+                      // 🌈 БРЭНДИЙН ЗАГВАРУУД — ХАЙЛТТАЙ combo (бичингүүт шүүгдэнэ)
+                      //    ⚠️ Жагсаалтад БАЙХГҮЙ загварыг ч ГАРААР бичиж болно
+                      //       (`allowFreeText` анхдагчаар `true` — «🔍 «…» гэж хайх» мөр)
+                      <SearchableSelect
+                        value={value}
+                        options={depOptions}
+                        onChange={(v) => setAttrCascade(f, v)}
+                        placeholder={`${depValue} загварууд — хайх...`}
                         ariaLabel={f.label}
                         commitOnType
                       />
                     ) : f.type === 'select' ? (
                       <select
                         value={value}
-                        onChange={(e) => setAttr(f.key, e.target.value)}
+                        onChange={(e) => setAttrCascade(f, e.target.value)}
                       >
                         <option value="">Сонгох</option>
                         {/* ⚠️ Хуучин утга (жагсаалтад байхгүй) — дээрх тайлбар */}
@@ -1001,9 +1057,18 @@ export default function AddListingClient() {
                       <input
                         type={f.type === 'number' ? 'number' : 'text'}
                         value={value}
-                        onChange={(e) => setAttr(f.key, e.target.value)}
+                        onChange={(e) => setAttrCascade(f, e.target.value)}
                         placeholder={f.placeholder || ''}
                       />
+                    )}
+                    {/* 💡 Брэндээс хамаарах талбарт ЧИГЛҮҮЛЭГ (хэрэглэгч яагаад
+                        жагсаалт гарч/гарахгүй байгааг ойлгоно ✓) */}
+                    {f.optionsFrom && (
+                      <p className="form-hint">
+                        {depOptions.length
+                          ? `💡 «${depValue}»-ийн ${depOptions.length} загвар — бичиж хайгаад сонгоно уу (жагсаалтад байхгүй бол гараар бичнэ)`
+                          : `💡 Эхлээд «🏷️ Үйлдвэрлэгч»-ээ сонгоход загварын жагсаалт гарна (гараар бичиж ч болно)`}
+                      </p>
                     )}
                   </div>
                   );
