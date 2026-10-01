@@ -140,6 +140,20 @@ export default function SearchableSelect({
     if (e.key === 'Escape') { setOpen(false); setHi(-1); }
   };
 
+  /**
+   * ⚠️ 2026-10-01: `!pl-9` / `!pr-10` — `!` (important) ЗААВАЛ байх ёстой!
+   *    Форм дотор (`AddListingClient`) энэ оролт нь `.form-group`-ийн дотор
+   *    байрладаг ба `app/globals.css`-ийн
+   *    `.form-group :is(input, select, textarea):not([type="checkbox"]):not([type="radio"])`
+   *    дүрэм нь specificity (0,3,1) — энгийн `pl-8` (0,1,0)-ыг ДАВЖ,
+   *    `padding-left`-ыг 0.75rem (12px) болгочихдог байв → 🔎 дүрс (left-3 =
+   *    12px) нь бичсэн текстийн ЭХНИЙ ҮСЭГТЭЙ ЯГ ДАВХАРДАЖ байв ✗
+   *    (хэрэглэгчийн гомдол: «🔎 нь text-ийнхээ эхний үсэгтэй давхардаад байна»).
+   *    `!pl-9` (2.25rem = 36px) нь дүрсний дараа ~8px зай үлдээнэ ✓
+   *    (ижил шалтгаанаар цэвэрлэх ✕ товчны зай нь `!pr-10` = 40px ✓)
+   */
+  const inputClass = `${className} !pl-9 ${text ? '!pr-10' : ''}`;
+
   return (
     <div className="relative" ref={boxRef}>
       <div className="relative">
@@ -157,7 +171,7 @@ export default function SearchableSelect({
           aria-autocomplete="list"
           aria-label={ariaLabel}
           autoComplete="off"
-          className={`${className} pl-8 ${text ? 'pr-8' : ''}`}
+          className={inputClass}
           placeholder={placeholder}
           value={text}
           onChange={onInput}

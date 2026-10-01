@@ -523,9 +523,17 @@ Node дээр `chrome --headless=new --remote-debugging-port=9335` + `WebSocket`
   (💻 Чихэвч) нь замд НЭГ Л УДАА гарна (`findSubtypeGroup` → `null`) ✓
 - ⚠️ CDP/тестийн тогтвортой selector: `[data-picker="section|level2|level3"]`,
   `button[data-picker-value="…"]`, `[data-picker-summary]`, `[data-step-tab="…"]` ✓
-- 🧪 **CDP (бодит Chrome):** `npm run cdp:picker` → **34/34 ✓** (`scripts/cdp-picker.mjs` —
-  нэвтэрсэн Chrome профайл шаардана; 6 бүлэг шалгалт: 3 багана · хавтгай хэсэг ·
-  бүлэг · доод түвшингүй бүлэг · алхмын табууд · exception 0)
+- 🧪 **CDP (бодит Chrome):** `npm run cdp:picker` → **40/40 ✓** (`scripts/cdp-picker.mjs` —
+  нэвтэрсэн Chrome профайл шаардана; 7 бүлэг шалгалт: 3 багана · хавтгай хэсэг ·
+  бүлэг · доод түвшингүй бүлэг · алхмын табууд · **🔎 дүрс текстээ халхлахгүй** ·
+  exception 0)
+- 🔎 **Хайлттай талбарын дүрсний зай (2026-10-01):** 🏷️ Үйлдвэрлэгч / 🚙 Загвар
+  (`SearchableSelect` · `TextFilter`) нь `!pl-9` (**36px**) + `!pr-10` (**40px**)
+  класс авна. ⚠️ **`!` (important) ЗААВАЛ** — эс бөгөөс `app/globals.css`-ийн
+  `.form-group :is(input, select, textarea):not(…):not(…)` (0,3,1) дүрэм нь
+  `pl-8` (0,1,0)-ыг дарж `padding-left`-ыг **12px** болгож, 🔎 дүрс (`left-3` =
+  12px) нь бичсэн текстийн ЭХНИЙ ҮСЭГ ДЭЭР суудаг байв ✗ (хэрэглэгчийн гомдол:
+  «🔎 нь text-ийнхээ эхний үсэгтэй давхардаад байна»)
 - **UI-д л өөрчлөлт** — `form`, payload, `validateStep('category')`, DB бүтэц ХӨНДӨГДӨӨГҮЙ ✓
 
 #### Дизайны шийдвэрүүд

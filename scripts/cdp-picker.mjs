@@ -6,14 +6,16 @@
  *   ① 1-р алхам нь 3 БАГАНАТ сонголт (Хэсэг → «Зарах/Түрээслэх»/БҮЛЭГ → Дэд төрөл)
  *   ② ДЭЭД ХЭСЭГТ «Ангилал · Дэлгэрэнгүй · Байршил · Үнэ · Зураг» табууд
  *
- * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (34 шалгалт):
+ * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (40 шалгалт):
  *   ① Үл хөдлөх: 3 багана (12 хэсэг · sell/rent · 8 төрөл) + толгой = сонгосон утга
  *   ② «Түрээслэх» солиход багана 3 нь «…түрээслүүлнэ» болно + `?step=2` руу шилжинэ
  *   ③ ХАВТГАЙ хэсэг (🚗 auto) → багана 3 АРИЛНА (2 багана) + хуучин сонголт цэвэрлэгдэнэ
  *   ④ БҮЛЭГТЭЙ хэсэг (💻 computers) → 9 бүлэг, «Notebook» → 22 брэнд (3 багана)
  *   ⑤ ДООД ТҮВШИНГҮЙ бүлэг (💻 Чихэвч) нь ӨӨРӨӨ leaf болж хадгалагдана
  *   ⑥ Алхмын табууд: 5 таб, идэвхтэй нь `aria-selected`, дууссан дээр дарж буцна
- *   ⑦ JS exception / `console.error` 0 (сүлжээний 401 нь Supabase session — тооцохгүй)
+ *   ⑦ 🔎 ДҮРС ТЕКСТЭЭС ХҮРЭХГҮЙ — 🏷️ Үйлдвэрлэгчийн `combo`/текст талбарт
+ *      (`!pl-9` = 36px, зай ≥ 6px) + ✕ товч (`!pr-10`) + sidebar-ийн 2 талбар
+ *   ⑧ JS exception / `console.error` 0 (сүлжээний 401 нь Supabase session — тооцохгүй)
  *
  * ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
  *   1) сервер http://localhost:3000 (`npm run dev` эсвэл `npm run build && npm run start`)
@@ -200,9 +202,112 @@ ok('2-Р АЛХАМ руу шилжив (Дэлгэрэнгүй идэвхтэй
 const search = await evaluate('location.search');
 ok('URL нь `?step=2` болов', String(search).includes('step=2'), search);
 
-console.log('\n── ⑦ CONSOLE / EXCEPTION ──');
-ok('JS exception / console.error БАЙХГҮЙ', problems.length === 0, JSON.stringify(problems.slice(0, 5)));
+console.log('\n── ⑦ 🔎 ДҮРС ТЕКСТЭЭС ХҮРЭХГҮЙ (§ «Үйлдвэрлэгч» combobox + sidebar) ──');
+/**
+ * 🔴 АСУУДАЛ (2026-10-01, хэрэглэгчийн гомдол): «🔎 нь text-ийнхээ эхний үсэгтэй
+ *    давхардаад байна».
+ *    ШАЛТГААН: форм дотор оролт нь `.form-group`-ийн дотор байдаг ба
+ *    `app/globals.css`-ийн `.form-group :is(input, select, textarea):not(…)` (0,3,1)
+ *    дүрэм нь `pl-8` (0,1,0)-ыг ДАРЖ `padding-left`-ыг **12px** болгодог байв →
+ *    дүрс (`left-3` = 12px) нь текстийн эхний үсэг ДЭЭР сууж байв ✗
+ * ✅ ЗАСВАР: `SearchableSelect`/`TextFilter` → **`!pl-9`** (36px) + **`!pr-10`** (40px)
+ *    ⇒ доор нь дүрс ба текст ХҮРЭХГҮЙ (зай ≥ 6px) гэдгийг БОДИТ Chrome дээр хэмжинэ ✓
+ */
+const waitForSel = async (sel, ms = 10000) => {
+  const deadline = Date.now() + ms;
+  while (Date.now() < deadline) {
+    if (await evaluate(`!!document.querySelector(${JSON.stringify(sel)})`)) return true;
+    await wait(250);
+  }
+  return false;
+};
+/** 🔎 дүрстэй оролт БҮРИЙН зайг хэмжинэ (icon.right → текстийн эхлэл) */
+const ICON_PROBE = `(() => {
+  const out = [];
+  document.querySelectorAll('input').forEach((input) => {
+    const holder = input.parentElement;
+    const icon = holder ? holder.querySelector('span[aria-hidden="true"]') : null;
+    if (!icon) return;
+    const ir = input.getBoundingClientRect();
+    const gr = icon.getBoundingClientRect();
+    const cs = getComputedStyle(input);
+    out.push({
+      aria: (input.getAttribute('aria-label') || input.getAttribute('placeholder') || '').trim(),
+      cls: input.className,
+      pl: cs.paddingLeft,
+      pr: cs.paddingRight,
+      iconRight: +(gr.right - ir.left).toFixed(1),
+      gap: +(ir.left + parseFloat(cs.paddingLeft) - gr.right).toFixed(1),
+    });
+  });
+  return out;
+})()`;
+
+// 🚗 Автомашин → Суудлын машин → 2-Р АЛХАМ (Үйлдвэрлэгч тэнд байна)
+await click('[data-step-tab="category"]');
+await click('[data-picker="section"] button[data-picker-value="auto"]');
+await waitForSel('[data-picker="level2"] button[data-picker-value="Суудлын машин"]');
+await click('[data-picker="level2"] button[data-picker-value="Суудлын машин"]');
+await evaluate('(() => { const b = [...document.querySelectorAll(\'form button\')].find((x) => (x.innerText||\'\').includes(\'Үргэлжлүүлэх\')); if (!b) return \'NOT_FOUND\'; b.click(); return \'OK\'; })()');
+await waitForSel('input[role="combobox"]');
+
+const formFields = await evaluate(ICON_PROBE);
+const brand = formFields.find((f) => f.aria.includes('Үйлдвэрлэгч'));
+ok('🔎 «🏷️ Үйлдвэрлэгч» combobox олдов', Boolean(brand), JSON.stringify(formFields.map((f) => f.aria)));
+ok('🔎 дүрс текстийн эхний үсэгтэй ХҮРЭХГҮЙ (зай ≥ 6px)',
+  Boolean(brand) && brand.gap >= 6, JSON.stringify(brand));
+ok('padding-left ≥ 36px (`!pl-9` нь `.form-group`-ийн 12px-ыг дарсан)',
+  Boolean(brand) && parseFloat(brand.pl) >= 36, brand ? brand.pl : 'талбар олдсонгүй');
+
+// ✍️ «Toyota» бичихэд ✕ (Арилгах) товч текстээс хүрэхгүй байх ёстой (`!pr-10`)
+await evaluate(`(() => {
+  const i = document.querySelector('input[role="combobox"]');
+  i.focus();
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  setter.call(i, 'Toyota');
+  i.dispatchEvent(new Event('input', { bubbles: true }));
+  return 'OK';
+})()`);
+await wait(600);
+const typed = await evaluate(`(() => {
+  const input = document.querySelector('input[role="combobox"]');
+  const btn = input.parentElement.querySelector('button[aria-label="Арилгах"]');
+  if (!btn) return { error: '✕ товч гараагүй' };
+  const cs = getComputedStyle(input);
+  const ir = input.getBoundingClientRect();
+  return {
+    pr: cs.paddingRight,
+    value: input.value,
+    clearance: +(btn.getBoundingClientRect().left - (ir.right - parseFloat(cs.paddingRight))).toFixed(1),
+  };
+})()`);
+ok('текст бичихэд ✕ товч текстээс ХҮРЭХГҮЙ (`!pr-10` ≥ 40px, зай ≥ 6px)',
+  !typed.error && parseFloat(typed.pr) >= 40 && typed.clearance >= 6, JSON.stringify(typed));
+
+// ⬅️ SIDEBAR (HomeClient) — ижил 2 компонент, ижил класс
+/**
+ * ⚠️ Энэ цэгээс өмнө хуримтлагдсан алдаа = ЗӨВХӨН `/listings/new` (picker + форм)
+ *    дээр гарсан алдаа — ⑧-д шалгах нь ЯГ тэр хэсэг (нүүр хуудсанд шилжсэний
+ *    дараах алдаа нь ⚠️ хуучирсан session (`PGRST301` JWT) — кодтой холбоогүй)
+ */
+const pickerProblems = problems.slice();
+await rpc('Page.navigate', { url: `${BASE}/?section=auto&category=all&type=${encodeURIComponent('Суудлын машин')}` });
+await wait(2500);
+await waitForSel('input[aria-label="Үйлдвэрлэгч"]', 15000);
+const sideFields = await evaluate(ICON_PROBE);
+ok('sidebar: 🔎 дүрстэй талбарт «Үйлдвэрлэгч» ба «Загвар» бий (hero хайлттай хамт)',
+  sideFields.some((f) => f.aria.includes('Үйлдвэрлэгч'))
+  && sideFields.some((f) => f.aria.includes('Загвар')),
+  JSON.stringify(sideFields.map((f) => f.aria)));
+ok('sidebar: бүх 🔎 талбарын зай ≥ 6px (дүрс текстээ халхлахгүй)',
+  sideFields.length >= 2 && sideFields.every((f) => f.gap >= 6),
+  JSON.stringify(sideFields.map((f) => `${f.aria.slice(0, 14)}:${f.gap}px`)));
+
+console.log('\n── ⑧ CONSOLE / EXCEPTION ──');
+ok('JS exception / console.error БАЙХГҮЙ (picker + Үйлдвэрлэгч форм)',
+  pickerProblems.length === 0, JSON.stringify(pickerProblems.slice(0, 5)));
 console.log(`  ℹ️ сүлжээний 401 (Supabase session, кодтой холбоогүй): ${netProblems.length}`);
+console.log(`  ℹ️ нүүр хуудсанд шилжсэний дараах алдаа (⚠️ хуучирсан session JWT — кодтой холбоогүй): ${problems.length - pickerProblems.length}`);
 
 console.log(`\n══════════ ҮР ДҮН: ${pass}/${pass + fail} ✓ ══════════\n`);
 try { await fetch(`${CDP}/json/close/${target.id}`); } catch { /* орхино */ }

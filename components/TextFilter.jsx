@@ -62,6 +62,15 @@ export default function TextFilter({
     if (e.key === 'Escape') setText(value || '');
   };
 
+  /**
+   * ⚠️ 2026-10-01: `!pl-9` / `!pr-10` — ЗААВАЛ `!` (important) байх ёстой!
+   *    `SearchableSelect`-ийн адил: хэрэв энэ талбар `.form-group`-ийн дотор
+   *    орвол `app/globals.css`-ийн `.form-group :is(input, …)` дүрэм (0,3,1) нь
+   *    `pl-8` (0,1,0)-ыг ДАВЖ padding-left-ыг 12px болгоно → 🔎 дүрс бичсэн
+   *    текстийн ЭХНИЙ ҮСЭГТЭЙ ДАВХАРДАХАД хүргэдэг байв ✗
+   */
+  const inputClass = `${className} !pl-9 ${text ? '!pr-10' : ''}`;
+
   return (
     <div className="relative">
       <span
@@ -74,7 +83,7 @@ export default function TextFilter({
         type={type}
         aria-label={ariaLabel}
         autoComplete="off"
-        className={`${className} pl-8 ${text ? 'pr-8' : ''}`}
+        className={inputClass}
         placeholder={placeholder}
         value={text}
         onChange={(e) => setText(e.target.value)}
