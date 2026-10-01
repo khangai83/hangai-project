@@ -20,6 +20,7 @@
     "test:rooms": "node scripts/test-rooms.mjs",
     "cdp:rooms": "node scripts/cdp-rooms.mjs",
     "cdp:range": "node scripts/cdp-range.mjs",
+    "cdp:picker": "node scripts/cdp-picker.mjs",
     "test:messages": "node scripts/test-messages.mjs",
     "test:youtube": "node scripts/test-youtube.mjs",
     "migration:copy": "node scripts/setup-migration.js",

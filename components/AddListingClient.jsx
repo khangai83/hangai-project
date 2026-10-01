@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, useToast, useUI } from './AppProviders';
 import { createListing, updateListing, uploadImages, fetchListingById } from '../lib/queries';
-import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, hasSimpleForm, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSubtypes, hasCategoryChoice, getSubtypeGroups, getAttrFields } from '../lib/locationData';
+import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, hasSimpleForm, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSection, getSubtypes, hasCategoryChoice, getSectionCategories, getSubtypeGroups, findSubtypeGroup, getAttrFields, PROPERTY_TYPE_ICONS } from '../lib/locationData';
 import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice, isNegotiablePrice, NEGOTIABLE_PRICE_LABEL } from '../lib/format';
 import phoneEmail from '../lib/phoneEmail';
 import YouTubeField from './YouTubeField';
@@ -77,6 +77,75 @@ function listingToForm(l) {
   };
 }
 
+/**
+ * 🗂 «КАТЕГОРИО СОНГОНО УУ» — unegui.mn загварын 3 БАГАНАТ сонголтын БАГАНА
+ * (2026-10-01, хэрэглэгчийн хүсэлт: «Эхний хэсгийг ийм болго» — `unegui.mn/post_ad/`).
+ *
+ *  ⚠️ ЯАГААД `<select>` БИШ ВЭ: 12 хэсэг × 26 хүртэл дэд төрөл нь select-д
+ *     «юу байгаа нь харагдахгүй» (зөвхөн нээсэн үед) — хэрэглэгч 3 түвшний
+ *     модоо НЭГ ДЭЛГЭЦЭЭР харж, дараалан сонгох боломжтой боллоо ✓
+ *
+ *  @param {string}   p.title     улаан толгойн бичиг (сонгосон утга). ⚠️ `null`
+ *     бол толгой ГАРАХГҮЙ (unegui-д 3 дахь баганад толгой байхгүй ✓)
+ *  @param {string}   [p.mobileLabel] 320–640px дээр толгойн оронд гарах жижиг
+ *     шошго (толгойгүй баганад ч утга нь ойлгомжтой байхын тулд ✓)
+ *  @param {string}   p.pickRole  `data-picker` утга (`section`|`level2`|`level3`) —
+ *     ⚠️ CDP/тестийн тогтвортой selector (`[data-picker="section"] button`) ✓
+ *  @param {Array}    p.items     `{ value, label, icon?, badge? }`
+ *  @param {string}   p.value     сонгогдсон утга (`items[].value`-тай тэнцэнэ)
+ *  @param {Function} p.onPick    утга сонгоход дуудагдана
+ *  @param {string}   [p.emptyText] хоосон үеийн тайлбар
+ *  @param {string}   [p.className] нэмэлт класс (баганын хүрээ/хуваалт)
+ */
+function PickerColumn({ pickRole, title, mobileLabel, items, value, onPick, emptyText = 'Дараагийн баганаас сонгоно уу', className = '' }) {
+  return (
+    <div data-picker={pickRole} className={`flex min-h-[220px] flex-col ${className}`}>
+      {title ? (
+        <div className="flex items-center gap-1.5 bg-primary px-3 py-2 text-[12.5px] font-bold text-white">
+          <span className="truncate">{title}</span>
+        </div>
+      ) : (
+        mobileLabel ? (
+          <div className="px-3 pt-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400 sm:hidden">
+            {mobileLabel}
+          </div>
+        ) : null
+      )}
+      <ul className="max-h-[300px] flex-1 overflow-y-auto p-1">
+        {items.length === 0 && (
+          <li className="px-2.5 py-3 text-[12.5px] leading-snug text-gray-400">{emptyText}</li>
+        )}
+        {items.map((it) => {
+          const active = it.value === value;
+          return (
+            <li key={it.value}>
+              <button
+                type="button"
+                data-picker-value={it.value}
+                onClick={() => onPick(it.value)}
+                aria-pressed={active}
+                className={`flex w-full items-center gap-1.5 rounded-md px-2.5 py-2 text-left text-[13px] leading-snug transition ${
+                  active
+                    ? 'bg-primary font-semibold text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {it.icon ? <span aria-hidden="true">{it.icon}</span> : null}
+                <span className="min-w-0 flex-1">{it.label}</span>
+                {typeof it.badge === 'number' && it.badge > 0 ? (
+                  <span className={`shrink-0 rounded-full px-1.5 text-[10px] font-semibold ${active ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                    {it.badge}
+                  </span>
+                ) : null}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 export default function AddListingClient() {
   const { user, profileName, authLoading } = useAuth();
   const { showToast } = useToast();
@@ -143,6 +212,15 @@ export default function AddListingClient() {
   const [compressing, setCompressing] = useState(false); // 🗜 зураг шахаж байна
   const [lastReport, setLastReport] = useState(null); // сүүлийн шахалтын тайлан
   const [error, setError] = useState('');
+  /**
+   * 🗂 3 БАГАНАТ сонголт (2026-10-01) — 2 дахь баганад дарагдсан БҮЛЭГ (3 дахь
+   *    түвшин). ⚠️ ЗӨВХӨН бүлэгтэй хэсэгт (💻 computers, ⚡ electric, 🛠️ services)
+   *    ашиглагдана; хавтгай хэсэгт `''` хэвээр (багана 2 нь шууд дэд төрөл) ✓
+   * ⚠️ Сонгосон LEAF (`form.propertyType`) нь тусад нь `form` дотор байгаа тул
+   *    давхар хадгалахгүй ✓ — `openGroup` нь зөвхөн «аль бүлэг нээлттэй вэ»-г л
+   *    хэлнэ (`useEffect` доор — засах горимд бүлгийг автоматаар нээнэ ✓)
+   */
+  const [openGroup, setOpenGroup] = useState('');
   const baselineRef = useRef(''); // анхны төлөв (өөрчлөгдсөн эсэхийг шалгах)
 
   // 🪜 Хуудас ачаалахад: нэвтэрсэн бол шинэ/засах формыг бэлдэнэ.
@@ -186,6 +264,24 @@ export default function AddListingClient() {
     return () => { mounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, userId, editId]);
+
+  /**
+   * 🗂 3 БАГАНАТ сонголт — сонгосон ДЭД ТӨРЛИЙН БҮЛГИЙГ автоматаар нээнэ.
+   * ⚠️ Засах горимд (`?edit=<id>`) `form.propertyType` нь ХОЖИМ (fetch дууссаны
+   *    дараа) бөглөгддөг тул `useState`-ийн анхны утгаар шийдэж болохгүй ✗ —
+   *    effect-ээр синк хийнэ ✓
+   * ⚠️ Хэрэглэгч 2 дахь баганаас БҮЛЭГ дээр дарахад `propertyType` ХӨДӨЛӨХГҮЙ
+   *    (зөвхөн `openGroup` солигдоно) тул энэ effect түүнийг ДАРАХГҮЙ ✓
+   */
+  useEffect(() => {
+    const s = form.section || 'real-estate';
+    const g = findSubtypeGroup(s, form.propertyType);
+    if (g) { setOpenGroup(g.label); return; }
+    // ⚠️ Доод түвшингүй бүлэг («💻 Чихэвч») нь ӨӨРӨӨ leaf тул
+    //    `findSubtypeGroup` нь `null` буцаана — тэр тохиолдлыг тусад нь барина ✓
+    const leaf = getSubtypeGroups(s).find((x) => !x.items.length && x.label === form.propertyType);
+    if (leaf) setOpenGroup(leaf.label);
+  }, [form.section, form.propertyType]);
 
   const originalImageCount = isEdit && Array.isArray(editing.images) ? editing.images.length : 0;
   const isDirty = () =>
@@ -234,8 +330,84 @@ export default function AddListingClient() {
    *    харагдана (хэрэглэгч зар нэмэхдээ бүх сонголтыг харах ёстой ✓)
    */
   const subtypeGroups = getSubtypeGroups(form.section || 'real-estate');
-  /** «Зарах / Түрээслэх» сонголт харагдах эсэх — ⚠️ ЗӨВХӨН үл хөдлөхөд */
-  const showCategoryChoice = hasCategoryChoice(form.section || 'real-estate');
+
+  /* ==========================================================================
+     🗂 3 БАГАНАТ «КАТЕГОРИО СОНГОНО УУ» — unegui.mn загварын СОНГОЛТ (2026-10-01)
+     ──────────────────────────────────────────────────────────────────────────
+     Хэрэглэгчийн хүсэлт: «Эхний хэсгийг ийм болго» (`unegui.mn/post_ad/`).
+     ⚠️ ӨМНӨ нь 2–3 `<select>` байсныг 3 БАГАНАТ жагсаалт болгов:
+        ① ХЭСЭГ (12)  ② «Зарах/Түрээслэх» (зөвхөн үл хөдлөх) эсвэл БҮЛЭГ
+        эсвэл хавтгай дэд төрөл  ③ LEAF дэд төрөл
+     ⚠️ Улаан толгойн бичиг нь СОНГОСОН утга (unegui-той ижил) — юу сонгосноо
+        багана бүрийн толгойноос харж баталгаажуулна ✓
+     ⚠️ Хавтгай хэсэгт (`subtypeGroups` хоосон) 3 дахь багана ГАРАХГҮЙ ✓
+     ========================================================================== */
+  const sectionValue = form.section || 'real-estate';
+  const sectionDef = getSection(sectionValue);
+  const sectionItems = SECTIONS.map((s) => ({ value: s.value, label: s.label, icon: s.icon }));
+  /** «Зарах / Түрээслэх» — ⚠️ ЗӨВХӨН үл хөдлөхөд (`hasCategoryChoice`).
+   *  ⚠️ «Бүгд» (`all`) нь зарын формд УТГАГҮЙ — зар нь үргэлж `sell`/`rent` тул хасна ✓ */
+  const showCategoryChoice = hasCategoryChoice(sectionValue);
+  const categoryItems = getSectionCategories(sectionValue)
+    .filter((c) => c.value !== 'all')
+    .map((c) => ({ value: c.value, label: c.label }));
+  const hasGroups = subtypeGroups.length > 0;
+  /** 3 дахь багана харагдах эсэх (бүлэгтэй хэсэг эсвэл үл хөдлөх) */
+  const hasThirdColumn = showCategoryChoice || hasGroups;
+  /* ② дахь багана — үл хөдлөх: «Зарах/Түрээслэх»; бүлэгтэй: БҮЛЭГ; бусад: дэд төрөл */
+  const level2Items = showCategoryChoice
+    ? categoryItems
+    : hasGroups
+      ? subtypeGroups.map((g) => ({ value: g.label, label: g.label, badge: g.items.length }))
+      : subtypes.map((t) => ({ value: t, label: getPropertyTypeLabel(t, form.category) }));
+  const level2Value = showCategoryChoice ? form.category : hasGroups ? openGroup : form.propertyType;
+  /* ③ дахь багана (leaf) — үл хөдлөх: бүх төрөл; бүлэгтэй: нээлттэй бүлгийн item-үүд */
+  const level3Items = showCategoryChoice
+    ? subtypes.map((t) => ({ value: t, label: getPropertyTypeLabel(t, form.category), icon: PROPERTY_TYPE_ICONS[t] || '' }))
+    : (subtypeGroups.find((g) => g.label === openGroup)?.items || []).map((t) => ({ value: t, label: t }));
+  const level2Title = showCategoryChoice
+    ? (categoryItems.find((c) => c.value === form.category)?.label || 'Зар эсвэл түрээс')
+    : hasGroups ? (openGroup || 'Дэд бүлэг') : 'Дэд төрөл';
+  const selectedLeafLabel = form.propertyType ? getPropertyTypeLabel(form.propertyType, form.category) : '';
+  /**
+   * 🥖 БҮТЭН ЗАМНЫ «БҮЛЭГ» хэсэг — сонгосон leaf нь аль бүлэгт харьяалагдах вэ.
+   * ⚠️ Чихэвч шиг доод ТҮВШИНГҮЙ бүлэг нь ӨӨРӨӨ leaf тул `findSubtypeGroup` NULL
+   *    буцаана — `''` болж, замд «Чихэвч › Чихэвч» гэж ДАВХАРДАХГҮЙ ✓
+   */
+  const selectedGroupLabel = form.propertyType
+    ? (findSubtypeGroup(sectionValue, form.propertyType)?.label || '')
+    : '';
+
+  /** ① ХЭСЭГ солих — дэд төрөл/attr цэвэрлэнэ, «Зарах/Түрээслэх» зөвхөн үл хөдлөхөд */
+  const pickSection = (next) => {
+    // ⚠️ 2 дахь баганын «нээлттэй бүлэг» нь хэсэг бүрд ӨӨР байна — заавал
+    //    цэвэрлэнэ (эс бөгөөс шинэ хэсэгт хоосон/буруу багана гарна ✗)
+    setOpenGroup('');
+    setForm((f) => ({
+      ...f,
+      section: next,
+      propertyType: '',
+      attrs: {},
+      // ⚠️ «Зарах / Түрээслэх» нь зөвхөн үл хөдлөхөд — бусад хэсэгт `sell` болж буцна ✓
+      category: hasCategoryChoice(next) ? f.category : 'sell',
+    }));
+  };
+
+  /** ② Баганаас сонгох — БҮЛЭГ дээр дарахад ЗӨВХӨН нээнэ (leaf биш) ✓ */
+  const pickLevel2 = (v) => {
+    if (showCategoryChoice) { set('category', v); return; }
+    if (!hasGroups) { set('propertyType', v); setOpenGroup(''); return; }
+    const g = subtypeGroups.find((x) => x.label === v);
+    if (!g) return;
+    setOpenGroup(v);
+    // ⚠️ Доод түвшингүй бүлэг («💻 Чихэвч», «⚡ Хөргөгч, хөлдөөгч») нь ӨӨРӨӨ
+    //    leaf болно — `propertyType`-д хадгалагдана (хуучин `<select>`-ийн зан ✓)
+    if (!g.items.length) { set('propertyType', v); return; }
+    // ⚠️ Өөр бүлэг рүү шилжихэд хуучин leaf нь тэр бүлэгт БАЙХГҮЙ бол цэвэрлэнэ
+    //    (эс бөгөөс «2-р багана А бүлэг, доорх сонголт Б бүлгийн leaf» → зөрүү ✗)
+    if (!g.items.includes(form.propertyType)) set('propertyType', '');
+  };
+
   /**
    * Тухайн хэсгийн attr талбарууд (форм автоматаар үүсгэнэ).
    *
@@ -548,46 +720,48 @@ export default function AddListingClient() {
               </button>
             </div>
 
-          {/* 🪜 АЛХМЫН ЗААГЧ — дууссан алхам дээр дарж буцаж болно */}
-          <div className="px-4 pb-4 sm:px-6" aria-label="Зарын алхмууд">
-            <div className="flex items-start justify-between gap-1">
-              {STEPS.map((s, i) => {
-                const done = i < step;
-                const active = i === step;
-                return (
-                  <button
-                    key={s.key}
-                    type="button"
-                    onClick={() => goToStep(i)}
-                    disabled={!done}
-                    aria-current={active ? 'step' : undefined}
-                    className={`flex flex-1 flex-col items-center gap-1.5 ${done ? 'cursor-pointer' : 'cursor-default'}`}
-                  >
-                    <span
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] font-bold transition-all duration-150 ${
-                        done || active ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'
-                      } ${active ? 'ring-4 ring-primary-light' : ''}`}
-                    >
-                      {done ? '✓' : i + 1}
-                    </span>
-                    <span
-                      className={`text-center text-[10px] font-semibold leading-tight sm:text-[11px] ${
-                        active ? 'text-primary' : done ? 'text-gray-600' : 'text-gray-400'
-                      }`}
-                    >
-                      {s.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            {/* Дэвшлийн зурвас */}
-            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-              <div
-                className="h-full rounded-full bg-primary transition-all duration-300"
-                style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
-              />
-            </div>
+          {/* 🪜 АЛХМЫН ТАБУУД — «Ангилал · Дэлгэрэнгүй · Байршил · Үнэ · Зураг» нь
+              хуудасны ДЭЭД ХЭСЭГТ дандаа харагдана (2026-10-01, хэрэглэгчийн
+              хүсэлт: «дээр нь ангилал, дэлгэрэнгүй, байршил … харуул» — unegui.mn
+              загвар). ⚠️ Дууссан алхам дээр ДАРЖ БУЦАЖ болно (`goToStep`, зөвхөн
+              `i < step`) — дараагийн алхам руу ҮСРЭХГҮЙ (дутуу мэдээллээр
+              нийтлэхээс сэргийлнэ ✓) */}
+          <div aria-label="Зарын алхмууд" role="tablist" className="flex items-stretch gap-0.5 overflow-x-auto px-1.5 sm:px-3">
+            {STEPS.map((s, i) => {
+              const done = i < step;
+              const active = i === step;
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  role="tab"
+                  data-step-tab={s.key}
+                  aria-selected={active}
+                  onClick={() => goToStep(i)}
+                  disabled={!done}
+                  title={s.short}
+                  className={`shrink-0 whitespace-nowrap border-b-2 px-1.5 pb-2 pt-1 text-[11px] font-semibold transition sm:px-3 sm:text-[12.5px] ${
+                    active
+                      ? 'border-primary text-primary'
+                      : done
+                        ? 'border-transparent text-gray-600 hover:border-gray-300 hover:text-primary'
+                        : 'border-transparent text-gray-400'
+                  }`}
+                >
+                  <span className="mr-0.5 text-[10px] sm:mr-1 sm:text-[11px]">
+                    {done ? '✓' : <span className="hidden sm:inline">{`${i + 1}.`}</span>}
+                  </span>
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
+          {/* Дэвшлийн зурвас */}
+          <div className="h-1.5 w-full bg-gray-100">
+            <div
+              className="h-full bg-primary transition-all duration-300"
+              style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
+            />
           </div>
         </div>
         <div className="p-6">
@@ -603,69 +777,72 @@ export default function AddListingClient() {
               <p className="text-[13px] text-gray-500">{STEPS[step].short}</p>
             </div>
 
-            {/* ═══ 1-р алхам · АНГИЛАЛ (хэсэг · дэд төрөл · зарах/түрээслэх) ═══ */}
+            {/* ═══ 1-р алхам · АНГИЛАЛ — «КАТЕГОРИО СОНГОНО УУ» (3 баганат, unegui.mn) ═══
+                ⚠️ Хэрэглэгч эндээс ① ХЭСЭГ → ② «Зарах/Түрээслэх»/БҮЛЭГ → ③ ДЭД ТӨРӨЛ
+                   гэж ДАРААЛАН сонгоно. Багана бүрийн УЛААН толгой нь сонгосон
+                   утгыг харуулна (`PickerColumn` — дээр тайлбарласан ✓) */}
             {step === 0 && (
-            <div className="form-row">
-              {/* ===== ХЭСЭГ (0016) — Автомашин / Ажлын зар / Компьютер … =====
-                  ⚠️ Хэсэг солиход дэд төрөл (propertyType) ба attr утгууд нь
-                     тухайн хэсэгт тохирохгүй тул ЦЭВЭРЛЭНЭ. */}
-              <div className="form-group">
-                <label>Хэсэг *</label>
-                <select
-                  value={form.section || 'real-estate'}
-                  onChange={(e) => {
-                    const next = e.target.value;
-                    setForm((f) => ({
-                      ...f,
-                      section: next,
-                      propertyType: '',
-                      attrs: {},
-                      // ⚠️ «Зарах / Түрээслэх» нь зөвхөн үл хөдлөхөд — бусад
-                      //    хэсэгт `sell` болж буцна (select нь харагдахгүй).
-                      category: hasCategoryChoice(next) ? f.category : 'sell',
-                    }));
-                  }}
-                >
-                  {SECTIONS.map((s) => (
-                    <option key={s.value} value={s.value}>{s.icon} {s.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Дэд төрөл *</label>
-                <select value={form.propertyType} onChange={(e) => set('propertyType', e.target.value)}>
-                  <option value="">Сонгох</option>
-                  {/* 🛠 БҮЛЭГТЭЙ хэсэг (`services`) — `optgroup`-оор бүлэглэнэ */}
-                  {subtypeGroups.length > 0
-                    ? subtypeGroups.map((g) =>
-                        g.items.length ? (
-                          <optgroup key={g.label} label={g.label}>
-                            {g.items.map((t) => (
-                              <option key={t} value={t}>{getPropertyTypeLabel(t, form.category)}</option>
-                            ))}
-                          </optgroup>
-                        ) : (
-                          /* доод түвшингүй бүлэг — өөрөө сонгогдоно */
-                          <option key={g.label} value={g.label}>{getPropertyTypeLabel(g.label, form.category)}</option>
-                        )
-                      )
-                    : subtypes.map((t) => (
-                        <option key={t} value={t}>{getPropertyTypeLabel(t, form.category)}</option>
-                      ))}
-                </select>
-              </div>
-              {/* «Зар эсвэл түрээс» — ⚠️ ЗӨВХӨН үл хөдлөхөд (хэрэглэгчийн хүсэлт).
-                  Бусад хэсэгт `category` нь `sell` (DB-ийн default) байна. */}
-              {showCategoryChoice && (
-              <div className="form-group">
-                <label>Зар эсвэл түрээс *</label>
-                <select value={form.category} onChange={(e) => set('category', e.target.value)}>
-                  <option value="sell">💰 Зарах</option>
-                  <option value="rent">🔑 Түрээслэх</option>
-                </select>
-              </div>
+            <>
+            <h3 className="mb-2 text-[15px] font-semibold text-gray-900">Категорио сонгоно уу</h3>
+            <div className={`grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-gray-300 bg-gray-200 ${hasThirdColumn ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+              {/* ① ХЭСЭГ — Автомашин / Ажлын зар / Компьютер … (0016) */}
+              <PickerColumn
+                pickRole="section"
+                title={`${sectionDef.icon} ${sectionDef.label}`}
+                items={sectionItems}
+                value={sectionValue}
+                onPick={pickSection}
+                className="bg-white"
+              />
+              {/* ② «Зарах / Түрээслэх» (зөвхөн үл хөдлөх) эсвэл БҮЛЭГ эсвэл дэд төрөл */}
+              <PickerColumn
+                pickRole="level2"
+                title={level2Title}
+                mobileLabel={hasGroups && !showCategoryChoice ? 'Дэд бүлэг' : 'Дэд төрөл'}
+                items={level2Items}
+                value={level2Value}
+                onPick={pickLevel2}
+                emptyText={showCategoryChoice ? 'Зар эсвэл түрээсээ сонгоно уу' : 'Дэд төрлөө сонгоно уу'}
+                className="bg-white"
+              />
+              {/* ③ LEAF дэд төрөл — хавтгай хэсэгт ГАРАХГҮЙ (2 багана) ✓
+                  ⚠️ Толгойн улаан зурвас ГАРАХГҮЙ (unegui.mn-тэй ижил) — сонгосон
+                     зам нь доорх «Сонгосон: …» мөрөнд бүтнээр харагдана ✓ */}
+              {hasThirdColumn && (
+                <PickerColumn
+                  pickRole="level3"
+                  mobileLabel="Зарын төрөл"
+                  items={level3Items}
+                  value={form.propertyType}
+                  onPick={(v) => set('propertyType', v)}
+                  emptyText={hasGroups && !openGroup ? 'Эхлээд дэд бүлгээ сонгоно уу' : 'Дэд төрөл байхгүй'}
+                  className="bg-white"
+                />
               )}
             </div>
+            {/* ---- Сонгосон зам (unegui.mn-ийн breadcrumb мэт) + дараагийн алхам ---- */}
+            <p data-picker-summary className="mt-3 rounded-lg bg-gray-50 px-3 py-2.5 text-[13px] text-gray-600">
+              {form.propertyType ? (
+                <>
+                  Сонгосон:{' '}
+                  <b className="text-gray-900">{sectionDef.icon} {sectionDef.label}</b>
+                  {showCategoryChoice && (
+                    <> › <b className="text-gray-900">{categoryItems.find((c) => c.value === form.category)?.label}</b></>
+                  )}
+                  {selectedGroupLabel && (
+                    <> › <b className="text-gray-900">{selectedGroupLabel}</b></>
+                  )}
+                  {' '}› <b className="text-gray-900">{selectedLeafLabel}</b>
+                </>
+              ) : showCategoryChoice ? (
+                'Хэсэг → «Зар эсвэл түрээс» → зарын төрлөө сонгоно уу.'
+              ) : hasGroups ? (
+                'Хэсэг → дэд бүлэг → дэд төрлөө сонгоно уу.'
+              ) : (
+                'Дэд төрлөө сонгоно уу.'
+              )}
+            </p>
+            </>
             )}
 
             {/* ═══ 2-р алхам · ДЭЛГЭРЭНГҮЙ (үндсэн үзүүлэлт ба нэмэлт талбарууд) ═══ */}

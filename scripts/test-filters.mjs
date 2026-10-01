@@ -542,8 +542,11 @@ t('⚠️ Хуучин/demo утга нь ШИНЭ сонголтод багтс
   assert.ok(!storage.includes('512 GB SSD + 1 TB HDD'));
 });
 
-t('💻 ГЭРЭЭ: форм (`AddListingModal`) + seed нь нэг эх сурвалжийг барина', () => {
-  const modal = readFileSync(new URL('../components/AddListingModal.jsx', import.meta.url), 'utf8');
+t('💻 ГЭРЭЭ: форм (`AddListingClient` — `/listings/new`) + seed нь нэг эх сурвалжийг барина', () => {
+  // ⚠️ 2026-10-01: модал (`AddListingModal.jsx`) БҮРЭН ХАСАГДАЖ, тусдаа хуудас
+  //    (`app/listings/new` → `components/AddListingClient.jsx`) болов — тест нь
+  //    ШИНЭ файлыг уншина ✓ (гэрээ/assert-ууд нь ХӨНДӨГДӨӨГҮЙ ✓)
+  const modal = readFileSync(new URL('../components/AddListingClient.jsx', import.meta.url), 'utf8');
   // ① Форм нь ЗӨВХӨН `getAttrFields(section, subtype)`-ээр талбараа сонгоно
   assert.ok(/getAttrFields\(form\.section \|\| 'real-estate', form\.propertyType\)/.test(modal),
     'форм `getAttrFields`-ийг дэд төрөлтэй дуудах ёстой ✗');
