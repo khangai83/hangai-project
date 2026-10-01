@@ -40,10 +40,23 @@ import { compressImages, formatBytes } from '../lib/imageUtils';
  *    форм дотрох «1/5-Р АЛХАМ · Ангилал · Юу зарах вэ?» гарчиг бүхэлдээ
  *    хасагдсан тул ашиглагдахгүй болсон ✓ (git түүхэд хэвээр байна)
  */
+/**
+ * 📍 2026-10-01 — АЛХМЫН ДАРААЛАЛ СОЛИГДОВ (хэрэглэгчийн хүсэлт:
+ *    «Байршлыг 3т биш 2т оруулдаг мэдээлэл болго, ингэхдээ 1т зар оруулж
+ *    байгаатай адилхан форматтай болгоорой»): «📍 Байршил» нь 3-Р АЛХМААС
+ *    **2-Р АЛХАМ** руу шилжиж, «📋 Дэлгэрэнгүй» 3-р алхам болов (бусдын
+ *    байрлал хэвээр).
+ *    ⚠️ УЧИРЛАЛТАЙ ЗАСВАРУУД (алхмыг `step` индексээр удирддаг тул):
+ *       • `{step === N && ( … )}` блок бүр дээр N-ийг СОЛИНО ✓
+ *       • `validateStep`/`firstInvalidStep` нь `STEPS[i].key`-ээр ажилладаг →
+ *         өөрчлөлт ШААРДЛАГАГҮЙ (нэг эх сурвалж ✓)
+ *       • URL хэрэглэгчид 1-based хэвээр: `?step=2` = **Байршил** ✓
+ *       • `scripts/cdp-picker.mjs` ⑥⑦-г шинэ дугаарлалтад тааруулав ✓
+ */
 const STEPS = [
   { key: 'category', label: 'Ангилал' },
-  { key: 'details',  label: 'Дэлгэрэнгүй' },
   { key: 'location', label: 'Байршил' },
+  { key: 'details',  label: 'Дэлгэрэнгүй' },
   { key: 'price',    label: 'Үнэ' },
   { key: 'media',    label: 'Зураг' },
 ];
@@ -61,7 +74,6 @@ function listingToForm(l) {
     city: l.city || 'Улаанбаатар',
     district: l.district || '',
     khoroo: l.khoroo || '',
-    addressDetail: l.address_detail || '',
     price: l.price ? String(l.price) : '',
     // 🤝 «Үнэ тохирно» — үнэ 0/хоосон бол чекбокс асаалттай нээгдэнэ (lib/format.js)
     negotiable: isNegotiablePrice(l),
@@ -90,10 +102,20 @@ function listingToForm(l) {
  *     «юу байгаа нь харагдахгүй» (зөвхөн нээсэн үед) — хэрэглэгч 3 түвшний
  *     модоо НЭГ ДЭЛГЭЦЭЭР харж, дараалан сонгох боломжтой боллоо ✓
  *
- *  @param {string}   p.title     толгойн бичиг (сонгосон утга — цэнхэр зурвас). ⚠️ `null`
- *     бол толгой ГАРАХГҮЙ (unegui-д 3 дахь баганад толгой байхгүй ✓)
- *  @param {string}   [p.mobileLabel] 320–640px дээр толгойн оронд гарах жижиг
- *     шошго (толгойгүй баганад ч утга нь ойлгомжтой байхын тулд ✓)
+ *  ⚠️ 2026-10-01 (**4 ДЭХ ЗАСВАР**, хэрэглэгчийн хүсэлт: «сонгосон хэсгийг дээд
+ *     талд нь ДАВХАР гаргаж байгааг болиё»): баганын ДЭЭД ЦЭНХЭР ТОЛГОЙ
+ *     (`[data-picker-title]`) **БҮХЭЛДЭЭ ХАСАГДАВ** — сонгосон утга нь
+ *     баганын ЖАГСААЛТЫН мөр дээр аль хэдийн цэнхэрээр (`aria-pressed`) байдаг
+ *     тул толгойд дахин гарах нь ЗҮГЭЭР ДАВХАРДАЛ байв ✗
+ *     ⇒ Сонгосон утга нь ЗӨВХӨН 2 газар харагдана: ① мөрийн цэнхэр дэвсгэр
+ *        ② доорх «Сонгосон: …» дүгнэлтийн мөр (`[data-picker-summary]` /
+ *        `[data-location-summary]`) ✓ — давхардал **0**
+ *     ℹ️ `title` проп бүрэн хасагдсан (label3/level2-ийн `…Title` тооцооллууд ч
+ *        хамт) — CDP нь одоо толгой ОГТ БАЙХГҮЙ (`[data-picker-title]` = 0)
+ *        гэдгийг шалгана ✓
+ *  @param {string}   [p.mobileLabel] 320–640px дээр гарах баганын жижиг шошго
+ *     (`Хот / Аймаг`, `Дүүрэг / Сум`, `Төрөл` …) — `sm`-ээс ДЭЭШ ГАРАХГҮЙ ✓
+ *     (сонгосон утга БИШ — тогтмол нэр тул давхардал үүсгэхгүй ✓)
  *  @param {string}   p.pickRole  `data-picker` утга (`section`|`level2`|`level3`) —
  *     ⚠️ CDP/тестийн тогтвортой selector (`[data-picker="section"] button`) ✓
  *  @param {Array}    p.items     `{ value, label, icon?, badge? }`
@@ -102,20 +124,17 @@ function listingToForm(l) {
  *  @param {string}   [p.emptyText] хоосон үеийн тайлбар
  *  @param {string}   [p.className] нэмэлт класс (баганын хүрээ/хуваалт)
  */
-function PickerColumn({ pickRole, title, mobileLabel, items, value, onPick, emptyText = 'Дараагийн баганаас сонгоно уу', className = '' }) {
+function PickerColumn({ pickRole, mobileLabel, items, value, onPick, emptyText = 'Дараагийн баганаас сонгоно уу', className = '' }) {
   return (
     <div data-picker={pickRole} className={`flex min-h-[220px] flex-col ${className}`}>
-      {title ? (
-        <div className="flex items-center gap-1.5 bg-primary px-3 py-2 text-[12.5px] font-bold text-white">
-          <span className="truncate">{title}</span>
+      {/* ⚠️ 2026-10-01 (4 дэх засвар) — ДЭЭД ЦЭНХЭР ТОЛГОЙ ХАСАГДАВ: толгойд
+          гардаг байсан бичиг нь ЯГ доорх жагсаалтын цэнхэр мөртэй ижил
+          (сонгосон утга) байсан тул давхардал үүсгэж байв ✗ */}
+      {mobileLabel ? (
+        <div className="px-3 pt-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400 sm:hidden">
+          {mobileLabel}
         </div>
-      ) : (
-        mobileLabel ? (
-          <div className="px-3 pt-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400 sm:hidden">
-            {mobileLabel}
-          </div>
-        ) : null
-      )}
+      ) : null}
       <ul className="max-h-[300px] flex-1 overflow-y-auto p-1">
         {items.length === 0 && (
           <li className="px-2.5 py-3 text-[12.5px] leading-snug text-gray-400">{emptyText}</li>
@@ -186,7 +205,6 @@ export default function AddListingClient() {
     city: 'Улаанбаатар',
     district: '',
     khoroo: '',
-    addressDetail: '',
     price: '',
     // 🤝 «Үнэ тохирно» — үнэ нь ЗААВАЛ БИШ (2026-09-29). Шинэ зар дээр
     //    анхдагчаар УНТРААЛТТАЙ (хэрэглэгч үнэ бичих нь элбэг ✓).
@@ -316,6 +334,24 @@ export default function AddListingClient() {
   const districts = getDistricts(form.city);
   const khoroos = getKhoroos(form.city, form.district);
 
+  /* ==========================================================================
+     📍 2-Р АЛХАМ («Байршил») — 2–3 БАГАНАТ СОНГОЛТ (2026-10-01, хэрэглэгчийн
+     хүсэлт: «Байршлыг 3т биш 2т оруулдаг мэдээлэл болго, ингэхдээ 1т зар оруулж
+     байгаатай адилхан форматтай болгоорой»).
+     ⚠️ Формат нь 1-р алхмын `PickerColumn`-той ЯГ ИЖИЛ — `<select>` БИШ:
+        ① Хот / Аймаг  ② Дүүрэг / Сум  ③ Хороо (⚡ `simpleForm`-д ГАРАХГҮЙ)
+        Багана бүрийн мөр дээр дарахад сонгогдоно (1-р алхамтай ижил зан төлөв ✓)
+     ⚠️ 2026-10-01 (4 дэх засвар): ДЭЭД ЦЭНХЭР ТОЛГОЙ ХАСАГДАВ (1-р алхамтай
+        хамт) — сонгосон утга нь зөвхөн мөрийн цэнхэр дэвсгэр + доорх
+        «Сонгосон: 📍 … » мөрөнд харагдана ✓
+     ⚠️ Дараалсан сонголт: хот солиход дүүрэг+хороо, дүүрэг солиход хороо
+        ЦЭВЭРЛЭГДЭНЭ (дээрх `changeCity`/`changeDistrict`) — 1-р алхмын
+        «бүлэг солиход leaf цэвэрлэгддэг» зантай ижил ✓
+     ========================================================================== */
+  const cityItems = CITIES.map((c) => ({ value: c, label: c }));
+  const districtItems = districts.map((d) => ({ value: d, label: d }));
+  const khorooItems = khoroos.map((k) => ({ value: k, label: k }));
+
   // ===== ХЭСЭГ ба ATTR (0016) =====
   // ⚠️ `real-estate` нь уламжлалт: дэд төрөл нь `PROPERTY_TYPES`, нэмэлт
   //    талбарууд нь `rooms`/`floor`/`build_year` … тусдаа БАГАНА дээр.
@@ -343,8 +379,12 @@ export default function AddListingClient() {
      ⚠️ ӨМНӨ нь 2–3 `<select>` байсныг 3 БАГАНАТ жагсаалт болгов:
         ① ХЭСЭГ (12)  ② «Зарах/Түрээслэх» (зөвхөн үл хөдлөх) эсвэл БҮЛЭГ
         эсвэл хавтгай дэд төрөл  ③ LEAF дэд төрөл
-     ⚠️ Улаан толгойн бичиг нь СОНГОСОН утга (unegui-той ижил) — юу сонгосноо
-        багана бүрийн толгойноос харж баталгаажуулна ✓
+     ⚠️ 2026-10-01 (4 дэх засвар): багана БҮРИЙН ДЭЭД ТОЛГОЙ ХАСАГДАВ — толгойд
+        гарч байсан бичиг нь доорх жагсаалтын цэнхэр мөртэй ЯГ ИЖИЛ (сонгосон
+        утга) байсан тул давхардал үүсгэж байв ✗ (хэрэглэгчийн хүсэлт:
+        «сонгосон хэсгийг дээд талд нь ДАВХАР гаргаж байгааг болиё»).
+        Сонгосон утга нь зөвхөн ① мөрийн цэнхэр дэвсгэр ② доорх «Сонгосон: …»
+        мөрөнд харагдана ✓
      ⚠️ Хавтгай хэсэгт (`subtypeGroups` хоосон) 3 дахь багана ГАРАХГҮЙ ✓
      ========================================================================== */
   const sectionValue = form.section || 'real-estate';
@@ -371,14 +411,14 @@ export default function AddListingClient() {
     ? subtypes.map((t) => ({ value: t, label: getPropertyTypeLabel(t, form.category), icon: PROPERTY_TYPE_ICONS[t] || '' }))
     : (subtypeGroups.find((g) => g.label === openGroup)?.items || []).map((t) => ({ value: t, label: t }));
   /**
-   * ② дахь баганын толгой.
-   * ⚠️ 2026-10-01 (2 дахь засвар): хавтгай хэсэгт «Дэд төрөл» БИШ зүгээр л
-   *    «Төрөл» (хэрэглэгчийн хүсэлт: «дэд төрөл биш зүгээр л Төрөл гэж нэрлэ»).
-   *    Бүлэгтэй хэсгийн «Дэд бүлэг» нь 3 дахь түвшний жинхэнэ нэр тул ХЭВЭЭР ✓
+   * ⚠️ 2026-10-01 (**4 дэх засвар**): баганын толгой (`columnTitleOf` /
+   *    `level2Title` / `level3Title`) БҮХЭЛДЭЭ ХАСАГДАВ — хэрэглэгчийн хүсэлт
+   *    «сонгосон хэсгийг дээд талд нь ДАВХАР гаргаж байгааг болиё». Толгойд
+   *    гарч байсан бичиг нь ЯГ доорх жагсаалтын цэнхэр мөртэй ижил байсан тул
+   *    давхардал байв ✗. Сонгосон утга нь ① мөрийн цэнхэр дэвсгэр ② доорх
+   *    «Сонгосон: …» мөрөнд харагдана ✓ (ℹ️ (3 дахь засварын «сонгосон
+   *    категорио баганын толгойд харуул» хүсэлт энэ засвараар ХҮЧИНГҮЙ болов)
    */
-  const level2Title = showCategoryChoice
-    ? (categoryItems.find((c) => c.value === form.category)?.label || 'Зар эсвэл түрээс')
-    : hasGroups ? (openGroup || 'Дэд бүлэг') : 'Төрөл';
   const selectedLeafLabel = form.propertyType ? getPropertyTypeLabel(form.propertyType, form.category) : '';
   /**
    * 🥖 БҮТЭН ЗАМНЫ «БҮЛЭГ» хэсэг — сонгосон leaf нь аль бүлэгт харьяалагдах вэ.
@@ -438,10 +478,13 @@ export default function AddListingClient() {
    *    🆕 🛋️ `furniture` (Тавилга) / 🧳 `travel` (Аяны бараа — 2026-09-30 (5)-д
    *    «Аяллын хэрэгсэл»-ээс тусдаа хэсэг болсон ✓).
    * ⚠️ Ийм хэсэгт форм нь ЗӨВХӨН байршил (хот+дүүрэг) · шинэ/хуучин · үнэ ·
-   *    утас · тайлбар · зураг асууна — хороо/дэлгэрэнгүй хаяг ба YouTube
-   *    видео линк ХАРАГДАХГҮЙ (хэрэглэгчийн хүсэлт: «зөвхөн … асуудаг байя»).
-   * ⚠️ ХАДГАЛАХ үед далд талбаруудын ХУУЧИН утга УСТАХГҮЙ (payload-д
+   *    утас · тайлбар · зураг асууна — хороо ба YouTube видео линк
+   *    ХАРАГДАХГҮЙ (хэрэглэгчийн хүсэлт: «зөвхөн … асуудаг байя»).
+   * ⚠️ ХАДГАЛАХ үед далд талбарын ХУУЧИН утга УСТАХГҮЙ (payload-д
    *    `form`-оосоо хэвээр явна) — зөвхөн UI-д харагдахгүй ✓
+   * ⚠️ 2026-10-01: «Дэлгэрэнгүй хаяг» (`addressDetail`) БҮРЭН ХАСАГДАВ —
+   *    форм · DB бичилт · хайлт · админ/экспорт БҮГДЭЭС (хэрэглэгчийн
+   *    хүсэлт: «бүр байхгүй болго, дахин ашиглахгүй») ✓
    */
   const simpleForm = hasSimpleForm(form.section || 'real-estate');
 
@@ -724,6 +767,9 @@ export default function AddListingClient() {
                  `role="group"` + `aria-label` (screen reader) хэвээр ✓
               ④ «дэд төрөл биш зүгээр л Төрөл гэж нэрлэ» → баганын толгой
                  «Дэд төрөл» → «Төрөл» (бүлэгтэй хэсгийн «Дэд бүлэг» ХЭВЭЭР) ✓
+                 ⚠️ 2026-10-01 (4 дэх засвар) — баганын толгой (title) БҮХЭЛДЭЭ
+                 ХАСАГДАВ (сонгосон утгатай давхардаж байв ✗); оронд нь багана
+                 бүрд мобайлд л гарах жижиг шошго (`mobileLabel`) үлдэв ✓
               ℹ️ Алхмын мэдээлэл нь одоо ЗӨВХӨН дээд breadcrumb-аас харагдана —
                  `{step + 1}. {currentStep.label}` (`[data-step-current]` нь CDP
                  тестийн тогтвортой selector ✓). Форм нь `section-card`-ийн p-6
@@ -736,8 +782,10 @@ export default function AddListingClient() {
 
             {/* ═══ 1-р алхам · АНГИЛАЛ — 3 БАГАНАТ СОНГОЛТ (unegui.mn загвар) ═══
                 ⚠️ Хэрэглэгч эндээс ① ХЭСЭГ → ② «Зарах/Түрээслэх»/Дэд бүлэг → ③ ТӨРӨЛ
-                   гэж ДАРААЛАН сонгоно. Багана бүрийн ЦЭНХЭР толгой нь сонгосон
-                   утгыг харуулна (`PickerColumn` — дээр тайлбарласан ✓) */}
+                   гэж ДАРААЛАН сонгоно. ⚠️ 2026-10-01 (4 дэх засвар) — баганын
+                   ДЭЭД ЦЭНХЭР ТОЛГОЙ ХАСАГДАВ (сонгосон утга нь доорх мөр дээрээ
+                   цэнхэрээр байсан тул давхардал байв ✗); сонгосон утга нь зөвхөн
+                   ① мөрийн цэнхэр дэвсгэр ② доорх «Сонгосон: …» мөрөнд ✓ */}
             {step === 0 && (
             <>
             {/* ⚠️ 2026-10-01 (2 дахь засвар) — «Категорио сонгоно уу» ГАРЧИГ Ч
@@ -749,16 +797,17 @@ export default function AddListingClient() {
               {/* ① ХЭСЭГ — Автомашин / Ажлын зар / Компьютер … (0016) */}
               <PickerColumn
                 pickRole="section"
-                title={`${sectionDef.icon} ${sectionDef.label}`}
+                mobileLabel="Хэсэг"
                 items={sectionItems}
                 value={sectionValue}
                 onPick={pickSection}
                 className="bg-white"
               />
-              {/* ② «Зарах / Түрээслэх» (зөвхөн үл хөдлөх) эсвэл Дэд бүлэг эсвэл Төрөл */}
+              {/* ② «Зарах / Түрээслэх» (зөвхөн үл хөдлөх) эсвэл Дэд бүлэг эсвэл Төрөл
+                  ⚠️ 2026-10-01 (4 дэх засвар) — толгой ХАСАГДАВ (`title` проп
+                     бүхэлдээ байхгүй болов); сонгосон утга нь мөр дээрээ ✓ */}
               <PickerColumn
                 pickRole="level2"
-                title={level2Title}
                 mobileLabel={hasGroups && !showCategoryChoice ? 'Дэд бүлэг' : 'Төрөл'}
                 items={level2Items}
                 value={level2Value}
@@ -767,8 +816,9 @@ export default function AddListingClient() {
                 className="bg-white"
               />
               {/* ③ LEAF ТӨРӨЛ — хавтгай хэсэгт ГАРАХГҮЙ (2 багана) ✓
-                  ⚠️ Толгойн цэнхэр зурвас ГАРАХГҮЙ (unegui.mn-тэй ижил) — сонгосон
-                     зам нь доорх «Сонгосон: …» мөрөнд бүтнээр харагдана ✓ */}
+                  ⚠️ 2026-10-01 (4 дэх засвар) — толгойн цэнхэр зурвас ХАСАГДАВ
+                     (сонгосон Төрөл нь мөр дээрээ цэнхэрээр харагдана);
+                     мобайлд `ТӨРӨЛ` жижиг шошго `sm:hidden`-ээр гарна ✓ */}
               {hasThirdColumn && (
                 <PickerColumn
                   pickRole="level3"
@@ -806,8 +856,81 @@ export default function AddListingClient() {
             </>
             )}
 
-            {/* ═══ 2-р алхам · ДЭЛГЭРЭНГҮЙ (үндсэн үзүүлэлт ба нэмэлт талбарууд) ═══ */}
+            {/* ═══ 2-р алхам · БАЙРШИЛ — 2–3 БАГАНАТ СОНГОЛТ (2026-10-01) ═══
+                ⚠️ Хэрэглэгчийн хүсэлт: «Байршлыг 3т биш 2т оруулдаг мэдээлэл
+                   болго, ингэхдээ 1т зар оруулж байгаатай адилхан форматтай
+                   болгоорой» → ① алхмын БАЙРЛАЛ 3 → **2** ② харагдац нь 1-р
+                   алхмын БАГАНАТ сонголттой ЯГ ИЖИЛ (`<select>` БИШ ✓)
+                ⚠️ Талбарууд ХЭВЭЭР: Хот/Аймаг · Дүүрэг/Сум · Хороо
+                ⚡ ХЯЛБАР ФОРМ (`simpleForm`): хороо ХАРАГДАХГҮЙ — байршил нь
+                   «Хот/Аймаг + Дүүрэг/Сум» хангалттай (хэрэглэгчийн хүсэлт) ✓
+                ⚠️ Засах горимд хуучин утга (`city`/`district`/`khoroo`) нь
+                   `form`-оос уншигдаж ТОХИРСОН баганад идэвхтэй харагдана ✓ */}
             {step === 1 && (
+            <>
+            <div
+              role="group"
+              aria-label="Байршлаа сонгоно уу"
+              className={`grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-gray-300 bg-gray-200 ${simpleForm ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}
+            >
+              {/* ① ХОТ / АЙМАГ — солисон үед дүүрэг ба хороо ЦЭВЭРЛЭГДЭНЭ ✓ */}
+              <PickerColumn
+                pickRole="loc-city"
+                mobileLabel="Хот / Аймаг"
+                items={cityItems}
+                value={form.city}
+                onPick={changeCity}
+                emptyText="Хот / Аймаг байхгүй"
+                className="bg-white"
+              />
+              {/* ② ДҮҮРЭГ / СУМ — хорооны жагсаалт ЗӨВХӨН эндээс хамаарна ✓ */}
+              <PickerColumn
+                pickRole="loc-district"
+                mobileLabel="Дүүрэг / Сум"
+                items={districtItems}
+                value={form.district}
+                onPick={changeDistrict}
+                emptyText="Дүүрэг / Сум байхгүй"
+                className="bg-white"
+              />
+              {/* ③ ХОРОО — ⚡ `simpleForm` (hobby/home/…) дээр ГАРАХГҮЙ ✓
+                  ⚠️ Засах горимд хуучин `khoroo` утга нь `form` дотор хэвээр —
+                     устгагдахгүй, зөвхөн дээрх баганад идэвхтэй харагдана ✓ */}
+              {!simpleForm && (
+                <PickerColumn
+                  pickRole="loc-khoroo"
+                  mobileLabel="Хороо"
+                  items={khorooItems}
+                  value={form.khoroo}
+                  onPick={(v) => set('khoroo', v)}
+                  emptyText={form.district ? 'Хороо байхгүй' : 'Эхлээд дүүргээ сонгоно уу'}
+                  className="bg-white"
+                />
+              )}
+            </div>
+            {/* ---- Сонгосон байршил — 1-р алхмын `[data-picker-summary]`-тэй
+                ижил харагдац. ⚠️ ТУСДАА атрибут (`data-location-summary`) —
+                picker-ийн CDP тест `[data-picker-summary]`-г дан ганц гэж
+                үздэг тул саад болохгүй ✓ ---- */}
+            <p data-location-summary className="mt-3 rounded-lg bg-gray-50 px-3 py-2.5 text-[13px] text-gray-600">
+              {form.city ? (
+                <>
+                  Сонгосон:{' '}
+                  <b className="text-gray-900">📍 {form.city}</b>
+                  {form.district ? <> › <b className="text-gray-900">{form.district}</b></> : null}
+                  {!simpleForm && form.khoroo ? <> › <b className="text-gray-900">{form.khoroo}</b></> : null}
+                </>
+              ) : (
+                'Хот/Аймаг → дүүрэг/сум → хороогоо дараалан сонгоно уу.'
+              )}
+            </p>
+            </>
+            )}
+
+            {/* ═══ 3-р алхам · ДЭЛГЭРЭНГҮЙ (үндсэн үзүүлэлт ба нэмэлт талбарууд) ═══
+                ⚠️ 2026-10-01: «Байршил» 2-р алхам болсон тул ЭНЭ блок 3-р
+                   алхам (`step === 2`) дээр render болно (STEPS дараалал солигдсон ✓) */}
+            {step === 2 && (
             <>
             {/* ⚠️ Энэ хэсэг/төрөлд тохирох нэмэлт талбар БАЙХГҮЙ бол
                 хэрэглэгчид ойлгуулна (ж: «Газар» төрөлд өрөө/давхар байхгүй) ✓ */}
@@ -1003,47 +1126,9 @@ export default function AddListingClient() {
             </>
             )}
 
-            {/* ═══ 3-р алхам · БАЙРШИЛ (хот · дүүрэг · хороо · хаяг) ═══ */}
-            {step === 2 && (
-            <>
-            <div className="form-row">
-              <div className="form-group">
-                <label>Хот / Аймаг *</label>
-                <select value={form.city} onChange={(e) => changeCity(e.target.value)}>
-                  {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Дүүрэг / Сум</label>
-                <select value={form.district} onChange={(e) => changeDistrict(e.target.value)}>
-                  <option value="">Сонгох</option>
-                  {districts.map((d) => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-            </div>
-
-            {/* ⚡ ХЯЛБАР ФОРМ (hobby): хороо/дэлгэрэнгүй хаяг ХАРАГДАХГҮЙ —
-                байршил нь «Хот/Аймаг + Дүүрэг/Сум» хангалттай (хэрэглэгчийн хүсэлт).
-                ⚠️ Засах горимд хуучин утга нь `form` дотор хэвээр — устгагдахгүй ✓ */}
-            {!simpleForm && (
-            <div className="form-row">
-              <div className="form-group">
-                <label>Хороо</label>
-                <select value={form.khoroo} onChange={(e) => set('khoroo', e.target.value)}>
-                  <option value="">Сонгох</option>
-                  {khoroos.map((k) => <option key={k} value={k}>{k}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Дэлгэрэнгүй хаяг</label>
-                <input type="text" value={form.addressDetail} onChange={(e) => set('addressDetail', e.target.value)} placeholder="Байр, гудамж, байшингийн дугаар" />
-              </div>
-            </div>
-            )}
-            </>
-            )}
-
-            {/* ═══ 4-р алхам · ҮНЭ ба ТАЙЛБАР (үнэ · үнэ тохирно · тайлбар · видео) ═══ */}
+            {/* ═══ 4-р алхам · ҮНЭ ба ТАЙЛБАР (үнэ · үнэ тохирно · тайлбар · видео) ═══
+                ⚠️ 2026-10-01: «Байршил» (хуучин 3-р алхам) 2-р алхам болов —
+                   энэ блокийн дугаар (`step === 3`, 4-р алхам) ХӨНДӨГДӨӨГҮЙ ✓ */}
             {step === 3 && (
             <>
             <div className="form-row">

@@ -1055,7 +1055,7 @@ export default function HomeClient() {
             /* ⚠️ 2026-09-29: «99112233» нэмэв — утасны дугаараар ч хайж
                болохыг хэрэглэгчид ШУУД хэлж өгнө (зарын эзний бүх зар
                гарна ✓ `lib/queries.js` → `phone.ilike`) */
-            placeholder="Хайх... (жишээ нь: Баянгол, орон сууц, 99112233)"
+            placeholder="Хайх..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="min-w-0 flex-1 border-none px-4 py-3.5 text-sm text-gray-900 outline-none placeholder:text-gray-400"

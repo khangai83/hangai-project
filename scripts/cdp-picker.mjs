@@ -10,6 +10,13 @@
  *       асуулт нь ЗӨВХӨН `role="group"` + `aria-label` (screen reader) хэвээр ✓
  *    ④ «дэд төрөл биш зүгээр л Төрөл гэж нэрлэ» → баганын толгой
  *       «Дэд төрөл» → **«Төрөл»** (бүлэгтэй хэсгийн «Дэд бүлэг» ХЭВЭЭР ✓)
+ *    ⑤ 🆕 **2026-10-01 (4 дэх засвар)**: «сонгосон хэсгийг дээд талд нь ДАВХАР
+ *       гаргаж байгааг болиё» → баганын ДЭЭД ТОЛГОЙ (`[data-picker-title]`)
+ *       БҮХЭЛДЭЭ ХАСАГДАВ (сонгосон утга нь доорх мөртэй давхардаж байв ✗).
+ *       ⚠️ Тиймээс `title`/`header` тугууд ХАСАГДАЖ, оронд нь `pickerTitles`
+ *       (DOM-д 0 байх ёстой) ба `dupe` (сонгосон утга багана дотроо ЯГ 1 удаа)
+ *       гэсэн 2 ШИНЭ инвариант нэмэгдэв ✓ (①②③④⑥′-ийн олон шалгалт «толгой =
+ *       сонгосон утга» байсныг «сонгосон мөр ГАНЦ (dupe = 1)» болгов)
  *    → энэ скрипт одоо:
  *    ⓐ `role="tablist"` (алхмын таб) **0** байхыг шалгана
  *    ⓑ `[data-step-heading]` ОГТ БАЙХГҮЙ (**0**) гэдгийг шалгана
@@ -24,18 +31,32 @@
  *       (⚠️ өмнө нь дээд хэсэгт «Ангилал · Дэлгэрэнгүй · Байршил · Үнэ · Зураг»
  *          табууд байсан — 2026-10-01-нд ХАСАГДАВ ✓)
  *
- * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (43 шалгалт):
- *   ① Үл хөдлөх: 3 багана (12 хэсэг · sell/rent · 8 төрөл) + толгой = сонгосон утга
+ * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (65 шалгалт):
+ *   ① Үл хөдлөх: 3 багана (12 хэсэг · sell/rent · 8 төрөл)
+ *      ⚠️ 2026-10-01 (**4 дэх засвар**): баганын ДЭЭД ТОЛГОЙ (`[data-picker-title]`)
+ *      БҮХЭЛДЭЭ ХАСАГДАВ (сонгосон утга нь доорх мөртэй давхардаж байв ✗) →
+ *      `pickerTitles` = **0** ба `dupe` = **1** (сонгосон утга багана дотроо
+ *      ЯГ НЭГ УДАА — зөвхөн мөрөндөө) гэсэн 2 инвариантыг шалгана ✓
  *   ② «Түрээслэх» солиход багана 3 нь «…түрээслүүлнэ» болж, дүгнэлтэд БҮТЭН зам гарна
- *   ③ ХАВТГАЙ хэсэг (🚗 auto) → багана 3 АРИЛНА (2 багана) + багана 2-ын толгой
- *      «Төрөл» (2026-10-01 — «Дэд төрөл» БИШ ✓) + хуучин сонголт цэвэрлэгдэнэ
- *   ④ БҮЛЭГТЭЙ хэсэг (💻 computers) → 9 бүлэг, «Notebook» → 22 брэнд (3 багана)
+ *   ③ ХАВТГАЙ хэсэг (🚗 auto) → багана 3 АРИЛНА (2 багана) + хуучин сонголт
+ *      цэвэрлэгдэнэ ✓ (толгойн нэр 2026-10-01-нд ХАСАГДСАН тул одоо «сонгосон
+ *      мөр 0» гэдгээр шалгана ✓)
+ *   ④ БҮЛЭГТЭЙ хэсэг (💻 computers) → 9 бүлэг, «Notebook» → 22 брэнд (3 багана) ✓
  *   ⑤ ДООД ТҮВШИНГҮЙ бүлэг (💻 Чихэвч) нь ӨӨРӨӨ leaf болж хадгалагдана
  *   ⑥ АЛХМЫН ТАБ ба форм дотрох АЛХМЫН ГАРЧИГ ХОЁУЛАА ХАСАГДСАН
  *      (0 `role="tab"` · `[data-step-heading]` = 0) + «Үргэлжлүүлэх» → 2-р алхам
- *      (breadcrumb `[data-step-current]` = «2. Дэлгэрэнгүй» + URL `?step=2`) ✓
+ *      = **📍 БАЙРШИЛ** (breadcrumb `[data-step-current]` = «2. Байршил» +
+ *      URL `?step=2`) — 2026-10-01-нд алхмын дараалал солигдож, «Байршил»
+ *      3-р алхмаас **2-Р АЛХАМ** болов ✓
+ *   ⑥′/⑥″ БАЙРШЛЫН БАГАНУУД бүрэн шалгагдана: 3 багана (**loc-city ·
+ *      loc-district · loc-khoroo**), форм дотор `<select>` **0** (1-р алхмын
+ *      форматтай ижил — хэрэглэгчийн хүсэлт), толгой **0** (4 дэх засвар),
+ *      Хот → Дүүрэг → Хороо дарааллаар сонгогдоно, ХОТ солиход дүүрэг БА
+ *      хороо ЦЭВЭРЛЭГДЭНЭ, «Үргэлжлүүлэх» → 3-р алхам («3. Дэлгэрэнгүй»,
+ *      URL `?step=3`) ✓
  *   ⑦ 🔎 ДҮРС ТЕКСТЭЭС ХҮРЭХГҮЙ — 🏷️ Үйлдвэрлэгчийн `combo`/текст талбарт
  *      (`!pl-9` = 36px, зай ≥ 6px) + ✕ товч (`!pr-10`) + sidebar-ийн 2 талбар
+ *      ⚠️ «🏷️ Үйлдвэрлэгч» нь 3-р алхамд (хуучнаар 2-р) → `clickNext()` ХОЁР УДАА ✓
  *   ⑧ JS exception / `console.error` 0 (сүлжээний 401 нь Supabase session — тооцохгүй)
  *
  * ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
@@ -128,7 +149,22 @@ const PROBE = `(() => {
   const cols = {};
   document.querySelectorAll('[data-picker]').forEach((el) => {
     cols[el.dataset.picker] = {
-      title: (el.innerText || '').split('\\n')[0].trim(),
+      /**
+       * ⚠️ 2026-10-01 (**4 дэх засвар**): баганын ДЭЭД ТОЛГОЙ ([data-picker-title])
+       *    БҮХЭЛДЭЭ ХАСАГДАВ (сонгосон утга нь доорх мөртэй давхардаж байв ✗) —
+       *    pickerTitles (доор) нь ЯГ 0 байх ёстой ✓
+       * ℹ️ dupe = тухайн баганд СОНГОСОН мөрийн бичиг ХЭДЭН УДАА гарч байна вэ.
+       *    Толгой байсан үед 2 байв (толгой + мөр) ✗ — одоо ЯГ 1 (зөвхөн мөр) ✓
+       *    (⚠️ RegExp БИШ, split ашиглана — энэ template literal дотор backtick
+       *     болон долларын буржгар хаалт БИЧИХГҮЙ ✗)
+       */
+      dupe: (() => {
+        const sel = [...el.querySelectorAll('button[aria-pressed="true"]')];
+        if (sel.length !== 1) return 0;
+        const t = (sel[0].innerText || '').trim();
+        if (!t) return 0;
+        return el.innerText.split(t).length - 1;
+      })(),
       items: [...el.querySelectorAll('button[data-picker-value]')].map((b) => b.dataset.pickerValue),
       selected: [...el.querySelectorAll('button[aria-pressed="true"]')].map((b) => b.dataset.pickerValue),
     };
@@ -147,7 +183,16 @@ const PROBE = `(() => {
     stepHeadings: document.querySelectorAll('[data-step-heading]').length,
     tabs: [...document.querySelectorAll('[role="tablist"] [role="tab"]')].map((b) => (b.innerText || '').trim()),
     summary: (document.querySelector('[data-picker-summary]') || {}).innerText || '',
+    // 📍 2-р алхам = Байршил — өөрийн гэсэн дүгнэлтийн мөр ([data-location-summary])
+    //    ⚠️ ТУСДАА атрибут: [data-picker-summary] нь ЗӨВХӨН 1-р алхамд байх ёстой ✓
+    locationSummary: (document.querySelector('[data-location-summary]') || {}).innerText || '',
+    // ⚠️ 2026-10-01: Байршил нь select БИШ, баганат сонголт болов → 2-р алхамд
+    //    форм дотор select ЯГ 0 байх ёстой (1-р алхамд ч 0 ✓)
+    selects: document.querySelectorAll('form select').length,
     colCount: document.querySelectorAll('[data-picker]').length,
+    // ⚠️ 2026-10-01 (4 дэх засвар): баганын ДЭЭД ЦЭНХЭР ТОЛГОЙ БҮХЭЛДЭЭ
+    //    ХАСАГДСАН (сонгосон утгатай давхардаж байв ✗) → DOM-д ЯГ 0 байх ёстой ✓
+    pickerTitles: document.querySelectorAll('[data-picker-title]').length,
     cols,
   };
 })()`;
@@ -156,6 +201,16 @@ const probe = () => evaluate(PROBE);
 const click = async (sel) => {
   const res = await evaluate(`(() => { const el = document.querySelector(${JSON.stringify(sel)}); if (!el) return 'NOT_FOUND'; el.click(); return 'OK'; })()`);
   await wait(350);
+  return res;
+};
+/**
+ * 🪜 «Үргэлжлүүлэх →» — алхмын навигаци.
+ * ⚠️ 2026-10-01: «📍 Байршил» нь 3-р алхмаас **2-р алхам** болов → 3-р алхам
+ *    (Дэлгэрэнгүй, «🏷️ Үйлдвэрлэгч» тэнд) руу хүрэхэд ХОЁР УДАА дарах хэрэгтэй ✓
+ */
+const clickNext = async () => {
+  const res = await evaluate(`(() => { const b = [...document.querySelectorAll('form button')].find((x) => (x.innerText||'').includes('Үргэлжлүүлэх')); if (!b) return 'NOT_FOUND'; b.click(); return 'OK'; })()`);
+  await wait(800);
   return res;
 };
 /**
@@ -182,37 +237,61 @@ ok('1-р алхам: breadcrumb «1. Ангилал» (`[data-step-current]`)',
   String(p0.stepLabel).includes('1. Ангилал'), JSON.stringify(p0.stepLabel));
 ok('3 багана харагдаж байна (Үл хөдлөх)', p0.colCount === 3, `colCount=${p0.colCount}`);
 ok('багана 1: 12 ХЭСЭГ', p0.cols.section?.items.length === 12, String(p0.cols.section?.items.length));
-ok('багана 1 толгой = «🏠 Үл хөдлөх»', (p0.cols.section?.title || '').includes('Үл хөдлөх'), p0.cols.section?.title);
+/**
+ * 🗑 2026-10-01 (**4 дэх засвар**, хэрэглэгчийн хүсэлт): «сонгосон хэсгийг дээд
+ *    талд нь ДАВХАР гаргаж байгааг болиё» → баганын толгой БҮХЭЛДЭЭ ХАСАГДАВ.
+ *    ⚠️ Энэ нь ТОГТВОРТОЙ selector (`[data-picker-title]`) байсан тул тест нь
+ *    одоо «толгой = 0» ба «сонгосон утга багана дотроо ГАНЦ (`dupe` = 1)»
+ *    гэсэн 2 ШИНЭ инвариантыг шалгана ✓ (өмнө нь толгой НЭМЭГДЭЖ байсан
+ *    тул `dupe` нь 2 байв ✗)
+ */
+ok('🆕 баганын ДЭЭД ТОЛГОЙ ХАСАГДСАН: `[data-picker-title]` = 0 (давхардал үгүй)',
+  p0.pickerTitles === 0, `pickerTitles=${p0.pickerTitles}`);
+ok('багана 1: «Үл хөдлөх» сонгосон утга ГАНЦ (толгойд давхардахгүй, мөрөндөө ✓)',
+  p0.cols.section?.dupe === 1 && JSON.stringify(p0.cols.section?.selected) === '["real-estate"]',
+  `dupe=${p0.cols.section?.dupe} selected=${JSON.stringify(p0.cols.section?.selected)}`);
 ok('багана 2: Зарах/Түрээслэх (sell, rent)', JSON.stringify(p0.cols.level2?.items) === '["sell","rent"]', JSON.stringify(p0.cols.level2?.items));
-ok('багана 2 толгой = «💰 Зарах»', (p0.cols.level2?.title || '').includes('Зарах'), p0.cols.level2?.title);
+ok('багана 2: «💰 Зарах» сонгосон утга ГАНЦ (цэнхэр мөр ✓)',
+  p0.cols.level2?.dupe === 1, `dupe=${p0.cols.level2?.dupe}`);
 ok('багана 3: 8 ТӨРӨЛ', p0.cols.level3?.items.length === 8, String(p0.cols.level3?.items.length));
 ok('багана 3 дэд төрөл = «Орон сууц»', (p0.cols.level3?.items || []).includes('Орон сууц'), JSON.stringify(p0.cols.level3?.items.slice(0, 3)));
+ok('багана 3: сонголт хийгээгүй → сонгосон мөр 0 (dupe 0)',
+  p0.cols.level3?.dupe === 0 && JSON.stringify(p0.cols.level3?.selected) === '[]',
+  `dupe=${p0.cols.level3?.dupe} selected=${JSON.stringify(p0.cols.level3?.selected)}`);
 ok('дүгнэлт: «…сонгоно уу»', (p0.summary || '').includes('сонгоно уу'), p0.summary);
 
 console.log('\n── ② ТҮРЭЭСЛҮҮЛЭХ + ДЭД ТӨРӨЛ СОНГОХ ──');
 await click('[data-picker="level2"] button[data-picker-value="rent"]');
 const p1 = await probe();
 ok('багана 2-т «rent» сонгогдов', JSON.stringify(p1.cols.level2?.selected) === '["rent"]', JSON.stringify(p1.cols.level2?.selected));
-ok('багана 2 толгой = «🔑 Түрээслэх»', (p1.cols.level2?.title || '').includes('Түрээслэх'), p1.cols.level2?.title);
+ok('багана 2: «🔑 Түрээслэх» ГАНЦ (сонгосон утга давхардахгүй ✓)',
+  p1.cols.level2?.dupe === 1, `dupe=${p1.cols.level2?.dupe}`);
 await click('[data-picker="level3"] button[data-picker-value="Орон сууц"]');
 const p2 = await probe();
 ok('багана 3-т «Орон сууц» сонгогдов', JSON.stringify(p2.cols.level3?.selected) === '["Орон сууц"]', JSON.stringify(p2.cols.level3?.selected));
 ok('дүгнэлтэд бүтэн зам («Орон сууц түрээслүүлнэ»)',
   (p2.summary || '').includes('Үл хөдлөх') && (p2.summary || '').includes('Түрээслэх') && (p2.summary || '').includes('Орон сууц түрээслүүлнэ'),
   p2.summary);
+ok('багана 3: «🏢 Орон сууц зарна» ГАНЦ (толгойн давхардал үгүй ✓)',
+  p2.cols.level3?.dupe === 1, `dupe=${p2.cols.level3?.dupe}`);
 
 console.log('\n── ③ ХАВТГАЙ ХЭСЭГ (🚗 Автомашин) → 2 БАГАНА ──');
 await click('[data-picker="section"] button[data-picker-value="auto"]');
 const p3 = await probe();
 ok('багана 3 АРИЛАВ (2 багана)', p3.colCount === 2, `colCount=${p3.colCount}`);
-ok('багана 1 толгой = «🚗 Автомашин»', (p3.cols.section?.title || '').includes('Автомашин'), p3.cols.section?.title);
+ok('багана 1: «🚗 Автомашин» сонгосон утга ГАНЦ (толгойд давхардахгүй ✓)',
+  p3.cols.section?.dupe === 1, `dupe=${p3.cols.section?.dupe} selected=${JSON.stringify(p3.cols.section?.selected)}`);
 ok('багана 2 = 10 дэд төрөл (хавтгай)', p3.cols.level2?.items.length === 10, String(p3.cols.level2?.items.length));
-ok('багана 2 толгой = «Төрөл» (2026-10-01: «Дэд төрөл» БИШ ✓)',
-  (p3.cols.level2?.title || '') === 'Төрөл', JSON.stringify(p3.cols.level2?.title));
+ok('багана 2: сонголт хийгээгүй → сонгосон мөр 0 (dupe 0)',
+  p3.cols.level2?.dupe === 0 && JSON.stringify(p3.cols.level2?.selected) === '[]',
+  `dupe=${p3.cols.level2?.dupe} selected=${JSON.stringify(p3.cols.level2?.selected)}`);
 ok('өмнөх сонголт ЦЭВЭРЛЭГДЭВ', JSON.stringify(p3.cols.level2?.selected) === '[]' && (p3.summary || '').includes('Төрлөө сонгоно уу'), p3.summary);
 await click('[data-picker="level2"] button[data-picker-value="Жийп, SUV"]');
 const p4 = await probe();
 ok('хавтгай хэсэгт дэд төрөл сонгогдов', (p4.summary || '').includes('Жийп, SUV'), p4.summary);
+ok('хавтгай: багана 2-т «Жийп, SUV» ГАНЦ (цэнхэр мөр ✓, толгой ХАСАГДСАН ✓)',
+  p4.cols.level2?.dupe === 1 && p4.pickerTitles === 0,
+  `dupe=${p4.cols.level2?.dupe} pickerTitles=${p4.pickerTitles}`);
 
 console.log('\n── ④ БҮЛЭГТЭЙ ХЭСЭГ (💻 Компьютер) → 3 БАГАНА ──');
 await click('[data-picker="section"] button[data-picker-value="computers"]');
@@ -222,11 +301,15 @@ ok('багана 2 = 9 БҮЛЭГ', p5.cols.level2?.items.length === 9, JSON.str
 ok('багана 3 хоосон (бүлэг сонгоогүй)', p5.cols.level3?.items.length === 0, String(p5.cols.level3?.items.length));
 await click('[data-picker="level2"] button[data-picker-value="Notebook"]');
 const p6 = await probe();
-ok('багана 2 толгой = «Notebook»', (p6.cols.level2?.title || '').includes('Notebook'), p6.cols.level2?.title);
+ok('багана 2: «💻 Notebook» сонгосон утга ГАНЦ (толгойд давхардахгүй ✓)',
+  p6.cols.level2?.dupe === 1, `dupe=${p6.cols.level2?.dupe} selected=${JSON.stringify(p6.cols.level2?.selected)}`);
 ok('багана 3 = Notebook-ийн 22 брэнд', p6.cols.level3?.items.length === 22, String(p6.cols.level3?.items.length));
 await click('[data-picker="level3"] button[data-picker-value="Apple"]');
 const p7 = await probe();
 ok('багана 3-т «Apple» сонгогдов', JSON.stringify(p7.cols.level3?.selected) === '["Apple"]', JSON.stringify(p7.cols.level3?.selected));
+ok('бүлэгтэй: багана 3-т «Apple» ГАНЦ (цэнхэр мөр ✓, толгой ХАСАГДСАН ✓)',
+  p7.cols.level3?.dupe === 1 && p7.pickerTitles === 0,
+  `dupe=${p7.cols.level3?.dupe} pickerTitles=${p7.pickerTitles}`);
 ok('дүгнэлтэд БҮТЭН ЗАМ («Компьютер … › Notebook › Apple»)',
   ['Компьютер', 'Notebook', 'Apple'].every((x) => (p7.summary || '').includes(x)), p7.summary);
 
@@ -238,18 +321,80 @@ ok('дүгнэлтэд «Чихэвч» (бүлэг=leaf) 1 УДАА — дав�
   (p8.summary || '').includes('Чихэвч') && !(p8.summary || '').includes('Apple')
   && (p8.summary || '').split('Чихэвч').length - 1 === 1, p8.summary);
 
-console.log('\n── ⑥ ТАБ БА АЛХМЫН ГАРЧИГ ХАСАГДСАН + ДАРААГИЙН АЛХАМ ──');
+console.log('\n── ⑥ ТАБ БА АЛХМЫН ГАРЧИГ ХАСАГДСАН + 2-Р АЛХАМ = 📍 БАЙРШИЛ ──');
 await click('[data-picker="section"] button[data-picker-value="real-estate"]');
 await click('[data-picker="level3"] button[data-picker-value="Орон сууц"]');
-const plusOk = await evaluate(`(() => { const b = [...document.querySelectorAll('form button')].find((x) => (x.innerText||'').includes('Үргэлжлүүлэх')); if (!b) return 'NOT_FOUND'; b.click(); return 'OK'; })()`);
-await wait(700);
+const plusOk = await clickNext();
 const p9 = await probe();
 ok('«Үргэлжлүүлэх» товч ажилласан', plusOk === 'OK', plusOk);
-ok('2-Р АЛХАМ руу шилжив (breadcrumb = «2. Дэлгэрэнгүй»)',
-  String(p9.stepLabel).includes('2. Дэлгэрэнгүй'),
+ok('2-Р АЛХАМ руу шилжив (breadcrumb = «2. Байршил» — 2026-10-01: дараалал солигдов)',
+  String(p9.stepLabel).includes('2. Байршил'),
   JSON.stringify(p9.stepLabel));
 const search = await evaluate('location.search');
 ok('URL нь `?step=2` болов', String(search).includes('step=2'), search);
+/**
+ * 📍 2026-10-01 (хэрэглэгчийн хүсэлт): «Байршлыг 3т биш 2т оруулдаг мэдээлэл болго,
+ *    ингэхдээ 1т зар оруулж байгаатай адилхан форматтай болгоорой»
+ *    → ① алхмын байрлал 3 → **2** ② харагдац нь 1-р алхмын БАГАНАТ сонголттой ЯГ
+ *    ИЖИЛ болж, `<select>` ХАСАГДАВ (`[data-picker="loc-city|loc-district|loc-khoroo"]`) ✓
+ */
+ok('байршил нь 3 БАГАНАТ сонголт (loc-city · loc-district · loc-khoroo)',
+  p9.colCount === 3 && ['loc-city', 'loc-district', 'loc-khoroo'].every((k) => p9.cols[k]),
+  `colCount=${p9.colCount} keys=${JSON.stringify(Object.keys(p9.cols))}`);
+ok('байршилд `<select>` БАЙХГҮЙ (1-р алхмын форматтай ижил ✓)', p9.selects === 0, `selects=${p9.selects}`);
+ok('📍 байршилд Ч БАГАНЫН ТОЛГОЙ БАЙХГҮЙ (`[data-picker-title]` = 0 ✓)',
+  p9.pickerTitles === 0, `pickerTitles=${p9.pickerTitles}`);
+ok('багана 1: «Улаанбаатар» сонгосон утга ГАНЦ (толгойд давхардахгүй) + 22 хот/аймаг',
+  p9.cols['loc-city']?.dupe === 1 && p9.cols['loc-city']?.items.length === 22,
+  `dupe=${p9.cols['loc-city']?.dupe} items=${p9.cols['loc-city']?.items.length}`);
+ok('багана 2 (дүүрэг) = 9 дүүрэг, сонголт хийгээгүй (dupe 0 ✓)',
+  p9.cols['loc-district']?.dupe === 0 && p9.cols['loc-district']?.items.length === 9,
+  `dupe=${p9.cols['loc-district']?.dupe} items=${p9.cols['loc-district']?.items.length}`);
+ok('багана 3 (хороо) хоосон — дүүрэг сонгоогүй тул ✓',
+  p9.cols['loc-khoroo']?.items.length === 0,
+  String(p9.cols['loc-khoroo']?.items.length));
+
+console.log('\n── ⑥′ БАЙРШЛЫН БАГАНУУД: Хот → Дүүрэг → Хороо ──');
+await click('[data-picker="loc-district"] button[data-picker-value="Баянгол"]');
+const p10 = await probe();
+ok('багана 2-т «Баянгол» сонгогдов',
+  JSON.stringify(p10.cols['loc-district']?.selected) === '["Баянгол"]',
+  JSON.stringify(p10.cols['loc-district']?.selected));
+ok('багана 2-т «Баянгол» ГАНЦ (цэнхэр мөр ✓, толгойн давхардал үгүй)',
+  p10.cols['loc-district']?.dupe === 1,
+  `dupe=${p10.cols['loc-district']?.dupe} selected=${JSON.stringify(p10.cols['loc-district']?.selected)}`);
+ok('багана 3-т Баянголын 33 хороо гарч ирэв',
+  p10.cols['loc-khoroo']?.items.length === 33, String(p10.cols['loc-khoroo']?.items.length));
+await click('[data-picker="loc-khoroo"] button[data-picker-value="3-р хороо"]');
+const p11 = await probe();
+ok('багана 3-т «3-р хороо» сонгогдов',
+  JSON.stringify(p11.cols['loc-khoroo']?.selected) === '["3-р хороо"]',
+  JSON.stringify(p11.cols['loc-khoroo']?.selected));
+ok('байршлын дүгнэлтэд БҮТЭН ХАЯГ («Улаанбаатар › Баянгол › 3-р хороо»)',
+  ['Улаанбаатар', 'Баянгол', '3-р хороо'].every((x) => (p11.locationSummary || '').includes(x)),
+  p11.locationSummary);
+// ⚠️ Дараалсан сонголт: ХОТ солиход дүүрэг БА хороо ХОЁУЛАА цэвэрлэгдэнэ ✓
+await click('[data-picker="loc-city"] button[data-picker-value="Дархан-Уул"]');
+const p12 = await probe();
+ok('хот солиход дүүрэг ЦЭВЭРЛЭГДЭВ',
+  JSON.stringify(p12.cols['loc-district']?.selected) === '[]' && p12.cols['loc-district']?.dupe === 0,
+  JSON.stringify(p12.cols['loc-district']?.selected));
+ok('хот солиход хороо ЦЭВЭРЛЭГДЭВ',
+  JSON.stringify(p12.cols['loc-khoroo']?.selected) === '[]',
+  JSON.stringify(p12.cols['loc-khoroo']?.selected));
+ok('«Дархан-Уул»-ийн дүүрэг/сум гарч ирэв (4)',
+  p12.cols['loc-district']?.items.length === 4,
+  String(p12.cols['loc-district']?.items.length));
+
+console.log('\n── ⑥″ 3-Р АЛХАМ = 📋 ДЭЛГЭРЭНГҮЙ (байршлаас ХОЙШ) ──');
+const next3 = await clickNext();
+const p13 = await probe();
+ok('«Үргэлжлүүлэх» байршлаас ажилласан', next3 === 'OK', next3);
+ok('3-Р АЛХАМ руу шилжив (breadcrumb = «3. Дэлгэрэнгүй»)',
+  String(p13.stepLabel).includes('3. Дэлгэрэнгүй'),
+  JSON.stringify(p13.stepLabel));
+const search3 = await evaluate('location.search');
+ok('URL нь `?step=3` болов', String(search3).includes('step=3'), search3);
 
 console.log('\n── ⑦ 🔎 ДҮРС ТЕКСТЭЭС ХҮРЭХГҮЙ (§ «Үйлдвэрлэгч» combobox + sidebar) ──');
 /**
@@ -292,13 +437,17 @@ const ICON_PROBE = `(() => {
   return out;
 })()`;
 
-// 🚗 Автомашин → Суудлын машин → 2-Р АЛХАМ (Үйлдвэрлэгч тэнд байна)
+// 🚗 Автомашин → Суудлын машин → 2-Р АЛХАМ (📍 Байршил) → 3-Р АЛХАМ (Үйлдвэрлэгч)
+// ⚠️ 2026-10-01: «Байршил» 2-р алхам болов → «🏷️ Үйлдвэрлэгч» (📋 Дэлгэрэнгүй,
+//    3-р алхам) руу хүрэхэд «Үргэлжлүүлэх»-ийг ХОЁР УДАА дарах хэрэгтэй ✓
 // ⚠️ Табууд хасагдсан → 1-р алхам руу URL-аар буцна (`?step=1`)
 await gotoStepUrl(1);
 await click('[data-picker="section"] button[data-picker-value="auto"]');
 await waitForSel('[data-picker="level2"] button[data-picker-value="Суудлын машин"]');
 await click('[data-picker="level2"] button[data-picker-value="Суудлын машин"]');
-await evaluate('(() => { const b = [...document.querySelectorAll(\'form button\')].find((x) => (x.innerText||\'\').includes(\'Үргэлжлүүлэх\')); if (!b) return \'NOT_FOUND\'; b.click(); return \'OK\'; })()');
+await clickNext(); // 1 → 2 (📍 Байршил — хот анхдагчаар сонгогдсон тул зүгээр ✓)
+await waitForSel('[data-picker="loc-city"]');
+await clickNext(); // 2 → 3 (📋 Дэлгэрэнгүй — 🏷️ Үйлдвэрлэгч энд байна)
 await waitForSel('input[role="combobox"]');
 
 const formFields = await evaluate(ICON_PROBE);
