@@ -31,7 +31,7 @@
  *       (⚠️ өмнө нь дээд хэсэгт «Ангилал · Дэлгэрэнгүй · Байршил · Үнэ · Зураг»
  *          табууд байсан — 2026-10-01-нд ХАСАГДАВ ✓)
  *
- * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (70 шалгалт):
+ * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (76 шалгалт):
  *   ① Үл хөдлөх: 3 багана (12 хэсэг · sell/rent · 8 төрөл)
  *      ⚠️ 2026-10-01 (**4 дэх засвар**): баганын ДЭЭД ТОЛГОЙ (`[data-picker-title]`)
  *      БҮХЭЛДЭЭ ХАСАГДАВ (сонгосон утга нь доорх мөртэй давхардаж байв ✗) →
@@ -62,6 +62,14 @@
  *      (2026-10-01, 5 дахь засвар): мөр бүр `.form-row-single` +
  *      `[data-form-row="details"]` → grid track **ЯГ 1**, хүүхдүүд ИЖИЛ x-т
  *      (зэрэг БИШ), талбар бүр мөрийнхөө БҮТЭН өргөнийг эзэлнэ; 📱 390px дээр ч ✓
+ *   ⑩ 🆕 **АВТО ФОРМ — 🔧 «Хөдөлгүүр» СОНГОЛТ + 🎨 «Өнгө» нэмэгдэж, 🔀 «Хөтлөгч»
+ *      ХАСАГДАВ** (2026-10-01, хэрэглэгчийн хүсэлт; 3-р алхмын DOM-оос уншина):
+ *      ① `[data-form-row="details"] .form-group`-ийн `label`-ээр «Хөдөлгүүр»-ыг
+ *      олж, түүний `select` нь «Сонгох» + **7** утгатай (1.5л хүртэл …
+ *      Цахилгаан (EV)) ✓ ② «Хөтлөгч» гэсэн талбар форм дээр **0** ✓
+ *      ③ «Өнгө» 10 сонголттой ✓ ④ sidebar (`select[aria-label]`) — «Өнгө» бий,
+ *      «Хөтлөгч» **0** ✓ ⇒ `lib/locationData.js`-ийн `ENGINE_OPTIONS` /
+ *      `AUTO_COLOR_OPTIONS` / `attrFilters` гэрээг БОДИТ DOM дээр батална ✓
  *
  * ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
  *   1) сервер http://localhost:3000 (`npm run dev` эсвэл `npm run build && npm run start`)
@@ -547,6 +555,42 @@ const typed = await evaluate(`(() => {
 ok('текст бичихэд ✕ товч текстээс ХҮРЭХГҮЙ (`!pr-10` ≥ 40px, зай ≥ 6px)',
   !typed.error && parseFloat(typed.pr) >= 40 && typed.clearance >= 6, JSON.stringify(typed));
 
+// ── ⑦′ АВТО ФОРМ (3-р алхам) — 🔧 Хөдөлгүүр сонголт · 🎨 Өнгө · 🔀 Хөтлөгч байхгүй ──
+// ⚠️ 2026-10-01 (хэрэглэгчийн хүсэлт): «Хөтлөгч хэсгийг байхгүй болгож Өнгө гэсэн
+//    сонголтыг оруулж ир» + «Хөдөлгүүр … дараах сонголттой болго» ⇒ DOM-оос
+//    талбар бүрийн `<label>` ба `<select>`-ийн сонголтуудыг уншиж батална ✓
+//    ⚠️ Энэ нь template literal ТУЛ дотор backtick эсвэл доллар-бүслүүр БИЧИХГҮЙ
+const ATTRS_PROBE = `(() => {
+  return [...document.querySelectorAll('[data-form-row="details"] .form-group')].map((g) => {
+    const lab = (g.querySelector('label') || {}).textContent || '';
+    const box = g.querySelector('select');
+    return {
+      label: lab.trim(),
+      options: box ? [...box.options].map((o) => (o.textContent || '').trim()) : [],
+    };
+  });
+})()`;
+const attrs3 = await evaluate(ATTRS_PROBE);
+const engineField = attrs3.find((g) => g.label.includes('Хөдөлгүүр'));
+const ENGINE7 = [
+  '1.5л хүртэл', '1.5л - 2.0л', '2.1л - 2.7л', '2.8л - 3.5л',
+  '3.6л - 4.5л', '4.6л ба түүнээс дээш', 'Цахилгаан (EV)',
+];
+ok('🔧 «Хөдөлгүүр» нь СОНГОЛТ болов (чөлөөт текст БИШ)',
+  Boolean(engineField) && engineField.options.length === 8,
+  JSON.stringify(engineField));
+ok('🔧 хөдөлгүүрийн 7 утга ЯГ дарааллаараа (1.5л хүртэл … Цахилгаан (EV))',
+  Boolean(engineField) && engineField.options[0] === 'Сонгох'
+    && JSON.stringify(engineField.options.slice(1)) === JSON.stringify(ENGINE7),
+  JSON.stringify(engineField && engineField.options));
+const colorField = attrs3.find((g) => g.label.includes('Өнгө'));
+ok('🎨 «Өнгө» нэмэгдэв (10 сонголт + хоосон «Сонгох» мөр)',
+  Boolean(colorField) && colorField.options.length === 11,
+  JSON.stringify(colorField));
+ok('🔀 «Хөтлөгч» форм дээр БАЙХГҮЙ (0 талбар)',
+  !attrs3.some((g) => g.label.includes('Хөтлөгч')),
+  JSON.stringify(attrs3.map((g) => g.label)));
+
 // ⬅️ SIDEBAR (HomeClient) — ижил 2 компонент, ижил класс
 /**
  * ⚠️ Энэ цэгээс өмнө хуримтлагдсан алдаа = ЗӨВХӨН `/listings/new` (picker + форм)
@@ -565,6 +609,18 @@ ok('sidebar: 🔎 дүрстэй талбарт «Үйлдвэрлэгч» ба 
 ok('sidebar: бүх 🔎 талбарын зай ≥ 6px (дүрс текстээ халхлахгүй)',
   sideFields.length >= 2 && sideFields.every((f) => f.gap >= 6),
   JSON.stringify(sideFields.map((f) => `${f.aria.slice(0, 14)}:${f.gap}px`)));
+
+// 🎨🔀 2026-10-01: sidebar-ийн ATTR шүүлтүүд (`select[aria-label]`) — «Өнгө» бий,
+//    «Хөтлөгч» БАЙХГҮЙ (форм ба sidebar НЭГ эх сурвалж: attrFields → attrFilters ✓)
+const SIDE_SELECTS = `(() => [...document.querySelectorAll('select[aria-label]')]
+  .map((s) => ({ aria: (s.getAttribute('aria-label') || '').trim(), n: s.options.length })))()`;
+const sideSelects = await evaluate(SIDE_SELECTS);
+ok('sidebar: 🎨 «Өнгө» шүүлт бий (10 сонголт + «Бүгд» мөр)',
+  sideSelects.some((s) => s.aria === 'Өнгө' && s.n === 11),
+  JSON.stringify(sideSelects));
+ok('sidebar: 🔀 «Хөтлөгч» шүүлт БАЙХГҮЙ (0 талбар)',
+  !sideSelects.some((s) => s.aria === 'Хөтлөгч'),
+  JSON.stringify(sideSelects.map((s) => s.aria)));
 
 console.log('\n── ⑧ CONSOLE / EXCEPTION ──');
 ok('JS exception / console.error БАЙХГҮЙ (picker + Үйлдвэрлэгч форм)',

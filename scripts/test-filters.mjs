@@ -36,9 +36,73 @@ const t = (name, fn) => {
 console.log('\n🧪 Шүүлтийн логик (lib/locationData.js)\n');
 
 // ---- ① 🚗 Автомашин: ЗАГВАР + ХОЁР ОН ----
-t("getAttrFilters('auto') — 7 шүүлт (Үйлдвэрлэгч, Загвар, 2 он, хайрцаг, түлш, хөтлөгч)", () => {
+t("getAttrFilters('auto') — 7 шүүлт (Үйлдвэрлэгч, Загвар, 2 он, хайрцаг, түлш, өнгө)", () => {
   const keys = getAttrFilters('auto').map((f) => f.key);
-  assert.deepEqual(keys, ['brand', 'model', 'year', 'importYear', 'transmission', 'fuel', 'drive']);
+  // 🎨 2026-10-01 (хэрэглэгчийн хүсэлт): 🔀 «Хөтлөгч» (`drive`) ХАСАГДАЖ,
+  //    «Өнгө» (`color`) нэмэгдэв — ⚠️ `drive` буцаж ОРОХГҮЙ ✓
+  assert.deepEqual(keys, ['brand', 'model', 'year', 'importYear', 'transmission', 'fuel', 'color']);
+  assert.ok(!keys.includes('drive'));
+});
+
+// ---- ①′ 🔧 ХӨДӨЛГҮҮР: ЧӨЛӨӨТ ТЕКСТ → СОНГОЛТ (2026-10-01) ----
+// Хэрэглэгчийн хүсэлт: «Хөдөлгүүр гэсэн хэсэгт дараах сонголттой болго …».
+// ⚠️ Урьд нь `txt('engine', 'Хөдөлгүүр (л)')` байв — хэрэглэгч өөрөө бичдэг
+//    тул «2.5» / «2.4L» / «2.5 литр» гэж холилдож, карт дээр зөрүүтэй харагдана ✗
+t('🔧 Хөдөлгүүр нь СОНГОЛТ болов — ЯГ 7 утга (1.5л хүртэл … Цахилгаан (EV))', () => {
+  const f = getAttrField('auto', 'engine');
+  assert.equal(f.type, 'select');
+  assert.equal(f.label, 'Хөдөлгүүр');
+  // ⚠️ Нэгж («л») нь сонголт БҮРДӨӨ байгаа тул label-д «(л)» БАЙХГҮЙ
+  assert.ok(!f.label.includes('(л)'));
+  assert.deepEqual(f.options, [
+    '1.5л хүртэл', '1.5л - 2.0л', '2.1л - 2.7л', '2.8л - 3.5л',
+    '3.6л - 4.5л', '4.6л ба түүнээс дээш', 'Цахилгаан (EV)',
+  ]);
+  // ⚠️ ШҮҮЛТЭД ОРООГҮЙ (хуучин/demo заруудын тоон «2.5» нь хүрээний
+  //    сонголттой таарахгүй тул «0 үр дүн» гарах байв ✗)
+  assert.ok(!getAttrFilters('auto').some((x) => x.key === 'engine'));
+});
+
+// ---- ①″ 🎨 ӨНГӨ НЭМЭГДЭЖ, 🔀 ХӨТЛӨГЧ БҮРЭН ХАСАГДАВ (2026-10-01) ----
+// Хэрэглэгчийн хүсэлт: «Хөтлөгч хэсгийг байхгүй болгож Өнгө гэсэн сонголтыг
+// оруулж ир» — ⚠️ форм (`attrFields`) ба шүүлт (`attrFilters`) НЭГ эх сурвалж
+t('🎨 Өнгө — форм ба sidebar ХОЁУЛАА (10 сонголт, «Бусад»-тай)', () => {
+  const f = getAttrField('auto', 'color');
+  assert.equal(f.type, 'select');
+  assert.equal(f.label, 'Өнгө');
+  assert.equal(f.icon, '🎨');
+  assert.equal(f.options.length, 10);
+  ['Цагаан', 'Хар', 'Саарал', 'Мөнгөлөг', 'Бор', 'Беж', 'Цэнхэр', 'Улаан', 'Ногоон', 'Бусад']
+    .forEach((c) => assert.ok(f.options.includes(c), `«${c}» өнгө байхгүй ✗`));
+  assert.ok(getAttrFilters('auto').some((x) => x.key === 'color'));
+});
+
+t('🔀 Хөтлөгч форм, шүүлт, картын мөр ГУРВААС ХАСАГДАВ', () => {
+  const sec = getSection('auto');
+  assert.equal(getAttrField('auto', 'drive'), null);
+  assert.ok(!sec.attrFields.some((x) => x.key === 'drive'));
+  assert.ok(!sec.attrFilters.includes('drive'));
+  // ⚠️ Хуучин заруудын `attrs.drive` нь DB-д ХЭВЭЭР байгаа ч карт дээр ГАРАХГҮЙ ✓
+  const line = formatAttrsLine('auto', {
+    brand: 'Nissan', model: 'Leaf', engine: 'Цахилгаан (EV)',
+    fuel: 'Цахилгаан', color: 'Цагаан', drive: 'Урд',
+  });
+  assert.ok(!line.includes('Урд'), line);
+  assert.ok(line.includes('Цахилгаан (EV)') && line.includes('🎨 Цагаан'), line);
+});
+
+t('🔧 Картын мөр: хүрээний утга нэгжээ өөрөө агуулна, ХУУЧИН тоон утга «л»-тэй', () => {
+  const line = formatAttrsLine('auto', {
+    brand: 'Toyota', model: 'Prius', year: '2021', transmission: 'Автомат',
+    engine: '1.5л - 2.0л', fuel: 'Хайбрид',
+  });
+  assert.ok(line.includes('1.5л - 2.0л'), line);
+  assert.ok(!line.includes('1.5л - 2.0л л'), `«л» ДАВХАРДАВ ✗: ${line}`);
+  // ⚠️ ХУУЧИН/demo («2.5») — нэгж нь ХЭВЭЭР залгагдана ✓
+  assert.ok(formatAttrsLine('auto', { engine: '2.5' }).includes('2.5 л'));
+  assert.ok(formatAttrsLine('auto', { engine: '4.6' }).includes('4.6 л'));
+  // ⚠️ «Цахилгаан (EV)» нь тоон БИШ тул «л» ЗАЛГАГДАХГҮЙ ✓
+  assert.equal(formatAttrsLine('auto', { engine: 'Цахилгаан (EV)' }), 'Цахилгаан (EV)');
 });
 
 t('🚙 Загвар нь ЧӨЛӨӨТ ТЕКСТ шүүлт (filterable, select БИШ)', () => {
