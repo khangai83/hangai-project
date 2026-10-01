@@ -1,24 +1,39 @@
 /**
- * 🗂 CDP ШАЛГАЛТ — «ЗАР НЭМЭХ» → 1-Р АЛХАМ: 3 БАГАНАТ «Категорио сонгоно уу»
- * ⚠️ 2026-10-01 (хэрэглэгчийн хүсэлт «Зар нэмэхэд энийг харуулахгүй»): ДЭЭД ТОЛГОЙ
- *    (➕ Зар нэмэх · «1/5 · …» заагч · 5 АЛХМЫН ТАБ · дэвшлийн зурвас)
- *    `AddListingClient.jsx`-ээс БҮХЭЛДЭЭ ХАСАГДАВ → энэ скрипт одоо:
+ * 🗂 CDP ШАЛГАЛТ — «ЗАР НЭМЭХ» → 1-Р АЛХАМ: 3 БАГАНАТ СОНГОЛТ (гарчиггүй ✓)
+ * ⚠️ 2026-10-01 — ХОЁР хүсэлтээр `AddListingClient.jsx`-ийн ХАРАГДАЦ ЦЭВЭРЛЭВ:
+ *    ① «Зар нэмэхэд энийг харуулахгүй» → ДЭЭД ТОЛГОЙ (➕ Зар нэмэх · «1/5 · …»
+ *       заагч · 5 АЛХМЫН ТАБ · дэвшлийн зурвас) БҮХЭЛДЭЭ ХАСАГДАВ
+ *    ② «энэ бүгдийг нь зайлуул, харахыг хүсэхгүй байна» → форм ДОТРОХ алхмын
+ *       гарчиг (`data-step-heading`) БҮХЭЛДЭЭ ХАСАГДАВ
+ *       («1/5-Р АЛХАМ · Ангилал · Юу зарах вэ?» + `STEPS[].short`)
+ *    ③ мөн адил хүсэлтээр «Категорио сонгоно уу» ГАРЧИГ Ч ХАСАГДАВ —
+ *       асуулт нь ЗӨВХӨН `role="group"` + `aria-label` (screen reader) хэвээр ✓
+ *    ④ «дэд төрөл биш зүгээр л Төрөл гэж нэрлэ» → баганын толгой
+ *       «Дэд төрөл» → **«Төрөл»** (бүлэгтэй хэсгийн «Дэд бүлэг» ХЭВЭЭР ✓)
+ *    → энэ скрипт одоо:
  *    ⓐ `role="tablist"` (алхмын таб) **0** байхыг шалгана
- *    ⓑ одоогийн алхмыг `[data-step-heading]`-ээс уншина
- *    ⓒ алхам солихдоо `?step=N` руу URL-аар шилжинэ (`gotoStepUrl`) ✓
+ *    ⓑ `[data-step-heading]` ОГТ БАЙХГҮЙ (**0**) гэдгийг шалгана
+ *    ⓒ одоогийн алхмыг ЗӨВХӨН дээд breadcrumb (`[data-step-current]` =
+ *       «1. Ангилал»)-аас уншина
+ *    ⓓ алхам солихдоо `?step=N` руу URL-аар шилжинэ (`gotoStepUrl`) ✓
+ *    ⓔ 1-р алхамд ХАРАГДАХ ГАРЧИГ **0** байхыг шалгана (③) — picker-ийн
+ *       асуулт нь зөвхөн `aria-label`-д үлдсэн ✓
  *
  * Хэрэглэгчийн хүсэлт: «Эхний хэсгийг ийм болго» (`unegui.mn/post_ad/`) —
- *   ① 1-р алхам нь 3 БАГАНАТ сонголт (Хэсэг → «Зарах/Түрээслэх»/БҮЛЭГ → Дэд төрөл)
- *   ② ДЭЭД ХЭСЭГТ «Ангилал · Дэлгэрэнгүй · Байршил · Үнэ · Зураг» табууд
+ *   ① 1-р алхам нь 3 БАГАНАТ сонголт (Хэсэг → «Зарах/Түрээслэх»/Дэд бүлэг → Төрөл)
+ *       (⚠️ өмнө нь дээд хэсэгт «Ангилал · Дэлгэрэнгүй · Байршил · Үнэ · Зураг»
+ *          табууд байсан — 2026-10-01-нд ХАСАГДАВ ✓)
  *
- * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (40 шалгалт):
+ * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (43 шалгалт):
  *   ① Үл хөдлөх: 3 багана (12 хэсэг · sell/rent · 8 төрөл) + толгой = сонгосон утга
- *   ② «Түрээслэх» солиход багана 3 нь «…түрээслүүлнэ» болно + `?step=2` руу шилжинэ
- *   ③ ХАВТГАЙ хэсэг (🚗 auto) → багана 3 АРИЛНА (2 багана) + хуучин сонголт цэвэрлэгдэнэ
+ *   ② «Түрээслэх» солиход багана 3 нь «…түрээслүүлнэ» болж, дүгнэлтэд БҮТЭН зам гарна
+ *   ③ ХАВТГАЙ хэсэг (🚗 auto) → багана 3 АРИЛНА (2 багана) + багана 2-ын толгой
+ *      «Төрөл» (2026-10-01 — «Дэд төрөл» БИШ ✓) + хуучин сонголт цэвэрлэгдэнэ
  *   ④ БҮЛЭГТЭЙ хэсэг (💻 computers) → 9 бүлэг, «Notebook» → 22 брэнд (3 багана)
  *   ⑤ ДООД ТҮВШИНГҮЙ бүлэг (💻 Чихэвч) нь ӨӨРӨӨ leaf болж хадгалагдана
- *   ⑥ Толгойн АЛХМЫН ТАБ ГАРАХГҮЙ (0 `role="tab"`) + «Үргэлжлүүлэх» → 2-р алхам
- *      (`[data-step-heading]` = «Дэлгэрэнгүй» + URL `?step=2`) ✓
+ *   ⑥ АЛХМЫН ТАБ ба форм дотрох АЛХМЫН ГАРЧИГ ХОЁУЛАА ХАСАГДСАН
+ *      (0 `role="tab"` · `[data-step-heading]` = 0) + «Үргэлжлүүлэх» → 2-р алхам
+ *      (breadcrumb `[data-step-current]` = «2. Дэлгэрэнгүй» + URL `?step=2`) ✓
  *   ⑦ 🔎 ДҮРС ТЕКСТЭЭС ХҮРЭХГҮЙ — 🏷️ Үйлдвэрлэгчийн `combo`/текст талбарт
  *      (`!pl-9` = 36px, зай ≥ 6px) + ✕ товч (`!pr-10`) + sidebar-ийн 2 талбар
  *   ⑧ JS exception / `console.error` 0 (сүлжээний 401 нь Supabase session — тооцохгүй)
@@ -35,7 +50,11 @@
  *
  *  ⚠️ Тогтвортой selector-ууд (`AddListingClient.jsx` дотор):
  *     `[data-picker="section|level2|level3"]` · `button[data-picker-value="…"]`
- *     `[data-picker-summary]` · `[data-step-heading]` ✓
+ *     `[data-picker-summary]` · `[data-step-current]` · `[role="group"][aria-label]` ✓
+ *     (⚠️ `Категорио сонгоно уу` нь 2026-10-01-нд ХАРАГДАХ ГАРЧИГ БАЙХГҮЙ —
+ *      зөвхөн `aria-label`-д (a11y) үлдсэн; CDP нь DOM текстээс хайна ✓)
+ *     (⚠️ `[data-step-heading]` нь 2026-10-01-нд алхмын гарчигтай хамт ХАСАГДАВ
+ *      — одоо DOM-д 0 байх ёстой; `[data-step-tab="…"]` ч мөн адил ✓)
  */
 const BASE = process.argv[2] || 'http://localhost:3000';
 const CDP = `http://127.0.0.1:${process.env.CDP_PORT || 9222}`;
@@ -116,11 +135,16 @@ const PROBE = `(() => {
   });
   return {
     gate: document.body.innerText.includes('нэвтрэх шаардлагатай'),
-    title: document.body.innerText.includes('Категорио сонгоно уу'),
-    // ⚠️ 2026-10-01: толгойн АЛХМЫН ТАБУУД хасагдсан → одоогийн алхмыг
-    //    [data-step-heading] («1/5-Р АЛХАМ · Ангилал»)-ээс уншина ✓
-    stepHeading: (document.querySelector('[data-step-heading] h3') || {}).innerText || '',
-    stepIndex: (document.querySelector('[data-step-heading] p') || {}).innerText || '',
+    // ⚠️ 2026-10-01 (2 дахь засвар): «Категорио сонгоно уу» ГАРЧИГ Ч ХАСАГДАВ →
+    //    асуулт нь зөвхөн aria-label (a11y) хэвээр; ХАРАГДАХ текст DOM-д 0 ✓
+    noPickerHeading: !document.body.innerText.includes('Категорио сонгоно уу'),
+    pickerAria: (document.querySelector('[data-picker="section"]')?.closest('[role="group"]')?.getAttribute('aria-label') || '').trim(),
+    // ⚠️ 2026-10-01: толгойн АЛХМЫН ТАБУУД ба форм дотрох алхмын гарчиг ХОЁУЛАА
+    //    хасагдсан → одоогийн алхмыг ЗӨВХӨН дээд breadcrumb-аас уншина:
+    //    [data-step-current] = «1. Ангилал» ✓
+    //    [data-step-heading] нь 0 байх ЁСТОЙ (хасагдсаныг батлана) ✓
+    stepLabel: (document.querySelector('[data-step-current]') || {}).innerText || '',
+    stepHeadings: document.querySelectorAll('[data-step-heading]').length,
     tabs: [...document.querySelectorAll('[role="tablist"] [role="tab"]')].map((b) => (b.innerText || '').trim()),
     summary: (document.querySelector('[data-picker-summary]') || {}).innerText || '',
     colCount: document.querySelectorAll('[data-picker]').length,
@@ -148,11 +172,14 @@ const gotoStepUrl = async (n) => {
 console.log('\n── ① НЭВТЭРСЭН ТӨЛӨВ + АНХДАГЧ (🏠 Үл хөдлөх) ──');
 const p0 = await probe();
 ok('нэвтрэх хаалт ГАРАХГҮЙ (session ажиллаж байна)', p0.gate === false);
-ok('«Категорио сонгоно уу» гарчиг байна', p0.title === true);
+ok('1-р алхамд ХАРАГДАХ ГАРЧИГ БАЙХГҮЙ («Категорио сонгоно уу» хасагдсан ✓)', p0.noPickerHeading === true);
+ok('асуулт нь `aria-label`-аар (screen reader) ХЭВЭЭР',
+  p0.pickerAria === 'Категорио сонгоно уу', JSON.stringify(p0.pickerAria));
 ok('дээд хэсэгт АЛХМЫН ТАБ ГАРАХГҮЙ (2026-10-01-нд хасагдсан ✓)', p0.tabs.length === 0, JSON.stringify(p0.tabs));
-ok('1-р алхам: «1/5-Р АЛХАМ · Ангилал» (`[data-step-heading]`)',
-  String(p0.stepHeading).includes('Ангилал') && String(p0.stepIndex).includes('1/5'),
-  JSON.stringify([p0.stepIndex, p0.stepHeading]));
+ok('форм дотор АЛХМЫН ГАРЧИГ ГАРАХГҮЙ (`[data-step-heading]` = 0)',
+  p0.stepHeadings === 0, `stepHeadings=${p0.stepHeadings}`);
+ok('1-р алхам: breadcrumb «1. Ангилал» (`[data-step-current]`)',
+  String(p0.stepLabel).includes('1. Ангилал'), JSON.stringify(p0.stepLabel));
 ok('3 багана харагдаж байна (Үл хөдлөх)', p0.colCount === 3, `colCount=${p0.colCount}`);
 ok('багана 1: 12 ХЭСЭГ', p0.cols.section?.items.length === 12, String(p0.cols.section?.items.length));
 ok('багана 1 толгой = «🏠 Үл хөдлөх»', (p0.cols.section?.title || '').includes('Үл хөдлөх'), p0.cols.section?.title);
@@ -180,7 +207,9 @@ const p3 = await probe();
 ok('багана 3 АРИЛАВ (2 багана)', p3.colCount === 2, `colCount=${p3.colCount}`);
 ok('багана 1 толгой = «🚗 Автомашин»', (p3.cols.section?.title || '').includes('Автомашин'), p3.cols.section?.title);
 ok('багана 2 = 10 дэд төрөл (хавтгай)', p3.cols.level2?.items.length === 10, String(p3.cols.level2?.items.length));
-ok('өмнөх сонголт ЦЭВЭРЛЭГДЭВ', JSON.stringify(p3.cols.level2?.selected) === '[]' && (p3.summary || '').includes('Дэд төрлөө сонгоно уу'), p3.summary);
+ok('багана 2 толгой = «Төрөл» (2026-10-01: «Дэд төрөл» БИШ ✓)',
+  (p3.cols.level2?.title || '') === 'Төрөл', JSON.stringify(p3.cols.level2?.title));
+ok('өмнөх сонголт ЦЭВЭРЛЭГДЭВ', JSON.stringify(p3.cols.level2?.selected) === '[]' && (p3.summary || '').includes('Төрлөө сонгоно уу'), p3.summary);
 await click('[data-picker="level2"] button[data-picker-value="Жийп, SUV"]');
 const p4 = await probe();
 ok('хавтгай хэсэгт дэд төрөл сонгогдов', (p4.summary || '').includes('Жийп, SUV'), p4.summary);
@@ -209,16 +238,16 @@ ok('дүгнэлтэд «Чихэвч» (бүлэг=leaf) 1 УДАА — дав�
   (p8.summary || '').includes('Чихэвч') && !(p8.summary || '').includes('Apple')
   && (p8.summary || '').split('Чихэвч').length - 1 === 1, p8.summary);
 
-console.log('\n── ⑥ АЛХМЫН ТАБ ХАСАГДСАН + ДАРААГИЙН АЛХАМ ──');
+console.log('\n── ⑥ ТАБ БА АЛХМЫН ГАРЧИГ ХАСАГДСАН + ДАРААГИЙН АЛХАМ ──');
 await click('[data-picker="section"] button[data-picker-value="real-estate"]');
 await click('[data-picker="level3"] button[data-picker-value="Орон сууц"]');
 const plusOk = await evaluate(`(() => { const b = [...document.querySelectorAll('form button')].find((x) => (x.innerText||'').includes('Үргэлжлүүлэх')); if (!b) return 'NOT_FOUND'; b.click(); return 'OK'; })()`);
 await wait(700);
 const p9 = await probe();
 ok('«Үргэлжлүүлэх» товч ажилласан', plusOk === 'OK', plusOk);
-ok('2-Р АЛХАМ руу шилжив (гарчиг = «Дэлгэрэнгүй»)',
-  String(p9.stepHeading).includes('Дэлгэрэнгүй'),
-  JSON.stringify([p9.stepIndex, p9.stepHeading]));
+ok('2-Р АЛХАМ руу шилжив (breadcrumb = «2. Дэлгэрэнгүй»)',
+  String(p9.stepLabel).includes('2. Дэлгэрэнгүй'),
+  JSON.stringify(p9.stepLabel));
 const search = await evaluate('location.search');
 ok('URL нь `?step=2` болов', String(search).includes('step=2'), search);
 

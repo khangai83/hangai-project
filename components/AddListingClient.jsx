@@ -35,12 +35,17 @@ import { compressImages, formatBytes } from '../lib/imageUtils';
  *  ⚠️ «Одоогийн алхам» нь URL-аас уншигдана (`step`), `setStep` гэж БАЙХГҮЙ ✓
  *     Дууссан алхам дээр дарж ХОЙШ буцаж болно (зөвхөн `i < step`).
  */
+/**
+ * ⚠️ 2026-10-01: `short` (алхамын товч тайлбар — «Юу зарах вэ?» …) ХАСАГДАВ —
+ *    форм дотрох «1/5-Р АЛХАМ · Ангилал · Юу зарах вэ?» гарчиг бүхэлдээ
+ *    хасагдсан тул ашиглагдахгүй болсон ✓ (git түүхэд хэвээр байна)
+ */
 const STEPS = [
-  { key: 'category', label: 'Ангилал',     short: 'Юу зарах вэ?' },
-  { key: 'details',  label: 'Дэлгэрэнгүй', short: 'Үндсэн үзүүлэлт' },
-  { key: 'location', label: 'Байршил',     short: 'Хаана байрлах вэ?' },
-  { key: 'price',    label: 'Үнэ',         short: 'Үнэ ба тайлбар' },
-  { key: 'media',    label: 'Зураг',       short: 'Зураг ба холбоо' },
+  { key: 'category', label: 'Ангилал' },
+  { key: 'details',  label: 'Дэлгэрэнгүй' },
+  { key: 'location', label: 'Байршил' },
+  { key: 'price',    label: 'Үнэ' },
+  { key: 'media',    label: 'Зураг' },
 ];
 
 /** Зарын DB мөр → форм (засах горимд) */
@@ -85,7 +90,7 @@ function listingToForm(l) {
  *     «юу байгаа нь харагдахгүй» (зөвхөн нээсэн үед) — хэрэглэгч 3 түвшний
  *     модоо НЭГ ДЭЛГЭЦЭЭР харж, дараалан сонгох боломжтой боллоо ✓
  *
- *  @param {string}   p.title     улаан толгойн бичиг (сонгосон утга). ⚠️ `null`
+ *  @param {string}   p.title     толгойн бичиг (сонгосон утга — цэнхэр зурвас). ⚠️ `null`
  *     бол толгой ГАРАХГҮЙ (unegui-д 3 дахь баганад толгой байхгүй ✓)
  *  @param {string}   [p.mobileLabel] 320–640px дээр толгойн оронд гарах жижиг
  *     шошго (толгойгүй баганад ч утга нь ойлгомжтой байхын тулд ✓)
@@ -365,9 +370,15 @@ export default function AddListingClient() {
   const level3Items = showCategoryChoice
     ? subtypes.map((t) => ({ value: t, label: getPropertyTypeLabel(t, form.category), icon: PROPERTY_TYPE_ICONS[t] || '' }))
     : (subtypeGroups.find((g) => g.label === openGroup)?.items || []).map((t) => ({ value: t, label: t }));
+  /**
+   * ② дахь баганын толгой.
+   * ⚠️ 2026-10-01 (2 дахь засвар): хавтгай хэсэгт «Дэд төрөл» БИШ зүгээр л
+   *    «Төрөл» (хэрэглэгчийн хүсэлт: «дэд төрөл биш зүгээр л Төрөл гэж нэрлэ»).
+   *    Бүлэгтэй хэсгийн «Дэд бүлэг» нь 3 дахь түвшний жинхэнэ нэр тул ХЭВЭЭР ✓
+   */
   const level2Title = showCategoryChoice
     ? (categoryItems.find((c) => c.value === form.category)?.label || 'Зар эсвэл түрээс')
-    : hasGroups ? (openGroup || 'Дэд бүлэг') : 'Дэд төрөл';
+    : hasGroups ? (openGroup || 'Дэд бүлэг') : 'Төрөл';
   const selectedLeafLabel = form.propertyType ? getPropertyTypeLabel(form.propertyType, form.category) : '';
   /**
    * 🥖 БҮТЭН ЗАМНЫ «БҮЛЭГ» хэсэг — сонгосон leaf нь аль бүлэгт харьяалагдах вэ.
@@ -689,44 +700,52 @@ export default function AddListingClient() {
           <>
             <span>Зар нэмэх</span>
             <span className="text-gray-300">›</span>
-            <span className="font-semibold text-gray-800">{step + 1}. {currentStep.label}</span>
+            {/* ℹ️ `data-step-current` — «хаана явж байна»-г харуулах ЦОРЫН ГАНЦ
+                газар (форм дотрох алхмын гарчиг 2026-10-01-нд хасагдсан) тул
+                CDP тестийн тогтвортой selector болно ✓ */}
+            <span data-step-current className="font-semibold text-gray-800">{step + 1}. {currentStep.label}</span>
           </>
         )}
       </nav>
 
       <div className="mx-auto w-full max-w-3xl">
         <div className="section-card !p-0">
-          {/* ⚠️ 2026-10-01 (хэрэглэгчийн хүсэлт «Зар нэмэхэд энийг харуулахгүй»):
-              ДЭЭД ТОЛГОЙ БҮХЭЛДЭЭ ХАСАГДАВ — «➕ Зар нэмэх» гарчиг · «1/5 · …»
-              заагч · 5 АЛХМЫН ТАБ · дэвшлийн цэнхэр зурвас. ⚠️ `goToStep` ч
-              хасагдсан (табуудгүй бол ашиглагдахгүй → eslint no-unused-vars ✗).
-              ℹ️ Алхам нь одоо ① дээд breadcrumb (`{step + 1}. {label}`) ба
-                 ② доорх `[data-step-heading]` («1/5-Р АЛХАМ · Ангилал»)
-                 гарчигаар харагдана. Навигаци: «← Буцах» (нэг алхам) /
-                 0-р алхам дээр «Цуцлах» ✓ */}
+          {/* ⚠️ 2026-10-01 — хэрэглэгчийн ХОЁР хүсэлтээр ЭНЭ ГАЗРЫН ХАРАГДАЦ
+              БҮРЭН ЦЭВЭРЛЭВ:
+              ① «Зар нэмэхэд энийг харуулахгүй» → ДЭЭД ТОЛГОЙ БҮХЭЛДЭЭ ХАСАГДАВ
+                 («➕ Зар нэмэх» гарчиг · «1/5 · …» заагч · 5 АЛХМЫН ТАБ ·
+                 дэвшлийн цэнхэр зурвас · хаах × товч). ⚠️ `goToStep` ч хасагдав
+                 (табуудгүй бол ашиглагдахгүй → eslint no-unused-vars ✗).
+              ② «энэ бүгдийг нь зайлуул, харахыг хүсэхгүй байна» → форм ДОТРОХ
+                 алхмын гарчиг (`data-step-heading`) БҮХЭЛДЭЭ ХАСАГДАВ —
+                 «1/5-Р АЛХАМ · Ангилал · Юу зарах вэ?» блок (мөн `STEPS[].short`).
+              ③ (2 дахь хүсэлт) «энэ бүгдийг нь зайлуул, харахыг хүсэхгүй байна»
+                 → «Категорио сонгоно уу» ГАРЧИГ Ч ХАСАГДАВ — асуулт нь ЗӨВХӨН
+                 `role="group"` + `aria-label` (screen reader) хэвээр ✓
+              ④ «дэд төрөл биш зүгээр л Төрөл гэж нэрлэ» → баганын толгой
+                 «Дэд төрөл» → «Төрөл» (бүлэгтэй хэсгийн «Дэд бүлэг» ХЭВЭЭР) ✓
+              ℹ️ Алхмын мэдээлэл нь одоо ЗӨВХӨН дээд breadcrumb-аас харагдана —
+                 `{step + 1}. {currentStep.label}` (`[data-step-current]` нь CDP
+                 тестийн тогтвортой selector ✓). Форм нь `section-card`-ийн p-6
+                 дотроос ШУУД эхэлнэ (1-р алхамд ОДОО ямар ч ХАРАГДАХ гарчиг БАЙХГҮЙ — шууд
+                 баганат сонголт эхэлнэ ✓).
+                 Навигаци: «← Буцах» (нэг алхам) / 0-р алхам дээр «Цуцлах» ✓ */}
         <div className="p-6">
           <form onSubmit={handleSubmit}>
             {error && <div className="mb-3 rounded-lg bg-red-50 p-2.5 text-red-800">{error}</div>}
 
-            {/* 🪜 Алхмын гарчиг — энэ алхамд юу асуухыг товч тайлбарлана
-                ⚠️ `data-step-heading` — CDP тестийн тогтвортой selector ✓ (толгойн
-                   табууд 2026-10-01-нд хасагдсан тул одоогийн алхмыг ЭНДЭЭС уншина) */}
-            <div data-step-heading className="mb-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-                {step + 1}/{STEPS.length}-р алхам
-              </p>
-              <h3 className="text-lg font-semibold text-gray-900">{STEPS[step].label}</h3>
-              <p className="text-[13px] text-gray-500">{STEPS[step].short}</p>
-            </div>
-
-            {/* ═══ 1-р алхам · АНГИЛАЛ — «КАТЕГОРИО СОНГОНО УУ» (3 баганат, unegui.mn) ═══
-                ⚠️ Хэрэглэгч эндээс ① ХЭСЭГ → ② «Зарах/Түрээслэх»/БҮЛЭГ → ③ ДЭД ТӨРӨЛ
-                   гэж ДАРААЛАН сонгоно. Багана бүрийн УЛААН толгой нь сонгосон
+            {/* ═══ 1-р алхам · АНГИЛАЛ — 3 БАГАНАТ СОНГОЛТ (unegui.mn загвар) ═══
+                ⚠️ Хэрэглэгч эндээс ① ХЭСЭГ → ② «Зарах/Түрээслэх»/Дэд бүлэг → ③ ТӨРӨЛ
+                   гэж ДАРААЛАН сонгоно. Багана бүрийн ЦЭНХЭР толгой нь сонгосон
                    утгыг харуулна (`PickerColumn` — дээр тайлбарласан ✓) */}
             {step === 0 && (
             <>
-            <h3 className="mb-2 text-[15px] font-semibold text-gray-900">Категорио сонгоно уу</h3>
-            <div className={`grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-gray-300 bg-gray-200 ${hasThirdColumn ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+            {/* ⚠️ 2026-10-01 (2 дахь засвар) — «Категорио сонгоно уу» ГАРЧИГ Ч
+                ХАСАГДАВ (хэрэглэгч: «энэ бүгдийг нь зайлуул, харахыг хүсэхгүй
+                байна» → дэлгэцийн зураг дээр яг энэ гарчгийг заасан).
+                ⚠️ Асуулт нь доорх `role="group"` + `aria-label`-д (screen
+                reader) ХЭВЭЭР ✓ — харагдах текст DOM-д 0 байхыг CDP шалгана ✓ */}
+            <div role="group" aria-label="Категорио сонгоно уу" className={`grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-gray-300 bg-gray-200 ${hasThirdColumn ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
               {/* ① ХЭСЭГ — Автомашин / Ажлын зар / Компьютер … (0016) */}
               <PickerColumn
                 pickRole="section"
@@ -740,24 +759,24 @@ export default function AddListingClient() {
               <PickerColumn
                 pickRole="level2"
                 title={level2Title}
-                mobileLabel={hasGroups && !showCategoryChoice ? 'Дэд бүлэг' : 'Дэд төрөл'}
+                mobileLabel={hasGroups && !showCategoryChoice ? 'Дэд бүлэг' : 'Төрөл'}
                 items={level2Items}
                 value={level2Value}
                 onPick={pickLevel2}
-                emptyText={showCategoryChoice ? 'Зар эсвэл түрээсээ сонгоно уу' : 'Дэд төрлөө сонгоно уу'}
+                emptyText={showCategoryChoice ? 'Зар эсвэл түрээсээ сонгоно уу' : 'Төрлөө сонгоно уу'}
                 className="bg-white"
               />
-              {/* ③ LEAF дэд төрөл — хавтгай хэсэгт ГАРАХГҮЙ (2 багана) ✓
+              {/* ③ LEAF ТӨРӨЛ — хавтгай хэсэгт ГАРАХГҮЙ (2 багана) ✓
                   ⚠️ Толгойн улаан зурвас ГАРАХГҮЙ (unegui.mn-тэй ижил) — сонгосон
                      зам нь доорх «Сонгосон: …» мөрөнд бүтнээр харагдана ✓ */}
               {hasThirdColumn && (
                 <PickerColumn
                   pickRole="level3"
-                  mobileLabel="Зарын төрөл"
+                  mobileLabel="Төрөл"
                   items={level3Items}
                   value={form.propertyType}
                   onPick={(v) => set('propertyType', v)}
-                  emptyText={hasGroups && !openGroup ? 'Эхлээд дэд бүлгээ сонгоно уу' : 'Дэд төрөл байхгүй'}
+                  emptyText={hasGroups && !openGroup ? 'Эхлээд дэд бүлгээ сонгоно уу' : 'Төрөл байхгүй'}
                   className="bg-white"
                 />
               )}
@@ -777,11 +796,11 @@ export default function AddListingClient() {
                   {' '}› <b className="text-gray-900">{selectedLeafLabel}</b>
                 </>
               ) : showCategoryChoice ? (
-                'Хэсэг → «Зар эсвэл түрээс» → зарын төрлөө сонгоно уу.'
+                'Хэсэг → «Зар эсвэл түрээс» → төрлөө сонгоно уу.'
               ) : hasGroups ? (
-                'Хэсэг → дэд бүлэг → дэд төрлөө сонгоно уу.'
+                'Хэсэг → дэд бүлэг → төрлөө сонгоно уу.'
               ) : (
-                'Дэд төрлөө сонгоно уу.'
+                'Төрлөө сонгоно уу.'
               )}
             </p>
             </>
@@ -836,7 +855,7 @@ export default function AddListingClient() {
                         value={value}
                         options={f.options}
                         onChange={(v) => setAttr(f.key, v)}
-                        placeholder="Бичиж хайх эсвэл өөрөө бичих"
+                        placeholder="Хайх..."
                         ariaLabel={f.label}
                         commitOnType
                       />
