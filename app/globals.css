@@ -241,7 +241,11 @@
   .form-group label {
     @apply mb-1 block text-[13px] font-semibold text-gray-700;
   }
-  .form-group :is(input, select, textarea) {
+  /* ⚠️ 2026-10-01: checkbox/radio ГАДУУР — `.form-group`-ийн input загвар нь
+     (specificity (0,1,1) > Tailwind `w-4` (0,1,0)) чекбоксыг `w-full` (бүтэн
+     өргөн) + padding/border-той болгож, чекбокс нь текстийн ДЭЭР том хайрцаг
+     мэт гарахад хүргэдэг байв ✗ Одоо зөвхөн текст талбаруудад хамаарна ✓ */
+  .form-group :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]) {
     @apply w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition
            placeholder:text-gray-400 focus:border-primary focus:ring-[3px] focus:ring-primary-light
            disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70;

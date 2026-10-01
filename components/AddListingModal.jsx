@@ -618,7 +618,7 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
 
             <div className="form-row">
               <div className="form-group">
-                <label>Үнэ (сонголтоор)</label>
+                <label>Үнэ </label>
                 {/* ⚠️ type="number" БИШ: number input нь «250,000,000» гэсэн
                     таслалтай утгыг ХҮЛЭЭХГҮЙ (хоосон болгочихдог). Тиймээс
                     type="text" + inputMode="numeric" ашиглаж, бичих үед нь
@@ -659,17 +659,26 @@ export default function AddListingModal({ open, onClose, userId, displayName, us
                     {shortPrice(form.price) ? ` · ≈ ${shortPrice(form.price)} ₮` : ''}
                   </p>
                 ) : null}
-                {/* 🤝 Чекбокс — ЗӨВХӨН нэр, илүү тайлбаргүй (хэрэглэгчийн шаардлага).
+                {/* Чекбокс — зүгээр checkbox + текст (гаднах box БАЙХГҮЙ, 🤝 emoji БАЙХГҮЙ).
+                    ⚠️ 2026-10-01 (CSS SPECIFICITY — ₮-гийн асуудалтай ИЖИЛ):
+                       `.form-group label { display:block }` (globals.css, (0,1,1)) нь
+                       label-ийн `flex` (0,1,0)-ийг ДАРДАГ тул чекбокс+текст текстийн
+                       ДЭЭР БИШ, зөвхөн ЯГ ЗҮҮН талд гарахын тулд ДОТООД
+                       `<span class="flex">` (label-ийг БИШ) ашиглав ✓
+                    ⚠️ checkbox-ийн `w-full`-ийг globals.css дээр `:not([type="checkbox"])`
+                       -оор зассан (эс бөгөөс чекбокс бүтэн өргөн болно) ✓
                     ⚠️ `price`-ыг ХӨНДӨХГҮЙ, input-ыг disabled БОЛГОХГҮЙ ✗ —
                        хоёулаа зэрэг байж болно: «₮5,000,000» + «Үнэ тохирно» ✓ */}
-                <label className="mt-2 flex cursor-pointer items-center gap-2.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 transition hover:border-primary/40">
-                  <input
-                    type="checkbox"
-                    checked={form.negotiable}
-                    onChange={(e) => setForm((f) => ({ ...f, negotiable: e.target.checked }))}
-                    className="h-4 w-4 shrink-0 accent-primary"
-                  />
-                  <b className="text-[13px] text-gray-800">🤝 {NEGOTIABLE_PRICE_LABEL}</b>
+                <label className="mt-2 block w-fit cursor-pointer">
+                  <span className="flex w-fit items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={form.negotiable}
+                      onChange={(e) => setForm((f) => ({ ...f, negotiable: e.target.checked }))}
+                      className="h-4 w-4 shrink-0 accent-primary"
+                    />
+                    <span className="text-[13px] font-normal text-gray-700">{NEGOTIABLE_PRICE_LABEL}</span>
+                  </span>
                 </label>
               </div>
               {/* <div className="form-group">
