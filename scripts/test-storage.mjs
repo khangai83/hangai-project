@@ -422,6 +422,19 @@ function withR2Env(patch, fn) {
   }
 }
 
+async function withR2EnvAsync(patch, fn) {
+  try {
+    process.chdir(os.tmpdir());
+    for (const k of R2_ENV_ALL) delete process.env[k];
+    Object.assign(process.env, patch);
+    await fn();
+  } finally {
+    process.chdir(cwdAtStart);
+    for (const k of Object.keys(process.env)) if (!(k in savedEnv)) delete process.env[k];
+    Object.assign(process.env, savedEnv);
+  }
+}
+
 t('isR2UploadReady: R2_PUBLIC_BASE-ГҮЙ (5-ын 4) → FALSE ⚠️ (config нь true хэвээр)', () => {
   const { R2_PUBLIC_BASE, ...four } = R2_ENV_SAMPLE;
   withR2Env(four, () => {
@@ -483,6 +496,54 @@ t('R2 endpoint: R2_ENDPOINT (сонголтоор) дарж бичнэ — ж: E
 t('R2 endpoint: R2_ENDPOINT хоосон/зайтай бичигдсэн ч автомат утга хэвээр', () => {
   withR2Env({ ...R2_ENV_SAMPLE, R2_ENDPOINT: '   ' }, () => {
     assert.equal(r2lib.r2Config().endpoint, 'https://acc123.r2.cloudflarestorage.com');
+  });
+});
+
+// ⚠️⚠️ ХАМГИЙН ЧУХАЛ БАТАЛГАА: `endpoint` нь зөвхөн `r2Config()`-д БИШ,
+//    БОДИТ S3 client-д хүрсэн эсэх. Учир нь presign · list · delete ·
+//    HeadBucket — БҮГД энэ client-ээр явдаг тул endpoint тааруу бол
+//    «"s3.eu-central-1.amazonaws.com"-руу хүсэлт явж байна» гэсэн
+//    алдаа гарна ✗ (эсвэл огт холбогдохгүй). Мөн «endpoint гэсэн код
+//    хаана ч ашиглагдахгүй юм уу?» гэсэн эргэлзлээс сэргийлнэ ✓
+await ta('R2 endpoint: БОДИТ S3 client-д ХҮРСЭН (бүх R2 хүсэлт энэ хаягаар явна)', async () => {
+  await withR2EnvAsync(R2_ENV_SAMPLE, async () => {
+    const client = r2lib.r2Client();
+    const ep =
+      typeof client.config.endpoint === 'function' ? await client.config.endpoint() : client.config.endpoint;
+    const host = String((ep && (ep.hostname || ep.url)) || ep);
+    assert.equal(
+      host,
+      'acc123.r2.cloudflarestorage.com',
+      '⚠️ S3 client нь автоматаар үүссэн endpoint руу ЗААСАН байх ЁСТОЙ (эс бөгөөс бүх R2 хүсэлт бүтэлгүй)'
+    );
+    const region =
+      typeof client.config.region === 'function' ? await client.config.region() : client.config.region;
+    assert.equal(region, 'auto', 'region нь client-д ч `auto` хүрсэн байх ЁСТОЙ');
+  });
+});
+
+await ta('R2 endpoint: presigned PUT линк нь «<bucket>.<account>.r2.cloudflarestorage.com» руу заана', async () => {
+  await withR2EnvAsync(R2_ENV_SAMPLE, async () => {
+    const url = await r2lib.presignPut('listing-images/u/a.jpg', 'image/jpeg', 300);
+    const u = new URL(url);
+    assert.equal(
+      u.host,
+      'zar-media.acc123.r2.cloudflarestorage.com',
+      '→ browser-ийн PUT хүсэлт R2-ийн S3 API endpoint руу ШУУД явна ✓'
+    );
+    assert.equal(u.pathname, '/listing-images/u/a.jpg');
+    assert.equal(u.searchParams.get('X-Amz-Algorithm'), 'AWS4-HMAC-SHA256');
+    assert.equal(u.searchParams.get('X-Amz-Expires'), '300');
+    assert.equal(
+      u.searchParams.get('X-Amz-SignedHeaders'),
+      'content-type;host',
+      '⚠️ content-type нь гарын үсэгт орох ЁСТОЙ (эс бөгөөс дурын төрөл хадгалагдана)'
+    );
+    assert.equal(
+      [...u.searchParams.keys()].filter((k) => /checksum/i.test(k)).length,
+      0,
+      '⚠️ checksum параметр URL-д орох ЁСГҮЙ (WHEN_REQUIRED — эс бөгөөс R2 «checksum mismatch»)'
+    );
   });
 });
 
