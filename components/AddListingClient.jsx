@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, useToast, useUI } from './AppProviders';
 import { createListing, updateListing, uploadImages, fetchListingById } from '../lib/queries';
 import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, hasSimpleForm, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSection, getSubtypes, hasCategoryChoice, getSectionCategories, getSubtypeGroups, findSubtypeGroup, getAttrFields, PROPERTY_TYPE_ICONS } from '../lib/locationData';
-import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice, isNegotiablePrice, NEGOTIABLE_PRICE_LABEL } from '../lib/format';
+import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice, isNegotiablePrice, NEGOTIABLE_PRICE_LABEL, MAX_LISTING_TITLE_LENGTH } from '../lib/format';
 import phoneEmail from '../lib/phoneEmail';
 import YouTubeField from './YouTubeField';
 import SearchableSelect from './SearchableSelect';
@@ -16,6 +16,9 @@ import { compressImages, formatBytes } from '../lib/imageUtils';
 //    `lookupMap` (талбарын `optionsMap`-аас сонголт), `cascadeAttrs`
 //    (брэнд солигдоход хуучирсан загварыг цэвэрлэх НЭГ дүрэм — sidebar-тай ижил) ✓
 import { lookupMap, cascadeAttrs } from '../lib/carModels.mjs';
+// 📱 «Өрөө»-ний сонголтууд (мобайл drill-down) — ⚠️ шүүлтийн (sidebar) ЯГ ИЖИЛ
+//    утга/шошго (`'1'`…`'5'`, «+5 өрөө») ашиглана: нэг эх сурвалж → зөрүү үгүй ✓
+import { ROOM_VALUES, roomOptionLabel } from '../lib/roomFilter.mjs';
 
 /**
  * 🪜 «ЗАР НЭМЭХ» — ТУСДАА ХУУДАС (`/listings/new`) + АЛХАМТ ФОРМ (2026-10-01)
@@ -84,6 +87,9 @@ function listingToForm(l) {
     priceType: l.price_type || 'total',
     phone: phoneEmail.toLocalPhone(l.phone),
     contactName: l.contact_name || '',
+    // 🏷️ ЗАРЫН ГАРЧИГ (0027_listing_title.sql) — 3-р алхам (📋 Дэлгэрэнгүй).
+    //    ⚠️ Хуучин зарууд дээр `null` байж болно → `''` (хоосон талбар ✓)
+    title: l.title || '',
     description: l.description || '',
     // YouTube видео линк (0011). Хадгалагдсан нь КАНОНИК линк байна.
     videoUrl: l.video_url || '',
@@ -174,6 +180,93 @@ function PickerColumn({ pickRole, mobileLabel, items, value, onPick, emptyText =
   );
 }
 
+/**
+ * 📱 «АСУУЛГА БҮР НЭГ ДЭЛГЭЦ» — МОБАЙЛ (<640px) DRILL-DOWN (2026-10-02)
+ * ──────────────────────────────────────────────────────────────────────────
+ * Хэрэглэгчийн хүсэлт: «гар утсаас зар оруулахад ийм асуудаг формоо нэг
+ * нэгээр нь харуулаад яв» (unegui.mn/post_ad-ийн дэлгэцүүд) ⇒ мобайлд
+ * сонголтууд нь БАГАНА БИШ, **ДЭЛГЭЦ БҮРД НЭГ АСУУЛТ** болж дараалан
+ * харагдана: `Зар нийтлэх` → (сонгосон хэсэг) → (сонгосон бүлэг) → … мөр
+ * бүр баруун талдаа `›` товчтой — unegui.mn-ийн ЯГ ИЖИЛ харагдац ✓
+ *
+ * ⚠️ ЗӨВХӨН `<640px` (`sm:hidden`) — 🖥 ≥640px дээр хуучин **3 БАГАНАТ**
+ *    харагдац ХЭВЭЭР (CDP тестүүд (`scripts/cdp-picker.mjs`) тэнд ажиллана) ✓
+ * ⚠️ `data-mobile-*` атрибутууд — CDP-ийн `[data-picker]` (=3) тоог
+ *    хөндөхгүйн тулд ТУСДАА нэршил (`data-picker` ХЭРЭГЛЭХГҮЙ ✗)
+ * ⚠️ Хайлтын талбар нь ЗӨВХӨН энэ дэлгэцийн жагсаалтыг шүүнэ (state нь
+ *    компонентийн дотроо — дэлгэц солигдоход `key`-ээр шинээр монтажлагдана)
+ * 🔍 Хайх үг: data-mobile-question, data-mobile-value, mobileCatStep, mobileLocStep
+ */
+function MobileQuestion({ title, items, value, onPick, onBack, emptyText = 'Сонголт байхгүй' }) {
+  const [q, setQ] = useState('');
+  const needle = q.trim().toLowerCase();
+  const shown = needle
+    ? items.filter((it) => String(it.label).toLowerCase().includes(needle))
+    : items;
+  return (
+    <div data-mobile-question className="sm:hidden">
+      {/* Толгой — ← (дээш алхмаар буцах) + юу асууж байгаа */}
+      <div className="flex items-center gap-2 border-b border-gray-200 pb-3">
+        <button
+          type="button"
+          data-mobile-back
+          onClick={onBack}
+          aria-label="Буцах"
+          className="-ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg text-gray-700 active:bg-gray-100"
+        >
+          ←
+        </button>
+        <h2 className="min-w-0 flex-1 truncate text-[17px] font-bold text-gray-900">{title}</h2>
+      </div>
+      {/* 🔎 Хайлт (unegui.mn-ийн «Хайх зүйлсээ бичнэ үү») */}
+      <div className="relative mt-3">
+        <span aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+          🔍
+        </span>
+        <input
+          type="text"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Хайх зүйлсээ бичнэ үү"
+          aria-label="Хайх"
+          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary"
+        />
+      </div>
+      <ul className="mt-2">
+        {shown.length === 0 && (
+          <li className="px-1 py-4 text-[13px] text-gray-400">{emptyText}</li>
+        )}
+        {shown.map((it) => (
+          <li key={it.value} className="border-b border-gray-100 last:border-b-0">
+            <button
+              type="button"
+              data-mobile-value={it.value}
+              aria-pressed={it.value === value}
+              onClick={() => onPick(it.value)}
+              className={`flex w-full items-center gap-2 px-1 py-3.5 text-left text-[15px] leading-snug ${
+                it.value === value ? 'font-semibold text-primary' : 'text-gray-800'
+              }`}
+            >
+              {it.icon ? <span aria-hidden="true">{it.icon}</span> : null}
+              <span className="min-w-0 flex-1">{it.label}</span>
+              <span aria-hidden="true" className="text-gray-300">›</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** 📱 Мобайл drill-down-ийн «Алгасах» мөр (`rooms` нь заавал биш) — утга нь `''` */
+const MOBILE_SKIP = '__skip__';
+
+/** 📱 «Өрөөний тоо» дэлгэцийн мөрүүд — утга нь шүүлттэй ЯГ ИЖИЛ (`'1'`…`'5'`) ✓ */
+const MOBILE_ROOM_ITEMS = [
+  ...ROOM_VALUES.map((v) => ({ value: v, label: roomOptionLabel(v) })),
+  { value: MOBILE_SKIP, label: 'Алгасах' },
+];
+
 export default function AddListingClient() {
   const { user, profileName, authLoading } = useAuth();
   const { showToast } = useToast();
@@ -221,6 +314,9 @@ export default function AddListingClient() {
     // Нэр нь «Холбоо барих хүн» (contact_name) талбарт хэвээр — тэр талбар нуугдсан ч
     // зар хадгалахдаа нэрийг хамт хадгална.
     contactName: displayName || '',
+    // 🏷️ ЗАРЫН ГАРЧИГ (0027_listing_title.sql) — ШИНЭ ЗАРД ЗААВАЛ
+    //    (`validateStep('details')`), карт дээр үнийн доор харагдана ✓
+    title: '',
     description: '',
     videoUrl: '', // YouTube линк (сонголтоор) — Storage-д файл хадгалахгүй
     // ---- Орон сууцны нэмэлт мэдээлэл ----
@@ -248,6 +344,16 @@ export default function AddListingClient() {
    *    хэлнэ (`useEffect` доор — засах горимд бүлгийг автоматаар нээнэ ✓)
    */
   const [openGroup, setOpenGroup] = useState('');
+  /**
+   * 📱 Мобайл (<640px) drill-down-ийн «аль дэлгэц дээр байна» (2026-10-02) —
+   *    ⚠️ ТҮВШНИЙ ДУГААР БИШ, ТҮЛХҮҮР (`'section'`/`'category'`/`'group'`/
+   *    `'subtype'`/`'rooms'`, `'city'`/`'district'`/`'khoroo'`) хадгална: түвшин
+   *    нь сонголтоос хамаарч 2–4 дэлгэц болж ХУВИРДАГ (ж: бүлэгтэй хэсэгт
+   *    «Дэд бүлэг» нэг дэлгэц нэмэгдэнэ) тул тоо нь эвдрэхэд амар ✗
+   *    🖥 ≥640px дээр эдгээр нь ХЭРЭГЛЭГДЭХГҮЙ (баганат харагдац хэвээр) ✓
+   */
+  const [mobileCatStep, setMobileCatStep] = useState('section');
+  const [mobileLocStep, setMobileLocStep] = useState('city');
   const baselineRef = useRef(''); // анхны төлөв (өөрчлөгдсөн эсэхийг шалгах)
 
   // 🪜 Хуудас ачаалахад: нэвтэрсэн бол шинэ/засах формыг бэлдэнэ.
@@ -529,6 +635,160 @@ export default function AddListingClient() {
   // «Угаалгын өрөө» — АОС/хаус төрөлд үргэлж, 3+ өрөөтэй орон сууцанд нэмж харагдана
   const showBathrooms = hasBathroomFields(form.propertyType, form.rooms);
 
+  /* ==========================================================================
+     📱 МОБАЙЛ (<640px) — «АСУУЛГА БҮР НЭГ ДЭЛГЭЦ» (2026-10-02)
+     ──────────────────────────────────────────────────────────────────────────
+     Хэрэглэгчийн хүсэлт: «гар утсаас зар оруулахад ийм асуудаг формоо нэг
+     нэгээр нь харуулаад яв» (`unegui.mn/post_ad/`-ийн дэлгэцүүд) ⇒ мобайлд
+     ① Хэсэг → ② «Зарах / Түрээслэх» эсвэл Дэд бүлэг → ③ Төрөл → ④ Өрөө
+     (зөвхөн өрөөтэй төрөлд) гэж ДАРААЛАН, дэлгэц бүрд НЭГ асуулт харагдана.
+     Байршил ч мөн адил: Хот/Аймаг → Дүүрэг/Сум → Хороо.
+     ⚠️ Сүүлийн дэлгэц дээр сонгосны дараа ДАРААГИЙН АЛХАМ руу ШУУД шилжинэ
+        (unegui.mn-ийн зан) — тул «Үргэлжлүүлэх» дарах шаардлагагүй ✓
+        ⚠️ Шилжилт нь `validateStep`-ээр БИШ, ШУУД `gotoStep(1)`/`(2)`: дөнгөж
+           сонгосон утга нь `form`-д ороогүй хэвээр байгаа тул `validateStep`
+           хуучин төлөвийг харж «сонгоно уу» гэж БУРУУ алдаа өгнө ✗
+     ⚠️ 🖥 ≥640px дээр ЭДГЭЭР дэлгэцүүд ХАРАГДАХГҮЙ (`MobileQuestion` нь
+        `sm:hidden`) — баганат сонголт ХЭВЭЭР ✓
+     🔍 Хайх үг: mobileCatStep, mobileLocStep, finishMobileCategory, catScreens
+     ========================================================================== */
+  /** 📱 Төрлийн дараа → дараагийн алхам (📍 Байршил) */
+  const finishMobileCategory = () => { setError(''); gotoStep(1); };
+  /** 📱 Байршлын дараа → дараагийн алхам (📋 Дэлгэрэнгүй) */
+  const finishMobileLocation = () => { setError(''); gotoStep(2); };
+
+  /**
+   * 📱 Төрөл сонгох — өрөөтэй төрөл (`hasRoomsFields`) бол «Өрөө» дэлгэц,
+   *    эс бөгөөс шууд дараагийн алхам.
+   * ⚠️ `hasRoomsFields(v)` — ШИНЭ утгаар ШУУД шалгана: `set('propertyType', v)`
+   *    нь async тул энэ render дээр `showRooms` ХУУЧИН хэвээр байна ✗
+   */
+  const pickSubtypeMobile = (v) => {
+    set('propertyType', v);
+    if (hasRoomsFields(v)) setMobileCatStep('rooms');
+    else finishMobileCategory();
+  };
+
+  const catVerb = form.category === 'rent' ? 'түрээслүүлнэ' : 'зарна';
+
+  /**
+   * 📱 1-р алхмын дэлгэцүүд — сонголтоос хамаарч 2–4 ширхэг.
+   * `key` нь `mobileCatStep`-тэй таарна; `find` олдохгүй бол эхнийх ✓
+   */
+  const catScreens = (() => {
+    const out = [
+      {
+        key: 'section',
+        title: 'Зар нийтлэх',
+        items: sectionItems,
+        value: sectionValue,
+        onPick: (v) => {
+          pickSection(v);
+          // ① ХЭСЭГ → ② «Зарах/Түрээслэх» | Дэд бүлэг | Төрөл
+          const next = hasCategoryChoice(v) ? 'category' : getSubtypeGroups(v).length ? 'group' : 'subtype';
+          setMobileCatStep(next);
+        },
+      },
+    ];
+    if (showCategoryChoice) {
+      out.push({
+        key: 'category',
+        // unegui.mn-ийн 2 дахь дэлгэц: «Үл хөдлөх зарна / Үл хөдлөх түрээслүүлнэ»
+        title: 'Зар нийтлэх',
+        items: categoryItems.map((c) => ({
+          ...c,
+          label: `${sectionDef.label} ${c.value === 'rent' ? 'түрээслүүлнэ' : 'зарна'}`,
+        })),
+        value: form.category,
+        onPick: (v) => { set('category', v); setMobileCatStep('subtype'); },
+      });
+    } else if (hasGroups) {
+      out.push({
+        key: 'group',
+        title: sectionDef.label,
+        items: subtypeGroups.map((g) => ({ value: g.label, label: g.label, badge: g.items.length })),
+        value: openGroup,
+        onPick: (v) => {
+          pickLevel2(v);
+          const g = subtypeGroups.find((x) => x.label === v);
+          // ⚠️ Доод түвшингүй бүлэг («💻 Чихэвч») нь ӨӨРӨӨ leaf → шууд үргэлжилнэ
+          if (g && g.items.length) setMobileCatStep('subtype');
+          else finishMobileCategory();
+        },
+      });
+    }
+    out.push({
+      key: 'subtype',
+      // unegui.mn-ийн 3 дахь дэлгэцийн толгой = өмнөх сонголт («Үл хөдлөх зарна»)
+      title: showCategoryChoice
+        ? `${sectionDef.label} ${catVerb}`
+        : (hasGroups ? openGroup : '') || sectionDef.label,
+      items: showCategoryChoice || hasGroups ? level3Items : level2Items,
+      value: form.propertyType,
+      onPick: pickSubtypeMobile,
+    });
+    if (showRooms) {
+      out.push({
+        key: 'rooms',
+        // unegui.mn-ийн 4 дэх дэлгэц: «Орон сууц зарна» → 1 өрөө … +5 өрөө
+        title: selectedLeafLabel || 'Өрөөний тоо',
+        items: MOBILE_ROOM_ITEMS,
+        value: form.rooms,
+        onPick: (v) => { set('rooms', v === MOBILE_SKIP ? '' : v); finishMobileCategory(); },
+      });
+    }
+    return out;
+  })();
+  const mobileCatScreen = catScreens.find((s) => s.key === mobileCatStep) || catScreens[0];
+
+  /** 📱 2-р алхмын дэлгэцүүд — ⚡ `simpleForm` (хороо харагдахгүй) дээр 2 ширхэг */
+  const locScreens = [
+    {
+      key: 'city',
+      title: 'Зар нийтлэх',
+      items: cityItems,
+      value: form.city,
+      onPick: (v) => { changeCity(v); setMobileLocStep('district'); },
+    },
+    {
+      key: 'district',
+      title: form.city || 'Дүүрэг / Сум',
+      items: districtItems,
+      value: form.district,
+      onPick: (v) => {
+        changeDistrict(v);
+        // ⚡ `simpleForm` (хобби/гэр ахуй/…) дээр хороо асуухгүй → шууд үргэлжилнэ
+        if (simpleForm) finishMobileLocation();
+        else setMobileLocStep('khoroo');
+      },
+    },
+  ];
+  if (!simpleForm) {
+    locScreens.push({
+      key: 'khoroo',
+      title: form.district || 'Хороо',
+      items: khorooItems,
+      value: form.khoroo,
+      onPick: (v) => { set('khoroo', v); finishMobileLocation(); },
+    });
+  }
+  const mobileLocScreen = locScreens.find((s) => s.key === mobileLocStep) || locScreens[0];
+
+  /**
+   * 📱 ← товч — нэг дэлгэцээр ДЭЭШ буцаана; хамгийн эхний дэлгэц дээр
+   *    `goBack()` (алхмаас гарна: 1-р алхамд «Цуцлах», бусад алхамд «← Буцах»)
+   *    ⚠️ Буцах үед СОНГОЛТ ЦЭВЭРЛЭГДЭХГҮЙ — дэлгэц дээр цэнхэрээр (aria-pressed)
+   *       тэмдэглэгдсэн хэвээр үлдэнэ (unegui.mn-ийн зан ✓)
+   */
+  const mobileStepBack = (screens, current, setStepKey) => {
+    setError('');
+    const idx = screens.findIndex((s) => s.key === current.key);
+    if (idx > 0) setStepKey(screens[idx - 1].key);
+    else goBack();
+  };
+  const mobileCatBack = () => mobileStepBack(catScreens, mobileCatScreen, setMobileCatStep);
+  const mobileLocBack = () => mobileStepBack(locScreens, mobileLocScreen, setMobileLocStep);
+
   const onPickFiles = async (e) => {
     const files = Array.from(e.target.files || []);
     e.target.value = '';
@@ -580,6 +840,19 @@ export default function AddListingClient() {
     }
     if (key === 'location') {
       if (!form.city) return 'Хот/Аймгаа сонгоно уу';
+      return '';
+    }
+    if (key === 'details') {
+      /**
+       * 🏷️ ЗАРЫН ГАРЧИГ (2026-10-02) — ШИНЭ ЗАРД ЗААВАЛ.
+       * ⚠️ ЯАГААД ЗААВАЛ ВЭ: гарчиг нь зарын карт дээр үнийн доор харагддаг
+       *    үндсэн мөр — хоосон орхивол карт дээр мөр ОГТ гарахгүй (0027) тул
+       *    «гарчиггүй» зар үүснэ ✗
+       * ⚠️ ЗАСАХ ГОРИМД ШААРДАХГҮЙ (`isEdit`): 0027 орохоос өмнөх зарууд дээр
+       *    (`null`) гарчиг БАЙХГҮЙ тул хуучин зарыг засахад хэрэглэгчийг
+       *    блоклохгүй ✓ (хүсвэл нэмж болно)
+       */
+      if (!isEdit && !String(form.title || '').trim()) return 'Зарын гарчигаа оруулна уу';
       return '';
     }
     if (key === 'price') {
@@ -646,6 +919,33 @@ export default function AddListingClient() {
     if (step === 0) { requestCancel(); return; }
     gotoStep(Math.max(step - 1, 0));
   };
+
+  /**
+   * 🛡️ ХАМГААЛАЛТ (2026-10-02, хэрэглэгчийн гомдол: «зарын дэлгэрэнгүй асуух хэсэг
+   *    байхгүй болсон») — «хаана явж байна» нь `?step=` ХАЯГ дээр байдаг, харин
+   *    ФОРМ нь тэнд хадгалагддаггүй: хуудас дахин ачаалагдвал (F5), `?step=3`
+   *    гэсэн линкээр орвол, эсвэл dev дээр файл өөрчлөгдөж (HMR) компонент
+   *    дахин монтажлагдвал форм ХООСОН болдог. Тэр үед URL нь хуучин алхам дээрээ
+   *    үлддэг тул хэрэглэгч жишээ нь «3. Дэлгэрэнгүй» дээр
+   *    **ТАЛБАРГҮЙ** (зөвхөн «Энэ төрөлд нэмэлт талбар байхгүй» мөр) хуудас
+   *    хардаг байв ✗ (төрөл сонгоогүй тул `showRooms`/`showFloors`/`showApartment`
+   *    БҮГД `false`).
+   *    ⇒ Дээд алхмуудын ЗААВАЛ хариулт дутуу атлаа хойш алхамд байвал ЭХНИЙ
+   *    ДУТУУ алхам руу буцааж, `validateStep`-ийн мессежийг харуулна ✓
+   *    ⚠️ `isEdit` — засах горимд хуучин зарын талбар дутуу байж болзошгүй тул
+   *    ХӨНДӨХГҮЙ; ⚠️ `authLoading`/`loadingEdit` дуусаагүй, эсвэл URL дээр
+   *    `?edit=` байгаа үед ч хөндөхгүй ✓
+   */
+  useEffect(() => {
+    if (authLoading || loadingEdit || isEdit || editId) return;
+    if (step === 0) return;
+    const invalid = firstInvalidStep();
+    if (invalid && invalid.index < step) {
+      setError(invalid.msg);
+      gotoStep(invalid.index);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, authLoading, loadingEdit, isEdit, form.propertyType, form.city]);
 
 
   const handleSubmit = async (e) => {
@@ -817,7 +1117,22 @@ export default function AddListingClient() {
                 байна» → дэлгэцийн зураг дээр яг энэ гарчгийг заасан).
                 ⚠️ Асуулт нь доорх `role="group"` + `aria-label`-д (screen
                 reader) ХЭВЭЭР ✓ — харагдах текст DOM-д 0 байхыг CDP шалгана ✓ */}
-            <div role="group" aria-label="Категорио сонгоно уу" className={`grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-gray-300 bg-gray-200 ${hasThirdColumn ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+            {/* 📱 МОБАЙЛ (<640px): АСУУЛТ БҮР НЭГ ДЭЛГЭЦ — «нэг нэгээр нь»
+                (`unegui.mn/post_ad/` загвар, 2026-10-02, хэрэглэгчийн хүсэлт).
+                ⚠️ `key` нь дэлгэц солигдоход хайлтын талбарыг ЦЭВЭРЛЭНЭ ✓;
+                   `data-mobile-question` нь CDP-ийн ТОГТВОРТОЙ selector
+                   (`[data-picker*]`-аас ТУСДАА — доорх тоог хөндөхгүй ✓) */}
+            <MobileQuestion
+              key={`cat-${mobileCatScreen.key}`}
+              title={mobileCatScreen.title}
+              items={mobileCatScreen.items}
+              value={mobileCatScreen.value}
+              onPick={mobileCatScreen.onPick}
+              onBack={mobileCatBack}
+              emptyText="Сонголт байхгүй"
+            />
+            {/* 🖥 ≥640px: 3 БАГАНАТ СОНГОЛТ (хэвээр — `hidden sm:grid`) */}
+            <div role="group" aria-label="Категорио сонгоно уу" className={`hidden gap-px overflow-hidden rounded-lg border border-gray-300 bg-gray-200 sm:grid ${hasThirdColumn ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
               {/* ① ХЭСЭГ — Автомашин / Ажлын зар / Компьютер … (0016) */}
               <PickerColumn
                 pickRole="section"
@@ -892,10 +1207,22 @@ export default function AddListingClient() {
                    `form`-оос уншигдаж ТОХИРСОН баганад идэвхтэй харагдана ✓ */}
             {step === 1 && (
             <>
+            {/* 📱 МОБАЙЛ (<640px): Хот/Аймаг → Дүүрэг/Сум → Хороо — нэг
+                нэгээр нь (1-р алхмын `MobileQuestion`-тэй ЯГ ИЖИЛ харагдац) */}
+            <MobileQuestion
+              key={`loc-${mobileLocScreen.key}`}
+              title={mobileLocScreen.title}
+              items={mobileLocScreen.items}
+              value={mobileLocScreen.value}
+              onPick={mobileLocScreen.onPick}
+              onBack={mobileLocBack}
+              emptyText="Сонголт байхгүй"
+            />
+            {/* 🖥 ≥640px: 2–3 БАГАНАТ СОНГОЛТ (хэвээр — `hidden sm:grid`) */}
             <div
               role="group"
               aria-label="Байршлаа сонгоно уу"
-              className={`grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-gray-300 bg-gray-200 ${simpleForm ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}
+              className={`hidden gap-px overflow-hidden rounded-lg border border-gray-300 bg-gray-200 sm:grid ${simpleForm ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}
             >
               {/* ① ХОТ / АЙМАГ — солисон үед дүүрэг ба хороо ЦЭВЭРЛЭГДЭНЭ ✓ */}
               <PickerColumn
@@ -956,12 +1283,60 @@ export default function AddListingClient() {
                    алхам (`step === 2`) дээр render болно (STEPS дараалал солигдсон ✓) */}
             {step === 2 && (
             <>
+            {/* ═══ 🏷️ ЗАРЫН ГАРЧИГ (2026-10-02) — БҮХ ХЭСЭГТ, ХАМГИЙН ЭХЭНД ═══
+                хэрэглэгчийн хүсэлт: «Бүх зард Зарын гарчиг гэдэг утга оруулахаа
+                мартсан байна. Тэр нь зарын карт дээр Үнэ мэдээллийн доор bold
+                font-той, бас Үнээс бага зэрэг жижиг харагдах юм.»
+                ⚠️ ХЭСГИЙН нэмэлт талбаруудаас (attrs/өрөө/давхар…) ӨМНӨ — ингэснээр
+                   «нэмэлт талбаргүй» хэсэг (ж: 🏠 Газар) дээр ч 3-р алхам
+                   ХООСОН харагдахгүй ✓
+                ⚠️ Мөр нь бусадтай ИЖИЛ `form-row-single` + `data-form-row="details"`
+                   → 🖥 ≥640px дээр нэр нь ЗҮҮЛ талд (хэвтээ), 📱 мобайлд нэг
+                   нэгээрээ (нэр оролтын дээр, бүтэн өргөн) ✓
+                ⚠️ ШИНЭ зард ЗААВАЛ (`validateStep('details')` → «Зарын гарчигаа
+                   оруулна уу»); засах горимд ЗААВАЛ БИШ — 0027 орохоос өмнөх
+                   зарууд дээр гарчиг байхгүй тул блоклохгүй ✓
+                ⚠️ 120 тэмдэгт (`MAX_LISTING_TITLE_LENGTH` = DB-ийн CHECK = queries.js)
+                   🔍 Хайх үг: listingTitle, 0027_listing_title.sql */}
+            <div className="form-row-single" data-form-row="details">
+              <div className="form-group">
+                <label>Зарын гарчиг *</label>
+                <input
+                  type="text"
+                  value={form.title}
+                  onChange={(e) => set('title', e.target.value)}
+                  maxLength={MAX_LISTING_TITLE_LENGTH}
+                  placeholder="Ж: 3 өрөө байр, Баянгол, 16-р байр"
+                />
+                <p className="form-hint">
+                  Карт дээр үнийн доор харагдана — товч, ойлгомжтой бичнэ үү
+                  (дээд тал нь {MAX_LISTING_TITLE_LENGTH} тэмдэгт)
+                </p>
+              </div>
+            </div>
             {/* ⚠️ Энэ хэсэг/төрөлд тохирох нэмэлт талбар БАЙХГҮЙ бол
                 хэрэглэгчид ойлгуулна (ж: «Газар» төрөлд өрөө/давхар байхгүй) ✓ */}
             {!(showRooms || showFloors || showApartment || showBathrooms || attrFields.length > 0) && (
-              <p className="mb-3 rounded-lg bg-gray-50 p-3 text-[13px] text-gray-500">
-                Энэ төрөлд нэмэлт талбар байхгүй — «Үргэлжлүүлэх» дээр дарна уу.
-              </p>
+              /* 🛡️ 2026-10-02 — төрөл СОНГООГҮЙ бол «нэмэлт талбар байхгүй» гэж
+                 хэлэх нь БУРУУ (хэрэглэгчийн гомдол: «зарын дэлгэрэнгүй асуух
+                 хэсэг байхгүй болсон») → 1-р алхам руу буцах товчтой мессеж ✓ */
+              form.propertyType ? (
+                <p className="mb-3 rounded-lg bg-gray-50 p-3 text-[13px] text-gray-500">
+                  Энэ төрөлд нэмэлт талбар байхгүй — «Үргэлжлүүлэх» дээр дарна уу.
+                </p>
+              ) : (
+                <p className="mb-3 rounded-lg bg-gray-50 p-3 text-[13px] text-gray-600">
+                  Зарын төрөл сонгоогүй байна.{' '}
+                  <button
+                    type="button"
+                    onClick={() => { setError(''); gotoStep(0); }}
+                    className="font-semibold text-primary underline"
+                  >
+                    1. Ангилал
+                  </button>{' '}
+                  алхамд төрлөө сонгоод буцаж ирнэ үү.
+                </p>
+              )
             )}
             {/* ===== ХЭСГИЙН НЭМЭЛТ ТАЛБАРУУД (attrs jsonb, 0016) =====
                 ⚠️ Хэсэг тус бүрд өөр (Авто: брэнд/он/гүйлт/түлш; Ажил: компани/
@@ -1090,7 +1465,11 @@ export default function AddListingClient() {
             <div className="form-row-single" data-form-row="details">
               {/* «Өрөө» нь зөвхөн Орон сууц, АОС/хаус төрөлд харагдана (lib/locationData.js) */}
               {showRooms && (
-                <div className="form-group">
+                /* 📱 2026-10-02: МОБАЙЛД ХАРАГДАХГҮЙ (`.hide-below-sm`) — өрөөг
+                   нь 1-р алхмын drill-down-д (unegui.mn-ийн 4 дэх дэлгэц:
+                   «Орон сууц зарна» → 1 өрөө … +5 өрөө) асуудаг болсон тул
+                   энд ДАХИН асуухгүй ✓ (🖥 ≥640px дээр ХЭВЭЭР харагдана) */
+                <div className="form-group hide-below-sm">
                   <label>Өрөө</label>
                   <input type="number" min="0" value={form.rooms} onChange={(e) => set('rooms', e.target.value)} placeholder="3" />
                 </div>
@@ -1138,7 +1517,7 @@ export default function AddListingClient() {
               <div className="form-row-single" data-form-row="details">
                 {showApartment && (
                   <div className="form-group">
-                    <label>Ашиглалтанд орсон ооон</label>
+                    <label>Ашиглалтанд орсон он</label>
                     <input
                       type="number"
                       min="1900"

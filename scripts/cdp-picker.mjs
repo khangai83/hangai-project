@@ -31,7 +31,7 @@
  *       (⚠️ өмнө нь дээд хэсэгт «Ангилал · Дэлгэрэнгүй · Байршил · Үнэ · Зураг»
  *          табууд байсан — 2026-10-01-нд ХАСАГДАВ ✓)
  *
- * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (98 шалгалт):
+ * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (121 шалгалт):
  *   ① Үл хөдлөх: 3 багана (12 хэсэг · sell/rent · 8 төрөл)
  *      ⚠️ 2026-10-01 (**4 дэх засвар**): баганын ДЭЭД ТОЛГОЙ (`[data-picker-title]`)
  *      БҮХЭЛДЭЭ ХАСАГДАВ (сонгосон утга нь доорх мөртэй давхардаж байв ✗) →
@@ -86,6 +86,21 @@
  *      уншина ✓) ⇒ `lib/locationData.js`-ийн `ENGINE_OPTIONS` /
  *      `AUTO_COLOR_OPTIONS` / `attrFields` · `attrFilters` / `CARD_ATTR_ORDER`
  *      гэрээг БОДИТ DOM дээр батална ✓
+ *   ⑪ 🆕 **📱 МОБАЙЛ (390px): АСУУЛТ БҮР НЭГ ДЭЛГЭЦ (drill-down)** — 2026-10-02,
+ *      хэрэглэгчийн хүсэлт: «гар утсаас зар оруулахад ийм асуудаг формоо нэг
+ *      нэгээр нь харуулаад яв» (`unegui.mn/post_ad/`-ийн дэлгэцүүд) ⇒ мобайлд
+ *      багана БАЙХГҮЙ (`[data-picker]` DOM-д 3 хэвээр ч өргөн 0), ДЭЛГЭЦ БҮРД
+ *      НЭГ асуулт (`[data-mobile-question]`): ① 12 хэсэг ② «Үл хөдлөх зарна /
+ *      …түрээслүүлнэ» ③ «Үл хөдлөх зарна» → 8 төрөл ④ «Орон сууц зарна» →
+ *      1 өрөө … +5 өрөө (+ «Алгасах») ⑤ сүүлийн сонголт дээр **ДАРААГИЙН
+ *      АЛХАМ руу ШУУД** (📍 Байршил) ⑥ хот → дүүрэг → хороо ⑦ 3-р алхамд
+ *      «Өрөө» ХАРАГДАХГҮЙ (`.hide-below-sm` — drill-down-д асуусан тул
+ *      давхардахгүй ✓) ⑧ 🖥 1440px дээр мобайл блок ХАРАГДАХГҮЙ + 3 БАГАНАТ
+ *      ХЭВЭЭР ✓ ⑨ 🆕 **🛡️ ХАМГААЛАЛТ** — форм ХООСОН атлаа `?step=3` (эсвэл 5)
+ *      руу ороход ЭХНИЙ ДУТУУ АЛХАМ руу буцаж, «Зарын төрлөө сонгоно уу»
+ *      мессеж харуулна (өмнө нь ТАЛБАРГҮЙ хоосон «Дэлгэрэнгүй» хуудас гардаг
+ *      байв ✗ — хэрэглэгчийн гомдол: «зарын дэлгэрэнгүй асуух хэсэг байхгүй
+ *      болсон») (**23 шалгалт**)
  *
  * ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
  *   1) сервер http://localhost:3000 (`npm run dev` эсвэл `npm run build && npm run start`)
@@ -234,10 +249,19 @@ const PROBE = `(() => {
      */
     detailsRows: [...document.querySelectorAll('[data-form-row="details"]')].map((r) => {
       const rr = r.getBoundingClientRect();
-      const kids = [...r.children].map((c) => {
-        const k = c.getBoundingClientRect();
-        return { x: +k.left.toFixed(1), w: +k.width.toFixed(1) };
-      });
+      /**
+       * ⚠️ 2026-10-02: ЗӨВХӨН ХАРАГДАЖ БАЙГАА хүүхдүүд (өргөн > 0) — мобайлд
+       *    «Өрөө» талбар нь .hide-below-sm-ээр display:none болдог
+       *    (1-р алхмын drill-down-д асуудаг болсон) тул 0×0 хэмжигдэж,
+       *    stacked (хүүхдүүд ИЖИЛ x-т) шалгалтыг БУРУУ унагаж байв ✗
+       *    (харагдаж байгаа талбарууд нь зөв цуваа байсан ч 0-x ≠ 24-x)
+       */
+      const kids = [...r.children]
+        .filter((c) => c.getBoundingClientRect().width > 0)
+        .map((c) => {
+          const k = c.getBoundingClientRect();
+          return { x: +k.left.toFixed(1), w: +k.width.toFixed(1) };
+        });
       return {
         cols: getComputedStyle(r).gridTemplateColumns.split(' ').filter(Boolean).length,
         rowW: +rr.width.toFixed(1),
@@ -477,7 +501,16 @@ ok('3-Р АЛХАМ: 2+ талбартай мөр («Өрөө» + «Талбай
 // 📱 Мобайл (390px) дээр Ч 1 БАГАНА хэвээр — regression байхгүй гэдгийг батлана ✓
 await rpc('Emulation.setDeviceMetricsOverride', { width: 390, height: 1400, deviceScaleFactor: 1, mobile: false });
 await wait(600);
-const drM = (await probe()).detailsRows || [];
+/**
+ * ⚠️ 2026-10-02: «Өрөө» талбар нь МОБАЙЛД ХАРАГДАХГҮЙ болов
+ *    (`.hide-below-sm`, globals.css) — өрөөг 1-р алхмын drill-down-д асуудаг
+ *    тул (unegui.mn-ийн 4 дэх дэлгэц: «Орон сууц зарна» → 1 өрөө … +5 өрөө)
+ *    3-р алхамд ДАВХАРДАХГҮЙ ✓. Тиймээс хэмжилт нь ① `rowW > 0` (бүхэлдээ
+ *    нуугдсан мөрийг ХАСНА) ② PROBE нь харагдахгүй хүүхдүүдийг хасдаг (дээр)
+ *    — эс бөгөөс `display:none` талбарын 0×0 хэмжилт `stacked`-ыг БУРУУ
+ *    унагана ✗ (энэ нь АЛДАА БИШ — мөр харагдахгүй байна)
+ */
+const drM = ((await probe()).detailsRows || []).filter((r) => r.rowW > 0);
 ok('📱 390px (мобайл) дээр Ч ЦУВАА = 1 БАГАНА (regression үгүй ✓)',
   drM.length >= 3 && drM.every((r) => r.cols === 1 && r.stacked),
   JSON.stringify(drM.map((r) => ({ cols: r.cols, stacked: r.stacked }))));
@@ -563,6 +596,137 @@ ok('📱 390px (мобайл): оролт мөрийнхөө БҮТЭН өргө
   JSON.stringify(dtcM.map((r) => ({ l: r.label, full: r.full }))));
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1400, deviceScaleFactor: 1, mobile: false });
 await wait(600);
+
+console.log('\n── ⑪ 📱 МОБАЙЛ (390px): АСУУЛТ БҮР НЭГ ДЭЛГЭЦ (drill-down) ──');
+/**
+ * 🎯 Хэрэглэгчийн хүсэлт (2026-10-02): «гар утсаас зар оруулахад ийм асуудаг
+ *    формоо нэг нэгээр нь харуулаад яв» (`unegui.mn/post_ad/`-ийн дэлгэцүүд)
+ *    ⇒ 390px дээр багана БАЙХГҮЙ, ДЭЛГЭЦ БҮРД НЭГ асуулт
+ *    (`[data-mobile-question]`): Хэсэг → Зарах/Түрээслэх → Төрөл → Өрөө →
+ *    Байршил (хот → дүүрэг → хороо) гэж ДАРААЛАН; сүүлийн сонголт дээр
+ *    ДАРААГИЙН АЛХАМ руу ШУУД шилжинэ ✓
+ * ⚠️ `[data-mobile-*]` нь `[data-picker*]`-аас ТУСДАА нэршил — дээрх
+ *    `colCount` (=3) шалгалтууд хөндөгдөхгүй ✓
+ * ⚠️ Энэ template literal дотор backtick / долларын буржгар хаалт БИЧИХГҮЙ
+ */
+const MOBILE_PROBE = `(() => {
+  const q = document.querySelector('[data-mobile-question]');
+  const desky = document.querySelector('[role="group"][aria-label="Категорио сонгоно уу"]');
+  const rows = [...document.querySelectorAll('[data-form-row="details"] > .form-group')];
+  return {
+    has: !!q,
+    visible: !!q && q.getBoundingClientRect().width > 0,
+    title: q ? ((q.querySelector('h2') || {}).innerText || '').trim() : '',
+    text: q ? q.innerText : '',
+    back: !!(q && q.querySelector('[data-mobile-back]')),
+    search: !!(q && q.querySelector('input[aria-label="Хайх"]')),
+    items: q ? [...q.querySelectorAll('button[data-mobile-value]')].map((b) => b.dataset.mobileValue) : [],
+    selected: q ? [...q.querySelectorAll('button[aria-pressed="true"]')].map((b) => b.dataset.mobileValue) : [],
+    cols: document.querySelectorAll('[data-picker]').length,
+    colsVisible: [...document.querySelectorAll('[data-picker]')].some((el) => el.getBoundingClientRect().width > 0),
+    desktopVisible: desky ? desky.getBoundingClientRect().width > 0 : false,
+    stepLabel: (document.querySelector('[data-step-current]') || {}).innerText || '',
+    roomRow: rows.filter((g) => ((g.querySelector('label') || {}).textContent || '').includes('Өрөө'))
+      .map((g) => +g.getBoundingClientRect().width.toFixed(1)),
+  };
+})()`;
+const mprobe = () => evaluate(MOBILE_PROBE);
+/** Мобайл жагсаалтын мөр дээр дарах — `[data-mobile-value]` */
+const mclick = async (value) => {
+  const sel = `[data-mobile-question] button[data-mobile-value="${value}"]`;
+  const r = await evaluate(`(() => { const b = document.querySelector(${JSON.stringify(sel)}); if (!b) return 'NOT_FOUND'; b.click(); return 'OK'; })()`);
+  await wait(700);
+  return r;
+};
+
+await rpc('Emulation.setDeviceMetricsOverride', { width: 390, height: 1400, deviceScaleFactor: 1, mobile: false });
+await gotoStepUrl(1);
+await wait(1200);
+const mb0 = await mprobe();
+ok('📱 1-р алхам: НЭГ АСУУЛТ харагдаж байна (`[data-mobile-question]` ✓)',
+  mb0.has && mb0.visible, JSON.stringify({ has: mb0.has, visible: mb0.visible }));
+ok('📱 1 дэх дэлгэц: толгой «Зар нийтлэх» + ← товч + 🔎 хайлтын талбар',
+  mb0.title === 'Зар нийтлэх' && mb0.back && mb0.search,
+  JSON.stringify({ title: mb0.title, back: mb0.back, search: mb0.search }));
+ok('📱 1 дэх дэлгэц: 12 ХЭСЭГ (багана БИШ — жагсаалт)',
+  mb0.items.length === 12, String(mb0.items.length));
+ok('📱 баганат сонголт ХАРАГДАХГҮЙ (DOM-д 3 хэвээр ч өргөн 0 ✓)',
+  mb0.cols === 3 && mb0.colsVisible === false && mb0.desktopVisible === false,
+  JSON.stringify({ cols: mb0.cols, colsVisible: mb0.colsVisible, desktop: mb0.desktopVisible }));
+
+ok('📱 ХЭСЭГ («Үл хөдлөх») дарж сонгов', (await mclick('real-estate')) === 'OK');
+const mb1 = await mprobe();
+ok('📱 2 дахь дэлгэц: «Үл хөдлөх зарна» / «…түрээслүүлнэ» (2 мөр)',
+  JSON.stringify(mb1.items) === '["sell","rent"]'
+    && mb1.text.includes('Үл хөдлөх зарна') && mb1.text.includes('Үл хөдлөх түрээслүүлнэ'),
+  JSON.stringify(mb1.items));
+
+ok('📱 «Үл хөдлөх зарна» сонгов', (await mclick('sell')) === 'OK');
+const mb2 = await mprobe();
+ok('📱 3 дахь дэлгэц: толгой = өмнөх сонголт «Үл хөдлөх зарна» + 8 ТӨРӨЛ',
+  mb2.title === 'Үл хөдлөх зарна' && mb2.items.length === 8,
+  JSON.stringify({ title: mb2.title, n: mb2.items.length }));
+
+ok('📱 «Орон сууц» сонгов', (await mclick('Орон сууц')) === 'OK');
+const mb3 = await mprobe();
+ok('📱 4 дэх дэлгэц: «Орон сууц зарна» → 1 өрөө … +5 өрөө (+ «Алгасах»)',
+  mb3.title === 'Орон сууц зарна' && JSON.stringify(mb3.items) === '["1","2","3","4","5","__skip__"]',
+  JSON.stringify({ title: mb3.title, items: mb3.items }));
+
+ok('📱 «2 өрөө» сонгоход ДАРААГИЙН АЛХАМ руу ШУУД шилжив', (await mclick('2')) === 'OK');
+const mb4 = await mprobe();
+ok('📱 2-Р АЛХАМ (📍 Байршил): «Хот / Аймаг» жагсаалт (20+) гарч ирэв',
+  mb4.stepLabel.includes('2. Байршил') && mb4.items.length >= 20 && mb4.title === 'Зар нийтлэх',
+  JSON.stringify({ step: mb4.stepLabel, n: mb4.items.length, title: mb4.title }));
+
+ok('📱 Хот («Улаанбаатар») сонгов', (await mclick('Улаанбаатар')) === 'OK');
+const mb5 = await mprobe();
+ok('📱 Дүүргийн дэлгэц: толгой = сонгосон хот («Улаанбаатар»)',
+  mb5.title === 'Улаанбаатар' && mb5.items.includes('Баянгол'),
+  JSON.stringify({ title: mb5.title, n: mb5.items.length }));
+ok('📱 «Баянгол» сонгов', (await mclick('Баянгол')) === 'OK');
+const mb6 = await mprobe();
+ok('📱 Хорооны дэлгэц: толгой = «Баянгол» + хороодын жагсаалт',
+  mb6.title === 'Баянгол' && mb6.items.includes('1-р хороо'),
+  JSON.stringify({ title: mb6.title, n: mb6.items.length }));
+ok('📱 «1-р хороо» сонгоход → 3-Р АЛХАМ (📋 Дэлгэрэнгүй)',
+  (await mclick('1-р хороо')) === 'OK');
+const mb7 = await mprobe();
+ok('📱 3-р алхамд «Өрөө» талбар ХАРАГДАХГҮЙ (drill-down-д асуусан тул давхардахгүй ✓)',
+  mb7.stepLabel.includes('3. Дэлгэрэнгүй') && JSON.stringify(mb7.roomRow) === '[0]',
+  JSON.stringify({ step: mb7.stepLabel, roomRow: mb7.roomRow }));
+
+await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1400, deviceScaleFactor: 1, mobile: false });
+await gotoStepUrl(1);
+await wait(1200);
+const mb8 = await mprobe();
+ok('🖥 1440px: мобайл блок ХАРАГДАХГҮЙ + 3 БАГАНАТ харагдац ХЭВЭЭР ✓',
+  mb8.visible === false && mb8.colsVisible === true && mb8.desktopVisible === true,
+  JSON.stringify({ mobile: mb8.visible, colsVisible: mb8.colsVisible, desktop: mb8.desktopVisible }));
+
+/**
+ * 🛡️ 2026-10-02 — ХАМГААЛАЛТ (хэрэглэгчийн гомдол: «зарын дэлгэрэнгүй асуух хэсэг
+ *    байхгүй болсон»): `?step=` нь ЗӨВХӨН ХАЯГ дээр байдаг ба форм нь хуудас
+ *    дахин ачаалагдах / линкээр орох / HMR үед ХООСОН болдог. Тэр үед URL нь
+ *    хуучин алхам дээрээ үлдэж, хэрэглэгч «3. Дэлгэрэнгүй» дээр ТАЛБАРГҮЙ
+ *    (төрөл сонгоогүй тул `showRooms`/`showFloors`/`showApartment` бүгд false)
+ *    хуудас хардаг байв ✗ ⇒ одоо ЭХНИЙ ДУТУУ АЛХАМ руу буцаана ✓
+ */
+const GUARD_PROBE = `(() => ({
+  q: location.search,
+  step: (document.querySelector('[data-step-current]') || {}).innerText || '',
+  text: document.querySelector('form') ? document.querySelector('form').innerText : '',
+}))()`;
+for (const n of [3, 5]) {
+  await evaluate('location.href = ' + JSON.stringify(`${BASE}/listings/new?step=${n}`));
+  await wait(4000);
+  const g = await evaluate(GUARD_PROBE);
+  ok(`🛡️ ?step=${n} (форм хоосон) → ЭХНИЙ АЛХАМ руу буцлаа (хоосон алхам ГАРАХГҮЙ ✓)`,
+    g.q === '?step=1' && g.step.includes('1. Ангилал'),
+    JSON.stringify({ url: g.q, step: g.step }));
+  ok(`🛡️ ?step=${n} → мессеж «Зарын төрлөө сонгоно уу» харагдаж байна`,
+    g.text.includes('Зарын төрлөө сонгоно уу'), '');
+}
 
 console.log('\n── ⑦ 🔎 ДҮРС ТЕКСТЭЭС ХҮРЭХГҮЙ (§ «Үйлдвэрлэгч» combobox + sidebar) ──');
 /**

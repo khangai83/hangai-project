@@ -28,7 +28,7 @@ assert(!/^import /m.test(stripped), 'бүх import хасагдсан байх �
 const tmp = path.join(here, '..', '.format.test.tmp.mjs');
 fs.writeFileSync(tmp, stripped);
 
-const { formatThousands, digitCount, shortPrice, isNegotiablePrice, priceLabel, hasRealPrice, negotiableNote, NEGOTIABLE_PRICE_LABEL } = await import(`${tmp}?t=${Date.now()}`);
+const { formatThousands, digitCount, shortPrice, isNegotiablePrice, priceLabel, hasRealPrice, negotiableNote, NEGOTIABLE_PRICE_LABEL, listingTitle, MAX_LISTING_TITLE_LENGTH } = await import(`${tmp}?t=${Date.now()}`);
 fs.unlinkSync(tmp);
 
 let passed = 0;
@@ -190,6 +190,56 @@ t('⚠️ АЛДААНААС СЭРГИЙЛЭХ: queries.js → toNumber()', () 
   assert.equal(Math.trunc(toNumber('250,000,000')), 0, '→ таслалтай утга 0 болж ЭВДЭРНЭ');
   console.log("     ⚠️ '250,000,000' → toNumber → 0  (үнэ ЧИМЭЭГҮЙ 0 болно!)");
   console.log('     ✅ Тиймээс форм нь зөвхөн ЦИФР хадгалж, таслалыг зөвхөн харагдацад хэрэглэнэ.');
+});
+
+// ============================================================
+// 🏷️ ЗАРЫН ГАРЧИГ (0027_listing_title.sql) — 2026-10-02
+// ============================================================
+// ⚠️ ЯАГААД ТЕСТЛЭХ ВЭ: гарчиг нь зарын карт дээр үнийн доор харагддаг ч
+//    ЗААВАЛ БИШ талбар — 0027 орохоос өмнөх зарууд дээр багана нь `null`.
+//    Хоосон утга нь МӨР БОЛЖ ГАРАХГҮЙ байх ЁСТОЙ (эс бөгөөс карт бүр дээр
+//    хоосон зай эсвэл `undefined` гарч ирнэ ✗)
+t('🏷️ listingTitle: гарчигтай бол тэр текстээ буцаана', () => {
+  assert.equal(listingTitle({ title: '3 өрөө байр, Баянгол' }), '3 өрөө байр, Баянгол');
+  // ⚠️ Туршилтын (seed) заруудын жишээ гарчиг
+  assert.equal(
+    listingTitle({ title: 'Хангай дүүрэг, 16-р байр — 3 өрөө' }),
+    'Хангай дүүрэг, 16-р байр — 3 өрөө'
+  );
+});
+
+t("🏷️ listingTitle: `null`/`''`/зай/байхгүй → `''` (карт дээр мөр ГАРАХГҮЙ)", () => {
+  assert.equal(listingTitle({ title: null }), '');
+  assert.equal(listingTitle({ title: undefined }), '');
+  assert.equal(listingTitle({ title: '' }), '');
+  assert.equal(listingTitle({ title: '   ' }), '');
+  assert.equal(listingTitle({ title: '\n\t ' }), '');
+  // ⚠️ 0027 ороогүй DB-ээс `select *` хийхэд багана ОГТ ирэхгүй → крашгүй ✓
+  assert.equal(listingTitle({ property_type: 'Орон сууц' }), '');
+  assert.equal(listingTitle({}), '');
+  assert.equal(listingTitle(null), '');
+});
+
+t('🏷️ listingTitle: олон зай/мөр таслалт НЭГ зай болов (карт 1 мөр — `truncate`)', () => {
+  assert.equal(listingTitle({ title: '  3 өрөө \n байр,\t Баянгол  ' }), '3 өрөө байр, Баянгол');
+  assert.equal(listingTitle({ title: 'A\nB' }), 'A B');
+});
+
+t(`🏷️ listingTitle: ${MAX_LISTING_TITLE_LENGTH} тэмдэгтээр таслагдана (DB CHECK-тай ИЖИЛ)`, () => {
+  // ⚠️ DB-ийн CHECK (`char_length(btrim(title)) between 1 and 120`) ба форм
+  //    (`maxLength`) ба энэ функц — ГУРВУУЛАА ижил хязгаартай байх ёстой,
+  //    эс бөгөөс insert нь CHECK-д унана ✗
+  assert.equal(MAX_LISTING_TITLE_LENGTH, 120);
+  assert.equal(listingTitle({ title: 'а'.repeat(120) }).length, 120);
+  assert.equal(listingTitle({ title: 'а'.repeat(200) }).length, 120);
+  // Таслагдсаны дараах утга нь ЭХНИЙ 120 тэмдэгт байх ёстой ✓
+  assert.equal(listingTitle({ title: `${'а'.repeat(119)}X` }), `${'а'.repeat(119)}X`);
+  assert.equal(listingTitle({ title: `${'а'.repeat(120)}X` }), 'а'.repeat(120));
+});
+
+t('🏷️ listingTitle: тоон/бусад төрөл ч текст болно (крашгүй)', () => {
+  assert.equal(listingTitle({ title: 12345 }), '12345');
+  assert.equal(listingTitle({ title: '  abc123  ' }), 'abc123');
 });
 
 console.log(`\n✅ БҮГД ТЭНЦСЭН — ${passed} тест\n`);

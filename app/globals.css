@@ -318,6 +318,23 @@
     }
   }
 
+  /**
+   * 📱 2026-10-02 — «ЗӨВХӨН 🖥 ≥640px ДЭЭР ГАРАХ» талбар (хэрэглэгчийн хүсэлт:
+   *    гар утсаас асуулт бүр НЭГ ДЭЛГЭЦ харагдана).
+   *    Жишээ: «Өрөө» (`AddListingClient`) — мобайлд 1-р алхмын drill-down-д
+   *    («Орон сууц зарна» → 1 өрөө … +5 өрөө) асуудаг тул 3-р алхамд
+   *    ДАХИН ХАРАГДАХГҮЙ ✓ (🖥 ≥640px дээр хэвээр)
+   * ⚠️ `!important` — `[data-form-row="details"] > .form-group` (0,2,0) нь
+   *    `display`-ийг `grid` болгодог тул Tailwind `hidden` (0,1,0) дангаараа
+   *    хүрэлцэхгүй ✗
+   * 🔍 Хайх үг: hide-below-sm, мобайлд харагдахгүй, нэг нэгээр нь
+   */
+  @media (max-width: 639.98px) {
+    .hide-below-sm {
+      display: none !important;
+    }
+  }
+
  /* ---------- Badges ---------- */
   .badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white;

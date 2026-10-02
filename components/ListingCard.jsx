@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { priceLabel, negotiableNote, getPropertyIcon, firstImage, getFloorLabel, timeAgo, formatAddress } from '../lib/format';
+import { priceLabel, negotiableNote, getPropertyIcon, firstImage, getFloorLabel, timeAgo, formatAddress, listingTitle } from '../lib/format';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 import Avatar from './Avatar';
 import VerifiedBadge from './VerifiedBadge';
@@ -26,6 +26,10 @@ export default function ListingCard({ listing, author, attrsLine }) {
   //    бусад хэсэгт (авто/ажил/компьютер…) энэ badge ХАРАГДАХГҮЙ.
   const isRealEstate = (listing.section || 'real-estate') === 'real-estate';
   const floorLabel = getFloorLabel(listing.floor, listing.total_floors);
+  // 🏷️ Зарын гарчиг (0027_listing_title.sql) — үнээс бага зэрэг жижиг, bold.
+  //    ⚠️ Хоосон бол `''` → мөр нь ОГТ ГАРАХГҮЙ (хуучин зарууд дээр багана нь
+  //    `null` байж болно — хэрэглэгчийн шийдвэр: backfill хийхгүй ✓)
+  const title = listingTitle(listing);
   /*
    * ══════ ⚠️ КАРТЫН ӨНДӨР — `sm:h-[240px]` (2026-09-27) ══════
    * 🔴 1-р АСУУДАЛ: карт нь `overflow-hidden` + БЭХЛЭГДСЭН өндөр байсан
@@ -35,16 +39,19 @@ export default function ListingCard({ listing, author, attrsLine }) {
    *    ~68px ЧӨЛӨӨЛӨГДӨВ ✓ → өндрийг буцааж багасгав ✓
    *
    * 📐 ТООЦОО (мэдээллийн блокийн агуулга — автар ОДОО зураг дээр):
-   *      24px  🏢 ТӨРӨЛ + mb-1.5
    *      21px  📋 attrsLine (бусад хэсэгт) + mb-1
    *      29px  💰 ҮНЭ + mb-0.5
+   *      22px  🤝 Үнэ тохирно (зөвхөн тэмдэглэсэн зарт) + mb-1
+   *      28px  🏷️ Зарын гарчиг (0027) + mb-1
    *      42px  📍 Хаяг + 🕒 Огноо (2 мөр)
    *      27px  🛏 өрөө / 📐 м² / 🏢 давхар / 📅 он + mt-1.5
    *      27px  ❤️ доод мөр (border-t + pt-2)
    *     ─────
-   *     170px  НИЙТ агуулга
-   * ✅ `sm:h-[240px]` → `p-4` (32px) хасвал **208px** → **38px нөөцтэй**
-   *    БҮГД БАГТАНА ✓ (зураг ч 320×240 ✓)
+   *     ~196px  ХАМГИЙН ОЛОН НИЙТ агуулга (attrs + үнэ + 🤝 + гарчиг + …)
+   * ✅ `sm:h-[240px]` → `p-4` (32px) хасвал **208px** → **12px нөөцтэй** ✓
+   *    ⚠️ 2026-10-02: 🏢 ТӨРЛИЙН МӨР (−24px, хэрэглэгчийн хүсэлтээр ХАСАГДАВ)
+   *    ба 🏷️ Зарын гарчиг (+28px, 0027) нэмэгдэв — өмнөх 38px нөөц 12px болов ✓
+   *    БҮГД БАГТАНА (зураг ч 320×240 ✓)
    *
    * 🔧 ӨНДРИЙГ СОЛИХ БОЛ: доорх `sm:h-[240px]`-г `220` (нягт) эсвэл
    *    `260` (илүү чөлөөтэй) гэж бичнэ.
@@ -138,17 +145,18 @@ export default function ListingCard({ listing, author, attrsLine }) {
               ✅ badge + профайл зураг) нь ЭНД БАЙХАА БОЛИВ — дээрх
               ЗУРГИЙН БАРУУН ДООД булан руу ЗӨӨГДСӨН ✓
               (мэдээллийн блокт ~68px чөлөөлөгдөж, карт цэвэрхэн болов ✓) */}
-          {/* ---------- ТӨРӨЛ — КАРТЫН ХАМГИЙН ЭХНИЙ МӨР ----------
-              ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «Зар бүрийн доор харагдаж
-                 байгаа Үл хөдлөх / Автомашин гэх мэтийг урд нь гарга» —
-                 өмнө нь ҮНИЙН ДООР байсан → одоо ЗУРГИЙН дараагийн
-                 ХАМГИЙН ЭХЭНД (урд) гарлаа.
-              ⚠️ `getPropertyIcon(type, section)` — `section`-ыг ЗААВАЛ дамжуулна:
-                 эс бөгөөс бусд хэсгийн дэд төрөл (ж: «Суудлын машин») 🏠 icon авна.
-                 (Бусад хэсэгт icon нь ХЭСГИЙН icon: 🚗 💼 💻 🛋️ 🛠️) */}
-          <div className="mb-1.5 truncate text-[13px] font-semibold text-gray-800">
-            {getPropertyIcon(listing.property_type, listing.section)} {listing.property_type}
-          </div>
+          {/* 🗑 2026-10-02 (хэрэглэгчийн хүсэлт): «карт дээр Зарын төрлийг
+              харуулж байгааг болиулах, жишээ нь Орон сууц гэх мэт» →
+              ТӨРЛИЙН МӨР (`{getPropertyIcon(…)} {listing.property_type}`)
+              КАРТААС БҮРЭН ХАСАГДАВ.
+              ⚠️ Урьд нь энэ нь мэдээллийн блокийн ХАМГИЙН ЭХНИЙ мөр байв
+                 (2026-09-27-д үнийн доороос энд зөөгдсөн) — одоо эхний мөр
+                 нь 💰 ҮНЭ (үл хөдлөхөд) эсвэл 📋 attrs мөр ✓
+              ⚠️ `getPropertyIcon` импорт ХЭВЭЭР байна — зургийн ОРОНД
+                 гарах `text-5xl` placeholder icon (дээд блок) үүнийг ашиглана ✓
+              ⚠️ Төрөл/хэсгийн мэдээлэл АЛГА БОЛООГҮЙ: 🖼 Зарах/Түрээс badge нь
+                 зураг дээр (зүүн дээд), 🏠 icon нь зураггүй үед, дэлгэрэнгүй
+                 хуудсанд breadcrumb + «Зарын дэлгэрэнгүй» хүснэгт хэвээр ✓ */}
           {/* ---------- ЗАР НИЙТЛЭГЧ (нэр + профайл зураг) ----------
               ⚠️ 2026-09-27: БАРУУН ДЭЭД БУЛАНД зөөгдсөн — доорх (картын
                  эхний мөр) блокийг харна уу ↑ (justify-end). */}
@@ -179,6 +187,26 @@ export default function ListingCard({ listing, author, attrsLine }) {
           {negotiableNote(listing) && (
             <div className="mb-1 text-[12px] font-semibold text-amber-700">
               🤝 {negotiableNote(listing)}
+            </div>
+          )}
+          {/* ---------- 🏷️ ЗАРЫН ГАРЧИГ — ҮНИЙН ЯГ ДОР (2026-10-02) ----------
+              хэрэглэгчийн хүсэлт: «Бүх зард Зарын гарчиг гэдэг утга оруулахаа
+              мартсан байна. Тэр нь зарын карт дээр Үнэ мэдээллийн доор bold
+              font-той, бас Үнээс бага зэрэг жижиг харагдах юм.»
+              ⚠️ «Үнэ мэдээллийн доор» = 💰 үнэ БА 🤝 «Үнэ тохирно» хоёулаас
+                 ХОЙШ (үнийн блок бүхэлдээ) ✓
+              📐 ХЭМЖЭЭ: `text-base` (16px) + `font-bold` — үнэ нь `text-lg`
+                 (18px) + `font-bold` тул «бага зэрэг жижиг» ✓ (доорх хаяг нь
+                 14px regular тул гарчиг нь тод ялгарна ✓)
+              ⚠️ ХООСОН бол мөр ОГТ ГАРАХГҮЙ (`title` = '' — дээрх const):
+                 0027 орохоос өмнөх зарууд дээр гарчиг байхгүй хэвээр ✓
+                 (хэрэглэгчийн шийдвэр: backfill/UPDATE хийхгүй)
+              ⚠️ `truncate` (1 мөр) — урт гарчиг картын өндрийг (`sm:h-[240px]`)
+                 ХӨДӨЛӨӨХГҮЙ ✓; бүтэн текстийг `title` (hover) харуулна
+              🔍 Хайх үг: listingTitle, 0027_listing_title.sql, зарын гарчиг */}
+          {title && (
+            <div className="mb-1 truncate text-base font-bold text-gray-900" title={title}>
+              {title}
             </div>
           )}
           {/* ---------- 📍 ХАЯГ + 🕒 НИЙТЭЛСЭН (2 мөр, ЗҮҮН тийш) ----------
