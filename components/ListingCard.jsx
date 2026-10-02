@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { priceLabel, negotiableNote, getPropertyIcon, firstImage, getFloorLabel, timeAgo, formatAddress, listingTitle } from '../lib/format';
+import { priceLabel, hasRealPrice, getPropertyIcon, firstImage, getFloorLabel, timeAgo, formatAddress, listingTitle } from '../lib/format';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 import Avatar from './Avatar';
 import VerifiedBadge from './VerifiedBadge';
@@ -41,16 +41,16 @@ export default function ListingCard({ listing, author, attrsLine }) {
    * 📐 ТООЦОО (мэдээллийн блокийн агуулга — автар ОДОО зураг дээр):
    *      21px  📋 attrsLine (бусад хэсэгт) + mb-1
    *      29px  💰 ҮНЭ + mb-0.5
-   *      22px  🤝 Үнэ тохирно (зөвхөн тэмдэглэсэн зарт) + mb-1
    *      28px  🏷️ Зарын гарчиг (0027) + mb-1
    *      42px  📍 Хаяг + 🕒 Огноо (2 мөр)
    *      27px  🛏 өрөө / 📐 м² / 🏢 давхар / 📅 он + mt-1.5
    *      27px  ❤️ доод мөр (border-t + pt-2)
    *     ─────
-   *     ~196px  ХАМГИЙН ОЛОН НИЙТ агуулга (attrs + үнэ + 🤝 + гарчиг + …)
-   * ✅ `sm:h-[240px]` → `p-4` (32px) хасвал **208px** → **12px нөөцтэй** ✓
-   *    ⚠️ 2026-10-02: 🏢 ТӨРЛИЙН МӨР (−24px, хэрэглэгчийн хүсэлтээр ХАСАГДАВ)
-   *    ба 🏷️ Зарын гарчиг (+28px, 0027) нэмэгдэв — өмнөх 38px нөөц 12px болов ✓
+   *     ~174px  ХАМГИЙН ОЛОН НИЙТ агуулга (attrs + үнэ + гарчиг + …)
+   * ✅ `sm:h-[240px]` → `p-4` (32px) хасвал **208px** → **34px нөөцтэй** ✓
+   *    ⚠️ 2026-10-02: 🏢 ТӨРЛИЙН МӨР (−24px, хэрэглэгчийн хүсэлтээр ХАСАГДСАН)
+   *    ба 🏷️ Зарын гарчиг (+28px, 0027) нэмэгдэв. 🤝 «Үнэ тохирно» мөр
+   *    (−22px, хэрэглэгчийн хүсэлтээр КАРТААС ХАСАГДАВ) нөөцийг буцаан нэмэв ✓
    *    БҮГД БАГТАНА (зураг ч 320×240 ✓)
    *
    * 🔧 ӨНДРИЙГ СОЛИХ БОЛ: доорх `sm:h-[240px]`-г `220` (нягт) эсвэл
@@ -174,19 +174,17 @@ export default function ListingCard({ listing, author, attrsLine }) {
               ⚠️ `price_type` («нийт» / «сард» / «м²») карт дээр ХАРАГДАХГҮЙ —
                  зөвхөн үнэ. (Ижил дүрэм: ListingDetailClient, MyListingsClient,
                  MapView — бүх UI дээр хассан.)
-              ⚠️ `getPriceTypeLabel` импорт ч хасагдсан (unused import → ESLint). */}
-          <div className="mb-0.5 text-lg font-bold text-gray-900">
-            {/* 🤝 Үнэ 0/хоосон бол «Үнэ тохирно» — бүх дэлгэц дээр нэгэн жигд
-                (lib/format.js → priceLabel). ⚠️ `₮0` гэж ХАРАГДАХГҮЙ ✓ */}
-            {priceLabel(listing)}
-          </div>
-          {/* 🤝 «Үнэ тохирно» — үнийн ЯГ ДОР (2026-09-29, хэрэглэгчийн хүсэлт):
-              үнэ БИЧСЭН бөгөөд «Үнэ тохирно» тэмдэглэсэн үед л гарна ✓
-              (үнэ байхгүй бол дээрх мөр өөрөө «Үнэ тохирно» болдог тул
-               давхар гарахгүй — `negotiableNote` хоосон буцаана) */}
-          {negotiableNote(listing) && (
-            <div className="mb-1 text-[12px] font-semibold text-amber-700">
-              🤝 {negotiableNote(listing)}
+              ⚠️ `getPriceTypeLabel` импорт ч хасагдсан (unused import → ESLint).
+              ⚠️ 2026-10-02 (хэрэглэгчийн хүсэлт): «Үнэ тохирно» нь КАРТ ДЭЭР
+                 ОГТ ХАРАГДАХГҮЙ ✗ — ① 🤝 нэмэлт мөр (`negotiableNote`) эндээс
+                 хасагдав ② үнэ байхгүй (`hasRealPrice` = false) үед үнийн мөр
+                 өөрөө ч ГАРАХГҮЙ (`priceLabel` нь «Үнэ тохирно» буцаадаг байсан).
+                 ℹ️ Тэмдэглэгч нь ЗӨВХӨН зарын ДЭЛГЭРЭНГҮЙ хуудсанд
+                 (`ListingDetailClient`, үнийн ЯГ ДОР) хэвээр харагдана ✓
+              🔍 Хайх үг: negotiableNote, hasRealPrice, priceLabel */}
+          {hasRealPrice(listing) && (
+            <div className="mb-0.5 text-lg font-bold text-gray-900">
+              {priceLabel(listing)}
             </div>
           )}
           {/* ---------- 🏷️ ЗАРЫН ГАРЧИГ — ҮНИЙН ЯГ ДОР (2026-10-02) ----------
