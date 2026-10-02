@@ -129,6 +129,34 @@ https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com
 - ℹ️ `R2_PUBLIC_BASE` нь зөвхөн **уншиж харуулах** URL угсарна
   (`<R2_PUBLIC_BASE>/<түлхүүр>`); S3 API-д НӨЛӨӨЛӨХГҮЙ.
 
+### 🕓 Домэйн ХАРААХАН аваагүй бол (2026-10-02-ны бодит байдал)
+
+`zarlaa.mn` нь **хараахан худалдаж аваагүй** (DNS-д resolve болохгүй) тул
+**одоо `r2.dev`-ээр ажиллаж байна** — энэ нь БҮРЭН хэвийн ✓ Upload, нийтийн
+URL, устгалт бүгд ажиллана (`npm run check:r2` → бүгд ✅).
+
+- ⚠️ Ганц хязгаарлалт: `r2.dev` бол **туршилтын** домэйн — хурдны хязгаартай,
+  WAF/cache/аналитик ажиллахгүй, Cloudflare үүнийг хүссэн үедээ унтрааж болно
+- ✅ Тиймээс **нийтэд нээхээс өмнө** домэйн авч холбох нь зүйтэй (доорхи checklist)
+- 👍 Одоо DB-д R2 URL **0** байгаа нь давуу тал: домэйн холбоход хуучин URL
+  шинэчлэх ажил бараг гарахгүй (гарсан ч `storage:rebase` л хангалттай ✓)
+- ℹ️ §4-ийн CORS-д `https://zarlaa.mn`, `https://www.zarlaa.mn` **аль хэдийн
+  бичигдсэн** байгаа тул домэйн авмагц нэмэлт ажил бараг байхгүй ✓
+
+**Домэйн авсны дараах checklist:**
+
+1. Домэйнаа **Cloudflare-д** нэмээд nameserver-ийг нь заана (эсвэл Cloudflare-аас
+   шууд авна) — R2-ийн custom domain нь Cloudflare-ийн zone шаарддаг
+2. Сайтаа тэр домэйн рүү заана (Vercel → Domains) ⚠️ **фронтын домэйн солигдвол
+   §4-ийн CORS-д ШИНЭ домэйныг ЗААВАЛ нэмнэ** (`npm run check:r2 -- --origin …`)
+3. R2 → `my-zar` → Settings → **Custom Domains → Add** → `img.<домэйн>` (эсвэл
+   `media.<домэйн>`) — Cloudflare DNS бичлэгийг өөрөө нэмнэ
+4. `.env.local` ба Vercel (production/preview/development) →
+   `R2_PUBLIC_BASE=https://img.<домэйн>` (төгсгөлийн `/` БИШ)
+5. `npm run check:r2` (домэйн + CORS ✅) → `npm run deploy:vercel`
+6. **`npm run storage:rebase -- --apply`** ← DB-д бичигдсэн хуучин (r2.dev)
+   URL-уудыг шинэ домэйн рүү шилжүүлнэ (доорхи хэсэг)
+
 ### 🔁 Домэйныг сольсны ДАРАА: `npm run storage:rebase` (⚠️ ЗААВАЛ)
 
 Зургийн URL нь DB-д **бичигдэж хадгалагддаг** (`listings.images[]`,

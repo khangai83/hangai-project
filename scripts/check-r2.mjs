@@ -111,8 +111,13 @@ async function main() {
       '     Дараа нь .env.local → R2_PUBLIC_BASE=<тэр хаяг>  (⚠️ төгсгөлд нь / БИШ)');
   } else {
     if (/r2\.dev/i.test(cfg.publicBase)) {
-      report(null, 'R2_PUBLIC_BASE нь r2.dev (зөвхөн ТУРШИЛТАД)',
-        'r2.dev нь хурдны хязгаартай, production-д тохиромжгүй → өөрийн домэйн (жишээ: img.zarlaa.mn) холбоно уу');
+      report(null, 'R2_PUBLIC_BASE нь r2.dev (туршилтын домэйн — өөрийн домэйн холбоогүй)',
+        'r2.dev нь хурдны хязгаартай, WAF/cache ажиллахгүй ⇒ олон хэрэглэгчтэй\n' +
+        '     production-д тохиромжгүй. ⚠️ Custom domain нь ХУДАЛДАЖ АВСАН домэйн\n' +
+        '     шаардана (жишээ: img.zarlaa.mn) — домэйн хараахан аваагүй бол r2.dev\n' +
+        '     хэвээр ажиллана ✓ Харин авсны дараа: ① R2 → Settings → Custom Domains\n' +
+        '     → Add  ② R2_PUBLIC_BASE-ыг солих  ③ npm run storage:rebase -- --apply\n' +
+        '     (DB-д бичигдсэн хуучин домэйны URL-уудыг шинэчилнэ)');
     }
     try {
       const probe = publicUrlFor(`${IMAGE_BUCKET}/__check_probe__`);
