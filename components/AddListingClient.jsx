@@ -926,7 +926,8 @@ export default function AddListingClient() {
    *    ФОРМ нь тэнд хадгалагддаггүй: хуудас дахин ачаалагдвал (F5), `?step=3`
    *    гэсэн линкээр орвол, эсвэл dev дээр файл өөрчлөгдөж (HMR) компонент
    *    дахин монтажлагдвал форм ХООСОН болдог. Тэр үед URL нь хуучин алхам дээрээ
-   *    үлддэг тул хэрэглэгч жишээ нь «3. Дэлгэрэнгүй» дээр
+   *    үлддэг тул хэрэглэгч жишээ нь «Дэлгэрэнгүй» (тэр үед харагдац нь
+   *    «3. Дэлгэрэнгүй» байв — 2026-10-02-нд дугаар хасагдав) дээр
    *    **ТАЛБАРГҮЙ** (зөвхөн «Энэ төрөлд нэмэлт талбар байхгүй» мөр) хуудас
    *    хардаг байв ✗ (төрөл сонгоогүй тул `showRooms`/`showFloors`/`showApartment`
    *    БҮГД `false`).
@@ -1069,8 +1070,12 @@ export default function AddListingClient() {
             <span className="text-gray-300">›</span>
             {/* ℹ️ `data-step-current` — «хаана явж байна»-г харуулах ЦОРЫН ГАНЦ
                 газар (форм дотрох алхмын гарчиг 2026-10-01-нд хасагдсан) тул
-                CDP тестийн тогтвортой selector болно ✓ */}
-            <span data-step-current className="font-semibold text-gray-800">{step + 1}. {currentStep.label}</span>
+                CDP тестийн тогтвортой selector болно ✓
+                ⚠️ 2026-10-02 (хэрэглэгчийн хүсэлт): «2. Байршил» / «5. Зураг» гэж
+                   алхмын УРД нь гарч байсан ДУГААР ХАСАГДАВ ✗ → зөвхөн
+                   «Байршил» / «Зураг» ✓ (`{step + 1}. ` арилав;
+                   `[data-step-current]` selector ХЭВЭЭР ✓) */}
+            <span data-step-current className="font-semibold text-gray-800">{currentStep.label}</span>
           </>
         )}
       </nav>
@@ -1095,8 +1100,8 @@ export default function AddListingClient() {
                  ХАСАГДАВ (сонгосон утгатай давхардаж байв ✗); оронд нь багана
                  бүрд мобайлд л гарах жижиг шошго (`mobileLabel`) үлдэв ✓
               ℹ️ Алхмын мэдээлэл нь одоо ЗӨВХӨН дээд breadcrumb-аас харагдана —
-                 `{step + 1}. {currentStep.label}` (`[data-step-current]` нь CDP
-                 тестийн тогтвортой selector ✓). Форм нь `section-card`-ийн p-6
+                 `{currentStep.label}` (⚠️ 2026-10-02-д алхмын ДУГААР арилав)
+                 ба `[data-step-current]` нь CDP тестийн тогтвортой selector ✓). Форм нь `section-card`-ийн p-6
                  дотроос ШУУД эхэлнэ (1-р алхамд ОДОО ямар ч ХАРАГДАХ гарчиг БАЙХГҮЙ — шууд
                  баганат сонголт эхэлнэ ✓).
                  Навигаци: «← Буцах» (нэг алхам) / 0-р алхам дээр «Цуцлах» ✓ */}
@@ -1332,7 +1337,7 @@ export default function AddListingClient() {
                     onClick={() => { setError(''); gotoStep(0); }}
                     className="font-semibold text-primary underline"
                   >
-                    1. Ангилал
+                    Ангилал
                   </button>{' '}
                   алхамд төрлөө сонгоод буцаж ирнэ үү.
                 </p>

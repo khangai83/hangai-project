@@ -21,7 +21,10 @@
  *    ⓐ `role="tablist"` (алхмын таб) **0** байхыг шалгана
  *    ⓑ `[data-step-heading]` ОГТ БАЙХГҮЙ (**0**) гэдгийг шалгана
  *    ⓒ одоогийн алхмыг ЗӨВХӨН дээд breadcrumb (`[data-step-current]` =
- *       «1. Ангилал»)-аас уншина
+ *       «Ангилал»)-аас уншина
+ *    ⓕ ⚠️ 2026-10-02 (хэрэглэгчийн хүсэлт): breadcrumb-ийн алхмын УРД нь гарч
+ *       байсан ДУГААР («1. » / «2. ») ХАСАГДАВ ⇒ `[data-step-current]` нь
+ *       «Ангилал» / «Байршил» / «Дэлгэрэнгүй» (тоо БАЙХГҮЙ) ✓
  *    ⓓ алхам солихдоо `?step=N` руу URL-аар шилжинэ (`gotoStepUrl`) ✓
  *    ⓔ 1-р алхамд ХАРАГДАХ ГАРЧИГ **0** байхыг шалгана (③) — picker-ийн
  *       асуулт нь зөвхөн `aria-label`-д үлдсэн ✓
@@ -45,14 +48,14 @@
  *   ⑤ ДООД ТҮВШИНГҮЙ бүлэг (💻 Чихэвч) нь ӨӨРӨӨ leaf болж хадгалагдана
  *   ⑥ АЛХМЫН ТАБ ба форм дотрох АЛХМЫН ГАРЧИГ ХОЁУЛАА ХАСАГДСАН
  *      (0 `role="tab"` · `[data-step-heading]` = 0) + «Үргэлжлүүлэх» → 2-р алхам
- *      = **📍 БАЙРШИЛ** (breadcrumb `[data-step-current]` = «2. Байршил» +
+ *      = **📍 БАЙРШИЛ** (breadcrumb `[data-step-current]` = «Байршил» +
  *      URL `?step=2`) — 2026-10-01-нд алхмын дараалал солигдож, «Байршил»
  *      3-р алхмаас **2-Р АЛХАМ** болов ✓
  *   ⑥′/⑥″ БАЙРШЛЫН БАГАНУУД бүрэн шалгагдана: 3 багана (**loc-city ·
  *      loc-district · loc-khoroo**), форм дотор `<select>` **0** (1-р алхмын
  *      форматтай ижил — хэрэглэгчийн хүсэлт), толгой **0** (4 дэх засвар),
  *      Хот → Дүүрэг → Хороо дарааллаар сонгогдоно, ХОТ солиход дүүрэг БА
- *      хороо ЦЭВЭРЛЭГДЭНЭ, «Үргэлжлүүлэх» → 3-р алхам («3. Дэлгэрэнгүй»,
+ *      хороо ЦЭВЭРЛЭГДЭНЭ, «Үргэлжлүүлэх» → 3-р алхам («Дэлгэрэнгүй»,
  *      URL `?step=3`) ✓
  *   ⑦ 🔎 ДҮРС ТЕКСТЭЭС ХҮРЭХГҮЙ — 🏷️ Үйлдвэрлэгчийн `combo`/текст талбарт
  *      (`!pl-9` = 36px, зай ≥ 6px) + ✕ товч (`!pr-10`) + sidebar-ийн 2 талбар
@@ -220,7 +223,7 @@ const PROBE = `(() => {
     pickerAria: (document.querySelector('[data-picker="section"]')?.closest('[role="group"]')?.getAttribute('aria-label') || '').trim(),
     // ⚠️ 2026-10-01: толгойн АЛХМЫН ТАБУУД ба форм дотрох алхмын гарчиг ХОЁУЛАА
     //    хасагдсан → одоогийн алхмыг ЗӨВХӨН дээд breadcrumb-аас уншина:
-    //    [data-step-current] = «1. Ангилал» ✓
+    //    [data-step-current] = «Ангилал» (⚠️ 2026-10-02: дугаар «1. » хасагдав) ✓
     //    [data-step-heading] нь 0 байх ЁСТОЙ (хасагдсаныг батлана) ✓
     stepLabel: (document.querySelector('[data-step-current]') || {}).innerText || '',
     stepHeadings: document.querySelectorAll('[data-step-heading]').length,
@@ -310,8 +313,8 @@ ok('асуулт нь `aria-label`-аар (screen reader) ХЭВЭЭР',
 ok('дээд хэсэгт АЛХМЫН ТАБ ГАРАХГҮЙ (2026-10-01-нд хасагдсан ✓)', p0.tabs.length === 0, JSON.stringify(p0.tabs));
 ok('форм дотор АЛХМЫН ГАРЧИГ ГАРАХГҮЙ (`[data-step-heading]` = 0)',
   p0.stepHeadings === 0, `stepHeadings=${p0.stepHeadings}`);
-ok('1-р алхам: breadcrumb «1. Ангилал» (`[data-step-current]`)',
-  String(p0.stepLabel).includes('1. Ангилал'), JSON.stringify(p0.stepLabel));
+ok('1-р алхам: breadcrumb «Ангилал» — ⚠️ 2026-10-02: ДУГААРГҮЙ болов',
+  String(p0.stepLabel).trim() === 'Ангилал', JSON.stringify(p0.stepLabel));
 ok('3 багана харагдаж байна (Үл хөдлөх)', p0.colCount === 3, `colCount=${p0.colCount}`);
 ok('багана 1: 12 ХЭСЭГ', p0.cols.section?.items.length === 12, String(p0.cols.section?.items.length));
 /**
@@ -404,8 +407,8 @@ await click('[data-picker="level3"] button[data-picker-value="Орон сууц"
 const plusOk = await clickNext();
 const p9 = await probe();
 ok('«Үргэлжлүүлэх» товч ажилласан', plusOk === 'OK', plusOk);
-ok('2-Р АЛХАМ руу шилжив (breadcrumb = «2. Байршил» — 2026-10-01: дараалал солигдов)',
-  String(p9.stepLabel).includes('2. Байршил'),
+ok('2-Р АЛХАМ руу шилжив (breadcrumb = «Байршил» — 2026-10-01: дараалал солигдов)',
+  String(p9.stepLabel).trim() === 'Байршил',
   JSON.stringify(p9.stepLabel));
 const search = await evaluate('location.search');
 ok('URL нь `?step=2` болов', String(search).includes('step=2'), search);
@@ -467,8 +470,8 @@ console.log('\n── ⑥″ 3-Р АЛХАМ = 📋 ДЭЛГЭРЭНГҮЙ (ба
 const next3 = await clickNext();
 const p13 = await probe();
 ok('«Үргэлжлүүлэх» байршлаас ажилласан', next3 === 'OK', next3);
-ok('3-Р АЛХАМ руу шилжив (breadcrumb = «3. Дэлгэрэнгүй»)',
-  String(p13.stepLabel).includes('3. Дэлгэрэнгүй'),
+ok('3-Р АЛХАМ руу шилжив (breadcrumb = «Дэлгэрэнгүй»)',
+  String(p13.stepLabel).trim() === 'Дэлгэрэнгүй',
   JSON.stringify(p13.stepLabel));
 const search3 = await evaluate('location.search');
 ok('URL нь `?step=3` болов', String(search3).includes('step=3'), search3);
@@ -676,7 +679,7 @@ ok('📱 4 дэх дэлгэц: «Орон сууц зарна» → 1 өрөө 
 ok('📱 «2 өрөө» сонгоход ДАРААГИЙН АЛХАМ руу ШУУД шилжив', (await mclick('2')) === 'OK');
 const mb4 = await mprobe();
 ok('📱 2-Р АЛХАМ (📍 Байршил): «Хот / Аймаг» жагсаалт (20+) гарч ирэв',
-  mb4.stepLabel.includes('2. Байршил') && mb4.items.length >= 20 && mb4.title === 'Зар нийтлэх',
+  mb4.stepLabel.trim() === 'Байршил' && mb4.items.length >= 20 && mb4.title === 'Зар нийтлэх',
   JSON.stringify({ step: mb4.stepLabel, n: mb4.items.length, title: mb4.title }));
 
 ok('📱 Хот («Улаанбаатар») сонгов', (await mclick('Улаанбаатар')) === 'OK');
@@ -693,7 +696,7 @@ ok('📱 «1-р хороо» сонгоход → 3-Р АЛХАМ (📋 Дэлг
   (await mclick('1-р хороо')) === 'OK');
 const mb7 = await mprobe();
 ok('📱 3-р алхамд «Өрөө» талбар ХАРАГДАХГҮЙ (drill-down-д асуусан тул давхардахгүй ✓)',
-  mb7.stepLabel.includes('3. Дэлгэрэнгүй') && JSON.stringify(mb7.roomRow) === '[0]',
+  mb7.stepLabel.trim() === 'Дэлгэрэнгүй' && JSON.stringify(mb7.roomRow) === '[0]',
   JSON.stringify({ step: mb7.stepLabel, roomRow: mb7.roomRow }));
 
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1400, deviceScaleFactor: 1, mobile: false });
@@ -708,7 +711,7 @@ ok('🖥 1440px: мобайл блок ХАРАГДАХГҮЙ + 3 БАГАНАТ
  * 🛡️ 2026-10-02 — ХАМГААЛАЛТ (хэрэглэгчийн гомдол: «зарын дэлгэрэнгүй асуух хэсэг
  *    байхгүй болсон»): `?step=` нь ЗӨВХӨН ХАЯГ дээр байдаг ба форм нь хуудас
  *    дахин ачаалагдах / линкээр орох / HMR үед ХООСОН болдог. Тэр үед URL нь
- *    хуучин алхам дээрээ үлдэж, хэрэглэгч «3. Дэлгэрэнгүй» дээр ТАЛБАРГҮЙ
+ *    хуучин алхам дээрээ үлдэж, хэрэглэгч «Дэлгэрэнгүй» дээр ТАЛБАРГҮЙ
  *    (төрөл сонгоогүй тул `showRooms`/`showFloors`/`showApartment` бүгд false)
  *    хуудас хардаг байв ✗ ⇒ одоо ЭХНИЙ ДУТУУ АЛХАМ руу буцаана ✓
  */
@@ -722,7 +725,7 @@ for (const n of [3, 5]) {
   await wait(4000);
   const g = await evaluate(GUARD_PROBE);
   ok(`🛡️ ?step=${n} (форм хоосон) → ЭХНИЙ АЛХАМ руу буцлаа (хоосон алхам ГАРАХГҮЙ ✓)`,
-    g.q === '?step=1' && g.step.includes('1. Ангилал'),
+    g.q === '?step=1' && g.step.trim() === 'Ангилал',
     JSON.stringify({ url: g.q, step: g.step }));
   ok(`🛡️ ?step=${n} → мессеж «Зарын төрлөө сонгоно уу» харагдаж байна`,
     g.text.includes('Зарын төрлөө сонгоно уу'), '');
