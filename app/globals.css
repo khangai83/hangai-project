@@ -336,6 +336,32 @@
   }
 
   /**
+   * 📱 2026-10-02 — 3-Р АЛХАМ (📋 Дэлгэрэнгүй) «АСУУЛТ БҮР НЭГ ДЭЛГЭЦ»
+   *
+   * 🎯 Хэрэглэгчийн хүсэлт: «зарын гарчиг, талбай, угаалгын өрөө, ашиглалтанд
+   *    орсон он … бүгдийг нь нэг нэгээр нь харуул» («гар утсаас зар оруулахад
+   *    ийм асуудаг формоо нэг нэгээр нь харуулаад яв») ⇒ 📱 мобайлд зөвхөн
+   *    ОДООНЫ дэлгэцийн талбар харагдаж, бусдыг нь `AddListingClient.jsx`
+   *    `data-mobile-active="false"`-ээр тэмдэглэнэ; энэ дүрэм тэднийг нууна ✓
+   *
+   * ⚠️ ЗӨВХӨН `<640px` (media query дотор) — 🖥 ≥640px дээр бүх талбар
+   *    ХЭВЭЭР харагдана (хуучин ЦУВАА 1 баганат харагдац; `data-form-row="details"`
+   *    мөр бүр `data-mobile-active` атрибуттай ч дүрэм тэнд үйлчлэхгүй ✓)
+   * ⚠️ `!important` — `[data-form-row="details"] > .form-group` (0,2,0) нь
+   *    `display`-ийг `grid` болгодог тул Tailwind `hidden` (0,1,0) хүрэлцэхгүй ✗
+   * ⚠️ Талбарыг ХОЁР ДАХИН рендэрлэхгүй (CDP-ийн `[data-choice-trigger]` тоо,
+   *    `form`/DB/`validateStep` ХӨНДӨГДӨХГҮЙ — НЭГ DOM, зөвхөн CSS-ээр нуув ✓)
+   * 🔍 Хайх үг: data-mobile-active, data-detail-field, data-mobile-detail-head,
+   *    нэг дэлгэцэд нэг талбар, mobileDetailStep
+   */
+  @media (max-width: 639.98px) {
+    [data-form-row="details"][data-mobile-active="false"],
+    [data-form-row="details"] .form-group[data-mobile-active="false"] {
+      display: none !important;
+    }
+  }
+
+  /**
    * 🔢 📱 СОНГОЛТТОЙ ТАЛБАРЫН ТОВЧ (2026-10-02)
    *
    * 🎯 Хэрэглэгчийн хүсэлт: «…барилгийн давхар 1 2 3 4 … 26-аас сонгуулах …

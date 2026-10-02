@@ -370,17 +370,31 @@ const attrWheelUnit = (f) => f.choiceUnit || (f.type === 'number' ? 'он' : '')
  * @param {string}   [desktopControl] `'select'` бол 🖥 дээр жагсаалт (ж: тагт)
  * @param {Function} onChange  утга солигдоход (🖥 бичих бүрд, 📱 дугуйнаас)
  * @param {Function} openWheel дугуйг нээх state setter (spec-ээ өөрөө бэлдэнэ)
+ * @param {string}   [fieldKey] 📱 «нэг дэлгэцэд НЭГ талбар» (3-р алхам)-ийн
+ *   түлхүүр → `.form-group` дээр `data-detail-field="…"` (CDP-ийн тогтвортой
+ *   selector + `data-mobile-active`-ийн хамт) ✓
+ * @param {boolean}  [mobileActive] талбар нь ОДООНЫ мобайл дэлгэц мөн эсэх —
+ *   `false` үед 📱 <640px дээр `globals.css`-ийн дүрмээр `display:none`
+ *   (🖥 ≥640px дээр ДҮРЭМ ҮЙЛЧЛЭХГҮЙ тул бүх талбар хэвээр ✓)
  */
 function ChoiceField({
   label, icon = '', hint = '', wheelHint = '', value = '', items = [], unit = '',
   testId, placeholder = '', min, max, desktopControl = 'input', onChange, openWheel,
+  fieldKey = '', mobileActive,
 }) {
   /** 🎛 Товч/дугуй дээрх бичиг: `'5 давхар'` · `'2015 он'` (хоосон бол `''`) */
   const shown = choiceText(value, unit);
   /** ⚠️ Жагсаалтад БАЙХГҮЙ хуучин утга — `<select>`-д мөр нэмнэ (алга болохгүй ✓) */
   const legacy = value && !items.some((it) => it.value === String(value)) ? String(value) : '';
   return (
-    <div className="form-group">
+    <div
+      className="form-group"
+      /* 📱 2026-10-02 — «нэг дэлгэцэд НЭГ талбар» (3-р алхам): `data-detail-field`
+         нь CDP-ийн тогтвортой selector, `data-mobile-active="false"` нь 📱
+         `<640px` дээр `globals.css`-ээр `display:none` (🖥 ≥640px хэвээр ✓) */
+      data-detail-field={fieldKey || undefined}
+      data-mobile-active={mobileActive === undefined ? undefined : (mobileActive ? 'true' : 'false')}
+    >
       <label>{icon ? `${icon} ` : ''}{label}</label>
       <div className="flex w-full items-stretch gap-2">
         {/* ═ 🖥 ≥640px: ГАР БИЧИЛТ (өмнөх зан төлөв ХЭВЭЭР) ═ */}
@@ -521,6 +535,20 @@ export default function AddListingClient() {
    */
   const [mobileCatStep, setMobileCatStep] = useState('section');
   const [mobileLocStep, setMobileLocStep] = useState('city');
+  /**
+   * 📱 3-р алхам (📋 Дэлгэрэнгүй)-ийн МОБАЙЛ дэлгэц (2026-10-02) — 1 ба 2-р
+   *    алхам шиг «асуулт бүр НЭГ ДЭЛГЭЦ» болгов (хэрэглэгчийн хүсэлт: «зарын
+   *    гарчиг, талбай, угаалгын өрөө, ашиглалтанд орсон он … бүгдийг нь нэг
+   *    нэгээр нь харуул»). Утга нь `detailScreens[].key` (`'title'`,
+   *    `'area'`, `'buildYear'` …).
+   *    ⚠️ ТҮВШНИЙ ДУГААР БИШ ТҮЛХҮҮР — сонгосон хэсэг/төрлөөс хамаарч дэлгэцийн
+   *       тоо ХУВИРДАГ (ж: 🏠 Газар дээр зөвхөн «Зарын гарчиг») тул тоо эвдрэхэд
+   *       амар ✗ (1/2-р алхмын `mobileCatStep`/`mobileLocStep`-тэй ЯГ ИЖИЛ зарчим)
+   *    ⚠️ Жагсаалтад байхгүй түлхүүр (ж: хэсэг солигдсоны дараа) → эхний дэлгэц ✓
+   *    🖥 ≥640px дээр ЭНЭ нь ажиллахгүй: бүх талбарыг харуулна (`data-mobile-active`
+   *       дүрэм нь зөвхөн `<640px` media query дотор ✓)
+   */
+  const [mobileDetailStep, setMobileDetailStep] = useState('title');
   /**
    * 🔢🎡 СОНГОЛТТОЙ ТООН ТАЛБАРЫН ДУГУЙ (2026-10-02) — нэг л дугуй байна, түүнд
    *    ОДОО нээлттэй талбарын бүх мэдээлэл (`{title, items, value, hint,
@@ -951,6 +979,60 @@ export default function AddListingClient() {
   }
   const mobileLocScreen = locScreens.find((s) => s.key === mobileLocStep) || locScreens[0];
 
+  /* ==========================================================================
+     📱 3-Р АЛХАМ (📋 Дэлгэрэнгүй) — «АСУУЛТ БҮР НЭГ ДЭЛГЭЦ» (2026-10-02)
+     ──────────────────────────────────────────────────────────────────────────
+     Хэрэглэгчийн хүсэлт: «зарын гарчиг, талбай, угаалгын өрөө, ашиглалтанд
+     орсон он … бүгдийг нь нэг нэгээр нь харуул» ⇒ мобайлд эдгээр талбар нь
+     3-р алхам дээр ЦУВААГААР БИШ, **дэлгэц бүрд НЭГ** (1/2-р алхамын
+     `MobileQuestion`-тэй ЯГ ИЖИЛ зарчим) харагдана.
+
+     ⚙️ ХЭРХЭН АЖИЛЛАДАГ ВЭ (нэг DOM — ХУУЛБАР БИШ):
+        • Талбар бүр нь `.form-group` дээр `data-detail-field="<key>"` +
+          `data-mobile-active="true|false"` атрибуттай
+        • `app/globals.css` → 📱 `<640px` дээр `data-mobile-active="false"`
+          талбар/мөрийг `display:none` ⇒ ЗӨВХӨН идэвхтэй дэлгэцийн талбар
+          харагдана; 🖥 ≥640px дээр дүрэм ҮЙЛЧЛЭХГҮЙ ⇒ хуучин харагдац ХЭВЭЭР ✓
+        ⚠️ Ингэснээр утга/`form`/DB/`validateStep` ХӨНДӨГДӨХГҮЙ (нэг эх сурвалж)
+        ⚠️ Талбарыг ХОЁР ДАХИН рендэрлэхгүй (CDP-ийн `[data-choice-trigger]`
+           тоо хэвээр — cdp-wheel.mjs эвдрэхгүй ✓)
+
+     ⚠️ «Өрөө» ЭНД БАЙХГҮЙ (`rooms`): 1-р алхмын drill-down-д асуудаг болсон
+        (unegui.mn-ийн 4 дэх дэлгэц) тул 3-р алхамд ДАВХАРДАХГҮЙ ✓ (🖥 дээр
+        `hide-below-sm`-ээр хуучин байдал хэвээр)
+     ⚠️ Заавал талбар нь («Зарын гарчиг») дэлгэцээ солихдоо шалгагдана —
+        `validateStep('details')`-тэй ИЖИЛ мессеж (нэг эх сурвалж) ✓
+     🔍 Хайх үг: mobileDetailStep, detailScreens, data-detail-field,
+        data-mobile-active, data-mobile-detail-head
+     ========================================================================== */
+  const detailScreens = (() => {
+    /** ⚠️ `required` — зөвхөн ШИНЭ зард (засах горимд `validateStep` ч шаарддаггүй ✓) */
+    const out = [{ key: 'title', title: 'Зарын гарчиг', group: 'title', required: !isEdit }];
+    /** Хэсгийн нэмэлт талбарууд (брэнд/он/гүйлт/компьютер …) — нэг нэгээрээ */
+    attrFields.forEach((f) => out.push({
+      key: `attr-${f.key}`,
+      title: `${f.icon ? `${f.icon} ` : ''}${f.label}`,
+      group: 'attrs',
+    }));
+    if (isRealEstate) out.push({ key: 'area', title: 'Талбай (м²)', group: 'area' });
+    if (showBathrooms) out.push({ key: 'bathrooms', title: 'Угаалгын өрөө', group: 'bathrooms' });
+    if (showFloors && showApartment) out.push({ key: 'buildYear', title: 'Ашиглалтанд орсон он', group: 'floors-1' });
+    if (showFloors) out.push({ key: 'totalFloors', title: 'Барилгын нийт давхар', group: 'floors-1' });
+    if (showFloors) out.push({ key: 'floor', title: 'Байрны давхар', group: 'floors-2' });
+    if (showFloors && showApartment) out.push({ key: 'balconies', title: 'Тагт (1-4)', group: 'floors-2' });
+    if (showApartment) out.push({ key: 'garage', title: 'Гараж', group: 'garage' });
+    return out;
+  })();
+  /** ⚠️ Түлхүүр олдохгүй бол (ж: хэсэг солигдов) → ЭХНИЙ дэлгэц (`title`) ✓ */
+  const detailIdxRaw = detailScreens.findIndex((s) => s.key === mobileDetailStep);
+  const detailIdx = detailIdxRaw < 0 ? 0 : detailIdxRaw;
+  const activeDetail = detailScreens[detailIdx];
+  const isFirstDetail = detailIdx === 0;
+  const isLastDetail = detailIdx === detailScreens.length - 1;
+  /** 📱 Мөр/талбар «энэ дэлгэцэн дээр байна уу» → `data-mobile-active` (CSS ✓) */
+  const detailRowActive = (group) => (activeDetail.group === group ? 'true' : 'false');
+  const detailFieldActive = (key) => (activeDetail.key === key ? 'true' : 'false');
+
   /**
    * 📱 ← товч — нэг дэлгэцээр ДЭЭШ буцаана; хамгийн эхний дэлгэц дээр
    *    `goBack()` (алхмаас гарна: 1-р алхамд «Цуцлах», бусад алхамд «← Буцах»)
@@ -965,6 +1047,35 @@ export default function AddListingClient() {
   };
   const mobileCatBack = () => mobileStepBack(catScreens, mobileCatScreen, setMobileCatStep);
   const mobileLocBack = () => mobileStepBack(locScreens, mobileLocScreen, setMobileLocStep);
+
+  /**
+   * 📱 3-р алхмын «Дараагийн асуулт» — талбар бүр НЭГ ДЭЛГЭЦ (2026-10-02).
+   * ⚠️ Заавал талбар («Зарын гарчиг») хоосон бол ДАРААГИЙН ДЭЛГЭЦ РУУ ЯВАХГҮЙ ✗ —
+   *    `validateStep('details')`-тэй ИЖИЛ мессеж (нэг эх сурвалж) ✓
+   * ⚠️ СҮҮЛИЙН дэлгэцээс цааш `goNext()` (дараагийн АЛХАМ): энэ салбар нь
+   *    зөвхөн аюулгүйн зам — 📱 дээр сүүлийн дэлгэцэд wizard-ийн товч
+   *    ХАРАГДАХГҮЙ (доорх `hide-below-sm`) ба хуучин «Үргэлжлүүлэх» л үлддэг ✓
+   */
+  const mobileDetailNext = () => {
+    const cur = detailScreens[detailIdx];
+    if (cur && cur.required && !String(form.title || '').trim()) {
+      setError('Зарын гарчигаа оруулна уу');
+      return;
+    }
+    setError('');
+    if (isLastDetail) { goNext(); return; }
+    setMobileDetailStep(detailScreens[detailIdx + 1].key);
+  };
+  /**
+   * 📱 «← » — нэг дэлгэцээр ДЭЭШ буцаана; ХАМГИЙН ЭХНИЙ дэлгэц дээр `goBack()`
+   *    (2-р алхам «📍 Байршил» руу) — `mobileStepBack`-тэй ИЖИЛ зан ✓
+   * ⚠️ Буцах үед оруулсан утга ЦЭВЭРЛЭГДЭХГҮЙ (form хэвээр ✓)
+   */
+  const mobileDetailBack = () => {
+    setError('');
+    if (isFirstDetail) { goBack(); return; }
+    setMobileDetailStep(detailScreens[detailIdx - 1].key);
+  };
 
   const onPickFiles = async (e) => {
     const files = Array.from(e.target.files || []);
@@ -1472,6 +1583,28 @@ export default function AddListingClient() {
                    алхам (`step === 2`) дээр render болно (STEPS дараалал солигдсон ✓) */}
             {step === 2 && (
             <>
+            {/* 📱 МОБАЙЛ (<640px): 3-Р АЛХМЫН «АСУУЛТ БҮР НЭГ ДЭЛГЭЦ» — толгой
+                (← товч + асуулт + «2/9» явц). ⚠️ `data-mobile-detail-key` нь
+                CDP-ийн ТОГТВОРТОЙ selector (аль дэлгэц дээр байгааг хэлнэ) ✓
+                ⚠️ Нийт тоо нь динамик: 🏠 Газар дээр «1/1», орон сууцан дээр
+                   «1/8» гэх мэт (`detailScreens.length`) ✓ */}
+            <div data-mobile-detail-head data-mobile-detail-key={activeDetail.key} className="sm:hidden">
+              <div className="flex items-center gap-2 border-b border-gray-200 pb-3">
+                <button
+                  type="button"
+                  data-mobile-detail-back
+                  onClick={mobileDetailBack}
+                  aria-label="Буцах"
+                  className="-ml-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg text-gray-700 active:bg-gray-100"
+                >
+                  ←
+                </button>
+                <h2 className="min-w-0 flex-1 truncate text-[17px] font-bold text-gray-900">{activeDetail.title}</h2>
+                <span className="shrink-0 text-[12px] font-semibold tabular-nums text-gray-400">
+                  {detailIdx + 1}/{detailScreens.length}
+                </span>
+              </div>
+            </div>
             {/* ═══ 🏷️ ЗАРЫН ГАРЧИГ (2026-10-02) — БҮХ ХЭСЭГТ, ХАМГИЙН ЭХЭНД ═══
                 хэрэглэгчийн хүсэлт: «Бүх зард Зарын гарчиг гэдэг утга оруулахаа
                 мартсан байна. Тэр нь зарын карт дээр Үнэ мэдээллийн доор bold
@@ -1487,8 +1620,13 @@ export default function AddListingClient() {
                    зарууд дээр гарчиг байхгүй тул блоклохгүй ✓
                 ⚠️ 120 тэмдэгт (`MAX_LISTING_TITLE_LENGTH` = DB-ийн CHECK = queries.js)
                    🔍 Хайх үг: listingTitle, 0027_listing_title.sql */}
-            <div className="form-row-single" data-form-row="details">
-              <div className="form-group">
+            <div
+              className="form-row-single"
+              data-form-row="details"
+              data-detail-row="title"
+              data-mobile-active={detailRowActive('title')}
+            >
+              <div className="form-group" data-detail-field="title" data-mobile-active={detailFieldActive('title')}>
                 <label>Зарын гарчиг *</label>
                 <input
                   type="text"
@@ -1551,7 +1689,12 @@ export default function AddListingClient() {
                  багана) — ЗӨВХӨН CSS-ээр шийдэв (`globals.css`,
                  `[data-form-row="details"] > .form-group`), JSX-ийн бүтэц
                  ХӨНДӨГДӨӨГҮЙ ✓ (4/5-р алхам хэвээр — нэр нь оролтын дээр) */
-              <div className="form-row-single" data-form-row="details">
+              <div
+                className="form-row-single"
+                data-form-row="details"
+                data-detail-row="attrs"
+                data-mobile-active={detailRowActive('attrs')}
+              >
                 {attrFields.map((f) => {
                   const value = (form.attrs || {})[f.key] || '';
                   /**
@@ -1581,7 +1724,13 @@ export default function AddListingClient() {
                   /** 🏷️ «эцэг» талбарын одоогийн утга (ж: «Toyota») — зөвхөн hint-д */
                   const depValue = f.optionsFrom ? ((form.attrs || {})[f.optionsFrom] || '') : '';
                   return (
-                  <div key={f.key} className="form-group">
+                  <div
+                    key={f.key}
+                    className="form-group"
+                    /* 📱 3-р алхамд энэ талбар нь ӨӨРИЙН дэлгэцтэй (`attr-<key>`) ✓ */
+                    data-detail-field={`attr-${f.key}`}
+                    data-mobile-active={detailFieldActive(`attr-${f.key}`)}
+                  >
                     <label>{f.icon ? `${f.icon} ` : ''}{f.label}</label>
                     {f.choices ? (
                       /**
@@ -1674,14 +1823,24 @@ export default function AddListingClient() {
               </div>
             )}
 
-            <div className="form-row-single" data-form-row="details">
+            <div
+              className="form-row-single"
+              data-form-row="details"
+              data-detail-row="area"
+              data-mobile-active={detailRowActive('area')}
+            >
               {/* «Өрөө» нь зөвхөн Орон сууц, АОС/хаус төрөлд харагдана (lib/locationData.js) */}
               {showRooms && (
                 /* 📱 2026-10-02: МОБАЙЛД ХАРАГДАХГҮЙ (`.hide-below-sm`) — өрөөг
                    нь 1-р алхмын drill-down-д (unegui.mn-ийн 4 дэх дэлгэц:
                    «Орон сууц зарна» → 1 өрөө … +5 өрөө) асуудаг болсон тул
                    энд ДАХИН асуухгүй ✓ (🖥 ≥640px дээр ХЭВЭЭР харагдана) */
-                <div className="form-group hide-below-sm">
+                <div
+                  className="form-group hide-below-sm"
+                  /* ⚠️ «Өрөө» нь 3-р алхамд МОБАЙЛ дэлгэцгүй (1-р алхамд асуусан ✓) */
+                  data-detail-field="rooms"
+                  data-mobile-active="false"
+                >
                   <label>Өрөө</label>
                   <input type="number" min="0" value={form.rooms} onChange={(e) => set('rooms', e.target.value)} placeholder="3" />
                 </div>
@@ -1691,7 +1850,7 @@ export default function AddListingClient() {
               /* ⚠️ 5 дахь засвар: мөр 1 БАГАНАТ болов → `sm:col-span-2` ХАСАГДАВ
                  (үлдээвэл grid дотор ДАЛД 2 дахь track үүснэ) — «Талбай» нь
                  «Өрөө»-ний ЯГ ДООР бүтэн өргөнөө эзэлнэ ✓ */
-              <div className="form-group">
+              <div className="form-group" data-detail-field="area" data-mobile-active={detailFieldActive('area')}>
                 <label>Талбай (м²)</label>
                 <input
                   type="text"
@@ -1708,7 +1867,12 @@ export default function AddListingClient() {
                 АОС/хаус төрөлд ҮРГЭЛЖ, мөн 3 ба түүнээс олон өрөөтэй зарт
                 харагдана (lib/locationData.js → hasBathroomFields). */}
             {showBathrooms && (
-              <div className="form-row-single" data-form-row="details">
+              <div
+                className="form-row-single"
+                data-form-row="details"
+                data-detail-row="bathrooms"
+                data-mobile-active={detailRowActive('bathrooms')}
+              >
                 {/* 🆕 2026-10-02: 📱 мобайлд ДУГУЙ (1–6 түгээмэл утга), 🖥 дээр
                     гар бичилт ХЭВЭЭР (жагсаалтад байхгүй тоог ч бичиж болно ✓) */}
                 <ChoiceField
@@ -1717,6 +1881,8 @@ export default function AddListingClient() {
                   items={BATHROOM_ITEMS}
                   unit="өрөө"
                   testId="bathrooms"
+                  fieldKey="bathrooms"
+                  mobileActive={activeDetail.key === 'bathrooms'}
                   placeholder="1"
                   min={0}
                   max={BATHROOM_MAX}
@@ -1733,7 +1899,12 @@ export default function AddListingClient() {
                 iOS Timer маягийн ДУГУЙгаар сонгогдоно (`ChoiceField` +
                 `WheelPicker`); 🖥 дээр ГАР БИЧИЛТ/`<select>` ХЭВЭЭР ✓ */}
             {showFloors && (
-              <div className="form-row-single" data-form-row="details">
+              <div
+                className="form-row-single"
+                data-form-row="details"
+                data-detail-row="floors-1"
+                data-mobile-active={detailRowActive('floors-1')}
+              >
                 {showApartment && (
                   <ChoiceField
                     label="Ашиглалтанд орсон он"
@@ -1741,6 +1912,8 @@ export default function AddListingClient() {
                     items={yearItemsFor(form.buildYear)}
                     unit="он"
                     testId="buildYear"
+                    fieldKey="buildYear"
+                    mobileActive={activeDetail.key === 'buildYear'}
                     placeholder="2015"
                     min={YEAR_FROM}
                     max={YEAR_TO}
@@ -1755,6 +1928,8 @@ export default function AddListingClient() {
                   items={FLOOR_ITEMS}
                   unit="давхар"
                   testId="totalFloors"
+                  fieldKey="totalFloors"
+                  mobileActive={activeDetail.key === 'totalFloors'}
                   placeholder="9"
                   min={1}
                   max={FLOOR_MAX}
@@ -1766,7 +1941,12 @@ export default function AddListingClient() {
             )}
 
             {showFloors && (
-              <div className="form-row-single" data-form-row="details">
+              <div
+                className="form-row-single"
+                data-form-row="details"
+                data-detail-row="floors-2"
+                data-mobile-active={detailRowActive('floors-2')}
+              >
                 {/* ⚠️ Давхрын жагсаалт нь «Барилгын нийт давхар»-аас ХЭТРЭХГҮЙ
                     (ж: 9 давхарт 12-р давхар сонгох боломжгүй ✓) */}
                 <ChoiceField
@@ -1775,6 +1955,8 @@ export default function AddListingClient() {
                   items={floorItemsFor(form.floor, form.totalFloors)}
                   unit="давхар"
                   testId="floor"
+                  fieldKey="floor"
+                  mobileActive={activeDetail.key === 'floor'}
                   placeholder="5"
                   min={1}
                   max={FLOOR_MAX}
@@ -1791,6 +1973,8 @@ export default function AddListingClient() {
                     items={BALCONY_ITEMS}
                     desktopControl="select"
                     testId="balconies"
+                    fieldKey="balconies"
+                    mobileActive={activeDetail.key === 'balconies'}
                     wheelHint="Хэдэн тагттай вэ?"
                     onChange={(v) => set('balconies', v)}
                     openWheel={setWheel}
@@ -1800,8 +1984,13 @@ export default function AddListingClient() {
             )}
 
             {showApartment && (
-              <div className="form-row-single" data-form-row="details">
-                <div className="form-group">
+              <div
+                className="form-row-single"
+                data-form-row="details"
+                data-detail-row="garage"
+                data-mobile-active={detailRowActive('garage')}
+              >
+                <div className="form-group" data-detail-field="garage" data-mobile-active={detailFieldActive('garage')}>
                   <label>Гараж</label>
                   <select value={form.hasGarage} onChange={(e) => set('hasGarage', e.target.value)}>
                     <option value="">Сонгох</option>
@@ -1810,6 +1999,36 @@ export default function AddListingClient() {
                 </div>
               </div>
             )}
+            {/* 📱 МОБАЙЛ (<640px): АСУУЛТ БҮР НЭГ ДЭЛГЭЦ — «Үргэлжлүүлэх» нь
+                дараагийн ТАЛБАР руу шилжүүлнэ (алхам руу БИШ ✓).
+                ⚠️ СҮҮЛИЙН дэлгэцэд энэ блок `hide-below-sm`-ээр ХААГДАЖ,
+                   доорх хуучин «Үргэлжлүүлэх» (алхам руу) л үлдэнэ ✓
+                ⚠️ Заавал БИШ талбар дээр «Алгасах» — утга хоосон үлдээж болно
+                   (1-р алхмын «Өрөө» дэлгэцийн `MOBILE_SKIP`-тэй ИЖИЛ зан ✓)
+                ⚠️ 🖥 ≥640px дээр ЭНЭ блок ХАРАГДАХГҮЙ (`sm:hidden`) — хуучин
+                   навигаци (доор) хэвээр ✓
+                🔍 Хайх үг: data-mobile-detail-next, data-mobile-detail-skip */}
+            <div
+              data-mobile-detail-nav
+              className={`mt-5 gap-2 sm:hidden ${isLastDetail ? 'hide-below-sm' : 'flex'}`}
+            >
+              <button
+                type="button"
+                data-mobile-detail-skip
+                onClick={mobileDetailNext}
+                className={`btn btn-ghost ${activeDetail.required ? 'hidden' : ''}`}
+              >
+                Алгасах
+              </button>
+              <button
+                type="button"
+                data-mobile-detail-next
+                onClick={mobileDetailNext}
+                className="btn btn-primary btn-lg flex-1"
+              >
+                Үргэлжлүүлэх →
+              </button>
+            </div>
             </>
             )}
 
@@ -2010,18 +2229,30 @@ export default function AddListingClient() {
             </>
             )}
 
-            {/* 🪜 АЛХМЫН НАВИГАЦ — Буцах / Үргэлжлүүлэх / Нийтлэх */}
+            {/* 🪜 АЛХМЫН НАВИГАЦ — Буцах / Үргэлжлүүлэх / Нийтлэх
+                📱 2026-10-02 — 3-Р АЛХАМ (📋 Дэлгэрэнгүй) дээр мобайл нь
+                «асуулт бүр НЭГ ДЭЛГЭЦ» болсон тул энэ хоёр товч нь дээрх
+                wizard-ийн навигацитай ДАВХАРДАХГҮЙ:
+                  • «← Буцах» — мобайлд ХААГДАХГҮЙ (толгойн `←` нь дэлгэц
+                    бүрээр буцаана; хамгийн эхний дэлгэц дээр 2-р алхам руу ✓)
+                  • «Үргэлжлүүлэх →» — ЗӨВХӨН СҮҮЛИЙН дэлгэцэд харагдана
+                    (өмнө нь wizard-ийн товч дараагийн талбар руу явуулна ✓)
+                🖥 ≥640px дээр `hide-below-sm` ҮЙЛЧЛЭХГҮЙ — хуучин байдал ХЭВЭЭР ✓ */}
             <div className="mt-6 flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
               <button
                 type="button"
                 onClick={goBack}
-                className="btn btn-ghost"
+                className={`btn btn-ghost ${step === 2 ? 'hide-below-sm' : ''}`}
                 disabled={submitting || compressing}
               >
                 {step === 0 ? 'Цуцлах' : '← Буцах'}
               </button>
               {step < STEPS.length - 1 ? (
-                <button type="button" onClick={goNext} className="btn btn-primary btn-lg">
+                <button
+                  type="button"
+                  onClick={goNext}
+                  className={`btn btn-primary btn-lg ${step === 2 && !isLastDetail ? 'hide-below-sm' : ''}`}
+                >
                   Үргэлжлүүлэх →
                 </button>
               ) : (

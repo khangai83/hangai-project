@@ -25,7 +25,17 @@
 //    `[data-wheel-scroll]` · `[data-wheel-value="…"]` · `[data-wheel-marker]` ·
 //    `[data-wheel-done]` · `[data-wheel-backdrop]`
 //    ℹ️ Алхмууд: `[data-picker="…"]` / «Үргэлжлүүлэх» (cdp-picker.mjs-тэй ижил)
-// 🔍 Хайх үг: cdp-wheel, data-choice-trigger, data-wheel, iOS Timer, 390px
+// 🆕 2026-10-02 — 📱 3-р алхам (📋 Дэлгэрэнгүй) нь «АСУУЛТ БҮР НЭГ ДЭЛГЭЦ»
+//    болов ⇒ `<640px` дээр талбар бүр ӨӨРИЙН дэлгэцтэй. Тиймээс хэмжилтийн
+//    өмнө тухайн дэлгэц рүү ГҮЙЛГЭНЭ (`detailTo`, `detailKeyList`):
+//    `[data-mobile-detail-head]` (`data-mobile-detail-key` = дэлгэцийн нэр) ·
+//    `[data-mobile-detail-next]` · `[data-mobile-detail-back]` ·
+//    `[data-mobile-detail-nav]` · `[data-detail-field="…"]` ·
+//    `[data-detail-row="…"]` + `data-mobile-active` (CSS `globals.css`)
+//    ⚠️ Заавал талбар («Зарын гарчиг») ХООСОН бол урагш ЯВАХГҮЙ — эхлээд
+//       `fillTitle()`-ээр бичнэ ✓
+// 🔍 Хайх үг: cdp-wheel, data-choice-trigger, data-wheel, iOS Timer, 390px,
+//    data-mobile-detail-key, detailTo
 // ============================================================
 const BASE = process.argv[2] || 'http://localhost:3000';
 const CDP = `http://127.0.0.1:${process.env.CDP_PORT || 9222}`;
@@ -177,6 +187,79 @@ const pressEscape = async () => {
   await wait(400);
 };
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   📱 2026-10-02 — 3-Р АЛХАМ (📋 Дэлгэрэнгүй) «АСУУЛТ БҮР НЭГ ДЭЛГЭЦ»
+   ───────────────────────────────────────────────────────────────────────────
+   Хэрэглэгчийн хүсэлт: «гар утсаас зар оруулахад ийм асуудаг формоо нэг
+   нэгээр нь харуулаад яв» ⇒ `<640px` дээр зөвхөн ОДООНЫ талбар харагдана.
+   ⚠️ Тиймээс хэмжилт бүрийн өмнө тухайн талбарын дэлгэц рүү ГҮЙЛГЭНЭ
+      (`detailTo`) — эс бөгөөс товч нь `display:none` мөрөнд байж
+      `trigVisible=false` гараад хуурамч ✗ өгнө ✓
+   ⚠️ `data-mobile-detail-key` нь ТОГТВОРТОЙ CDP selector (дэлгэцийн нэр) ✓
+   🔍 Хайх үг: detailState, detailKeyList, detailTo, detailReset
+   ═══════════════════════════════════════════════════════════════════════════ */
+const DETAIL_STATE = `(() => {
+  const head = document.querySelector('[data-mobile-detail-head]');
+  const vis = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const fields = [...document.querySelectorAll('[data-detail-field]')];
+  return {
+    key: head ? (head.dataset.mobileDetailKey || '') : '',
+    title: head ? (((head.querySelector('h2') || {}).innerText) || '').trim() : '',
+    visible: fields.filter(vis).map((f) => f.dataset.detailField),
+    /** 🪜 Мобайл wizard-ийн «Үргэлжлүүлэх» (сүүлийн дэлгэцэд БАЙХГҮЙ) ✓ */
+    next: !!document.querySelector('[data-mobile-detail-next]'),
+  };
+})()`;
+const detailState = () => evaluate(DETAIL_STATE);
+/** ↩️ ХАМГИЙН ЭХНИЙ дэлгэц (гарчиг) хүртэл буцаана */
+const detailReset = async () => {
+  for (let i = 0; i < 16; i += 1) {
+    if ((await detailState()).key === 'title') return true;
+    if ((await click('[data-mobile-detail-back]')) !== 'OK') return false;
+  }
+  return false;
+};
+/** 🎯 Тухайн түлхүүрийн дэлгэц рүү очих (урагш гүйлгээд, олдохгүй бол эхнээс) */
+const detailTo = async (key) => {
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (let i = 0; i < 16; i += 1) {
+      const s = await detailState();
+      if (s.key === key) return true;
+      /** ⚠️ `next` байхгүй = сүүлийн дэлгэц ⇒ урагш явах боломжгүй ✓ */
+      if (!s.next || (await click('[data-mobile-detail-next]')) !== 'OK') break;
+    }
+    if (!(await detailReset())) return false;
+  }
+  return false;
+};
+/** 📋 БҮХ дэлгэцийн түлхүүрийг ДАРААЛЛААР нь цуглуулна (эхлээд эхнээс ✓) */
+const detailKeyList = async () => {
+  if (!(await detailReset())) return [];
+  const keys = [];
+  for (let i = 0; i < 16; i += 1) {
+    const s = await detailState();
+    if (!s.key) break;
+    keys.push(s.key);
+    if (!s.next || (await click('[data-mobile-detail-next]')) !== 'OK') break;
+  }
+  return keys;
+};
+/** ⌨️ «Зарын гарчиг» — React-ийн controlled input-д БОДИТ бичилт хийх
+ *  ⚠️ `el.value = ...` шууд тавибал React ХАРАХГҮЙ (native setter + `input`) ✓ */
+const fillTitle = async (v) => {
+  const res = await evaluate(`(() => {
+    const el = document.querySelector('[data-detail-field="title"] input');
+    if (!el) return 'NOT_FOUND';
+    const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    set.call(el, ${JSON.stringify(v)});
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    return 'OK';
+  })()`);
+  await wait(400);
+  return res;
+};
+
+
 console.log('\n── ① НЭВТРЭЛТ + 3-Р АЛХАМ (📋 Дэлгэрэнгүй) ХҮРЭХ ──');
 if (await evaluate('document.body.innerText.includes("нэвтрэх шаардлагатай")')) {
   console.log('\n⏭  SKIP: Chrome профайл НЭВТРЭЭГҮЙ байна (форм харагдахгүй).');
@@ -198,9 +281,33 @@ const step3 = await evaluate('(document.querySelector("[data-step-current]") || 
 ok('3-Р АЛХАМ (📋 Дэлгэрэнгүй) руу шилжив', String(step3).trim() === 'Дэлгэрэнгүй', JSON.stringify(step3));
 
 // ────────────────────────────────────────────────────────────
-console.log('\n── ② 📱 390px: ТОВЧ харагдаж, ГАР БИЧИЛТ нуугдав ──');
+console.log('\n── ② 📱 390px: «НЭГ ДЭЛГЭЦЭД НЭГ ТАЛБАР» + ТОВЧ харагдаж, ГАР БИЧИЛТ нуугдав ──');
 await viewport(390);
 ok('дугуй хаалттай үед DOM-д БАЙХГҮЙ (`[data-wheel]` = 0)', (await wheel()).open === false);
+/** 📱 2026-10-02 — 3-р алхам «асуулт бүр НЭГ ДЭЛГЭЦ» болов ⇒ ① хэсэгт
+ *  гарчиг бичээгүй тул ЭХЛЭЭД бичнэ (заавал талбар — эс бөгөөс урагш
+ *  явахгүй, `mobileDetailNext` мессеж өгнө ✓) */
+const firstD = await detailState();
+ok('📱 3-р алхам: эхний дэлгэц «Зарын гарчиг» — харагдах талбар ЯГ 1 («нэг дэлгэцэд нэг талбар» ✓)',
+  firstD.key === 'title' && firstD.title === 'Зарын гарчиг' && JSON.stringify(firstD.visible) === '["title"]',
+  JSON.stringify(firstD));
+/** 🛡️ Заавал талбарын ХААЛТ: гарчиг хоосон үед урагш ЯВАХГҮЙ ✓ */
+await click('[data-mobile-detail-next]');
+const gated = await detailState();
+const gateErr = String(await evaluate('((document.querySelector("form .bg-red-50") || {}).innerText || "").trim()'));
+ok('🛡️ гарчиг ХООСОН үед дараагийн дэлгэц рүү ЯВАХГҮЙ + мессеж гарна',
+  gated.key === 'title' && gateErr === 'Зарын гарчигаа оруулна уу', `${gated.key} / ${JSON.stringify(gateErr)}`);
+ok('⌨️ «Зарын гарчиг»-т бичив', (await fillTitle('3 өрөө байр, Баянгол')) === 'OK');
+await click('[data-mobile-detail-next]');
+const afterTitle = await detailState();
+ok('📱 «Үргэлжлүүлэх» нь дараагийн ТАЛБАР руу шилжүүлэв (алхам руу БИШ ✓)',
+  afterTitle.key === 'area' && afterTitle.visible.length === 1, `${afterTitle.key} ${JSON.stringify(afterTitle.visible)}`);
+await detailReset();
+const allKeys = await detailKeyList();
+ok('📱 дэлгэцүүд ДАРААЛААР ба «Өрөө» БАЙХГҮЙ (1-р алхмын drill-down-д асуусан ✓)',
+  allKeys[0] === 'title' && allKeys.length >= 4 && !allKeys.includes('rooms'),
+  JSON.stringify(allKeys));
+ok('📱 «Барилгын нийт давхар» дэлгэц рүү гүйлгэв', await detailTo('totalFloors'));
 const f0 = await field('totalFloors');
 ok('📱 «Барилгын нийт давхар» — ДУГУЙ нээх товч ХАРАГДАЖ байна',
   f0.hasTrigger && f0.trigVisible, JSON.stringify(f0));
@@ -208,14 +315,23 @@ ok('📱 хоосон үед товч «Сонгох» + `data-empty="true"` (pl
   f0.trigText === 'Сонгох' && f0.trigEmpty === 'true', `${f0.trigText} / ${f0.trigEmpty}`);
 ok('📱 гар бичилт (`input[type=number]`) ХАРАГДАХГҮЙ (`.hide-below-sm` ✓)',
   f0.hasInput && f0.inputVisible === false, `hasInput=${f0.hasInput} visible=${f0.inputVisible}`);
-const MKEYS = ['bathrooms', 'buildYear', 'totalFloors', 'floor', 'balconies'];
-const mState = await Promise.all(MKEYS.map((k) => field(k)));
-const mPresent = mState.filter((s) => s.hasTrigger);
+/** ⚠️ Дараалал нь 3-р алхмын дараалалтай ИЖИЛ (угаалгын өрөө нь 2 өрөөт
+ *  орон сууцад БАЙХГҮЙ тул ХАМГИЙН СҮҮЛД — эс бөгөөс урагш гүйлгээд
+ *  буцаж чадахгүй ✗) ✓ */
+const MKEYS = ['buildYear', 'totalFloors', 'floor', 'balconies', 'bathrooms'];
+const mState = [];
+for (const k of MKEYS) {
+  const reached = await detailTo(k);
+  mState.push({ k, reached, s: await field(k), vis: (await detailState()).visible });
+}
+const mPresent = mState.filter((x) => x.reached && x.vis.length === 1 && x.vis[0] === x.k);
 /** ⚠️ Яг аль талбар харагдах нь зарын төрлөөс хамаарна (ж: он/тагт зөвхөн
- *  «Орон сууц» дээр) — тиймээс ЗААВАЛ 5 БИШ, ХАМГИЙН БАГАДАА 4 ✓ */
-ok('📱 бүх тоон талбар ДУГУЙтай: угаалгын өрөө · он · нийт давхар · давхар · тагт',
-  mPresent.length >= 4 && mPresent.every((s) => s.trigVisible && s.hasInput && !s.inputVisible),
-  `present=${mPresent.length} ${MKEYS.map((k, i) => `${k}:${mState[i].hasTrigger}`).join(' ')}`);
+ *  «Орон сууц» дээр, угаалгын өрөө 3+ өрөөтэй үед) — тиймээс ЗААВАЛ 5
+ *  БИШ, ХАМГИЙН БАГАДАА 4 ✓ */
+ok('📱 тоон талбар бүр ӨӨРИЙН дэлгэц дээр: ДУГУЙ товч ХАРАГДАЖ, гар бичилт НУУГДСАН',
+  mPresent.length >= 4 && mPresent.every((x) => x.s.trigVisible && x.s.hasInput && !x.s.inputVisible),
+  `${mPresent.length}/${MKEYS.length} ${mState.map((x) => `${x.k}:${x.reached ? `vis=${x.vis.join('|')}` : 'дэлгэц байхгүй'}`).join(' · ')}`);
+await detailTo('totalFloors');
 
 // ────────────────────────────────────────────────────────────
 console.log('\n── ③ 🎡 ДУГУЙ НЭЭГДЭХ + МӨРҮҮД («—» + 1…26, iOS Timer бүтэц) ──');
@@ -276,6 +392,8 @@ console.log('\n── ⑦ «Байрны давхар»: НИЙТ ДАВХРАА
 await click('[data-choice-trigger="totalFloors"]');
 await click('[data-wheel-value="9"]');
 await click('[data-wheel-done]');
+/** 📱 3-р алхам «нэг дэлгэцэд нэг талбар» — «Байрны давхар» нь ӨӨРИЙН дэлгэцтэй ✓ */
+ok('📱 «Байрны давхар» дэлгэц рүү гүйлгэв', await detailTo('floor'));
 await click('[data-choice-trigger="floor"]');
 const wf = await wheel();
 ok('нийт давхар 9 болоход давхрын жагсаалт = «—» + 1…9 (10 мөр ✓)',
@@ -288,6 +406,8 @@ await click('[data-wheel-done]');
 
 // ────────────────────────────────────────────────────────────
 console.log('\n── ⑧ ОН (1980…2026): «—» + БУУРАХ эрэмбэ ──');
+/** 📱 3-р алхам «нэг дэлгэцэд нэг талбар» — «Ашиглалтанд орсон он» ӨӨРИЙН дэлгэцтэй ✓ */
+ok('📱 «Ашиглалтанд орсон он» дэлгэц рүү гүйлгэв', await detailTo('buildYear'));
 await click('[data-choice-trigger="buildYear"]');
 const wy = await wheel();
 ok('мөр 48 = «—» + 1980…2026 (хоёр хязгаар ОРНО ✓)', wy.rows === 48, String(wy.rows));

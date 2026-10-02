@@ -64,7 +64,9 @@
  *   ⑨ 🆕 **3-Р АЛХАМ (📋 Дэлгэрэнгүй) — ТАЛБАРУУД ЦУВАА = 1 БАГАНА**
  *      (2026-10-01, 5 дахь засвар): мөр бүр `.form-row-single` +
  *      `[data-form-row="details"]` → grid track **ЯГ 1**, хүүхдүүд ИЖИЛ x-т
- *      (зэрэг БИШ), талбар бүр мөрийнхөө БҮТЭН өргөнийг эзэлнэ; 📱 390px дээр ч ✓
+ *      (зэрэг БИШ), талбар бүр мөрийнхөө БҮТЭН өргөнийг эзэлнэ
+ *      ⚠️ 2026-10-02: 📱 390px дээр 3-р алхам «АСУУЛТ БҮР НЭГ ДЭЛГЭЦ» болов
+ *      (⓫′ доор) ⇒ мобайлд харагдах мөр нь **ЯГ 1** (бусдыг CSS нууна ✓)
  *   ⑨′ 🆕 **3-Р АЛХАМ: НЭР нь ОРОЛТЫН ЗҮҮН талд (хэвтээ) — ТОМ ДЭЛГЭЦ (1440px)**
  *      (2026-10-01, 6 дахь засвар, хэрэглэгчийн хүсэлт: «Дэлгэрэнгүй мэдээлэл
  *      оруулах нэрнүүдийг дээр нь биш, зүүн талд нь гаргаад өгөөч»): `.form-group`
@@ -76,6 +78,8 @@
  *      640px-ээс ДООШ нэр нь оролтын ДЭЭР, оролт нь мөрийнхөө БҮТЭН өргөнийг
  *      эзэлнэ ✓ — ① ИЖИЛ x (зэрэгцэхгүй) ② нэр оролтын дээд ирмэгээс ДЭЭШ
  *      ③ оролт бүтэн өргөн (`globals.css` → `@media (min-width: 640px)`)
+ *      ⚠️ 2026-10-02: хэмжилт нь `width > 0` шүүлттэй (харагдах талбар **ЯГ 1** —
+ *      бусдыг «нэг дэлгэцэд нэг талбар» дүрэм нуудаг ✓)
  *      ⚠️ (6 дахь засварын «мобайлд ч нэр зүүн талд» шийдэл ЭСРЭГЭЭРЭЭ БОЛОВ)
  *   ⑩ 🆕 **АВТО ФОРМ — 🔧 «Хөдөлгүүр» СОНГОЛТ + 🎨 «Өнгө» нэмэгдэж, 🔀 «Хөтлөгч»
  *      ХАСАГДАВ** (2026-10-01, хэрэглэгчийн хүсэлт; 3-р алхмын DOM-оос уншина):
@@ -104,6 +108,21 @@
  *      мессеж харуулна (өмнө нь ТАЛБАРГҮЙ хоосон «Дэлгэрэнгүй» хуудас гардаг
  *      байв ✗ — хэрэглэгчийн гомдол: «зарын дэлгэрэнгүй асуух хэсэг байхгүй
  *      болсон») (**23 шалгалт**)
+ *   ⑪′ 🆕 **📱 3-Р АЛХАМ (📋 Дэлгэрэнгүй): «АСУУЛТ БҮР НЭГ ДЭЛГЭЦ»** —
+ *      2026-10-02, хэрэглэгчийн хүсэлт: «зарын гарчиг, талбай, угаалгын өрөө,
+ *      ашиглалтанд орсон он … бүгдийг нь нэг нэгээр нь харуул» ⇒ мобайлд
+ *      дэлгэц бүрд НЭГ талбар (`[data-detail-field]`), толгойд ← товч +
+ *      асуулт + «n/N» явц (`[data-mobile-detail-head]` → `data-mobile-detail-key`):
+ *      ① эхний дэлгэц «Зарын гарчиг», харагдах талбар ЯГ 1 ② мөр бүр
+ *      `data-mobile-active`-тай, ЯГ 1 нь идэвхтэй ③ дэлгэц бүрд «Үргэлжлүүлэх»
+ *      ЯГ 1 (дэлгэц ↔ алхам ДАВХАРДАХГҮЙ) ④ заавал талбарт «Алгасах»
+ *      ХАРАГДАХГҮЙ ⑤ гарчиг ХООСОН → урагш ЯВАХГҮЙ + `validateStep`-тэй ИЖИЛ
+ *      мессеж ⑥ дараалал: гарчиг → талбай → он → нийт давхар → давхар → тагт
+ *      → гараж («Өрөө» БАЙХГҮЙ — 1-р алхмын drill-down-д асуусан ✓)
+ *      ⑦ сүүлийн дэлгэцэд wizard-ийн товч ХААГДАЖ, алхмын «Үргэлжлүүлэх» л
+ *      үлдэнэ (+ «← Буцах» мобайлд ХАРАГДАХГҮЙ — толгойн ← л буцаана)
+ *      ⑧ толгойн ← өмнөх дэлгэц рүү, оруулсан утга ХАДГАЛАГДАНА
+ *      ⇒ **14 шалгалт** (`scripts/test-detail-wizard.mjs` — статик ГЭРЭЭ)
  *
  * ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
  *   1) сервер http://localhost:3000 (`npm run dev` эсвэл `npm run build && npm run start`)
@@ -512,10 +531,15 @@ await wait(600);
  *    нуугдсан мөрийг ХАСНА) ② PROBE нь харагдахгүй хүүхдүүдийг хасдаг (дээр)
  *    — эс бөгөөс `display:none` талбарын 0×0 хэмжилт `stacked`-ыг БУРУУ
  *    унагана ✗ (энэ нь АЛДАА БИШ — мөр харагдахгүй байна)
+ * 📱 2026-10-02 (хэрэглэгчийн хүсэлт «нэг нэгээр нь харуулаад яв»):
+ *    3-р алхам «АСУУЛТ БҮР НЭГ ДЭЛГЭЦ» болов ⇒ 390px дээр зөвхөн ОДООНЫ
+ *    талбарын мөр харагдана (`[data-mobile-active="false"]` = `display:none`,
+ *    globals.css) — тиймээс харагдах мөр ЯГ 1 (эхний дэлгэц = «Зарын гарчиг») ✓
+ *    ⇒ `>= 3` БИШ, `=== 1` (мобайлд бүх талбар ЦУВСАН байх ёсгүй ✓)
  */
 const drM = ((await probe()).detailsRows || []).filter((r) => r.rowW > 0);
-ok('📱 390px (мобайл) дээр Ч ЦУВАА = 1 БАГАНА (regression үгүй ✓)',
-  drM.length >= 3 && drM.every((r) => r.cols === 1 && r.stacked),
+ok('📱 390px: «НЭГ ДЭЛГЭЦЭД НЭГ ТАЛБАР» — харагдах мөр ЯГ 1 (бусдыг CSS нуув ✓)',
+  drM.length === 1 && drM[0].cols === 1 && drM[0].stacked,
   JSON.stringify(drM.map((r) => ({ cols: r.cols, stacked: r.stacked }))));
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1400, deviceScaleFactor: 1, mobile: false });
 await wait(600);
@@ -572,6 +596,7 @@ ok('3-Р АЛХАМ: НЭР ба ОРОЛТ НЭГ мөрөнд (нэрийн т
  * ⚠️ Энэ template literal дотор backtick / долларын буржгар хаалт БИЧИХГҮЙ
  */
 const DETAILS_STACK_MOBILE = `(() => [...document.querySelectorAll('[data-form-row="details"] > .form-group')]
+  .filter((g) => g.getBoundingClientRect().width > 0)
   .map((g) => {
     const lab = g.querySelector('label');
     const ctrl = g.querySelector('input, select, textarea, div');
@@ -588,14 +613,16 @@ const DETAILS_STACK_MOBILE = `(() => [...document.querySelectorAll('[data-form-r
 await rpc('Emulation.setDeviceMetricsOverride', { width: 390, height: 1400, deviceScaleFactor: 1, mobile: false });
 await wait(600);
 const dtcM = await evaluate(DETAILS_STACK_MOBILE);
+ok('📱 390px (мобайл): харагдах талбар ЯГ 1 («нэг дэлгэцэд нэг талбар» ✓ — PROBE нь 0 өргөнтэйг хасна)',
+  dtcM.length === 1, JSON.stringify(dtcM.map((r) => r.label)));
 ok('📱 390px (мобайл): НЭГ НЭГЭЭРЭЭ — нэр ба оролт ИЖИЛ x-т (зэрэгцэхгүй ✓)',
-  dtcM.length >= 3 && dtcM.every((r) => r.sameX),
+  dtcM.length >= 1 && dtcM.every((r) => r.sameX),
   JSON.stringify(dtcM.map((r) => ({ l: r.label, sameX: r.sameX }))));
 ok('📱 390px (мобайл): нэр нь оролтын ДЭЭР (цуваа байрлал ✓)',
-  dtcM.length >= 3 && dtcM.every((r) => r.above),
+  dtcM.length >= 1 && dtcM.every((r) => r.above),
   JSON.stringify(dtcM.map((r) => ({ l: r.label, above: r.above }))));
 ok('📱 390px (мобайл): оролт мөрийнхөө БҮТЭН өргөнийг эзэлнэ (бүтэн өргөн ✓)',
-  dtcM.length >= 3 && dtcM.every((r) => r.full),
+  dtcM.length >= 1 && dtcM.every((r) => r.full),
   JSON.stringify(dtcM.map((r) => ({ l: r.label, full: r.full }))));
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1400, deviceScaleFactor: 1, mobile: false });
 await wait(600);
@@ -699,10 +726,144 @@ ok('📱 3-р алхамд «Өрөө» талбар ХАРАГДАХГҮЙ (dri
   mb7.stepLabel.trim() === 'Дэлгэрэнгүй' && JSON.stringify(mb7.roomRow) === '[0]',
   JSON.stringify({ step: mb7.stepLabel, roomRow: mb7.roomRow }));
 
+// ── ⑪′ 🆕 2026-10-02 — 3-Р АЛХАМ (📋 Дэлгэрэнгүй): «АСУУЛТ БҮР НЭГ ДЭЛГЭЦ» ──
+/**
+ * 🎯 Хэрэглэгчийн хүсэлт: «зарын гарчиг, талбай, угаалгын өрөө, ашиглалтанд
+ *    орсон он … бүгдийг нь нэг нэгээр нь харуул» — өмнө нь 390px дээр 3-р
+ *    алхмын БҮХ талбар цувж харагддаг байв ✗ ⇒ одоо ДЭЛГЭЦ БҮРД НЭГ талбар
+ *    (`[data-detail-field]`), толгойд ← товч + асуулт + «n/N» явц
+ *    (`[data-mobile-detail-head]`, `data-mobile-detail-key`) ✓
+ * ⚠️ Нэг л DOM — талбарыг ХОЁР ДАХИН рендэрлэхгүй (CDP-ийн `[data-detail-field]`
+ *    тоо тогтвортой, `form`/DB/`validateStep` хөндөгдөхгүй) ✓
+ * ⚠️ Заавал талбар (гарчиг) ХООСОН бол урагш явахгүй — `validateStep`-тэй
+ *    ИЖИЛ мессеж («Зарын гарчигаа оруулна уу») ✓
+ * ⚠️ СҮҮЛИЙН дэлгэцэд wizard-ийн товч ХААГДАЖ, алхмын «Үргэлжлүүлэх» л үлдэнэ
+ *    (дэлгэц ↔ алхам ДАВХАРДАХГҮЙ: аль ч дэлгэцэд ЯГ 1 «Үргэлжлүүлэх» ✓)
+ * ⚠️ Энэ template literal дотор backtick / долларын буржгар хаалт БИЧИХГҮЙ
+ */
+const DETAIL_WIZ_PROBE = `(() => {
+  const head = document.querySelector('[data-mobile-detail-head]');
+  const vis = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+  const fields = [...document.querySelectorAll('[data-detail-field]')];
+  const nav = document.querySelector('[data-mobile-detail-nav]');
+  const btns = [...document.querySelectorAll('form button')];
+  return {
+    head: !!head && vis(head),
+    key: head ? (head.dataset.mobileDetailKey || '') : '',
+    title: head ? ((head.querySelector('h2') || {}).innerText || '').trim() : '',
+    progress: head ? ((head.querySelector('span') || {}).innerText || '').trim() : '',
+    back: !!(head && head.querySelector('[data-mobile-detail-back]')),
+    fields: fields.length,
+    visible: fields.filter(vis).map((f) => f.dataset.detailField),
+    navVisible: nav ? vis(nav) : false,
+    navHasNext: !!(nav && nav.querySelector('[data-mobile-detail-next]')),
+    navHasSkip: !!(nav && nav.querySelector('[data-mobile-detail-skip]')),
+    skipVisible: nav ? [...nav.querySelectorAll('[data-mobile-detail-skip]')].some(vis) : false,
+    nextBtns: btns.filter((b) => (b.innerText || '').includes('Үргэлжлүүлэх')).filter(vis).length,
+    backBtns: btns.filter((b) => (b.innerText || '').includes('Буцах')).filter(vis).length,
+    rows: [...document.querySelectorAll('[data-detail-row]')].map((r) => (r.dataset.detailRow || '') + '=' + (r.dataset.mobileActive || '')),
+    titleValue: ((document.querySelector('[data-detail-field="title"] input') || {}).value || ''),
+    error: ((document.querySelector('form .bg-red-50') || {}).innerText || '').trim(),
+  };
+})()`;
+const wprobe = () => evaluate(DETAIL_WIZ_PROBE);
+/** 🪜 Wizard-ийн «Үргэлжлүүлэх» (`mobileDetailNext`) */
+const wnext = async () => {
+  const r = await evaluate(`(() => { const b = document.querySelector('[data-mobile-detail-next]'); if (!b) return 'NOT_FOUND'; b.click(); return 'OK'; })()`);
+  await wait(500);
+  return r;
+};
+/** ↩️ Толгойн ← (`mobileDetailBack`) */
+const wback = async () => {
+  const r = await evaluate(`(() => { const b = document.querySelector('[data-mobile-detail-back]'); if (!b) return 'NOT_FOUND'; b.click(); return 'OK'; })()`);
+  await wait(500);
+  return r;
+};
+/** ⌨️ React-ийн controlled input-д БОДИТ бичилт (native setter + `input` ✓) */
+const wtype = async (sel, v) => {
+  const r = await evaluate(`(() => {
+    const el = document.querySelector(${JSON.stringify(sel)});
+    if (!el) return 'NOT_FOUND';
+    const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    set.call(el, ${JSON.stringify(v)});
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    return 'OK';
+  })()`);
+  await wait(500);
+  return r;
+};
+
+const w0 = await wprobe();
+ok('📱 3-р алхам: толгой (← · асуулт · «n/N» явц) мобайлд гарч ирэв',
+  w0.head && w0.title === 'Зарын гарчиг' && w0.back && /^\d+\/\d+$/.test(w0.progress),
+  JSON.stringify({ head: w0.head, title: w0.title, back: w0.back, progress: w0.progress }));
+ok('📱 «НЭГ ДЭЛГЭЦЭД НЭГ ТАЛБАР»: харагдах `[data-detail-field]` = ЯГ 1 (гарчиг) — бусдыг CSS нуув ✓',
+  w0.fields >= 5 && JSON.stringify(w0.visible) === '["title"]',
+  `fields=${w0.fields} visible=${JSON.stringify(w0.visible)}`);
+ok('📱 мөр бүр `data-mobile-active`-тай ба ЯГ 1 нь идэвхтэй (CSS-ийн НЭГ эх сурвалж ✓)',
+  w0.rows.length >= 6 && w0.rows.filter((r) => r.endsWith('=true')).length === 1
+    && w0.rows.every((r) => r.endsWith('=true') || r.endsWith('=false')),
+  JSON.stringify(w0.rows));
+ok('📱 ДЭЛГЭЦ БҮРД «Үргэлжлүүлэх» ЯГ 1 ХАРАГДАНА (дэлгэц ↔ алхам давхардахгүй ✓)',
+  w0.nextBtns === 1 && w0.navVisible && w0.navHasNext,
+  `visible=${w0.nextBtns} nav=${w0.navVisible} navNext=${w0.navHasNext}`);
+ok('📱 заавал талбар («Гарчиг») дээр «Алгасах» ХАРАГДАХГҮЙ (хоосон үлдээж болохгүй ✓)',
+  w0.navHasSkip && w0.skipVisible === false, `DOM=${w0.navHasSkip} visible=${w0.skipVisible}`);
+
+// 🛡️ Заавал талбарын ХААЛТ — гарчиг ХООСОН үед урагш ЯВАХГҮЙ
+await wnext();
+const wGate = await wprobe();
+ok('🛡️ гарчиг ХООСОН үед урагш ЯВАХГҮЙ + «Зарын гарчигаа оруулна уу» мессеж',
+  wGate.key === 'title' && wGate.error === 'Зарын гарчигаа оруулна уу',
+  `${wGate.key} / ${JSON.stringify(wGate.error)}`);
+ok('⌨️ «Зарын гарчиг»-т бичив', (await wtype('[data-detail-field="title"] input', '2 өрөө байр, Баянгол')) === 'OK');
+await wnext();
+const w1s = await wprobe();
+ok('📱 «Үргэлжлүүлэх» дараагийн ТАЛБАР руу шилжүүлэв («2/7» = талбай — алхам руу БИШ ✓)',
+  w1s.key === 'area' && JSON.stringify(w1s.visible) === '["area"]' && w1s.progress === '2/7',
+  JSON.stringify({ key: w1s.key, visible: w1s.visible, progress: w1s.progress }));
+
+// 🚶 БҮХ дэлгэцээр алхаж, дэлгэц бүрд «ЯГ 1 талбар + ЯГ 1 Үргэлжлүүлэх» гэдгийг батлана
+const wWalk = [];
+const wBad = [];
+let wCur = await wprobe();
+wWalk.push(wCur.key);
+/** ⚠️ Хамгийн ихдээ 12 (хязгааргүй давталт ✗) · `navVisible=false` = 🏁 сүүлийн дэлгэц */
+for (let i = 0; i < 12; i += 1) {
+  if (!wCur.navVisible) break;
+  await wnext();
+  wCur = await wprobe();
+  wWalk.push(wCur.key);
+  if (JSON.stringify(wCur.visible) !== JSON.stringify([wCur.key])) wBad.push(`${wCur.key}:vis=${wCur.visible.join('|')}`);
+  if (wCur.nextBtns !== 1) wBad.push(`${wCur.key}:btns=${wCur.nextBtns}`);
+}
+ok('📱 дэлгэцүүд ДАРААЛААР: гарчиг → талбай → он → нийт давхар → давхар → тагт → гараж («Өрөө» БАЙХГҮЙ ✓)',
+  JSON.stringify(wWalk) === '["title","area","buildYear","totalFloors","floor","balconies","garage"]',
+  JSON.stringify(wWalk));
+ok('📱 ДЭЛГЭЦ БҮР дээр ЯГ 1 талбар + ЯГ 1 «Үргэлжлүүлэх» (хоосон/давхар дэлгэц БАЙХГҮЙ ✓)',
+  wBad.length === 0, wBad.join(' · '));
+ok('🏁 СҮҮЛИЙН дэлгэц («Гараж»): wizard-ийн товч ХААГДАЖ, алхмын «Үргэлжлүүлэх» л үлдэв',
+  wCur.key === 'garage' && wCur.navVisible === false && wCur.navHasNext === true
+    && JSON.stringify(wCur.visible) === '["garage"]' && wCur.nextBtns === 1,
+  JSON.stringify({ key: wCur.key, nav: wCur.navVisible, vis: wCur.visible, btns: wCur.nextBtns }));
+ok('📱 «Гараж» дэлгэцэд алхмын «← Буцах» ХАРАГДАХГҮЙ (толгойн ← л буцаана ✓)',
+  wCur.backBtns === 0, `backBtns=${wCur.backBtns}`);
+
+// ↩️ Толгойн ← — ӨМНӨХ дэлгэц рүү (утга ХАДГАЛАГДАНА ✓)
+await wback();
+const w2b = await wprobe();
+ok('📱 толгойн ← нь ӨМНӨХ дэлгэц рүү буцаана (гараж → тагт ✓)',
+  w2b.key === 'balconies' && JSON.stringify(w2b.visible) === '["balconies"]',
+  JSON.stringify({ key: w2b.key, visible: w2b.visible }));
+ok('📱 буцаж явахад оруулсан утга ХАДГАЛАГДАНА (гарчиг input-д хэвээр ✓)',
+  w2b.titleValue === '2 өрөө байр, Баянгол', JSON.stringify(w2b.titleValue));
+
+// ── 🖥 1440px: мобайл блок БҮРЭН ХААГДАЖ, ХУУЧИН байдал ХЭВЭЭР (regression үгүй) ──
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1400, deviceScaleFactor: 1, mobile: false });
 await gotoStepUrl(1);
 await wait(1200);
 const mb8 = await mprobe();
+
 ok('🖥 1440px: мобайл блок ХАРАГДАХГҮЙ + 3 БАГАНАТ харагдац ХЭВЭЭР ✓',
   mb8.visible === false && mb8.colsVisible === true && mb8.desktopVisible === true,
   JSON.stringify({ mobile: mb8.visible, colsVisible: mb8.colsVisible, desktop: mb8.desktopVisible }));
