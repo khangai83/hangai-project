@@ -143,13 +143,38 @@ async function main() {
   console.log(`   НИЙТ                ${' '.repeat(7)}      ${fmtBytes(dbBytes).padStart(10)}`);
 
   const storage = await bucketUsage();
-  console.log(`\n🖼  Storage «${BUCKET}»: ${storage.files} файл, ${fmtBytes(storage.bytes)}`);
+  console.log(`\n🖼  Supabase Storage «${BUCKET}»: ${storage.files} файл, ${fmtBytes(storage.bytes)}`);
   if (storage.files === 0) {
     console.log('   (Демо зарууд нь Storage биш `public/uploads/*.svg` ашигладаг тул хоосон байна)');
   }
 
+  // ☁️ Cloudflare R2 (2026-10-02) — тохируулсан бол ГҮЙЦЭТ хэмжээг тэндээс авна
+  let imgFiles = storage.files;
+  let imgBytes = storage.bytes;
+  try {
+    const r2 = await import('../lib/r2.mjs');
+    if (r2.isR2Configured()) {
+      const cfg = r2.r2Config();
+      const objs = await r2.listR2Keys('', 1000);
+      imgFiles = objs.length;
+      imgBytes = objs.reduce((s, o) => s + o.size, 0);
+      console.log(`\n☁️  Cloudflare R2 «${cfg.bucket}»: ${imgFiles} объект, ${fmtBytes(imgBytes)}`);
+      for (const b of ['listing-images', 'avatars']) {
+        const list = objs.filter((o) => o.key.startsWith(`${b}/`));
+        console.log(
+          `   ${b.padEnd(15)} ${String(list.length).padStart(5)} объект  ${fmtBytes(list.reduce((s, o) => s + o.size, 0))}`
+        );
+      }
+      console.log(`   Нийтийн домэйн: ${cfg.publicBase || '(тохируулаагүй!)'}`);
+    } else {
+      console.log('\n☁️  Cloudflare R2 тохируулаагүй — зураг Supabase Storage-д хадгалагдана (docs/R2_SETUP.md)');
+    }
+  } catch (e) {
+    console.log(`\n☁️  R2-ийн хэмжээг уншиж чадсангүй: ${e.message}`);
+  }
+
   const avgListing = tables.listings.bytes / Math.max(1, tables.listings.count);
-  const avgImg = storage.files ? storage.bytes / storage.files : 250 * 1024;
+  const avgImg = imgFiles ? imgBytes / imgFiles : 250 * 1024;
 
   console.log('\n📐 Багтаамжийн тооцоо (нэг зар дунджаар 3.5 зураг гэж үзэв):');
   for (const p of Object.values(PLANS)) {
@@ -162,6 +187,8 @@ async function main() {
   }
 
   console.log('\nℹ️  Бодит хязгаар нь ихэвчлэн STORAGE ба EGRESS (трафик):');
+  console.log('   • ☁️ Cloudflare R2 руу шилжсэн бол: 10 GB storage ба EGRESS ҮНЭГҮЙ');
+  console.log('     (дээрх план хүснэгт нь Supabase-ийн лимит — DB-д л хамаарна) ✓');
   console.log('   • Нүүр хуудас нэг ачаалахад 50 зар (~58 KB — хуудаслалт 2026-09-27-нд');
   console.log('     нэмэгдсэнээс хойш) → Free-ийн 5 GB/сар нь ~86,000 хуудас үзэлт.');
   console.log('     Гол зарцуулалт нь ЗУРГИЙН трафик (Storage-аас татагдана) ✓');

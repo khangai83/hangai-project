@@ -139,6 +139,8 @@ function listeningPorts() {
   // ---------- 4. .env.local ----------
   const envPath = path.join(ROOT, '.env.local');
   const needed = ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'VERIFY_MN_API_KEY'];
+  // ☁️ R2 (сонголттой) — байхгүй бол зураг Supabase Storage руу хадгалагдана
+  const r2Keys = ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET', 'R2_PUBLIC_BASE'];
   if (!fs.existsSync(envPath)) {
     row('❌', '.env.local байхгүй', '→ cp .env.local.example .env.local  (дараа нь утгуудыг бөглөнө)');
     problems += 1;
@@ -152,6 +154,17 @@ function listeningPorts() {
       row('⚠️ ', `.env.local-д дутуу/хоосон: ${empty.join(', ')}`);
     } else {
       row('✅', '.env.local — 4 хувьсагч бүгд бөглөгдсөн');
+    }
+    // Cloudflare R2 (зургийн сан) — эзгүй бол ⚠️ (алдаа БИШ: нөөц зам байна)
+    const r2Empty = r2Keys.filter((k) => {
+      const m = envText.match(new RegExp(`^${k}=(.*)$`, 'm'));
+      return !m || !m[1].trim() || /your_|TANII_/i.test(m[1]);
+    });
+    if (r2Empty.length) {
+      row('⚠️ ', `Cloudflare R2 тохируулагдаагүй (${r2Empty.length}/5 дутуу)`,
+        '→ Зураг Supabase Storage руу хадгалагдана (ажиллана ✓). R2 руу шилжих: docs/R2_SETUP.md');
+    } else {
+      row('✅', 'Cloudflare R2 зураг хадгалах сан тохируулсан', '→ npm run check:r2');
     }
   }
 

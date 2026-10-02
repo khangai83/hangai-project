@@ -14,6 +14,9 @@
     "test:verify": "node scripts/test-verify-mn.js",
     "test:activity": "node scripts/test-activity.mjs",
     "test:format": "node scripts/test-format.mjs",
+    "test:storage": "node scripts/test-storage.mjs",
+    "check:r2": "node scripts/check-r2.mjs",
+    "storage:migrate": "node scripts/migrate-storage-to-r2.mjs",
     "test:phone": "node scripts/test-phone.mjs",
     "test:filters": "node scripts/test-filters.mjs",
     "test:search": "node scripts/test-search.mjs",
@@ -43,6 +46,8 @@
     "normalize:condition": "node scripts/normalize-condition.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1145.0",
+    "@aws-sdk/s3-request-presigner": "^3.1145.0",
     "@supabase/supabase-js": "^2.114.0",
     "leaflet": "^1.9.4",
     "next": "^15.5.25",

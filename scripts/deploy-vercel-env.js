@@ -28,6 +28,9 @@ const ENV_KEYS = [
   'SUPABASE_SERVICE_ROLE_KEY',
   'VERIFY_MN_API_KEY',
 ];
+// ☁️ Cloudflare R2 — СОНГОЛТТОЙ (2026-10-02). Байхгүй бол зураг нь
+//    Supabase Storage руу хадгалагдана (нөөц зам) тул deploy-ыг зогсоохгүй ✓
+const OPTIONAL_ENV_KEYS = ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET', 'R2_PUBLIC_BASE'];
 const TARGETS = ['production', 'preview', 'development'];
 
 // ---- .env.local унших ----
@@ -110,7 +113,16 @@ async function api(pathname, options = {}) {
   console.log(`   Одоо байгаа env: ${[...existingByKey.keys()].join(', ') || '(хоосон)'}\n`);
 
   // ---------- 3. Env тус бүрийг үүсгэх / шинэчлэх ----------
-  for (const key of ENV_KEYS) {
+  //    ⚠️ R2 (сонголттой) нь ЗӨВХӨН бүрэн бөглөгдсөн үед тавигдана ✓
+  const presentOptional = OPTIONAL_ENV_KEYS.filter((k) => env[k] && !/your_|TANII_/i.test(env[k]));
+  if (presentOptional.length && presentOptional.length < OPTIONAL_ENV_KEYS.length) {
+    const missingR2 = OPTIONAL_ENV_KEYS.filter((k) => !presentOptional.includes(k));
+    console.log(`   ⚠️  R2 дутуу (${missingR2.join(', ')}) → R2-ийн 5 утгыг бүрэн бөглөх хүртэл тавихгүй\n`);
+  } else if (presentOptional.length) {
+    console.log('   ☁️ R2 env (5) хамт тавигдана\n');
+  }
+
+  for (const key of [...ENV_KEYS, ...presentOptional]) {
     const value = env[key];
     const found = existingByKey.get(key);
 
