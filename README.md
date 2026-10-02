@@ -3017,6 +3017,10 @@ cp .env.local.example .env.local
 - ☁️ **Cloudflare R2** — зураг хадгалах сан (2026-10-02): `R2_ACCOUNT_ID`,
   `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_BASE`
   → **бүрэн заавар: [`docs/R2_SETUP.md`](docs/R2_SETUP.md)** · шалгах: `npm run check:r2`
+  ℹ️ **S3 API endpoint, `region` — ХИЙХ ШААРДЛАГАГҮЙ:** `R2_ACCOUNT_ID`-аас
+  автоматаар `https://<ACCOUNT_ID>.r2.cloudflarestorage.com` + `region: auto`
+  болно (`lib/r2.mjs`; Cloudflare → bucket → Settings → S3 API дээр харагдана).
+  Зөвхөн EU jurisdiction bucket үед `R2_ENDPOINT`-оор дарж бичиж болно (сонголтоор)
   ⚠️ **Эдгээрийг тохируулаагүй ч сайт БҮРЭН ажиллана** — зураг нь хуучин
   Supabase Storage руу автоматаар хадгалагдана (нөөц зам) ✓
 

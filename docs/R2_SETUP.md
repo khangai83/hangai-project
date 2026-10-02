@@ -65,6 +65,24 @@ Browser                      Манай Next.js API            Cloudflare R2
 | Secret Access Key | `R2_SECRET_ACCESS_KEY` |
 | (Account ID — R2-ийн баруун дээд буланд) | `R2_ACCOUNT_ID` |
 
+### ℹ️ «S3 API endpoint» хаана бөглөх вэ? → **ХААНА Ч БИШ, хэрэггүй** ✓
+
+`endpoint` нь `R2_ACCOUNT_ID`-аас **автоматаар** үүснэ
+(`lib/r2.mjs → r2Config()`):
+
+```
+https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com
+```
+
+- Харахыг хүсвэл: **Cloudflare → R2 → `zar-media` (bucket) → Settings → S3 API**
+  → *S3 endpoint* — яг энэ хаяг байна (Account ID нь тухайн хуудасны URL болон
+  R2-ийн баруун дээд буланд харагдана).
+- Шалгах: `npm run check:r2` нь `bucket: … endpoint: … (R2_ACCOUNT_ID-аас автоматаар)`
+  гэж хэвлэнэ ✓
+- `region` нь үргэлж `auto` (R2-ийн шаардлага) — мөн бөглөхгүй.
+- Зөвхөн **EU jurisdiction** bucket эсвэл S3-нийцтэй прокси ашиглаж байгаа үед л
+  `R2_ENDPOINT`-оор дарж бичнэ (сонголтоор): `https://<ACCOUNT_ID>.eu.r2.cloudflarestorage.com`
+
 ---
 
 ## 3. Нийтийн домэйн (зургийг browser-т үзүүлэх)

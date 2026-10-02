@@ -66,7 +66,10 @@ async function main() {
   }
 
   const cfg = r2Config();
-  console.log(`   bucket: ${cfg.bucket}   endpoint: ${cfg.endpoint}`);
+  // ℹ️ S3 API endpoint нь `R2_ACCOUNT_ID`-аас автоматаар үүснэ (бөглөх
+  //    шаардлагагүй) — зөвхөн `R2_ENDPOINT` өгсөн бол тэр нь давамгайлна
+  const endpointSrc = (process.env.R2_ENDPOINT || '').trim() ? 'R2_ENDPOINT-оос' : 'R2_ACCOUNT_ID-аас автоматаар';
+  console.log(`   bucket: ${cfg.bucket}   endpoint: ${cfg.endpoint}  (${endpointSrc})`);
   console.log(`   нийтийн домэйн: ${cfg.publicBase || '(тохируулаагүй!)'}\n`);
 
   // 1) S3 API + bucket

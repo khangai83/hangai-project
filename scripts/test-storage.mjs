@@ -402,7 +402,7 @@ const R2_ENV_SAMPLE = {
   R2_BUCKET: 'zar-media',
   R2_PUBLIC_BASE: 'https://img.zarlaa.mn',
 };
-const R2_ENV_ALL = [...Object.keys(R2_ENV_SAMPLE), 'NEXT_PUBLIC_R2_PUBLIC_BASE'];
+const R2_ENV_ALL = [...Object.keys(R2_ENV_SAMPLE), 'NEXT_PUBLIC_R2_PUBLIC_BASE', 'R2_ENDPOINT'];
 // ⚠️ Тусдаа (цэвэр) module instance — `lib/r2.mjs` нь `.env.local`-ыг нэг удаа
 //    уншдаг тул БОДИТ .env.local-ыг (хэрэглэгч бөглөсөн байж болно) уншвал тест
 //    тогтворгүй болно ✗ ⇒ `process.chdir(tmpdir)`-ээр уншилтыг таслана ✓
@@ -456,6 +456,33 @@ t('isR2UploadReady: домэйн нь NEXT_PUBLIC_R2_PUBLIC_BASE-аар өгсө
   withR2Env({ ...four, NEXT_PUBLIC_R2_PUBLIC_BASE: 'https://pub-abc123.r2.dev' }, () => {
     assert.equal(r2lib.isR2UploadReady(), true);
     assert.equal(r2lib.publicUrlFor('avatars/u/a.jpg'), 'https://pub-abc123.r2.dev/avatars/u/a.jpg');
+  });
+});
+
+// ---------- 🌐 S3 API ENDPOINT — `.env.local`-д БӨГЛӨХ ШААРДЛАГАГҮЙ ----------
+// ⚠️ ЯАГААД: `region: auto` + `endpoint` нь `R2_ACCOUNT_ID`-аас автоматаар
+//    бүрддэг (`https://<ACCOUNT_ID>.r2.cloudflarestorage.com`) — хэрэглэгч
+//    «S3 API endpoint хаана бөглөх вэ?» гэж төөрөхөөс сэргийлж тестээр
+//    баталгаажуулна ✓ (bucket → Settings → S3 API дээр яг энэ хаяг харагдана)
+t('R2 endpoint: R2_ACCOUNT_ID-аас АВТОМАТААР үүснэ (бөглөх шаардлагагүй)', () => {
+  withR2Env(R2_ENV_SAMPLE, () => {
+    const cfg = r2lib.r2Config();
+    assert.equal(cfg.endpoint, 'https://acc123.r2.cloudflarestorage.com');
+    assert.equal(cfg.region, 'auto', 'region нь үргэлж auto (R2-ийн шаардлага)');
+  });
+});
+
+t('R2 endpoint: R2_ENDPOINT (сонголтоор) дарж бичнэ — ж: EU jurisdiction bucket', () => {
+  withR2Env({ ...R2_ENV_SAMPLE, R2_ENDPOINT: 'https://acc123.eu.r2.cloudflarestorage.com' }, () => {
+    assert.equal(r2lib.r2Config().endpoint, 'https://acc123.eu.r2.cloudflarestorage.com');
+    assert.equal(r2lib.isR2UploadReady(), true, 'R2_ENDPOINT нь ЗААВАЛ биш — upload-д саад болохгүй ✓');
+    assert.deepEqual(r2lib.missingR2Env(), [], 'R2_ENDPOINT нь заавал биш тул missing гэж тооцогдохгүй ✓');
+  });
+});
+
+t('R2 endpoint: R2_ENDPOINT хоосон/зайтай бичигдсэн ч автомат утга хэвээр', () => {
+  withR2Env({ ...R2_ENV_SAMPLE, R2_ENDPOINT: '   ' }, () => {
+    assert.equal(r2lib.r2Config().endpoint, 'https://acc123.r2.cloudflarestorage.com');
   });
 });
 
