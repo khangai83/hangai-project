@@ -174,6 +174,15 @@ async function main() {
       cols: 'section,attrs',
       file: '0016_listing_sections.sql',
     },
+    {
+      // ⚠️ 0027: «Зарын гарчиг» (`listings.title`) — багана байхгүй бол
+      //    `createListing()` нь алдааг барьж, `title`-гүйгээр ДАХИН хадгална
+      //    (сайт эвдрэхгүй, зөвхөн гарчиг хадгалагдахгүй) — тиймээс
+      //    чимээгүй үлдэхгүйн тулд ЭНД тусдаа шалгана ✓
+      label: '0027 — зарын гарчиг (title)',
+      cols: 'title',
+      file: '0027_listing_title.sql',
+    },
   ];
 
   for (const c of detailChecks) {
