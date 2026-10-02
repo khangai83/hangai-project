@@ -3021,6 +3021,10 @@ cp .env.local.example .env.local
   автоматаар `https://<ACCOUNT_ID>.r2.cloudflarestorage.com` + `region: auto`
   болно (`lib/r2.mjs`; Cloudflare → bucket → Settings → S3 API дээр харагдана).
   Зөвхөн EU jurisdiction bucket үед `R2_ENDPOINT`-оор дарж бичиж болно (сонголтоор)
+  📍 **`R2_PUBLIC_BASE`-ыг хаанаас авах вэ:** Cloudflare → Storage & databases →
+  R2 → `<bucket>` → **Settings** → «Public Development URL» (Enable → `allow`, зөвхөн
+  туршилт) эсвэл «Custom Domains» (production: `img.zarlaa.mn`) — дэлгэрэнгүй
+  [`docs/R2_SETUP.md`](docs/R2_SETUP.md) §3 ✓
   ⚠️ **Эдгээрийг тохируулаагүй ч сайт БҮРЭН ажиллана** — зураг нь хуучин
   Supabase Storage руу автоматаар хадгалагдана (нөөц зам) ✓
 

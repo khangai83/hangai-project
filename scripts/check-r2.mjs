@@ -97,7 +97,12 @@ async function main() {
   // 3) Нийтийн домэйн
   if (!cfg.publicBase) {
     report(false, 'R2_PUBLIC_BASE тохируулаагүй',
-      'Зургийн URL угсрах боломжгүй. Cloudflare → R2 → Settings → Public access (custom domain эсвэл r2.dev)');
+      'Зургийн URL угсрах боломжгүй → утгыг Cloudflare-оос авна:\n' +
+      `     Cloudflare → Storage & databases → R2 → ${cfg.bucket} → **Settings**\n` +
+      '     · ТУРШИЛТАД: «Public Development URL» → Enable → `allow` гэж бичээд Allow\n' +
+      `       → «Public Bucket URL» (жишээ: https://pub-1a2b3c.r2.dev)\n` +
+      '     · PRODUCTION: «Custom Domains» → Add → жишээ: img.zarlaa.mn (Cloudflare DNS өөрөө нэмнэ)\n' +
+      '     Дараа нь .env.local → R2_PUBLIC_BASE=<тэр хаяг>  (⚠️ төгсгөлд нь / БИШ)');
   } else {
     if (/r2\.dev/i.test(cfg.publicBase)) {
       report(null, 'R2_PUBLIC_BASE нь r2.dev (зөвхөн ТУРШИЛТАД)',
@@ -124,8 +129,12 @@ async function main() {
     report(true, 'CORS: PUT зөвшөөрөгдсөн (browser-ээс шууд upload боломжтой)', `access-control-allow-origin: ${cors.allow}`);
   } else if (cors.ok === false) {
     report(false, 'CORS тохиргоо ДУТУУ — browser-ээс upload ХИЙГДЭХГҮЙ ✗',
-      'Cloudflare → R2 → bucket → Settings → CORS Policy: AllowedOrigins (localhost:3000 + production домэйн), ' +
-      'AllowedMethods: PUT, GET, HEAD, AllowedHeaders: content-type. Дэлгэрэнгүй: docs/R2_SETUP.md');
+      'Presigned PUT нь гарын үсэгтэй ч browser CORS-гүй бол ХҮСЭЛТ ЯВУУЛАХГҮЙ ✗\n' +
+      `     Cloudflare → Storage & databases → R2 → ${cfg.bucket} → **Settings** → «CORS Policy»\n` +
+      '     → Add → JSON-оо буулгаад Save (AllowedOrigins: http://localhost:3000 + production\n' +
+      '     домэйн — scheme://host:port ЗӨВХӨН, зам БИШ; AllowedMethods: PUT, GET, HEAD;\n' +
+      '     AllowedHeaders: content-type). ⚠️ Хадгалсны дараа 30 секунд хүлээгээд дахин ажиллуулна\n' +
+      '     (жишээ JSON: docs/R2_SETUP.md §4)');
   } else {
     report(null, 'CORS-ыг шалгаж чадсангүй', cors.error);
   }

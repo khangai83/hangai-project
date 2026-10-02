@@ -38,23 +38,30 @@ Browser                      Манай Next.js API            Cloudflare R2
 
 ## 1. Bucket үүсгэх (2 минут)
 
-1. <https://dash.cloudflare.com> → **R2 Object Storage** → *Create bucket*
-2. Нэр: `zar-media` (эсвэл өөрийн нэр) → Location: *Automatic* → **Create**
+1. <https://dash.cloudflare.com> → **Storage & databases** → **R2** → *Create bucket*
+2. Нэр: `my-zar` (юу ч байж болно — ⚠️ `R2_BUCKET`-д **ЯГ ТЭР НЭРИЙГ** бичнэ)
+   → Location: *Automatic* → **Create**
 
 > Нэг bucket дотор хоёр фолдер байна: `listing-images/…`, `avatars/…`
 > (Supabase-ийн хоёр bucket-ыг нэг дор нэгтгэсэн — хямд, энгийн).
+>
+> ℹ️ Dashboard дээр фолдер үүсгэвэл `zar-media/` гэх мэт **0 B объект** үлддэг
+> (аль хэдийн `my-zar` дотор нэг байна) — зүгээр л фолдерын тэмдэглэгээ, сандарч
+> болохгүй; хэрэггүй бол *Objects* → `…` → Delete ✓ (манай код `listing-images/`,
+> `avatars/` гэсэн фолдеруудыг АВТОМАТААР үүсгэдэг — гараар үүсгэх шаардлагагүй).
 
 ---
 
 ## 2. API token (2 минут)
 
 **R2 → API → Manage API tokens → Create API token**
+(Cloudflare-ийн шинэ UI: **Storage & databases → R2 → API** хэсэг)
 
 | Талбар | Утга |
 |---|---|
 | Token name | `zarlaa-web` |
 | Permissions | **Object Read & Write** |
-| Specify bucket | `zar-media` (зөвхөн энэ bucket) |
+| Specify bucket | `my-zar` (зөвхөн энэ bucket) |
 
 Үүсгэсний дараа гарч ирэх утгуудыг хуулна (⚠️ **жагсаалтыг дахин харах
 боломжгүй** — тэр даруй `.env.local`-д хийгээрэй):
@@ -85,24 +92,39 @@ https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com
 
 ---
 
-## 3. Нийтийн домэйн (зургийг browser-т үзүүлэх)
+## 3. Нийтийн домэйн (`R2_PUBLIC_BASE`) — хэрхэн авах вэ
 
-**Bucket → Settings → Public access**
+**Cloudflare → Storage & databases → R2 → `<bucket>` → Settings** — доош гүйлгээд
+**Public Development URL** ба **Custom Domains** хоёр хэсэг байна:
 
-| Сонголт | Хэзээ |
-|---|---|
-| ✅ **Custom domain** (санал болгож байна) — жишээ `img.zarlaa.mn` | Production. Cloudflare cache + DDoS хамгаалалт бүрэн ажиллана |
-| ⚠️ **r2.dev subdomain** (`pub-xxxx.r2.dev`) | Зөвхөн ТУРШИЛТАД — хурдны хязгаартай |
+| | Зам (дарж очно) | Үр дүн | Хэзээ |
+|---|---|---|---|
+| ⚠️ **r2.dev** | *Public Development URL* → **Enable** → цонхонд `allow` гэж бичээд **Allow** | `Public Bucket URL` = `https://pub-1a2b3c.r2.dev` | Зөвхөн ТУРШИЛТАД (хурдны хязгаартай, WAF/cache ажиллахгүй) |
+| ✅ **Custom domain** | *Custom Domains* → **Add**/**Connect Domain** → ж: `img.zarlaa.mn` | `img.zarlaa.mn` (Cloudflare DNS бичлэгийг өөрөө нэмнэ) | **Production (санал болгож байна)** |
 
-`R2_PUBLIC_BASE` = `https://img.zarlaa.mn` (төгсгөлд нь `/` **БИШ**).
-Custom domain ашиглавал DNS дэх `img` бичлэг нь Cloudflare-ийн өгсөн
-target руу зааж байх ёстой (Cloudflare өөрөө нэмж өгдөг ✓).
+- Асаасны дараа «**Public URL Access: Allowed**» гэж харагдана ✓
+- ⚠️ `r2.dev` рүү CNAME бичлэг хийхийг Cloudflare **дэмждэггүй** — production-д
+  өөрийн домэйн заавал холбоно.
+- ⚠️ **Зам/төгсгөлийн `/`-г ХАСАЖ бичнэ:** зөв нь `https://img.zarlaa.mn`,
+  буруу нь `https://img.zarlaa.mn/` ✗
+- Дараа нь `.env.local` → `R2_PUBLIC_BASE=<тэр хаяг>` ба **`npm run check:r2`**
+  (энэ нь домэйныг HEAD хүсэлтээр БОДИТООР шалгана: `404 = ✅ зөв хариулж байна`,
+  `403 = ❌ bucket нь public биш`) ✓
+- ℹ️ `R2_PUBLIC_BASE` нь зөвхөн **уншиж харуулах** URL угсарна
+  (`<R2_PUBLIC_BASE>/<түлхүүр>`); S3 API-д НӨЛӨӨЛӨХГҮЙ.
 
 ---
 
 ## 4. CORS (ЗААВАЛ — эс бөгөөс browser-ээс upload ХИЙГДЭХГҮЙ ✗)
 
-**Bucket → Settings → CORS Policy → Add**
+**Bucket → Settings → CORS Policy → Add** (дарж очно: Cloudflare → Storage &
+databases → R2 → `<bucket>` → **Settings** → «CORS Policy» → **Add**) — JSON-оо
+буулгаад **Save**.
+
+⚠️ Presigned PUT нь гарын үсгээр баталгаажсан ч **browser CORS-гүй бол хүсэлт
+явуулахгүй** (Cloudflare-ийн docs: «you still need to configure CORS when making
+requests from a browser») ✗
+⚠️ Хадгалсны дараа дүрэм тархахад **30 секунд хүртэл** хугацаа орж болно.
 
 ```json
 [
@@ -123,6 +145,10 @@ target руу зааж байх ёстой (Cloudflare өөрөө нэмж өг�
 
 > ⚠️ `AllowedMethods`-д **PUT** заавал байх ёстой (presigned PUT-ийг browser
 > шууд хийдэг). `AllowedHeaders`-д **content-type** заавал (гарын үсэгт орсон).
+> ⚠️ `AllowedOrigins` нь **`scheme://host[:port]` ЗӨВХӨН** — зам (`/`) БИШ,
+> төгсгөлийн `/` БИШ. Wildcard нь хамгийн ихдээ **нэг** `*` (`https://*.zarlaa.mn`
+> → `a.zarlaa.mn`, `a.b.zarlaa.mn` ✓, харин `zarlaa.mn` ✗). localhost-ийн порт
+> бүрийг ТУС ТУСД нь жагсаана (`:3000`, `:5173`).
 
 ---
 
@@ -132,8 +158,11 @@ target руу зааж байх ёстой (Cloudflare өөрөө нэмж өг�
 R2_ACCOUNT_ID=xxxxxxxxxxxxxxxxxxxxxxxx
 R2_ACCESS_KEY_ID=xxxxxxxxxxxxxxxxxxxxxxxx
 R2_SECRET_ACCESS_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-R2_BUCKET=zar-media
+R2_BUCKET=my-zar
+#          ↑ ЯГ Cloudflare дээрх bucket-ийн нэр (мөрөн доторх зай/шинэ мөр БИШ)
 R2_PUBLIC_BASE=https://img.zarlaa.mn
+#          ↑ §3-ын дагуу авна: Settings → Public Development URL (r2.dev, туршилт)
+#            эсвэл Custom Domains (img.zarlaa.mn, production) — төгсгөлд нь `/` БИШ ✓
 ```
 
 > ⚠️ **5-ыг нь БҮРЭН бөглөнө.** `R2_PUBLIC_BASE` (нийтийн домэйн) дутуу бол upload
