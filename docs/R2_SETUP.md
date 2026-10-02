@@ -90,6 +90,22 @@ https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com
 - Зөвхөн **EU jurisdiction** bucket эсвэл S3-нийцтэй прокси ашиглаж байгаа үед л
   `R2_ENDPOINT`-оор дарж бичнэ (сонголтоор): `https://<ACCOUNT_ID>.eu.r2.cloudflarestorage.com`
 
+### 🔎 «Тэгэхээр S3 API огт ашиглагдахгүй юм уу?» → ҮГҮЙ, БҮХ үйлдэл үүгээр явдаг ✓
+
+| Хэрэглээ | `lib/r2.mjs` функц | S3 команд |
+|---|---|---|
+| `POST /api/storage/presign` | `presignPut()` | `GetSignedUrl(PutObject)` → browser шууд PUT |
+| `POST /api/storage/delete` | `deleteR2Keys()` | `DeleteObjects` |
+| `npm run storage:migrate` | `putObject()` | `PutObject` |
+| `npm run check:r2` | `headBucket()` · `listR2Keys()` | `HeadBucket` · `ListObjectsV2` |
+
+Эдгээр нь БҮГД нэг `S3Client` → `cfg.endpoint` (автомат) руу явдаг.
+
+> ⚠️ «S3 API» бол R2-ийн **үйлчилгээ (протокол)** — дашбоардын Settings дээрх
+> «S3 API» хэсэг нь **зөвхөн мэдээлэл** (endpoint + token удирдах холбоос).
+> Тэнд **асаах/тохируулах/бөглөх зүйл БАЙХГҮЙ** ✓ (энэ нь автоматаар үргэлж
+> идэвхтэй, зөвхөн token-оор хандана).
+
 ---
 
 ## 3. Нийтийн домэйн (`R2_PUBLIC_BASE`) — хэрхэн авах вэ
