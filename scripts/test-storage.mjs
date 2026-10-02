@@ -321,6 +321,24 @@ await ta('putToR2: 403 үед CORS-ыг сануулсан монгол алда
   );
 });
 
+await ta('putToR2: CORS-гүй (fetch өөрөө шидэх) → ойлгомжтой монгол мессеж + заавар', async () => {
+  // ⚠️ Бодит browser дээр CORS тохируулаагүй үед ЯГ ИНГЭЖ БОЛДОГ: preflight
+  //    (OPTIONS) уначихдаг тул fetch нь response-ГҮЙГЭЭР шиддэг. Ийм үед
+  //    хуучнаар хэрэглэгч зөвхөн «Failed to fetch» хардаг байсан ✗
+  globalThis.fetch = async () => {
+    throw new TypeError('Failed to fetch');
+  };
+  await assert.rejects(
+    () => putToR2({ uploadUrl: 'https://x/y', contentType: 'image/jpeg' }, {}),
+    (err) =>
+      /CORS/.test(err.message) &&
+      /R2_SETUP/.test(err.message) &&
+      /npm run check:r2/.test(err.message) &&
+      /Failed to fetch/.test(err.message) &&
+      err.cause instanceof Error
+  );
+});
+
 await ta('requestPresignedUploads: сессгүй → NO_SESSION (fetch ХИЙГДЭХГҮЙ)', async () => {
   mockFetch(() => jsonRes(200, { ok: true, files: [] }));
   const res = await requestPresignedUploads(fakeSb(null), 'listing-images', [{ name: 'a.jpg', type: 'image/jpeg', size: 1 }]);
