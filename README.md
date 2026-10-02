@@ -3481,6 +3481,18 @@ npm run storage:migrate -- --apply          # ✅ хуучин зургууды�
 npm run report:usage                        # R2 ба Supabase-ийн хэмжээг харна
 ```
 
+ℹ️ **Одоогийн байдал (2026-10-02, шалгаж батлав):** **шинэ** зураг R2 руу ✓
+(LIVE сайтаас e2e: presign 200 → PUT 200 → нийтийн URL 200); **хуучин 25 файл**
+(20 `listing-images` + 5 `avatars`, DB-д 18 URL + 1 avatar) **Supabase дээрээ
+үлдсэн — санаатай (hybrid)**. Хуучин URL-ууд хэвийн ачаалагдана ✓ ба устгалт
+`splitStorageUrls()`-ээр хоёр замаар явдаг ✓ Шилжүүлэхийг хүсвэл дээрх
+`storage:migrate -- --apply`-г ажиллуулахад л хангалттай.
+
+> ⚠️ CORS-ыг dashboard-аас гадна **S3 API-аар** (`PutBucketCors`) ч бичиж болно —
+> ⚠️ энэ нь дүрмүүдийг БҮХЭЛД НЬ дарж бичнэ; бодит тохиолдол ба жишээ код:
+> [`docs/R2_SETUP.md`](docs/R2_SETUP.md) §4 (төгсгөлийн `/` нь production-ыг
+> хэрхэн эвдсэн тухай).
+
 → Алхам алхмын заавар: **[`docs/R2_SETUP.md`](docs/R2_SETUP.md)**
 
 **⚠️ Буцаах боломжтой (rollback):** `R2_*` утгуудыг түр хасаж dev server-ээ

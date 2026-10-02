@@ -189,6 +189,44 @@ R2_CORS_ORIGIN=https://a.mn,https://b.mn npm run check:r2     # ⚠️ `*` ба�
 > болохгүй** — localhost-ийн порт бүрийг ТУС ТУСД нь жагсаана.
 > ⚠️ Дүрэм **хар** байсан ч тархахад 30 секунд хүртэл хугацаа орж болно.
 
+### 🛠 Dashboard-гүйгээр: CORS-ыг S3 API-аар бичих (2026-10-02-нд БАТАЛСАН ✓)
+
+R2 нь **`PutBucketCors` / `GetBucketCors` / `DeleteBucketCors`-ыг S3 API-аар
+дэмждэг** → `.env.local`-ийн S3 түлхүүрээр CORS-ыг **кодоос** тохируулж болно
+(dashboard шаардлагагүй):
+
+```js
+import { PutBucketCorsCommand, GetBucketCorsCommand } from '@aws-sdk/client-s3';
+import { r2Client, r2Config } from './lib/r2.mjs';
+
+await r2Client().send(new PutBucketCorsCommand({
+  Bucket: r2Config().bucket,
+  CORSConfiguration: { CORSRules: [{
+    AllowedOrigins: ['http://localhost:3000', 'https://hangai-project.vercel.app', 'https://zarlaa.mn', 'https://www.zarlaa.mn'],
+    AllowedMethods: ['PUT', 'GET', 'HEAD'],
+    AllowedHeaders: ['content-type'],
+    ExposeHeaders: ['etag'],
+    MaxAgeSeconds: 3600,
+  }] },
+}));
+// Одоогийнхыг харах: await r2Client().send(new GetBucketCorsCommand({ Bucket: r2Config().bucket }))
+```
+
+⚠️ `PutBucketCors` нь дүрмүүдийг **БҮХЭЛД НЬ ДАРЖ БИЧНЭ** — хуучин домэйнуудаа
+жагсаалтад оруулахаа мартуузай ✗ (эс бөгөөс тэдгээрээс upload зогсоно).
+
+### 🐛 БОДИТ тохиолдол (2026-10-02): төгсгөлийн `/` production-ыг эвдсэн
+
+Cloudflare-д `https://hangai-project.vercel.app/` (⚠️ **`/`-ТЭЙ**) бичигдсэн байв →
+preflight нь **`HTTP 403`**, `access-control-allow-origin` **БАЙХГҮЙ** ✗. Vercel дээр
+R2 env 5/5 байсан тул `presign` **200 · `backend: r2`** болж, PUT-ыг browser
+блоклосон ⇒ **LIVE сайт дээр зураг оруулах ЭВДЭРХИЙ** байв. ⚠️ Анхаар: Supabase руу
+буцах нөөц зам нь **ЗӨВХӨН `R2_NOT_CONFIGURED` (503) үед** ажилладаг тул энэ
+тохиолдолд ТУСЛАХГҮЙ ✗. `/`-ийг хасаж дээрх `PutBucketCors`-оор дахин бичсэний дараа
+3 домэйн **БҮГД ✅** болов (`npm run check:r2 -- --origin …`).
+Бодит e2e баталгаа: presign **200** → PUT → R2 **200** (`ACAO` зөв) → `publicUrl` GET
+**200** (хэмжээ/`content-type` зөв) ✓
+
 ---
 
 ## 5. `.env.local` (5 мөр)
@@ -251,6 +289,15 @@ npm run storage:migrate -- --apply         # ✅ хуулж, DB-ийн URL со�
 | `--force` | R2 дээр байсан ч дарж бичнэ (анхдагч: алгасна) |
 | `--limit N` | Bucket тус бүрээс эхний N объектыг л (туршилт) |
 | `--bucket avatars` | Зөвхөн нэг bucket |
+
+> ℹ️ **Шилжүүлэхгүй байх нь ч БҮРЭН хүчинтэй** (2026-10-02-ны шийдвэр — hybrid горим):
+> хуучин файлууд Supabase-д, шинэ нь R2-д үлдэж, **хоёул нийтийн URL-тай** тул зэрэг
+> ажиллана ✓ (шалгав: хуучин `…/storage/v1/object/public/listing-images/…jpg` →
+> **HTTP 200 · 372 KB · image/jpeg**). Устгах логик нь
+> `lib/storageClient.mjs → splitStorageUrls()`-ээр **хоёр хэлбэрийг ЯЛГАЖ, хоёр
+> замаар** устгадаг тул зар устгахад асуудал гарахгүй ✓ Ганц анхаарах зүйл:
+> Supabase-ийн **1 GB / 5 GB сарын** хязгаарт хуучин файлууд хэвээр тооцогдоно
+> (`npm run report:usage`). Хүссэн үедээ дээрх `--apply`-г ажиллуулахад л хангалттай.
 
 > ⚠️ **Дараа нь:** Supabase Storage-ийн хэмжээ 0 болсноо `npm run report:usage`-аар
 > шалгана. Нарийн тохиолдол: R2 руу бүрэн хуулагдаагүй бол `--apply`-г **дахин**
