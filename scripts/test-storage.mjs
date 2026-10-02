@@ -52,6 +52,9 @@ const {
   isLegacyStorageUrl,
   legacyStoragePath,
   publicStorageUrl,
+  publicBaseOf,
+  rebaseStorageUrl,
+  rebaseStorageUrls,
 } = await import(`${KEYS_SRC}?t=${Date.now()}`);
 const { splitStorageUrls } = await import(`${path.join(here, '..', 'lib', 'storageClient.mjs')}?t=${Date.now()}`);
 const {
@@ -210,6 +213,62 @@ t('publicStorageUrl: base-ийн төгсгөлийн `/` давхарлахгү
   assert.equal(publicStorageUrl(R2_BASE, `listing-images/${UID}/a.jpg`), `${R2_BASE}/listing-images/${UID}/a.jpg`);
   assert.equal(publicStorageUrl(`${R2_BASE}/`, `/listing-images/${UID}/a.jpg`), `${R2_BASE}/listing-images/${UID}/a.jpg`);
   assert.equal(publicStorageUrl('', 'k'), '/k');
+});
+
+// ---- R2 нийтийн домэйн СОЛИХ (r2.dev → img.zarlaa.mn) ----
+// ⚠️ `R2_PUBLIC_BASE`-ыг сольсны дараа DB-д ХУУЧИН домэйн бичигдсэн үлдвэл
+//    (r2.dev-ийг унтраавал) тэр зураг НУРНА ✗ — `npm run storage:rebase`
+//    яг энэ хоёр функц дээр тулгуурлана ✓
+const R2DEV = 'https://pub-493f295c1111222233334444.r2.dev';
+
+t('publicBaseOf: URL-ийн нийтийн домэйныг ЗӨВ салгана', () => {
+  assert.equal(publicBaseOf(`${R2DEV}/listing-images/${UID}/a.jpg`), R2DEV);
+  assert.equal(publicBaseOf(`${R2_BASE}/avatars/${UID}/a.png?v=2`), R2_BASE);
+  assert.equal(publicBaseOf('https://youtube.com/watch?v=1'), null);
+  assert.equal(publicBaseOf(''), null);
+  assert.equal(publicBaseOf(null), null);
+});
+
+t('rebaseStorageUrl: хуучин домэйн → шинэ (түлхүүр ЯГ хэвээр)', () => {
+  const old = `${R2DEV}/listing-images/${UID}/a.jpg`;
+  assert.equal(rebaseStorageUrl(old, R2DEV, R2_BASE), `${R2_BASE}/listing-images/${UID}/a.jpg`);
+  // base-ийн төгсгөлийн `/` нөлөөлөхгүй (хоёр талд ч)
+  assert.equal(rebaseStorageUrl(old, `${R2DEV}/`, `${R2_BASE}/`), `${R2_BASE}/listing-images/${UID}/a.jpg`);
+  assert.equal(storageKeyFromUrl(rebaseStorageUrl(old, R2DEV, R2_BASE)), storageKeyFromUrl(old), 'түлхүүр өөрчлөгдвөл устгалт тасарна ✗');
+  assert.equal(rebaseStorageUrl(`${R2DEV}/avatars/${UID}/a.png?x=1`, R2DEV, R2_BASE), `${R2_BASE}/avatars/${UID}/a.png?x=1`);
+});
+
+t('rebaseStorageUrl: Supabase-ийн ХУУЧИН URL-ыг хөндөхгүй (hybrid горим ✓)', () => {
+  const legacy = `${SUPABASE}/storage/v1/object/public/listing-images/${UID}/a.jpg`;
+  assert.equal(rebaseStorageUrl(legacy, R2DEV, R2_BASE), legacy);
+  // ⚠️ uri биш ч гэсэн `from`-д тохирохгүй бүхэн хэвээр
+  assert.equal(rebaseStorageUrl(`${R2_BASE}/listing-images/${UID}/a.jpg`, R2DEV, R2_BASE), `${R2_BASE}/listing-images/${UID}/a.jpg`);
+});
+
+t('rebaseStorageUrl: танихгүй утга/base дутуу → ЯГ эх утга (демо, youtube)', () => {
+  for (const v of [
+    'https://images.unsplash.com/photo-123.jpg',   // демо placeholder
+    'https://youtube.com/watch?v=1',
+    '/demo/placeholders/1.jpg',
+    '',
+    null,
+    undefined,
+  ]) {
+    assert.equal(rebaseStorageUrl(v, R2DEV, R2_BASE), v);
+  }
+  const r2 = `${R2DEV}/listing-images/${UID}/a.jpg`;
+  assert.equal(rebaseStorageUrl(r2, '', R2_BASE), r2, 'from хоосон → бичихгүй (санамсаргүй бөглөхөөс сэргийлнэ)');
+  assert.equal(rebaseStorageUrl(r2, R2DEV, ''), r2, 'to хоосон → бичихгүй');
+  assert.equal(rebaseStorageUrl(r2, R2DEV, R2DEV), r2, 'from === to → хөндөхгүй');
+});
+
+t('rebaseStorageUrls: массив буцаана, эх массив ХӨНДӨГДӨХГҮЙ', () => {
+  const input = [`${R2DEV}/listing-images/${UID}/1.jpg`, 'https://youtube.com/watch?v=1', `${R2DEV}/listing-images/${UID}/2.jpg`];
+  const copy = [...input];
+  const out = rebaseStorageUrls(input, R2DEV, R2_BASE);
+  assert.deepEqual(input, copy, 'эх массив өөрчлөгдсөн ✗');
+  assert.deepEqual(out, [`${R2_BASE}/listing-images/${UID}/1.jpg`, 'https://youtube.com/watch?v=1', `${R2_BASE}/listing-images/${UID}/2.jpg`]);
+  assert.deepEqual(rebaseStorageUrls(null, R2DEV, R2_BASE), [], 'массив биш → хоосон');
 });
 
 t('🔁 ROUND-TRIP: buildStorageKey → publicStorageUrl → storageKeyFromUrl (яг ижил)', () => {

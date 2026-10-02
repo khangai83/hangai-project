@@ -17,6 +17,7 @@
     "test:storage": "node scripts/test-storage.mjs",
     "check:r2": "node scripts/check-r2.mjs",
     "storage:migrate": "node scripts/migrate-storage-to-r2.mjs",
+    "storage:rebase": "node scripts/rebase-storage-urls.mjs",
     "test:phone": "node scripts/test-phone.mjs",
     "test:filters": "node scripts/test-filters.mjs",
     "test:search": "node scripts/test-search.mjs",

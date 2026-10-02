@@ -129,6 +129,35 @@ https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com
 - ℹ️ `R2_PUBLIC_BASE` нь зөвхөн **уншиж харуулах** URL угсарна
   (`<R2_PUBLIC_BASE>/<түлхүүр>`); S3 API-д НӨЛӨӨЛӨХГҮЙ.
 
+### 🔁 Домэйныг сольсны ДАРАА: `npm run storage:rebase` (⚠️ ЗААВАЛ)
+
+Зургийн URL нь DB-д **бичигдэж хадгалагддаг** (`listings.images[]`,
+`profiles.avatar_url`) тул `R2_PUBLIC_BASE`-ыг сольсон тэр мөчөөс **хуучин
+бичигдсэн URL-ууд хуучин домэйн дээрээ үлддэг** ✗ → `r2.dev`-ийг унтраавал
+(`R2_PUBLIC_BASE = r2.dev` байхад солиход) **тэр зурагнууд нурна**.
+
+```bash
+npm run storage:rebase                         # 🔍 DRY-RUN — ямар домэйн, хэдэн URL вэ
+npm run storage:rebase -- --apply               # ✅ бүх R2 URL-ыг R2_PUBLIC_BASE рүү шинэчилнэ
+npm run storage:rebase -- --apply --from https://pub-1a2b3c.r2.dev
+npm run storage:rebase -- --apply --to https://img.zarlaa.mn   # R2_PUBLIC_BASE-ыг орхиж заана
+```
+
+| Флаг | Утга |
+|---|---|
+| `--apply` | Бичнэ (анхдагч нь DRY-RUN — юу ч бичихгүй ✓) |
+| `--from <домэйн>` | Зөвхөн ТЭР домэйны URL-уудыг солино (анхдагч: олдсон БҮХ R2 URL) |
+| `--to <домэйн>` | Шинэ домэйн (анхдагч: `R2_PUBLIC_BASE`) |
+
+- ⚠️ **Файл, түлхүүр ХӨНДӨГДӨХГҮЙ** — зөвхөн DB-ийн URL-ийн угтвар солигдоно
+  (R2/Supabase дээрх объект хэвээр ✓); буцаах боломжтой:
+  `--from <шинэ> --to <хуучин> --apply`
+- ✅ **Supabase-ийн хуучин URL-ууд хөндөгдөхгүй** (hybrid горим хэвээр) · youtube
+  холбоос, демо placeholder зэрэг storage-ийн бүтэцгүй утга ч хэвээр ✓
+- 🔁 Дахин ажиллуулбал «Хуучин домэйнтой URL олдсонгүй» гэж хэлнэ (idempotent ✓)
+- 📌 **Хамгийн тохиромжтой мөч:** DB-д R2 URL бага байх үед (одоо 0) — тиймээс
+  custom domain-ыг **аль болох эрт** холбох нь дээр.
+
 ---
 
 ## 4. CORS (ЗААВАЛ — эс бөгөөс browser-ээс upload ХИЙГДЭХГҮЙ ✗)
@@ -329,6 +358,7 @@ npm run storage:migrate -- --apply         # ✅ хуулж, DB-ийн URL со�
 | `lib/queries.js` | `uploadImages()` / `uploadAvatar()` — R2 (үндсэн) + Supabase (нөөц) |
 | `scripts/check-r2.mjs` | `npm run check:r2` |
 | `scripts/migrate-storage-to-r2.mjs` | `npm run storage:migrate` |
+| `scripts/rebase-storage-urls.mjs` | `npm run storage:rebase` — нийтийн домэйн солигдоход DB-ийн URL-уудыг шинэчилнэ (§3) |
 
 > ℹ️ **Нөөц зам:** `R2_*` тохируулаагүй бол `/api/storage/presign` нь 503
 > `R2_NOT_CONFIGURED` буцааж, client нь хуучин Supabase Storage руу автоматаар
