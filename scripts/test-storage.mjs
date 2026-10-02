@@ -16,6 +16,7 @@
 // АЖИЛЛУУЛАХ:  npm run test:storage
 // ============================================================
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
@@ -385,6 +386,77 @@ await ta('deleteR2StorageKeys: хоосон жагсаалт → fetch ХИЙГ�
   const res = await deleteR2StorageKeys(fakeSb('tok'), []);
   assert.deepEqual(res, { removed: 0, skipped: 0 });
   assert.equal(fetchCalls.length, 0);
+});
+
+// ---------- 🔒 2026-10-02 — R2 UPLOAD «БЭЛЭН» ЭСЭХ (`R2_PUBLIC_BASE`-ийн ХОГ URL) ----------
+// ⚠️ ЯАГААД ЧУХАЛ ВЭ: `r2Config()` нь `R2_PUBLIC_BASE`-ийг ШААРДАДГГҮЙ (устгах/
+//    list-д хэрэггүй). Гэтэл 5 утгын 4-ийг л бөглөсөн хэрэглэгч upload хийхэд
+//    `publicUrlFor()` нь «https://R2_PUBLIC_BASE-тохируулаагүй/<key>» гэсэн ХОГ
+//    URL-ыг DB-д (`listings.images[]`, `profiles.avatar_url`) бичнэ ⇒ зураг
+//    ХЭЗЭЭ Ч харагдахгүй ✗  ⇒ `isR2UploadReady()` ийм үед `false` байж,
+//    `POST /api/storage/presign` нь 503 → BROWSER хуучин Supabase зам руу буцна ✓
+const R2_ENV_SAMPLE = {
+  R2_ACCOUNT_ID: 'acc123',
+  R2_ACCESS_KEY_ID: 'AKIAEXAMPLE',
+  R2_SECRET_ACCESS_KEY: 's3cr3t',
+  R2_BUCKET: 'zar-media',
+  R2_PUBLIC_BASE: 'https://img.zarlaa.mn',
+};
+const R2_ENV_ALL = [...Object.keys(R2_ENV_SAMPLE), 'NEXT_PUBLIC_R2_PUBLIC_BASE'];
+// ⚠️ Тусдаа (цэвэр) module instance — `lib/r2.mjs` нь `.env.local`-ыг нэг удаа
+//    уншдаг тул БОДИТ .env.local-ыг (хэрэглэгч бөглөсөн байж болно) уншвал тест
+//    тогтворгүй болно ✗ ⇒ `process.chdir(tmpdir)`-ээр уншилтыг таслана ✓
+const r2lib = await import(`${path.join(here, '..', 'lib', 'r2.mjs')}?t=${Date.now()}`);
+const savedEnv = { ...process.env };
+const cwdAtStart = process.cwd();
+function withR2Env(patch, fn) {
+  try {
+    process.chdir(os.tmpdir()); // .env.local олдохгүй → env нь ЗӨВХӨН доорхи patch
+    for (const k of R2_ENV_ALL) delete process.env[k];
+    Object.assign(process.env, patch);
+    fn();
+  } finally {
+    process.chdir(cwdAtStart);
+    for (const k of Object.keys(process.env)) if (!(k in savedEnv)) delete process.env[k];
+    Object.assign(process.env, savedEnv);
+  }
+}
+
+t('isR2UploadReady: R2_PUBLIC_BASE-ГҮЙ (5-ын 4) → FALSE ⚠️ (config нь true хэвээр)', () => {
+  const { R2_PUBLIC_BASE, ...four } = R2_ENV_SAMPLE;
+  withR2Env(four, () => {
+    assert.equal(r2lib.isR2Configured(), true, 'r2Config() нь publicBase-гүй ч true (устгах/list-д хэрэгтэй)');
+    assert.equal(r2lib.isR2UploadReady(), false, '⚠️ upload нь publicBase-гүй бол FALSE байх ЁСТОЙ');
+    assert.equal(
+      r2lib.publicUrlFor('listing-images/u/a.jpg'),
+      'https://R2_PUBLIC_BASE-тохируулаагүй/listing-images/u/a.jpg',
+      '→ ийм ХОГ URL DB-д бичигдэхээс `isR2UploadReady()` хамгаална'
+    );
+  });
+});
+
+t('isR2UploadReady: бүтэн 5 утгатай → true (эерэг зам)', () => {
+  withR2Env(R2_ENV_SAMPLE, () => {
+    assert.equal(r2lib.isR2UploadReady(), true);
+    assert.deepEqual(r2lib.missingR2Env(), []);
+    assert.equal(r2lib.publicUrlFor('avatars/u/a.jpg'), 'https://img.zarlaa.mn/avatars/u/a.jpg');
+  });
+});
+
+t('isR2UploadReady: огт тохируулаагүй → false + missingR2Env = 5 (нөөц зам: Supabase)', () => {
+  withR2Env({}, () => {
+    assert.equal(r2lib.isR2Configured(), false);
+    assert.equal(r2lib.isR2UploadReady(), false);
+    assert.deepEqual(r2lib.missingR2Env(), r2lib.R2_ENV_KEYS);
+  });
+});
+
+t('isR2UploadReady: домэйн нь NEXT_PUBLIC_R2_PUBLIC_BASE-аар өгсөн ч true', () => {
+  const { R2_PUBLIC_BASE, ...four } = R2_ENV_SAMPLE;
+  withR2Env({ ...four, NEXT_PUBLIC_R2_PUBLIC_BASE: 'https://pub-abc123.r2.dev' }, () => {
+    assert.equal(r2lib.isR2UploadReady(), true);
+    assert.equal(r2lib.publicUrlFor('avatars/u/a.jpg'), 'https://pub-abc123.r2.dev/avatars/u/a.jpg');
+  });
 });
 
 globalThis.fetch = realFetch;

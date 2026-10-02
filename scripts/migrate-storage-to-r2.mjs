@@ -61,6 +61,15 @@ function die(msg) {
 
 if (!SUPABASE_URL || !SERVICE_KEY) die('NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY дутуу (.env.local).');
 if (!CFG) die('R2 тохиргоо дутуу — эхлээд docs/R2_SETUP.md-ийн дагуу .env.local-аа бөглөнө үү (`npm run check:r2`).');
+// ⚠️ Migration нь DB-д ШИНЭ URL БИЧДЭГ (`listings.images[]`,
+//    `profiles.avatar_url`) тул нийтийн домэйн ЗААВАЛ хэрэгтэй — хоосон бол
+//    «https://R2_PUBLIC_BASE-тохируулаагүй/…» гэсэн ХОГ URL болж, зураг
+//    ХЭЗЭЭ Ч харагдахгүй ✗ (DRY-RUN дээр ч зогсооно: «юу болохыг» худлаа
+//    харуулахгүйн тулд)
+if (!CFG.publicBase) {
+  die('R2_PUBLIC_BASE дутуу (.env.local) — нийтийн домэйн бичихгүйгээр migration хийх БОЛОМЖГҮЙ.\n' +
+    '     → docs/R2_SETUP.md → 3-р хэсэг (custom domain эсвэл r2.dev)');
+}
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 const TARGETS = (ONLY_BUCKET ? [ONLY_BUCKET] : STORAGE_BUCKETS).filter((b) => STORAGE_BUCKETS.includes(b));

@@ -42,7 +42,7 @@ import {
   maxBytesForBucket,
   safeImageType,
 } from '../../../../lib/storageKeys.mjs';
-import { isR2Configured, presignPut, publicUrlFor, r2SetupHint } from '../../../../lib/r2.mjs';
+import { isR2UploadReady, presignPut, publicUrlFor, r2SetupHint } from '../../../../lib/r2.mjs';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,8 +83,12 @@ export async function POST(req) {
   const fileLimit = bucket === AVATAR_BUCKET ? 1 : MAX_LISTING_IMAGES;
   if (files.length > fileLimit) return bad(`Хэт олон файл (${files.length}). Хамгийн их: ${fileLimit}.`);
 
-  // ⚠️ Эхлээд «R2 тохируулаагүй» эсэхийг хэлнэ — client үүн дээр л буцна
-  if (!isR2Configured()) {
+  // ⚠️ Эхлээд «R2 бэлэн биш» эсэхийг хэлнэ — client ЗӨВХӨН энэ код дээр л буцна.
+  //    `isR2UploadReady()` нь `R2_PUBLIC_BASE`-ийг Ч шаардана: домэйн хоосон
+  //    үед `publicUrlFor()` нь «https://R2_PUBLIC_BASE-тохируулаагүй/…» гэсэн
+  //    ХОГ URL-ыг DB-д бичиж, зураг ХЭЗЭЭ Ч харагдахгүй болно ✗ — тиймээс
+  //    ийм тохиолдлыг «R2 бэлэн БИШ» гэж үзэж, хуучин Supabase зам руу буцаана ✓
+  if (!isR2UploadReady()) {
     return NextResponse.json({ ok: false, code: 'R2_NOT_CONFIGURED', error: r2SetupHint() }, { status: 503 });
   }
 

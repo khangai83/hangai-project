@@ -118,6 +118,13 @@ R2_BUCKET=zar-media
 R2_PUBLIC_BASE=https://img.zarlaa.mn
 ```
 
+> ⚠️ **5-ыг нь БҮРЭН бөглөнө.** `R2_PUBLIC_BASE` (нийтийн домэйн) дутуу бол upload
+> нь `503 R2_NOT_CONFIGURED` болж, зураг **хуучин Supabase Storage руу буцна** ✓
+> (эс бөгөөс DB-д «https://R2_PUBLIC_BASE-тохируулаагүй/…» гэсэн ХОГ URL
+> бичигдэж, зураг ХЭЗЭЭ Ч харагдахгүй болно ✗ — сервер талд
+> `isR2UploadReady()` үүнийг сэргийлнэ). `npm run storage:migrate` ч домэйнгүй
+> бол DRY-RUN дээр ч **эхлэхээс татгалзана** ✓
+
 ⚠️ **Эдгээрийг Vercel дээр ч тавих ёстой:**
 `npm run deploy:vercel` (энэ нь 5 R2 утгыг автоматаар Vercel-д тавьж, шинэ
 deploy эхлүүлнэ) — эсвэл Vercel → Settings → Environment Variables гараар.
