@@ -335,6 +335,47 @@
     }
   }
 
+  /**
+   * 🔢 📱 СОНГОЛТТОЙ ТАЛБАРЫН ТОВЧ (2026-10-02)
+   *
+   * 🎯 Хэрэглэгчийн хүсэлт: «…барилгийн давхар 1 2 3 4 … 26-аас сонгуулах …
+   *    эсвэл iPhone timer-ийн тоо сонгодог шиг» ⇒ 📱 мобайлд (`<640px`) тоон
+   *    талбар нь ГАРААР БИЧИХ биш, ТОВЧ болж — дархад iOS Timer маягийн ДУГУЙ
+   *    (`components/WheelPicker.jsx`) нээгдэнэ ✓
+   *    🖥 ≥640px дээр оронд нь гар бичилт (`<input type="number">`,
+   *    `.hide-below-sm`-ээр энэ товч дарагддаг) ХЭВЭЭР ажиллана ✓
+   *
+   * ⚠️ Харагдац нь `.form-group :is(input, select, textarea)`-ийн бичигтэй
+   *    ЯГ ИЖИЛ байх ЁСТОЙ — эс бөгөөс мобайлд талбар өөр хэлбэртэй харагдана ✗
+   * ⚠️ `sm:hidden` (Tailwind) нь энэ классыг `utilities` давхаргаараа ДАРНА ✓
+   * 🔍 Хайх үг: choice-trigger, data-choice-trigger, дугуй сонгогч
+   */
+  .choice-trigger {
+    @apply flex w-full items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-left text-sm text-gray-900 outline-none transition active:bg-gray-50;
+  }
+  /* Хоосон үед «Сонгох» нь placeholder шиг цайвар ✓ */
+  .choice-trigger[data-empty="true"] {
+    @apply text-gray-400;
+  }
+  .choice-trigger .choice-arrow {
+    @apply shrink-0 text-gray-400;
+  }
+
+  /**
+   * 🎡 ДУГУЙ СОНГОГЧИЙН гүйлгэх хэсэг — scrollbar-ыг НУУНА (iOS Timer-ийн
+   *    цэвэрхэн харагдац). Chrome (`::-webkit-scrollbar`) ба Firefox
+   *    (`scrollbar-width`) хоёуланд ч ✓
+   * 🔍 Хайх үг: data-wheel-scroll, WheelPicker
+   */
+  [data-wheel-scroll] {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  [data-wheel-scroll]::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
  /* ---------- Badges ---------- */
   .badge {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white;

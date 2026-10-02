@@ -19,6 +19,20 @@ import { lookupMap, cascadeAttrs } from '../lib/carModels.mjs';
 // 📱 «Өрөө»-ний сонголтууд (мобайл drill-down) — ⚠️ шүүлтийн (sidebar) ЯГ ИЖИЛ
 //    утга/шошго (`'1'`…`'5'`, «+5 өрөө») ашиглана: нэг эх сурвалж → зөрүү үгүй ✓
 import { ROOM_VALUES, roomOptionLabel } from '../lib/roomFilter.mjs';
+/**
+ * 🔢🎡 СОНГОЛТТОЙ ТООН ТАЛБАР (2026-10-02) — хэрэглэгчийн хүсэлт: «…барилгийн
+ *    давхар 1 2 3 4 … 26-аас сонгуулах … ашиглалтанд орсон он 1980-аас 2026 …
+ *    эсвэл iPhone timer-ийн тоо сонгодог шиг» ⇒ 📱 мобайлд талбар дарахад
+ *    iOS Timer маягийн ДУГУЙ (`WheelPicker`) нээгдэж, утгаа төвд нь гүйлгэн
+ *    сонгоно; 🖥 ≥640px дээр гар бичилт ХЭВЭЭР ✓
+ * ⚠️ Жагсаалтууд нь `lib/numberChoices.mjs` (цэвэр модуль) — форм/дугуй/тест
+ *    БҮГД нэг эх сурвалжтай ✓
+ */
+import {
+  YEAR_FROM, YEAR_TO, FLOOR_MAX, BATHROOM_MAX,
+  countChoices, floorChoices, yearChoices, toChoiceItems, choiceText,
+} from '../lib/numberChoices.mjs';
+import WheelPicker from './WheelPicker';
 
 /**
  * 🪜 «ЗАР НЭМЭХ» — ТУСДАА ХУУДАС (`/listings/new`) + АЛХАМТ ФОРМ (2026-10-01)
@@ -267,6 +281,159 @@ const MOBILE_ROOM_ITEMS = [
   { value: MOBILE_SKIP, label: 'Алгасах' },
 ];
 
+/**
+ * 🔢🎡 СОНГОЛТТОЙ ТООН ТАЛБАРЫН МӨРҮҮД (2026-10-02)
+ *
+ * Хэрэглэгчийн хүсэлт: «…барилгийн давхар 1 2 3 4 … 26-аас сонгуулах …
+ * ашиглалтанд орсон он 1980-аас 2026 … эсвэл iPhone timer-ийн тоо сонгодог
+ * шиг» ⇒ эдгээр нь модулийн түвшинд НЭГ УДАА бэлдэгдэнэ ✓
+ *   • ⚡ `WheelPicker` нь `itemsKey`-ээр (утгуудын нийлбэр) эффектээ хянадаг
+ *     тул мөрүүд ТОГТВОРТОЙ байх ёстой — render бүрд шинэ массив үүсгэвэл
+ *     дугуй нээгдэх бүрд дахин байрлал тааруулж, мэдрэмж муудна ✗
+ *   • ⚠️ `'—'` хэлбэрийн ХООСОН мөр нь ЗӨВХӨН ЗААВАЛ БИШ талбаруудад
+ *     (iOS Timer-ийн зан — «сонгохгүй үлдээх» боломж ✓)
+ * 🔍 Хайх үг: YEAR_ITEMS, FLOOR_ITEMS, BALCONY_ITEMS, BATHROOM_ITEMS
+ */
+const EMPTY_ROW = '—';
+/** 📅 Онууд — `1980…2026`, БУУРАХ (шинэ он эхэнд) ✓ */
+const YEAR_ITEMS = toChoiceItems(yearChoices(), { emptyLabel: EMPTY_ROW });
+/** 🏢 Нийт давхар `1…26` (хэрэглэгчийн хэлсэн хүрээ) ✓ */
+const FLOOR_ITEMS = toChoiceItems(countChoices(1, FLOOR_MAX), { emptyLabel: EMPTY_ROW });
+/** 🌇 Тагт — `BALCONY_OPTIONS` (`1…4`, нэг эх сурвалж) — desktop `<select>`-ийн
+ *  шошготой ЯГ ижил («2 тагт») ✓ */
+const BALCONY_ITEMS = toChoiceItems(BALCONY_OPTIONS, { emptyLabel: EMPTY_ROW, unit: 'тагт' });
+/** 🚿 Угаалгын өрөө — `1…6` түгээмэл утгууд ✓ */
+const BATHROOM_ITEMS = toChoiceItems(countChoices(1, BATHROOM_MAX), { emptyLabel: EMPTY_ROW });
+
+/**
+ * 📅 Оны мөрүүд — хэрэв ОДООГИЙН утга хүрээнээс ГАДУУР байвал (ж: хуучин
+ * зар «1965») түүнийг жагсаалтын ТӨГСГӨЛД нэмнэ ✓ — засах үед утга нь
+ * ХӨДӨЛӨХГҮЙ, гэхдээ хэрэглэгч өөр он сонгож болно.
+ * ⚠️ Хуучин утга байхгүй бол ДЭЭРХ ТОГТМОЛ массив буцаана (тогтвортой ✓)
+ */
+const yearItemsFor = (value) => {
+  const v = String(value ?? '').trim();
+  if (!v || YEAR_ITEMS.some((it) => it.value === v)) return YEAR_ITEMS;
+  return toChoiceItems(yearChoices(YEAR_FROM, YEAR_TO, v), { emptyLabel: EMPTY_ROW });
+};
+
+/** 🏢 Давхрын мөрүүд — «Тухайн байрны давхар» нь НИЙТ ДАВХРААС хэтрэхгүй ✓ */
+const floorItemsFor = (value, totalFloors) => {
+  const list = floorChoices(totalFloors || FLOOR_MAX, String(value ?? '').trim());
+  return toChoiceItems(list, { emptyLabel: EMPTY_ROW });
+};
+
+/**
+ * 🎛 `choices` МЕТАТАЙ attr талбарын (`lib/locationData.js`) дугуйн мөрүүд/нэгж.
+ * ⚠️ Одоогоор ийм талбар нь зөвхөн ОН (`type: 'number'`, `choices: YEAR_CHOICES`)
+ *    тул он нь `yearItemsFor` (хүрээнээс гадуур хуучин утгыг хамгаална ✓);
+ *    ирээдүйд `type: 'select' + choices` нэмэгдвэл `f.choiceUnit`-аар нэгж өгнө ✓
+ */
+const attrWheelItems = (f, value) => (f.type === 'number'
+  ? yearItemsFor(value)
+  : toChoiceItems(f.choices || [], { emptyLabel: EMPTY_ROW, unit: f.choiceUnit || '' }));
+
+/** 🏷️ Дугуйн товч/мөр дээрх нэгж (`'он'` · `'давхар'` · `''`) */
+const attrWheelUnit = (f) => f.choiceUnit || (f.type === 'number' ? 'он' : '');
+
+/**
+ * 🔢 СОНГОЛТТОЙ ТООН ТАЛБАР (2026-10-02) — форм дээрх НЭГ талбарын харагдац.
+ *
+ * 🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «…жагсаалтаас сонгоод оруулдаг байя, жишээ нь
+ *    барилгийн давхар 1 2 3 4 … 26-аас сонгуулах … эсвэл iPhone timer-ийн тоо
+ *    сонгодог шиг хийж чадах уу» ⇒
+ *      • 📱 `<640px`: талбар нь ТОВЧ (`.choice-trigger`) — дархад iOS Timer
+ *        маягийн ДУГУЙ (`WheelPicker`) нээгдэж, утгаа гүйлгэн сонгоно ✓
+ *      • 🖥 `≥640px`: `hide-below-sm`-ээр товч дарагдаж, ГАР БИЧИЛТ
+ *        (`<input type="number">`, эсвэл `desktopControl="select"` бол
+ *        `<select>`) ХЭВЭЭР ажиллана — desktop-ийн зан төлөв ХӨНДӨГДӨХГҮЙ ✓
+ *
+ * ⚠️ ХОЁР ХҮҮХЭД нь нэг `div` (флекс) дотор — `[data-form-row="details"]`
+ *    мөрийн CDP геометрийн шалгалтууд (`scripts/cdp-picker.mjs`) нь мөр
+ *    доторх ЭХНИЙ `input|select|textarea|div`-ийг хэмждэг тул тэр нь
+ *    БҮТЭН ӨРГӨНТЭЙ флекс хүрээ байх ёстой ✓ (мобайлд ч, десктопд ч)
+ * ⚠️ Утга нь ЯГ ИЖИЛ бичлэгээр (`'5'` текст) — форм/DB/URL хөндөгдөхгүй ✓
+ * ⚠️ Хоосон утга → товч «Сонгох» (`data-empty="true"` — цайвар үсэг) ✓
+ * 🔍 Хайх үг: ChoiceField, data-choice-trigger, data-choice-input, WheelPicker
+ *
+ * @param {string}   label     талбарын нэр (label)
+ * @param {string}   [icon]    нэрийн өмнөх дүрс (ж: `'📅'`)
+ * @param {string}   [hint]    оролтын доорх 💡 тайлбар
+ * @param {string}   [wheelHint] дугуйн толгойд гарах тайлбар (хоосон бол `hint`)
+ * @param {string}   value     одоогийн утга
+ * @param {Array}    items     `[{ value, label }]` (дугуйн мөрүүд — хоосон
+ *   мөр нь `value: ''` байж БОЛНО ✓)
+ * @param {string}   [unit]    товч дээрх нэгж (ж: `'давхар'`, `'он'`)
+ * @param {string}   [testId]  `data-choice-trigger`/`data-choice-input`-ийн утга
+ * @param {string}   [placeholder] 🖥 гар бичилтийн placeholder
+ * @param {number}   [min]/[max] 🖥 гар бичилтийн хязгаар
+ * @param {string}   [desktopControl] `'select'` бол 🖥 дээр жагсаалт (ж: тагт)
+ * @param {Function} onChange  утга солигдоход (🖥 бичих бүрд, 📱 дугуйнаас)
+ * @param {Function} openWheel дугуйг нээх state setter (spec-ээ өөрөө бэлдэнэ)
+ */
+function ChoiceField({
+  label, icon = '', hint = '', wheelHint = '', value = '', items = [], unit = '',
+  testId, placeholder = '', min, max, desktopControl = 'input', onChange, openWheel,
+}) {
+  /** 🎛 Товч/дугуй дээрх бичиг: `'5 давхар'` · `'2015 он'` (хоосон бол `''`) */
+  const shown = choiceText(value, unit);
+  /** ⚠️ Жагсаалтад БАЙХГҮЙ хуучин утга — `<select>`-д мөр нэмнэ (алга болохгүй ✓) */
+  const legacy = value && !items.some((it) => it.value === String(value)) ? String(value) : '';
+  return (
+    <div className="form-group">
+      <label>{icon ? `${icon} ` : ''}{label}</label>
+      <div className="flex w-full items-stretch gap-2">
+        {/* ═ 🖥 ≥640px: ГАР БИЧИЛТ (өмнөх зан төлөв ХЭВЭЭР) ═ */}
+        {desktopControl === 'select' ? (
+          <select
+            className="hide-below-sm min-w-0 flex-1"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            data-choice-input={testId}
+          >
+            <option value="">Сонгох</option>
+            {legacy ? <option value={legacy}>{legacy}</option> : null}
+            {items.filter((it) => it.value !== '').map((it) => (
+              <option key={it.value} value={it.value}>{it.label}</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="number"
+            inputMode="numeric"
+            className="hide-below-sm min-w-0 flex-1"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            min={min}
+            max={max}
+            data-choice-input={testId}
+          />
+        )}
+        {/* ═ 📱 <640px: iOS Timer маягийн ДУГУЙ нээх ТОВЧ ═ */}
+        <button
+          type="button"
+          data-choice-trigger={testId}
+          data-empty={shown ? 'false' : 'true'}
+          aria-haspopup="dialog"
+          onClick={() => openWheel({
+            title: `${icon ? `${icon} ` : ''}${label}`,
+            items,
+            value,
+            hint: wheelHint || hint,
+            onPick: onChange,
+          })}
+          className="choice-trigger sm:hidden"
+        >
+          <span className="min-w-0 truncate">{shown || 'Сонгох'}</span>
+          <span aria-hidden="true" className="choice-arrow">▾</span>
+        </button>
+      </div>
+      {hint ? <p className="form-hint">{hint}</p> : null}
+    </div>
+  );
+}
+
 export default function AddListingClient() {
   const { user, profileName, authLoading } = useAuth();
   const { showToast } = useToast();
@@ -354,6 +521,16 @@ export default function AddListingClient() {
    */
   const [mobileCatStep, setMobileCatStep] = useState('section');
   const [mobileLocStep, setMobileLocStep] = useState('city');
+  /**
+   * 🔢🎡 СОНГОЛТТОЙ ТООН ТАЛБАРЫН ДУГУЙ (2026-10-02) — нэг л дугуй байна, түүнд
+   *    ОДОО нээлттэй талбарын бүх мэдээлэл (`{title, items, value, hint,
+   *    onPick}`) хадгалагдана ✓ (талбар бүрд тусдаа state хийвэл 6+ ширхэг
+   *    болж, «аль дугуй нээлттэй вэ» логик хүндэрнэ ✗)
+   *    ⚠️ `null` = хаалттай (DOM-д огт гарахгүй ✓); `onPick` нь тухайн
+   *       талбарын `set(...)`-ийг барьсан closure тул дахин render хийхэд
+   *       ч зөв талбарт бичнэ ✓ — туршилтаар (CDP) шалгасан
+   */
+  const [wheel, setWheel] = useState(null);
   const baselineRef = useRef(''); // анхны төлөв (өөрчлөгдсөн эсэхийг шалгах)
 
   // 🪜 Хуудас ачаалахад: нэвтэрсэн бол шинэ/засах формыг бэлдэнэ.
@@ -898,6 +1075,13 @@ export default function AddListingClient() {
    *    хэрэглэгчид «2/5» гэж ойлгомжтой, хаяг дээр ч тодорхой харагдана ✓
    */
   const gotoStep = (n) => {
+    /**
+     * 🔢🎡 ДУГУЙГ ХААНА (2026-10-02) — алхам солигдоход нээлттэй дугуй үлдвэл
+     *    шинэ дэлгэцийн дээр хөвж, «хаана байгаа нь ойлгомжгүй» болно ✗
+     * ⚠️ `setWheel(null)` нь идэвхгүй алхамд ч аюулгүй (React нь үгүй бол
+     *    ямар ч өөрчлөлт хийхгүй ✓)
+     */
+    setWheel(null);
     const qs = new URLSearchParams();
     if (editId) qs.set('edit', editId);
     qs.set('step', String(n + 1));
@@ -1399,7 +1583,30 @@ export default function AddListingClient() {
                   return (
                   <div key={f.key} className="form-group">
                     <label>{f.icon ? `${f.icon} ` : ''}{f.label}</label>
-                    {f.type === 'select' && f.searchable ? (
+                    {f.choices ? (
+                      /**
+                       * 📅 2026-10-02 (хэрэглэгчийн хүсэлт): `choices` МЕТАТАЙ талбар
+                       *    (ж: «Үйлдвэрлэсэн он», «Орж ирсэн он») ⇒ 📱 мобайлд
+                       *    iOS Timer маягийн ДУГУЙ, 🖥 ≥640px дээр ГАР БИЧИЛТ
+                       *    ХЭВЭЭР (уншиж бичих давуу тал хэвээр ✓)
+                       * ⚠️ Утга нь `attrs` (jsonb) руу ТЕКСТЭЭР хадгалагдана —
+                       *    `number` талбарын урьдчих зан ХӨНДӨГДӨӨГҮЙ ✓
+                       */
+                      <ChoiceField
+                        icon={f.icon}
+                        label={f.label}
+                        value={value}
+                        items={attrWheelItems(f, value)}
+                        unit={attrWheelUnit(f)}
+                        testId={`attr-${f.key}`}
+                        placeholder={f.placeholder}
+                        min={f.type === 'number' ? YEAR_FROM : undefined}
+                        max={f.type === 'number' ? YEAR_TO : undefined}
+                        wheelHint={f.type === 'number' ? `Сонголт: ${YEAR_FROM}–${YEAR_TO} он` : ''}
+                        onChange={(v) => setAttrCascade(f, v)}
+                        openWheel={setWheel}
+                      />
+                    ) : f.type === 'select' && f.searchable ? (
                       // ⚠️ `commitOnType` — форм дотор сервер рүү query явахгүй
                       //    тул бичих БҮРД хадгална (Enter дарахад «Хадгалах»-ыг
                       //    дарахгүйн тулд компонент Enter-ийг зогсоодог ✓)
@@ -1502,72 +1709,92 @@ export default function AddListingClient() {
                 харагдана (lib/locationData.js → hasBathroomFields). */}
             {showBathrooms && (
               <div className="form-row-single" data-form-row="details">
-                <div className="form-group">
-                  <label>Угаалгын өрөө</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="20"
-                    value={form.bathrooms}
-                    onChange={(e) => set('bathrooms', e.target.value)}
-                    placeholder="1"
-                  />
-                  <p className="form-hint">Хэдэн угаалгын өрөөтэй вэ? (сонголтоор)</p>
-                </div>
+                {/* 🆕 2026-10-02: 📱 мобайлд ДУГУЙ (1–6 түгээмэл утга), 🖥 дээр
+                    гар бичилт ХЭВЭЭР (жагсаалтад байхгүй тоог ч бичиж болно ✓) */}
+                <ChoiceField
+                  label="Угаалгын өрөө"
+                  value={form.bathrooms}
+                  items={BATHROOM_ITEMS}
+                  unit="өрөө"
+                  testId="bathrooms"
+                  placeholder="1"
+                  min={0}
+                  max={BATHROOM_MAX}
+                  hint="Хэдэн угаалгын өрөөтэй вэ? (сонголтоор)"
+                  wheelHint={`Сонголт: 1–${BATHROOM_MAX} (эсвэл гар бичилт)`}
+                  onChange={(v) => set('bathrooms', v)}
+                  openWheel={setWheel}
+                />
               </div>
             )}
 
-            {/* ===== Орон сууцны нэмэлт мэдээлэл (зөвхөн Орон сууц сонгосон үед) ===== */}
+            {/* ===== Орон сууцны нэмэлт мэдээлэл (зөвхөн Орон сууц сонгосон үед) =====
+                🆕 2026-10-02 (хэрэглэгчийн хүсэлт): он/давхар/тагт нь 📱 мобайлд
+                iOS Timer маягийн ДУГУЙгаар сонгогдоно (`ChoiceField` +
+                `WheelPicker`); 🖥 дээр ГАР БИЧИЛТ/`<select>` ХЭВЭЭР ✓ */}
             {showFloors && (
               <div className="form-row-single" data-form-row="details">
                 {showApartment && (
-                  <div className="form-group">
-                    <label>Ашиглалтанд орсон он</label>
-                    <input
-                      type="number"
-                      min="1900"
-                      max="2100"
-                      value={form.buildYear}
-                      onChange={(e) => set('buildYear', e.target.value)}
-                      placeholder="2015"
-                    />
-                  </div>
+                  <ChoiceField
+                    label="Ашиглалтанд орсон он"
+                    value={form.buildYear}
+                    items={yearItemsFor(form.buildYear)}
+                    unit="он"
+                    testId="buildYear"
+                    placeholder="2015"
+                    min={YEAR_FROM}
+                    max={YEAR_TO}
+                    wheelHint={`Сонголт: ${YEAR_FROM}–${YEAR_TO} он`}
+                    onChange={(v) => set('buildYear', v)}
+                    openWheel={setWheel}
+                  />
                 )}
-                <div className="form-group">
-                  <label>Барилгын нийт давхар</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="200"
-                    value={form.totalFloors}
-                    onChange={(e) => set('totalFloors', e.target.value)}
-                    placeholder="9"
-                  />
-                </div>
+                <ChoiceField
+                  label="Барилгын нийт давхар"
+                  value={form.totalFloors}
+                  items={FLOOR_ITEMS}
+                  unit="давхар"
+                  testId="totalFloors"
+                  placeholder="9"
+                  min={1}
+                  max={FLOOR_MAX}
+                  wheelHint={`Сонголт: 1–${FLOOR_MAX} давхар`}
+                  onChange={(v) => set('totalFloors', v)}
+                  openWheel={setWheel}
+                />
               </div>
             )}
 
             {showFloors && (
               <div className="form-row-single" data-form-row="details">
-                <div className="form-group">
-                  <label>Тухайн байрны давхар</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="200"
-                    value={form.floor}
-                    onChange={(e) => set('floor', e.target.value)}
-                    placeholder="5"
-                  />
-                </div>
+                {/* ⚠️ Давхрын жагсаалт нь «Барилгын нийт давхар»-аас ХЭТРЭХГҮЙ
+                    (ж: 9 давхарт 12-р давхар сонгох боломжгүй ✓) */}
+                <ChoiceField
+                  label="Байрны давхар"
+                  value={form.floor}
+                  items={floorItemsFor(form.floor, form.totalFloors)}
+                  unit="давхар"
+                  testId="floor"
+                  placeholder="5"
+                  min={1}
+                  max={FLOOR_MAX}
+                  wheelHint={form.totalFloors
+                    ? `Сонголт: 1–${Math.min(FLOOR_MAX, Number(form.totalFloors) || FLOOR_MAX)} давхар (нийт давхраас)`
+                    : `Сонголт: 1–${FLOOR_MAX} давхар`}
+                  onChange={(v) => set('floor', v)}
+                  openWheel={setWheel}
+                />
                 {showApartment && (
-                  <div className="form-group">
-                    <label>Тагт (1-4)</label>
-                    <select value={form.balconies} onChange={(e) => set('balconies', e.target.value)}>
-                      <option value="">Сонгох</option>
-                      {BALCONY_OPTIONS.map((n) => <option key={n} value={n}>{n} тагт</option>)}
-                    </select>
-                  </div>
+                  <ChoiceField
+                    label="Тагт (1-4)"
+                    value={form.balconies}
+                    items={BALCONY_ITEMS}
+                    desktopControl="select"
+                    testId="balconies"
+                    wheelHint="Хэдэн тагттай вэ?"
+                    onChange={(v) => set('balconies', v)}
+                    openWheel={setWheel}
+                  />
                 )}
               </div>
             )}
@@ -1811,6 +2038,22 @@ export default function AddListingClient() {
           </div>
         </div>
       </div>
+      {/*
+        🔢🎡 ТООН УТГЫН ДУГУЙ (2026-10-02) — форм дотроос ГАДУУР, `<form>`-ийн
+        дараа байрлана (overlay тул `fixed inset-0`). ⚠️ `open` нь `wheel`
+        state-ээр удирдагдана — `null` үед `WheelPicker` нь DOM-д ОГТ гарахгүй ✓
+        ⚠️ `onPick` нь `wheel`-д хадгалагдсан closure — сонгосон утга ЯГ ТЭР
+           талбарын `set(...)` руу очно (ref шиг тогтвортой ✓)
+      */}
+      <WheelPicker
+        open={!!wheel}
+        title={(wheel && wheel.title) || ''}
+        items={(wheel && wheel.items) || []}
+        value={(wheel && wheel.value) || ''}
+        hint={(wheel && wheel.hint) || ''}
+        onPick={wheel ? wheel.onPick : undefined}
+        onClose={() => setWheel(null)}
+      />
     </div>
   );
 }
