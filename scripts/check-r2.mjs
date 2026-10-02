@@ -2,13 +2,16 @@
 // check-r2.mjs — Cloudflare R2 тохиргоо ҮНЭХЭЭР ажиллаж байгаа эсэх
 //
 // Ажиллуулах:  npm run check:r2
+//              npm run check:r2 -- --origin https://танай-домэйн.mn   (CORS-ыг өөр домэйноор)
+//   эсвэл:     R2_CORS_ORIGIN=https://a.mn,https://b.mn npm run check:r2
 //
 // Шалгах зүйлс (бүгд READ-ONLY — юу ч өөрчлөхгүй):
 //   1. `.env.local` дахь R2_* хувьсагчид бүрэн эсэх
 //   2. S3 API-д хүрч, bucket байгаа эсэх (HeadBucket)
 //   3. Bucket доторх объектууд (`listing-images/`, `avatars/` тус бүрээр)
 //   4. НИЙТИЙН домэйн (R2_PUBLIC_BASE) хүрч байгаа эсэх
-//   5. CORS (browser-ээс шууд PUT хийхэд ШААРДЛАГАТАЙ!)
+//   5. CORS (browser-ээс шууд PUT хийхэд ШААРДЛАГАТАЙ!) — ДОМЭЙН ТУС БҮРЭЭР,
+//      дутуу бол Cloudflare-д буулгах JSON-ыг ШУУД хэвлэнэ ✓
 //
 // ⚠️ ЯАГААД ХЭРЭГТЭЙ ВЭ: R2-ийн алдаа нь browser дээр зөвхөн
 //    «HTTP 403» эсвэл «Failed to fetch» болж харагддаг тул шалтгааныг
@@ -16,6 +19,7 @@
 // ============================================================
 import { headBucket, isR2Configured, listR2Keys, missingR2Env, publicUrlFor, r2Config, r2SetupHint } from '../lib/r2.mjs';
 import { AVATAR_BUCKET, IMAGE_BUCKET, STORAGE_BUCKETS } from '../lib/storageKeys.mjs';
+import { corsOriginProblem, corsPolicyJson, parseCorsOrigins } from '../lib/corsOrigins.mjs';
 
 const results = [];
 function report(ok, label, detail) {
@@ -36,21 +40,23 @@ function fmtBytes(n) {
   return `${v.toFixed(v < 10 ? 2 : 1)} ${units[i]}`;
 }
 
-/** CORS preflight — browser-ээс PUT хийхэд заавал хэрэгтэй */
-async function checkCors(cfg) {
+/** CORS preflight — browser-ээс PUT хийхэд заавал хэрэгтэй. `origin` нь САЙТЫН домэйн */
+async function checkCors(cfg, origin) {
   try {
     const res = await fetch(`${cfg.endpoint}/${cfg.bucket}/${IMAGE_BUCKET}/__cors_probe__`, {
       method: 'OPTIONS',
       headers: {
-        Origin: 'https://zarlaa.mn',
+        Origin: origin,
         'Access-Control-Request-Method': 'PUT',
         'Access-Control-Request-Headers': 'content-type',
       },
     });
+    // ⚠️ Заримдаа 200 буцаагаад `access-control-allow-origin` ОГТ байхгүй байдаг
+    //    (тухайн origin зөвшөөрөгдөөгүй гэсэн үг) → зөвхөн тэр header-ийг шалгана ✓
     const allow = res.headers.get('access-control-allow-origin');
-    return { ok: !!allow, status: res.status, allow };
+    return { ok: !!allow, status: res.status, allow, origin };
   } catch (e) {
-    return { ok: null, error: e.message };
+    return { ok: null, error: e.message, origin };
   }
 }
 
@@ -123,24 +129,35 @@ async function main() {
     }
   }
 
-  // 4) CORS
-  const cors = await checkCors(cfg);
-  if (cors.ok === true) {
-    report(true, 'CORS: PUT зөвшөөрөгдсөн (browser-ээс шууд upload боломжтой)', `access-control-allow-origin: ${cors.allow}`);
-  } else if (cors.ok === false) {
-    report(false, 'CORS тохиргоо ДУТУУ — browser-ээс upload ХИЙГДЭХГҮЙ ✗',
-      'Presigned PUT нь гарын үсэгтэй ч browser CORS-гүй бол ХҮСЭЛТ ЯВУУЛАХГҮЙ ✗\n' +
-      `     Cloudflare → Storage & databases → R2 → ${cfg.bucket} → **Settings** → «CORS Policy»\n` +
-      '     → Add → JSON-оо буулгаад Save (AllowedOrigins: http://localhost:3000 + production\n' +
-      '     домэйн — scheme://host:port ЗӨВХӨН, зам БИШ; AllowedMethods: PUT, GET, HEAD;\n' +
-      '     AllowedHeaders: content-type). ⚠️ Хадгалсны дараа 30 секунд хүлээгээд дахин ажиллуулна\n' +
-      '     (жишээ JSON: docs/R2_SETUP.md §4)');
-  } else {
-    report(null, 'CORS-ыг шалгаж чадсангүй', cors.error);
+  // 4) CORS — ⚠️ ДОМЭЙН ТУС БҮРЭЭР (нэг домэйнд зөвшөөрөгдсөн ч нөгөөд нь
+  //    биш байж болно → тэр сайтаас upload ХИЙГДЭХГҮЙ)
+  const probeOrigins = parseCorsOrigins(process.argv.slice(2), process.env.R2_CORS_ORIGIN);
+  console.log(`   CORS-ийг шалгах домэйн(ууд): ${probeOrigins.join('  ·  ')}`);
+  for (const origin of probeOrigins) {
+    const problem = corsOriginProblem(origin);
+    if (problem) report(false, `CORS домэйн буруу бичигдсэн: ${origin}`, problem);
+  }
+  for (const origin of probeOrigins) {
+    const cors = await checkCors(cfg, origin);
+    if (cors.ok === true) {
+      report(true, `CORS зөв: ${origin}`, `access-control-allow-origin: ${cors.allow} → энэ домэйноос шууд upload боломжтой ✓`);
+    } else if (cors.ok === false) {
+      report(false, `CORS тохиргоо ДУТУУ: ${origin} — энэ домэйноос upload ХИЙГДЭХГҮЙ ✗`,
+        'Presigned PUT нь гарын үсэгтэй ч browser CORS-гүй бол ХҮСЭЛТ ЯВУУЛАХГҮЙ ✗\n' +
+        `     Cloudflare → Storage & databases → R2 → ${cfg.bucket} → **Settings** → «CORS Policy»\n` +
+        '     → Add → доорх JSON-ыг ШУУД буулгаад Save (домэйнууд нь аль хэдийн зөв бичигдсэн):\n\n' +
+        `${corsPolicyJson(probeOrigins)}\n\n` +
+        '     ⚠️ origin нь `scheme://host[:port]` ЗӨВХӨН — зам ба төгсгөлийн `/` ХҮЧИНГҮЙ;\n' +
+        '     `*` нь хамгийн ихдээ 1 (цэг дамжина), порт дотор `*` БОЛОХГҮЙ. Хадгалсны\n' +
+        '     дараа 30 сек хүлээгээд дахин ажиллуулна (дэлгэрэнгүй: docs/R2_SETUP.md §4)');
+    } else {
+      report(null, `CORS-ыг шалгаж чадсангүй (${origin})`, cors.error);
+    }
   }
 
   const failed = results.filter((r) => r.ok === false).length;
   console.log(`\n${failed === 0 ? '🎉 R2 бэлэн — зураг R2 руу хадгалагдана!' : `⚠️  ${failed} шалгалт амжилтгүй.`}`);
+  console.log('ℹ️  Өөр домэйн шалгах: npm run check:r2 -- --origin https://танай-домэйн.mn');
   console.log('📊 Хэрэглээ: npm run report:usage');
   process.exit(failed === 0 ? 0 : 1);
 }

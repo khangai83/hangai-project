@@ -147,9 +147,9 @@ requests from a browser») ✗
   {
     "AllowedOrigins": [
       "http://localhost:3000",
+      "https://hangai-project.vercel.app",
       "https://zarlaa.mn",
-      "https://www.zarlaa.mn",
-      "https://<tanii-project>.vercel.app"
+      "https://www.zarlaa.mn"
     ],
     "AllowedMethods": ["PUT", "GET", "HEAD"],
     "AllowedHeaders": ["content-type"],
@@ -159,12 +159,35 @@ requests from a browser») ✗
 ]
 ```
 
+### Аль домэйныг нэмэх вэ? (⚠️ ЗӨВХӨН САЙТЫН домэйн — R2-ийн домэйн БИШ)
+
+| Origin | Энэ юу вэ |
+|---|---|
+| `http://localhost:3000` | локал хөгжүүлэлт (`npm run dev`) |
+| `https://hangai-project.vercel.app` | **Vercel-ийн хаяг** — ⚠️ төгсгөлийн `/` БЕЗ (`…app/` ✗) |
+| `https://zarlaa.mn` | өөрийн домэйн (Vercel дээр холбосон үед) |
+| `https://www.zarlaa.mn` | `www`-тэй хувилбар — тусдаа БИЧНЭ (автомат биш!) |
+| `https://hangai-project-*.vercel.app` | *(сонголтоор)* Vercel-ийн **preview** deploy-ууд — `*` нь 1 ширхэг, цэг дамжина |
+| `http://localhost:3001` | өөр порт → **ТУС ТУСД нь** (порт дотор `*` БОЛОХГҮЙ ✗) |
+
+```bash
+# Шалгах (нэгийг эсвэл хэдийг ч зааж болно):
+npm run check:r2 -- --origin https://hangai-project.vercel.app
+npm run check:r2 -- --origin http://localhost:3000 --origin https://zarlaa.mn
+R2_CORS_ORIGIN=https://a.mn,https://b.mn npm run check:r2     # ⚠️ `*` байвал хашилтанд: 'https://x-*.vercel.app'
+```
+→ Скрипт домэйн **тус бүрээр** preflight (OPTIONS, PUT + content-type) хийж, дутуу
+байвал Cloudflare-д **буулгах JSON-ыг шууд хэвлэнэ** ✓
+
 > ⚠️ `AllowedMethods`-д **PUT** заавал байх ёстой (presigned PUT-ийг browser
 > шууд хийдэг). `AllowedHeaders`-д **content-type** заавал (гарын үсэгт орсон).
 > ⚠️ `AllowedOrigins` нь **`scheme://host[:port]` ЗӨВХӨН** — зам (`/`) БИШ,
-> төгсгөлийн `/` БИШ. Wildcard нь хамгийн ихдээ **нэг** `*` (`https://*.zarlaa.mn`
-> → `a.zarlaa.mn`, `a.b.zarlaa.mn` ✓, харин `zarlaa.mn` ✗). localhost-ийн порт
-> бүрийг ТУС ТУСД нь жагсаана (`:3000`, `:5173`).
+> төгсгөлийн `/` БИШ (Cloudflare-ийн дүрэм: «Invalid AllowedOrigins value:
+> `https://static.example.com/`» — ийм утга ҮЙЛЧИЛЭХГҮЙ ✗). Wildcard нь
+> хамгийн ихдээ **нэг** `*` бөгөөд **цэг дамжина** (`https://*.zarlaa.mn` →
+> `a.zarlaa.mn`, `a.b.zarlaa.mn` ✓, харин `zarlaa.mn` ✗). **Порт дотор `*`
+> болохгүй** — localhost-ийн порт бүрийг ТУС ТУСД нь жагсаана.
+> ⚠️ Дүрэм **хар** байсан ч тархахад 30 секунд хүртэл хугацаа орж болно.
 
 ---
 

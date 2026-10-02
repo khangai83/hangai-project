@@ -54,6 +54,13 @@ const {
   publicStorageUrl,
 } = await import(`${KEYS_SRC}?t=${Date.now()}`);
 const { splitStorageUrls } = await import(`${path.join(here, '..', 'lib', 'storageClient.mjs')}?t=${Date.now()}`);
+const {
+  corsOriginProblem,
+  corsPolicyJson,
+  parseCorsOrigins,
+  normalizeCorsOrigin,
+  DEFAULT_CORS_ORIGINS,
+} = await import(`${path.join(here, '..', 'lib', 'corsOrigins.mjs')}?t=${Date.now()}`);
 
 const UID = '8f3c1a2b-4d5e-4f60-9a1b-2c3d4e5f6a7b';
 const OTHER = '00000000-1111-2222-3333-444444444444';
@@ -563,6 +570,65 @@ await ta('R2 endpoint: presigned PUT линк нь «<bucket>.<account>.r2.cloud
       '⚠️ checksum параметр URL-д орох ЁСГҮЙ (WHEN_REQUIRED — эс бөгөөс R2 «checksum mismatch»)'
     );
   });
+});
+
+// ---------- 🌍 CORS-ийн ДОМЭЙНУУД (`lib/corsOrigins.mjs`) — 2026-10-02 ----------
+// ⚠️ ЯАГААД ЧУХАЛ ВЭ: presigned PUT-ийг BROWSER илгээдэг тул тухайн САЙТЫН
+//    домэйн R2-ийн `AllowedOrigins`-д БАЙХ ЁСТОЙ. Cloudflare-ийн дүрмийг
+//    (зам/төгсгөлийн `/` ХҮЧИНГҮЙ · хамгийн ихдээ 1 `*` · порт дотор `*` ✗)
+//    зөрчвөл «юу ч болохгүй» — browser зөвхөн «Failed to fetch» гэдэг ✗
+t('CORS origin: төгсгөлийн `/` ХАСАГДАНА (Cloudflare үүнийг хүчингүй гэдэг)', () => {
+  assert.equal(normalizeCorsOrigin('https://hangai-project.vercel.app/'), 'https://hangai-project.vercel.app');
+  assert.equal(normalizeCorsOrigin('  http://localhost:3000//  '), 'http://localhost:3000');
+});
+
+t('parseCorsOrigins: анхдагч → зөвхөн localhost:3000 (dev)', () => {
+  assert.deepEqual(parseCorsOrigins([], ''), DEFAULT_CORS_ORIGINS);
+  assert.deepEqual(parseCorsOrigins([], ''), ['http://localhost:3000']);
+});
+
+t('parseCorsOrigins: --origin / --origin= (production домэйн шалгахад)', () => {
+  assert.deepEqual(parseCorsOrigins(['--origin', 'https://hangai-project.vercel.app'], ''), [
+    'https://hangai-project.vercel.app',
+  ]);
+  // ⚠️ Хэрэглэгч dashboard-аас домэйноо `/`-тай хуулж болно → нормчлогдоно ✓
+  assert.deepEqual(parseCorsOrigins(['--origin=https://zarlaa.mn/'], ''), ['https://zarlaa.mn']);
+  // ⚠️ Утга өгвөл localhost-ийн ❌ нь саад болохгүй (default СОЛИГДОНО)
+  assert.equal(parseCorsOrigins(['--origin', 'https://zarlaa.mn'], '').includes('http://localhost:3000'), false);
+});
+
+t('parseCorsOrigins: R2_CORS_ORIGIN (таслалаар) + давхардлыг цэвэрлэнэ', () => {
+  assert.deepEqual(parseCorsOrigins([], 'https://a.mn, https://b.mn'), ['https://a.mn', 'https://b.mn']);
+  assert.deepEqual(parseCorsOrigins(['--origin', 'https://a.mn'], 'https://a.mn/,https://a.mn'), ['https://a.mn']);
+});
+
+t('corsOriginProblem: зөв утгууд → null (wildcard ч зөв)', () => {
+  assert.equal(corsOriginProblem('http://localhost:3000'), null);
+  assert.equal(corsOriginProblem('https://hangai-project.vercel.app'), null);
+  assert.equal(corsOriginProblem('https://*.zarlaa.mn'), null, '`*` дэд домэйнд — Cloudflare зөвшөөрнө');
+  assert.equal(corsOriginProblem('https://hangai-project-*.vercel.app'), null, '`*` нь цэг дамжина');
+});
+
+t('corsOriginProblem: буруу утгууд → шалтгааныг хэлнэ', () => {
+  assert.match(corsOriginProblem('https://x.mn/app'), /ЗАМ/);
+  assert.match(corsOriginProblem('x.mn'), /https:\/\//);
+  assert.match(corsOriginProblem('https://*.*.mn'), /НЭГ/);
+  assert.match(corsOriginProblem('http://localhost:*'), /ПОРТ/);
+  assert.equal(corsOriginProblem(''), 'хоосон утга');
+});
+
+t('corsPolicyJson: PUT/content-type ЗААВАЛ орсон + домэйнууд ЯГ тэр', () => {
+  const policy = JSON.parse(corsPolicyJson(['http://localhost:3000', 'https://hangai-project.vercel.app']));
+  assert.equal(policy.length, 1);
+  assert.deepEqual(policy[0].AllowedOrigins, ['http://localhost:3000', 'https://hangai-project.vercel.app']);
+  assert.ok(policy[0].AllowedMethods.includes('PUT'), '⚠️ PUT-гүй бол browser-ээс upload ХИЙГДЭХГҮЙ ✗');
+  assert.ok(policy[0].AllowedMethods.includes('GET'), '→ нийтийн домэйнээс зургийг <img>-ээр харах');
+  assert.deepEqual(policy[0].AllowedHeaders, ['content-type'], '⚠️ гарын үсэгт орсон header ✓');
+});
+
+t('corsPolicyJson: хоосон жагсаалт → localhost анхдагч (хоосон AllowedOrigins БИШ)', () => {
+  const policy = JSON.parse(corsPolicyJson([]));
+  assert.deepEqual(policy[0].AllowedOrigins, ['http://localhost:3000']);
 });
 
 globalThis.fetch = realFetch;
