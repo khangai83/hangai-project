@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, useToast, useUI } from './AppProviders';
 import { createListing, updateListing, uploadImages, fetchListingById } from '../lib/queries';
 import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, hasSimpleForm, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSection, getSubtypes, hasCategoryChoice, getSectionCategories, getSubtypeGroups, findSubtypeGroup, getAttrFields, PROPERTY_TYPE_ICONS } from '../lib/locationData';
-import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice, isNegotiablePrice, NEGOTIABLE_PRICE_LABEL, MAX_LISTING_TITLE_LENGTH } from '../lib/format';
+import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice, isNegotiablePrice, NEGOTIABLE_PRICE_LABEL, NEGOTIABLE_SALARY_LABEL, MAX_LISTING_TITLE_LENGTH } from '../lib/format';
 import phoneEmail from '../lib/phoneEmail';
 import YouTubeField from './YouTubeField';
 import SearchableSelect from './SearchableSelect';
@@ -826,6 +826,16 @@ export default function AddListingClient() {
    *    `onlySubtypes` байхгүй талбар нь өмнөх шигээ бүх дэд төрөлд ✓
    */
   const attrFields = getAttrFields(form.section || 'real-estate', form.propertyType);
+  /**
+   * 💼 АЖЛЫН ЗАРТ «ҮНЭ» БИШ — ЦАЛИН (2026-10-03 (9), хэрэглэгчийн хүсэлт).
+   * ⚠️ Хэрэглэгч: «Жич Энд Үнэ биш Цалин байх юм шүү хавсралтыг хараарай» ⇒
+   *    4-р алхмын үнийн талбар нь ажлын зар дээр «Цалингийн хэмжээ» болж,
+   *    «Үнэ тохирно» чекбокс нь «Цалин тохиролцоно» болно ✓
+   *    (уншигдах текст 3 газар — доор нэг л удаа тодорхойлж хэрэглэнэ)
+   */
+  const jobsSection = form.section === 'jobs';
+  const priceFieldTitle = jobsSection ? 'Цалингийн хэмжээ' : 'Үнэ';
+  const priceNegotiableText = jobsSection ? NEGOTIABLE_SALARY_LABEL : NEGOTIABLE_PRICE_LABEL;
 
   /**
    * ⚡ ХЯЛБАР ФОРМ (2026-09-29, хэрэглэгчийн хүсэлт; ⚠️ 2026-09-30 (5)-д өргөжсөн) —
@@ -1256,7 +1266,10 @@ export default function AddListingClient() {
         if (Number(priceDigits) <= 0) return 'Үнэ 0-ээс их байх ёстой';
         if (priceDigits.length > 15) return 'Үнэ хэт урт байна (15 цифр хүртэл)';
       } else if (!form.negotiable) {
-        return `Үнээ оруулна уу (эсвэл «${NEGOTIABLE_PRICE_LABEL}»-г тэмдэглэнэ үү)`;
+        // 💼 ажил → «Цалингаа … Цалин тохиролцоно», бусад → «Үнээ … Үнэ тохирно»
+        const isJob = form.section === 'jobs';
+        const negLabel = isJob ? NEGOTIABLE_SALARY_LABEL : NEGOTIABLE_PRICE_LABEL;
+        return `${isJob ? 'Цалингаа' : 'Үнээ'} оруулна уу (эсвэл «${negLabel}»-г тэмдэглэнэ үү)`;
       }
       // 🎥 Видео линк: хоосон бол зүгээр; бичсэн бол YouTube линк БАЙХ ЁСТОЙ
       // (буруу линк хадгалагдвал дэлгэрэнгүй хуудас дээр видео харагдахгүй).
@@ -2208,7 +2221,7 @@ export default function AddListingClient() {
             <>
             <div className="form-row">
               <div className="form-group">
-                <label>Үнэ </label>
+                <label>{priceFieldTitle} </label>
                 {/* ⚠️ type="number" БИШ: number input нь «250,000,000» гэсэн
                     таслалтай утгыг ХҮЛЭЭХГҮЙ (хоосон болгочихдог). Тиймээс
                     type="text" + inputMode="numeric" ашиглаж, бичих үед нь
@@ -2249,6 +2262,13 @@ export default function AddListingClient() {
                     {shortPrice(form.price) ? ` · ≈ ${shortPrice(form.price)} ₮` : ''}
                   </p>
                 ) : null}
+                {/* 💼 2026-10-03 (9): ажлын зарт unegui.mn-ийн зурагтай ИЖИЛ нэмэлт
+                    тусламж — «бүх тэгтэй нь оруулна уу» (12 сая → 12000000) ✓ */}
+                {jobsSection && (
+                  <p className="form-hint">
+                    💡 Үнийн дүнг бүх тэгтэй нь оруулна уу. Жишээ нь: 12 саяыг 12000000 гэж оруулна уу.
+                  </p>
+                )}
                 {/* Чекбокс — зүгээр checkbox + текст (гаднах box БАЙХГҮЙ, 🤝 emoji БАЙХГҮЙ).
                     ⚠️ 2026-10-01 (CSS SPECIFICITY — ₮-гийн асуудалтай ИЖИЛ):
                        `.form-group label { display:block }` (globals.css, (0,1,1)) нь
@@ -2267,7 +2287,7 @@ export default function AddListingClient() {
                       onChange={(e) => setForm((f) => ({ ...f, negotiable: e.target.checked }))}
                       className="h-4 w-4 shrink-0 accent-primary"
                     />
-                    <span className="text-[13px] font-normal text-gray-700">{NEGOTIABLE_PRICE_LABEL}</span>
+                    <span className="text-[13px] font-normal text-gray-700">{priceNegotiableText}</span>
                   </span>
                 </label>
               </div>

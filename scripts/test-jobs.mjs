@@ -1,0 +1,184 @@
+// ============================================================
+// test-jobs.mjs — 💼 АЖЛЫН ЗАРЫН ГЭРЭЭ (2026-10-03 (9))
+//
+// Хэрэглэгчийн хүсэлт:
+//   «Ажлын зарын дэлгэрэнгүй хэсгиийг ийм болгоё:
+//     Ажлын цаг: Бүтэн цагийн · Хагас цагийн · Цагийн · Гэрээт · Түр хугацааны
+//     Туршлага: Шаардлагатай · Шаардлагагүй
+//     Зарлагч: Байгууллага · Хувь хүн · Зуучлагч
+//     Мэргэжлийн түвшин: Дадлагын · Анхан шатны · Мэргэжилтэн ·
+//                        Дунд шатны удирдлага · Дээд шатны удирдлага
+//     Цалингийн Төрөл: Тогтмол · Хэлбэлзэх
+//    Мөн ажлын зар хайх хэсгийн Design ийг бас явуулсан хараад хийгээрэй»
+//   + «Жич Энд Үнэ биш Цалин байх юм шүү» (unegui.mn-ийн зурагнууд).
+//
+// ЯАГААД ХЭРЭГТЭЙ ВЭ:
+//   Ажлын зарын талбарууд/form/шүүлт/карт/дэлгэрэнгүй нь НЭГ эх сурвалжаас
+//   (`lib/locationData.js`) удирдагдана — нэг газар буруу болвол форм, хайлт,
+//   карт, дэлгэрэнгүй ДӨРВҮҮЛЭЭ зэрэг эвдэрнэ ✗. Энэ тест тэр гэрээг бариулна ✓
+//
+// АЖИЛЛУУЛАХ:  npm run test:jobs
+// ⚠️ DB/React хөндөхгүй — зөвхөн Node (`lib/locationData.js` шууд + эх кодын гэрээ).
+// ============================================================
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import assert from 'node:assert/strict';
+import {
+  getAttrFields, getAttrFilters, getAttrField, getAttrRows,
+  priceWord, isJobsSection, formatAttrsLine,
+  JOB_TIME_OPTIONS,
+} from '../lib/locationData.js';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.join(here, '..');
+const readSrc = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+/** Комментгүй ЦЭВЭР КОД (тайлбар доторх «хасагдсан» гэсэн үг хуурамч улаан гарахгүй) */
+const codeOnly = (src) => src
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/(^|[^:])\/\/.*$/gm, '$1');
+
+let passed = 0;
+const t = (name, fn) => {
+  fn();
+  passed += 1;
+  console.log(`  ✓ ${name}`);
+};
+
+const HOME = readSrc('components/HomeClient.jsx');
+const HOME_CODE = codeOnly(HOME);
+const ADD = readSrc('components/AddListingClient.jsx');
+const ADD_CODE = codeOnly(ADD);
+const FORMAT = readSrc('lib/format.js');
+const FORMAT_CODE = codeOnly(FORMAT);
+const SEED = readSrc('scripts/seed-sections.mjs');
+
+console.log('\n🧪 Ажлын зар — шинэ талбарууд + «Цалин» (2026-10-03 (9))\n');
+
+// ---------- ① ХЭСЭГ / ТАЛБАРУУД ----------
+t('💼 jobs: 5 ШИНЭ талбар + company/position — форм дараалал нь хэрэглэгчийн жагсаалт', () => {
+  assert.deepEqual(
+    getAttrFields('jobs').map((f) => f.key),
+    ['company', 'position', 'jobType', 'experience', 'advertiser', 'jobLevel', 'salaryType'],
+  );
+});
+
+t('🕒 Ажлын цаг — 5 сонголт, `chips: true` (sidebar-д ЧИП)', () => {
+  const f = getAttrField('jobs', 'jobType');
+  assert.equal(f.label, 'Ажлын цаг');
+  assert.equal(f.icon, '🕒');
+  assert.equal(f.chips, true);
+  assert.deepEqual(f.options, JOB_TIME_OPTIONS);
+  assert.deepEqual(JOB_TIME_OPTIONS, ['Бүтэн цагийн', 'Хагас цагийн', 'Цагийн', 'Гэрээт', 'Түр хугацааны']);
+});
+
+t('📊 Туршлага — Шаардлагатай / Шаардлагагүй', () => {
+  assert.deepEqual(getAttrField('jobs', 'experience').options, ['Шаардлагатай', 'Шаардлагагүй']);
+});
+
+t('🏷️ Зарлагч — Байгууллага / Хувь хүн / Зуучлагч', () => {
+  const f = getAttrField('jobs', 'advertiser');
+  assert.equal(f.label, 'Зарлагч');
+  assert.deepEqual(f.options, ['Байгууллага', 'Хувь хүн', 'Зуучлагч']);
+});
+
+t('📈 Мэргэжлийн түвшин — 5 шат', () => {
+  const f = getAttrField('jobs', 'jobLevel');
+  assert.equal(f.label, 'Мэргэжлийн түвшин');
+  assert.deepEqual(f.options, ['Дадлагын', 'Анхан шатны', 'Мэргэжилтэн', 'Дунд шатны удирдлага', 'Дээд шатны удирдлага']);
+});
+
+t('💰 Цалингийн төрөл — Тогтмол / Хэлбэлзэх', () => {
+  const f = getAttrField('jobs', 'salaryType');
+  assert.equal(f.label, 'Цалингийн төрөл');
+  assert.deepEqual(f.options, ['Тогтмол', 'Хэлбэлзэх']);
+});
+
+t('🚫 Хуучин талбарууд (salary/education/workMode/expiry) форм/шүүлтээс ХАСАГДАВ', () => {
+  ['salary', 'education', 'workMode', 'expiry'].forEach((k) => assert.equal(getAttrField('jobs', k), null, `${k} байсаар байна ✗`));
+  assert.ok(!getAttrFilters('jobs').some((f) => ['salary', 'education', 'workMode', 'expiry'].includes(f.key)));
+});
+
+// ---------- ② SIDEBAR ШҮҮЛТ ----------
+t('🔎 Sidebar шүүлт нь ЯГ 3: 🕒 jobType(чип) · 📊 experience · 📈 jobLevel (unegui дараалал)', () => {
+  assert.deepEqual(getAttrFilters('jobs').map((f) => f.key), ['jobType', 'experience', 'jobLevel']);
+  assert.equal(getAttrFilters('jobs')[0].chips, true);
+});
+
+// ---------- ③ «ҮНЭ» → «ЦАЛИН» ----------
+t('💼 priceWord/isJobsSection: ажил → «Цалин», бусад → «Үнэ»', () => {
+  assert.equal(priceWord('jobs'), 'Цалин');
+  ['real-estate', 'auto', 'computers', 'all'].forEach((s) => assert.equal(priceWord(s), 'Үнэ'));
+  assert.equal(isJobsSection('jobs'), true);
+  assert.equal(isJobsSection('auto'), false);
+});
+
+t('🏷️ format.js: NEGOTIABLE_SALARY_LABEL + negotiableLabel (section-аар солигдоно)', () => {
+  assert.match(FORMAT_CODE, /NEGOTIABLE_SALARY_LABEL\s*=\s*'Цалин тохиролцоно'/);
+  assert.match(FORMAT_CODE, /function negotiableLabel\(listing\)/);
+  assert.match(FORMAT_CODE, /listing\.section === 'jobs'/);
+  // priceLabel/negotiableNote ХОЁУЛАА negotiableLabel-аар явна (давхар текст БАЙХГҮЙ)
+  assert.match(FORMAT_CODE, /: negotiableLabel\(listing\);/);
+  assert.match(FORMAT_CODE, /isNegotiablePrice\(listing\) \? negotiableLabel\(listing\)/);
+});
+
+// ---------- ④ ФОРМ (AddListingClient) ----------
+t('📝 Форм: 4-р алхамд «Цалингийн хэмжээ» + «Цалин тохиролцоно» (ажил дээр)', () => {
+  assert.match(ADD_CODE, /jobsSection = form\.section === 'jobs'/);
+  assert.match(ADD_CODE, /priceFieldTitle = jobsSection \? 'Цалингийн хэмжээ' : 'Үнэ'/);
+  assert.match(ADD_CODE, /priceNegotiableText = jobsSection \? NEGOTIABLE_SALARY_LABEL : NEGOTIABLE_PRICE_LABEL/);
+  assert.match(ADD_CODE, /<label>\{priceFieldTitle\} <\/label>/);
+  assert.match(ADD_CODE, /\{priceNegotiableText\}/);
+});
+
+// ---------- ⑤ SIDEBAR (HomeClient) ----------
+t('🕒 Sidebar: `f.chips` салбар НЭМЭГДЭВ (`chip-toggle` + `data-attr-value`)', () => {
+  assert.match(HOME_CODE, /f\.chips \? \(/);
+  assert.match(HOME_CODE, /data-attr-filter=\{f\.key\}/);
+  assert.match(HOME_CODE, /data-attr-value=\{o\}/);
+  assert.match(HOME_CODE, /setAttr\(f\.key, on \? '' : o\)/);
+});
+
+t('💰 Sidebar: үнийн блок нэг эх сурвалж (`priceSideBlock`) + ажилд «Цалин, ₮»', () => {
+  assert.match(HOME_CODE, /const priceSideBlock = \(/);
+  assert.match(HOME_CODE, /label=\{`\$\{priceWord\(section\)\}, ₮`\}/);
+  assert.match(HOME_CODE, /label=\{priceWord\(section\)\}/);
+});
+
+t('💼 Sidebar дараалал: ажилд үнэ нь attr шүүлтүүдийн ӨМНӨ (`isJobs && priceSideBlock`)', () => {
+  assert.match(HOME_CODE, /\{isJobs && priceSideBlock\}/);
+  assert.match(HOME_CODE, /\{!isJobs && priceSideBlock\}/);
+  const beforeAttr = HOME_CODE.indexOf('{isJobs && priceSideBlock}');
+  const attrStart = HOME_CODE.indexOf('{attrFilters.map((f) => {');
+  const afterAttr = HOME_CODE.indexOf('{!isJobs && priceSideBlock}');
+  assert.ok(beforeAttr > 0 && attrStart > 0 && afterAttr > 0, 'блок олдсонгүй ✗');
+  assert.ok(beforeAttr < attrStart, 'ажлын үнэ attr шүүлтүүдийн ДАРАА байна ✗');
+  assert.ok(afterAttr > attrStart, 'бусад хэсгийн үнэ attr шүүлтүүдийн ӨМНӨ байна ✗');
+});
+
+// ---------- ⑥ КАРТ / SEED ----------
+t('📇 Картын мөр: шинэ талбаруудын дараалал (salary МӨРӨНД ГАРАХГҮЙ)', () => {
+  assert.equal(
+    formatAttrsLine('jobs', {
+      company: 'Мобиком', position: 'Программист', jobType: 'Бүтэн цагийн',
+      experience: 'Шаардлагатай', advertiser: 'Байгууллага',
+      jobLevel: 'Мэргэжилтэн', salaryType: 'Тогтмол',
+    }),
+    'Мобиком · Программист · 🕒 Бүтэн цагийн · 📊 Шаардлагатай · 🏷️ Байгууллага · 📈 Мэргэжилтэн · 💰 Тогтмол',
+  );
+});
+
+t('📋 `getAttrRows(jobs)` — `salary` МӨР БАЙХГҮЙ (цалин нь зарын ҮНЭ)', () => {
+  const rows = getAttrRows('jobs', { company: 'X', salary: '2500000', jobType: 'Цагийн' });
+  assert.ok(!rows.some((r) => r.key === 'salary'));
+  assert.ok(rows.some((r) => r.key === 'jobType'));
+});
+
+t('🌱 seed-sections: ДЕМО өгөгдөл нь ШИНЭ утгуудтай (education/workMode БАЙХГҮЙ)', () => {
+  assert.match(SEED, /salaryType: pick\(\['Тогтмол'/);
+  assert.match(SEED, /advertiser: pick\(/);
+  assert.match(SEED, /jobLevel: isExecutive/);
+  assert.ok(!/education: isEntry/.test(SEED), 'seed-д хуучин education үлдсэн ✗');
+});
+
+console.log(`\n✅ БҮГД ТЭНЦСЭН — ${passed} тест\n`);

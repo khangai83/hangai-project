@@ -328,11 +328,15 @@ t('🛏 HomeClient.jsx: өрөө сонгох UI ЭРГЭЖ ИРЭВ + «Үнэ�
   assert.match(ui, /showRooms/, 'showRooms нөхцөл алга ✗');
   assert.match(src, /Өрөөний тоо/, '«Өрөөний тоо» блокын шошго алга ✗');
   // ③ БАЙРЛАЛ: чип нь «Үнэ, ₮» блокийн ӨМНӨ байх ЁСТОЙ (хэрэглэгчийн хүсэлт)
+  // ⚠️ 2026-10-03 (9): үнийн блок нь одоо НЭГ эх сурвалж (`priceSideBlock`) болов
+  //    — ажлын зарт «Цалин, ₮» болж attr шүүлтүүдийн ӨМНӨ гардаг (`{isJobs && …}`),
+  //    харин үл хөдлөхөд ХУУЧИН байрлалдаа (`{!isJobs && priceSideBlock}`) ✓
+  //    ⇒ өрөөний чип нь `{!isJobs && priceSideBlock}`-ийн ӨМНӨ байх ёстой ✓
   const roomsAt = ui.indexOf('data-room-filter');
-  const priceAt = ui.indexOf('Үнэ, ₮');
+  const priceAt = ui.indexOf('{!isJobs && priceSideBlock}');
   assert.ok(roomsAt > 0, 'өрөөний блок олдсонгүй ✗');
-  assert.ok(priceAt > 0, '«Үнэ, ₮» блок олдсонгүй ✗');
-  assert.ok(roomsAt < priceAt, 'өрөөний блок «Үнэ»-ний ДАРАА байна ✗');
+  assert.ok(priceAt > 0, 'үнийн блок (`!isJobs && priceSideBlock`) олдсонгүй ✗');
+  assert.ok(roomsAt < priceAt, 'өрөөний блок үнийн ДАРАА байна ✗');
   // ④ ХОРООНЫ блоктой ИЖИЛ хэв маяг (`chip-toggle` + «N сонгосон»)
   assert.match(ui, /chip-toggle-active/, 'чипийн идэвхтэй хэв маяг алга ✗');
   assert.match(src, /сонгосон/, '«N сонгосон» badge алга ✗');

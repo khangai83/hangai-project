@@ -15,6 +15,7 @@ import {
   hasRoomsFields, SECTIONS, getSection, getSubtypes, getSectionCategories,
   hasCategoryChoice, getAttrFilters, pruneGatedAttrs, getAttrField, formatAttrsLine,
   parseAttrRangeKey, getAttrRangeKeys,   // 📅 оны хүрээ (2026-09-28)
+  priceWord,   // 💼 ажил → «Цалин», бусад → «Үнэ» (2026-10-03 (9))
   getSubtypeGroups,   // 🛠 3 дахь түвшин (2026-09-27) — зөвхөн `services`
 } from '../lib/locationData';
 import { getCategoryLabel, getPropertyIcon, getPropertyTypeLabel, formatPrice, formatCount, shortPrice } from '../lib/format';
@@ -871,6 +872,13 @@ export default function HomeClient() {
    *  ⚠️ `sec`/`isRealEstate` нь `showRooms`-ООС ӨМНӨ байх ЁСТОЙ (TDZ алдаа). */
   const sec = getSection(noSection ? 'real-estate' : section);
   const isRealEstate = section === 'real-estate';
+  /**
+   * 💼 АЖЛЫН ЗАР эсэх (2026-10-03 (9), хэрэглэгчийн хүсэлт) — ажлын зарт
+   *    «үнэ» биш **ЦАЛИН** байдаг тул sidebar-ийн «Үнэ, ₮» блок нь
+   *    «Цалин, ₮» болж, «Ажлын цаг» нь ЧИП хэлбэрээр харагдана ✓
+   *    (уншигдах текст нь `priceWord(section)` — нэг эх сурвалж)
+   */
+  const isJobs = section === 'jobs';
 
   /**
    * 🛏 ӨРӨӨНИЙ ТООНЫ блок харагдах эсэх — 🆕 2026-10-03 (4) UI сэргээв.
@@ -1118,6 +1126,31 @@ export default function HomeClient() {
   // 🖥 DESKTOP дээр өөрчлөлт БАЙХГҮЙ ✓ (тэнд панель байнга нээлттэй байв)
   // ↺ БУЦААХ БОЛ: `filtersOpen` төлөв + `${filtersOpen ? '' : 'hidden'}`
   //    класс + «⚙️ Дэлгэрэнгүй хайлт» товчийг буцааж нэмнэ.
+
+  /**
+   * 💰 ҮНЭ / 💼 ЦАЛИН — sidebar-ийн үнийн блок (НЭГ ЭХ СУРВАЛЖ).
+   * ⚠️ 2026-10-03 (9): ажлын зарт шошго нь «Цалин, ₮» / «Цалин» болно
+   *    (`priceWord(section)`); мөн энэ блок нь ажлын зарт «Байршил»-ийн
+   *    ЯГ ДАРАА (attr шүүлтүүдийн ӨМНӨ) байрлана — unegui.mn-ийн ажлын
+   *    хайлтын зурагтай ИЖИЛ дараалал ✓; бусад хэсэгт ХУУЧИН байрлал ✓
+   * ⚠️ DOM дэгээ (`data-range-filter`) нь label-аас үүснэ — ажлын зарт
+   *    «Цалин», бусад хэсэгт «Үнэ» (`scripts/cdp-range.mjs` нь үл хөдлөх
+   *    дээр ажилладаг тул хөндөгдөхгүй ✓)
+   */
+  const priceSideBlock = (
+    <SideBlock label={`${priceWord(section)}, ₮`}>
+      <RangeInput
+        label={priceWord(section)}
+        unit="₮"
+        mode="int"
+        bounds={priceLimit}
+        short={shortPrice}
+        from={filters.minPrice}
+        to={filters.maxPrice}
+        onChange={(a, b) => { setF('minPrice', a); setF('maxPrice', b); }}
+      />
+    </SideBlock>
+  );
 
   return (
     <>
@@ -1775,6 +1808,11 @@ export default function HomeClient() {
                     </p>
                   )}
                 </SideBlock>
+                {/* 💰💼 2026-10-03 (9): «Үнэ, ₮» / «Цалин, ₮» блок — АЖЛЫН ЗАРТ
+                    энд (attr шүүлтүүдийн ӨМНӨ) байрлана (unegui.mn-ийн ажлын
+                    хайлтын зурагтай ИЖИЛ); бусад хэсэгт доор (хуучин байрлал) ✓ */}
+                {isJobs && priceSideBlock}
+
                 {/* ===== ХЭСГИЙН ATTR ШҮҮЛТҮҮД (0016, өргөтгөсөн 2026-09-28) =====
                     ⚠️ Хэсэг тус бүрийн `attrFilters` — оролтын төрөл 3:
                       ① энгийн `<select>` (цөөн сонголт: Түлш, Өнгө)
@@ -1801,7 +1839,12 @@ export default function HomeClient() {
                        «Иж бүрэн компьютер»/«Процессор, сервер» сонгосон үед
                        харагдана — `getAttrFilters(section, filters.propertyType)`
                        нь формойн `getAttrFields`-тэй ЯГ ИЖИЛ `onlySubtypes` дүрмийг
-                       хэрэглэнэ ✓ (Mouse/Keyboard/тонер дээр ГАРАХГҮЙ) */}
+                       хэрэглэнэ ✓ (Mouse/Keyboard/тонер дээр ГАРАХГҮЙ)
+                    🕒 ⑥ ЧИП ШҮҮЛТ (`f.chips`, 2026-10-03 (9), хэрэглэгчийн
+                       хүсэлт: «ажлын зар хайх хэсгийн Design ийг … хийгээрэй»):
+                       💼 «Ажлын цаг» нь бөөрөнхий ТОВЧНУУД (чип) — unegui.mn-ийн
+                       ажлын хайлтын зурагтай ИЖИЛ. ⚠️ Утга нь НЭГ (`?attr_jobType=…`),
+                       идэвхтэй чип дээр дахин дарвал цуцлагдана (`chip-toggle` хэв) ✓ */}
                 {attrFilters.map((f) => {
                   /**
                    * 🌈 БРЭНДЭЭС ХАМААРАХ СОНГОЛТУУД (`f.optionsFrom` = 'brand') —
@@ -1813,7 +1856,36 @@ export default function HomeClient() {
                     : [];
                   return (
                   <SideBlock key={f.key} label={`${f.icon ? `${f.icon} ` : ''}${f.label}`}>
-                    {f.searchable ? (
+                    {f.chips ? (
+                      /* 🕒 ЧИП шүүлт (2026-10-03 (9)) — 💼 «Ажлын цаг» нь unegui.mn-ийн
+                         ажлын хайлтын зурагтай ИЖИЛ бөөрөнхий товчнууд (чип) хэлбэрээр
+                         харагдана. ⚠️ Утга нь НЭГ (`?attr_jobType=Бүтэн цагийн`) — идэвхтэй
+                         чип дээр дахин дарвал ЦУЦЛАГДАНА (`chip-toggle` хэв = «Хороо»/«Өрөө»)
+                         ⚠️ `data-attr-filter` / `data-attr-value` нь CDP тестийн дэгээ ✓ */
+                      <div
+                        className="flex flex-wrap gap-1.5"
+                        data-attr-filter={f.key}
+                        role="group"
+                        aria-label={f.label}
+                      >
+                        {(f.options || []).map((o) => {
+                          const on = attrValue(f.key) === o;
+                          return (
+                            <button
+                              key={o}
+                              type="button"
+                              aria-pressed={on}
+                              data-attr-value={o}
+                              onClick={() => setAttr(f.key, on ? '' : o)}
+                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                            >
+                              {on && <span aria-hidden="true">✓</span>}
+                              {o}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : f.searchable ? (
                       <SearchableSelect
                         value={attrValue(f.key)}
                         options={f.options}
@@ -2008,18 +2080,9 @@ export default function HomeClient() {
                        500 сая (`priceBounds(isRealEstate)`) — энэ нь зөвхөн
                        «хязгааргүй тал»-ыг тодорхойлоход хэрэглэгдэнэ,
                        хэрэглэгчийн бичсэн утгыг ХЯЗГААРЛАХГҮЙ ✓ */}
-                <SideBlock label="Үнэ, ₮">
-                  <RangeInput
-                    label="Үнэ"
-                    unit="₮"
-                    mode="int"
-                    bounds={priceLimit}
-                    short={shortPrice}
-                    from={filters.minPrice}
-                    to={filters.maxPrice}
-                    onChange={(a, b) => { setF('minPrice', a); setF('maxPrice', b); }}
-                  />
-                </SideBlock>
+                {/* ⚠️ 2026-10-03 (9): ажлын зарт энэ блок ДЭЭР (attr шүүлтүүдийн
+                    өмнө) гарсан тул энд `!isJobs` үед л дүрслэгдэнэ ✓ */}
+                {!isJobs && priceSideBlock}
 
                 {/* ===== ТАЛБАЙ, м² — 2026-09-30: ЧИРДЭГ ХҮРЭЭ ХАСАГДАВ =====
                     ⚠️ «Талбай» нь ЗӨВХӨН үл хөдлөх хэсэгт (0016) — автомашин/

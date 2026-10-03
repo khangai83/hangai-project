@@ -23,6 +23,7 @@
     "test:search": "node scripts/test-search.mjs",
     "test:rooms": "node scripts/test-rooms.mjs",
     "test:card": "node scripts/test-card.mjs",
+    "test:jobs": "node scripts/test-jobs.mjs",
     "test:payments": "node scripts/test-payments.mjs",
     "test:choices": "node scripts/test-number-choices.mjs",
     "test:wheel": "node scripts/test-wheel-render.mjs",
