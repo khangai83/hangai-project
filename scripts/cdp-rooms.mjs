@@ -13,8 +13,12 @@
  *      блок нь «Үнэ, ₮»-ний ӨМНӨ байрлана (хэрэглэгчийн хүсэлт ✓)
  *   ①b ЧИП ДАРАХ: «1 өрөө» + «3 өрөө» → URL `?rooms=1,3` · DB
  *      `rooms=in.(1,3)` · «2 сонгосон» badge · дахин дарвал ЦУЦЛАГДАНА (toggle)
- *   ② Өрөөгүй төрөл (Оффис, Гараж …) ба төрөл сонгоогүй үед блок
- *      ХАРАГДАХГҮЙ (`hasRoomsFields` — хорооны блоктой ижил зарчим ✓)
+ *   ② Өрөөгүй төрөл (Оффис, Гараж …) дээр блок ХАРАГДАХГҮЙ
+ *      (`hasRoomsFields` — хорооны блоктой ижил зарчим ✓)
+ *      🆕 2026-10-03 (13): progressive disclosure ХАСАГДсан тул ХЭСГИЙН түвшинд
+ *      (`?section=real-estate`, төрөл ГҮЙ) ч ХАРАГДАНА (`!filters.propertyType`
+ *      нөхцөл нь идэвхтэй болов ✓); 🚗 `?section=auto` (үл хөдлөх БИШ) дээр
+ *      ГАРАХГҮЙ ✓
  *   ③ ХУУЧИН линк: `?rooms=1,3` → чип дээр ТЭМДЭГЛЭГДЭж, DB `in.(1,3)`
  *   ④ Идэвхтэй шүүлтийн чип `🛏 1, 3 өрөө` дээрх ✕ → `rooms: []`
  *   ④b «✕ Цуцлах» товч → БҮХ сонголт арилж, URL/DB цэвэр болно
@@ -250,15 +254,24 @@ const afterToggle = await roomUi();
 check('🛏 Дахин дарвал ЦУЦЛАГДАВ (checkbox мэт toggle ✓) — зөвхөн «3» үлдэв',
   afterToggle.selected.join(',') === '3', `selected=[${afterToggle.selected.join(',')}]`);
 
-// ═══════ ② ӨРӨӨГҮЙ ТӨРӨЛ БА ТӨРӨЛ СОНГООГҮЙ ҮЕД БЛОК ХАРАГДАХГҮЙ ═══════
+// ═══════ ② ӨРӨӨГҮЙ ТӨРӨЛ БА СЕКЦИЙН ТҮВШИН ═══════
+// 🆕 2026-10-03 (13): progressive disclosure ХАСАГДАВ ⇒ sidebar нь хэсгийн
+//    түвшинд (`?section=real-estate`, төрөл ГҮЙ) ч ГАРНА ✓
+//    ⚠️ «Өрөөний тоо» блок нь `showRooms = isRealEstate && (!filters.propertyType
+//    || hasRoomsFields(...))` — төрөл сонгоогүй үед `!filters.propertyType` нь
+//    TRUE тул ХАРАГДАНА ✓ (⏳ урьд нь `<aside>` бүтнээрээ байхгүй байв)
 await go(`${BASE}/?section=real-estate`);
 const domNoType = await roomUi();
-check('🧭 Төрөл сонгоогүй үед sidebar огт байхгүй ⇒ өрөөний блок БАЙХГҮЙ',
-  domNoType.blocks === 0 && domNoType.labelBtns.length === 0,
-  `blocks=${domNoType.blocks}`);
+check('🆕 Хэсгийн түвшинд (төрөл ГҮЙ) ч «Өрөөний тоо» блок ХАРАГДАНА (`showRooms` ✓)',
+  domNoType.blocks === 1 && domNoType.chips === 5,
+  `blocks=${domNoType.blocks} chips=${domNoType.chips}`);
 const noTypeLabels = await sideLabels();
-check('🧭 Төрөл сонгоогүй үед ч «Өрөөний тоо» блок БАЙХГҮЙ',
-  !noTypeLabels.some((l) => /Өрөөний тоо/.test(l)), noTypeLabels.join(' → ') || '(aside байхгүй ✓)');
+check('🆕 Sidebar нь ч БИЙ (төрөл хэрэггүй болсон ✓) — «Байршил» ЭХНИЙ, «Өрөөний тоо» бий',
+  /Байршил/.test(noTypeLabels[0] || '') && noTypeLabels.some((l) => /Өрөөний тоо/.test(l)),
+  noTypeLabels.join(' → '));
+await go(`${BASE}/?section=auto`);
+check('🚗 Үл хөдлөх БИШ хэсэгт «Өрөөний тоо» блок БАЙХГҮЙ (`isRealEstate` ✗)',
+  (await roomUi()).blocks === 0, `blocks=${(await roomUi()).blocks}`);
 await go(`${BASE}/?section=real-estate&type=${encodeURIComponent('Оффис')}`);
 const domOffice = await roomUi();
 check('🛏 Өрөөгүй төрөл (Оффис) дээр ч блок ХАРАГДАХГҮЙ (`hasRoomsFields` ✓)',

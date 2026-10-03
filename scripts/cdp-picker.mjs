@@ -1197,12 +1197,13 @@ ok('sidebar: 🎨 «Өнгө» нь «Загвар»-ын ЯГ дараа (шү�
  *    Мөн брэнд солигдоход хуучирсан загварын шүүлт URL-аас АРИЛНА
  *    (`cascadeAttrs` — формтой ЯГ ИЖИЛ дүрэм ✓)
  *
- * ⚠️ 2026-10-01: `&type=…` ЗААВАЛ хэрэгтэй — sidebar нь PROGRESSIVE DISCLOSURE:
- *    `<aside>` нь ЗӨВХӨН ТӨРӨЛ сонгосон үед render болно
- *    (`HomeClient.jsx`: `{filters.propertyType && (<aside …>)}`).
- *    `?section=auto&attr_brand=Toyota` (type-ГҮЙ) дээр `aside` ОГТ БАЙХГҮЙ тул
- *    бүх sidebar шалгалт хуурамчаар ✗ болно ✗ (дээрх TӨРӨЛ сонгосон URL-тай
- *    ЯГ ИЖИЛ байх ёстой ✓)
+ * ⚠️ 2026-10-01: `&type=…` хэрэгтэй байв — sidebar нь PROGRESSIVE DISCLOSURE
+ *    байсан тул `<aside>` нь ЗӨВХӨН ТӨРӨЛ сонгосон үед render болдог байв ✗
+ *    🆕 2026-10-03 (13): progressive disclosure ХАСАГДАВ — `showAdvancedFilters`
+ *    нь ҮРГЭЛЖ тул `?section=auto&attr_brand=Toyota` (type-ГҮЙ) дээр ч
+ *    `aside` БИЙ ✓ (`HomeClient.jsx`: `{showAdvancedFilters && (<aside …>)}`)
+ *    ⚠️ Гэхдээ шалгалт нь ТӨРӨЛ сонгосон URL-тай ХЭВЭЭР — форм дээр сонгосон
+ *    утгатай (3-р түвшин) ЯГ ИЖИЛ байх ёстой тул ✓
  */
 await rpc('Page.navigate', { url: `${BASE}/?section=auto&category=all&type=${encodeURIComponent('Суудлын машин')}&attr_brand=Toyota` });
 await wait(3500);

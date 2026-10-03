@@ -271,10 +271,17 @@ check('🧭 «Төлбөрийн нөхцөл» нь «Өрөөний тоо»-�
   `өрөө=#${roomsIdx} төлбөр=#${payIdx} үнэ=#${priceIdx} — ${labels1.join(' → ')}`);
 
 // ═══════ ② 🚗 АВТО: БАЙНА · ⛔ АЖИЛ/КОМПЬЮТЕР/«БҮХ ЗАР»: БАЙХГҮЙ ═══════
-// ⚠️ `&type=…` ЗААВАЛ — sidebar нь PROGRESSIVE DISCLOSURE: `<aside>` нь ЗӨВХӨН
-//    ТӨРӨЛ сонгосон үед render болно (`{filters.propertyType && (<aside …>)}`) —
-//    `?section=auto` (type-ГҮЙ) дээр зөвхөн дэд төрлийн сонголт гарч, шүүлт
-//    ОГТ харагдахгүй тул шалгалт хуурамчаар ✗ болно ✗
+// 🆕 2026-10-03 (13): progressive disclosure ХАСАГДАВ — `<aside>` нь хэсэг
+//    (2-р түвшин) ба «Бүх зар» дээр Ч render болно (`showAdvancedFilters` ✓).
+//    ⏳ урьд нь зөвхөн `{filters.propertyType && (<aside …>)}` байв ✗
+//    ⚠️ 💳 блок нь `hasPaymentTerms(section)` — зөвхөн 🏠 үл хөдлөх ба 🚗 авто
+//    дээр; төрөл сонгох ШААРДЛАГАГҮЙ тул `?section=auto` (type-ГҮЙ) дээр ч
+//    ГАРНА ✓ (эхлээд хэсгийн түвшинг шалгаад дараа нь төрөлтэй нь ✓)
+await go(`${BASE}/?section=auto`);
+const autoSecUi = await paymentUi();
+check('🆕 🚗 Хэсгийн түвшинд (`?section=auto`, төрөл ГҮЙ) ч ☑ блок БАЙНА',
+  autoSecUi.blocks === 1 && autoSecUi.chips === 4,
+  `blocks=${autoSecUi.blocks} chips=${autoSecUi.chips}`);
 await go(`${BASE}/?section=auto&type=${encodeURIComponent('Суудлын машин')}`);
 const autoUi = await paymentUi();
 check('🚗 «Автомашин зарна» дээр ☑ checkbox-үүд БАЙНА', autoUi.blocks === 1 && autoUi.chips === 4,
@@ -289,6 +296,16 @@ await go(`${BASE}/?section=computers`);
 check('⛔ «Компьютер» дээр БАЙХГҮЙ', (await paymentUi()).blocks === 0);
 await go(`${BASE}/`);
 check('⛔ «Бүх зар» (хэсэг сонгоогүй) дээр БАЙХГҮЙ', (await paymentUi()).blocks === 0);
+// 🆕 2026-10-03 (13) — «бүх зар дээр шүү» гэсэн хүсэлтийн ГОЛ шалгалт:
+//    progressive disclosure ХАСАГДсан тул «Бүх зар» (1-р түвшин) дээр Ч
+//    панель БИЙ ба нийтлэг блок (📍 Байршил · 💰 Үнэ) шүүлт хийнэ ✓
+const rootAside = await evalJs(`(() => {
+  const a = document.getElementById('advanced-filters');
+  return a ? a.innerText : '';
+})()`);
+check('🆕 «Бүх зар» дээр sidebar БИЙ (📍 Байршил · 💰 Үнэ — шүүлт хийнэ ✓)',
+  /Байршил/.test(rootAside) && /Үнэ/.test(rootAside),
+  rootAside.split(String.fromCharCode(10)).join(' | ').slice(0, 140));
 
 // ═══════ ③ 🖱 ☑ ДАРАХ — ОЛОН СОНГОЛТ (хамгийн чухал; ШОШГО дээр дарна ✓) ═══════
 listingReqs.length = 0;

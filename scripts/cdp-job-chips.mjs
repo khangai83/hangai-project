@@ -37,9 +37,11 @@
 //    ⓐ React-ийн `state.attrs`-ыг fiber-ээс уншихад COMMIT-ийн 1 АЛХАМ
 //       ХОЦРОЛТТОЙ (DOM аль хэдийн шинэчлэгдсэн байдаг) ⇒ шалгалт нь
 //       `aria-pressed` / `.chip-toggle-active`-ыг POLL хийнэ ✓
-//    ⓑ `<aside>` нь ЗӨВХӨН `filters.propertyType` сонгогдсон үед
-//       рендэрлэгддэг (`HomeClient.jsx`) ⇒ sidebar шалгалт
-//       `?section=jobs&type=<дэд төрөл>` хаягаар явна ✓
+//    ⓑ `<aside>` нь 🆕 2026-10-03 (13)-аас хойш ХЭСГИЙН түвшинд ч
+//       рендэрлэгддэг (`showAdvancedFilters` — үргэлж ✓); ⏳ урьд нь зөвхөн
+//       `filters.propertyType` сонгогдсон үед байв ✗ (`HomeClient.jsx`)
+//       ⚠️ Энэ шалгалт нь форм дээрх 3-р түвшний сонголттой ЖИШИХ тул
+//       `?section=jobs&type=<дэд төрөл>` хаягаар ХЭВЭЭР явна ✓
 //    ⓒ headless Chrome-ийн анхдагч өргөн 800px дээр sidebar ХААГДАНА ⇒
 //       📱 шалгалтын дараа метрикийг 1440px руу БУЦААНА ✓
 //    ⓓ 📱 3-р алхмын ЭХНИЙ дэлгэц нь «Зарын гарчиг» (ЗААВАЛ талбар) ⇒
@@ -499,9 +501,12 @@ await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1200, dev
 await wait(800);
 
 // ═══════ ⑥ SIDEBAR ХӨНДӨГДӨӨГҮЙ ═══════
-// ⚠️ `<aside>` нь ЗӨВХӨН `filters.propertyType` сонгогдсон үед рендэрлэгддэг
-//    (`HomeClient.jsx`: `{filters.propertyType && (<aside id="advanced-filters">)}`)
-//    тул `?section=jobs&type=<дэд төрөл>` — форм дээр сонгосонтой ИЖИЛ ✓
+// 🆕 2026-10-03 (13): `<aside>` нь ХЭСЭГ (2-р түвшин) ба «Бүх зар» дээр Ч
+//    рендэрлэгддэг (`showAdvancedFilters` ✓ — progressive disclosure ХАСАГДАВ).
+//    ⏳ урьд нь `{filters.propertyType && (<aside id="advanced-filters">)}` тул
+//       зөвхөн дэд төрөл сонгосон үед байв ✗
+//    ⚠️ Энэ шалгалт нь форм дээрх сонголттой ЖИШИХ тул `?section=jobs&type=<дэд
+//       төрөл>` хаягийг ХЭВЭЭР ашиглана ✓
 console.log('\n⑥ SIDEBAR — /?section=jobs&type=… (формтой холилдоогүй эсэх)');
 const SIDE_URL = BASE + '/?section=jobs&type=' + encodeURIComponent('Борлуулалт, худалдаа');
 await rpc('Page.navigate', { url: SIDE_URL });

@@ -25,7 +25,7 @@
  *      (`.in()` БИШ!) ба breadcrumb нь «Баянгол» гэж хэвээр ✓
  *   ④ Идэвхтэй шүүлтийн чип `📍 2 дүүрэг/сум` дээрх ✕ → дүүрэг цэвэрлэгдэнэ
  *   ⑤ «✕ Цуцлах» товч → БҮХ дүүрэг арилж, URL/DB цэвэр болно
- *   ⑥ breadcrumb: 2 дүүрэг → «2 дүүрэг/сум» · «Үл хөдлөх» линк → төрөл арилж sidebar ХАГАГДАВ (progressive ✓) — дүүрэг URL + crumb-д ХЭВЭЭР
+ *   ⑥ breadcrumb: 2 дүүрэг → «2 дүүрэг/сум» · «Үл хөдлөх» линк → төрөл арилна, ХАРИН sidebar ХЭВЭЭР (🆕 2026-10-03 (13): progressive disclosure ХАСАГДАВ — хэсгийн түвшинд ч панель гарна ✓) — дүүрэг URL + crumb-д ХЭВЭЭР
  *   ⑦ 📱 Мобайл 390px: чипүүд харагдана, хэвтээ гүйлт (overflow) ГАРАХГҮЙ
  *   ⑧ Консол дээр JS exception 0
  *
@@ -394,11 +394,18 @@ check('🍞 «Үл хөдлөх» breadcrumb линк олдлоо', crumbClick 
 await sleep(1200);
 check('🍞 Дарахад дүүрэг ХЭВЭЭР (байршил нь төрлөөс үл хамаарах шүүлт ✓)',
   decodeURIComponent(await url()).includes('district=Баянгол,Сүхбаатар'), decodeURIComponent(await url()));
-// ⚠️ «Үл хөдлөх» буюу `type` (төрөл) цэвэрлэгдсэн тул sidebar нь ПРОГРЕССИВ
-//    ДИСКЛОЗУРААР (мөр 1760: `{filters.propertyType && (…)}`) БҮРЭН
-//    ХАГАГДАНА — хорооны чип байхгүй нь АЛДАА БИШ, зориудын зан төлөв ✓
-check('🍞 Төрөл цэвэрлэгдэхэд sidebar ХАГАГДАВ (blocks=0 — progressive ✓)',
-  (await districtUi()).blocks === 0, `blocks=${(await districtUi()).blocks}`);
+// 🆕 2026-10-03 (13) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ («Дэлгэрэнгүй хайлт 3р түвшний
+//    сонголт дээр орж ирж байна … 2р түвшин дээр гаргаж ирээд, бүх зар дээр
+//    шүүдэг болго»): progressive disclosure ХАСАГДАВ ⇒ «Үл хөдлөх»
+//    (`type = ''`) дээр ч sidebar БАЙНА. ⚠️ Байршил нь БИЕ ДААСАН шүүлт тул
+//    дүүргийн чипүүд ч ХЭВЭЭР үлдэнэ ✓
+//    (⏳ урьд нь `{filters.propertyType && (…)}` тул blocks=0 байв ✗)
+const afterCrumb = await districtUi();
+check('🍞 Төрөл цэвэрлэгдэхэд sidebar ХЭВЭЭР (blocks=1 — 🆕 progressive БАЙХГҮЙ ✓)',
+  afterCrumb.blocks === 1, `blocks=${afterCrumb.blocks}`);
+check('🗺 Дүүргийн чипүүд 2 сонгогдсон ХЭВЭЭР (байршил нь төрлөөс үл хамаарна ✓)',
+  afterCrumb.chips === 9 && afterCrumb.selected.join(',') === 'Баянгол,Сүхбаатар',
+  `chips=${afterCrumb.chips} selected=[${afterCrumb.selected.join(',')}]`);
 check('🍞 «2 дүүрэг/сум» breadcrumb мөрөндөө ХЭВЭЭР (байршил үл хамаарах ✓)',
   /2 дүүрэг\/сум/.test(await evalJs(`[...document.querySelectorAll('nav')].map((n) => n.textContent).join(' | ')`)));
 // ⚠️ Төрлийг ЭРГҮҮЛЭН сонгоход хорооны нэгдэл (33) ба чипүүд ХЭВЭЭР байх

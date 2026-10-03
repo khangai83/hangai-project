@@ -145,8 +145,10 @@ const go = async (address) => {
 
 /**
  * 🖥 Sidebar дахь attr шүүлтүүдийн төлөв — `[data-attr-filter]` дэгээгээр
- * ⚠️ `#advanced-filters` (aside) нь ЗӨВХӨН дэд төрөл сонгосон үед бий ✓
- *    (`components/HomeClient.jsx`: `{filters.propertyType && (<aside …>)}`)
+ * 🆕 2026-10-03 (13): `#advanced-filters` (aside) нь ХЭСЭГ (2-р түвшин) ба
+ *    «Бүх зар» (1-р түвшин) дээр Ч бий — `showAdvancedFilters` нь ҮРГЭЛЖ ✓
+ *    ⏳ урьд нь ЗӨВХӨН дэд төрөл сонгосон үед байв ✗ (progressive disclosure)
+ *    (`components/HomeClient.jsx`: `{showAdvancedFilters && (<aside …>)}`)
  */
 const specUi = () => evalJs(`(() => {
   const aside = document.getElementById('advanced-filters');
@@ -306,11 +308,25 @@ check('🔎 DB: `attrs->>cpu` ОГТ ЯВАХГҮЙ (үл үзэгдэх шүү�
   !dbQ('attrs->>cpu'), lastQ());
 check('🖱 Шүүлт 1 хэвээр (Mouse — зөвхөн ✅ төлөв ✓)', pruned.total === 1, `total=${pruned.total}`);
 
-// ═══════ ⑥ ДЭД ТӨРӨЛ СОНГООГҮЙ → SIDEBAR БАЙХГҮЙ ═══════
+// ═══ ⑥ 🆕 ДЭД ТӨРӨЛ СОНГООГҮЙ Ч SIDEBAR БАЙНА (хэсэг = 2-р түвшин) ═══
+// 🆕 2026-10-03 (13) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Дэлгэрэнгүй хайлт 3р түвшний
+//    сонголт дээр орж ирж байна (Бүх зар › Автомашин › Суудлын машин) —
+//    2р түвшин дээр гаргаж ирээд, бүх зар дээр шүүдэг болго» ⇒
+//    `?section=computers` (дэд төрөл ГҮЙ) дээр ч панель БИЙ ✓
+// ⚠️ Гэхдээ `onlySubtypes`-тай 📺/⚙️/🧠/💾 нь ХАРАГДАХГҮЙ ХЭВЭЭР — эхлээд
+//    Notebook-ийн брэндийг сонгоно ✓ (формойн `getAttrFields`-тэй ижил дүрэм)
+const EXPECT_NO_TYPE = getAttrFilters('computers', '').filter((f) => !f.searchable);
 await go(`${BASE}/?section=computers`);
 const noType = await specUi();
-check('⚠️ Дэд төрөл сонгоогүй үед sidebar ОГТ БАЙХГҮЙ (`#advanced-filters` ✗)',
-  noType.sidebar === false && noType.total === 0, `sidebar=${noType.sidebar}`);
+check('🆕 Дэд төрөл сонгоогүй ч sidebar БАЙНА (хэсэг = 2-р түвшин ✓)',
+  noType.sidebar === true, `sidebar=${noType.sidebar}`);
+check('🆕 Хэсгийн түвшинд `[data-attr-filter]` нь ЛИБЭЭС ижил (төрөл хэрэггүй ✓)',
+  noType.total === EXPECT_NO_TYPE.length
+    && noType.keys.join(',') === EXPECT_NO_TYPE.map((f) => f.key).join(','),
+  `${noType.total} ↔ ${EXPECT_NO_TYPE.length} · keys=[${noType.keys.join(', ')}]`);
+check('🆕 📺/⚙️/🧠/💾 нь хэсгийн түвшинд ОГТ БАЙХГҮЙ (дэд төрөл хэрэгтэй ✓)',
+  noType.total > 0 && !/Дэлгэц|CPU|RAM|Хард/.test(noType.labels.join(' ')),
+  noType.labels.join(' | '));
 
 // ═══════ ⑦ 🚗 БУСАД ХЭСЭГ ХӨНДӨГДӨӨГҮЙ (авто) ═══════
 listingReqs.length = 0;
