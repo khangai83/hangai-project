@@ -762,6 +762,40 @@ const DETAIL_WIZ_PROBE = `(() => {
     nextBtns: btns.filter((b) => (b.innerText || '').includes('Үргэлжлүүлэх')).filter(vis).length,
     backBtns: btns.filter((b) => (b.innerText || '').includes('Буцах')).filter(vis).length,
     rows: [...document.querySelectorAll('[data-detail-row]')].map((r) => (r.dataset.detailRow || '') + '=' + (r.dataset.mobileActive || '')),
+    /**
+     * 🆕 2026-10-03 (17) — МОБАЙЛЫН ШИНЭ ХЭВ (unegui.mn):
+     *   • options      — харагдаж байгаа 2 баганат сонголтууд ([data-mobile-option])
+     *   • twoCol       — тор нь ЖИНХЭНЭ 2 багана (grid-template-columns = 2 track ✓)
+     *   • skipOption   — «Алгасах» линк (утга ЦЭВЭРЛЭНЭ ✓)
+     *   • answers/answerKeys/answerText — «ӨМНӨХ ХАРИУЛТУУД» мөрүүд (✏️ ✓)
+     *   • labelText/labelsVisible — АСУУЛТЫН НЭР (талбарын label) ГАНЦ удаа ✓
+     * ⚠️ ЭНЭ template literal дотор backtick / долларын буржгар хаалт БИЧИХГҮЙ ✗
+     */
+    options: [...document.querySelectorAll('[data-mobile-option]')].filter(vis).length,
+    twoCol: (() => {
+      const g = [...document.querySelectorAll('[data-mobile-options-grid]')].find(vis);
+      if (!g) return false;
+      return getComputedStyle(g).gridTemplateColumns.split(' ').filter(Boolean).length === 2;
+    })(),
+    selectedOption: (() => {
+      const b = [...document.querySelectorAll('[data-mobile-option]')].filter(vis)
+        .find((e) => e.getAttribute('aria-pressed') === 'true');
+      return b ? (b.dataset.mobileOption || '') : '';
+    })(),
+    skipOption: [...document.querySelectorAll('[data-mobile-option-skip]')].some(vis),
+    /** 💳 «Төлбөрийн нөхцөл» — ЗААВАЛ (сонголтгүй бол урагшлуулахгүй ✗) */
+    paymentsSelected: [...document.querySelectorAll('[data-payment-value]')].filter((c) => c.checked).length,
+    answers: [...document.querySelectorAll('[data-mobile-answer-edit]')].filter(vis).length,
+    answerKeys: [...document.querySelectorAll('[data-mobile-answer-edit]')].filter(vis)
+      .map((b) => b.dataset.mobileAnswerEdit || ''),
+    answerText: [...document.querySelectorAll('[data-mobile-answers]')].filter(vis)
+      .map((b) => b.innerText).join(' ').replace(/\s+/g, ' ').trim(),
+    labelsVisible: fields.filter(vis).map((f) => f.querySelector('label')).filter((l) => {
+      if (!l) return false; const b = l.getBoundingClientRect(); return b.width > 0 && b.height > 0;
+    }).length,
+    labelText: (((fields.filter(vis).map((f) => f.querySelector('label'))).find((l) => {
+      if (!l) return false; const b = l.getBoundingClientRect(); return b.width > 0 && b.height > 0;
+    })) || {}).innerText || '',
     titleValue: ((document.querySelector('[data-detail-field="title"] input') || {}).value || ''),
     error: ((document.querySelector('form .bg-red-50') || {}).innerText || '').trim(),
   };
@@ -793,10 +827,26 @@ const wtype = async (sel, v) => {
   return r;
 };
 
+/** 🖱 ХАРАГДАЖ БАЙГАА элемент дээр дарах (далд дэлгэцийн мөрүүдийг АЛГАСНА ✓) */
+const clickVisible = async (sel) => {
+  const r = await evaluate(`(() => {
+    const el = [...document.querySelectorAll(${JSON.stringify(sel)})].find((e) => {
+      const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0;
+    });
+    if (!el) return 'NOT_FOUND';
+    el.click(); return 'OK';
+  })()`);
+  await wait(500);
+  return r;
+};
+
 const w0 = await wprobe();
-ok('📱 3-р алхам: толгой (← · асуулт · «n/N» явц) мобайлд гарч ирэв',
-  w0.head && w0.title === 'Зарын гарчиг' && w0.back && /^\d+\/\d+$/.test(w0.progress),
+ok('📱 3-р алхам: толгой (← · «Зар нийтлэх» · «n/N» явц) мобайлд гарч ирэв',
+  w0.head && w0.title === 'Зар нийтлэх' && w0.back && /^\d+\/\d+$/.test(w0.progress),
   JSON.stringify({ head: w0.head, title: w0.title, back: w0.back, progress: w0.progress }));
+ok('📱 АСУУЛТЫН НЭР толгойд ДАВХАРДАХГҮЙ — зөвхөн талбарын толгойд ГАНЦ удаа («Зарын гарчиг» ✓)',
+  w0.labelsVisible === 1 && w0.labelText.includes('Зарын гарчиг') && w0.title === 'Зар нийтлэх',
+  JSON.stringify({ labels: w0.labelsVisible, label: w0.labelText, head: w0.title }));
 ok('📱 «НЭГ ДЭЛГЭЦЭД НЭГ ТАЛБАР»: харагдах `[data-detail-field]` = ЯГ 1 (гарчиг) — бусдыг CSS нуув ✓',
   w0.fields >= 5 && JSON.stringify(w0.visible) === '["title"]',
   `fields=${w0.fields} visible=${JSON.stringify(w0.visible)}`);
@@ -804,9 +854,9 @@ ok('📱 мөр бүр `data-mobile-active`-тай ба ЯГ 1 нь идэвхт
   w0.rows.length >= 6 && w0.rows.filter((r) => r.endsWith('=true')).length === 1
     && w0.rows.every((r) => r.endsWith('=true') || r.endsWith('=false')),
   JSON.stringify(w0.rows));
-ok('📱 ДЭЛГЭЦ БҮРД «Үргэлжлүүлэх» ЯГ 1 ХАРАГДАНА (дэлгэц ↔ алхам давхардахгүй ✓)',
-  w0.nextBtns === 1 && w0.navVisible && w0.navHasNext,
-  `visible=${w0.nextBtns} nav=${w0.navVisible} navNext=${w0.navHasNext}`);
+ok('📱 ГАР БИЧИЛТТЭЙ дэлгэцэд «Үргэлжлүүлэх» ЯГ 1 ХАРАГДАНА (дэлгэц ↔ алхам давхардахгүй ✓)',
+  w0.nextBtns === 1 && w0.navVisible && w0.navHasNext && w0.options === 0,
+  `visible=${w0.nextBtns} nav=${w0.navVisible} navNext=${w0.navHasNext} opt=${w0.options}`);
 ok('📱 заавал талбар («Гарчиг») дээр «Алгасах» ХАРАГДАХГҮЙ (хоосон үлдээж болохгүй ✓)',
   w0.navHasSkip && w0.skipVisible === false, `DOM=${w0.navHasSkip} visible=${w0.skipVisible}`);
 
@@ -819,33 +869,67 @@ ok('🛡️ гарчиг ХООСОН үед урагш ЯВАХГҮЙ + «За�
 ok('⌨️ «Зарын гарчиг»-т бичив', (await wtype('[data-detail-field="title"] input', '2 өрөө байр, Баянгол')) === 'OK');
 await wnext();
 const w1s = await wprobe();
-ok('📱 «Үргэлжлүүлэх» дараагийн ТАЛБАР руу шилжүүлэв («2/7» = талбай — алхам руу БИШ ✓)',
-  w1s.key === 'area' && JSON.stringify(w1s.visible) === '["area"]' && w1s.progress === '2/7',
+ok('📱 «Үргэлжлүүлэх» дараагийн ТАЛБАР руу шилжүүлэв («2/N» = 💳 Төлбөрийн нөхцөл — алхам руу БИШ ✓)',
+  w1s.key === 'payments' && JSON.stringify(w1s.visible) === '["payments"]' && /^2\/\d+$/.test(w1s.progress),
   JSON.stringify({ key: w1s.key, visible: w1s.visible, progress: w1s.progress }));
 
-// 🚶 БҮХ дэлгэцээр алхаж, дэлгэц бүрд «ЯГ 1 талбар + ЯГ 1 Үргэлжлүүлэх» гэдгийг батлана
+// 🚶 БҮХ дэлгэцээр алхаж, дэлгэц бүрд «ЯГ 1 талбар + (товч | сонголт)» гэдгийг батлана
+/** ⚠️ Алхалтыг ЭХНИЙ дэлгэцээс (гарчиг) эхлүүлнэ — толгойн ← дараалан буцаана ✓ */
+for (let i = 0; i < 12 && (await wprobe()).key !== 'title'; i += 1) await wback();
+/**
+ * 🪜 Урагшлах — ① гар бичилттэй дэлгэц: «Үргэлжлүүлэх» ✓
+ *              ② сонголттой дэлгэц: «Алгасах» линк ✓
+ *              ③ 💳 «Төлбөрийн нөхцөл» (ЗААВАЛ): эхлээд нэг сонголт хийнэ ✓
+ */
+const walkNext = async () => {
+  const s = await wprobe();
+  if (!s.navVisible) { await clickVisible('[data-mobile-option-skip]'); return; }
+  if (s.key === 'payments' && s.paymentsSelected === 0) await clickVisible('[data-payment-value]');
+  await wnext();
+};
 const wWalk = [];
 const wBad = [];
 let wCur = await wprobe();
 wWalk.push(wCur.key);
-/** ⚠️ Хамгийн ихдээ 12 (хязгааргүй давталт ✗) · `navVisible=false` = 🏁 сүүлийн дэлгэц */
+/** ⚠️ Хамгийн ихдээ 12 (хязгааргүй давталт ✗) · `progress` = «n/N» → сүүлийг мэднэ ✓ */
 for (let i = 0; i < 12; i += 1) {
-  if (!wCur.navVisible) break;
-  await wnext();
+  const [pi, pt] = String(wCur.progress || '').split('/').map(Number);
+  if (!(pi > 0 && pi < pt)) break;
+  /** 🪜 Урагшлах: гар бичилт → «Үргэлжлүүлэх»; сонголттой → «Алгасах»; 💳 → сонголт ✓ */
+  await walkNext();
   wCur = await wprobe();
   wWalk.push(wCur.key);
   if (JSON.stringify(wCur.visible) !== JSON.stringify([wCur.key])) wBad.push(`${wCur.key}:vis=${wCur.visible.join('|')}`);
-  if (wCur.nextBtns !== 1) wBad.push(`${wCur.key}:btns=${wCur.nextBtns}`);
+  /** ⚠️ Гар бичилт → ЯГ 1 «Үргэлжлүүлэх»; сонголттой → 0 товч, харин жагсаалттай ✓
+   *  ⚠️ СҮҮЛИЙН дэлгэцэд wizard-ийн «Үргэлжлүүлэх» (4-р алхам руу) л үлдэнэ ✓ */
+  const [pi2, pt2] = String(wCur.progress || '').split('/').map(Number);
+  const isLastScreen = pi2 > 0 && pi2 === pt2;
+  const wantBtns = (wCur.navVisible || isLastScreen) ? 1 : 0;
+  if (wCur.nextBtns !== wantBtns) wBad.push(`${wCur.key}:btns=${wCur.nextBtns}`);
+  if (!wCur.navVisible && !isLastScreen && wCur.options === 0) wBad.push(`${wCur.key}:opt=0`);
+  /** ⚠️ Асуултын нэр нь ГАНЦ удаа (толгойд «Зар нийтлэх» л байна ✓) */
+  if (wCur.labelsVisible !== 1) wBad.push(`${wCur.key}:labels=${wCur.labelsVisible}`);
 }
-ok('📱 дэлгэцүүд ДАРААЛААР: гарчиг → талбай → он → нийт давхар → давхар → тагт → гараж («Өрөө» БАЙХГҮЙ ✓)',
-  JSON.stringify(wWalk) === '["title","area","buildYear","totalFloors","floor","balconies","garage"]',
+/**
+ * ⚠️ Хүлээгдэх ДАРААЛАЛ — зарын төрлөөс хамаарч НЭМЭЛТ дэлгэц байж болно
+ *    (ж: 🚿 «Угаалгын өрөөний тоо» 3+ өрөөтэй орон сууцанд) ⇒ дэд дараалал
+ *    (subsequence) болгон шалгана ✓
+ */
+const WALK_SUB = ['title', 'payments', 'area', 'buildYear', 'totalFloors', 'floor', 'balconies', 'garage'];
+const isSubseq = (arr, sub) => {
+  let j = 0;
+  arr.forEach((x) => { if (x === sub[j]) j += 1; });
+  return j === sub.length;
+};
+ok('📱 дэлгэцүүд ДАРААЛААР: гарчиг → 💳 төлбөр → талбай → он → нийт давхар → давхар → тагт → гараж',
+  wWalk[0] === 'title' && wWalk[wWalk.length - 1] === 'garage' && isSubseq(wWalk, WALK_SUB),
   JSON.stringify(wWalk));
-ok('📱 ДЭЛГЭЦ БҮР дээр ЯГ 1 талбар + ЯГ 1 «Үргэлжлүүлэх» (хоосон/давхар дэлгэц БАЙХГҮЙ ✓)',
+ok('📱 ДЭЛГЭЦ БҮР дээр ЯГ 1 талбар + (гар бичилт→1 товч | сонголт→жагсаалт) — хоосон дэлгэц БАЙХГҮЙ ✓',
   wBad.length === 0, wBad.join(' · '));
-ok('🏁 СҮҮЛИЙН дэлгэц («Гараж»): wizard-ийн товч ХААГДАЖ, алхмын «Үргэлжлүүлэх» л үлдэв',
-  wCur.key === 'garage' && wCur.navVisible === false && wCur.navHasNext === true
-    && JSON.stringify(wCur.visible) === '["garage"]' && wCur.nextBtns === 1,
-  JSON.stringify({ key: wCur.key, nav: wCur.navVisible, vis: wCur.visible, btns: wCur.nextBtns }));
+ok('🏁 СҮҮЛИЙН дэлгэц («Гараж»): алхмын доод товч л үлдэв — сонголт/«Алгасах» дарж урагшилна (unegui ✓)',
+  wCur.key === 'garage' && wCur.navVisible === false && JSON.stringify(wCur.visible) === '["garage"]'
+    && wCur.nextBtns === 1 && wCur.options > 0,
+  JSON.stringify({ key: wCur.key, nav: wCur.navVisible, vis: wCur.visible, btns: wCur.nextBtns, opt: wCur.options }));
 ok('📱 «Гараж» дэлгэцэд алхмын «← Буцах» ХАРАГДАХГҮЙ (толгойн ← л буцаана ✓)',
   wCur.backBtns === 0, `backBtns=${wCur.backBtns}`);
 
@@ -857,6 +941,35 @@ ok('📱 толгойн ← нь ӨМНӨХ дэлгэц рүү буцаана (
   JSON.stringify({ key: w2b.key, visible: w2b.visible }));
 ok('📱 буцаж явахад оруулсан утга ХАДГАЛАГДАНА (гарчиг input-д хэвээр ✓)',
   w2b.titleValue === '2 өрөө байр, Баянгол', JSON.stringify(w2b.titleValue));
+
+// ────────────────────────────────────────────────────────────
+// ⑪‴ 🆕 2026-10-03 (17) — unegui.mn-ийн МОБАЙЛ ХЭВ: 2 БАГАНАТ ЖАГСААЛТ + ✏️ МӨР
+// ────────────────────────────────────────────────────────────
+console.log('\n── ⑪‴ 📱 2 баганат сонголт + «Өмнөх хариултууд» (✏️) ──');
+/** 🎯 «Барилгын нийт давхар» дэлгэц рүү буцна (толгойн ← дараалан ✓) */
+for (let i = 0; i < 8 && (await wprobe()).key !== 'totalFloors'; i += 1) await wback();
+const wp0 = await wprobe();
+ok('📱 «Барилгын нийт давхар» дэлгэц рүү буцлаа (толгойн ← ✓)', wp0.key === 'totalFloors', wp0.key);
+ok('📱 Сонголт нь ЖИНХЭНЭ 2 БАГАНАТ жагсаалт + «Алгасах» линк (unegui.mn-ийн хэв ✓)',
+  wp0.twoCol === true && wp0.options > 3 && wp0.skipOption === true,
+  JSON.stringify({ twoCol: wp0.twoCol, options: wp0.options, skip: wp0.skipOption }));
+ok('📱 Сонголттой дэлгэцэд доод «Үргэлжлүүлэх» БАЙХГҮЙ (дармагц шилжинэ ✓)',
+  wp0.nextBtns === 0 && wp0.navVisible === false, `btns=${wp0.nextBtns} nav=${wp0.navVisible}`);
+ok('🖱 «9» сонголт дээр дарахад ШУУД дараагийн асуулт («Байрны давхар») руу шилжив',
+  (await clickVisible('[data-mobile-option="9"]')) === 'OK' && (await wprobe()).key === 'floor');
+const wp1 = await wprobe();
+ok('📱 Хариулсан асуулт нь ✏️ МӨР болж үлдэв («Барилгын нийт давхар / 9 давхар»)',
+  wp1.answerKeys.includes('totalFloors') && wp1.answerText.includes('9 давхар'),
+  JSON.stringify({ keys: wp1.answerKeys, text: wp1.answerText.slice(0, 120) }));
+ok('📱 Мөрийн дээгүүр 🗂 АНГИЛАЛ ба 📍 БАЙРШИЛ ч харагдана (unegui.mn-ийн хэв ✓)',
+  wp1.answerKeys.includes('step-category') && wp1.answerKeys.includes('step-location'),
+  JSON.stringify(wp1.answerKeys));
+ok('🖱 ✏️ (`data-mobile-answer-edit="totalFloors"`) дарж тэр дэлгэц рүү буцаж засна ✓',
+  (await clickVisible('[data-mobile-answer-edit="totalFloors"]')) === 'OK'
+    && (await wprobe()).key === 'totalFloors');
+const wp2 = await wprobe();
+ok('📱 Утга нь хадгалагдсан (`aria-pressed=\"true\"` — сонгосон «9» тэмдэглэгдсэн ✓)',
+  wp2.selectedOption === '9', `selected=${JSON.stringify(wp2.selectedOption)}`);
 
 // ── 🖥 1440px: мобайл блок БҮРЭН ХААГДАЖ, ХУУЧИН байдал ХЭВЭЭР (regression үгүй) ──
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1400, deviceScaleFactor: 1, mobile: false });

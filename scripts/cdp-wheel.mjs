@@ -118,6 +118,22 @@ const click = async (sel) => {
   await wait(350);
   return res;
 };
+/**
+ * 🖱 ХАРАГДАЖ БАЙГАА элемент дээр дарах — 🆕 2026-10-03 (17)
+ * ⚠️ 3-р алхмын БҮХ дэлгэцийн сонголтууд DOM-д байдаг (зөвхөн CSS нуудаг)
+ *    тул `querySelector` нь ДАЛД мөрийг барих эрсдэлтэй ⇒ харагдахыг сонгоно ✓
+ */
+const clickVisible = async (sel) => {
+  const res = await evaluate(`(() => {
+    const el = [...document.querySelectorAll(${JSON.stringify(sel)})].find((e) => {
+      const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0;
+    });
+    if (!el) return 'NOT_FOUND';
+    el.click(); return 'OK';
+  })()`);
+  await wait(500);
+  return res;
+};
 /** 🪜 «Үргэлжлүүлэх →» — алхмын навигаци (cdp-picker.mjs-тэй ижил) */
 const clickNext = async () => {
   const res = await evaluate(`(() => { const b = [...document.querySelectorAll('form button')].find((x) => (x.innerText||'').includes('Үргэлжлүүлэх')); if (!b) return 'NOT_FOUND'; b.click(); return 'OK'; })()`);
@@ -129,19 +145,30 @@ const viewport = async (w) => {
   await wait(600);
 };
 
-/** 🔎 Нэг талбарын төлөв: 📱 товч (харагдах эсэх/текст) + 🖥 гар бичилт */
+/** 🔎 Нэг талбарын төлөв: 📱 2 баганат жагсаалт + 🎡 холбоос + 🖥 гар бичилт */
 const FIELD = (key) => `(() => {
   const key = ${JSON.stringify(key)};
   const vis = (el) => { if (!el) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
   const b = document.querySelector('[data-choice-trigger="' + key + '"]');
   const inp = document.querySelector('[data-choice-input="' + key + '"]');
-  /** ⚠️ Товч дотор «▾» сум байдаг — зөвхөн ШОШГО (эхний span)-ыг уншина ✓ */
-  const lbl = b ? b.querySelector('span') : null;
+  /**
+   * 🆕 2026-10-03 (17): мобайлд үндсэн сонголт нь 2 БАГАНАТ ЖАГСААЛТ
+   * (unegui.mn-ийн хэв) — товч нь ЗӨВХӨН урт жагсаалтад «🎡 Гүйлгээд сонгох»
+   * (§ .mob-wheel-link, WHEEL_LINK_MIN) тул текстийг бүтнээр уншина ✓
+   * ⚠️ ЭНЭ template literal дотор backtick БИЧИХГҮЙ ✗
+   */
+  const box = (b || inp) ? (b || inp).closest('.form-group') : null;
+  const opts = box ? [...box.querySelectorAll('[data-mobile-option]')] : [];
+  const visOpts = opts.filter(vis);
+  const sel = visOpts.find((e) => e.getAttribute('aria-pressed') === 'true');
   return {
     hasTrigger: !!b,
     trigVisible: vis(b),
-    trigText: lbl ? (lbl.textContent || '').trim() : '',
+    trigText: b ? (b.textContent || '').trim() : '',
     trigEmpty: b ? b.dataset.empty : null,
+    options: visOpts.length,
+    selectedOption: sel ? (sel.dataset.mobileOption || '') : '',
+    skipVisible: box ? [...box.querySelectorAll('[data-mobile-option-skip]')].some(vis) : false,
     hasInput: !!inp,
     inputVisible: vis(inp),
     inputValue: inp ? inp.value : null,
@@ -211,12 +238,55 @@ const DETAIL_STATE = `(() => {
   return {
     key: head ? (head.dataset.mobileDetailKey || '') : '',
     title: head ? (((head.querySelector('h2') || {}).innerText) || '').trim() : '',
+    progress: head ? (((head.querySelector('span') || {}).innerText) || '').trim() : '',
     visible: fields.filter(vis).map((f) => f.dataset.detailField),
-    /** 🪜 Мобайл wizard-ийн «Үргэлжлүүлэх» (сүүлийн дэлгэцэд БАЙХГҮЙ) ✓ */
+    /**
+     * 🪜 Мобайл wizard-ийн «Үргэлжлүүлэх» — ① DOM-д БАЙХ эсэх (next)
+     * ② ХАРАГДАХ эсэх (nextVisible — 🆕 2026-10-03 (17): сонголттой дэлгэцэд
+     * hide-below-sm-ээр дарагддаг тул ялгах ШААРДЛАГАТАЙ ✓)
+     * ⚠️ ЭНЭ template literal дотор backtick БИЧИХГҮЙ ✗
+     */
     next: !!document.querySelector('[data-mobile-detail-next]'),
+    nextVisible: vis(document.querySelector('[data-mobile-detail-next]')),
+    /** 🆕 2026-10-03 (17): 2 баганат сонголт + «Алгасах» линк + 💳 сонголт */
+    options: [...document.querySelectorAll('[data-mobile-option]')].filter(vis).length,
+    skipVisible: [...document.querySelectorAll('[data-mobile-option-skip]')].some(vis),
+    paymentsSelected: [...document.querySelectorAll('[data-payment-value]')].filter((c) => c.checked).length,
   };
 })()`;
 const detailState = () => evaluate(DETAIL_STATE);
+/**
+ * 🪜 УРАГШЛАХ (2026-10-03 (17) — unegui.mn-ийн мобайл хэв):
+ *   ① гар бичилттэй дэлгэц → «Үргэлжлүүлэх»
+ *   ② сонголттой дэлгэц → СОНГОСОН утга байвал түүн дээр (утга ХАДГАЛАГДАНА ✓),
+ *      эс бөгөөс «Алгасах» линк
+ *   ③ 💳 «Төлбөрийн нөхцөл» (ЗААВАЛ) → эхлээд нэг сонголт, дараа нь «Үргэлжлүүлэх»
+ * ⚠️ 🏁 СҮҮЛИЙН дэлгэцэд (`n/N`) урагш явахгүй (`false` буцаана) ✓
+ * ⚠️ ЭНЭ функц доторх evaluate-ийн template literal-д backtick БИЧИХГҮЙ ✗
+ */
+const detailNext = async () => {
+  const s = await detailState();
+  const [pi, pt] = String(s.progress || '').split('/').map(Number);
+  if (pi > 0 && pi === pt) return false;
+  /** 💳 ЗААВАЛ талбар — эхлээд сонголт (эс бөгөөс «Үргэлжлүүлэх» урагшлуулахгүй ✗) */
+  if (s.key === 'payments' && s.paymentsSelected === 0) {
+    await click('[data-payment-value]');
+    await click('[data-mobile-detail-next]');
+  } else if (s.nextVisible) await click('[data-mobile-detail-next]');
+  else {
+    await evaluate(`(() => {
+      const vis = (e) => { const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0; };
+      const opts = [...document.querySelectorAll('[data-mobile-option]')].filter(vis);
+      const sel = opts.find((e) => e.getAttribute('aria-pressed') === 'true');
+      if (sel) { sel.click(); return 'SEL'; }
+      const sk = [...document.querySelectorAll('[data-mobile-option-skip]')].find(vis);
+      if (sk) { sk.click(); return 'SKIP'; }
+      return 'NONE';
+    })()`);
+  }
+  await wait(500);
+  return true;
+};
 /** ↩️ ХАМГИЙН ЭХНИЙ дэлгэц (гарчиг) хүртэл буцаана */
 const detailReset = async () => {
   for (let i = 0; i < 16; i += 1) {
@@ -231,8 +301,8 @@ const detailTo = async (key) => {
     for (let i = 0; i < 16; i += 1) {
       const s = await detailState();
       if (s.key === key) return true;
-      /** ⚠️ `next` байхгүй = сүүлийн дэлгэц ⇒ урагш явах боломжгүй ✓ */
-      if (!s.next || (await click('[data-mobile-detail-next]')) !== 'OK') break;
+      /** ⚠️ 🏁 сүүлийн дэлгэц хүрвэл урагш явах боломжгүй ⇒ эхнээс ✓ */
+      if (!(await detailNext())) break;
     }
     if (!(await detailReset())) return false;
   }
@@ -246,7 +316,7 @@ const detailKeyList = async () => {
     const s = await detailState();
     if (!s.key) break;
     keys.push(s.key);
-    if (!s.next || (await click('[data-mobile-detail-next]')) !== 'OK') break;
+    if (!(await detailNext())) break;
   }
   return keys;
 };
@@ -294,8 +364,8 @@ ok('дугуй хаалттай үед DOM-д БАЙХГҮЙ (`[data-wheel]` = 0
  *  гарчиг бичээгүй тул ЭХЛЭЭД бичнэ (заавал талбар — эс бөгөөс урагш
  *  явахгүй, `mobileDetailNext` мессеж өгнө ✓) */
 const firstD = await detailState();
-ok('📱 3-р алхам: эхний дэлгэц «Зарын гарчиг» — харагдах талбар ЯГ 1 («нэг дэлгэцэд нэг талбар» ✓)',
-  firstD.key === 'title' && firstD.title === 'Зарын гарчиг' && JSON.stringify(firstD.visible) === '["title"]',
+ok('📱 3-р алхам: эхний дэлгэц «Зарын гарчиг» (толгойд «Зар нийтлэх») — харагдах талбар ЯГ 1 ✓',
+  firstD.key === 'title' && firstD.title === 'Зар нийтлэх' && JSON.stringify(firstD.visible) === '["title"]',
   JSON.stringify(firstD));
 /** 🛡️ Заавал талбарын ХААЛТ: гарчиг хоосон үед урагш ЯВАХГҮЙ ✓ */
 await click('[data-mobile-detail-next]');
@@ -307,7 +377,8 @@ ok('⌨️ «Зарын гарчиг»-т бичив', (await fillTitle('3 өр�
 await click('[data-mobile-detail-next]');
 const afterTitle = await detailState();
 ok('📱 «Үргэлжлүүлэх» нь дараагийн ТАЛБАР руу шилжүүлэв (алхам руу БИШ ✓)',
-  afterTitle.key === 'area' && afterTitle.visible.length === 1, `${afterTitle.key} ${JSON.stringify(afterTitle.visible)}`);
+  afterTitle.key === 'payments' && afterTitle.visible.length === 1,
+  `${afterTitle.key} ${JSON.stringify(afterTitle.visible)}`);
 await detailReset();
 const allKeys = await detailKeyList();
 ok('📱 дэлгэцүүд ДАРААЛААР ба «Өрөө» БАЙХГҮЙ (1-р алхмын drill-down-д асуусан ✓)',
@@ -315,10 +386,10 @@ ok('📱 дэлгэцүүд ДАРААЛААР ба «Өрөө» БАЙХГҮЙ 
   JSON.stringify(allKeys));
 ok('📱 «Барилгын нийт давхар» дэлгэц рүү гүйлгэв', await detailTo('totalFloors'));
 const f0 = await field('totalFloors');
-ok('📱 «Барилгын нийт давхар» — ДУГУЙ нээх товч ХАРАГДАЖ байна',
-  f0.hasTrigger && f0.trigVisible, JSON.stringify(f0));
-ok('📱 хоосон үед товч «Сонгох» + `data-empty="true"` (placeholder зан ✓)',
-  f0.trigText === 'Сонгох' && f0.trigEmpty === 'true', `${f0.trigText} / ${f0.trigEmpty}`);
+ok('📱 «Барилгын нийт давхар» — 2 БАГАНАТ ЖАГСААЛТ гарч ирэв (1…' + FLOOR_MAX + ' ✓)',
+  f0.options > 20 && f0.trigVisible, JSON.stringify({ options: f0.options, trig: f0.trigVisible }));
+ok('📱 хоосон үед «🎡 Гүйлгээд сонгох» холбоос + `data-empty="true"` (урт жагсаалт ✓)',
+  f0.trigText === '🎡 Гүйлгээд сонгох' && f0.trigEmpty === 'true', `${f0.trigText} / ${f0.trigEmpty}`);
 ok('📱 гар бичилт (`input[type=number]`) ХАРАГДАХГҮЙ (`.hide-below-sm` ✓)',
   f0.hasInput && f0.inputVisible === false, `hasInput=${f0.hasInput} visible=${f0.inputVisible}`);
 /** ⚠️ Дараалал нь 3-р алхмын дараалалтай ИЖИЛ (угаалгын өрөө нь 2 өрөөт
@@ -334,9 +405,10 @@ const mPresent = mState.filter((x) => x.reached && x.vis.length === 1 && x.vis[0
 /** ⚠️ Яг аль талбар харагдах нь зарын төрлөөс хамаарна (ж: он/тагт зөвхөн
  *  «Орон сууц» дээр, угаалгын өрөө 3+ өрөөтэй үед) — тиймээс ЗААВАЛ 5
  *  БИШ, ХАМГИЙН БАГАДАА 4 ✓ */
-ok('📱 тоон талбар бүр ӨӨРИЙН дэлгэц дээр: ДУГУЙ товч ХАРАГДАЖ, гар бичилт НУУГДСАН',
-  mPresent.length >= 4 && mPresent.every((x) => x.s.trigVisible && x.s.hasInput && !x.s.inputVisible),
-  `${mPresent.length}/${MKEYS.length} ${mState.map((x) => `${x.k}:${x.reached ? `vis=${x.vis.join('|')}` : 'дэлгэц байхгүй'}`).join(' · ')}`);
+ok('📱 тоон талбар бүр ӨӨРИЙН дэлгэц дээр: жагсаалт/товч ХАРАГДАЖ, гар бичилт НУУГДСАН',
+  mPresent.length >= 4 && mPresent.every((x) => x.s.hasInput && !x.s.inputVisible
+    && (x.s.trigVisible || x.s.options > 0)),
+  `${mPresent.length}/${MKEYS.length} ${mState.map((x) => `${x.k}:${x.reached ? `vis=${x.vis.join('|')} opt=${x.s.options} trig=${x.s.trigVisible}` : 'дэлгэц байхгүй'}`).join(' · ')}`);
 await detailTo('totalFloors');
 
 // ────────────────────────────────────────────────────────────
@@ -363,8 +435,8 @@ await click('[data-wheel-value="9"]');
 const w2 = await wheel();
 const f2 = await field('totalFloors');
 ok('«9» мөр сонгогдов (төвд, `aria-selected="true"`)', w2.active === 9 && w2.values[9] === '9', `active=${w2.active}`);
-ok('товч «9 давхар» болов + `data-empty="false"` (өнгө солигдов ✓)',
-  f2.trigText === '9 давхар' && f2.trigEmpty === 'false', `${f2.trigText} / ${f2.trigEmpty}`);
+ok('📱 жагсаалтын «9» СОНГОГДСОН болов + `data-empty="false"` (өнгө солигдов ✓)',
+  f2.selectedOption === '9' && f2.trigEmpty === 'false', `selected=${f2.selectedOption} / ${f2.trigEmpty}`);
 ok('🖥 далд гар бичилтэд утга бичигдэв (форм/DB нэг эх сурвалж ✓)',
   f2.inputValue === '9', String(f2.inputValue));
 ok('дугуй НЭЭТЭЙ хэвээр (iOS-ийн зан — «Болсон» дарах шаардлагагүй ✓)', w2.open === true);
@@ -374,7 +446,7 @@ console.log('\n── ⑤ ГҮЙЛГЭЭ ЗОГСОХОД ТӨВД БАЙГАА 
 await scrollTo(240);
 const f3 = await field('totalFloors');
 const w3 = await wheel();
-ok('scrollTop 240px (=индекс 6) → товч «6 давхар» болов', f3.trigText === '6 давхар', f3.trigText);
+ok('scrollTop 240px (=индекс 6) → «6» СОНГОГДСОН болов', f3.selectedOption === '6', f3.selectedOption);
 ok('төвд байгаа мөр = индекс 6 (`aria-selected` бодитоор шилжив ✓)',
   w3.active === 6 && w3.values[6] === '6', `active=${w3.active}`);
 /** ⚠️ Сүүлийн мөр = индекс `FLOOR_MAX` ⇒ `FLOOR_MAX * 40px` (2026-10-03: 6000px).
@@ -382,7 +454,7 @@ ok('төвд байгаа мөр = индекс 6 (`aria-selected` бодито�
 await scrollTo(FLOOR_MAX * 40 + 4000);
 const f4 = await field('totalFloors');
 ok(`хэт доош гүйлгэхэд СҮҮЛИЙН мөр («${FLOOR_MAX} давхар») — хязгаар ажиллана ✓`,
-  f4.trigText === `${FLOOR_MAX} давхар`, f4.trigText);
+  f4.selectedOption === String(FLOOR_MAX), f4.selectedOption);
 
 // ────────────────────────────────────────────────────────────
 console.log('\n── ⑥ ХААХ: `Escape` · ард тал · «Болсон» (3 зам) ──');
@@ -390,7 +462,7 @@ await pressEscape();
 ok('`Escape` → дугуй ХААГДАВ', (await wheel()).open === false);
 await click('[data-choice-trigger="totalFloors"]');
 ok(`дахин нээхэд өмнө сонгосон утга ХЭВЭЭР («${FLOOR_MAX} давхар»)`,
-  (await field('totalFloors')).trigText === `${FLOOR_MAX} давхар` && (await wheel()).open === true);
+  (await field('totalFloors')).selectedOption === String(FLOOR_MAX) && (await wheel()).open === true);
 await click('[data-wheel-backdrop]');
 ok('ард тал (бараан хэсэг) дарахад ХААГДАВ', (await wheel()).open === false);
 await click('[data-choice-trigger="totalFloors"]');
@@ -398,21 +470,24 @@ await click('[data-wheel-done]');
 ok('«Болсон» дарахад ХААГДАВ', (await wheel()).open === false);
 
 // ────────────────────────────────────────────────────────────
-console.log('\n── ⑦ «Байрны давхар»: НИЙТ ДАВХРААС ХЭТРЭХГҮЙ (9 → «—»+1…9) ──');
+console.log('\n── ⑦ «Байрны давхар»: НИЙТ ДАВХРААС ХЭТРЭХГҮЙ (9 → 1…9) ──');
 await click('[data-choice-trigger="totalFloors"]');
 await click('[data-wheel-value="9"]');
 await click('[data-wheel-done]');
 /** 📱 3-р алхам «нэг дэлгэцэд нэг талбар» — «Байрны давхар» нь ӨӨРИЙН дэлгэцтэй ✓ */
 ok('📱 «Байрны давхар» дэлгэц рүү гүйлгэв', await detailTo('floor'));
-await click('[data-choice-trigger="floor"]');
-const wf = await wheel();
-ok('нийт давхар 9 болоход давхрын жагсаалт = «—» + 1…9 (10 мөр ✓)',
-  wf.rows === 10 && wf.values[9] === '9' && wf.values[10] === undefined,
-  `rows=${wf.rows} last=${JSON.stringify(wf.values[wf.values.length - 1])}`);
-ok('💡 чиглүүлэг «(нийт давхраас)» гэж тайлбарлав', wf.hint.includes('нийт давхраас'), wf.hint);
-await click('[data-wheel-value="5"]');
-ok('«Байрны давхар» = «5 давхар» болов', (await field('floor')).trigText === '5 давхар');
-await click('[data-wheel-done]');
+const ff = await field('floor');
+/**
+ * ⚠️ 2026-10-03 (17): «Байрны давхар» нь БОГИНО жагсаалт (нийт давхар 9 бол
+ *    1…9 = 9 мөр) ⇒ 🎡 дугуйн товч ГАРАХГҮЙ (`WHEEL_LINK_MIN` = 40-аас доош),
+ *    2 БАГАНАТ ШУУД ЖАГСААЛТ л байна (unegui.mn-ийн хэв ✓)
+ */
+ok('нийт давхар 9 болоход давхрын сонголт = 1…9 (9 мөр, дугуйн товчгүй ✓)',
+  ff.options === 9 && ff.hasTrigger === false, `options=${ff.options} trig=${ff.hasTrigger}`);
+ok('📱 сонголт дээр дарахад утга бичигдээд ДАРААГИЙН асуулт руу шилжинэ ✓',
+  (await clickVisible('[data-mobile-option="5"]')) === 'OK');
+ok('🖥 далд гар бичилтэд утга бичигдэв («Байрны давхар» = 5 ✓)',
+  (await field('floor')).inputValue === '5', String((await field('floor')).inputValue));
 
 // ────────────────────────────────────────────────────────────
 console.log('\n── ⑧ ОН (1980…2026): «—» + БУУРАХ эрэмбэ ──');
@@ -426,8 +501,8 @@ ok('эхний мөр «—» (хоосон үлдээх) · 2 дахь = 2026 (
   `${JSON.stringify(wy.values[0])} / ${wy.values[1]} … ${wy.values[47]}`);
 ok('утга хоосон тул төвд «—» (эхний мөр ✓)', wy.active === 0 && wy.activeText === '—', `active=${wy.active}`);
 await click('[data-wheel-value="2015"]');
-ok('«Ашиглалтанд орсон он» = «2015 он» болов', (await field('buildYear')).trigText === '2015 он',
-  (await field('buildYear')).trigText);
+ok('«Ашиглалтанд орсон он» = «2015 он» болов', (await field('buildYear')).selectedOption === '2015',
+  (await field('buildYear')).selectedOption);
 await click('[data-wheel-done]');
 
 // ────────────────────────────────────────────────────────────

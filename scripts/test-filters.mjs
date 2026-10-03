@@ -116,6 +116,31 @@ t('🔀 Хөтлөгч форм, шүүлт, картын мөр ГУРВААС 
   assert.ok(line.includes('Цахилгаан (EV)') && line.includes('🎨 Цагаан'), line);
 });
 
+t('🚗 Жолооны хүрд (steering) — форм БА карт (Зөв / Буруу), шүүлтэд ОРООГҮЙ', () => {
+  const sec = getSection('auto');
+  const f = getAttrField('auto', 'steering');
+  // ① Талбар нь формоос (`attrFields`) олдоно: unegui.mn-ийн ЯГ ИЖИЛ 2 сонголт
+  assert.ok(f, 'steering талбар формоос олдохгүй байна ✗');
+  assert.equal(f.label, 'Жолооны хүрд');
+  assert.equal(f.icon, '🚗');
+  assert.deepEqual(f.options, ['Зөв', 'Буруу']);
+  // ② Дараалал нь ⚙️ «Хурдны хайрцаг»-ийн ЯГ дараа (форм ба карт хоёулаа ✓)
+  const keys = sec.attrFields.map((x) => x.key);
+  assert.equal(keys.indexOf('steering'), keys.indexOf('transmission') + 1);
+  // ③ Шүүлтэд ОРООГҮЙ (mileage/engine-ийн зарчим ✓)
+  assert.ok(!sec.attrFilters.includes('steering'));
+  assert.ok(!getAttrFilters('auto').some((x) => x.key === 'steering'));
+  // ④ Картын мөр: «🚗 Зөв хүрд» (зөвхөн «Зөв» гэвэл утга нь ойлгомжгүй ✗)
+  const line = formatAttrsLine('auto', {
+    brand: 'Toyota', model: 'Sai', transmission: 'Автомат', steering: 'Зөв',
+  });
+  assert.ok(line.includes('🚗 Зөв хүрд'), line);
+  assert.ok(line.includes('⚙️ Автомат'), line);
+  // ⑤ 🔀 ХУУЧИН `drive` (Урд/Хойд/Бүх — хөтлөгчийн төрөл) нь ХӨНДӨГДӨӨГҮЙ
+  assert.notEqual(f.options[0], 'Урд');
+  assert.equal(getAttrField('auto', 'drive'), null);
+});
+
 t('🔧 Картын мөр: хүрээний утга нэгжээ өөрөө агуулна, ХУУЧИН тоон утга «л»-тэй', () => {
   const line = formatAttrsLine('auto', {
     brand: 'Toyota', model: 'Prius', year: '2021', transmission: 'Автомат',
@@ -1453,16 +1478,18 @@ t('🛋️/🧳 0026 migration: CHECK 12 утга + home→furniture / hobby→t
 //    `attrFields`-ийн шошго/icon/дарааллаар мөр болгоно — энэ тест гэрээг түгжинэ.
 // ============================================================
 
-t('📋 getAttrRows(auto) — 🚗 9 мөр, attrFields дараалал + «146,000» таслалттай', () => {
+t('📋 getAttrRows(auto) — 🚗 10 мөр, attrFields дараалал + «146,000» таслалттай', () => {
   // ⚠️ БОДИТ demo зарын `attrs` (`826210d7…` — 🚗 Toyota Sai)
   const rows = getAttrRows('auto', {
     brand: 'Toyota', model: 'Sai', color: 'Хар', year: '2010', importYear: '2020',
-    mileage: '146000', transmission: 'Автомат', engine: '2.1л - 2.7л', fuel: 'Бензин',
+    mileage: '146000', transmission: 'Автомат', steering: 'Зөв',
+    engine: '2.1л - 2.7л', fuel: 'Бензин',
     negotiable: 'yes', drive: 'Урд',   // ⚠️ ХОЁУЛАА ХАРАГДАХГҮЙ (доорх тест ✓)
   });
   // ① Түлхүүр ба дараалал нь `attrFields`-ийн дараалал (форм/sidebar-тай ижил)
   assert.deepEqual(rows.map((r) => r.key), [
-    'brand', 'model', 'color', 'year', 'importYear', 'mileage', 'transmission', 'engine', 'fuel',
+    'brand', 'model', 'color', 'year', 'importYear', 'mileage', 'transmission',
+    'steering', 'engine', 'fuel',
   ]);
   // ② Шошго нь `attrFields`-ээс (карт дээр харагдах нэртэй ЯГ ижил) + icon
   const byKey = Object.fromEntries(rows.map((r) => [r.key, r]));

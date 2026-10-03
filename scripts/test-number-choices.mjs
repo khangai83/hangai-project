@@ -311,12 +311,23 @@ t('🚿 ГЭРЭЭ: «Угаалгын өрөөний тоо» нь ТАГТНЫ
   assert.doesNotMatch(block, /max=\{BATHROOM_MAX\}/, '🖥 ч сонголттой болов ✓');
 });
 
-t('🧩 ГЭРЭЭ: форм нь 📱 мобайл дугуйг (`WheelPicker`) ХЭРЭГЛЭНЭ', () => {
+t('🧩 ГЭРЭЭ: мобайлд сонголт нь 2 БАГАНАТ ЖАГСААЛТ (`MobileOptions`) — «Сонгох» товч БИШ', () => {
   const src = readSrc('components/AddListingClient.jsx');
   assert.match(src, /import WheelPicker from '\.\/WheelPicker'/);
-  assert.match(src, /<WheelPicker/, 'жагсаалт дээр рендэрлэгдэнэ');
-  assert.match(src, /data-choice-trigger=/, 'товч нь CDP-ийн тогтвортой selector-той ✓');
-  assert.match(src, /className="choice-trigger sm:hidden"/, 'товч ЗӨВХӨН мобайлд ✓');
+  assert.match(src, /<WheelPicker/, 'дугуй нь урт жагсаалтад рендэрлэгдэнэ');
+  // ① Жагсаалтын компонент: ЗӨВХӨН мобайлд (`sm:hidden`) + тогтвортой selector-ууд
+  assert.match(src, /function MobileOptions\(\{/, 'MobileOptions компонент алга ✗');
+  assert.match(src, /data-mobile-options className="sm:hidden"/, 'мобайлд л харагдана ✓');
+  assert.match(src, /data-mobile-option=\{it\.value\}/, 'CDP-ийн тогтвортой selector ✓');
+  assert.match(src, /data-mobile-option-skip/, '«Алгасах» (утга ЦЭВЭРЛЭНЭ) ✓');
+  assert.match(src, /aria-pressed=\{on\}/, 'идэвхтэй сонголт нь тэмдэглэгдэнэ ✓');
+  // ② «Сонгох» ТОВЧ БАЙХГҮЙ болов (unegui.mn-ийн хэв ✓)
+  assert.doesNotMatch(src, /className="choice-trigger sm:hidden"/, 'хуучин мобайл товч үлдсэн ✗');
+  assert.doesNotMatch(src, /\{shown \|\| 'Сонгох'\}/, '«Сонгох» бичиг үлдсэн ✗');
+  // ③ 🎡 ДУГУЙ нь ЗӨВХӨН урт жагсаалтад ХЭВЭЭР (📅 48 он · 🏢 1–150 давхар) ✓
+  assert.match(src, /const WHEEL_LINK_MIN = \d+;/, 'урт жагсаалтын босго ✓');
+  assert.match(src, /items\.length > WHEEL_LINK_MIN/, 'товч ЗӨВХӨН урт жагсаалтад ✓');
+  assert.match(src, /data-choice-trigger=\{testId\}/, 'дугуйн товч (CDP ✓)');
   assert.match(src, /hide-below-sm/, '🖥 дээр гар бичилт/`<select>` хэвээр ✓');
   assert.match(src, /openWheel=\{setWheel\}/, 'дугуйг нээх state холбоотой ✓');
 });
@@ -362,10 +373,13 @@ t('🧩 ГЭРЭЭ: `locationData.js` — оны attr талбар нь `choices
   assert.match(src, /\.\.\.number\(key, label, placeholder, icon\), filterable: true, range: true,/);
 });
 
-t('🧩 ГЭРЭЭ: CSS — `.choice-trigger` (мобайл товч) + дугуйн scrollbar НУУГДСАН', () => {
+t('🧩 ГЭРЭЭ: CSS — `.mob-options`/`.mob-option` (2 баганат жагсаалт) + дугуйн scrollbar', () => {
   const src = readSrc('app/globals.css');
-  assert.match(src, /\.choice-trigger \{/, 'товчны класс ✓');
-  assert.match(src, /\.choice-trigger\[data-empty="true"\]/, 'хоосон үед цайвар (placeholder шиг) ✓');
+  assert.match(src, /\.mob-options \{/, 'жагсаалтын grid ✓');
+  assert.match(src, /\.mob-option \{/, 'сонголтын мөр ✓');
+  assert.match(src, /\.mob-option-on \{/, 'идэвхтэй сонголт ✓');
+  assert.match(src, /\.mob-skip \{/, '«Алгасах» линк ✓');
+  assert.match(src, /\.mob-wheel-link \{/, 'дугуйн холбоос ✓');
   assert.match(src, /\[data-wheel-scroll\] \{/, 'дугуйн гүйлгэх хэсэг ✓');
   assert.match(src, /scrollbar-width: none/, 'Firefox-д scrollbar нуух ✓');
   assert.match(src, /::-webkit-scrollbar \{/, 'Chrome/Safari-д scrollbar нуух ✓');

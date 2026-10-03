@@ -409,6 +409,18 @@
     [data-form-row="details"] .form-group[data-mobile-active="false"] {
       display: none !important;
     }
+    /**
+     * 📱 3-р алхмын АСУУЛТЫН ТОЛГОЙ (2026-10-03 (17)) — мобайлд талбарын нэр
+     *    нь АСУУЛТ болж, том/тод гарна (unegui.mn-ийн «Нөхцөл» / «Төрөл» /
+     *    «Хүрд» / «Үйлдвэрлэсэн он» төдий гарчигтай ИЖИЛ ✓).
+     * ⚠️ Нэрийг ХОЁР ДАХИН ГАРГАХГҮЙ — дэлгэцийн толгойд «Зар нийтлэх» л
+     *    байх ба асуултын нэр эндээс ГАНЦ удаа харагдана ✓
+     * ⚠️ ЗӨВХӨН `<640px` — 🖥 ≥640px дээр нэр нь зүүн баганад (дээрх дүрэм) ✓
+     * 🔍 Хайх үг: асуултын толгой, data-form-row details label
+     */
+    [data-form-row="details"] > .form-group > label {
+      @apply mb-1 text-[17px] font-bold leading-snug text-gray-900;
+    }
   }
 
   /**
@@ -435,6 +447,45 @@
   }
   .choice-trigger .choice-arrow {
     @apply shrink-0 text-gray-400;
+  }
+
+  /**
+   * 📱 2 БАГАНАТ СОНГОЛТЫН ЖАГСААЛТ (2026-10-03 (17), unegui.mn-ийн мобайл хэв)
+   *
+   * 🎯 Хэрэглэгчийн хүсэлт: «unegui.mn шиг: … одоогийн асуултын сонголтууд
+   *    2 баганат шууд цэнхэр линк» ⇒ мобайлд (`<640px`) сонголттой талбар нь
+   *    «Сонгох» ТОВЧ/ДУГУЙ/`<select>` БИШ, харин хоёр баганад эгнэсэн, шууд
+   *    дардаг текстэн сонголтууд (сүүдэр/хүрээ БАЙХГҮЙ — unegui-гийн ЯГ ИЖИЛ
+   *    харагдац ✓). Сонгосон нь БРЭНД ӨНГӨӨР + `✓`.
+   * ⚠️ Дармагц `AddListingClient`-ийн `pickDetail()` нь утгыг бичээд ДАРААГИЙН
+   *    АСУУЛТ руу шилжүүлнэ — тул мөрүүд нь зөвхөн «харагдац» биш, үйлдэл ✓
+   * ⚠️ Мөр хоорондын нимгэн зураас (`border-b`) нь багана бүрд ТУСДАА —
+   *    grid-ийн мөрүүд тэгшлэхгүй ч (урт текст 2 мөр болж болно) эвдрэхгүй ✓
+   * 🔍 Хайх үг: mob-options, mob-option, mob-skip, data-mobile-options,
+   *    data-mobile-option, 2 баганат жагсаалт
+   */
+  .mob-options {
+    @apply grid grid-cols-2 gap-x-4;
+  }
+  .mob-option {
+    @apply flex w-full items-start gap-1.5 border-b border-gray-100 py-3 text-left text-[15px] leading-snug text-primary transition active:bg-primary-light;
+  }
+  /* ⚠️ Идэвхтэй сонголт нь өнгөөрөө (`.text-primary`) + `✓` тэмдгээр ялгарна ✓ */
+  .mob-option-on {
+    @apply font-semibold;
+  }
+  /* «Алгасах» — жижиг текстэн линк (товч БИШ — unegui-д товч байхгүй ✓) */
+  .mob-skip {
+    @apply mt-3 inline-block text-[14px] font-semibold text-gray-500 underline-offset-2 active:text-gray-700;
+  }
+  /**
+   * 🎡 УРТ жагсаалтын ДУГУЙН холбоос (📅 он · 🏢 1–150 давхар) — 2 баганат
+   *    жагсаалт нь үндсэн сонголт; маш урт жагсаалтад хурдан сонгох нэмэлт
+   *    зам (2026-10-02-ны «iPhone Timer» хүсэлт ХЭВЭЭР ✓)
+   * 🔍 Хайх үг: mob-wheel-link, data-choice-trigger
+   */
+  .mob-wheel-link {
+    @apply mt-2 self-start text-[13px] font-semibold text-gray-500 underline-offset-2 active:text-gray-700;
   }
 
   /**

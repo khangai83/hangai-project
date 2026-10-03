@@ -271,11 +271,37 @@ t('📱 Толгой: `data-mobile-detail-head` + `data-mobile-detail-key` (= д
   assert.ok(FORM.includes('data-mobile-detail-head data-mobile-detail-key={activeDetail.key} className="sm:hidden"'));
 });
 
-t('📱 Толгой: ← товч (`data-mobile-detail-back`) + асуултын гарчиг + «n/N» явц ✓', () => {
+t('📱 Толгой: ← товч (`data-mobile-detail-back`) + «Зар нийтлэх» + «n/N» явц ✓', () => {
   assert.ok(step3.includes('data-mobile-detail-back'));
   assert.ok(step3.includes('aria-label="Буцах"'));
-  assert.ok(step3.includes('{activeDetail.title}'));
+  /** 🆕 2026-10-03 (17): толгойд АСУУЛТЫН НЭР ГАРАХГҮЙ (нэр ДАВХАРДАХГҮЙ) —
+   *  unegui.mn-ийн толгой шиг «Зар нийтлэх» л байна; асуултын нэр доор,
+   *  өөрийн талбарын толгойн мөрөнд (`label`) харагдана ✓ */
+  assert.ok(step3.includes('Зар нийтлэх</h2>'), 'толгойд «Зар нийтлэх» байх ёстой');
+  assert.ok(!step3.includes('{activeDetail.title}'), 'асуултын нэр толгойд ДАВХАРДАХГҮЙ ✓');
   assert.ok(step3.includes('{detailIdx + 1}/{detailScreens.length}'));
+});
+
+t('📱 «ӨМНӨХ ХАРИУЛТУУД» — ✏️-тэй мөрүүд (`MobileAnswers`, unegui.mn-ийн хэв) ✓', () => {
+  assert.ok(step3.includes('<MobileAnswers rows={mobileAnswerRows} onEdit={mobileAnswerEdit} />'));
+  assert.match(FORM, /function MobileAnswers\(\{ rows = \[\], onEdit \}\)/);
+  assert.match(FORM, /data-mobile-answers className="sm:hidden"/);
+  assert.match(FORM, /data-mobile-answer-edit=\{r\.key\}/);
+  assert.match(FORM, /onClick=\{\(\) => onEdit\(r\.key\)\}/);
+  // ⚠️ Утга нь формойн state-ээс ШУУД — шинэ DB багана/хадгалалт БАЙХГҮЙ ✓
+  assert.match(FORM, /const detailAnswerText = \(key\) => \{/);
+  assert.match(FORM, /const mobileAnswerRows = \(\(\) => \{/);
+  // ✏️ нь 1/2-Р АЛХАМ руу ч буцаана (🗂 Ангилал / 📍 Зарын дэд байршил) ✓
+  assert.match(FORM, /if \(key === 'step-category'\) \{ gotoStep\(0\); return; \}/);
+  assert.match(FORM, /if \(key === 'step-location'\) \{ gotoStep\(1\); return; \}/);
+});
+
+t('📱 Сонголттой талбар — дармагц ДАРААГИЙН асуулт (`pickDetail`), доод товч ХАРАГДАХГҮЙ ✓', () => {
+  assert.match(FORM, /const pickDetail = \(apply\) => \(v\) => \{ apply\(String\(v\)\); mobileDetailNext\(\); \}/);
+  assert.match(FORM, /const skipDetail = \(apply\) => \(\) => \{ apply\(''\); mobileDetailNext\(\); \}/);
+  assert.ok(step3.includes('<MobileOptions'), 'талбарууд 2 баганат жагсаалттай болсон ✓');
+  assert.match(FORM, /const activePick = !!activeDetail\.pick;/);
+  assert.match(FORM, /pick: isAttrPick\(f\),/);
 });
 
 t('📱 Wizard нь ЗӨВХӨН 3-р алхамд (`step === 2`) — бусад алхамд DOM-д БАЙХГҮЙ ✓', () => {
@@ -296,8 +322,10 @@ t('📱 Wizard навигаци: «Үргэлжлүүлэх» (`mobileDetailNext
   assert.ok(step3.includes("className={`btn btn-ghost ${activeDetail.required ? 'hidden' : ''}`}"));
 });
 
-t('🏁 СҮҮЛИЙН дэлгэцэд wizard-ийн навигаци ХААГДАЖ, алхмын товч л үлдэнэ (`hide-below-sm` ✓)', () => {
-  assert.ok(step3.includes("className={`mt-5 gap-2 sm:hidden ${isLastDetail ? 'hide-below-sm' : 'flex'}`}"));
+t('🏁 СҮҮЛИЙН дэлгэц БА сонголттой дэлгэцэд wizard-ийн навигаци ХААГДАЖ, алхмын товч л үлдэнэ ✓', () => {
+  /** ⚠️ 2026-10-03 (17): сонголттой талбар дээр (`pick`) доод товч ХЭРЭГГҮЙ —
+   *  сонголт дээр дарахад ШУУД дараагийн асуулт руу шилждэг (unegui.mn-ийн зан) ✓ */
+  assert.ok(step3.includes("className={`mt-5 gap-2 sm:hidden ${(isLastDetail || activePick) ? 'hide-below-sm' : 'flex'}`}"));
 });
 
 t('🪜 Алхмын «← Буцах» — 3-р алхамд мобайлд ХАРАГДАХГҮЙ (`hide-below-sm` ✓)', () => {

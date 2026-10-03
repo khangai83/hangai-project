@@ -26,7 +26,7 @@ import { ROOM_VALUES, roomOptionLabel } from '../lib/roomFilter.mjs';
 //    массив эсвэл `null` ⇒ түлхүүр УСТАНА) нь бас нэг газар бичигдэнэ ✓
 import {
   PAYMENT_OPTIONS, hasPaymentTerms, togglePaymentValue,
-  countPayments, parsePaymentList, paymentTermsForAttrs,
+  countPayments, parsePaymentList, paymentTermsForAttrs, paymentOptionLabel,
 } from '../lib/paymentFilter.mjs';
 /**
  * 🔢🎡 СОНГОЛТТОЙ ТООН ТАЛБАР (2026-10-02) — хэрэглэгчийн хүсэлт: «…барилгийн
@@ -288,6 +288,114 @@ function MobileQuestion({ title, items, value, onPick, onBack, emptyText = 'Со
 /** 📱 Мобайл drill-down-ийн «Алгасах» мөр (`rooms` нь заавал биш) — утга нь `''` */
 const MOBILE_SKIP = '__skip__';
 
+/**
+ * 🎡 УРТ жагсаалтад (ж: 📅 1980–2026 он = 48 мөр, 🏢 1–150 давхар = 151 мөр)
+ *    «🎡 Гүйлгээд сонгох» товчийг ГАРГАНА — 2 баганат жагсаалт нь үндсэн
+ *    сонголт (unegui.mn-ийн хэв ✓), харин маш урт жагсаалтыг гүйлгэхээс
+ *    хурдан сонгох боломж ХЭВЭЭР (`WheelPicker` — 2026-10-02-ны хүсэлт) ✓
+ * ⚠️ Богино жагсаалт (ж: ⚙️ Автомат/Механик, 🎨 12 өнгө) дээр товч ГАРАХГҮЙ —
+ *    жагсаалт дангаараа хангалттай (илүүц товч ✗)
+ */
+const WHEEL_LINK_MIN = 40;
+
+/**
+ * 📱 2 БАГАНАТ СОНГОЛТЫН ЖАГСААЛТ — 3-р алхам (📋 Дэлгэрэнгүй), ЗӨВХӨН <640px
+ * ──────────────────────────────────────────────────────────────────────────
+ * 🎯 2026-10-03 (17) — хэрэглэгчийн хүсэлт: «chamd heden jishee zurag yawuulj
+ *    bn. chi haraad iimerhuu bolgood ug doo» (unegui.mn-ийн мобайл формын
+ *    6 зураг: `Нөхцөл` · `Төрөл` · `Хурд` · `Үйлдвэрлэсэн он`) ⇒ мобайлд
+ *    сонголттой талбар нь «Сонгох» ТОВЧ (`choice-trigger` → iOS дугуй) эсвэл
+ *    `<select>` БИШ, харин **2 баганат шууд дардаг жагсаалт** болов ✓
+ *
+ * ⚠️ Сонголт дээр ДАРАХАД утга бичигдээд ШУУД дараагийн асуулт руу шилжинэ
+ *    (дэлгэцийн доорх «Алгасах / Үргэлжлүүлэх» товчнууд ХАРАГДАХГҮЙ —
+ *    unegui.mn-ийн ЯГ ИЖИЛ зан). Тиймээс `onPick` нь «утга бичих + дараагийн
+ *    дэлгэц» хоёуланг нь хийх ёстой (`pickDetail()` туслахыг үзнэ үү ✓)
+ * ⚠️ Идэвхтэй сонголт нь `aria-pressed="true"` + өмнө нь `✓` (unegui-д цэнхэрээр
+ *    ялгардаг — бидэнд брэнд өнгө + тод ✓)
+ * ⚠️ Хоосон мөрийг (`'—'`) ЭНД ГАРГАХГҮЙ — утга цэвэрлэх нь «Алгасах»
+ *    (`data-mobile-option-skip`) ✓
+ * ⚠️ `data-mobile-option` нь CDP-ийн ТОГТВОРТОЙ selector (`scripts/cdp-*.mjs`)
+ * ⚠️ ЗӨВХӨН `sm:hidden` — 🖥 ≥640px дээр хуучин `<select>`/гар бичилт ХЭВЭЭР ✓
+ * 🔍 Хайх үг: MobileOptions, data-mobile-options, mob-option, 2 баганат жагсаалт
+ */
+function MobileOptions({ items = [], value = '', onPick, skip = false, onSkip }) {
+  /** ⚠️ Хоосон мөр нь сонголт БИШ (цэвэрлэх нь «Алгасах») — хасаж харуулна ✓ */
+  const rows = items.filter((it) => String(it.value) !== '');
+  if (!rows.length) return null;
+  return (
+    <div data-mobile-options className="sm:hidden">
+      <div className="mob-options" data-mobile-options-grid role="group">
+        {rows.map((it) => {
+          const on = String(value) === String(it.value);
+          return (
+            <button
+              key={it.value}
+              type="button"
+              data-mobile-option={it.value}
+              aria-pressed={on}
+              onClick={() => onPick(it.value)}
+              className={`mob-option${on ? ' mob-option-on' : ''}`}
+            >
+              {on ? <span aria-hidden="true">✓</span> : null}
+              <span className="min-w-0 truncate">{it.label}</span>
+            </button>
+          );
+        })}
+      </div>
+      {skip ? (
+        <button type="button" data-mobile-option-skip onClick={onSkip} className="mob-skip">
+          Алгасах
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * 📱 «ӨМНӨХ ХАРИУЛТУУД» — 3-р алхмын толгойн ДОР (unegui.mn-ийн хэв, 2026-10-03)
+ * ──────────────────────────────────────────────────────────────────────────
+ * 🎯 Хэрэглэгчийн хүсэлт: «unegui.mn шиг: өмнөх хариултууд ✏️-тэй мөр болж,
+ *    одоогийн асуултын сонголтууд 2 баганат шууд цэнхэр линк» ⇒ аль хэдийн
+ *    хариулсан асуулт БҮР (ангилал · байршил · гарчиг · брэнд · он · …) нэг
+ *    мөр болж, БАРУУН талын ✏️ дарж тэр дэлгэц рүү буцаж засна ✓
+ *
+ * ⚠️ ЗӨВХӨН хариулттай (хоосон БИШ) асуулт мөр болно (`rows`-ыг дуудагч шүүнэ)
+ * ⚠️ ОДООГИЙН асуулт мөр болж ГАРАХГҮЙ — тэр нь доор асуугдаж байгаа ✓
+ * ⚠️ `sm:hidden` — 🖥 ≥640px дээр хуучин харагдац ХЭВЭЭР ✓
+ * ⚠️ `data-mobile-answer-edit` нь CDP-ийн ТОГТВОРТОЙ selector
+ * 🔍 Хайх үг: MobileAnswers, data-mobile-answers, data-mobile-answer-edit, ✏️
+ */
+function MobileAnswers({ rows = [], onEdit }) {
+  if (!rows.length) return null;
+  return (
+    <div data-mobile-answers className="sm:hidden">
+      <ul className="mb-3">
+        {rows.map((r) => (
+          <li key={r.key} className="border-b border-gray-100 last:border-b-0">
+            <button
+              type="button"
+              data-mobile-answer-edit={r.key}
+              onClick={() => onEdit(r.key)}
+              className="flex w-full items-center gap-2 py-2.5 text-left"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-[13px] font-bold leading-snug text-gray-900">{r.label}</span>
+                {r.value ? (
+                  <span className="mt-0.5 block truncate text-[15px] leading-snug text-gray-600">
+                    {r.value}
+                  </span>
+                ) : null}
+              </span>
+              <span aria-hidden="true" className="shrink-0 text-gray-300">✏️</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /** 📱 «Өрөөний тоо» дэлгэцийн мөрүүд — утга нь шүүлттэй ЯГ ИЖИЛ (`'1'`…`'5'`) ✓ */
 const MOBILE_ROOM_ITEMS = [
   ...ROOM_VALUES.map((v) => ({ value: v, label: roomOptionLabel(v) })),
@@ -409,8 +517,8 @@ const attrWheelUnit = (f) => f.choiceUnit || (f.type === 'number' ? 'он' : '')
  */
 function ChoiceField({
   label, icon = '', hint = '', wheelHint = '', value = '', items = [], unit = '',
-  testId, placeholder = '', min, max, desktopControl = 'input', onChange, openWheel,
-  fieldKey = '', mobileActive, plusValue = '',
+  testId, placeholder = '', min, max, desktopControl = 'input', onChange,
+  onPick, onSkip, openWheel, fieldKey = '', mobileActive, plusValue = '',
 }) {
   /** 🎛 Товч/дугуй дээрх бичиг: `'5 давхар'` · `'2015 он'` · `'+5 тагт'` */
   const shown = choiceText(value, unit, plusValue);
@@ -454,7 +562,21 @@ function ChoiceField({
             data-choice-input={testId}
           />
         )}
-        {/* ═ 📱 <640px: iOS Timer маягийн ДУГУЙ нээх ТОВЧ ═ */}
+        {/* ═ 📱 <640px: «Сонгох» ТОВЧ БАЙХГҮЙ — 2 баганат ШУУД жагсаалт
+            (unegui.mn-ийн хэв, 2026-10-03 (17)). Сонголт дээр дарахад утга
+            бичигдээд ШУУД дараагийн асуулт руу шилжинэ ✓ ═ */}
+      </div>
+      <MobileOptions
+        items={items}
+        value={value}
+        onPick={onPick || onChange}
+        skip
+        onSkip={onSkip}
+      />
+      {/* 🎡 УРТ жагсаалт (📅 1980–2026 он · 🏢 1–150 давхар) — 2 баганат
+          жагсаалт нь үндсэн сонголт; гүйлгэхээс хурдан сонгох БОЛОМЖ
+          ХЭВЭЭР үлдэнэ (`WheelPicker`, 2026-10-02-ны хүсэлт ✓) */}
+      {items.length > WHEEL_LINK_MIN ? (
         <button
           type="button"
           data-choice-trigger={testId}
@@ -467,12 +589,11 @@ function ChoiceField({
             hint: wheelHint || hint,
             onPick: onChange,
           })}
-          className="choice-trigger sm:hidden"
+          className="mob-wheel-link sm:hidden"
         >
-          <span className="min-w-0 truncate">{shown || 'Сонгох'}</span>
-          <span aria-hidden="true" className="choice-arrow">▾</span>
+          🎡 Гүйлгээд сонгох
         </button>
-      </div>
+      ) : null}
       {hint ? <p className="form-hint">{hint}</p> : null}
     </div>
   );
@@ -1073,6 +1194,22 @@ export default function AddListingClient() {
      🔍 Хайх үг: mobileDetailStep, detailScreens, data-detail-field,
         data-mobile-active, data-mobile-detail-head
      ========================================================================== */
+  /**
+   * 📱 Мобайлд «2 БАГАНАТ ШУУД ЖАГСААЛТ»-аар сонгогдох талбар уу? (2026-10-03)
+   * ⚠️ 🎛 ЧИП талбар (`chips`/`formChips`, ж: 💼 ажлын 4 талбар) нь мобайлд ч
+   *    ЧИП хэвээр (2026-10-03 (11)-ийн хэрэглэгчийн хүсэлт + unegui-гийн АЖЛЫН
+   *    форм) тул жагсаалт руу ОРУУЛАХГҮЙ — ⚠️ тэдгээр нь `type: 'select'` (!)
+   *    тул шалгалтаас ЗААВАЛ хасна, эс бөгөөс доод товч нь хуурамчаар
+   *    нуугдаж, мобайлд ЧИП талбар дээр урагшлах боломж ҮЛДЭХГҮЙ ✗
+   *    (`cdp:chips` тестээр илэрсэн ✓)
+   * ⚠️ 🔎 ХАЙЛТТАЙ сонголт (`searchable`, ж: 🏷️ Үйлдвэрлэгч) нь бичиж хайдаг
+   *    тул гар бичилт ХЭВЭЭР; 🚙 «Загвар» нь `optionsFrom` (брэндээс хамаарах
+   *    combo) — ч бичилт ХЭВЭЭР ✓
+   * ⚠️ JSX-ийн салбарын ДАРААЛАЛТАЙ ИЖИЛ байх ЁСТОЙ: `formChips/chips` →
+   *    `choices` → `searchable` → `optionsFrom` → `select` → input ✓
+   */
+  const isAttrPick = (f) => f.type === 'select' && !f.searchable && !f.optionsFrom
+    && !f.chips && !f.formChips;
   const detailScreens = (() => {
     /** ⚠️ `required` — зөвхөн ШИНЭ зард (засах горимд `validateStep` ч шаарддаггүй ✓) */
     const out = [{ key: 'title', title: 'Зарын гарчиг', group: 'title', required: !isEdit }];
@@ -1081,6 +1218,8 @@ export default function AddListingClient() {
       key: `attr-${f.key}`,
       title: `${f.icon ? `${f.icon} ` : ''}${f.label}`,
       group: 'attrs',
+      /** 📱 Сонголттой бол дарж сонгоод ШУУД дараагийн асуулт (товч ХАРАГДАХГҮЙ) */
+      pick: isAttrPick(f),
     }));
     /**
      * 💳 «Төлбөрийн нөхцөл» — 📱 мобайлд ӨӨРИЙН дэлгэцтэй (`required: true`).
@@ -1094,9 +1233,9 @@ export default function AddListingClient() {
       required: !isEdit,
     });
     if (isRealEstate) out.push({ key: 'area', title: 'Талбай (м²)', group: 'area' });
-    if (showFloors && showApartment) out.push({ key: 'buildYear', title: 'Ашиглалтанд орсон он', group: 'floors-1' });
-    if (showFloors) out.push({ key: 'totalFloors', title: 'Барилгын нийт давхар', group: 'floors-1' });
-    if (showFloors) out.push({ key: 'floor', title: 'Байрны давхар', group: 'floors-2' });
+    if (showFloors && showApartment) out.push({ key: 'buildYear', title: 'Ашиглалтанд орсон он', group: 'floors-1', pick: true });
+    if (showFloors) out.push({ key: 'totalFloors', title: 'Барилгын нийт давхар', group: 'floors-1', pick: true });
+    if (showFloors) out.push({ key: 'floor', title: 'Байрны давхар', group: 'floors-2', pick: true });
     /**
      * 🚿 «Угаалгын өрөөний тоо» — 🆕 2026-10-03 (хэрэглэгчийн хүсэлт:
      *    «тагтны өмнө угаалгын өрөөний тоо оруулах хэсгийг оруул») ⇒
@@ -1105,9 +1244,9 @@ export default function AddListingClient() {
      *    (`data-detail-row="floors-2"`); мөр ба талбарын `data-mobile-active`
      *    хоёр ТУСДАА тул «нэг дэлгэцэд нэг талбар» ХЭВЭЭР ✓
      */
-    if (showBathrooms) out.push({ key: 'bathrooms', title: 'Угаалгын өрөөний тоо', group: 'floors-2' });
-    if (showFloors && showApartment) out.push({ key: 'balconies', title: 'Тагт', group: 'floors-2' });
-    if (showApartment) out.push({ key: 'garage', title: 'Гараж', group: 'garage' });
+    if (showBathrooms) out.push({ key: 'bathrooms', title: 'Угаалгын өрөөний тоо', group: 'floors-2', pick: true });
+    if (showFloors && showApartment) out.push({ key: 'balconies', title: 'Тагт', group: 'floors-2', pick: true });
+    if (showApartment) out.push({ key: 'garage', title: 'Гараж', group: 'garage', pick: true });
     return out;
   })();
   /** ⚠️ Түлхүүр олдохгүй бол (ж: хэсэг солигдов) → ЭХНИЙ дэлгэц (`title`) ✓ */
@@ -1119,6 +1258,69 @@ export default function AddListingClient() {
   /** 📱 Мөр/талбар «энэ дэлгэцэн дээр байна уу» → `data-mobile-active` (CSS ✓) */
   const detailRowActive = (group) => (activeDetail.group === group ? 'true' : 'false');
   const detailFieldActive = (key) => (activeDetail.key === key ? 'true' : 'false');
+  /** 📱 Одоогийн асуулт нь «дарж сонгох» жагсаалттай юу → доод товч ХАРАГДАХГҮЙ ✓ */
+  const activePick = !!activeDetail.pick;
+
+  /**
+   * 📱 «Өмнөх хариулт» мөрийн УТГА (unegui.mn-ийн мөрийн доод текст) — 2026-10-03.
+   * ⚠️ Утга нь формойн state-ээс ШУУД (`form.*`, `form.attrs.*`) — шинэ
+   *    хадгалалт/DB багана НЭМЭГДЭХГҮЙ ✓
+   * ⚠️ Хоосон утга → `''` ⇒ мөр ГАРАХГҮЙ (хариулаагүй асуулт мөр болохгүй ✓)
+   */
+  const detailAnswerText = (key) => {
+    if (key === 'title') return String(form.title || '').trim();
+    if (key === 'payments') return form.payments.map((v) => paymentOptionLabel(v)).join(', ');
+    if (key === 'area') return form.area ? `${form.area} м²` : '';
+    if (key === 'buildYear') return form.buildYear ? choiceText(form.buildYear, 'он') : '';
+    if (key === 'totalFloors') return form.totalFloors ? choiceText(form.totalFloors, 'давхар') : '';
+    if (key === 'floor') return form.floor ? choiceText(form.floor, 'давхар') : '';
+    if (key === 'bathrooms') return form.bathrooms ? choiceText(form.bathrooms, '', PLUS_VALUE) : '';
+    if (key === 'balconies') return form.balconies ? choiceText(form.balconies, 'тагт', PLUS_VALUE) : '';
+    if (key === 'garage') {
+      const g = GARAGE_OPTIONS.find((x) => x.value === form.hasGarage);
+      return g ? g.label : '';
+    }
+    if (key.startsWith('attr-')) {
+      const f = attrFields.find((x) => `attr-${x.key}` === key);
+      const v = f ? String((form.attrs || {})[f.key] || '') : '';
+      if (!v) return '';
+      /** 📅 ОН нь «2015 он», 🛣️ ГҮЙЛТ нь «146,000» (картын мөртэй ижил ✓) */
+      if (f.type === 'number') {
+        return /^\d+$/.test(v) ? Number(v).toLocaleString('en-US') : v;
+      }
+      return v;
+    }
+    return '';
+  };
+
+  /**
+   * 📱 3-р алхмын толгойн ДОРХ мөрүүд (unegui.mn-ийн хэв, 2026-10-03 (17)):
+   *   ① 🗂 Ангилал (unegui-гийн «Автомашин ▸ Автомашин зарна ▸ Toyota ▸ 4Runner»)
+   *   ② 📍 Зарын дэд байршил («Улаанбаатар — Багануур — 1-р хороо»)
+   *   ③ хариулсан асуулт БҮР (ОДООГИЙНХООС бусад) — утгатай нь л ✓
+   * ⚠️ Түлхүүр нь `detailScreens[].key` (`'step-category'`/`'step-location'` нь
+   *    тусдаа — `✏️` нь 1/2-р АЛХАМ руу буцаана ✓)
+   */
+  const mobileAnswerRows = (() => {
+    const rows = [];
+    const catPath = form.propertyType
+      ? [
+        `${sectionDef.icon} ${sectionDef.label}`,
+        showCategoryChoice ? categoryItems.find((c) => c.value === form.category)?.label : '',
+        selectedGroupLabel,
+        selectedLeafLabel,
+      ].filter(Boolean).join(' ▸ ')
+      : '';
+    if (catPath) rows.push({ key: 'step-category', label: 'Ангилал', value: catPath });
+    const locPath = [form.city, form.district, simpleForm ? '' : form.khoroo].filter(Boolean).join(' — ');
+    if (locPath) rows.push({ key: 'step-location', label: 'Зарын дэд байршил', value: locPath });
+    detailScreens.forEach((s) => {
+      if (s.key === activeDetail.key) return;
+      const value = detailAnswerText(s.key);
+      if (value) rows.push({ key: s.key, label: s.title, value });
+    });
+    return rows;
+  })();
 
   /**
    * 📱 ← товч — нэг дэлгэцээр ДЭЭШ буцаана; хамгийн эхний дэлгэц дээр
@@ -1189,6 +1391,34 @@ export default function AddListingClient() {
     setError('');
     if (isFirstDetail) { goBack(); return; }
     setMobileDetailStep(detailScreens[detailIdx - 1].key);
+  };
+
+  /**
+   * 📱 Сонголт дээр дарах үйлдэл — «утга бичих → ШУУД дараагийн асуулт»
+   *    (unegui.mn-ийн зан: «Алгасах / Үргэлжлүүлэх» товч ШААРДЛАГАГҮЙ ✓)
+   * ⚠️ `apply` нь `set(...)`/`setAttrCascade(...)` — хоёулаа state-д бичнэ;
+   *    `mobileDetailNext()` нь дараагийн дэлгэцийн ТҮЛХҮҮРИЙГ одоогийн
+   *    render-ийн `detailIdx`-ээс боддог тул шинэ утга шаардахгүй ✓
+   * ⚠️ Заавал талбар («Зарын гарчиг», «Төлбөрийн нөхцөл») нь жагсаалттай БИШ
+   *    (`pick: false`) тул энэ зам руу орохгүй — `requiredDetailMsg` ХӨНДӨГДӨХГҮЙ ✓
+   */
+  const pickDetail = (apply) => (v) => { apply(String(v)); mobileDetailNext(); };
+  /** 📱 «Алгасах» — утгыг ЦЭВЭРЛЭЭД дараагийн асуулт (бүх сонголттой талбар заавал БИШ ✓) */
+  const skipDetail = (apply) => () => { apply(''); mobileDetailNext(); };
+
+  /**
+   * 📱 ✏️ — «Өмнөх хариулт» мөрийн засах товч (unegui.mn-ийн харандаа).
+   *   ① `step-category` → 1-р алхам (Ангилал) ② `step-location` → 2-р алхам
+   *   ③ бусад нь 3-р алхмын ТУХАЙН дэлгэц (`setMobileDetailStep`) ✓
+   * ⚠️ Утга нь ХАДГАЛАГДАНА (form хэвээр) — буцаж засаад дахин сонгоход л
+   *    солигдоно (өмнөх зан төлөв ХЭВЭЭР ✓)
+   */
+  const mobileAnswerEdit = (key) => {
+    setError('');
+    setWheel(null);
+    if (key === 'step-category') { gotoStep(0); return; }
+    if (key === 'step-location') { gotoStep(1); return; }
+    setMobileDetailStep(key);
   };
 
   const onPickFiles = async (e) => {
@@ -1735,12 +1965,17 @@ export default function AddListingClient() {
                 >
                   ←
                 </button>
-                <h2 className="min-w-0 flex-1 truncate text-[17px] font-bold text-gray-900">{activeDetail.title}</h2>
+                <h2 className="min-w-0 flex-1 truncate text-[17px] font-bold text-gray-900">Зар нийтлэх</h2>
                 <span className="shrink-0 text-[12px] font-semibold tabular-nums text-gray-400">
                   {detailIdx + 1}/{detailScreens.length}
                 </span>
               </div>
             </div>
+            {/* 📱 «ӨМНӨХ ХАРИУЛТУУД» — толгойн ДОР (unegui.mn-ийн хэв, 2026-10-03 (17)):
+                хариулсан асуулт бүр мөр болж, ✏️ дарж буцаж засна ✓
+                ⚠️ Толгойд асуултын нэр ГАРАХГҮЙ (нэр ДАВХАРДАХГҮЙ ✓) — асуулт
+                   нь доор, өөрийн талбарын толгойн мөрөнд (label) харагдана ✓ */}
+            <MobileAnswers rows={mobileAnswerRows} onEdit={mobileAnswerEdit} />
             {/* ═══ 🏷️ ЗАРЫН ГАРЧИГ (2026-10-02) — БҮХ ХЭСЭГТ, ХАМГИЙН ЭХЭНД ═══
                 хэрэглэгчийн хүсэлт: «Бүх зард Зарын гарчиг гэдэг утга оруулахаа
                 мартсан байна. Тэр нь зарын карт дээр Үнэ мэдээллийн доор bold
@@ -1940,6 +2175,8 @@ export default function AddListingClient() {
                         max={f.type === 'number' ? YEAR_TO : undefined}
                         wheelHint={f.type === 'number' ? `Сонголт: ${YEAR_FROM}–${YEAR_TO} он` : ''}
                         onChange={(v) => setAttrCascade(f, v)}
+                        onPick={pickDetail((v) => setAttrCascade(f, v))}
+                        onSkip={skipDetail((v) => setAttrCascade(f, v))}
                         openWheel={setWheel}
                       />
                     ) : f.type === 'select' && f.searchable ? (
@@ -1967,15 +2204,33 @@ export default function AddListingClient() {
                         commitOnType
                       />
                     ) : f.type === 'select' ? (
-                      <select
-                        value={value}
-                        onChange={(e) => setAttrCascade(f, e.target.value)}
-                      >
-                        <option value="">Сонгох</option>
-                        {/* ⚠️ Хуучин утга (жагсаалтад байхгүй) — дээрх тайлбар */}
-                        {legacy && <option value={legacy}>{legacy}</option>}
-                        {(f.options || []).map((o) => <option key={o} value={o}>{o}</option>)}
-                      </select>
+                      <>
+                        {/* 🖥 ≥640px: НАТИВ `<select>` ХЭВЭЭР (`hide-below-sm`-ээр
+                            мобайлд дарагдана ✓) */}
+                        <select
+                          className="hide-below-sm"
+                          value={value}
+                          onChange={(e) => setAttrCascade(f, e.target.value)}
+                        >
+                          <option value="">Сонгох</option>
+                          {/* ⚠️ Хуучин утга (жагсаалтад байхгүй) — дээрх тайлбар */}
+                          {legacy && <option value={legacy}>{legacy}</option>}
+                          {(f.options || []).map((o) => <option key={o} value={o}>{o}</option>)}
+                        </select>
+                        {/* 📱 <640px: 2 БАГАНАТ ШУУД ЖАГСААЛТ (unegui.mn-ийн хэв,
+                            2026-10-03 (17)) — сонголт дээр дарахад утга бичигдээд
+                            ШУУД дараагийн асуулт (товч ХАРАГДАХГҮЙ ✓) */}
+                        <MobileOptions
+                          items={[
+                            ...(legacy ? [{ value: legacy, label: legacy }] : []),
+                            ...(f.options || []).map((o) => ({ value: o, label: o })),
+                          ]}
+                          value={value}
+                          onPick={pickDetail((v) => setAttrCascade(f, v))}
+                          skip
+                          onSkip={skipDetail((v) => setAttrCascade(f, v))}
+                        />
+                      </>
                     ) : (
                       <input
                         type={f.type === 'number' ? 'number' : 'text'}
@@ -2137,6 +2392,8 @@ export default function AddListingClient() {
                     max={YEAR_TO}
                     wheelHint={`Сонголт: ${YEAR_FROM}–${YEAR_TO} он`}
                     onChange={(v) => set('buildYear', v)}
+                    onPick={pickDetail((v) => set('buildYear', v))}
+                    onSkip={skipDetail((v) => set('buildYear', v))}
                     openWheel={setWheel}
                   />
                 )}
@@ -2153,6 +2410,8 @@ export default function AddListingClient() {
                   max={FLOOR_MAX}
                   wheelHint={`Сонголт: 1–${FLOOR_MAX} давхар`}
                   onChange={(v) => set('totalFloors', v)}
+                  onPick={pickDetail((v) => set('totalFloors', v))}
+                  onSkip={skipDetail((v) => set('totalFloors', v))}
                   openWheel={setWheel}
                 />
               </div>
@@ -2183,6 +2442,8 @@ export default function AddListingClient() {
                       ? `Сонголт: 1–${Math.min(FLOOR_MAX, Number(form.totalFloors) || FLOOR_MAX)} давхар (нийт давхраас)`
                       : `Сонголт: 1–${FLOOR_MAX} давхар`}
                     onChange={(v) => set('floor', v)}
+                    onPick={pickDetail((v) => set('floor', v))}
+                    onSkip={skipDetail((v) => set('floor', v))}
                     openWheel={setWheel}
                   />
                 )}
@@ -2205,6 +2466,8 @@ export default function AddListingClient() {
                     hint="Хэдэн угаалгын өрөөтэй вэ? (сонголтоор)"
                     wheelHint="Сонголт: 1, 2, 3, 4 эсвэл +5 (5 ба түүнээс дээш)"
                     onChange={(v) => set('bathrooms', v)}
+                    onPick={pickDetail((v) => set('bathrooms', v))}
+                    onSkip={skipDetail((v) => set('bathrooms', v))}
                     openWheel={setWheel}
                   />
                 )}
@@ -2221,6 +2484,8 @@ export default function AddListingClient() {
                     mobileActive={activeDetail.key === 'balconies'}
                     wheelHint="Хэдэн тагттай вэ? (1, 2, 3, 4 эсвэл +5)"
                     onChange={(v) => set('balconies', v)}
+                    onPick={pickDetail((v) => set('balconies', v))}
+                    onSkip={skipDetail((v) => set('balconies', v))}
                     openWheel={setWheel}
                   />
                 )}
@@ -2236,10 +2501,26 @@ export default function AddListingClient() {
               >
                 <div className="form-group" data-detail-field="garage" data-mobile-active={detailFieldActive('garage')}>
                   <label>Гараж</label>
-                  <select value={form.hasGarage} onChange={(e) => set('hasGarage', e.target.value)}>
+                  {/* 🖥 ≥640px: `<select>` ХЭВЭЭР (`hide-below-sm` — мобайлд дарагдана ✓) */}
+                  <select
+                    className="hide-below-sm"
+                    value={form.hasGarage}
+                    onChange={(e) => set('hasGarage', e.target.value)}
+                  >
                     <option value="">Сонгох</option>
                     {GARAGE_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
                   </select>
+                  {/* 📱 <640px: 2 БАГАНАТ ШУУД ЖАГСААЛТ (unegui.mn-ийн хэв ✓)
+                      ⚠️ Сонголт дээр дарахад ШУУД дараагийн асуулт (эсвэл 4-р
+                         алхам) — сүүлийн дэлгэц учраас `mobileDetailNext()`
+                         нь `goNext()`-ийг дуудна ✓ */}
+                  <MobileOptions
+                    items={GARAGE_OPTIONS}
+                    value={form.hasGarage}
+                    onPick={pickDetail((v) => set('hasGarage', v))}
+                    skip
+                    onSkip={skipDetail((v) => set('hasGarage', v))}
+                  />
                 </div>
               </div>
             )}
@@ -2254,7 +2535,7 @@ export default function AddListingClient() {
                 🔍 Хайх үг: data-mobile-detail-next, data-mobile-detail-skip */}
             <div
               data-mobile-detail-nav
-              className={`mt-5 gap-2 sm:hidden ${isLastDetail ? 'hide-below-sm' : 'flex'}`}
+              className={`mt-5 gap-2 sm:hidden ${(isLastDetail || activePick) ? 'hide-below-sm' : 'flex'}`}
             >
               <button
                 type="button"
