@@ -5,7 +5,7 @@
 // зарна гэсэн дээр ХАЙХ хэсэгт гардаг болгоё. Зар оруулах үед хэрэглэгч
 // үүнийг сонгож өгөх ёстой. Олон сонголт хийж байгаа боломж…»
 //   ⇒ unegui.mn-ийн «Төлбөрийн нөхцөл» (Хувь лизингээр · Бэлэн төлөлтөөр ·
-//     Банкны зээлээр · Бартер солирхоно) — ☑ checkbox шиг ОЛНООР сонгогдоно
+//     Банкны зээлээр · Бартер сонирхоно) — ☑ checkbox шиг ОЛНООР сонгогдоно
 //
 // ХАМРАХ ХҮРЭЭ (4 давхарга — бүгд НЭГ эх сурвалж `lib/paymentFilter.mjs`):
 //   ① `lib/paymentFilter.mjs` — цэвэр логик (normalize/parse/toggle/шошго/
@@ -172,7 +172,7 @@ t("paymentOptionLabel: код → МОНГОЛ шошго (unegui.mn-ийн нэ
   assert.equal(paymentOptionLabel('lease'), 'Хувь лизингээр');
   assert.equal(paymentOptionLabel('cash'), 'Бэлэн төлөлтөөр');
   assert.equal(paymentOptionLabel('loan'), 'Банкны зээлээр');
-  assert.equal(paymentOptionLabel('barter'), 'Бартер солирхоно');
+  assert.equal(paymentOptionLabel('barter'), 'Бартер сонирхоно');
   // ⚠️ Том үсэг/зай ч ажиллана (гараар бичсэн линк ✓)
   assert.equal(paymentOptionLabel(' LEASE '), 'Хувь лизингээр');
   assert.equal(paymentOptionLabel('abc'), '');
@@ -194,7 +194,7 @@ t("paymentsFilterLabel: ['lease','cash'] → 'Хувь лизингээр, Бэ�
   assert.equal(paymentsFilterLabel('lease'), 'Хувь лизингээр');
   assert.equal(paymentsFilterLabel(['cash', 'lease']), 'Хувь лизингээр, Бэлэн төлөлтөөр');
   assert.equal(paymentsFilterLabel('lease,cash,loan,barter'),
-    'Хувь лизингээр, Бэлэн төлөлтөөр, Банкны зээлээр, Бартер солирхоно');
+    'Хувь лизингээр, Бэлэн төлөлтөөр, Банкны зээлээр, Бартер сонирхоно');
 });
 
 // ---------- ⑦ togglePaymentValue — checkbox мэт нэмэх/хасах ----------
@@ -346,12 +346,12 @@ t('🔗 lib/queries.js: `applyPaymentFilter` нь `applyRoomFilter`-ийн ДА�
 });
 
 // ---------- ⑭ HomeClient.jsx — хайлтын UI ----------
-t('💳 HomeClient.jsx: чипүүд + URL + DB (2026-10-03, хэрэглэгчийн хүсэлт)', () => {
+t('💳 HomeClient.jsx: ☑ checkbox + URL + DB (2026-10-03, хэрэглэгчийн хүсэлт)', () => {
   const src = readSrc('components/HomeClient.jsx');
   const ui = codeOnly(src);
-  // ① Блок ба чипүүд DOM-д байгаа (CDP тестийн дэгээнүүд ✓)
+  // ① Блок ба ☑ checkbox-үүд DOM-д байгаа (CDP тестийн дэгээнүүд ✓)
   assert.match(ui, /data-payment-filter/, 'төлбөрийн блокийн дэгээ алга ✗');
-  assert.match(ui, /data-payment-value/, 'төлбөрийн чипийн дэгээ алга ✗');
+  assert.match(ui, /data-payment-value/, 'төлбөрийн ☑-ийн дэгээ алга ✗');
   // ② НЭГ ЭХ СУРВАЛЖ — модулийн функцууд (дүрмийг давхар бичихгүй ✓)
   assert.match(ui, /PAYMENT_OPTIONS/, 'PAYMENT_OPTIONS импорт/хэрэглээ алга ✗');
   assert.match(ui, /togglePaymentValue/, 'togglePaymentValue импорт алга ✗');
@@ -371,6 +371,22 @@ t('💳 HomeClient.jsx: чипүүд + URL + DB (2026-10-03, хэрэглэгч�
   assert.match(ui, /payments: \[\]/, 'хэсэг солих үед цэвэрлэхгүй ✗');
   assert.match(ui, /next\.payments = \[\]/, 'хуучин линкээс ирсэн утгыг хасах дүрэм алга ✗');
   assert.match(ui, /key === 'payments' \? \[\]/, 'идэвхтэй чипийн ✕ дээр массив цэвэрлэхгүй ✗');
+  // ⑤ 🆕 ☑ CHECKBOX ДИЗАЙН (2026-10-03 (6) — хэрэглэгчийн заавар + unegui.mn
+  //    зураг: «Төлбөрийн нөхцөл» нь 2 БАГАНАТ ☑ жагсаалт, ЧИП БИШ ✓)
+  // ⚠️ Зөвхөн ТӨЛБӨРИЙН блокийн мөрийг шалгана (хороо/өрөө нь чип хэвээр ✓)
+  //    ⚠️ `className="pay-grid"` нь дэгээнээс (data-payment-filter) ӨМНӨ тул
+  //       зүсэлтийг бага зэрэг УРД эхлүүлнэ ✓
+  const payAt = ui.indexOf('data-payment-filter');
+  const payRegion = ui.slice(payAt - 300, payAt + 1200);
+  assert.match(payRegion, /className="pay-grid"/, '2 баганат grid (`.pay-grid`) алга ✗');
+  assert.match(payRegion, /className="pay-check"/, '☑ мөр (`.pay-check`) алга ✗');
+  assert.match(payRegion, /type="checkbox"/, 'жинхэнэ `<input type="checkbox">` алга ✗');
+  assert.match(payRegion, /checked=\{filters\.payments\.includes\(o\.value\)\}/,
+    '`checked` төлөв холбогдоогүй ✗');
+  assert.match(payRegion, /<span>\{o\.label\}<\/span>/, 'шошго span-д байх ёстой ✗');
+  assert.ok(!/chip-toggle/.test(payRegion), 'чип хэвээр байна ✗ (☑ checkbox байх ёстой)');
+  // ⚠️ icon (💳/💵/🏦/🔄) нь ☑ хэвээр ХАРАГДАХГҮЙ (unegui.mn: зөвхөн шошго)
+  assert.ok(!/o\.icon/.test(payRegion), '☑ дээр icon харагдаж байна ✗');
 });
 
 // ---------- ⑮ AddListingClient.jsx — зар оруулах форм ----------
@@ -399,15 +415,46 @@ t('📝 AddListingClient.jsx: ОЛОН сонголт + ЗААВАЛ шалга�
   assert.match(ui, /payments: \[\]/, 'pickSection/emptyForm-д массив алга ✗');
   // ⑤ Засах горимд хуучин утга формоо бөглөнө (`attrs.payment_terms` → код ✓)
   assert.match(ui, /payments: parsePaymentList\(/, 'засах горимд уншихгүй ✗');
+  // ⑥ 🆕 ☑ CHECKBOX ДИЗАЙН — sidebar-тай ЯГ ИЖИЛ (2026-10-03 (6), чип БИШ ✓)
+  //    ⚠️ `className="pay-grid"` нь дэгээнээс (data-payment-picker) ӨМНӨ ✓
+  const payAt = ui.indexOf('data-payment-picker');
+  const payRegion = ui.slice(payAt - 300, payAt + 1200);
+  assert.match(payRegion, /className="pay-grid"/, '2 баганат grid (`.pay-grid`) алга ✗');
+  assert.match(payRegion, /className="pay-check"/, '☑ мөр (`.pay-check`) алга ✗');
+  assert.match(payRegion, /type="checkbox"/, 'жинхэнэ `<input type="checkbox">` алга ✗');
+  assert.match(payRegion, /checked=\{form\.payments\.includes\(o\.value\)\}/,
+    '`checked` төлөв холбогдоогүй ✗');
+  assert.ok(!/chip-toggle/.test(payRegion), 'форм дээр чип хэвээр байна ✗');
 });
 
 // ---------- ⑯ CDP тест + бүртгэл ----------
-t('🐍 CDP скрипт нь чип БАЙГААГ ба дарах замыг шалгана', () => {
+t('🐍 CDP скрипт нь ☑ checkbox БАЙГААГ, 2 баганат дизайныг, дарах замыг шалгана', () => {
   const cdp = readSrc('scripts/cdp-payments.mjs');
-  assert.match(cdp, /data-payment-value/, 'чипийг DOM-оос олдоггүй ✗');
+  assert.match(cdp, /data-payment-value/, '☑-ийг DOM-оос олдоггүй ✗');
   assert.match(cdp, /data-payment-filter/, 'блокийг олдоггүй ✗');
-  assert.match(cdp, /clickPayment\(/, 'чип дарах код алга ✗');
+  assert.match(cdp, /clickPayment\(/, '☑ дарах код алга ✗');
   assert.match(cdp, /payment=/, 'URL-ийн `?payment=`-ийг шалгахгүй ✗');
+  // 🆕 2026-10-03 (6): БОДИТ хэмжилт — 2 багана, ☑-ийн хэмжээ, checked төлөв ✓
+  assert.match(cdp, /gridTemplateColumns/, '2 баганат grid-ийг хэмждэггүй ✗');
+  assert.match(cdp, /type === 'checkbox'/, 'жинхэнэ checkbox эсэхийг шалгахгүй ✗');
+  assert.match(cdp, /\.checked === true/, 'сонгогдсон төлөв (`checked`) шалгахгүй ✗');
+  assert.match(cdp, /getBoundingClientRect/, '☑-ийн харагдах хэмжээг хэмждэггүй ✗');
+});
+
+// ---------- ⑰ app/globals.css — ☑ дизайны нэг эх сурвалж ----------
+t('🎨 globals.css: `.pay-grid` (2 багана) + `.pay-check` (☑, appearance:none, SVG ✓)', () => {
+  const css = readSrc('app/globals.css');
+  // ① 2 БАГАНАТ grid — unegui.mn-ийн хэв (мобайл дээр Ч БАС 2 багана ✓)
+  assert.match(css, /\.pay-grid \{[^}]*grid-cols-2/, '2 баганат grid алга ✗');
+  // ② ☑ мөр нь flex (тэмдэг + шошго, шошго 2 мөр болж болно ✓)
+  assert.match(css, /\.pay-check \{[^}]*items-start/, '☑ мөрийн flex хэв маяг алга ✗');
+  // ③ НАФТ checkbox-ийг бүрэн дарж, өөрсдөө зурах (хөтөч бүрд ИЖИЛ ✓)
+  assert.match(css, /\.pay-check > input \{[^}]*appearance: none/, '`appearance:none` алга ✗');
+  assert.match(css, /\.pay-check > input \{[^}]*h-\[18px\]/, '☑-ийн хэмжээ (18px) алга ✗');
+  // ④ Сонгогдсон үед SVG ✓ (pseudo элемент нь `<input>` дээр ГАРАХГҮЙ ✗ зангилаа)
+  assert.match(css, /\.pay-check > input:checked \{[^}]*background-image: url\("data:image\/svg\+xml/,
+    'сонгогдсон ☑-ийн ✓ (SVG) алга ✗');
+  assert.match(css, /\.pay-check > input:checked \+ span/, 'сонгогдсон шошго тодрохгүй ✗');
 });
 
 t('📦 package.json: `test:payments` ба `cdp:payments` бүртгэгдсэн', () => {

@@ -1938,10 +1938,13 @@ export default function AddListingClient() {
                 Хэрэглэгчийн хүсэлт: «Төлбөрийн нөхцөлийг Үл хөдлөх зарна,
                 Автомашин зарна гэсэн дээр хайх хэсэгт гардаг болгоё. Зар
                 оруулах үед хэрэглэгч үүнийг сонгож өгөх ёстой. Олон сонголт
-                хийж байгаа боломж…» ⇒ unegui.mn-ийн «Төлбөрийн нөхцөл»
-                checkbox блоктой ижил ЧИПҮҮД (ОЛОН сонголт — `aria-pressed`):
-                [💳 Хувь лизингээр] [💵 Бэлэн төлөлтөөр] [🏦 Банкны зээлээр]
-                [🔄 Бартер солирхоно]
+                хийж байгаа боломж…»
+                🆕 DESIGN 2026-10-03 (6) — хэрэглэгчийн заавар + unegui.mn-ийн
+                   зураг: ЧИП БИШ ⇒ sidebar-тай ЯГ ИЖИЛ ☑ CHECKBOX (2 баганат):
+                   [☑ Хувь лизингээр] [☐ Бэлэн төлөлтөөр]
+                   [☐ Банкны зээлээр] [☑ Бартер сонирхоно]
+                   ⚠️ CSS нь `app/globals.css` (`.pay-grid`/`.pay-check`) —
+                      sidebar-тай НЭГ ЭХ СУРВАЛЖ (хоёр газар давхар бичихгүй ✓)
                 ⚠️ Шошго/утга нь хайлтын sidebar-тай ЯГ ИЖИЛ
                    (`lib/paymentFilter.mjs → PAYMENT_OPTIONS`) — нэг эх сурвалж ✓
                 ⚠️ ЗӨВХӨН `real-estate` ба `auto` хэсэгт (`showPayments`),
@@ -1963,33 +1966,27 @@ export default function AddListingClient() {
                 >
                   <label>💳 Төлбөрийн нөхцөл</label>
                   <div
-                    className="flex flex-wrap gap-1.5"
+                    className="pay-grid"
                     data-payment-picker
                     role="group"
                     aria-label="Төлбөрийн нөхцөл"
                   >
-                    {PAYMENT_OPTIONS.map((o) => {
-                      const on = form.payments.includes(o.value);
-                      return (
-                        <button
-                          key={o.value}
-                          type="button"
-                          aria-pressed={on}
+                    {PAYMENT_OPTIONS.map((o) => (
+                      <label key={o.value} className="pay-check">
+                        <input
+                          type="checkbox"
                           data-payment-value={o.value}
-                          onClick={() => togglePayment(o.value)}
-                          className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
-                        >
-                          {on && <span aria-hidden="true">✓</span>}
-                          <span aria-hidden="true">{o.icon}</span>
-                          {o.label}
-                        </button>
-                      );
-                    })}
+                          checked={form.payments.includes(o.value)}
+                          onChange={() => togglePayment(o.value)}
+                        />
+                        <span>{o.label}</span>
+                      </label>
+                    ))}
                   </div>
                   <p className="form-hint">
                     {form.payments.length
                       ? `✅ ${countPayments(form.payments)} нөхцөл сонгосон — хайлт дээр эдгээрийн АЛЬ НЭГ нь тохирох зарууд гарна`
-                      : 'Олон нөхцөл зэрэг сонгож болно (ж: «Хувь лизингээр» ба «Бартер солирхоно»)'}
+                      : 'Олон нөхцөл зэрэг сонгож болно (ж: «Хувь лизингээр» ба «Бартер сонирхоно»)'}
                   </p>
                 </div>
               </div>

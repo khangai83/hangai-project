@@ -53,9 +53,11 @@ import {
   parseRoomList, roomsUrlValue, roomsFilterLabel, toggleRoomValue,
 } from '../lib/roomFilter.mjs';
 // 💳 ТӨЛБӨРИЙН НӨХЦӨЛ (2026-10-03) — ҮЛ ХӨДЛӨХ ЗАРНА ба АВТОМАШИН ЗАРНА
-//    хэсгийн «Дэлгэрэнгүй хайлт»-д ОЛОН СОНГОЛТТОЙ чипүүд (unegui.mn-ийн
-//    ☑ checkbox шиг). Цэвэр логик (утга/шошго/URL/`cs` шүүлт) нь
-//    `lib/paymentFilter.mjs` — UI, URL, DB бүгд тэр модулийг хэрэглэнэ ✓
+//    хэсгийн «Дэлгэрэнгүй хайлт»-д ОЛОН СОНГОЛТТОЙ ☑ checkbox (unegui.mn-ийн
+//    2 баганат хэв — CSS нь `app/globals.css`: `.pay-grid`/`.pay-check` ✓).
+//    🆕 2026-10-03 (6): хэрэглэгчийн заавраар ЧИП → ☑ CHECKBOX болсон ✓
+//    Цэвэр логик (утга/шошго/URL/`cs` шүүлт) нь `lib/paymentFilter.mjs` —
+//    UI, URL, DB бүгд тэр модулийг хэрэглэнэ ✓
 import {
   PAYMENT_OPTIONS, countPayments, hasPaymentTerms, parsePaymentList,
   paymentsFilterLabel, paymentsUrlValue, togglePaymentValue,
@@ -1890,66 +1892,53 @@ export default function HomeClient() {
                 {/* ===== 💳 ТӨЛБӨРИЙН НӨХЦӨЛ (2026-10-03) =====
                     Хэрэглэгчийн хүсэлт: «Төлбөрийн нөхцөлийг Үл хөдлөх
                     зарна, Автомашин зарна гэсэн дээр хайх хэсэгт гардаг
-                    болгоё … олон сонголт хийж байгаа боломж» ⇒
-                    unegui.mn-ийн «Төлбөрийн нөхцөл» ☑ checkbox блоктой
-                    ижил: [💳 Хувь лизингээр] [💵 Бэлэн төлөлтөөр]
-                    [🏦 Банкны зээлээр] [🔄 Бартер солирхоно]
+                    болгоё … олон сонголт хийж байгаа боломж»
+                    🆕 DESIGN 2026-10-03 (6) — хэрэглэгчийн заавар + unegui.mn-ийн
+                       зураг: ЧИП БИШ ⇒ ЯГ ИЖИЛ ☑ CHECKBOX жагсаалт (2 БАГАНАТ,
+                       шошго нь уртасгаад 2 мөр болно):
+                         [☑ Хувь лизингээр] [☐ Бэлэн төлөлтөөр]
+                         [☐ Банкны зээлээр] [☑ Бартер сонирхоно]
+                       ⚠️ Чипээр хийвэл урт шошго («Хувь лизингээр») 4 мөр
+                          болж, нэг багана мэт харагдана ✗
+                       ⇒ CSS нь нэг газар: `app/globals.css` (`.pay-grid` +
+                          `.pay-check` + `input:checked` — appearance:none) ✓
                     ⚠️ ЗӨВХӨН `real-estate` ба `auto` хэсэгт (`showPayments`)
                        — ажил/компьютер/бараа/үйлчилгээнд лизинг гэж байхгүй ✓
                     ⚠️ Шүүлт нь `?payment=lease,cash` → `lib/queries.js` →
-                       `applyPaymentFilter()` (jsonb `cs` + OR) ✓
+                       `applyPaymentFilter()` (jsonb `cs` + OR) ✓ — UI-ийн
+                       өөрчлөлт нь URL/DB-д ОГТ хүрэхгүй ✓
                     ⚠️ `data-payment-filter` / `data-payment-value` нь
-                       `scripts/cdp-payments.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓ */}
+                       `scripts/cdp-payments.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓
+                       (одоо утга нь `<input type="checkbox">` дээр ✓) */}
                 {showPayments && (
                   <SideBlock label="💳 Төлбөрийн нөхцөл">
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[12px] font-semibold text-gray-500">
-                        Нөхцөл
-                        {filters.payments.length > 0 && (
-                          <span className="ml-1.5 rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
-                            {countPayments(filters.payments)} сонгосон
-                          </span>
-                        )}
+                    {filters.payments.length > 0 && (
+                      <span className="self-start rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
+                        {countPayments(filters.payments)} сонгосон
                       </span>
-                      <div
-                        className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
-                        data-payment-filter
-                        role="group"
-                        aria-label="Төлбөрийн нөхцөл"
-                      >
-                        <div className="flex flex-wrap gap-1.5">
-                          {PAYMENT_OPTIONS.map((o) => {
-                            const on = filters.payments.includes(o.value);
-                            return (
-                              <button
-                                key={o.value}
-                                type="button"
-                                aria-pressed={on}
-                                data-payment-value={o.value}
-                                onClick={() => togglePayments(o.value)}
-                                className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
-                              >
-                                {on && <span aria-hidden="true">✓</span>}
-                                <span aria-hidden="true">{o.icon}</span>
-                                {o.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      <p className="text-[11.5px] leading-snug text-gray-500">
-                        Олон нөхцөл зэрэг сонгож болно — аль нэг нь тохирох зарууд гарна
-                      </p>
-                      {filters.payments.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={clearPayments}
-                          className="self-start text-[12px] font-semibold text-gray-500 hover:text-primary hover:underline"
-                        >
-                          ✕ Цуцлах
-                        </button>
-                      )}
+                    )}
+                    <div className="pay-grid" data-payment-filter role="group" aria-label="Төлбөрийн нөхцөл">
+                      {PAYMENT_OPTIONS.map((o) => (
+                        <label key={o.value} className="pay-check">
+                          <input
+                            type="checkbox"
+                            data-payment-value={o.value}
+                            checked={filters.payments.includes(o.value)}
+                            onChange={() => togglePayments(o.value)}
+                          />
+                          <span>{o.label}</span>
+                        </label>
+                      ))}
                     </div>
+                    {filters.payments.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={clearPayments}
+                        className="self-start text-[12px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                      >
+                        ✕ Цуцлах
+                      </button>
+                    )}
                   </SideBlock>
                 )}
 

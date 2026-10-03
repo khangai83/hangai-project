@@ -6,19 +6,24 @@
  * үүнийг сонгож өгөх ёстой. Олон сонголт хийж байгаа боломж…»
  *
  * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ:
- *   ① 🏠 «Үл хөдлөх зарна» дээр чип БАЙГАА: `[data-payment-filter]` === 1,
+ *   ① 🏠 «Үл хөдлөх зарна» дээр ☑ checkbox БАЙГАА: `[data-payment-filter]` === 1,
  *      `[data-payment-value]` === 4 (lease/cash/loan/barter) ба шошгууд нь
- *      «Хувь лизингээр … Бартер солирхоно» (unegui.mn-тэй ижил ✓)
- *   ①b БАЙРЛАЛ: блок нь «Өрөөний тоо»-ны ДАРАА, «Үнэ, ₮»-ний ӨМНӨ
+ *      «Хувь лизингээр … Бартер сонирхоно» (unegui.mn-тэй ижил ✓)
+ *   ①b 🎨 ДИЗАЙН (2026-10-03 (6) — хэрэглэгчийн заавар + unegui.mn-ийн зураг):
+ *      ☑ нь ЖИНХЭНЭ `<input type="checkbox">`, 2 БАГАНАТ grid (unegui.mn-ийн
+ *      хэв — [лизинг][бэлэн] нэг мөрд, [зээл][бартер] дараагийн мөрд),
+ *      ХАРАГДАХ хэмжээтэй (18px — `appearance:none` хэв ажиллаж байна ✓)
+ *   ①c БАЙРЛАЛ: блок нь «Өрөөний тоо»-ны ДАРАА, «Үнэ, ₮»-ний ӨМНӨ
  *   ② 🚗 «Автомашин зарна» дээр БАЙНА; ⛔ «Ажил»/«Компьютер»/«Бүх зар»
  *      дээр БАЙХГҮЙ (`hasPaymentTerms` ✓ — лизинг гэдэг ойлголт байхгүй)
- *   ③ 🖱 ЧИП ДАРАХ (ОЛОН СОНГОЛТ — ХАМГИЙН ЧУХАЛ): «Хувь лизингээр» +
- *      «Бэлэн төлөлтөөр» → URL `?payment=lease,cash` · чипүүд `aria-pressed`
+ *   ③ 🖱 ☑ ДАРАХ (ОЛОН СОНГОЛТ — ХАМГИЙН ЧУХАЛ): «Хувь лизингээр» +
+ *      «Бэлэн төлөлтөөр» → URL `?payment=lease,cash` · ☑-үүд `checked`
  *      · «2 сонгосон» badge · DB `or=(attrs.cs.{"payment_terms":["lease"]},
  *      attrs.cs.{"payment_terms":["cash"]})` (OR — аль нэг нь тохирох зар)
+ *      ⚠️ ШОШГО дээр дарж шалгана (`label` → `input` холбоос ✓)
  *   ③b Дахин дарахад ЦУЦЛАГДАНА (checkbox мэт toggle) → `?payment=lease`
  *      ба DB нь НЭГ нөхцөл (`attrs=cs.…`) болж буурна ✓
- *   ④ 🔗 ХУУЧИН/гараар бичсэн линк: `?payment=cash,lease` → чипүүд
+ *   ④ 🔗 ХУУЧИН/гараар бичсэн линк: `?payment=cash,lease` → ☑-үүд
  *      тэмдэглэгдэж, URL нь КАНОН болно (`lease,cash`); `?payment=abc,lease`
  *      → хүчингүй утга ЧИМЭЭГҮЙ хасагдана ✓
  *   ⑤ 🎛 Идэвхтэй шүүлтийн чип `💳 Хувь лизингээр, Бэлэн төлөлтөөр` дээрх ✕
@@ -26,7 +31,8 @@
  *   ⑥ 🧹 ХЭСЭГ СОЛИХ: `?section=jobs&payment=lease` (эсвэл breadcrumb) →
  *      payment утга ЦЭВЭРЛЭГДЭНЭ (`next.payments = []`) — ажил дээр лизинг
  *      үлдэж, DB шүүлт «юу ч олдохгүй» болох ОНОВЧТОЙ АЛДААНЫГ бариулна ✗
- *   ⑦ 📱 Мобайл 390px: чипүүд харагдана, хэвтээ гүйлт (overflow) ГАРАХГҮЙ
+ *   ⑦ 📱 Мобайл 390px: ☑-үүд харагдана (мобайлд Ч 2 багана ✓), хэвтээ
+ *      гүйлт (overflow) ГАРАХГҮЙ
  *   ⑧ 🧯 Консол дээр JS exception 0
  *
  * ⚠️ JSONB-ИЙН 2 ДҮРЭМ (`lib/paymentFilter.mjs`): ① `cs` (contains) — учир нь
@@ -151,35 +157,60 @@ const go = async (url) => {
   await sleep(700);
 };
 
-/** 💳 DOM дахь төлбөрийн чипүүдийн төлөв (`data-payment-*` дэгээгээр) */
+/** 💳 DOM дахь төлбөрийн ☑ checkbox-үүдийн төлөв (`data-payment-*` дэгээгээр)
+ *  ⚠️ 2026-10-03 (6): UI нь ЧИП БИШ ☑ CHECKBOX (хэрэглэгчийн заавар +
+ *     unegui.mn-ийн зураг) — утга нь
+ *     `<input type="checkbox" data-payment-value="lease" checked>` дээр,
+ *     шошго нь `label.pay-check > span` дотор, төлөв нь `checked` ПРОПЕРТ ✓
+ *     (`aria-pressed` БИШ — натив checkbox нь өөрийн төлөвтэй ✓) */
 const paymentUi = () => evalJs(`(() => {
-  const chips = [...document.querySelectorAll('[data-payment-value]')];
+  const boxes = [...document.querySelectorAll('[data-payment-value]')];
   const box = document.querySelector('[data-payment-filter]');
+  const val = (el) => el.getAttribute('data-payment-value');
+  const top = (el) => Math.round(el.getBoundingClientRect().top);
+  const size = (el) => {
+    const r = el.getBoundingClientRect();
+    return Math.round(r.width) + 'x' + Math.round(r.height);
+  };
   return {
     blocks: document.querySelectorAll('[data-payment-filter]').length,
-    chips: chips.length,
-    labels: chips.map((b) => b.textContent.replace(/[\\u2713]/g, '').replace(/\\s+/g, ' ').trim()),
-    values: chips.map((b) => b.getAttribute('data-payment-value')),
-    selected: chips.filter((b) => b.getAttribute('aria-pressed') === 'true')
-      .map((b) => b.getAttribute('data-payment-value')),
-    // «N сонгосон» нь блокийн толгойд (чипүүдийн ЭЦЭГ эгч) — тоог тэмдэглэнэ
+    chips: boxes.length,
+    labels: boxes.map((i) => ((i.closest('label') || i.parentElement || i).textContent || '')
+      .replace(/\\s+/g, ' ').trim()),
+    values: boxes.map(val),
+    selected: boxes.filter((i) => i.checked === true).map(val),
+    // ☑ нь ЖИНХЭНЭ <input type="checkbox"> (натив — гар/хүртээмж ✓)
+    inputs: boxes.filter((i) => i.tagName === 'INPUT' && i.type === 'checkbox').length,
+    // 🎨 ДИЗАЙН: 2 БАГАНАТ grid (unegui.mn-ийн хэв) — gridTemplateColumns нь
+    //    «xpx ypx» ХОЁР утгатай (нэг багана бол 1 ✗)
+    cols: box ? getComputedStyle(box).gridTemplateColumns.split(' ').filter(Boolean).length : 0,
+    // 🎨 ☑ нь ХАРАГДАХ хэмжээтэй (0x0 биш — appearance:none хэв ажиллаж байна ✓)
+    size: boxes.length ? size(boxes[0]) : '0x0',
+    // 🎨 БАЙРЛАЛ: [лизинг][бэлэн] НЭГ МӨРД, [зээл][бартер] ДАРААГИЙН мөрд ✓
+    rows: (() => {
+      const tops = boxes.map(top);
+      return tops.length === 4 && tops[0] === tops[1] && tops[2] === tops[3] && tops[1] < tops[2];
+    })(),
+    // «N сонгосон» нь блокийн толгойд (☑-үүдийн ЭЦЭГ эгч) — тоог тэмдэглэнэ
     badge: (() => {
       const m = (box && box.parentElement ? box.parentElement.textContent : '').match(/(\\d+) сонгосон/);
       return m ? Number(m[1]) : 0;
     })(),
     // ⚠️ aria-label="Төлбөрийн нөхцөл" нь БҮЛЭГ (role=group div) дээр —
-    //    зөвхөн button дундаас хайвал 0 гарч ХУУРАМЧ улаан өгнө ✗
+    //    зөвхөн input дундаас хайвал 0 гарч ХУУРАМЧ улаан өгнө ✗
     toggles: [...document.querySelectorAll('[aria-label]')]
       .filter((e) => /төлбөрийн нөхцөл/i.test(e.getAttribute('aria-label') || '')).length,
     clear: [...document.querySelectorAll('button')].filter((b) => b.textContent.trim() === '✕ Цуцлах').length,
   };
 })()`);
 
-/** 💳 Нэг чипийг дарах (`data-payment-value="lease"`) */
+/** 💳 Нэг ☑-ийг дарах (`data-payment-value="lease"`)
+ *  ⚠️ Хэрэглэгч ШОШГО дээр дардаг тул `label`-ыг дарж шалгана —
+ *     `label` → `input` холбоос (`label`-ийн доторх input) батлагдана ✓ */
 const clickPayment = (value) => evalJs(`(() => {
-  const b = document.querySelector('[data-payment-value="${value}"]');
-  if (!b) return 'NO_CHIP';
-  b.click();
+  const i = document.querySelector('[data-payment-value="${value}"]');
+  if (!i) return 'NO_CHIP';
+  (i.closest('label') || i).click();
   return 'OK';
 })()`);
 
@@ -207,17 +238,27 @@ console.log('\n💳 CDP — «Төлбөрийн нөхцөл» шүүлт (UI +
 
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1280, height: 1400, deviceScaleFactor: 1, mobile: false });
 
-// ═══════ ① 🏠 ХҮЛ ХӨДЛӨХ: ЧИПҮҮД БАЙГАА + БАЙРЛАЛ НЬ ЗӨВ ═══════
+// ═══════ ① 🏠 ХҮЛ ХӨДЛӨХ: ☑ CHECKBOX-ҮҮД БАЙГАА + ДИЗАЙН + БАЙРЛАЛ ═══════
 await go(`${BASE}/?section=real-estate&type=${encodeURIComponent('Орон сууц')}`);
 const dom = await paymentUi();
 check('💳 Төлбөрийн блок БАЙНА (`[data-payment-filter]` === 1)', dom.blocks === 1, `blocks=${dom.blocks}`);
-check('💳 Чип 4 байна (`[data-payment-value]` === 4)', dom.chips === 4, `chips=${dom.chips}`);
+check('💳 ☑ checkbox 4 байна (`[data-payment-value]` === 4)', dom.chips === 4, `chips=${dom.chips}`);
 check('💳 Утгууд нь lease/cash/loan/barter (кодууд — URL/jsonb ✓)',
   dom.values.join(',') === 'lease,cash,loan,barter', dom.values.join(','));
-check('💳 Шошгууд нь «Хувь лизингээр … Бартер солирхоно» (unegui.mn-тэй ижил)',
+check('💳 Шошгууд нь «Хувь лизингээр … Бартер сонирхоно» (unegui.mn-тэй ижил)',
   dom.labels.map((l) => l.replace(/[^\p{L}\s]/gu, '').trim()).join(' · ') ===
-    'Хувь лизингээр · Бэлэн төлөлтөөр · Банкны зээлээр · Бартер солирхоно',
+    'Хувь лизингээр · Бэлэн төлөлтөөр · Банкны зээлээр · Бартер сонирхоно',
   dom.labels.join(' · '));
+// 🎨 ДИЗАЙН (2026-10-03 (6) — хэрэглэгчийн заавар + unegui.mn-ийн зураг):
+//   ЧИП БИШ ☑ checkbox, 2 БАГАНАТ, ХАРАГДАХ хэмжээтэй (натив input ✓)
+check('🎨 ☑ нь ЖИНХЭНЭ `<input type="checkbox">` (натив 4 — `aria-pressed` БИШ ✓)',
+  dom.inputs === 4, `inputs=${dom.inputs}`);
+check('🎨 ДИЗАЙН: «Төлбөрийн нөхцөл» нь 2 БАГАНАТ (unegui.mn-ийн хэв — grid 2 ✓)',
+  dom.cols === 2, `gridTemplateColumns=${dom.cols} багана`);
+check('🎨 ДИЗАЙН: [лизинг][бэлэн] НЭГ мөрд, [зээл][бартер] ДАРААГИЙН мөрд ✓',
+  dom.rows, `rows=${dom.rows}`);
+check('🎨 ☑ нь ХАРАГДАХ хэмжээтэй (16-24px — `appearance:none` хэв ажиллаж байна ✓)',
+  /^(1[6-9]|2[0-4])x(1[6-9]|2[0-4])$/.test(dom.size), dom.size);
 check('💳 `aria-label="Төлбөрийн нөхцөл"` бүлэг ТААРЛАА (хороо/өрөөтэй ижил хэв маяг)',
   dom.toggles === 1, `toggles=${dom.toggles}`);
 check('💳 Сонголтгүй үед «✕ Цуцлах» ХАРАГДАХГҮЙ', !(await evalJs(`(() => ${PAY_CLEAR} ? 'OK' : 'NO')()`) === 'OK'));
@@ -236,7 +277,7 @@ check('🧭 «Төлбөрийн нөхцөл» нь «Өрөөний тоо»-�
 //    ОГТ харагдахгүй тул шалгалт хуурамчаар ✗ болно ✗
 await go(`${BASE}/?section=auto&type=${encodeURIComponent('Суудлын машин')}`);
 const autoUi = await paymentUi();
-check('🚗 «Автомашин зарна» дээр чипүүд БАЙНА', autoUi.blocks === 1 && autoUi.chips === 4,
+check('🚗 «Автомашин зарна» дээр ☑ checkbox-үүд БАЙНА', autoUi.blocks === 1 && autoUi.chips === 4,
   `blocks=${autoUi.blocks} chips=${autoUi.chips}`);
 check('🚗 Авто дээрх шошгууд нь ч ЯГ ИЖИЛ (нэг эх сурвалж `PAYMENT_OPTIONS` ✓)',
   autoUi.values.join(',') === 'lease,cash,loan,barter', autoUi.values.join(','));
@@ -249,11 +290,11 @@ check('⛔ «Компьютер» дээр БАЙХГҮЙ', (await paymentUi()).
 await go(`${BASE}/`);
 check('⛔ «Бүх зар» (хэсэг сонгоогүй) дээр БАЙХГҮЙ', (await paymentUi()).blocks === 0);
 
-// ═══════ ③ 🖱 ЧИП ДАРАХ — ОЛОН СОНГОЛТ (хамгийн чухал) ═══════
+// ═══════ ③ 🖱 ☑ ДАРАХ — ОЛОН СОНГОЛТ (хамгийн чухал; ШОШГО дээр дарна ✓) ═══════
 listingReqs.length = 0;
 await go(`${BASE}/?section=real-estate&type=${encodeURIComponent('Орон сууц')}`);
 const clicked1 = await clickPayment('lease');
-check('🖱 «💳 Хувь лизингээр» чип дарагдав', clicked1 === 'OK', clicked1);
+check('🖱 «Хувь лизингээр» ☑ дарагдав (шошго дээр ✓)', clicked1 === 'OK', clicked1);
 await waitFor(`/payment=lease/.test(location.search)`);
 check('🔗 URL: `?payment=lease` (нэг утга — хуучин хэлбэртэй ижил ✓)',
   /payment=lease(?!,)/.test(await url()), await url());
@@ -261,7 +302,7 @@ await sleep(1200);
 check('🔎 DB: `attrs=cs.{"payment_terms":["lease"]}` (jsonb containment ✓ — `->>` БИШ)',
   dbQ('attrs=cs.{"payment_terms":["lease"]}'), lastQ());
 let ui1 = await paymentUi();
-check('🖱 Чип СОНГОГДСОН төлөвтэй (`aria-pressed=true`)', ui1.selected.join(',') === 'lease',
+check('🖱 ☑ СОНГОГДСОН төлөвтэй (`checked=true` — натив checkbox ✓)', ui1.selected.join(',') === 'lease',
   `selected=[${ui1.selected.join(',')}]`);
 check('🔢 «1 сонгосон» badge ХАРАГДАВ', ui1.badge === 1, `badge=${ui1.badge}`);
 check('💳 «✕ Цуцлах» товч ХАРАГДАВ (сонголт байгаа үед ✓)',
@@ -270,7 +311,7 @@ check('💳 «✕ Цуцлах» товч ХАРАГДАВ (сонголт ба�
 // ═══ ③b ХОЁР ДАХЬ утга — ОЛОН СОНГОЛТ (OR) ═══
 listingReqs.length = 0;
 const clicked2 = await clickPayment('cash');
-check('🖱 «💵 Бэлэн төлөлтөөр» чип дарагдав (2 дахь сонголт)', clicked2 === 'OK', clicked2);
+check('🖱 «Бэлэн төлөлтөөр» ☑ дарагдав (2 дахь сонголт)', clicked2 === 'OK', clicked2);
 await waitFor(`/payment=lease,cash/.test(location.search)`);
 check('🔗 URL: `?payment=lease,cash` (таслалаар, КАНОН дараалал ✓)',
   /payment=lease,cash/.test(decodeURIComponent(await url())), await url());
@@ -284,7 +325,7 @@ check('🚨 DB: нөхцөл бүр НЭГ ЭЛЕМЕНТТЭЙ массив —
 check('🧭 DB: хэсгийн шүүлт ХЭВЭЭР (`.or()` нь AND-аар холбогдоно ✓)',
   dbQ('section=eq.real-estate'), lastQ());
 ui1 = await paymentUi();
-check('🖱 ХОЁР чип сонгогдсон (ОЛОН СОНГОЛТ ажиллаж байна ✓)',
+check('🖱 ХОЁР ☑ сонгогдсон (ОЛОН СОНГОЛТ ажиллаж байна ✓)',
   ui1.selected.join(',') === 'lease,cash', `selected=[${ui1.selected.join(',')}]`);
 check('🔢 «2 сонгосон» badge', ui1.badge === 2, `badge=${ui1.badge}`);
 check('🎛 Идэвхтэй шүүлтийн чип нь БҮТЭН шошгыг харуулна (`💳 Хувь лизингээр, Бэлэн төлөлтөөр`)',
@@ -306,9 +347,9 @@ check('🔎 DB: `or=(` ХЭЛБЭРЭЭР ЯВАХГҮЙ (нэг утга = cont
 listingReqs.length = 0;
 await go(`${BASE}/?section=real-estate&type=${encodeURIComponent('Орон сууц')}&payment=cash,lease`);
 const linkUi = await paymentUi();
-check('🔗 `?payment=cash,lease` → чипүүд тэмдэглэгдэв (сонгосон = lease, cash)',
+check('🔗 `?payment=cash,lease` → ☑-үүд тэмдэглэгдэв (сонгосон = lease, cash)',
   linkUi.selected.join(',') === 'lease,cash', `selected=[${linkUi.selected.join(',')}]`);
-check('🔗 Линкээр «Банкны зээлээр»/«Бартер солирхоно» СОНГОГДООГҮЙ ✓',
+check('🔗 Линкээр «Банкны зээлээр»/«Бартер сонирхоно» СОНГОГДООГҮЙ ✓',
   !linkUi.selected.includes('loan') && !linkUi.selected.includes('barter'));
 await sleep(1200);
 check('🔎 DB: and=(…,or(attrs @> …)) — хоёр утга OR ✓',
@@ -344,14 +385,14 @@ await sleep(1200);
 check('🔎 DB: payment шүүлт ч арилав (`attrs.cs.` ОГТ ЯВАХГҮЙ ✓)',
   !dbQ('attrs.cs.{"payment_terms"'), lastQ());
 const afterChip = await paymentUi();
-check('🎛 Чипүүд СОНГОГДООГҮЙ болов (selected=[])',
+check('🎛 ☑-үүд СОНГОГДООГҮЙ болов (selected=[])',
   afterChip.selected.length === 0, `selected=[${afterChip.selected.join(',')}]`);
 check('🎛 Блок нь ХЭВЭЭР байна (шүүлт цэвэрлэх нь блокыг нуухгүй ✓)', afterChip.blocks === 1);
 
 // ═══════ ⑤b «✕ Цуцлах» — бүх сонголтыг арилгана ═══════
 // ⚠️ `&type=…` (дээрхтэй ижил шалтгаан — `<aside>` нь төрөл сонгосон үед л бий ✓)
 await go(`${BASE}/?section=auto&type=${encodeURIComponent('Суудлын машин')}&payment=lease,cash,loan`);
-check('🚗 Авто дээр 3 чип сонгогдсон', (await paymentUi()).selected.length === 3);
+check('🚗 Авто дээр 3 ☑ сонгогдсон', (await paymentUi()).selected.length === 3);
 listingReqs.length = 0;
 const clearClicked = await evalJs(`(() => { const b = ${PAY_CLEAR}; if (!b) return 'NO_BTN'; b.click(); return 'OK'; })()`);
 check('💳 «✕ Цуцлах» дарагдав', clearClicked === 'OK', clearClicked);
@@ -389,8 +430,10 @@ check('🍞 Дарахад «Орон сууц» төрөл цэвэрлэгдэ
 await rpc('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 3, mobile: true });
 await go(`${BASE}/?section=real-estate&type=${encodeURIComponent('Орон сууц')}&payment=lease`);
 const mobileUi = await paymentUi();
-check('📱 Мобайл: төлбөрийн чипүүд ХАРАГДАНА (4)',
+check('📱 Мобайл: төлбөрийн ☑ checkbox-үүд ХАРАГДАНА (4)',
   mobileUi.chips === 4, `chips=${mobileUi.chips}`);
+check('📱 Мобайл: ☑-үүд МӨН 2 БАГАНАТ (390px — unegui.mn-ийн хэв ✓)',
+  mobileUi.cols === 2, `cols=${mobileUi.cols}`);
 check('📱 Мобайл: линкээр «Хувь лизингээр» сонгогдсон төлөвтэй',
   mobileUi.selected.join(',') === 'lease', `selected=[${mobileUi.selected.join(',')}]`);
 check('📱 Мобайл: хэвтээ гүйлт (overflow) ГАРАХГҮЙ',
