@@ -3203,6 +3203,14 @@ npm run build   # production build
 npm start
 ```
 
+> 📱 **Утас / iPad-аас шалгах ба ажиллах:** dev server нь Next-ийн default **`0.0.0.0`**
+> дээр сонсдог (`lsof -iTCP:3000 -sTCP:LISTEN` → `TCP *:3000` ✓ ШАЛГАСАН) тул ижил
+> Wi-Fi-д байгаа утсаараа **`http://<Mac-ийн-LAN-IP>:3000`** (`ipconfig getifaddr en0`)
+> эсвэл **`http://<Mac-ийн-нэр>.local:3000`** (`scutil --get LocalHostName`) гэж нээхэд
+> шууд хандана ✓. Хөгжүүлэлтийг **өөрөө** утас/планшетаас үргэлжлүүлэх 4 зам
+> (⌨️ Cline CLI + SSH · 🖥 `code tunnel` + `vscode.dev` · ☁️ GitHub Codespaces ·
+> 🔒 сүлжээний анхааруулгууд) → **[`docs/REMOTE.md`](docs/REMOTE.md)**
+
 > ⚠️ **`npm run dev` ажиллаж байх үед `npm run build` БҮҮ ажиллуул** ✗ —
 > хоёулаа НЭГ `.next/` дотор бичдэг тул production chunk-үүд нь dev-ийн
 > `webpack-runtime.js`-ийг дарж, `Cannot find module './NNNN.js'`
