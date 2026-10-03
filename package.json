@@ -29,6 +29,7 @@
     "test:breadcrumb": "node scripts/test-breadcrumb.mjs",
     "cdp:rooms": "node scripts/cdp-rooms.mjs",
     "cdp:payments": "node scripts/cdp-payments.mjs",
+    "cdp:specs": "node scripts/cdp-notebook-specs.mjs",
     "cdp:range": "node scripts/cdp-range.mjs",
     "cdp:picker": "node scripts/cdp-picker.mjs",
     "cdp:wheel": "node scripts/cdp-wheel.mjs",

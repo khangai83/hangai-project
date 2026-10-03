@@ -23,6 +23,7 @@ import {
   getSubtypeGroups, findSubtypeGroup,   // 🛠/💻/⚡/🛋️ 3 дахь түвшин (2026-09-27, -29, -30)
   // 💻 2026-09-30 (6): Notebook-ийн нэмэлт талбар (`onlySubtypes` + сонголтууд)
   getAttrFields, NOTEBOOK_BRANDS, PC_SPEC_SUBTYPES,
+  pruneGatedAttrs,   // 🖥 2026-10-03 (7): хүчингүй болсон attr шүүлтийг цэвэрлэх
   NOTEBOOK_SCREEN_OPTIONS, NOTEBOOK_CPU_OPTIONS, NOTEBOOK_RAM_OPTIONS, NOTEBOOK_STORAGE_OPTIONS,
   CAR_BRANDS,   // 🚗🌈 2026-10-01: CAR_MODELS-ийн түлхүүрүүд энд байгаа эсэхийг шалгана
   getAttrRows,  // 📋 2026-10-01 (16): зарын дэлгэрэнгүй хуудсанд `attrs` 2 баганаар
@@ -284,7 +285,11 @@ t("Бусад хэсгийн шүүлт (jobs: 3, computers: 2, furniture/home/t
   const count = (s) => getAttrFilters(s).length;
   assert.equal(count('jobs'), 3);
   // 🛡️ 2026-10-01 (18): 💻 computers — 🛡️ «Баталгаа» (`warranty`) ХАСАГДСАН (3 → 2) ✓
+  //    🖥 2026-10-03 (7): `attrFilters` нь 6 болов (📺/⚙️/🧠/💾 нэмэгдэв) — гэхдээ
+  //       тэдгээр нь `onlySubtypes`-тай тул ДЭД ТӨРӨЛГҮЙ дуудлагад ОРОХГҮЙ ⇒ 2 ✓
+  //       (Notebook брэнд дээр 6 — доорх «🖥» тестүүд ✓)
   assert.equal(count('computers'), 2);
+  assert.equal(getAttrFilters('computers', 'Dell').length, 6);
   // ⚡ 2026-09-29: `home` (Гэр ахуйн бараа) мөн ХЯЛБАР ФОРМ болсон тул
   //    `📦 Хүргэлт` ХАСАГДАВ — зөвхөн `✅ Шинэ / Шинэвтэр / Хуучин` үлдэнэ (2 → 1) ✓
   assert.equal(count('home'), 1);
@@ -703,7 +708,12 @@ t('💻 Notebook: 4 үзүүлэлт нь СОНГОЛТТОЙ болов (📺 
   // ⚠️ Шүүлт (`attrFilters`) нь 📺/⚙️/🧠/💾-д ХӨНДӨГДӨӨГҮЙ — CPU/RAM нь
   //    хүрээ/шүүлт БИШ ✓ (хэрэглэгчийн хүсэлт зөвхөн ФОРМЫН талбарт хамаарна)
   //    🛡️ 2026-10-01 (18): `warranty` («Баталгаа») мөн ХАСАГДСАН (3 → 2) ✓
+  //    🖥 2026-10-03 (7): 📺/⚙️/🧠/💾 нь `attrFilters`-д НЭМЭГДЭВ — гэхдээ
+  //       `onlySubtypes`-тай тул ДЭД ТӨРӨЛ дамжуулахгүй үед ХАРАГДАХГҮЙ
+  //       (доорх «🖥» тестүүдийг үзнэ үү) ⇒ энэ дуудлага ХЭВЭЭР 2 ✓
   assert.deepEqual(getAttrFilters('computers').map((f) => f.key), ['brand', 'condition']);
+  assert.deepEqual(getAttrFilters('computers', 'Apple').map((f) => f.key),
+    ['brand', 'screen', 'cpu', 'ram', 'storage', 'condition']);
 });
 
 t('💻 Notebook-ийн талбар нь ЗӨВХӨН `PC_SPEC_SUBTYPES`-д харагдана (21 + 2)', () => {
@@ -754,6 +764,99 @@ t('⚠️ `getAttrField` (картын мөр/шүүлт) нь `onlySubtypes`-а
     fields.forEach((f) => assert.equal(f.onlySubtypes, undefined, `${s.value}.${f.key}`));
   }
   assert.equal(flagged, 4);
+});
+
+// ---------- 🖥 2026-10-03 (7): 💻 NOTEBOOK-ИЙН ШҮҮЛТ SIDEBAR-д ----------
+// ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (unegui.mn-ийн Notebook хайлтын зураг): «notebook хайх
+// дээр Дэлгэцийн хэмжээ · CPU · RAM · SSD Hard шүүлтүүд гардаг байх».
+// ⚠️ Шүүлт нь ФОРМТОЙ нэг эх сурвалж (`attrFields`/`attrFilters` + `onlySubtypes`)
+//    тул дараах тестүүд 2 үүрэг хамгаална: ① Notebook дээр шүүлт ХАРАГДАХ
+//    ② холдуу дэд төрөл (Mouse, тонер, чихэвч) ба дэд төрөл СОНГООГҮЙ үед ГАРАХГҮЙ
+t("🖥 getAttrFilters('computers', 'Apple') — 📺/⚙️/🧠/💾 шүүлт НЭМЭГДЭВ (формтой ижил дараалал)", () => {
+  const keys = getAttrFilters('computers', 'Apple').map((f) => f.key);
+  assert.deepEqual(keys, ['brand', 'screen', 'cpu', 'ram', 'storage', 'condition']);
+  // ⚠️ `model` нь зөвхөн формойн талбар (шүүлтэд ОРОХГҮЙ ✓); `warranty` хасагдсан ✓
+  assert.ok(!keys.includes('model') && !keys.includes('warranty'));
+});
+
+t('🖥 Шүүлтийн сонголт нь формойн сонголттой ЯГ ИЖИЛ (7 / 19 / 13 / 6 — нэг эх сурвалж)', () => {
+  const expected = [
+    ['screen', NOTEBOOK_SCREEN_OPTIONS],
+    ['cpu', NOTEBOOK_CPU_OPTIONS],
+    ['ram', NOTEBOOK_RAM_OPTIONS],
+    ['storage', NOTEBOOK_STORAGE_OPTIONS],
+  ];
+  for (const [key, options] of expected) {
+    const f = getAttrFilters('computers', 'Lenovo').find((x) => x.key === key);
+    assert.ok(f, `«${key}» шүүлт ОЛДСОНГҮЙ ✗`);
+    assert.equal(f.options, options, `«${key}»: сонголт нь либын экспорт БИШ (давхар хуулбар) ✗`);
+    assert.equal(f.type, 'select', `«${key}»: энгийн сонголт (select) биш ✗`);
+    // ⚠️ `searchable` БИШ — утга нь ЯГ тэнцүү (`attrs->>cpu=eq.…`); 6–19 сонголт
+    //    богино тул combobox шаардлагагүй ✓ (форм ч `<select>` хэвээр)
+    assert.equal(f.searchable, undefined, `«${key}»: combobox болсон ✗`);
+  }
+});
+
+t('🖥 21 Notebook брэнд + 2 PC дэд төрөлд 4 шүүлт; ХОЛДУУ дэд төрөл ба СОНГООГҮЙ үед 0', () => {
+  const spec = ['screen', 'cpu', 'ram', 'storage'];
+  for (const sub of PC_SPEC_SUBTYPES) {
+    assert.deepEqual(getAttrFilters('computers', sub).map((f) => f.key),
+      ['brand', ...spec, 'condition'], `«${sub}»`);
+  }
+  for (const sub of ['', 'Бусад', 'Mouse', 'Keyboard', 'Xbox', 'Чихэвч', 'Дэлгэц',
+    'Принтер, Хувилагч, Сканнер, Ламинатор', 'iPad, Tablet, Kindle']) {
+    assert.deepEqual(getAttrFilters('computers', sub).map((f) => f.key),
+      ['brand', 'condition'], `«${sub || '(хоосон)'}»: холдуу шүүлт гарч байна ✗`);
+  }
+});
+
+t('🖥 Бусад 11 хэсгийн шүүлт ХӨНДӨГДӨӨГҮЙ (subtype дамжуулсан ч ЯГ ижил)', () => {
+  for (const s of SECTIONS) {
+    if (s.value === 'computers') continue;
+    const sub = getSubtypes(s.value)[0] || '';
+    assert.deepEqual(getAttrFilters(s.value, sub).map((f) => f.key),
+      getAttrFilters(s.value).map((f) => f.key),
+      `${s.value}: дэд төрөл дамжуулахад шүүлт өөрчлөгдөж байна ✗`);
+    assert.ok(!(s.attrFields || []).some((f) => Array.isArray(f.onlySubtypes)), `${s.value}`);
+  }
+});
+
+t('🖥 ГЭРЭЭ: HomeClient нь дэд төрлийг дамжуулна + хүчингүй attr цэвэрлэнэ + `data-attr-filter` дэгээтэй', () => {
+  const home = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
+  // ① Sidebar нь СОНГОСОН дэд төрлийг дамжуулна (эс бөгөөс шүүлт огт гарахгүй ✗)
+  assert.ok(/getAttrFilters\(section, filters\.propertyType\)/.test(home),
+    'sidebar нь дэд төрлийг `getAttrFilters`-д ДАМЖУУЛАХГҮЙ ✗');
+  // ② Хоёр замд цэвэрлэнэ: ① линкээр орох (`secParam`) ② дэд төрөл солих (`v`)
+  assert.ok(/pruneGatedAttrs\(secParam, next\.propertyType, attrs\)/.test(home),
+    'линкээр орох үед хүчингүй attr цэвэрлэгдэхгүй байна ✗');
+  assert.ok(/pruneGatedAttrs\(section, v, f\.attrs \|\| \{\}\)/.test(home),
+    'дэд төрөл солих үед хуучин attr цэвэрлэгдэхгүй байна ✗');
+  // ③ CDP-ийн тогтвортой дэгээ (`data-room-filter`/`data-payment-value`-тэй ижил)
+  assert.ok(/data-attr-filter=\{f\.key\}/.test(home), 'CDP дэгээ (`data-attr-filter`) алга ✗');
+});
+
+t('🖥 pruneGatedAttrs: Notebook-ийн ⚙️ CPU нь Mouse сонгоход ЦЭВЭРЛЭГДЭНЭ (үл үзэгдэх шүүлт үлдэхгүй)', () => {
+  const attrs = { brand: 'Apple', cpu: 'Intel Core i5', ram: '16 GB' };
+  // ⚠️ Mouse дээр 4 шүүлт ХАРАГДАХГҮЙ ⇒ утга нь URL/DB-д ҮЛДЭХ ЁСГҮЙ ✗
+  assert.deepEqual(pruneGatedAttrs('computers', 'Mouse', attrs), { brand: 'Apple' });
+  // ⚠️ Notebook брэнд дээр шүүлт ХАРАГДАНА ⇒ хөндөгдөхгүй (ИЖИЛ объект ✓)
+  assert.equal(pruneGatedAttrs('computers', 'Apple', attrs), attrs);
+  // ⚠️ Дэд төрөл СОНГООГҮЙ (`''`) үед ч 4 шүүлт харагдахгүй ⇒ хасагдана
+  assert.deepEqual(pruneGatedAttrs('computers', '', attrs), { brand: 'Apple' });
+});
+
+t('🖥 pruneGatedAttrs: хүрээний түлхүүр, формойн `model`, бусад 11 хэсэг ХӨНДӨГДӨХГҮЙ + КРАШГҮЙ', () => {
+  const auto = { brand: 'Toyota', model: 'Prius 30', year_from: '2015', year_to: '2020' };
+  assert.equal(pruneGatedAttrs('auto', 'Суудлын машин', auto), auto);
+  // ⚠️ 11 хэсэгт `onlySubtypes` БАЙХГҮЙ ⇒ ямар ч түлхүүр хасагдахгүй ✓
+  SECTIONS.forEach((s) => {
+    const a = { brand: 'x', model: 'y', year_from: '2015' };
+    assert.equal(pruneGatedAttrs(s.value, getSubtypes(s.value)[0] || '', a), a, s.value);
+  });
+  // ⚠️ Хоосон/эвдэрсэн утга дээр КРАШГҮЙ (null/массив → хэвээр)
+  assert.equal(pruneGatedAttrs('computers', 'Mouse', null), null);
+  assert.deepEqual(pruneGatedAttrs('computers', 'Mouse', {}), {});
+  assert.deepEqual(pruneGatedAttrs('computers', 'Mouse', ['x']), ['x']);
 });
 
 t('💻 Картын мөр: шинэ СОНГОЛТЫН утгууд хэвээр гарна (📺 Дэлгэц мөрөнд ОРООГҮЙ)', () => {
@@ -1359,8 +1462,10 @@ t('🛡️ 💻 «Баталгаа» (`warranty`) форм · шүүлт · ка
       `«${sub || '(хоосон)'}»: формоос хасагдаагүй ✗`);
   }
   // ② Sidebar: `?warranty=` шүүлт БАЙХГҮЙ (💻-д 2 шүүлт үлдэв) ✓
+  //    🖥 2026-10-03 (7): 📺/⚙️/🧠/💾 нэмэгдсэн ч `warranty` БУЦАЖ ОРООГҮЙ ✓
   assert.ok(!getAttrFilters('computers').some((f) => f.key === 'warranty'));
   assert.deepEqual(getAttrFilters('computers').map((f) => f.key), ['brand', 'condition']);
+  assert.ok(!getAttrFilters('computers', 'HP').some((f) => f.key === 'warranty'));
   // ③ `getAttrField` нь `null` → карт ба «Зарын дэлгэрэнгүй» хоёулаа алгасна ✓
   assert.equal(getAttrField('computers', 'warranty'), null);
   // ④ Хуучин заруудын `attrs.warranty` (DB-д 💻 690 зар, нийт 700) ДҮРСЛЭГДЭХГҮЙ ✓

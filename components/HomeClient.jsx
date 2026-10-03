@@ -13,7 +13,7 @@ import { normalizeError } from '../lib/errors';
 import {
   CITIES, getDistricts, getKhoroos, ROOM_OPTIONS,
   hasRoomsFields, SECTIONS, getSection, getSubtypes, getSectionCategories,
-  hasCategoryChoice, getAttrFilters, getAttrField, formatAttrsLine,
+  hasCategoryChoice, getAttrFilters, pruneGatedAttrs, getAttrField, formatAttrsLine,
   parseAttrRangeKey, getAttrRangeKeys,   // 📅 оны хүрээ (2026-09-28)
   getSubtypeGroups,   // 🛠 3 дахь түвшин (2026-09-27) — зөвхөн `services`
 } from '../lib/locationData';
@@ -432,7 +432,18 @@ export default function HomeClient() {
     sp.forEach((value, key) => {
       if (key.startsWith('attr_') && value) attrs[key.slice(5)] = value;
     });
-    if (Object.keys(attrs).length) next.attrs = attrs;
+    /**
+     * 🖥 2026-10-03 (7): ТУХАЙН ДЭД ТӨРӨЛД ХҮЧИНГҮЙ attr шүүлтийг хаана —
+     *    ж: `?section=computers&type=Mouse&attr_cpu=Intel Core i5` (өөрсдийн
+     *    UI-ээс үүсэхгүй, гараар бичсэн линк) → `attr_cpu` нь Notebook-д
+     *    зориулагдсан тул sidebar-д ХАРАГДАХГҮЙ атлаа заруудыг шүүж,
+     *    «0 үр дүн» гарах байв ✗ ⇒ ЧИМЭЭГҮЙ ХАСНА
+     *    (⚠️ `rooms`/`payment`-ийн «хэсэгт тохирохгүй бол орхигдуулна»
+     *    дүрэмтэй ЯГ ИЖИЛ — `lib/locationData.js → pruneGatedAttrs` нэг
+     *    эх сурвалж, мөн `setF`-ийн дэд төрөл солих зам ч үүнийг дуудна ✓)
+     */
+    const keptAttrs = pruneGatedAttrs(secParam, next.propertyType, attrs);
+    if (Object.keys(keptAttrs).length) next.attrs = keptAttrs;
     if (sp.get('city')) next.city = sp.get('city');
     // ⚠️ ХОРОО: URL-д `khoroo=1-р хороо,3-р хороо` (таслалаар) — хуваалцсан
     //    линк эвдрэхгүйн тулд НЭГ утгатай хуучин линкийг ч зөв уншина.
@@ -607,6 +618,18 @@ export default function HomeClient() {
       if (k === 'district') { next.khoroos = []; }
       // «Өрөө» талбаргүй төрөл сонговол өрөөний хайлтыг цэвэрлэнэ (ж: Худалдаа…)
       if (k === 'propertyType' && v && !hasRoomsFields(v)) next.rooms = [];
+      /**
+       * 🖥 2026-10-03 (7): дэд төрөл солигдоход ТУХАЙН ДЭД ТӨРӨЛД ХҮЧИНГҮЙ
+       *    болсон attr шүүлтийг ЦЭВЭРЛЭНЭ (ж: 💻 Notebook-ийн ⚙️ CPU → Mouse).
+       *    ⚠️ ЯАГААД: `?attr_cpu=Intel Core i5` нь URL/DB-д ҮЛДВЭЛ sidebar-д
+       *    харагдахгүй «үл үзэгдэх шүүлт» болж, хэрэглэгч «0 үр дүн» гэж
+       *    гайхана ✗ — дүрэм нь `lib/locationData.js → pruneGatedAttrs` (нэг
+       *    эх сурвалж; линкээр орох үед ч ЯГ ижил дүрэм хэрэглэгдэнэ ✓)
+       */
+      if (k === 'propertyType') {
+        const kept = pruneGatedAttrs(section, v, f.attrs || {});
+        if (kept !== f.attrs) next.attrs = kept;
+      }
       return next;
     });
   };
@@ -938,7 +961,20 @@ export default function HomeClient() {
     [groupOpen, subtypeGroups]
   );
   const sectionCategories = useMemo(() => getSectionCategories(section), [section]);
-  const attrFilters = useMemo(() => getAttrFilters(section), [section]);
+  /**
+   * 🖥 2026-10-03 (7): `attrFilters` нь ДЭД ТӨРЛӨӨС хамаарна — 💻 Notebook-ийн
+   *    📺 Дэлгэц · ⚙️ CPU · 🧠 RAM · 💾 Хард шүүлтүүд нь зөвхөн Notebook-ийн
+   *    брэнд (эсвэл «Иж бүрэн компьютер»/«Процессор, сервер») сонгосон үед
+   *    харагдана ✓ (`lib/locationData.js → getAttrFilters(section, subtype)`;
+   *    формойн `getAttrFields`-тэй ЯГ ИЖИЛ `onlySubtypes` дүрэм)
+   *    ⚠️ `filters.propertyType` нь sidebar-д харагдах шүүлтийг тодорхойлдог
+   *       тул ХАМААРАЛТАЙ байх ЁСТОЙ (`setAttr`-ийн `cascadeAttrs` ч үүнийг
+   *       ашиглана) — useMemo-гийн хамааралд оруулав ✓
+   */
+  const attrFilters = useMemo(
+    () => getAttrFilters(section, filters.propertyType),
+    [section, filters.propertyType]
+  );
   /** «Зарах / Түрээслэх» сонголт харагдах эсэх — ⚠️ ЗӨВХӨН үл хөдлөхөд */
   const showCategories = hasCategoryChoice(section);
   /** Хэсгийн НИЙТ зарын тоо (дэд төрлүүдийн нийлбэр) — панелийн толгойд */
@@ -1757,7 +1793,15 @@ export default function HomeClient() {
                     ⚠️ Утга нь `listings.attrs` (jsonb) дотор → `?attr_brand=Toyota`,
                        оны хүрээ нь `?attr_year_from=2015&attr_year_to=2020`
                     ⚠️ Гараар бичих талбар нь ⏎/blur үед л хүчинтэй болно —
-                       үсэг бүрт query явахгүй ✓ (`TextFilter`, `SearchableSelect`) */}
+                       үсэг бүрт query явахгүй ✓ (`TextFilter`, `SearchableSelect`)
+                    🖥 ⑤ ДЭД ТӨРЛӨӨС ХАМААРАХ ШҮҮЛТ (2026-10-03 (7), хэрэглэгчийн
+                       хүсэлт: «notebook хайх дээр Дэлгэцийн хэмжээ · CPU · RAM ·
+                       SSD Hard шүүлтүүд гардаг байх»): 💻 Notebook-ийн 📺/⚙️/🧠/💾
+                       нь ЗӨВХӨН Notebook-ийн брэнд («Apple», «Lenovo» …) эсвэл
+                       «Иж бүрэн компьютер»/«Процессор, сервер» сонгосон үед
+                       харагдана — `getAttrFilters(section, filters.propertyType)`
+                       нь формойн `getAttrFields`-тэй ЯГ ИЖИЛ `onlySubtypes` дүрмийг
+                       хэрэглэнэ ✓ (Mouse/Keyboard/тонер дээр ГАРАХГҮЙ) */}
                 {attrFilters.map((f) => {
                   /**
                    * 🌈 БРЭНДЭЭС ХАМААРАХ СОНГОЛТУУД (`f.optionsFrom` = 'brand') —
@@ -1817,6 +1861,9 @@ export default function HomeClient() {
                       <select
                         className="form-select"
                         aria-label={f.label}
+                        // 🖥 CDP тестийн ТОГТВОРТОЙ дэгээ (`scripts/cdp-notebook-specs.mjs`)
+                        //    — `data-room-filter`/`data-payment-value`-тэй ижил зарчим ✓
+                        data-attr-filter={f.key}
                         value={attrValue(f.key)}
                         onChange={(e) => setAttr(f.key, e.target.value)}
                       >
