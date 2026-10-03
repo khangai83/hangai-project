@@ -1757,7 +1757,7 @@ export default function AddListingClient() {
                   value={form.title}
                   onChange={(e) => set('title', e.target.value)}
                   maxLength={MAX_LISTING_TITLE_LENGTH}
-                  placeholder="Ж: 3 өрөө байр, Баянгол, 16-р байр"
+                  placeholder="Гарчиг"
                 />
                 <p className="form-hint">
                   Карт дээр үнийн доор харагдана — товч, ойлгомжтой бичнэ үү
@@ -2264,11 +2264,11 @@ export default function AddListingClient() {
                 ) : null}
                 {/* 💼 2026-10-03 (9): ажлын зарт unegui.mn-ийн зурагтай ИЖИЛ нэмэлт
                     тусламж — «бүх тэгтэй нь оруулна уу» (12 сая → 12000000) ✓ */}
-                {jobsSection && (
+                {/* {jobsSection && (
                   <p className="form-hint">
-                    💡 Үнийн дүнг бүх тэгтэй нь оруулна уу. Жишээ нь: 12 саяыг 12000000 гэж оруулна уу.
+                    💡 Дүнг бүх тэгтэй нь оруулна уу. Жишээ нь: 12 саяыг 12000000 гэж оруулна уу.
                   </p>
-                )}
+                )} */}
                 {/* Чекбокс — зүгээр checkbox + текст (гаднах box БАЙХГҮЙ, 🤝 emoji БАЙХГҮЙ).
                     ⚠️ 2026-10-01 (CSS SPECIFICITY — ₮-гийн асуудалтай ИЖИЛ):
                        `.form-group label { display:block }` (globals.css, (0,1,1)) нь

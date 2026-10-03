@@ -1317,16 +1317,17 @@ t('💼 jobs: 2 түвшин, 3 шүүлт (🕒 чип · 📊 · 📈), хял
   assert.equal(findSubtypeGroup('jobs', getSubtypes('jobs')[0]), null);
 });
 
-t('💼 jobs: форм талбарууд — company · position · 5 ШИНЭ талбар (цалин ХАСАГДАВ)', () => {
+t('💼 jobs: форм талбарууд — ЯГ 5 ШИНЭ талбар (🏢/💼/💰 цалин ХАСАГДАВ)', () => {
   // ⚠️ Дараалал нь форм дээрх дараалал (хэрэглэгчийн өгсөн жагсаалт) ✓
+  // ⚠️ 2026-10-03 (10): 🏢 `company` ба 💼 `position` ХАСАГДАВ (хэрэглэгчийн хүсэлт)
   assert.deepEqual(
     getAttrFields('jobs').map((f) => f.key),
-    ['company', 'position', 'jobType', 'experience', 'advertiser', 'jobLevel', 'salaryType'],
+    ['jobType', 'experience', 'advertiser', 'jobLevel', 'salaryType'],
   );
   // 💰 «Цалин (₮)» нь форм/attrs-аас БҮРЭН ХАСАГДАВ (цалин = зарын ҮНЭ) ✓
   assert.equal(getAttrField('jobs', 'salary'), null);
-  // ⚠️ Хуучин талбарууд (education/workMode/expiry) ч хасагдсан ✓
-  ['education', 'workMode', 'expiry'].forEach((k) => assert.equal(getAttrField('jobs', k), null));
+  // ⚠️ Хуучин талбарууд (company/position/education/workMode/expiry) ч хасагдсан ✓
+  ['company', 'position', 'education', 'workMode', 'expiry'].forEach((k) => assert.equal(getAttrField('jobs', k), null));
   // 🏷️ Шошго ба утгууд нь хэрэглэгчийн жагсаалттай ЯГ ИЖИЛ
   assert.equal(getAttrField('jobs', 'jobType').label, 'Ажлын цаг');
   assert.equal(getAttrField('jobs', 'advertiser').label, 'Зарлагч');
@@ -1350,30 +1351,34 @@ t('💼 jobs: «Үнэ» БИШ — ЦАЛИН (priceWord/isJobsSection, 2026-10
   assert.equal(isJobsSection('computers'), false);
 });
 
-t('📋 getAttrRows(jobs): шинэ 5 талбар + salary МӨР БАЙХГҮЙ (цалин = үнэ)', () => {
+t('📋 getAttrRows(jobs): 5 талбар + salary/company/position МӨР БАЙХГҮЙ', () => {
   const rows = getAttrRows('jobs', {
     company: 'Мобиком', position: 'Программист', salary: '2500000',
     jobType: 'Бүтэн цагийн', experience: 'Шаардлагатай', advertiser: 'Байгууллага',
     jobLevel: 'Мэргэжилтэн', salaryType: 'Тогтмол',
   });
-  assert.deepEqual(rows.map((r) => r.key), ['company', 'position', 'jobType', 'experience', 'advertiser', 'jobLevel', 'salaryType']);
+  assert.deepEqual(rows.map((r) => r.key), ['jobType', 'experience', 'advertiser', 'jobLevel', 'salaryType']);
   // ⚠️ `salary` нь `attrFields`-д БАЙХГҮЙ тул мөр болохгүй (үнэ тусдаа) ✓
-  assert.ok(!rows.some((r) => r.key === 'salary'));
+  // ⚠️ 2026-10-03 (10): 🏢 `company` / 💼 `position` ч ХАСАГДСАН (форм/карт/
+  //    дэлгэрэнгүй ГУРВУУЛАА нэг эх сурвалж — `getAttrRows` нь `attrFields`-ээр ✓)
+  ['salary', 'company', 'position'].forEach((k) => assert.ok(!rows.some((r) => r.key === k), `${k} мөр гарсан ✗`));
   assert.equal(rows.find((r) => r.key === 'jobType').value, 'Бүтэн цагийн');
 });
 
-t('💼 jobs: картын мөр — компани · албан тушаал · ажлын цаг · туршлага …', () => {
+t('💼 jobs: картын мөр — «Ажилд авна» · ажлын цаг · туршлага · зарлагч · түвшин · цалингийн төрөл', () => {
   assert.equal(
     formatAttrsLine('jobs', {
       company: 'Мобиком', position: 'Программист',
       jobType: 'Бүтэн цагийн', experience: 'Шаардлагатай',
       advertiser: 'Байгууллага', jobLevel: 'Мэргэжилтэн', salaryType: 'Тогтмол',
     }),
-    'Мобиком · Программист · 🕒 Бүтэн цагийн · 📊 Шаардлагатай · 🏷️ Байгууллага · 📈 Мэргэжилтэн · 💰 Тогтмол',
+    'Ажилд авна · 🕒 Бүтэн цагийн · 📊 Шаардлагатай · 🏷️ Байгууллага · 📈 Мэргэжилтэн · 💰 Тогтмол',
   );
   // ⚠️ `salary` нь картын мөрөнд ГАРАХГҮЙ (цалин нь тусдаа үнийн мөр) ✓
   assert.equal(formatAttrsLine('jobs', { salary: '2000000' }), 'Ажилд авна');
-  assert.equal(formatAttrsLine('jobs', { company: 'Мобиком', salary: '2000000' }), 'Мобиком');
+  // ⚠️ 2026-10-03 (10): ХУУЧИН заруудын `company`/`position` ч ГАРАХГҮЙ ✓
+  assert.equal(formatAttrsLine('jobs', { company: 'Мобиком', salary: '2000000' }), 'Ажилд авна');
+  assert.equal(formatAttrsLine('jobs', { position: 'Программист' }), 'Ажилд авна');
 });
 
 t('💼 0024 migration: 15 хуучин нэр солигдож, 26 шинэ нэр бүрэн хамрагдсан', () => {

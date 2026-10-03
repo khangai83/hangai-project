@@ -56,11 +56,15 @@ const SEED = readSrc('scripts/seed-sections.mjs');
 console.log('\n🧪 Ажлын зар — шинэ талбарууд + «Цалин» (2026-10-03 (9))\n');
 
 // ---------- ① ХЭСЭГ / ТАЛБАРУУД ----------
-t('💼 jobs: 5 ШИНЭ талбар + company/position — форм дараалал нь хэрэглэгчийн жагсаалт', () => {
+t('💼 jobs: форм нь ЯГ 5 талбар — 🏢 company / 💼 position ХАСАГДАВ (2026-10-03 (10))', () => {
   assert.deepEqual(
     getAttrFields('jobs').map((f) => f.key),
-    ['company', 'position', 'jobType', 'experience', 'advertiser', 'jobLevel', 'salaryType'],
+    ['jobType', 'experience', 'advertiser', 'jobLevel', 'salaryType'],
   );
+  // ⚠️ Хэрэглэгчийн хүсэлт (2026-10-03 (10)): «🏢 Компани / байгууллага,
+  //    💼 Албан тушаал — энэ 2-ыг зайлуул» ⇒ форм · карт · «Зарын дэлгэрэнгүй»
+  //    хүснэгт ГУРВУУЛААС ГАРНА ✓ (`getAttrRows` нь `attrFields`-ээр явдаг)
+  ['company', 'position'].forEach((k) => assert.equal(getAttrField('jobs', k), null, `${k} байсаар байна ✗`));
 });
 
 t('🕒 Ажлын цаг — 5 сонголт, `chips: true` (sidebar-д ЧИП)', () => {
@@ -157,28 +161,50 @@ t('💼 Sidebar дараалал: ажилд үнэ нь attr шүүлтүүди
 });
 
 // ---------- ⑥ КАРТ / SEED ----------
-t('📇 Картын мөр: шинэ талбаруудын дараалал (salary МӨРӨНД ГАРАХГҮЙ)', () => {
+t('📇 Картын мөр: «Ажилд авна» толгой + 5 талбар (🏢/💼 МӨРӨНД ГАРАХГҮЙ)', () => {
   assert.equal(
     formatAttrsLine('jobs', {
       company: 'Мобиком', position: 'Программист', jobType: 'Бүтэн цагийн',
       experience: 'Шаардлагатай', advertiser: 'Байгууллага',
       jobLevel: 'Мэргэжилтэн', salaryType: 'Тогтмол',
     }),
-    'Мобиком · Программист · 🕒 Бүтэн цагийн · 📊 Шаардлагатай · 🏷️ Байгууллага · 📈 Мэргэжилтэн · 💰 Тогтмол',
+    'Ажилд авна · 🕒 Бүтэн цагийн · 📊 Шаардлагатай · 🏷️ Байгууллага · 📈 Мэргэжилтэн · 💰 Тогтмол',
   );
+  // ⚠️ ХУУЧИН заруудын `attrs.company`/`attrs.position` (DB-д хэвээр) нь картын
+  //    толгой/мөр болж ГАРАХГҮЙ ✓ (`section === 'jobs'` үед `company` хоосон)
+  assert.equal(formatAttrsLine('jobs', { company: 'Мобиком', position: 'Программист' }), 'Ажилд авна');
+  // ℹ️ 🛠️ Үйлчилгээ дээр 🏢 `company` ХЭВЭЭР толгой болно (хөндөгдөөгүй ✓)
+  assert.equal(formatAttrsLine('services', { company: 'Гэр засвар' }), 'Гэр засвар');
 });
 
-t('📋 `getAttrRows(jobs)` — `salary` МӨР БАЙХГҮЙ (цалин нь зарын ҮНЭ)', () => {
-  const rows = getAttrRows('jobs', { company: 'X', salary: '2500000', jobType: 'Цагийн' });
-  assert.ok(!rows.some((r) => r.key === 'salary'));
-  assert.ok(rows.some((r) => r.key === 'jobType'));
+t('📋 `getAttrRows(jobs)` — `salary`/`company`/`position` МӨР БАЙХГҮЙ (цалин нь зарын ҮНЭ)', () => {
+  const rows = getAttrRows('jobs', {
+    company: 'X', position: 'Y', salary: '2500000', jobType: 'Цагийн',
+    experience: 'Шаардлагатай', advertiser: 'Хувь хүн', jobLevel: 'Анхан шатны', salaryType: 'Тогтмол',
+  });
+  assert.deepEqual(
+    rows.map((r) => r.key),
+    ['jobType', 'experience', 'advertiser', 'jobLevel', 'salaryType'],
+  );
+  ['salary', 'company', 'position'].forEach((k) => assert.ok(
+    !rows.some((r) => r.key === k), `${k} мөр «Зарын дэлгэрэнгүй»-д гарсан ✗`,
+  ));
+  assert.equal(rows.find((r) => r.key === 'jobType').value, 'Цагийн');
 });
 
-t('🌱 seed-sections: ДЕМО өгөгдөл нь ШИНЭ утгуудтай (education/workMode БАЙХГҮЙ)', () => {
+t('🌱 seed-sections: ДЕМО өгөгдөл нь ШИНЭ утгуудтай (education/workMode/company/position БАЙХГҮЙ)', () => {
   assert.match(SEED, /salaryType: pick\(\['Тогтмол'/);
   assert.match(SEED, /advertiser: pick\(/);
   assert.match(SEED, /jobLevel: isExecutive/);
   assert.ok(!/education: isEntry/.test(SEED), 'seed-д хуучин education үлдсэн ✗');
+  // ⚠️ 2026-10-03 (10): 🏢 `company` / 💼 `position` нь ажлын зарын талбаруудаас
+  //    хамт ХАСАГДСАН тул демо `attrs`-д ч ҮҮСЭХГҮЙ, `JOB_SUBTYPE_PAIRS` УСТСАН ✓
+  assert.ok(!/const JOB_SUBTYPE_PAIRS\s*=/.test(SEED), 'seed-д `JOB_SUBTYPE_PAIRS` хүснэгт үлдсэн ✗');
+  assert.ok(!/JOB_SUBTYPE_PAIRS\[/.test(SEED), '`JOB_SUBTYPE_PAIRS` АШИГЛАГДСАар байна ✗');
+  assert.ok(!/^\s+company,$/m.test(SEED), 'jobs attrs-д `company` үлдсэн ✗');
+  assert.ok(!/^\s+position,$/m.test(SEED), 'jobs attrs-д `position` үлдсэн ✗');
+  // ℹ️ 🛠️ Үйлчилгээний `company: pick(SERVICE_NAMES)` ХЭВЭЭР (тусдаа хэсэг ✓)
+  assert.match(SEED, /company: pick\(SERVICE_NAMES\)/);
 });
 
 console.log(`\n✅ БҮГД ТЭНЦСЭН — ${passed} тест\n`);
