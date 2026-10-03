@@ -783,8 +783,13 @@ const DETAIL_WIZ_PROBE = `(() => {
       return b ? (b.dataset.mobileOption || '') : '';
     })(),
     skipOption: [...document.querySelectorAll('[data-mobile-option-skip]')].some(vis),
-    /** 💳 «Төлбөрийн нөхцөл» — ЗААВАЛ (сонголтгүй бол урагшлуулахгүй ✗) */
-    paymentsSelected: [...document.querySelectorAll('[data-payment-value]')].filter((c) => c.checked).length,
+    /** 💳 «Төлбөрийн нөхцөл» — ЗААВАЛ (сонголтгүй бол урагшлуулахгүй ✗)
+     *  ⚠️ 2026-10-03 (18): форм ч ЧИП болов ⇒ төлөв нь aria-pressed (⏳ c.checked
+     *     байсан — ☑ checkbox нь <input> байсан үеийнх ✗; чип нь <button> бөгөөд
+     *     .checked нь undefined ✓)
+     *  ⚠️ ЭНЭ template literal дотор backtick БИЧИХГҮЙ ✗ */
+    paymentsSelected: [...document.querySelectorAll('[data-payment-value]')]
+      .filter((c) => c.getAttribute('aria-pressed') === 'true').length,
     answers: [...document.querySelectorAll('[data-mobile-answer-edit]')].filter(vis).length,
     answerKeys: [...document.querySelectorAll('[data-mobile-answer-edit]')].filter(vis)
       .map((b) => b.dataset.mobileAnswerEdit || ''),

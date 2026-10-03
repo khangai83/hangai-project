@@ -2270,12 +2270,18 @@ export default function AddListingClient() {
                 Автомашин зарна гэсэн дээр хайх хэсэгт гардаг болгоё. Зар
                 оруулах үед хэрэглэгч үүнийг сонгож өгөх ёстой. Олон сонголт
                 хийж байгаа боломж…»
-                🆕 DESIGN 2026-10-03 (6) — хэрэглэгчийн заавар + unegui.mn-ийн
-                   зураг: ЧИП БИШ ⇒ sidebar-тай ЯГ ИЖИЛ ☑ CHECKBOX (2 баганат):
-                   [☑ Хувь лизингээр] [☐ Бэлэн төлөлтөөр]
-                   [☐ Банкны зээлээр] [☑ Бартер сонирхоно]
-                   ⚠️ CSS нь `app/globals.css` (`.pay-grid`/`.pay-check`) —
-                      sidebar-тай НЭГ ЭХ СУРВАЛЖ (хоёр газар давхар бичихгүй ✓)
+                🎛 DESIGN 2026-10-03 (18) — хэрэглэгчийн хүсэлт: «…зар оруулах
+                   болох дэлгэрэнгүй … дээр Өрөөний тоо дэлгэрэнгүй хайлт
+                   шиг оруулдаг болгоод өгчих» ⇒ (6)-ийн 2 баганат ☑ CHECKBOX
+                   ХАСАГДАВ, ОДОО ХАЙЛТЫН sidebar-тай ЯГ ИЖИЛ ЧИП:
+                   [✓ Хувь лизингээр] [Бэлэн төлөлтөөр]
+                   [Банкны зээлээр]  [Бартер сонирхоно]
+                   ⚠️ Хэв нь `app/globals.css` (`.chip-toggle` — «🛏 Өрөөний
+                      тоо»/«Хороо»/sidebar-ийн чиптэй НЭГ класс ✓); ШИНЭ CSS
+                      БИЧЭЭГҮЙ, хуучин `.pay-grid`/`.pay-check` нь УСТГАГДАВ
+                      (өөр хэрэглэгч байхгүй болсон ✓)
+                   ⚠️ ОЛОН сонголт ХЭВЭЭР (`togglePayment` → `payments` массив) —
+                      чип дарж асаах/унтраах БОЛОМЖ ХЭВЭЭР ✓
                 ⚠️ Шошго/утга нь хайлтын sidebar-тай ЯГ ИЖИЛ
                    (`lib/paymentFilter.mjs → PAYMENT_OPTIONS`) — нэг эх сурвалж ✓
                 ⚠️ ЗӨВХӨН `real-estate` ба `auto` хэсэгт (`showPayments`),
@@ -2297,22 +2303,29 @@ export default function AddListingClient() {
                 >
                   <label>💳 Төлбөрийн нөхцөл</label>
                   <div
-                    className="pay-grid"
+                    className="flex flex-wrap gap-2"
                     data-payment-picker
                     role="group"
                     aria-label="Төлбөрийн нөхцөл"
                   >
-                    {PAYMENT_OPTIONS.map((o) => (
-                      <label key={o.value} className="pay-check">
-                        <input
-                          type="checkbox"
+                    {PAYMENT_OPTIONS.map((o) => {
+                      /** ⚠️ Төлөв нь форм-ын `payments` МАССИВААС — `<select>`-ийн
+                       *  `checked` биш `aria-pressed` (чип нь `<button>` ✓) */
+                      const on = form.payments.includes(o.value);
+                      return (
+                        <button
+                          key={o.value}
+                          type="button"
+                          aria-pressed={on}
                           data-payment-value={o.value}
-                          checked={form.payments.includes(o.value)}
-                          onChange={() => togglePayment(o.value)}
-                        />
-                        <span>{o.label}</span>
-                      </label>
-                    ))}
+                          onClick={() => togglePayment(o.value)}
+                          className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                        >
+                          {on && <span aria-hidden="true">✓</span>}
+                          {o.label}
+                        </button>
+                      );
+                    })}
                   </div>
                   <p className="form-hint">
                     {form.payments.length

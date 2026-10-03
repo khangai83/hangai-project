@@ -883,10 +883,12 @@ Node дээр `chrome --headless=new --remote-debugging-port=9335` + `WebSocket`
   хүсэлтээр («Зар хайх хэсэгийн 💳 Төлбөрийн нөхцөлийг өрөөний тоо шиг сонгодог
   болго») «🛏 Өрөөний тоо»-той **ЯГ ИЖИЛ `chip-toggle` чипүүд** болов
   (`aria-pressed`, `flex-wrap` мөр, идэвхтэй нь `✓` + брэнд өнгө ✓).
-  ⏳ **ФОРМ (3-р алхам) нь (6)-ийн 2 БАГАНАТ ☑ CHECKBOX ХЭВЭЭР** (unegui.mn-ийн
-  зураг) — CSS нь нэг газар (`app/globals.css`: `.pay-grid`/`.pay-check`,
-  `appearance:none` + SVG ✓), icon (💳/💵/🏦/🔄) нь UI-д ХАРАГДАХГҮЙ (зөвхөн
-  шошго ✓ — чип Ч БАС). 📱 Мобайлд тусдаа
+  🆕 **ФОРМ (3-р алхам) Ч (18)-д ЧИП БОЛОВ** — хэрэглэгчийн хүсэлт: «…зар
+  оруулах болох дэлгэрэнгүй … дээр Өрөөний тоо дэлгэрэнгүй хайлт шиг оруулдаг
+  болгоод өгчих» ⇒ ⏳ (6)-ийн 2 БАГАНАТ ☑ CHECKBOX (`.pay-grid`/`.pay-check`,
+  `appearance:none` + SVG) **БҮРЭН УСТГАГДАВ** — ХАЙЛТ ба ФОРМ ОДОО **НЭГ ХЭВ**
+  (`app/globals.css → .chip-toggle` ✓). icon (💳/💵/🏦/🔄) нь UI-д ХАРАГДАХГҮЙ
+  (зөвхөн шошго ✓ — чип Ч БАС). 📱 Мобайлд тусдаа
   дэлгэц (`detailScreens`: гарчиг → аттр\* → **💳 төлбөр** → талбай → …) ба
   `requiredDetailMsg('payments')` → «Төлбөрийн нөхцөл сонгоно уу» (засах горимд
   ШААРДАХГҮЙ ✓). 🧪 `test:payments` **36 тест ✓** · `test:detail-wizard` (📱 8 мөр,
@@ -1195,7 +1197,7 @@ Sidebar нь `SideBlock` (дээрээ гарчиг + доор нь оролту
 | **Толгой** | **Голлосон** «🔍 Хайлт» + түүний хажууд **`activeFilterCount`** badge (зөвхөн идэвхтэй хайлт байвал). «✕ Хаах» товч (мобайл) нь `absolute right-3` — голыг хөдөлгөхгүй |
 | **Байршил** | `Хот/Аймаг` (select) → **`Дүүрэг` (🆕 2026-10-03 (12): ОЛОН сонголттой чип — `chip-toggle`, скроллтой)** → `Хороо` (**ОЛОН** сонголттой чип, сонгосон дүүргүүдийн **НЭГДЭЛ**, скроллтой) |
 | **🛏 Өрөөний тоо** | 🆕 **2026-10-03 (4)-д ЭРГЭЖ ИРЭВ** (⏳ 2026-09-30 (4)-д түр хасагдсан байв) — `showRooms`, `ROOM_OPTIONS`, `toggleRoomValue`, `toggleRooms`/`clearRooms`, «N сонгосон» badge, «✕ Цуцлах» бүгд буцаж ирэв ✓. ⚠️ Байрлал: sidebar-д **«Үнэ, ₮»-ний ДЭЭР** (хэрэглэгчийн хүсэлт), ЭХНИЙ блок нь **«Байршил»** хэвээр · Хорооны блоктой ижил `chip-toggle` чипүүд · зөвхөн өрөөтэй төрөлд (`hasRoomsFields`) — доорх «🛏 ӨРӨӨНИЙ ТОО» хэсгийг үзнэ үү |
-| **💳 Төлбөрийн нөхцөл** | 🆕 **2026-10-03 (5)-д НЭМЭГДЭВ** — `showPayments` (= `hasPaymentTerms(propertyType)` → **зөвхөн үл хөдлөх + авто**), `PAYMENT_OPTIONS` (4 чип: 💳/💵/🏦/🔄), `togglePaymentValue`, «N сонгосон» badge, «✕ Цуцлах» · ⚠️ Байрлал: **«Өрөөний тоо»-ны ДАРАА, «Үнэ, ₮»-ний ӨМНӨ** (unegui.mn-тэй ижил); URL `?payment=lease,cash` → DB `attrs=cs.{"payment_terms":["lease"]}` / 2+ утга `or=(…)` — 🆕 **(16): ХАЙЛТ нь «🛏 Өрөөний тоо»-той ЯГ ИЖИЛ ЧИП** (⏳ (6)-ийн 2 баганат ☑ нь ЗӨВХӨН ФОРМД — `.pay-grid`/`.pay-check`) — доорх «💳 ТӨЛБӨРИЙН НӨХЦӨЛ» хэсгийг үзнэ үү |
+| **💳 Төлбөрийн нөхцөл** | 🆕 **2026-10-03 (5)-д НЭМЭГДЭВ** — `showPayments` (= `hasPaymentTerms(propertyType)` → **зөвхөн үл хөдлөх + авто**), `PAYMENT_OPTIONS` (4 чип: 💳/💵/🏦/🔄), `togglePaymentValue`, «N сонгосон» badge, «✕ Цуцлах» · ⚠️ Байрлал: **«Өрөөний тоо»-ны ДАРАА, «Үнэ, ₮»-ний ӨМНӨ** (unegui.mn-тэй ижил); URL `?payment=lease,cash` → DB `attrs=cs.{"payment_terms":["lease"]}` / 2+ утга `or=(…)` — 🆕 **(16): ХАЙЛТ нь «🛏 Өрөөний тоо»-той ЯГ ИЖИЛ ЧИП** ба 🆕 **(18): ФОРМ ч МӨН ТЭР ЧИП** (⏳ (6)-ийн 2 баганат ☑ `.pay-grid`/`.pay-check` бүрэн хасагдав) — доорх «💳 ТӨЛБӨРИЙН НӨХЦӨЛ» хэсгийг үзнэ үү |
 | **🖥 💻 Notebook-ийн шүүлт** | 🆕 **2026-10-03 (7)-д НЭМЭГДЭВ** — 💻 `computers` хэсгийн sidebar-д **📺 Дэлгэцийн хэмжээ (инч) · ⚙️ Процессор (CPU) · 🧠 Санах ой (RAM) · 💾 Хард диск (SSD / HDD)** гэсэн 4 `<select>` («Бүгд» анхдагчтай) — ⚠️ **зөвхөн Notebook-ийн 21 брэнд** ба «Иж бүрэн компьютер»/«Процессор, сервер» сонгосон үед (`onlySubtypes`); Mouse/Keyboard/тонер/чихэвч ба **дэд төрөл сонгоогүй** үед ХАРАГДАХГҮЙ · Байрлал: 🏷️ Брэнд-ийн ДАРАА, ✅ Төлөв-ийн ӨМНӨ (формтой ижил дараалал) · URL `?attr_cpu=Intel+Core+i5` → DB `attrs->>cpu=eq.Intel Core i5` — доорх «🖥 💻 NOTEBOOK-ИЙН ШҮҮЛТ» хэсгийг үзнэ үү |
 | **Үнэ, ₮** | `RangeInput` — **«Доод / Дээд»** хоёр тоон оролт (2026-09-30 (3): өмнөх «Эхлэх / Дуусах» нэр солигдов); бичих ЯВЦАД тоо нь **цэгээр тусгаарлагдана** («3.000.000») + шүүлт идэвхтэй үед «₮250 сая – ₮2 тэрбум» шошго + ✕ арилгах — ⚠️ **«санал болгосон тоо» товч БАЙХГҮЙ** (хасагдсан ✓) |
 | **Талбай, м²** | Мөн `RangeInput` (`mode="decimal"`) → «75,5» монгол бутархайг зөвшөөрч, бүхэл хэсгийг нь цэгээр бүлэглэнэ («1.234,5» ✓) |
@@ -1287,12 +1289,13 @@ Sidebar нь `SideBlock` (дээрээ гарчиг + доор нь оролту
 > unegui.mn-тэй ЯГ ИЖИЛ **2 баганат ☑ checkbox** болов (мобайлд Ч 2 багана) ба
 > icon (💳/💵/🏦/🔄) нь **ХАРАГДАХГҮЙ** — зөвхөн шошго ✓
 >
-> 🆕 **(16) ХАЙЛТЫН ХЭВ (хэрэглэгчийн хүсэлт: «Зар хайх хэсэгийн 💳 Төлбөрийн
-> нөхцөлийг ӨРӨӨНИЙ ТОО шиг сонгодог болго»):** хайлтын sidebar нь (6)-ийн ☑
-> хэвээс БУЦАЖ, «🛏 Өрөөний тоо»-той **ЯГ ИЖИЛ `chip-toggle` чипүүд** болов —
-> `<button aria-pressed>` (☑ `<input>` БИШ), `flex-wrap` мөр, идэвхтэй нь `✓` +
-> брэнд өнгө (`chip-toggle-active`) ✓. ⏳ (6)-ийн `.pay-grid`/`.pay-check` CSS нь
-> ОДОО ЗӨВХӨН **ФОРМД** (`data-payment-picker`) хэрэглэгдэнэ — ХЭВЭЭР байх ЁСТОЙ
+> 🆕 **(16)+(18) ЧИП ХЭВ (хэрэглэгчийн хүсэлт: «Зар хайх хэсэгийн 💳 Төлбөрийн
+> нөхцөлийг ӨРӨӨНИЙ ТОО шиг сонгодог болго» → дараа нь «…зар оруулах …
+> дэлгэрэнгүй … дээр Өрөөний тоо … шиг оруулдаг болгоод өгчих»):** ХАЙЛТЫН
+> sidebar (16) ба ЗАР ОРУУЛАХ ФОРМ (18) ХОЁУЛАА «🛏 Өрөөний тоо»-той **ЯГ ИЖИЛ
+> `chip-toggle` чипүүд** — `<button aria-pressed>` (☑ `<input>` БИШ), `flex-wrap`
+> мөр, идэвхтэй нь `✓` + брэнд өнгө (`chip-toggle-active`) ✓. ⏳ (6)-ийн
+> `.pay-grid`/`.pay-check` CSS нь өөр хэрэглэгчгүй болсон тул **УСТГАГДАВ** ✓
 
 **① Хайлтын sidebar (2026-10-03 (16) — чип, өрөөний тоотой ижил):**
 
@@ -1303,24 +1306,22 @@ Sidebar нь `SideBlock` (дээрээ гарчиг + доор нь оролту
 ✕ Цуцлах
 ```
 
-**② Зар оруулах форм, 3-р алхам (2026-10-03 (6) — ☑, unegui.mn-ийн хэв):**
+**② Зар оруулах форм, 3-р алхам (2026-10-03 (18) — ЧИП, хайлттай ИЖИЛ хэв):**
 
 ```
-💳 Төлбөрийн нөхцөл  [2 сонгосон]      ← unegui.mn-ийн хэв
-☑ Хувь лизингээр   ☐ Бэлэн төлөлтөөр   ← 2 БАГАНАТ (мобайлд ч 2 ✓)
-☐ Банкны зээлээр   ☑ Бартер сонирхоно  ← шошго 2 мөр болж болно
+💳 Төлбөрийн нөхцөл  [2 сонгосон]
+[✓Хувь лизингээр][Бэлэн төлөлтөөр]     ← chip-toggle (⏳ (6)-ийн ☑ УСТГАГДАВ)
+[Банкны зээлээр][✓Бартер сонирхоно]    ← flex-wrap (хайлтын чиптэй ИЖИЛ ✓)
 ✕ Цуцлах
 ```
 
-> 🎨 **CSS нэг газар** (`app/globals.css`): `.pay-grid` (2 баганат grid) +
-> `.pay-check` (тэмдэг + шошго) + `.pay-check > input`
-> (**`appearance:none`** — натив checkbox нь хөтөч/ОС бүрд өөр ✗, `accent-color`
-> нь зөвхөн өнгийг солино) + `input:checked` (dark дүүргэлт + **SVG ✓** —
-> `<input>` нь replaced element тул `::after` зарим хөтөч дээр ГАРАХГҮЙ ✗)
-> · ⚠️ 2026-10-03 (16)-аас хойш энэ CSS нь **зөвхөн формд** хэрэглэгдэнэ
-> (`HomeClient.jsx`-д `.pay-grid` БАЙХГҮЙ — `test:payments` ⑭ үүнийг хамгаална ✓);
-> хайлтын чип нь `.chip-toggle` (өрөөний тоо/хорооны блоктой НЭГ класс —
-> давхар CSS БАЙХГҮЙ ✓)
+> 🎨 **CSS нэг газар** (`app/globals.css`): ХАЙЛТ ба ФОРМ ХОЁУЛАА `.chip-toggle`
+> (чип) + `.chip-toggle-active` (брэнд өнгө) — «🛏 Өрөөний тоо»/«Хороо»/
+> «🎛 Чип шүүлт»-тэй **ЯГ ИЖИЛ класс** тул давхар CSS БАЙХГҮЙ ✓.
+> ⏳ 2026-10-03 (18)-аас хойш `.pay-grid` (2 баганат grid) · `.pay-check` (☑ мөр)
+> · `.pay-check > input` (`appearance:none`, 18px, SVG ✓) дүрмүүд **УСТГАГДАВ**
+> (форм ч чип болов ⇒ хэрэглэгчгүй үлдэв ✗) — `test:payments` ⑮/⑰ үүнийг
+> хамгаална ✓
 
 ⚠️ **ЗӨВХӨН 2 ХЭСЭГТ** харагдана: 🏠 **Үл хөдлөх** ба 🚗 **Авто** (`hasPaymentTerms`;
 ажил/компьютер/тавилга … дээр блок ОГТ БАЙХГҮЙ ✗). ⚠️ `hasPaymentTerms` нь
@@ -1337,10 +1338,10 @@ Sidebar нь `SideBlock` (дээрээ гарчиг + доор нь оролту
 | ⚠️ JSONB 2 ДҮРЭМ | ① `cs` (**contains**) ашиглана — `attrs.payment_terms` нь МАССИВ тул `->>` тохирохгүй ✗ ② `.or()`-ийн мөрөнд **таслал нь тусгаарлагч** ⇒ нөхцөл бүр **ЯГ НЭГ ЭЛЕМЕНТТЭЙ** массив байх ЁСТОЙ; `["lease","cash"]` гэж илгээвэл PostgREST **`22P02`** алдаа өгнө ✗ (CDP тест үүнийг бодит query мөрөөр шалгана ✓) |
 | Шошго | `paymentsFilterLabel(['lease','cash'])` → «💳 Хувь лизингээр, Бэлэн төлөлтөөр» — идэвхтэй чип ба «N сонгосон» badge НЭГ функцийг дуудна ✓ (⚠️ AI-гүй: шошго нь `PAYMENT_OPTIONS`-оос, icon нь зөвхөн энэ мөрөнд ✓) |
 | 🎛 ЧИП (хайлт, (16)) | «🛏 Өрөөний тоо»-той ЯГ ИЖИЛ `.chip-toggle` `<button aria-pressed>` (☑ `<input>` БИШ ✓) + `flex-wrap` мөр; идэвхтэй нь `chip-toggle-active` + `✓` (`✓` нь `aria-hidden` — скринридер давхар уншихгүй ✓); `data-payment-value` нь **button** дээр ✓ |
-| ☑ ДИЗАЙН (форм) | `.pay-grid` (`grid-cols-2` — **мобайлд ч 2**) + `.pay-check` (`flex`, `items-start` — шошго 2 мөр) + `<input type="checkbox">` (`appearance:none`, 18px, `checked` → dark + SVG ✓); `data-payment-value` нь **input** дээр, шошго нь `<span>` дотор ✓ — ⚠️ `HomeClient.jsx`-д `.pay-grid` БАЙХГҮЙ (тест хамгаална ✓) |
-| Цэвэрлэх 3 зам | ① ☑ toggle ② блокийн «✕ Цуцлах» ③ үр дүнгийн доорх идэвхтэй чип (`✕`) — гурвуулаа URL-аас `payment=`-г хасна ✓ |
+| 🎛 ЧИП (форм, (18)) | «🛏 Өрөөний тоо»-той ЯГ ИЖИЛ `.chip-toggle` `<button aria-pressed>` (☑ `<input>` БИШ ✓) + `flex-wrap` мөр; идэвхтэй нь `chip-toggle-active` + `✓` (`aria-hidden` ✓); `data-payment-value` нь **button** дээр `togglePayment`-той холбоотой ✓ — ⚠️ ХАЙЛТ ба ФОРМ ОДОО НЭГ ХЭВ; ⏳ (6)-ийн `.pay-grid`/`.pay-check` нь CSS-ийн хамт **УСТГАГДАВ** ✓ |
+| Цэвэрлэх 3 зам | ① чип toggle ② блокийн «✕ Цуцлах» ③ үр дүнгийн доорх идэвхтэй чип (`✕`) — гурвуулаа URL-аас `payment=`-г хасна ✓ |
 | Хэсэг солих | `?section=jobs&payment=lease` → ажил дээр payment **ИГНОРХИЙГДЭНЭ** (URL цэвэр, DB query-д `attrs.cs.` огт явахгүй) ✓ |
-| Форм (3-р алхам) | ☑ checkbox-үүд (ЯГ ИЖИЛ `.pay-grid`/`.pay-check` класс — CSS нэг газар ✓; ⏳ 2026-10-03 (16)-аас хойш хайлт нь ЧИП — ☑ нь ЗӨВХӨН ЭНД ✓) + «N сонгосон»/«✕ Цуцлах»; 📱 мобайлд **тусдаа дэлгэц** (`detailScreens` дараалал: гарчиг → аттр\* → **💳 төлбөр** → талбай → …) ✓ |
+| Форм (3-р алхам) | 🎛 ЧИП (ЯГ ИЖИЛ `.chip-toggle` класс — CSS нэг газар ✓; 🆕 2026-10-03 (18)-аас хойш ХАЙЛТ БА ФОРМ хоёулаа чип — ⏳ ☑ УСТГАГДАВ ✓) + «N сонгосон»/«✕ Цуцлах»; 📱 мобайлд **тусдаа дэлгэц** (`detailScreens` дараалал: гарчиг → аттр\* → **💳 төлбөр** → талбай → …) ✓ |
 | **ЗААВАЛ** | Шинэ зард (`!isEdit`) сонголт хоосон бол 3-р алхам **хөдлөхгүй** ✗ — `requiredDetailMsg('payments')` → «Төлбөрийн нөхцөл сонгоно уу»; засах горимд ШААРДАХГҮЙ (хуучин зарууд `attrs.payment_terms`-гүй байж болно ✓) |
 | DB migration | **ШААРДЛАГАГҮЙ** ✓ — `attrs` нь аль хэдийн `jsonb` (0003) тул зөвхөн түлхүүр нэмэгдэж байна |
 
@@ -1361,13 +1362,13 @@ Sidebar нь `SideBlock` (дээрээ гарчиг + доор нь оролту
 > `paymentOptionLabel`/`Icon` · `paymentsFilterLabel` · `togglePaymentValue` ·
 > `paymentsFilterDescriptor` · `paymentContainsJson` · `applyPaymentFilter`
 > (contains vs or, таслалын аюулгүй байдал) · `paymentTermsForAttrs` ·
-> `getAttrRows` 4 тохиолдол ✓ · 🆕 **(16) ХАЙЛТ нь ЧИП:** `HomeClient.jsx`-д
-> `chip-toggle` + `aria-pressed` + жинхэнэ `<button>` байгаа ба
-> **`pay-grid`/`type="checkbox"`/`checked` БАЙХГҮЙ** (⏳ (6)-ийн ☑ нь ЗӨВХӨН
-> ФОРМД үлдэв ✓) + CDP скриптэд `aria-pressed`/`tagName === 'BUTTON'`/`flexWrap`/
-> `chip-toggle` хэмжилтүүд бий ✓ · ✅ `AddListingClient` (форм) нь
-> `pay-grid`/`pay-check`/`type="checkbox"`/`checked` ХЭВЭЭР, icon харагдахгүй ба
-> `globals.css`-ийн 2 багана/`appearance:none`/SVG ✓)
+> `getAttrRows` 4 тохиолдол ✓ · 🆕 **(16)+(18) ХАЙЛТ ба ФОРМ ХОЁУЛАА ЧИП:**
+> `HomeClient.jsx` БА `AddListingClient.jsx`-д `chip-toggle` + `aria-pressed` +
+> жинхэнэ `<button>` байгаа ба **`pay-grid`/`pay-check`/`type="checkbox"`/
+> `checked` ОГТ БАЙХГҮЙ** (⏳ (6)-ийн ☑ хэв `globals.css`-ийн хамт УСТГАГДАВ ✓) +
+> CDP скриптэд `aria-pressed`/`tagName === 'BUTTON'`/`flexWrap`/`chip-toggle`
+> хэмжилтүүд бий ✓ · ✅ ⑰ нь `.chip-toggle` (хайлт=форм НЭГ хэв) байгаа ба ☑-ийн
+> дүрэм БАЙХГҮЙ эсэхийг шалгана ✓)
 > 🐍 `npm run cdp:payments` → ✅ **58 OK, 0 FAIL** (бодит Chrome-д батлагдсан):
 > үл хөдлөх/авто дээр ЧИП 4 байгаа ба ажил/компьютер/«Бүх зар» дээр блок 0 ·
 > блок «Өрөөний тоо»-ны дараа «Үнэ»-ний өмнө · 🎛 **чип нь жинхэнэ `<button>` (4),
@@ -4080,7 +4081,7 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 | `lib/paymentFilter.mjs` | 💳 **«Төлбөрийн нөхцөл» (цэвэр функцууд, 🆕 2026-10-03 (5); дизайн (6))** — `PAYMENT_VALUES`/`PAYMENT_OPTIONS` (код + шошго + icon: `lease`/`cash`/`loan`/`barter`; ⚠️ шошго нь «Бартер **сонирхоно**», icon нь UI-д ХАРАГДАХГҮЙ — (6)) · `normalizePaymentValue`/`isPaymentValue` · `parsePaymentList`/`paymentsUrlValue`/`togglePaymentValue` · `countPayments`/`isPaymentsEmpty` · `paymentOptionLabel`/`paymentOptionIcon` · `paymentsFilterLabel`/`paymentsFilterDescriptor` · `paymentContainsJson`/`applyPaymentFilter` (⚠️ `.or()`-д нөхцөл бүр **ЯГ 1 ЭЛЕМЕНТТЭЙ** массив) · `hasPaymentTerms` (шүүлт/блок харагдах эсэх) · `paymentTermsForAttrs` (форм → `attrs.payment_terms`, хоосон/дэмжигдэхгүй → **`null`** ⇒ түлхүүр УСТГАГДАНА) — ⚠️ React/`window`-оос ХАМААРАЛГҮЙ тул `test-payments` нь рендэргүйгээр шалгана ✓ |
 | `scripts/cdp-payments.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:payments` (🆕 2026-10-03 (5); дизайн (6), хайлтын чип (16): 💳 **төлбөрийн нөхцөлийн 58 шалгалт** — ① 🏠 Орон сууц дээр `[data-payment-filter]` **1** + `[data-payment-value]` **4** (`lease,cash,loan,barter`) ба шошго нь «Хувь лизингээр · Бэлэн төлөлтөөр · Банкны зээлээр · Бартер сонирхоно» ①b 🎛 **ЧИП (өрөөний тоотой ЯГ ИЖИЛ): жинхэнэ `<button>` 4 · НЭГ `<input>` Ч БАЙХГҮЙ · `.chip-toggle` + `flex-wrap` · хэмжээ 124x33** (⏳ (6)-ийн 2 баганат ☑ нь ЗӨВХӨН ФОРМД) ② блок нь **«Өрөөний тоо»-ны ДАРАА, «Үнэ, ₮»-ний ӨМНӨ** (`aside .divide-y > div` дарааллаар) ③ чип дарж `?payment=lease` → DB **`attrs=cs.{"payment_terms":["lease"]}`** (⚠️ `->>` БИШ) ④ 2 чип → `or=(attrs.cs.{…["lease"]},attrs.cs.{…["cash"]})` + «2 сонгосон» badge ба ⚠️ **нөхцөл бүр ЯГ 1 ЭЛЕМЕНТТЭЙ массив** (`22P02`-оос сэргийлнэ) ⑤ дахин дарж toggle · «✕ Цуцлах» · «✕» идэвхтэй чип ⑥ 🚗 Авто дээр чипүүд (🆕 2026-10-03 (13): ХЭСГИЙН түвшинд `?section=auto` (төрөл ГҮЙ) ч блок **1** — `hasPaymentTerms(section)` ✓, progressive ХАСАГДАВ) ба ⛔ Ажил/Компьютер дээр блок **0**, «Бүх зар» дээр блок **0** ч sidebar **БИЙ** (📍 Байршил · 💰 Үнэ ✓) ⑦ **хуучин линк** нормчлогдоно (`?payment=abc, LEASE` → зөвхөн `lease`) ⑧ хэсэг солиход `payment=` ИГНОРХИЙГДЭНЭ (URL/DB цэвэр) ⑨ breadcrumb «Үл хөдлөх» линк ⑩ 📱 мобайл 390px — чипүүд (139x33) харагдана, **overflow 0**, JS exception **0** — ⚠️ сервер :3000 ба Chrome :9222 шаардна) |
 | `scripts/cdp-notebook-specs.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:specs` (🆕 **2026-10-03 (7): 💻 Notebook-ийн 📺/⚙️/🧠/💾 40 шалгалт** — ① `?section=computers&type=Apple` дээр `[data-attr-filter]` **5** (4 үзүүлэлт + ✅ төлөв), дараалал `screen→cpu→ram→storage→condition`, шошго/сонголт нь **`lib/locationData.js`-тэй DOM↔ЛИБ харьцуулалтаар ЯГ ижил** (7/19/13/6/3 + «Бүгд»), блок дараалал 🏷️ Брэнд → 📺 → ⚙️ → 🧠 → 💾 → «Үнэ, ₮» ② ⚙️ «Intel Core i5» сонгоход URL `?attr_cpu=Intel+Core+i5` + DB **`attrs->>cpu=eq.Intel Core i5`** (⚠️ `ilike` БИШ) + чип «⚙️ Intel Core i5» + үр дүн буурна ③ линкээр ороход утга талбар дээр тэмдэглэгдэж URL ХАСАГДАХГҮЙ ④ 🖱 `type=Mouse` дээр 4 шүүлт **0** ба DB-д `attrs->>cpu` ОГТ ЯВАХГҮЙ ⑤ 🕳 `?type=Mouse&attr_cpu=…` → URL/DB цэвэр (`pruneGatedAttrs`) ⑥ 🆕 2026-10-03 (13): дэд төрөл сонгоогүй Ч sidebar **БАЙНА** (хэсэг = 2-р түвшин; `[data-attr-filter]` нь либээс ижил, 📺/⚙️/🧠/💾 нь ГАРАХГҮЙ ХЭВЭЭР) ⑦ 🚗 авто дээр 3 (`color·transmission·fuel`, `attrs->>fuel=eq.Хайбрид` — бусад хэсэг хөндөгдөөгүй) ⑧ 📱 390px overflow 0 ⑨ exception 0 — ⚠️ сервер :3000 ба Chrome :9222 шаардна; `+` = зай (`dbQ` нь хөрвүүлнэ ✓)) |
-| `scripts/test-payments.mjs` | 🆕 **36 тест** — `npm run test:payments` (2026-10-03 (5): 💳 төлбөрийн нөхцөлийн гэрээг хамгаална — ① `lib/paymentFilter.mjs`-ийн цэвэр функцууд: `hasPaymentTerms` (зөвхөн `real-estate`/`auto` ✓) · `normalizePaymentValue`/`isPaymentValue` (trim + lowercase) · `parsePaymentList` (эвдэрсэн утга хасч, КАНОН дараалал) · `paymentsUrlValue` · `countPayments`/`isPaymentsEmpty` · `paymentOptionLabel`/`Icon` · `paymentsFilterLabel` · `togglePaymentValue` · `paymentsFilterDescriptor` ② `paymentContainsJson` ба `applyPaymentFilter` нь fake PostgREST builder-ээр: **1 утга → `attrs=cs.{"payment_terms":["x"]}`**, **2+ → `or=(…)`**, ⚠️ **`["a","b"]` гэсэн ХОЁР ЭЛЕМЕНТТЭЙ массив ХЭЗЭЭ Ч ЯВАХГҮЙ** (таслал `.or()`-ийг эвдэж `22P02` өгнө ✗) ③ `paymentTermsForAttrs` (дэмжигдэхгүй/хоосон → `null`) ④ `getAttrRows` — 💳 мөр зарын дэлгэрэнгүйд гарна (4 тохиолдол) ⑤ `lib/queries.js`/`HomeClient.jsx`/`AddListingClient.jsx`/`cdp-payments.mjs`/`package.json` дээрх ЭХ ФАЙЛЫН ГЭРЭЭ (regex) ✓ + 🆕 **(16) ХАЙЛТ нь ЧИП:** `HomeClient.jsx`-д `chip-toggle`/`aria-pressed`/`<button>` байна, `pay-grid`/`type="checkbox"` БАЙХГҮЙ, icon харагдахгүй ✓ + **☑ ДИЗАЙН (2026-10-03 (6)) нь ЗӨВХӨН ФОРМД:** `AddListingClient` нь `pay-grid`/`pay-check`/`type="checkbox"`/`checked` ба `globals.css`-ийн 2 багана/`appearance:none`/SVG ✓) — ⚠️ `scripts/cdp-payments.mjs` нь БОДИТ DOM дээр чипийн хэмжээ (124x33), `aria-pressed`, `flex-wrap`-ыг хэмжинэ ✓) |
+| `scripts/test-payments.mjs` | 🆕 **36 тест** — `npm run test:payments` (2026-10-03 (5): 💳 төлбөрийн нөхцөлийн гэрээг хамгаална — ① `lib/paymentFilter.mjs`-ийн цэвэр функцууд: `hasPaymentTerms` (зөвхөн `real-estate`/`auto` ✓) · `normalizePaymentValue`/`isPaymentValue` (trim + lowercase) · `parsePaymentList` (эвдэрсэн утга хасч, КАНОН дараалал) · `paymentsUrlValue` · `countPayments`/`isPaymentsEmpty` · `paymentOptionLabel`/`Icon` · `paymentsFilterLabel` · `togglePaymentValue` · `paymentsFilterDescriptor` ② `paymentContainsJson` ба `applyPaymentFilter` нь fake PostgREST builder-ээр: **1 утга → `attrs=cs.{"payment_terms":["x"]}`**, **2+ → `or=(…)`**, ⚠️ **`["a","b"]` гэсэн ХОЁР ЭЛЕМЕНТТЭЙ массив ХЭЗЭЭ Ч ЯВАХГҮЙ** (таслал `.or()`-ийг эвдэж `22P02` өгнө ✗) ③ `paymentTermsForAttrs` (дэмжигдэхгүй/хоосон → `null`) ④ `getAttrRows` — 💳 мөр зарын дэлгэрэнгүйд гарна (4 тохиолдол) ⑤ `lib/queries.js`/`HomeClient.jsx`/`AddListingClient.jsx`/`cdp-payments.mjs`/`package.json` дээрх ЭХ ФАЙЛЫН ГЭРЭЭ (regex) ✓ + 🆕 **(16) ХАЙЛТ нь ЧИП:** `HomeClient.jsx`-д `chip-toggle`/`aria-pressed`/`<button>` байна, `pay-grid`/`type="checkbox"` БАЙХГҮЙ, icon харагдахгүй ✓ + 🆕 **(18) ФОРМ Ч МӨН ЧИП:** `AddListingClient` нь `chip-toggle`/`aria-pressed`/`<button>` ба `pay-grid`/`pay-check`/`type="checkbox"`/`checked` **БАЙХГҮЙ** ✓, `globals.css`-ээс ☑-ийн дүрмүүд (`.pay-grid`/`.pay-check`/`appearance:none`/SVG) **УСТГАГДАВ** ба хайлт=форм нэг хэв (`.chip-toggle`) ✓) — ⚠️ `scripts/cdp-payments.mjs` нь БОДИТ DOM дээр чипийн хэмжээ (124x33), `aria-pressed`, `flex-wrap`-ыг хэмжинэ ✓) |
 | `scripts/test-districts.mjs` | **40 тест** — `npm run test:districts` (🆕 2026-10-03 (12): 🗺 дүүргийн **ОЛОН сонголтын** гэрээ — 🏷️ 2026-10-03 (14): `districtsFilterLabel` нь **«2 дүүрэг»** (өмнө «2 дүүрэг/сум») · `normalizeDistrict` (зай/таслалт/хүчингүй утга) · `parseDistrictList` (эвдэрсэн гишүүн хасаж, дараалал хадгална) · `isDistrictsEmpty`/`countDistricts` · `toggleDistrictValue` (checkbox мэт) · `districtsUrlValue` · `districtsFilterLabel` (**1 → нэрээр** «Баянгол» · 2+ → «2 дүүрэг») · `districtsFilterDescriptor`/`applyDistrictFilter` fake builder-ээр — **`['Баянгол']` → `eq`** (хуучин гэрээ ЯГ ижил ✓), 2+ → `in`; `getKhoroosForDistricts` (нэгдэл, хорооны нэрээр давхцалгүй, танихгүй хот → `[]`) · `lib/queries.js` ба `lib/breadcrumb.js` нь модулийг дуудна (`codeOnly()` эх кодын гэрээ) · `HomeClient.jsx`-д `<select>` БАЙХГҮЙ + `data-district-filter`/`data-district-value` БАЙНА, «Өрөө» илүүц текст БАЙХГҮЙ · `scripts/cdp-districts.mjs` нь чип дарах замыг шалгана ✓) |
 
 | `scripts/test-rooms.mjs` | **44 тест** — `npm run test:rooms` (🆕 2026-10-03 (4): өрөөний **UI ЭРГЭЖ ИРСНИЙ** гэрээг хамгаална — `codeOnly()`-оор `data-room-filter`/`data-room-value`/`ROOM_OPTIONS`/`toggleRoomValue`/`toggleRooms`/`clearRooms`/`showRooms`/«Өрөөний тоо» **КОДОД БАЙНА** ✓ ба ⚠️ `data-room-filter` нь «Үнэ, ₮»-ний **ӨМНӨ** байрлана (`indexOf`) ✓; ⚠️ ХАДГАЛАГДСАН: `rooms: []`, `parseRoomList(sp.get('rooms'))`, `roomsUrlValue(filters.rooms)`, `roomsFilterLabel(filters.rooms)`; 📌 CDP скрипт нь `dom.chips === 5` (Орон сууц дээр чип 5 байна) ба `clickRoom(` (чип дарж URL/DB шалгах) замыг шаардана ✓. Мөн: `ROOM_VALUES`/`normalizeRoomValue` (`'5+'`/`+5`/`5` → `'5'`)/`parseRoomList` (эвдэрсэн `abc` хасаж, өсөх эрэмбээр)/`toggleRoomValue`/`isRoomsEmpty`/`countRooms`/`roomsUrlValue`/`roomsFilterLabel`/`roomsFilterDescriptor` ба `applyRoomFilter` fake builder-ээр — **`['5']`→`gte 5`, `['3']`→`in ['3']` (хуучин үр дүнтэй ЯГ ижил)**, `['4','5']`→`gte 4`, `['1','5']`→`or(…)`; ⚠️ 2026-09-30 (4)-д тестэд гарсан алдаа: `ROOM_OPTIONS`-ийн хүлээлт нь `'2 өрөө','2 өрөө'` гэж бичигдсэн байсныг `'1 өрөө'` болгож зассан ✓) |

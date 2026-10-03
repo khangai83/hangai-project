@@ -421,17 +421,27 @@ t('📝 AddListingClient.jsx: ОЛОН сонголт + ЗААВАЛ шалга�
   assert.match(ui, /payments: \[\]/, 'pickSection/emptyForm-д массив алга ✗');
   // ⑤ Засах горимд хуучин утга формоо бөглөнө (`attrs.payment_terms` → код ✓)
   assert.match(ui, /payments: parsePaymentList\(/, 'засах горимд уншихгүй ✗');
-  // ⑥ 🆕 ☑ CHECKBOX ХЭВ (2026-10-03 (6)) — ЗӨВХӨН ЗАР ОРУУЛАХ ФОРМД байна
-  //    (⏳ (16)-д хайлтын sidebar нь «Өрөөний тоо» шиг ЧИП болов ✗)
-  //    ⚠️ `className="pay-grid"` нь дэгээнээс (data-payment-picker) ӨМНӨ ✓
+  // ⑥ 🆕 ЧИП ХЭВ (2026-10-03 (18)) — ХАЙЛТ БА ФОРМ ХОЁУЛАА ОДОО «🛏 Өрөөний
+  //    тоо»-той ЯГ ИЖИЛ чип (хэрэглэгчийн хүсэлт: «…зар оруулах болох
+  //    дэлгэрэнгүй … дээр Өрөөний тоо дэлгэрэнгүй хайлт шиг оруулдаг болгоод
+  //    өгчих») — ⏳ (6)-ийн ☑ checkbox БҮРЭН ХАСАГДАВ ✓
+  //    ⚠️ класс нь дэгээнээс (data-payment-picker) ӨМНӨ ✓
   const payAt = ui.indexOf('data-payment-picker');
   const payRegion = ui.slice(payAt - 300, payAt + 1200);
-  assert.match(payRegion, /className="pay-grid"/, '2 баганат grid (`.pay-grid`) алга ✗');
-  assert.match(payRegion, /className="pay-check"/, '☑ мөр (`.pay-check`) алга ✗');
-  assert.match(payRegion, /type="checkbox"/, 'жинхэнэ `<input type="checkbox">` алга ✗');
-  assert.match(payRegion, /checked=\{form\.payments\.includes\(o\.value\)\}/,
-    '`checked` төлөв холбогдоогүй ✗');
-  assert.ok(!/chip-toggle/.test(payRegion), 'форм дээр чип хэвээр байна ✗');
+  assert.match(payRegion, /className=\{`chip-toggle \$\{on \? 'chip-toggle-active' : ''\}`\}/,
+    'формд чипийн класс (`.chip-toggle`) алга ✗');
+  assert.match(payRegion, /aria-pressed=\{on\}/, 'чипийн төлөв (`aria-pressed`) алга ✗');
+  assert.match(payRegion, /<button/, 'чип нь ЖИНХЭНЭ `<button>` байх ёстой ✗');
+  assert.match(payRegion, /data-payment-value=\{o\.value\}/, 'чипийн дэгээ холбогдоогүй ✗');
+  assert.match(payRegion, /onClick=\{\(\) => togglePayment\(o\.value\)\}/,
+    'нэг эх сурвалж (`togglePayment`) холбогдоогүй ✗');
+  assert.match(payRegion, /\{on && <span aria-hidden="true">✓<\/span>\}/,
+    'идэвхтэй чип дээр `✓` тэмдэг алга ✗');
+  assert.ok(!/type="checkbox"/.test(payRegion), 'форм дээр ☑ checkbox хэвээр байна ✗');
+  assert.ok(!/pay-grid/.test(payRegion), 'форм дээр `.pay-grid` хэвээр байна ✗');
+  assert.ok(!/pay-check/.test(payRegion), 'форм дээр `.pay-check` хэвээр байна ✗');
+  // ⚠️ icon (💳/💵/🏦/🔄) нь чип дээр Ч харагдахгүй (sidebar-тай ижил ✓)
+  assert.ok(!/o\.icon/.test(payRegion), 'чип дээр icon харагдаж байна ✗');
 });
 
 // ---------- ⑯ CDP тест + бүртгэл ----------
@@ -454,24 +464,22 @@ t('🐍 CDP скрипт нь ЧИП БАЙГААГ, өрөөний тооны �
   assert.ok(!/gridTemplateColumns/.test(cdp), 'CDP нь 2 баганат grid хэмжиж байна ✗ (чип байх ёстой)');
 });
 
-// ---------- ⑰ app/globals.css — ФОРМ-Ы ☑ дизайны нэг эх сурвалж ----------
-// ⚠️ 2026-10-03 (16): `.pay-grid`/`.pay-check` нь ОДОО ЗӨВХӨН ЗАР ОРУУЛАХ
-//    ФОРМД (`AddListingClient.jsx → data-payment-picker`) хэрэглэгдэнэ —
-//    хайлтын sidebar нь `.chip-toggle` (өрөөний тоотой ижил) ✓ Иймд энэ
-//    CSS ХЭВЭЭР байх ЁСТОЙ (устгавал форм эвдэрнэ ✗)
-t('🎨 globals.css: `.pay-grid` (2 багана) + `.pay-check` (☑, appearance:none, SVG ✓)', () => {
+// ---------- ⑰ app/globals.css — ХАЙЛТ ба ФОРМ НЭГ ЭХ СУРВАЛЖ (чип) ----------
+// ⚠️ 2026-10-03 (18): `.pay-grid`/`.pay-check` (☑, `appearance:none`, SVG ✓)
+//    ХАСАГДАВ — хайлт (16) ба форм (18) ХОЁУЛАА «🛏 Өрөөний тоо»-той ижил
+//    `.chip-toggle` чиптэй болов ⇒ өөр хэрэглэгч байхгүй (устгах нь зөв ✓)
+t('🎨 globals.css: ☑ хэв УСТГАГДАВ + ХАЙЛТ=ФОРМ нэг хэв (`.chip-toggle` ✓)', () => {
   const css = readSrc('app/globals.css');
-  // ① 2 БАГАНАТ grid — unegui.mn-ийн хэв (мобайл дээр Ч БАС 2 багана ✓)
-  assert.match(css, /\.pay-grid \{[^}]*grid-cols-2/, '2 баганат grid алга ✗');
-  // ② ☑ мөр нь flex (тэмдэг + шошго, шошго 2 мөр болж болно ✓)
-  assert.match(css, /\.pay-check \{[^}]*items-start/, '☑ мөрийн flex хэв маяг алга ✗');
-  // ③ НАФТ checkbox-ийг бүрэн дарж, өөрсдөө зурах (хөтөч бүрд ИЖИЛ ✓)
-  assert.match(css, /\.pay-check > input \{[^}]*appearance: none/, '`appearance:none` алга ✗');
-  assert.match(css, /\.pay-check > input \{[^}]*h-\[18px\]/, '☑-ийн хэмжээ (18px) алга ✗');
-  // ④ Сонгогдсон үед SVG ✓ (pseudo элемент нь `<input>` дээр ГАРАХГҮЙ ✗ зангилаа)
-  assert.match(css, /\.pay-check > input:checked \{[^}]*background-image: url\("data:image\/svg\+xml/,
-    'сонгогдсон ☑-ийн ✓ (SVG) алга ✗');
-  assert.match(css, /\.pay-check > input:checked \+ span/, 'сонгогдсон шошго тодрохгүй ✗');
+  // ⛔ ☑ checkbox-ийн дүрмүүд БАЙХГҮЙ байх ёстой (форм ч чип болов ✓)
+  assert.ok(!/\n\s*\.pay-grid \{/.test(css), '`.pay-grid` дүрэм хэвээр байна ✗');
+  assert.ok(!/\n\s*\.pay-check \{/.test(css), '`.pay-check` дүрэм хэвээр байна ✗');
+  assert.ok(!/\.pay-check > input/.test(css), '☑-ийн `input` дүрэм хэвээр байна ✗');
+  assert.ok(!/appearance: none/.test(css) || !/pay-check/.test(css),
+    '☑-ийн `appearance:none` хэвээр байна ✗');
+  // ✅ НЭГ ХЭВ: `.chip-toggle` (чип) + идэвхтэй нь брэнд өнгөөр дүүрнэ ✓
+  assert.match(css, /\.chip-toggle \{/, 'чипийн класс (`.chip-toggle`) алга ✗');
+  assert.match(css, /\.chip-toggle-active \{/, 'идэвхтэй чипийн класс алга ✗');
+  assert.match(css, /\.chip-toggle-active \{[^}]*bg-primary/, 'идэвхтэй чип брэнд өнгөгүй ✗');
 });
 
 t('📦 package.json: `test:payments` ба `cdp:payments` бүртгэгдсэн', () => {

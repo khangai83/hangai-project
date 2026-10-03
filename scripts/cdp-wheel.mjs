@@ -248,10 +248,13 @@ const DETAIL_STATE = `(() => {
      */
     next: !!document.querySelector('[data-mobile-detail-next]'),
     nextVisible: vis(document.querySelector('[data-mobile-detail-next]')),
-    /** 🆕 2026-10-03 (17): 2 баганат сонголт + «Алгасах» линк + 💳 сонголт */
+    /** 🆕 2026-10-03 (17): 2 баганат сонголт + «Алгасах» линк + 💳 сонголт
+     *  ⚠️ (18): 💳 нь форм дээр ч ЧИП болсон тул төлөв нь aria-pressed ✓
+     *  ⚠️ ЭНЭ template literal дотор backtick БИЧИХГҮЙ ✗ */
     options: [...document.querySelectorAll('[data-mobile-option]')].filter(vis).length,
     skipVisible: [...document.querySelectorAll('[data-mobile-option-skip]')].some(vis),
-    paymentsSelected: [...document.querySelectorAll('[data-payment-value]')].filter((c) => c.checked).length,
+    paymentsSelected: [...document.querySelectorAll('[data-payment-value]')]
+      .filter((c) => c.getAttribute('aria-pressed') === 'true').length,
   };
 })()`;
 const detailState = () => evaluate(DETAIL_STATE);
