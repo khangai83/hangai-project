@@ -3658,6 +3658,7 @@ npm run test:format      # 💰 үнэ/мянгатын таслалт + 🤝 «
 npm run test:filters     # 🔎 attrFilters-ийн гэрээ + 🧳 travel/🧺 home/🛋️ furniture/⚡ electric/⚽ hobby хялбар форм + 💻 Notebook-ийн 📺/⚙️/🧠/💾 сонголт + 🔧 хөдөлгүүр/🎨 өнгө (+ 🎨 өнгө нь «Загвар»-ын дараа — форм/sidebar/карт) + 🛡️ 💻 «Баталгаа» (`warranty`) ХАСАГДАВ + 📋 `getAttrRows` (зарын дэлгэрэнгүй 2 багана) + «Шинэ / Шинэвтэр / Хуучин» (condition ЯГ 3 сонголттой, «Шинэвтэр» дунд) + 🆕 💻 Notebook-ийн 4 ШҮҮЛТ дэд төрлөөр (`getAttrFilters(section, subtype)`) + 🆕 `pruneGatedAttrs` (үл үзэгдэх шүүлт цэвэрлэнэ) (94 тест, 0₮)
 npm run test:rooms       # 🛏🗑 ӨРӨӨНИЙ ТОО — UI ХАСАГДСАН, URL/DB/breadcrumb ХЭВЭЭР (44 тест, 0₮) ✓
 npm run test:payments    # 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — ☑ checkbox/URL/DB (jsonb `cs`) + формд ЗААВАЛ (36 тест, 0₮) ✓
+npm run test:card        # 📇 ЗАРЫН КАРТ — unegui.mn хэв (ТОМ зураг 42% · үнэ/гарчиг/тайлбар · нийтлэгчийн band · 🖼 1/N · ❤️) (16 тест, 0₮) ✓
 npm run test:search      # 🔢 тооны хүрээ (цэгээр бүлэглэлт) + 🔀 эрэмбэлэлт (49 тест, 0₮)
 npm run test:choices     # 🎡 МОБАЙЛ ДУГУЙ (iOS Timer) — тоон жагсаалт/дараалал/гэрээ (32 тест, 0₮)
 npm run test:wheel       # 🎡 дугуйны SSR рендэр — 27/48 мөр, `aria-selected`, 📱390/🖥1440 (10 тест, 0₮)
@@ -3931,6 +3932,7 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 | `scripts/cdp-notebook-specs.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:specs` (🆕 **2026-10-03 (7): 💻 Notebook-ийн 📺/⚙️/🧠/💾 38 шалгалт** — ① `?section=computers&type=Apple` дээр `[data-attr-filter]` **5** (4 үзүүлэлт + ✅ төлөв), дараалал `screen→cpu→ram→storage→condition`, шошго/сонголт нь **`lib/locationData.js`-тэй DOM↔ЛИБ харьцуулалтаар ЯГ ижил** (7/19/13/6/3 + «Бүгд»), блок дараалал 🏷️ Брэнд → 📺 → ⚙️ → 🧠 → 💾 → «Үнэ, ₮» ② ⚙️ «Intel Core i5» сонгоход URL `?attr_cpu=Intel+Core+i5` + DB **`attrs->>cpu=eq.Intel Core i5`** (⚠️ `ilike` БИШ) + чип «⚙️ Intel Core i5» + үр дүн буурна ③ линкээр ороход утга талбар дээр тэмдэглэгдэж URL ХАСАГДАХГҮЙ ④ 🖱 `type=Mouse` дээр 4 шүүлт **0** ба DB-д `attrs->>cpu` ОГТ ЯВАХГҮЙ ⑤ 🕳 `?type=Mouse&attr_cpu=…` → URL/DB цэвэр (`pruneGatedAttrs`) ⑥ дэд төрөл сонгоогүй үед sidebar **БАЙХГҮЙ** ⑦ 🚗 авто дээр 3 (`color·transmission·fuel`, `attrs->>fuel=eq.Хайбрид` — бусад хэсэг хөндөгдөөгүй) ⑧ 📱 390px overflow 0 ⑨ exception 0 — ⚠️ сервер :3000 ба Chrome :9222 шаардна; `+` = зай (`dbQ` нь хөрвүүлнэ ✓)) |
 | `scripts/test-payments.mjs` | 🆕 **36 тест** — `npm run test:payments` (2026-10-03 (5): 💳 төлбөрийн нөхцөлийн гэрээг хамгаална — ① `lib/paymentFilter.mjs`-ийн цэвэр функцууд: `hasPaymentTerms` (зөвхөн `real-estate`/`auto` ✓) · `normalizePaymentValue`/`isPaymentValue` (trim + lowercase) · `parsePaymentList` (эвдэрсэн утга хасч, КАНОН дараалал) · `paymentsUrlValue` · `countPayments`/`isPaymentsEmpty` · `paymentOptionLabel`/`Icon` · `paymentsFilterLabel` · `togglePaymentValue` · `paymentsFilterDescriptor` ② `paymentContainsJson` ба `applyPaymentFilter` нь fake PostgREST builder-ээр: **1 утга → `attrs=cs.{"payment_terms":["x"]}`**, **2+ → `or=(…)`**, ⚠️ **`["a","b"]` гэсэн ХОЁР ЭЛЕМЕНТТЭЙ массив ХЭЗЭЭ Ч ЯВАХГҮЙ** (таслал `.or()`-ийг эвдэж `22P02` өгнө ✗) ③ `paymentTermsForAttrs` (дэмжигдэхгүй/хоосон → `null`) ④ `getAttrRows` — 💳 мөр зарын дэлгэрэнгүйд гарна (4 тохиолдол) ⑤ `lib/queries.js`/`HomeClient.jsx`/`AddListingClient.jsx`/`cdp-payments.mjs`/`package.json` дээрх ЭХ ФАЙЛЫН ГЭРЭЭ (regex) ✓ + 🆕 ☑ ДИЗАЙН (2026-10-03 (6)): HomeClient/AddListingClient хоёулаа `pay-grid`/`pay-check`/`type="checkbox"`/`checked` байна, ЧИП БАЙХГҮЙ, icon (💳/💵/🏦/🔄) харагдахгүй ба `globals.css`-ийн 2 багана/`appearance:none`/SVG ✓) — ⚠️ `scripts/cdp-payments.mjs` нь БОДИТ DOM дээр 2 багана, мөрүүд, 18x18 хэмжээг хэмжинэ ✓) |
 | `scripts/test-rooms.mjs` | **44 тест** — `npm run test:rooms` (🆕 2026-10-03 (4): өрөөний **UI ЭРГЭЖ ИРСНИЙ** гэрээг хамгаална — `codeOnly()`-оор `data-room-filter`/`data-room-value`/`ROOM_OPTIONS`/`toggleRoomValue`/`toggleRooms`/`clearRooms`/`showRooms`/«Өрөөний тоо» **КОДОД БАЙНА** ✓ ба ⚠️ `data-room-filter` нь «Үнэ, ₮»-ний **ӨМНӨ** байрлана (`indexOf`) ✓; ⚠️ ХАДГАЛАГДСАН: `rooms: []`, `parseRoomList(sp.get('rooms'))`, `roomsUrlValue(filters.rooms)`, `roomsFilterLabel(filters.rooms)`; 📌 CDP скрипт нь `dom.chips === 5` (Орон сууц дээр чип 5 байна) ба `clickRoom(` (чип дарж URL/DB шалгах) замыг шаардана ✓. Мөн: `ROOM_VALUES`/`normalizeRoomValue` (`'5+'`/`+5`/`5` → `'5'`)/`parseRoomList` (эвдэрсэн `abc` хасаж, өсөх эрэмбээр)/`toggleRoomValue`/`isRoomsEmpty`/`countRooms`/`roomsUrlValue`/`roomsFilterLabel`/`roomsFilterDescriptor` ба `applyRoomFilter` fake builder-ээр — **`['5']`→`gte 5`, `['3']`→`in ['3']` (хуучин үр дүнтэй ЯГ ижил)**, `['4','5']`→`gte 4`, `['1','5']`→`or(…)`; ⚠️ 2026-09-30 (4)-д тестэд гарсан алдаа: `ROOM_OPTIONS`-ийн хүлээлт нь `'2 өрөө','2 өрөө'` гэж бичигдсэн байсныг `'1 өрөө'` болгож зассан ✓) |
+| `scripts/test-card.mjs` | 🆕 **16 тест** — `npm run test:card` (🆕 2026-10-03 (8): 📇 зарын картын ДИЗАЙНЫ гэрээ (**unegui.mn** хэв) — `codeOnly()`-оор ① `sm:h-[300px]` + `sm:flex-row` + `data-listing-card` ② зураг `sm:w-[42%]` + `sm:h-full` (мобайл `h-52`) ③ үнэ `text-[22px] font-extrabold` ④ гарчиг `line-clamp-2` ⑤ тайлбар `line-clamp-2` (`listing.description`) ⑥ нийтлэгчийн band (28px Avatar + ✅ 13) ⑦ 🖼 `1/N` (`imageCount > 1`) ⑧ 🎥 (`video_url`) ⑨ badge зөвхөн `isRealEstate` ⑩ мета: `timeAgo`/`formatAddress`/👁 ⑪ ❤️ toggle (`preventDefault`+`stopPropagation`) ⑫ `pr-20`/`sm:pr-0` нөөц ⑬ «Үнэ тохирно» ГАРАХГҮЙ (`hasRealPrice` хаалт, `negotiableNote` БАЙХГҮЙ) ⑭ НЭГ `<Link>` ⑮ `getPropertyIcon` placeholder ⑯ HomeClient `attrsLine`+`author` — БҮГД эх кодоор ✓) |
 | `scripts/test-search.mjs` | **49 тест** — `npm run test:search` (2026-09-30: 🔢 `lib/rangeFilter.mjs` (`groupDigits`/`parseNum`/`formatGroupedInput`/`clampNum`/`snapNum`/`toFilterPair`/`isRangeActive`/`rangeLabel`/`yearBounds`) + 🔀 `lib/sortOptions.mjs` (`SORT_OPTIONS`/`normalizeSort`/`sortOrders`/`sortLabel`) — `order=price.asc.nullslast,id.desc` ба HomeClient/queries-ийн гэрээ ✓; 📌 регресс: ① слайдер (`RangeSlider`/`rangeSlider.mjs`/`role="slider"`/pointer handler) ХААНА Ч БАЙХГҮЙ ② он БҮЛЭГЛЭГДЭХГҮЙ («2.026» ✗) ③ «1.234,5» → `1234.5` ✓ ④ хил дээрх `0` → «₮0 – ₮5 тэрбум» (өмнө нь «₮ – …» хоосон ✗) ⑤ **2026-09-30 (3): `priceQuickPicks()` эскпорт БАЙХГҮЙ, `quickPicks`/`data-quick-pick`/`aria-pressed` КОДОД БАЙХГҮЙ (комментыг `codeOnly()`-оор хасч шалгана), `snapNum` ЦЭВЭР туслах хэвээр, шошго нь `placeholder="Доод"`/`"Дээд"` + `(доод хязгаар)`/`(дээд хязгаар)` — «Эхлэх / Дуусах» кодод БАЙХГҮЙ** ✓) |
 | `scripts/test-filters.mjs` | **94 тест** — `npm run test:filters` (🆕 2026-10-01 (13): 🎨 өнгө **12** сонголт — `assert.deepEqual`-ээр ЯГ дараалал (Цагаан … Бусад), давхардал 0 (`new Set().size === 12`), сүүлийнх нь «Бусад»; 2026-09-28: attrFilters-ийн гэрээ — 🚙 Загвар текст, 📅/📥 оны хүрээ, `parseAttrRangeKey`, `formatAttrsLine`; 2026-09-29: ⚽ hobby — `attrFilters`/`attrFields` зөвхөн `condition`, `hasSimpleForm`; ✅ «Шинэ / Хуучин» — attrFields ба attrFilters ХОЁУЛАА 2 сонголттой байв (2026-09-29; ⚠️ 2026-10-02-д **3** болов), хуучин 4 утга (Хэрэглэсэн — сайн/хэвийн, Засвар шаардлагатай, Хэвийн) БҮРЭН ХАСАГДСАН; 🆕 **2026-10-02: «Шинэ / Шинэвтэр / Хуучин» — attrFields ба attrFilters ХОЁУЛАА ЯГ 3 сонголттой** (ЯГ дараалал `Шинэ → Шинэвтэр → Хуучин` бүх 8 хэсэгт, `new Set().size === 3` давхардал 0, картын мөр `✅ Шинэвтэр` нэг л удаа, ⚠️ DB migration ШААРДЛАГАГҮЙ) → **87 тест** ✓; 2026-09-30: ⚡ electric — 8 бүлэг/26 дэд төрөл, 3 бүлэг `collapsed`, 4 дэх түвшин БАЙХГҮЙ, 🛋️ home-оос ХАСАГДСАН; 2026-09-30: 🛋️ home — 2 бүлэг (**«Тавилга» ЭХЭНД**)/22 дэд төрөл, хоёулаа `collapsed`, хуучин 9 хавтгай нэр ХАСАГДСАН, breadcrumb, картын мөр/шүүлт ХЭВЭЭР — ⚠️ 2026-09-30 (5)-д энэ мод ХУВААГДАВ; 2026-09-30 (5): **12 хэсэг ба ЯГ дараалал** (`SECTIONS.length === 12`), 🛋️ `furniture` 13 / 🧳 `travel` 12 / 🧺 `home` 9 / ⚽ `hobby` 6 дэд төрөл ЯГ таарах, дөрвүүлээ **ХАВТГАЙ** (`getSubtypeGroups` → `[]`), `hasSimpleForm` нь ⚽/🧺/⚡/🛋️/🧳 дээр `true` ба real-estate/auto/jobs/computers/services дээр `false` (тестээр түгжсэн 10 хэсэг), «Бусад» нь furniture/travel/electric/construction-д байгаа ба home/hobby-д **БАЙХГҮЙ**, ба `0026_furniture_travel_sections.sql`-ийн гэрээ (CHECK 12 утга, `home`→`furniture` 13, `hobby`→`travel` 12, «Аяллын хэрэгсэл» → «Бусад»/`travel`, `delete`/`truncate` БАЙХГҮЙ ✓); 🆕 **2026-09-30 (6): 💻 Notebook-ийн 📺/⚙️/🧠/💾 — 4 талбар `txt` → `sel`** (дараалал `brand·model·screen·cpu·ram·storage·condition·warranty`, сонголт 7/19/13/6, давхардал 0, `required` БАЙХГҮЙ, `attrFilters` нь `brand·condition` (🛡️ `warranty` 2026-10-01 (18)-д ХАСАГДСАН); талбар нь **ЗӨВХӨН** `PC_SPEC_SUBTYPES` = 21 Notebook брэнд (⚠️ «Бусад»-ГҮЙ) + «Иж бүрэн компьютер» + «Процессор, сервер» = **23** дэд төрөлд, харин «Бусад»/Mouse/Keyboard/Xbox/Чихэвч/тонер/Проектор/Дэлгэц/хоосон дэд төрөлд **ХАРАГДАХГҮЙ**; `getAttrField` нь `onlySubtypes`-аас ХАМААРАХГҮЙ (картын мөр/шүүлтэд хуучин утга харагдана ✓) ба бусад 11 хэсэгт талбар ХАСАГДАХГҮЙ; картын мөр `Lenovo ThinkPad T14 · ⚙️ Intel Core i5 · 16 GB · 512 GB · ✅ Шинэ` (📺 ОРООГҮЙ); хуучин/demo cpu (`Intel Core i5`…`Apple M2`) ба ram утга бүр шинэ сонголтод БАГТСАН, «512 GB SSD + 1 TB HDD» нь БАГТААГҮЙ (`legacy`-ээр хамгаалагдана); `AddListingModal.jsx`/`seed-sections.mjs`-ийн гэрээ; 🆕 **2026-10-01: 🔧 «Хөдөлгүүр» `txt` → `sel` (`ENGINE_OPTIONS` — ЯГ 7 утга: `1.5л хүртэл` … `Цахилгаан (EV)`, label нь зөвхөн «Хөдөлгүүр», ⚠️ шүүлтэд ОРООГҮЙ) ба 🎨 «Өнгө» НЭМЭГДЭВ (`AUTO_COLOR_OPTIONS` — 12 сонголт, форм **ба** sidebar); 🔀 «Хөтлөгч» (`drive`) форм/`attrFilters`/`CARD_ATTR_ORDER` **ГУРВААС** ХАСАГДАВ (хуучин `attrs.drive` карт дээр ГАРАХГҮЙ ✓); `formatAttrsLine` нь хүрээний утгад «л» **ДАВХАР залгахгүй** («1.5л - 2.0л»), зөвхөн ХУУЧИН тоон «2.5»-д залгана → 68 → **72 тест**; 🆕 **2026-10-01 (2): 🎨 «Өнгө» нь 🚙 «Загвар»-ын ЯГ ДАРАА — 3 газарт** (`attrFields` форм · `attrFilters` sidebar · `CARD_ATTR_ORDER.auto` картын мөр; ⚠️ дараалал нь массивын дараалал тул компонент дээр код засахгүй; карт дээр толгой нь «брэнд + загвар + он» нэг хэсэг тул «Өнгө» нь толгойн дараах ЭХНИЙ үзүүлэлт — `Toyota Prius, 2021 · 🎨 Цагаан · 95,200 км · …`; форм + sidebar дарааллын шинэ тест + картын мөрийн ЯГ тэнцэл → **80 тест** ✓; 🆕 **2026-10-01 (16): 📋 `getAttrRows` — зарын дэлгэрэнгүй хуудсанд `attrs` нь хэсгийн `attrFields`-ийн шошго/icon/дарааллаар 2 БАГАНАТ хүснэгт болж гарна** (4 тест: 🚗 `auto` → ЯГ 9 мөр `brand·model·color·year·importYear·mileage·transmission·engine·fuel`, 🛣️ гүйлт `146000` → **`146,000`** («км» шошгонд тул ДАВХАРДСАНГҮЙ), 🔧 «2.1л - 2.7л» давхар нэгжгүй ба хуучин тоон «2.5» → «2.5 л», `negotiable` ба **ХАСАГДСАН `drive`** ХАРАГДАХГҮЙ, `0` нь ХООСОН БИШ = `formatAttrsLine`-тэй ижил, `null`/`undefined`/`{}`/`'Toyota'` дээр КРАШГҮЙ, 💻 `onlySubtypes` → 📺/⚙️/🧠/💾 Notebook дээр л гарах ба Mouse-д ГАРАХГҮЙ, 🏠 `real-estate` (`attrFields: []`) → **0 мөр** ба 12 хэсэг бүгд крашгүй; 🆕 **2026-10-01 (18): 🛡️ 💻 «Баталгаа» (`warranty`) БҮРЭН ХАСАГДАВ** — форм · `attrFilters` · карт · `getAttrRows` ГУРВААС (💻 шүүлт 3 → **2**, форм талбар 8 → **7**; Notebook 8 → **7**, Mouse 4 → **3** мөр; ХУУЧИН `attrs.warranty`-тай зар карт/дэлгэрэнгүй дээр ГАРАХГҮЙ ✓; seed нь `warranty` ҮҮСГЭХГҮЙ; `getAttrField` → `null`) → 85 → 87 тест; 🆕 **2026-10-03 (7): 💻 Notebook-ийн 📺/⚙️/🧠/💾 ШҮҮЛТ — 6 тест** (① `getAttrFilters('computers','Apple')` → `brand·screen·cpu·ram·storage·condition` (формтой ижил дараалал, `model` шүүлтэд ОРООГҮЙ) ② сонголт нь либын экспорттой ИЖИЛ объект — 7/19/13/6, `type: select` ба `searchable` БИШ ③ 23 `PC_SPEC_SUBTYPES` дээр 4 шүүлт, холдуу дэд төрөл (Mouse/Keyboard/тонер/чихэвч) ба `''` дээр 0 ④ бусад 11 хэсэг дэд төрөл дамжуулахад ХӨНДӨГДӨӨГҮЙ ⑤ HomeClient-ийн ЭХ ФАЙЛЫН ГЭРЭЭ: `getAttrFilters(section, filters.propertyType)`, `pruneGatedAttrs` 2 зам, `data-attr-filter` ⑥ 🆕 **`pruneGatedAttrs` цэвэр функц** — Notebook үзүүлэлт Mouse/`''` дээр хасагдана, ⚠️ хүрээний түлхүүр (`year_from`)/формойн `model`/`null`/массив ХӨНДӨГДӨХГҮЙ, 12 хэсэг бүгд крашгүй; мөн 💻 «Баталгаа» тестэд `getAttrFilters('computers','HP')` нэмэгдэв) → **94 тест** ✓) |
 | `scripts/test-format.mjs` | **25 тест** — `npm run test:format` (🆕 **2026-10-02: 🏷️ `listingTitle()` — 5 тест** (`MAX_LISTING_TITLE_LENGTH` = **120**: гарчигтай → текстээ · `null`/`''`/зай → `''` (**мөр ГАРАХГҮЙ**) · олон зай/мөр таслалт → **НЭГ зай** · 120-аас урт → таслагдана (DB CHECK-тай ИЖИЛ) · тоон/бусад төрөл → текст (крашгүй)); 2026-09-29: 🤝 `hasRealPrice` / `priceLabel` (үнэ БИЧСЭН бол «₮…» — ДАРАХГҮЙ) / `negotiableNote` (зөвхөн үнэтэй + тэмдэглэсэн үед) + `toNumber('250,000,000') → 0` регресс) |
@@ -5263,44 +5265,58 @@ Breadcrumb      Бүх зар › Автомашин › Суудлын маши
 
 ### Зарын карт (`ListingCard.jsx`)
 
-Зүүн талд зураг, баруун талд мэдээлэл. Дээдээс доош:
+Зүүн талд **ТОМ зураг (42%)**, баруун талд мэдээлэл — **unegui.mn-ийн хэв**
+(2026-10-03, хэрэглэгчийн хүсэлт: «зарын картын дизайн их зүгээр юмаа, ийм
+дизайнтай болгоорой» + unegui.mn-ийн жишээ картууд).
 
 ```
-₮280,000,000
-3 өрөө байр, Баянгол, 16-р байр        ← 🆕 «Зарын гарчиг» (16px bold, 1 мөр)
-📍 Хангай дүүрэг 16-р байр, 5-р хороо, Баянгол, Улаанбаатар
-🛏 3 өрөө   📐 75 м²   🏢 5 / 9 давхар   📅 2015
-🕒 2 цагийн өмнө
-────────────────────────────────────────────────────────────────────────────────────
-👁 12                                                          🤍 5
+┌──────────────────────────┬──────────────────────────────────────────────┐
+│ [Зарах]          🖼 1/16 │ [Avatar] Цээгий ✅   ← 👤 нийтлэгчийн band      │
+│                          │ ────────────────────────────────────────────  │
+│        🖼 ЗУРАГ (42%)    │ ₮12,000,000          ← 💰 үнэ (22px extrabold) │
+│                          │ Toyota Prius 30, 2011 …  ← 🏷️ гарчиг (2 мөр)   │
+│                          │ Toyota Prius 30 ·    …   ← 📋 attr / байр мөр  │
+│                          │ Zarnaa ene mashiniig     ← 📝 тайлбар (2 мөр)  │
+│ 🎥 Видео                 │ 🕒 1 өдрийн өмнө | 📍 2-р хороо…  👁 1  🤍 1  │
+└──────────────────────────┴──────────────────────────────────────────────┘
 ```
 
-- **🏷️ Зарын гарчиг** 🆕 (2026-10-02) — хэрэглэгчийн өөрөө бичсэн товч нэр.
-  Байрлал: үнэ ба «🤝 Үнэ тохирно» мөрийн **ЯГ ДОР**, 📍 хаягийн **ДЭЭР**.
-  Хэв маяг: `text-base` (16px) `font-bold text-gray-900` — үнэ `text-lg`
-  (18px) `font-bold`-аас **1 алхам жижиг**, өнгө нь үнэтэй ижил ✓ ·
-  `truncate` (1 мөр) + `title` (hover-т бүтэн текст)
-  (`lib/format.js` → `listingTitle()`, DB: `0027_listing_title.sql`)
-- ⚠️ Гарчиг нь `null`/`''`/зөвхөн зай үед мөр **ОГТ ГАРАХГҮЙ** — хоосон `<div>`
-  эсвэл «undefined» текст үүсэхгүй ✓ (хуучин 782 зар дээр backfill ХИЙГЭЭГҮЙ)
-- 🗑 **ТӨРЛИЙН мөр («🏢 Орон сууц» / «🚗 Суудлын машин») картаас ХАСАГДАВ**
-  (2026-10-02, хэрэглэгчийн хүсэлт) — `getPropertyTypeLabel` нь карт дээр
-  дуудагдахаа болив (дэлгэрэнгүй хуудсан дээр ХЭВЭЭР ✓). ⚠️ Картын өндөр
-  `h-[240px]` ХЭВЭЭР: мөр −24px, гарчиг +28px ≈ тэнцэж, ~12px нөөцтэй ✓
-- **📍 Хаяг** — байрны мэдээллийн (🛏 өрөө / 📐 м² / 🏢 давхар / 📅 он) **ӨМНӨ**
-  (`lib/format.js` → `formatAddress()`)
-- **🕒 Нийтэлсэн огноо** — байрны мэдээллийн **ДОР**, нөхцөлгүйгээр үргэлж харагдана
-- ⚠️ `{нөхцөл && ( … )}` хаалтны дотор 2+ элемент зэрэгцвэл
-  «Adjacent JSX elements» алдаа гардаг — тиймээс огноо нь `)}`-ийн **ГАДНА** байрлана
-- Дэлгэрэнгүй хуудсанд: гарчгийн доор `📍 Байршил` (1-р мөр), түүний **ЯГ ДОР**
-  `📅 Нийтэлсэн` (2-р мөр) — хоёулаа зүүн тийш, тусдаа block div-үүд
-- Огноог карт дээр **🕒** (цаг) гэж тэмдэглэв — баригдсан он (📅) хоёр 📅 зөрөхөөс сэргийлсэн
+- **📐 ХЭМЖЭЭ** — карт `sm:h-[300px]` (2026-10-03: `240px` → **`300px`**), зураг
+  `sm:w-[42%]` + `sm:h-full`, мэдээллийн хэсэг `p-4 sm:p-5`. 📏 ФОРМУЛА:
+  `картын өндөр ≥ (мэдээллийн агуулга) + 40px`; ⚠️ `overflow-hidden` нь
+  хэтэрснийг ТАЙРНА → мэдээллийн блокт мөр нэмбэл өндрийг ч нэмнэ ✓
+  (📱 мобайлд бэхлэгдсэн өндөр БАЙХГҮЙ — `flex-col`, auto ✓)
+- **🖼 Зургийн тоо** — «🖼 1/16» баруун дээд (`imageCount > 1` үед л); 🎥 Видео нь
+  зүүн доод (`video_url`), «Зарах / Түрээслэх» badge нь зүүн дээд (ЗӨВХӨН үл хөдлөхөд).
+- **👤 Нийтлэгчийн band** 🆕 — мэдээллийн хэсгийн **ДЭЭД** талд `Avatar 28px` +
+  нэр + ✅ `VerifiedBadge`. ⚠️ `displayName` хоосон бол (`0017` → `show_identity
+  = false`) band **ОГТ ХАРАГДАХГҮЙ**. ⓘ 2026-09-27-д зургийн баруун доод буланд
+  байсан; 2026-10-03-д unegui-ийн хэвээр мэдээллийн band болов.
+- **💰 Үнэ** — `text-[22px] font-extrabold tracking-[-0.01em]`, ЗӨВХӨН
+  `hasRealPrice` үед (2026-10-02: «Үнэ тохирно» карт дээр ГАРАХГҮЙ — зөвхөн
+  дэлгэрэнгүй хуудсанд үнийн ЯГ ДОР).
+- **🏷️ Зарын гарчиг** — үнийн доор, `line-clamp-2` (**2 мөр**) `text-[15px]
+  font-semibold` (`lib/format.js` → `listingTitle()`, DB: `0027_listing_title.sql`).
+  ⚠️ `null`/`''`/зөвхөн зай үед мөр **ОГТ ГАРАХГҮЙ** (хуучин 782 зар дээр backfill
+  ХИЙГЭЭГҮЙ ✓) · урт гарчгийг `title` (hover) харуулна.
+- **📋 Дэлгэрэнгүй мөр** — 🏠 үл хөдлөхөд `🛏 өрөө · 🚿 угаалгын өрөө · 📐 м² ·
+  🏢 давхар · 📅 он`; бусад хэсэгт `attrsLine` (`formatAttrsLine`). Хоёулаа
+  хоосон бол мөр ГАРАХГҮЙ ✓
+- **📝 Тайлбар** 🆕 — `line-clamp-2` (**2 мөр**) `text-[13px] leading-relaxed
+  text-gray-500`, хоосон бол блок гарахгүй.
+- **📅 Доод мета мөр** — `🕒 огноо | 📍 хаяг` (зүүн) + `👁 үзсэн`, `❤️/🤍` (баруун).
+  ❤️ нь МИНИЙ favorite toggle БА нийт тоо (`listings.likes`).
+  📱 Мобайлд хаяг нь `order-last w-full` → **бүтэн мөр** (эс бөгөөс `pr-20`-ийн
+  дараа «…» болж алга болно); `pr-20` нь /favorites-ийн «Хасах» товчтой
+  мөргөлдөхөөс сэргийлнэ (`sm:pr-0` — desktop-д чөлөө).
 - ⚠️ **`price_type`** («нийт» / «сард» / «м²») нь UI-д **хаана ч харагдахгүй** —
   карт, дэлгэрэнгүй хуудас, миний зарууд, газрын зургийн popup, Excel/PDF экспорт
   бүгдээс хассан. Зар нэмэх/засах форм (`AddListingModal`) дээр л сонгогдоно.
-- Хаяг урт байвал `truncate` (нэг мөр) — картын өндөр `sm:h-[220px]` хэвээр хадгалагдана
-- Доод блокт `max-sm:pr-20` — /favorites хуудсанд «Хасах» товч утсанд баруун доод
-  буланд буудаг тул халхлахгүй байх зорилготой
+- 🧪 **ТЕСТ:** `npm run test:card` → **16 тест ✓** (`scripts/test-card.mjs`) —
+  өндөр/зургийн харьцаа, үнэ→гарчиг→дэлгэрэнгүй→тайлбар дараалал, нийтлэгчийн
+  band (28px Avatar + ✅), 🖼 тоо, 🎥, badge, ❤️ toggle (`preventDefault`
+  + `stopPropagation`), `pr-20` нөөц, «Үнэ тохирно» ХАРАГДАХГҮЙ, НЭГ `<Link>` —
+  БҮГД **эх кодоор** (`codeOnly()` — комментгүй) бариулна ✓
 
 ### Зар нийтлэгчийн бусад зарууд — `/sellers/[id]`
 

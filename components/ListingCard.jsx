@@ -6,69 +6,73 @@ import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 import Avatar from './Avatar';
 import VerifiedBadge from './VerifiedBadge';
 
-/**
-* @param {{listing: object, author?: {displayName?: string, avatarUrl?: string|null}}} props
-* `author` — зар нийтлэгчийн НИЙТИЙН профайл (нэр + зураг).
-* ⚠️ Сонголтоор: `HomeClient` нь тусдаа query-ээр татаж дамжуулна
-* (`fetchProfilesByIds`). Байхгүй бол блок харагдахгүй.
-*/
+/*
+ * ══════════════════════════════════════════════════════════════════════
+ * 📇 ЗАРЫН КАРТ — unegui.mn-ийн хэв маяг (2026-10-03, хэрэглэгчийн хүсэлт)
+ * ══════════════════════════════════════════════════════════════════════
+ * Хэрэглэгчийн хүсэлт: «зарын картын дизайн их зүгээр юмаа, ийм дизайнтай
+ * болгоорой» + unegui.mn-ийн жишээ картууд (ажил · орон сууц).
+ *
+ * 🎨 ЛАВЛАХ ЗАГВАР (unegui.mn):
+ *   ┌──────────────────────────┬──────────────────────────────────────┐
+ *   │  🖼 ЗУРАГ (42%)           │  [Avatar] Нийтлэгч ✅     ← нимгэн band │
+ *   │  [Зарах]          🖼 1/16 │  ────────────────────────────────────  │
+ *   │                          │  340 сая ₮          ← үнэ (том, bold) │
+ *   │                          │  Бзд центр аппартмент-д 3 өрөө …   ← 2 мөр│
+ *   │                          │  🛏 3 өрөө · 📐 80 м² · 🏢 5/9        │
+ *   │                          │  Тайлбар … (2 мөр, бүдэг саарал)       │
+ *   │  🎥                      │  🕒 27 минутын өмнө | 📍 Баянзүрх  ❤️ 5 │
+ *   └──────────────────────────┴──────────────────────────────────────┘
+ *
+ * 📐 ӨНДӨР: `sm:h-[300px]` — мэдээллийн баганын агуулга ~246px + `sm:p-5`
+ *    (40px) → ~286px хамгийн ихдээ, тул 300px нь ~14px нөөцтэй ✓
+ *    🔧 Өндрийг солих бол доорх `sm:h-[300px]`-г л өөрчилнө (зураг `sm:h-full`)
+ *    📏 ФОРМУЛА: картын өндөр ≥ (мэдээллийн агуулга) + 40px (p-5)
+ *    ⚠️ Мобайл дээр бэхлэгдсэн өндөр БАЙХГҮЙ (`flex-col`, auto) — тайрагдахгүй ✓
+ *
+ * ⚠️ ХАДГАЛАГДСАН ДҮРМҮҮД (өмнөх хэрэглэгчийн шийдвэрүүд — хөндөхгүй):
+ *   ① «Үнэ тохирно» КАРТ ДЭЭР ГАРАХГҮЙ — зөвхөн `hasRealPrice` үед үнэ харагдана
+ *   ② «Зарах / Түрээслэх» badge ЗӨВХӨН үл хөдлөхөд
+ *   ③ ❤️/🤍 нь МИНИЙ favourite toggle БА нийт тоо (listings.likes) хоёулаа
+ *   ④ Карт бүхэлдээ `<Link>` — дотор нь өөр `<Link>` БАЙХГҮЙ (HTML хориг)
+ *   ⑤ /favorites хуудсанд «Хасах» товч утсанд баруун ДОО буланд буудаг тул
+ *      доод мөр нь `max-sm:pr-20` (80px) хоосон зай үлдээнэ
+ * ⚠️ `author.displayName` хоосон бол нийтлэгчийн band ОГТ ХАРАГДАХГҮЙ
+ *    (`0017_profile_identity.sql` → `show_identity = false`) ✓
+ * 🔍 ХАЙХ ҮГ: ListingCard, sm:h-[300px], data-listing-card, line-clamp-2
+ */
 export default function ListingCard({ listing, author, attrsLine }) {
   const img = firstImage(listing);
+  const images = Array.isArray(listing.images) ? listing.images : [];
+  const imageCount = images.length;
   const favoriteIds = useFavorites();
   const isFav = favoriteIds.includes(listing.id);
   // ❤️ Нийт хэдэн хүн таалагдсан (listings.likes — supabase/migrations/0007)
   const likes = useLikeCount(listing.id, listing.likes);
-  // 👁 Нийт хэдэн хүн үзсэн (listings.views — 0007_listing_likes_views.sql,
-  //    триггер count(*) -ээр автоматаар бодно)
+  // 👁 Нийт хэдэн хүн үзсэн (listings.views — 0007_listing_likes_views.sql)
   const views = Number(listing.views) || 0;
   const isSell = listing.category === 'sell';
   // ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд (хэрэглэгчийн хүсэлт) —
   //    бусад хэсэгт (авто/ажил/компьютер…) энэ badge ХАРАГДАХГҮЙ.
   const isRealEstate = (listing.section || 'real-estate') === 'real-estate';
   const floorLabel = getFloorLabel(listing.floor, listing.total_floors);
-  // 🏷️ Зарын гарчиг (0027_listing_title.sql) — үнээс бага зэрэг жижиг, bold.
-  //    ⚠️ Хоосон бол `''` → мөр нь ОГТ ГАРАХГҮЙ (хуучин зарууд дээр багана нь
-  //    `null` байж болно — хэрэглэгчийн шийдвэр: backfill хийхгүй ✓)
+  // 🏷️ Зарын гарчиг (0027_listing_title.sql) — хоосон бол мөр ГАРАХГҮЙ
   const title = listingTitle(listing);
-  /*
-   * ══════ ⚠️ КАРТЫН ӨНДӨР — `sm:h-[240px]` (2026-09-27) ══════
-   * 🔴 1-р АСУУДАЛ: карт нь `overflow-hidden` + БЭХЛЭГДСЭН өндөр байсан
-   *    (`sm:h-[220px]`) тул агуулга хэтэрвэл ДООРООС НЬ ТАЙРАГДДАГ байв ✗
-   * ✅ 2-р ШИЙДЭЛ: «👤 ЗАР НИЙТЛЭГЧ» (нэр + ✅ + автар) нь мэдээллийн
-   *    блокоос ЗУРГИЙН overlay руу зөөгдсөн тул мэдээллийн блокт
-   *    ~68px ЧӨЛӨӨЛӨГДӨВ ✓ → өндрийг буцааж багасгав ✓
-   *
-   * 📐 ТООЦОО (мэдээллийн блокийн агуулга — автар ОДОО зураг дээр):
-   *      21px  📋 attrsLine (бусад хэсэгт) + mb-1
-   *      29px  💰 ҮНЭ + mb-0.5
-   *      28px  🏷️ Зарын гарчиг (0027) + mb-1
-   *      42px  📍 Хаяг + 🕒 Огноо (2 мөр)
-   *      27px  🛏 өрөө / 📐 м² / 🏢 давхар / 📅 он + mt-1.5
-   *      27px  ❤️ доод мөр (border-t + pt-2)
-   *     ─────
-   *     ~174px  ХАМГИЙН ОЛОН НИЙТ агуулга (attrs + үнэ + гарчиг + …)
-   * ✅ `sm:h-[240px]` → `p-4` (32px) хасвал **208px** → **34px нөөцтэй** ✓
-   *    ⚠️ 2026-10-02: 🏢 ТӨРЛИЙН МӨР (−24px, хэрэглэгчийн хүсэлтээр ХАСАГДСАН)
-   *    ба 🏷️ Зарын гарчиг (+28px, 0027) нэмэгдэв. 🤝 «Үнэ тохирно» мөр
-   *    (−22px, хэрэглэгчийн хүсэлтээр КАРТААС ХАСАГДАВ) нөөцийг буцаан нэмэв ✓
-   *    БҮГД БАГТАНА (зураг ч 320×240 ✓)
-   *
-   * 🔧 ӨНДРИЙГ СОЛИХ БОЛ: доорх `sm:h-[240px]`-г `220` (нягт) эсвэл
-   *    `260` (илүү чөлөөтэй) гэж бичнэ.
-   * 📏 ФОРМУЛА: `картын өндөр ≥ (мэдээллийн агуулга) + 32px (p-4)`
-   *    ⚠️ Мэдээллийн блокт ШИНЭ мөр нэмбэл өндрийг ч нэмнэ ✓
-   *    ⚠️ Үүнээс өмнө автарыг 40→50→60px болгож томруулахад мэдээллийн
-   *       блок хэтэрч ТАЙРАГДДАГ байсан (238px агуулга / 188px боломжтой) ✗
-   *       → одоо автар нь зураг дээр (overlay) тул энэ асуудал ГАРАХГҮЙ ✓
-   * ⚠️ МОБАЙЛ дээр бэхлэгдсэн өндөр БАЙХГҮЙ (`flex-col`, auto өндөр) тул
-   *    тайрагдахгүй ✓ — энэ засвар нь ЗӨВХӨН `sm:` (≥640px) дээр нөлөөлнө.
-   */
+  const address = formatAddress(listing);
+  // 📝 Тайлбар — зөвхөн 2 МӨР хүртэл (`line-clamp-2`), хоосон бол блок харагдахгүй
+  const description = typeof listing.description === 'string' ? listing.description.trim() : '';
+  // 🛏 Байрны мэдээлэл — 0 байж болох тул `> 0` шалгалттай; `floorLabel` '' байж болно
+  const hasPropertyLine =
+    listing.rooms > 0 || listing.bathrooms > 0 || listing.area > 0 || floorLabel || listing.build_year > 0;
+
   return (
     <Link
       href={`/listings/${listing.id}`}
-      className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover sm:flex-row sm:h-[240px]"
+      data-listing-card
+      className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover sm:h-[300px] sm:flex-row"
     >
-      <div className="relative h-52 w-full shrink-0 overflow-hidden bg-gray-100 sm:h-full sm:w-[320px]">
+      {/* ══════ 🖼 ЗУРАГ (зүүн) — мобайлд бүтэн өргөн, ≥640px-д 42% ══════ */}
+      <div className="relative h-52 w-full shrink-0 overflow-hidden bg-gray-100 sm:h-full sm:w-[42%]">
         {img ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -78,196 +82,135 @@ export default function ListingCard({ listing, author, attrsLine }) {
             className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-5xl">{getPropertyIcon(listing.property_type, listing.section)}</div>
+          <div className="flex h-full w-full items-center justify-center text-5xl">
+            {getPropertyIcon(listing.property_type, listing.section)}
+          </div>
         )}
+
+        {/* 🏷️ Зарах / Түрээслэх — зөвхөн үл хөдлөхөд (зүүн дээд булан) */}
         {isRealEstate && (
-        <span className={`badge absolute left-2 top-2 ${isSell ? 'badge-sell' : 'badge-rent'}`}>
-          {isSell ? 'Зарах' : 'Түрээс'}
-        </span>
+          <span className={`badge absolute left-2 top-2 ${isSell ? 'badge-sell' : 'badge-rent'}`}>
+            {isSell ? 'Зарах' : 'Түрээс'}
+          </span>
         )}
-        {/* 🎥 Видео байгаа зарын тэмдэг (0011_listing_video.sql → video_url).
-            ⚠️ `listing.video_url` нь КАНОНИК линк (lib/youtube.mjs) — энд
-            зөвхөн «байгаа эсэх»-ийг шалгана, задлан шинжлэх шаардлагагүй. */}
+
+        {/* 🖼 ЗУРГИЙН ТОО — «🖼 1/16» (баруун дээд булан, unegui-ийн хэв)
+            ⚠️ Зөвхөн 2+ зурагтай үед (1 зурагт «1/1» утгагүй) */}
+        {imageCount > 1 && (
+          <span
+            title={`Нийт ${imageCount} зураг`}
+            className="absolute right-2 top-2 flex h-6 items-center gap-1 rounded-full bg-black/60 px-2 text-[11px] font-semibold tabular-nums text-white backdrop-blur-sm"
+          >
+            🖼 1/{imageCount}
+          </span>
+        )}
+
+        {/* 🎥 Видео байгаа зарын тэмдэг (0011_listing_video.sql → video_url)
+            ⚠️ Зүүн ДООД буланд — баруун дээд нь зургийн тооны тэмдэгтэй
+               давхцахаас сэргийлэв ✓ (`listing.video_url` нь КАНОНИК линк) */}
         {listing.video_url && (
           <span
             title="Энэ зарт видео бий"
-            className="absolute right-2 top-2 flex h-7 items-center gap-1 rounded-full bg-black/65 px-2.5 text-[12px] font-bold text-white shadow backdrop-blur-sm"
+            className="absolute bottom-2 left-2 flex h-7 items-center gap-1 rounded-full bg-black/65 px-2.5 text-[12px] font-bold text-white shadow backdrop-blur-sm"
           >
             🎥 Видео
           </span>
         )}
-        {/* ══════ 👤 ЗАР НИЙТЛЭГЧ — ЗУРГИЙН БАРУУН ДООД БУЛАНД (2026-09-27) ══════
-            ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Profile нэр болон зургийг картны зарын
-               зурагны баруун буланд болгоё» → мэдээллийн блокоос ЗУРАГ РУУ
-               зөөв ✓ Ингэснээр:
-                 • мэдээллийн блокт ~68px чөлөөлөгдөж, карт цэвэрхэн болно ✓
-                 • нэр/зураг нь ЗАРНЫ ЗУРАГТАЙ шууд холбогдож харагдана ✓
-            ⚠️ БАРУУН ДООД (top БИШ) — баруун ДЭЭД буланд 🎥 Видео тэмдэг
-               байрладаг тул давхцахаас сэргийлэв ✓
-            🎨 ХАРАГДАЦ: зураг нь харанхуй/цайвар аль ч байж болох тул
-               ХАР хагас тунгалаг pill (`bg-black/60` + `backdrop-blur-sm`)
-               + ЦАГААН текст → ямар ч зураг дээр тод харагдана ✓
-            🔧 ХЭМЖЭЭГ СОЛИХ: `size={26}` (автар) · `size={12}` (✅ badge)
-               · `text-[12px]` (нэр) · `max-w-[…]` (нэрний хязгаар)
-            ⚠️ `show_identity = false` (0017) эсвэл 0015/0017 ороогүй бол
-               `fetchProfilesByIds` нь `displayName`-ыг ХООСОН буцаана →
-               энэ overlay ОГТ ХАРАГДАХГҮЙ ✓
-            ⚠️ Нэр нь холбоос БИШ — карт бүхэлдээ зар руу линк (`<Link>`
-               дотор `<Link>` хийх нь HTML-д хоригтой). */}
+      </div>
+
+      {/* ══════ 📋 МЭДЭЭЛЭЛ (баруун) ══════ */}
+      <div className="flex flex-1 flex-col overflow-hidden p-4 sm:p-5">
+        {/* 👤 ЗАР НИЙТЛЭГЧ — мэдээллийн хэсгийн дээд band (unegui-ийн хэв)
+            ⚠️ `show_identity = false` (0017) бол `displayName` ХООСОН буцах тул
+               энэ band ОГТ ХАРАГДАХГҮЙ ✓ */}
         {author?.displayName && (
-          <div className="absolute bottom-2 right-2 flex max-w-[calc(100%-16px)] items-center gap-1.5 rounded-full bg-black/60 py-1 pl-2.5 pr-1 shadow backdrop-blur-sm">
-            <span
-              className="truncate text-[12px] font-semibold text-white"
-              title={author.displayName}
-            >
+          <div className="mb-3 flex items-center gap-2 border-b border-gray-100 pb-2.5">
+            <Avatar src={author.avatarUrl} name={author.displayName} size={28} />
+            <span className="truncate text-[13px] font-semibold text-gray-800" title={author.displayName}>
               {author.displayName}
             </span>
-            <VerifiedBadge size={12} className="text-primary" />
-            <Avatar src={author.avatarUrl} name={author.displayName} size={68} />
+            <VerifiedBadge size={13} className="text-primary" />
           </div>
         )}
-        {/* ⚠️ ЗУРАГ дээр «таалагдсан» тэмдэглээ (зүрх/тоо) БАЙХГҮЙ.
-            Нийт тоо + ❤️/🤍 товч нь доорх МЭДЭЭЛЛИЙН хэсэгт (мета мөр) байна. */}
 
-        {/* 👁 Хичнээн хүн үзсэн — зургийн ЗҮҮН ДООД буланд.
-            ⚠️ Баруун доод буланд биш: /favorites хуудсанд «✕ Хасах» товч
-            (absolute bottom-3 right-3) нь тэнд байрладаг тул халхлагдана. */}
-        {/* <span
-          title="Энэ зарыг хэдэн хүн үзсэн"
-          className="absolute bottom-2 left-2 flex h-7 items-center gap-1 rounded-full bg-black/65 px-2.5 text-[12px] font-bold tabular-nums text-white shadow backdrop-blur-sm"
-        >
-          👁 {views}
-        </span> */}
-      </div>
-      <div className="flex flex-1 flex-col justify-between overflow-hidden p-4">
-        <div>
-          {/* ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «👤 ЗАР НИЙТЛЭГЧ» (нэр +
-              ✅ badge + профайл зураг) нь ЭНД БАЙХАА БОЛИВ — дээрх
-              ЗУРГИЙН БАРУУН ДООД булан руу ЗӨӨГДСӨН ✓
-              (мэдээллийн блокт ~68px чөлөөлөгдөж, карт цэвэрхэн болов ✓) */}
-          {/* 🗑 2026-10-02 (хэрэглэгчийн хүсэлт): «карт дээр Зарын төрлийг
-              харуулж байгааг болиулах, жишээ нь Орон сууц гэх мэт» →
-              ТӨРЛИЙН МӨР (`{getPropertyIcon(…)} {listing.property_type}`)
-              КАРТААС БҮРЭН ХАСАГДАВ.
-              ⚠️ Урьд нь энэ нь мэдээллийн блокийн ХАМГИЙН ЭХНИЙ мөр байв
-                 (2026-09-27-д үнийн доороос энд зөөгдсөн) — одоо эхний мөр
-                 нь 💰 ҮНЭ (үл хөдлөхөд) эсвэл 📋 attrs мөр ✓
-              ⚠️ `getPropertyIcon` импорт ХЭВЭЭР байна — зургийн ОРОНД
-                 гарах `text-5xl` placeholder icon (дээд блок) үүнийг ашиглана ✓
-              ⚠️ Төрөл/хэсгийн мэдээлэл АЛГА БОЛООГҮЙ: 🖼 Зарах/Түрээс badge нь
-                 зураг дээр (зүүн дээд), 🏠 icon нь зураггүй үед, дэлгэрэнгүй
-                 хуудсанд breadcrumb + «Зарын дэлгэрэнгүй» хүснэгт хэвээр ✓ */}
-          {/* ---------- ЗАР НИЙТЛЭГЧ (нэр + профайл зураг) ----------
-              ⚠️ 2026-09-27: БАРУУН ДЭЭД БУЛАНД зөөгдсөн — доорх (картын
-                 эхний мөр) блокийг харна уу ↑ (justify-end). */}
-
-          {/* ---------- ХЭСГИЙН НЭМЭЛТ МЭДЭЭЛЭЛ (0016) ----------
-              ж: «Toyota Harrier, 2021 · 95,200 км · Автомат · 2.5 л · Хайбрид»
-              ⚠️ `HomeClient` нь `formatAttrsLine()`-ээр бэлдэж дамжуулна
-                 (үл хөдлөхөд хоосон ирнэ → блок харагдахгүй). */}
-          {attrsLine && (
-            <div className="mb-1 truncate text-[12.5px] font-medium text-gray-600" title={attrsLine}>
-              {attrsLine}
-            </div>
-          )}
-          {/* ---------- ҮНЭ ----------
-              ⚠️ `price_type` («нийт» / «сард» / «м²») карт дээр ХАРАГДАХГҮЙ —
-                 зөвхөн үнэ. (Ижил дүрэм: ListingDetailClient, MyListingsClient,
-                 MapView — бүх UI дээр хассан.)
-              ⚠️ `getPriceTypeLabel` импорт ч хасагдсан (unused import → ESLint).
-              ⚠️ 2026-10-02 (хэрэглэгчийн хүсэлт): «Үнэ тохирно» нь КАРТ ДЭЭР
-                 ОГТ ХАРАГДАХГҮЙ ✗ — ① 🤝 нэмэлт мөр (`negotiableNote`) эндээс
-                 хасагдав ② үнэ байхгүй (`hasRealPrice` = false) үед үнийн мөр
-                 өөрөө ч ГАРАХГҮЙ (`priceLabel` нь «Үнэ тохирно» буцаадаг байсан).
-                 ℹ️ Тэмдэглэгч нь ЗӨВХӨН зарын ДЭЛГЭРЭНГҮЙ хуудсанд
-                 (`ListingDetailClient`, үнийн ЯГ ДОР) хэвээр харагдана ✓
-              🔍 Хайх үг: negotiableNote, hasRealPrice, priceLabel */}
-          {hasRealPrice(listing) && (
-            <div className="mb-0.5 text-lg font-bold text-gray-900">
-              {priceLabel(listing)}
-            </div>
-          )}
-          {/* ---------- 🏷️ ЗАРЫН ГАРЧИГ — ҮНИЙН ЯГ ДОР (2026-10-02) ----------
-              хэрэглэгчийн хүсэлт: «Бүх зард Зарын гарчиг гэдэг утга оруулахаа
-              мартсан байна. Тэр нь зарын карт дээр Үнэ мэдээллийн доор bold
-              font-той, бас Үнээс бага зэрэг жижиг харагдах юм.»
-              ⚠️ «Үнэ мэдээллийн доор» = 💰 үнэ БА 🤝 «Үнэ тохирно» хоёулаас
-                 ХОЙШ (үнийн блок бүхэлдээ) ✓
-              📐 ХЭМЖЭЭ: `text-base` (16px) + `font-bold` — үнэ нь `text-lg`
-                 (18px) + `font-bold` тул «бага зэрэг жижиг» ✓ (доорх хаяг нь
-                 14px regular тул гарчиг нь тод ялгарна ✓)
-              ⚠️ ХООСОН бол мөр ОГТ ГАРАХГҮЙ (`title` = '' — дээрх const):
-                 0027 орохоос өмнөх зарууд дээр гарчиг байхгүй хэвээр ✓
-                 (хэрэглэгчийн шийдвэр: backfill/UPDATE хийхгүй)
-              ⚠️ `truncate` (1 мөр) — урт гарчиг картын өндрийг (`sm:h-[240px]`)
-                 ХӨДӨЛӨӨХГҮЙ ✓; бүтэн текстийг `title` (hover) харуулна
-              🔍 Хайх үг: listingTitle, 0027_listing_title.sql, зарын гарчиг */}
-          {title && (
-            <div className="mb-1 truncate text-base font-bold text-gray-900" title={title}>
-              {title}
-            </div>
-          )}
-          {/* ---------- 📍 ХАЯГ + 🕒 НИЙТЭЛСЭН (2 мөр, ЗҮҮН тийш) ----------
-              ⚠️ Хаяг эхний мөрөнд, огноо нь ЯГ ДООР нь — хоёулаа ЗҮҮН тийш
-                 зэрэгцсэн (`justify-between` БИШ).
-              ⚠️ Энэ блок нь байрны мэдээллийн (🛏 өрөө / 📐 м² / 🏢 давхар /
-                 📅 он) ӨМНӨ байрлана. Дэлгэрэнгүй хуудсан дээр ч мөн адил.
-              ⚠️ Огноо нь 🕒 (цаг) — баригдсан он нь 📅 (хуанли) тул
-                 хоёр 📅 зөрөхгүй.
-              ⚠️ `truncate` — хаяг урт байвал картын өндөр (sm:h-[220px]) хэвээр. */}
-          <div className="text-[14px] text-gray-700">
-            <div className="truncate">📍 {formatAddress(listing) || 'Хаяг тодорхойгүй'}</div>
-            <div className="text-[14px] text-gray-700">🕒 {timeAgo(listing.created_at)}</div>
+        {/* 💰 ҮНЭ — том, bold (unegui). ⚠️ «Үнэ тохирно» карт дээр ГАРАХГҮЙ
+            (`hasRealPrice` — 2026-10-02-ын хэрэглэгчийн шийдвэр ✓) */}
+        {hasRealPrice(listing) && (
+          <div className="text-[22px] font-extrabold leading-tight tracking-[-0.01em] text-gray-900">
+            {priceLabel(listing)}
           </div>
-          {/* ---------- 🛏 БАЙРНЫ МЭДЭЭЛЭЛ (хаягийн ДОР) ----------
-              Өрөө · угаалгын өрөө · талбай · давхар · баригдсан он.
-              ⚠️ `rooms/area/build_year/bathrooms` нь 0 байж болох тул `> 0`
-                 шалгалттай; `floorLabel` нь lib/format-аас '' (хоосон) буцаж болно.
-              ⚠️ 🚿 нь 3+ өрөөтэй орон сууц / АОС/хаус зар дээр л хадгалагддаг
-                 (0012_listing_bathrooms.sql) — property.mn загварын тэмдэгт. */}
-          {(listing.rooms > 0 || listing.bathrooms > 0 || listing.area > 0 || floorLabel || listing.build_year > 0) && (
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-gray-700">
-              {listing.rooms > 0 && <span>🛏 {listing.rooms} Өрөө</span>}
-              {listing.bathrooms > 0 && <span>🚿 {listing.bathrooms} Угаалгын өрөө</span>}
-              {listing.area > 0 && <span>📐 {listing.area} м²</span>}
-              {floorLabel && <span>🏢 {floorLabel}</span>}
-              {listing.build_year > 0 && <span>📅 {listing.build_year}</span>}
-            </div>
-            
-          )}
-        </div>
-        {/* ДООД МӨР — зөвхөн ❤️/🤍 «Таалагдсан» товч үлдэв.
-            ⚠️ ШИЛЖИЛТ: 👁 «үзсэн» тоо болон 🛏 байрны мэдээлэл (өрөө / м² /
-               давхар / он) нь ДЭЭШЭЭ — 📍 ХАЯГИЙН хэсэг рүү шилжсэн
-               (дээрх «📍 ХАЯГ + 👁 ҮЗСЭН» ба «🛏 БАЙРНЫ МЭДЭЭЛЭЛ» блокоос харна уу).
-            ⚠️ `justify-between` БИШ: /favorites хуудсанд «Хасах» товч утсанд
-               (max-sm) баруун ДОО буланд буудаг тул халхлахгүйн тулд мөр
-               зүүнээс эхэлж, баруун талд `pr-20` (80px) хоосон зай үлдээв. */}
-        <div className="mt-auto flex flex-wrap items-center justify-start gap-x-3 gap-y-1 border-t border-gray-100 pt-2 pr-20 text-xs text-gray-400">
-          {/* ❤️/🤍 Таалагдсан — энэ нь МИНИЙ favourite toggle БА нийт тоо
-              (listings.likes) хоёулаа: дарвал ❤️↔🤍 солигдож, сервер дээрх
-              тоо ±1 болно (lib/favorites.js).
-              ⚠️ Зурган дээр тусдаа товч БАЙХГҮЙ (зураг цэвэр байх ёстой). */}
-          <span className="font-semibold text-sm text-gray-700" title="Энэ зарыг хэдэн хүн үзсэн">
-              👁 {views} 
+        )}
+
+        {/* 🏷️ ЗАРЫН ГАРЧИГ — үнийн доор, дээд тал нь 2 мөр (unegui) */}
+        {title && (
+          <div className="mt-1 line-clamp-2 text-[15px] font-semibold leading-snug text-gray-800" title={title}>
+            {title}
+          </div>
+        )}
+
+        {/* 📋 ДЭЛГЭРЭНГҮЙ МӨР
+            ① үл хөдлөх → 🛏 өрөө · 🚿 угаалгын өрөө · 📐 м² · 🏢 давхар · 📅 он
+            ② бусад хэсэг → `attrsLine` (HomeClient нь `formatAttrsLine`-ээр бэлдэнэ)
+            ⚠️ Хоёулаа хоосон бол мөр ОГТ ГАРАХГҮЙ (`false`/`''`) ✓ */}
+        {isRealEstate
+          ? hasPropertyLine && (
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-gray-600">
+                {listing.rooms > 0 && <span>🛏 {listing.rooms} өрөө</span>}
+                {listing.bathrooms > 0 && <span>🚿 {listing.bathrooms} угаалгын өрөө</span>}
+                {listing.area > 0 && <span>📐 {listing.area} м²</span>}
+                {floorLabel && <span>🏢 {floorLabel}</span>}
+                {listing.build_year > 0 && <span>📅 {listing.build_year}</span>}
+              </div>
+            )
+          : attrsLine && (
+              <div className="mt-1.5 truncate text-[13px] text-gray-600" title={attrsLine}>
+                {attrsLine}
+              </div>
+            )}
+
+        {/* 📝 ТАЙЛБАР — 2 мөр хүртэл (unegui: бүдэг саарал) */}
+        {description && (
+          <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-gray-500">{description}</p>
+        )}
+
+        {/* 📅 ДООД МЕТА МӨР — 🕒 огноо | 📍 хаяг   …   👁 үзсэн  ❤️/🤍 таалагдсан
+            ⚠️ `mt-auto` — агуулга бага байсан ч мөрийг картын ёроолд тогтооно ✓
+            📱 МОБАЙЛ: хаяг нь `order-last w-full` → БҮТЭН мөр болж доош бууна
+               (эс бөгөөс `pr-20`-ийн дараа хаяг «…» болж бүрэн алга болно ✗);
+               ≥640px-д `sm:order-none sm:flex-1` → нэг мөрөнд буцаж эгнэнэ ✓
+            ⚠️ `pr-20` — /favorites-ийн «Хасах» товч утсанд баруун ДОО буланд
+               буудаг тул ❤️-тэй мөргөлдөхөөс сэргийлнэ (`sm:pr-0` — desktop-д чөлөө) */}
+        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-gray-100 pt-2.5 pr-20 text-[12.5px] text-gray-500 sm:flex-nowrap sm:pr-0">
+          <span className="whitespace-nowrap" title="Нийтэлсэн огноо">🕒 {timeAgo(listing.created_at)}</span>
+          {address && (
+            <span className="order-last w-full truncate sm:order-none sm:w-auto sm:flex-1" title={address}>
+              <span aria-hidden="true" className="mr-1.5 hidden text-gray-300 sm:inline">|</span>
+              📍 {address}
             </span>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              toggleFavorite(listing.id);
-            }}
-            aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
-            title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
-            className={`-mx-1.5 inline-flex items-center gap-1 rounded-full px-1.5 font-semibold text-[14px] text-gray-700 transition hover:bg-red-50 hover:text-red-600 ${
-              isFav ? 'text-red-600' : ''
-            }`}
-          >
-            {isFav ? '❤️' : '🤍'} {likes}
-          </button>
+          )}
+          <span className="ml-auto flex shrink-0 items-center gap-2">
+            <span className="font-semibold tabular-nums text-gray-600" title="Энэ зарыг хэдэн хүн үзсэн">
+              👁 {views}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleFavorite(listing.id);
+              }}
+              aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
+              title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
+              className={`-mr-1 inline-flex items-center gap-1 rounded-full px-1.5 text-[14px] font-semibold transition hover:bg-red-50 hover:text-red-600 ${
+                isFav ? 'text-red-600' : 'text-gray-600'
+              }`}
+            >
+              {isFav ? '❤️' : '🤍'} {likes}
+            </button>
+          </span>
         </div>
       </div>
     </Link>
   );
 }
+
