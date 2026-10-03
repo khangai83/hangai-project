@@ -1856,7 +1856,58 @@ export default function AddListingClient() {
                     data-mobile-active={detailFieldActive(`attr-${f.key}`)}
                   >
                     <label>{f.icon ? `${f.icon} ` : ''}{f.label}</label>
-                    {f.choices ? (
+                    {f.formChips || f.chips ? (
+                      /**
+                       * 🎛 ЧИП ТАЛБАР (2026-10-03 (11), хэрэглэгчийн хүсэлт:
+                       *    «Ажлын цаг, Туршлага, Зарлагч, Мэргэжлийн түвшин
+                       *    бүгдийг сонгож оруулдаг болгоё, Жишээг хар» +
+                       *    чип товчны зураг) ⇒ 💼 ажлын зарын 4 талбар нь
+                       *    `<select>` биш, бөөрөнхий **ЧИП ТОВЧ** (нэг харцаар
+                       *    бүх сонголт харагдана, идэвхтэй дээр дахин дарвал
+                       *    ЦУЦЛАГДАНА ✓).
+                       *
+                       * ⚠️ `f.formChips` (формойн чип) ба `f.chips` (sidebar-ийн
+                       *    чип ШҮҮЛТ) хоёулаа энэ салбар руу орно — 🕒 jobType
+                       *    нь ХОЁУЛАНД нь чип, бусад нь зөвхөн форм дээр ✓
+                       *    (`lib/locationData.js` → 💼 `jobs.attrFields`)
+                       * ⚠️ Утга нь `<select>`-тэй ЯГ ИЖИЛ: `attrs.<key>` (текст),
+                       *    цуцлахад түлхүүр нь БҮРЭН УСТАНА (`setAttrCascade`
+                       *    → `delete attrs[key]`) ⇒ форм/DB/`validateStep`
+                       *    ХӨНДӨГДӨХГҮЙ ✓
+                       * ⚠️ Харагдац нь sidebar-ийн чиптэй НЭГ CSS (`.chip-toggle`)
+                       *    — `app/globals.css`; давхар бичихгүй ✓
+                       * ⚠️ ХУУЧИН утга (жагсаалтад байхгүй, ж: нэр нь солигдсон
+                       *    хуучин зар) нь ЭХНИЙ чип болж харагдана — сонгосон
+                       *    хэвээрээ үлдэж, дарж цэвэрлэж болно ✓ (`<select>`-ийн
+                       *    `legacy` option-той ЯГ ИЖИЛ зарчим)
+                       * ⚠️ `data-attr-field`/`data-attr-value` нь CDP тестийн
+                       *    дэгээ (sidebar нь `data-attr-filter` — формаас
+                       *    ЯЛГААТАЙ тул нэг хуудсанд 2 блок зөрчилдөхгүй ✓)
+                       */
+                      <div
+                        className="flex flex-wrap gap-2"
+                        data-attr-field={f.key}
+                        role="group"
+                        aria-label={f.label}
+                      >
+                        {(legacy ? [legacy, ...(f.options || [])] : (f.options || [])).map((o) => {
+                          const on = value === o;
+                          return (
+                            <button
+                              key={o}
+                              type="button"
+                              aria-pressed={on}
+                              data-attr-value={o}
+                              onClick={() => setAttrCascade(f, on ? '' : o)}
+                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                            >
+                              {on && <span aria-hidden="true">✓</span>}
+                              {o}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : f.choices ? (
                       /**
                        * 📅 2026-10-02 (хэрэглэгчийн хүсэлт): `choices` МЕТАТАЙ талбар
                        *    (ж: «Үйлдвэрлэсэн он», «Орж ирсэн он») ⇒ 📱 мобайлд

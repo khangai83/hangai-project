@@ -98,6 +98,23 @@ t('💰 Цалингийн төрөл — Тогтмол / Хэлбэлзэх', 
   assert.deepEqual(f.options, ['Тогтмол', 'Хэлбэлзэх']);
 });
 
+t('🎛 Форм: 4 талбар нь ЧИПЭЭР сонгоно (`formChips: true`, 2026-10-03 (11))', () => {
+  // Хэрэглэгчийн хүсэлт: «Ажлын цаг, Туршлага, Зарлагч, Мэргэжлийн түвшин
+  // бүгдийг сонгож оруулдаг болгоё, Жишээг хар» + чип товчны зураг ⇒
+  // форм дээр `<select>` биш, бөөрөнхий ЧИП ТОВЧ ✓
+  ['jobType', 'experience', 'advertiser', 'jobLevel'].forEach((k) => {
+    assert.equal(getAttrField('jobs', k).formChips, true, `${k}: форм дээр чип биш ✗`);
+  });
+  // 💰 «Цалингийн төрөл» нь хэвээр `<select>` (хэрэглэгчийн жагсаалтад ороогүй ✓)
+  assert.equal(getAttrField('jobs', 'salaryType').formChips, undefined);
+  // ⚠️ `formChips` (форм) ба `chips` (sidebar ШҮҮЛТ) нь ТУСДАА туг —
+  //    sidebar-ийн харагдац (unegui.mn-ийн хайлтын зураг) ХӨНДӨГДӨӨГҮЙ ✓
+  assert.equal(getAttrField('jobs', 'jobType').chips, true);
+  assert.equal(getAttrField('jobs', 'experience').chips, undefined);
+  assert.equal(getAttrField('jobs', 'jobLevel').chips, undefined);
+  assert.deepEqual(getAttrFilters('jobs').map((f) => f.chips === true), [true, false, false]);
+});
+
 t('🚫 Хуучин талбарууд (salary/education/workMode/expiry) форм/шүүлтээс ХАСАГДАВ', () => {
   ['salary', 'education', 'workMode', 'expiry'].forEach((k) => assert.equal(getAttrField('jobs', k), null, `${k} байсаар байна ✗`));
   assert.ok(!getAttrFilters('jobs').some((f) => ['salary', 'education', 'workMode', 'expiry'].includes(f.key)));
@@ -133,6 +150,20 @@ t('📝 Форм: 4-р алхамд «Цалингийн хэмжээ» + «Ца
   assert.match(ADD_CODE, /priceNegotiableText = jobsSection \? NEGOTIABLE_SALARY_LABEL : NEGOTIABLE_PRICE_LABEL/);
   assert.match(ADD_CODE, /<label>\{priceFieldTitle\} <\/label>/);
   assert.match(ADD_CODE, /\{priceNegotiableText\}/);
+});
+
+t('🎛 Форм: `formChips || chips` салбар — `.chip-toggle` + `data-attr-field`/`data-attr-value`', () => {
+  assert.match(ADD_CODE, /f\.formChips \|\| f\.chips \? \(/);
+  assert.match(ADD_CODE, /data-attr-field=\{f\.key\}/);
+  assert.match(ADD_CODE, /data-attr-value=\{o\}/);
+  assert.match(ADD_CODE, /aria-pressed=\{on\}/);
+  // ⚠️ Утга нь `<select>`-тэй ЯГ ИЖИЛ — идэвхтэй дээр дарвал ЦУЦЛАГДАНА
+  assert.match(ADD_CODE, /setAttrCascade\(f, on \? '' : o\)/);
+  assert.match(ADD_CODE, /const on = value === o;/);
+  // 🎨 Харагдац нь sidebar-ийн чиптэй НЭГ CSS (`chip-toggle`/`chip-toggle-active`)
+  assert.match(ADD_CODE, /chip-toggle \$\{on \? 'chip-toggle-active' : ''\}/);
+  // ⚠️ ХУУЧИН утга нь ЭХНИЙ чип (жагсаалтад байхгүй утга алга болохгүй ✓)
+  assert.match(ADD_CODE, /legacy \? \[legacy, \.\.\.\(f\.options \|\| \[\]\)\]/);
 });
 
 // ---------- ⑤ SIDEBAR (HomeClient) ----------

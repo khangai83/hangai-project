@@ -1312,6 +1312,12 @@ t('💼 jobs: 2 түвшин, 3 шүүлт (🕒 чип · 📊 · 📈), хял
   assert.equal(getAttrField('jobs', 'jobType').chips, true);
   assert.equal(getAttrField('jobs', 'experience').chips, undefined);
   assert.equal(getAttrField('jobs', 'jobLevel').chips, undefined);
+  // 🎛 2026-10-03 (11): ФОРМ дээр 4 талбар нь чип (`formChips`) —
+  //    ⚠️ энэ нь sidebar-ийн `chips`-ээс ТУСДАА туг (sidebar хөндөгдөхгүй ✓)
+  ['jobType', 'experience', 'advertiser', 'jobLevel'].forEach((k) => {
+    assert.equal(getAttrField('jobs', k).formChips, true, `${k}.formChips ✗`);
+  });
+  assert.equal(getAttrField('jobs', 'salaryType').formChips, undefined);
   assert.equal(hasSimpleForm('jobs'), false);
   assert.deepEqual(getSubtypeGroups('jobs'), []); // ⚠️ бүлэг (3 дахь түвшин) БАЙХГҮЙ
   assert.equal(findSubtypeGroup('jobs', getSubtypes('jobs')[0]), null);
