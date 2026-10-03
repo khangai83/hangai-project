@@ -96,13 +96,27 @@ t('📱 `mobileDetailStep` нь эхний дэлгэц `title`-ээр эхэл�
 
 const screensBody = bodyOf(FORM, 'const detailScreens = (() => {');
 
-t('📱 `detailScreens` нь ЗӨВ дараалалтай (гарчиг → аттр* → талбай → угаалгын өрөө → он → нийт давхар → давхар → тагт → гараж ✓)', () => {
+t('📱 `detailScreens` нь ЗӨВ дараалалтай (гарчиг → аттр* → 💳 төлбөр → талбай → угаалгын өрөө → он → нийт давхар → давхар → тагт → гараж ✓)', () => {
   const order = [...screensBody.matchAll(/key:\s*'([^']+)'|key:\s*`attr-\$\{f\.key\}`/g)]
     .map((m) => m[1] || 'attr-<key>');
   assert.deepEqual(order, [
-    'title', 'attr-<key>', 'area', 'bathrooms',
+    'title', 'attr-<key>', 'payments', 'area', 'bathrooms',
     'buildYear', 'totalFloors', 'floor', 'balconies', 'garage',
   ]);
+});
+
+t('💳 «Төлбөрийн нөхцөл» дэлгэц нь ЗӨВХӨН `showPayments` (үл хөдлөх/авто) + ШИНЭ зард ЗААВАЛ', () => {
+  // ⚠️ Бусад хэсэгт (ажил/компьютер/бараа/үйлчилгээ) дэлгэц НЭМЭГДЭХГҮЙ ✓
+  assert.ok(screensBody.includes("if (showPayments) out.push({\n      key: 'payments'"),
+    'payments нөхцөл (showPayments)');
+  assert.ok(screensBody.includes("title: '💳 Төлбөрийн нөхцөл'"), 'гарчиг');
+  // ⚠️ Заавал нь зөвхөн ШИНЭ зард (`required: !isEdit`) — хуучин зарууд
+  //    `attrs.payment_terms`-гүй тул засах горимд хаагдахгүй ✓
+  const payScreen = screensBody.slice(screensBody.indexOf("key: 'payments'"));
+  assert.ok(payScreen.slice(0, 220).includes('required: !isEdit'), 'required: !isEdit (зөвхөн шинэ зар)');
+  /** ⚠️ Дараалал нь DOM-той ИЖИЛ: аттрибутуудын ДАРАА, «Талбай»-н өмнө ✓ */
+  assert.ok(screensBody.indexOf("key: 'payments'") < screensBody.indexOf("key: 'area'"),
+    'payments нь area-гийн ӨМНӨ');
 });
 
 t('📱 «Өрөө» дэлгэцэд БАЙХГҮЙ (`rooms` — 1-р алхмын drill-down-д асуусан ✓)', () => {
@@ -149,17 +163,23 @@ console.log('\n── ② Заавал талбарын хаалт ──');
 
 const nextBody = bodyOf(FORM, 'const mobileDetailNext = () => {');
 
-t('🛡️ Гарчиг ХООСОН үед урагш ЯВАХГҮЙ (`setError` + `return` ✓)', () => {
-  assert.match(nextBody, /if \(cur && cur\.required && !String\(form\.title \|\| ''\)\.trim\(\)\)/);
-  assert.match(nextBody, /setError\('Зарын гарчигаа оруулна уу'\);\s*return;/);
+t('🛡️ Заавал талбар (гарчиг · 💳 төлбөр) ХООСОН үед урагш ЯВАХГҮЙ (`setError` + `return` ✓)', () => {
+  // ⚠️ 2026-10-03: шалгалт нь `requiredDetailMsg(key)` руу нэгдэв (нэг эх сурвалж) —
+  //    `mobileDetailNext` нь зөвхөн ҮР ДҮНГ ашиглана (мессежийг ЭНД бичихгүй ✓)
+  assert.match(nextBody, /const req = cur && cur\.required \? requiredDetailMsg\(cur\.key\) : ''/);
+  assert.match(nextBody, /if \(req\) \{\s*setError\(req\);\s*return;\s*\}/);
 });
 
-t("🛡️ Мессеж нь `validateStep('details')`-тэй ЯГ ИЖИЛ (нэг эх сурвалж ✓)", () => {
-  const fromStep = FORM.match(/if \(!isEdit && !String\(form\.title \|\| ''\)\.trim\(\)\) return '([^']+)'/);
-  const fromWizard = nextBody.match(/setError\('([^']+)'\)/);
-  assert.ok(fromStep, 'validateStep-ийн мессеж олдсонгүй');
-  assert.ok(fromWizard, 'wizard-ийн мессеж олдсонгүй');
-  assert.equal(fromWizard[1], fromStep[1]);
+t("🛡️ Мессеж нь `validateStep('details')`-тэй ЯГ ИЖИЛ (нэг эх сурвалж `requiredDetailMsg` ✓)", () => {
+  // ① Гарчиг — дүрэм нь `requiredDetailMsg('title')`
+  assert.match(FORM, /if \(key === 'title' && !isEdit && !String\(form\.title \|\| ''\)\.trim\(\)\) \{\s*return '([^']+)'/);
+  // ② 💳 Төлбөрийн нөхцөл — мөн адил нэг газарт
+  assert.match(FORM, /if \(key === 'payments' && !isEdit && showPayments && !form\.payments\.length\) \{\s*return PAYMENT_REQUIRED_MSG/);
+  // ③ `validateStep('details')` нь ЧУХАЛ дарааллаар дуудна (гарчиг → төлбөр) ✓
+  assert.match(FORM, /const req = requiredDetailMsg\('title'\) \|\| requiredDetailMsg\('payments'\)/);
+  assert.match(nextBody, /requiredDetailMsg\(cur\.key\)/, '📱 wizard');
+  // ④ Мессеж нь хэрэглэгчид ойлгомжтой, «сонгоно уу» гэж хэлнэ
+  assert.match(FORM, /const PAYMENT_REQUIRED_MSG = '([^']*сонгоно уу[^']*)'/);
 });
 
 t('🪜 `mobileDetailNext`: дараагийн ТАЛБАР руу (алхам руу БИШ), сүүлийн дэлгэцээс `goNext()` ✓', () => {
@@ -188,8 +208,8 @@ const step3 = (() => {
   return FORM.slice(from, to);
 })();
 
-t('📱 7 МӨР (title · attrs · area · bathrooms · floors-1 · floors-2 · garage) бүгд `data-detail-row` + `data-mobile-active`-тай (CSS-ийн НЭГ эх сурвалж ✓)', () => {
-  const rows = ['title', 'attrs', 'area', 'bathrooms', 'floors-1', 'floors-2', 'garage'];
+t('📱 8 МӨР (title · attrs · 💳 payments · area · bathrooms · floors-1 · floors-2 · garage) бүгд `data-detail-row` + `data-mobile-active`-тай (CSS-ийн НЭГ эх сурвалж ✓)', () => {
+  const rows = ['title', 'attrs', 'payments', 'area', 'bathrooms', 'floors-1', 'floors-2', 'garage'];
   rows.forEach((name) => {
     const re = new RegExp('data-detail-row="' + name + '"[\\s\\S]{0,200}?'
       + "data-mobile-active=\\{detailRowActive\\('" + name + "'\\)\\}");
@@ -198,11 +218,15 @@ t('📱 7 МӨР (title · attrs · area · bathrooms · floors-1 · floors-2 ·
   assert.equal((step3.match(/data-detail-row="/g) || []).length, rows.length);
 });
 
-t('📱 Гарчиг / Талбай / Гараж — `.form-group` дээр `data-detail-field` + `detailFieldActive` ✓', () => {
+t('📱 Гарчиг / Талбай / Гараж / 💳 төлбөр — `.form-group` дээр `data-detail-field` + `detailFieldActive` ✓', () => {
   ['title', 'area', 'garage'].forEach((k) => {
     assert.ok(step3.includes('data-detail-field="' + k + '" data-mobile-active={detailFieldActive(\'' + k + '\')}'),
       `талбар «${k}»`);
   });
+  // ⚠️ 💳 payments нь олон мөртэй JSX — `.form-group` дээр `data-detail-field="payments"`,
+  //    дараагийн мөрөнд `data-mobile-active={detailFieldActive('payments')}` ✓
+  assert.ok(step3.includes('data-detail-field="payments"\n                  data-mobile-active={detailFieldActive(\'payments\')}'),
+    'талбар «payments» (💳)');
 });
 
 t('📱 Хэсгийн аттр талбарууд (ж: 🏷️ Брэнд) — `attr-<key>` марктай (`data-detail-field` ✓)', () => {
@@ -222,10 +246,12 @@ t('📱 `ChoiceField` өөрөө маркийг ТУСГААР нэмнэ (та�
   const cf = fnBody(FORM, 'function ChoiceField(');
   assert.ok(cf.includes('data-detail-field={fieldKey || undefined}'));
   assert.ok(cf.includes("data-mobile-active={mobileActive === undefined ? undefined : (mobileActive ? 'true' : 'false')}")); 
-  /** ⚠️ 3-р алхамд статик `data-detail-field` марк ЗӨВХӨН 5 газар (title · attrs ·
-   *  rooms · area · garage); `ChoiceField`-ийн 5 талбар нь ПРОПСООР авна
-   *  (DOM ХОЁР ДАХИН рендэрлэхгүй — `form`/DB/`validateStep` хөндөгдөхгүй ✓) */
-  assert.equal((step3.match(/data-detail-field/g) || []).length, 5);
+  /** ⚠️ 3-р алхамд БОДИТ `data-detail-field=` марк ЗӨВХӨН 6 газар (title · attrs ·
+   *  💳 payments · rooms · area · garage); `ChoiceField`-ийн 5 талбар нь ПРОПСООР авна
+   *  (DOM ХОЁР ДАХИН рендэрлэхгүй — `form`/DB/`validateStep` хөндөгдөхгүй ✓)
+   *  ⚠️ `=`-тэй тоолно: 💳 блокийн JSX коммент дотор ч `data-detail-field` гэсэн
+   *     ҮГ бий (дэгээг тайлбарласан) — тэр нь марк БИШ ✓ */
+  assert.equal((step3.match(/data-detail-field=/g) || []).length, 6);
 });
 
 t('📱 «Өрөө» (`rooms`) — 3-р алхмын дэлгэцэд БАЙХГҮЙ (`data-mobile-active="false"` + `.hide-below-sm` ✓)', () => {

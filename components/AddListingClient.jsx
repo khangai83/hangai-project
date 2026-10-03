@@ -19,6 +19,15 @@ import { lookupMap, cascadeAttrs } from '../lib/carModels.mjs';
 // 📱 «Өрөө»-ний сонголтууд (мобайл drill-down) — ⚠️ шүүлтийн (sidebar) ЯГ ИЖИЛ
 //    утга/шошго (`'1'`…`'5'`, «+5 өрөө») ашиглана: нэг эх сурвалж → зөрүү үгүй ✓
 import { ROOM_VALUES, roomOptionLabel } from '../lib/roomFilter.mjs';
+// 💳 «ТӨЛБӨРИЙН НӨХЦӨЛ» (2026-10-03) — ⚠️ шүүлтийн (sidebar/`HomeClient`) ЯГ
+//    ИЖИЛ утга (`lease`/`cash`/`loan`/`barter`) ба шошго (`PAYMENT_OPTIONS`):
+//    нэг эх сурвалж → sidebar-тай зөрүү гарахгүй ✓
+//    `paymentTermsForAttrs(section, list)` — хадгалах дүрэм (`attrs.payment_terms`
+//    массив эсвэл `null` ⇒ түлхүүр УСТАНА) нь бас нэг газар бичигдэнэ ✓
+import {
+  PAYMENT_OPTIONS, hasPaymentTerms, togglePaymentValue,
+  countPayments, parsePaymentList, paymentTermsForAttrs,
+} from '../lib/paymentFilter.mjs';
 /**
  * 🔢🎡 СОНГОЛТТОЙ ТООН ТАЛБАР (2026-10-02) — хэрэглэгчийн хүсэлт: «…барилгийн
  *    давхар 1 2 3 4 … 26-аас сонгуулах … ашиглалтанд орсон он 1980-аас 2026 …
@@ -91,6 +100,10 @@ function listingToForm(l) {
     attrs: (l.attrs && typeof l.attrs === 'object') ? { ...l.attrs } : {},
     propertyType: l.property_type || '',
     rooms: l.rooms ? String(l.rooms) : '',
+    // 💳 Төлбөрийн нөхцөл (2026-10-03) — `attrs.payment_terms` МАССИВ-аас
+    //    ЦЭВЭР код болгож уншина (таслалтай мөр, ганц утга г.м. ч эвдрэхгүй ✓).
+    //    ⚠️ `parsePaymentList` нь хүчингүй/хоосон утгыг ЧИМЭЭГҮЙ хасна ✓
+    payments: parsePaymentList(l.attrs && l.attrs.payment_terms),
     area: l.area ? String(l.area) : '',
     city: l.city || 'Улаанбаатар',
     district: l.district || '',
@@ -280,6 +293,21 @@ const MOBILE_ROOM_ITEMS = [
   ...ROOM_VALUES.map((v) => ({ value: v, label: roomOptionLabel(v) })),
   { value: MOBILE_SKIP, label: 'Алгасах' },
 ];
+
+/**
+ * 💳 «ТӨЛБӨРИЙН НӨХЦӨЛ» — ЗААВАЛ сонгох мессеж (2026-10-03).
+ * ⚠️ НЭГ ЭХ СУРВАЛЖ: 📱 `mobileDetailNext` (3-р алхмын дэлгэц солих) ба
+ *    🖥 `validateStep('details')` (товч дарах) хоёулаа ЭНЭ мөрийг л ашиглана
+ *    — өөр газарт дахин бичихгүй ✓ (`Зарын гарчигаа оруулна уу`-тай ижил
+ *    зарчим: `validateStep('details')`-тэй нийцсэн байх ёстой)
+ * ⚠️ ЗААВАЛ болгосон шалтгаан: хэрэглэгчийн хүсэлт «Зар оруулах үед
+ *    хэрэглэгч үүнийг СОНГОЖ ӨГӨХ ЁСТОЙ» — тэмдэглээгүй зар дээр шүүлт
+ *    (jsonb `cs`) ажиллахгүй тул хоосон орхигдуулахгүй ✓
+ * ⚠️ ЗӨВХӨН ШИНЭ ЗАРД (`!isEdit`) — `Зарын гарчиг`-тай ЯГ ИЖИЛ: энэ
+ *    функц орохоос өмнөх хуучин зарууд `attrs.payment_terms`-гүй тул
+ *    засахад хэрэглэгчийг БЛОКЛОХГҮЙ ✓
+ */
+const PAYMENT_REQUIRED_MSG = 'Төлбөрийн нөхцөлөө сонгоно уу (олныг сонгож болно)';
 
 /**
  * 🔢🎡 СОНГОЛТТОЙ ТООН ТАЛБАРЫН МӨРҮҮД (2026-10-02)
@@ -479,6 +507,10 @@ export default function AddListingClient() {
     attrs: {},
     propertyType: '',
     rooms: '',
+    // 💳 Төлбөрийн нөхцөл (2026-10-03) — ОЛОН сонголттой МАССИВ. Хоосон
+    //    массив = сонгоогүй; хадгалах үед `paymentTermsForAttrs()` нь
+    //    хэсэг дэмжихгүй/хоосон бол `null` ⇒ `attrs`-аас түлхүүр УСТАНА ✓
+    payments: [],
     area: '',
     city: 'Улаанбаатар',
     district: '',
@@ -643,6 +675,14 @@ export default function AddListingClient() {
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
+  /**
+   * 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — нэг дарж нэмэх/хасах (checkbox мэт, ОЛОН сонголт).
+   * ⚠️ Дүрэм нь `lib/paymentFilter.mjs → togglePaymentValue()` (нэг эх
+   *    сурвалж — sidebar-ийн `togglePayments`-тай ЯГ ИЖИЛ) ✓
+   * ⚠️ `set('payments', …)` БИШ — өмнөх утга дээр тулгуурлана ✓
+   */
+  const togglePayment = (value) => setForm((f) => ({ ...f, payments: togglePaymentValue(f.payments, value) }));
+
   const changeCity = (city) => setForm((f) => ({ ...f, city, district: '', khoroo: '' }));
   const changeDistrict = (district) => setForm((f) => ({ ...f, district, khoroo: '' }));
 
@@ -754,6 +794,9 @@ export default function AddListingClient() {
       section: next,
       propertyType: '',
       attrs: {},
+      // 💳 Төлбөрийн нөхцөл (2026-10-03) — шинэ хэсэгт ХҮЧИНГҮЙ (ж: «Ажил»
+      //    хэсэгт лизинг гэж байхгүй) тул `attrs`-тай ХАМТ цэвэрлэнэ ✓
+      payments: [],
       // ⚠️ «Зарах / Түрээслэх» нь зөвхөн үл хөдлөхөд — бусад хэсэгт `sell` болж буцна ✓
       category: hasCategoryChoice(next) ? f.category : 'sell',
     }));
@@ -839,6 +882,19 @@ export default function AddListingClient() {
   const showRooms = hasRoomsFields(form.propertyType); // ← зөвхөн Орон сууц, АОС/хаус
   // «Угаалгын өрөө» — АОС/хаус төрөлд үргэлж, 3+ өрөөтэй орон сууцанд нэмж харагдана
   const showBathrooms = hasBathroomFields(form.propertyType, form.rooms);
+  /**
+   * 💳 «ТӨЛБӨРИЙН НӨХЦӨЛ» талбар харагдах эсэх (2026-10-03).
+   * ⚠️ ЗӨВХӨН «Үл хөдлөх зарна» (түрээслүүлнэ) ба «Автомашин зарна» хэсэгт —
+   *    хэрэглэгчийн хүсэлт («Төлбөрийн нөхцөлийг Үл хөдлөх зарна, Автомашин
+   *    зарна гэсэн дээр… гардаг болгоё»). Бусад хэсэгт лизинг/бартер гэсэн
+   *    ойлголт байхгүй тул форм дээр Ч ХАРАГДАХГҮЙ ✓ (нэг эх сурвалж:
+   *    `lib/paymentFilter.mjs → hasPaymentTerms`)
+   * ⚠️ Хэсэг солиход `pickSection` нь `form.payments`-ыг ЦЭВЭРЛЭНЭ — эс
+   *    бөгөөс «үл хөдлөх» дээр сонгосон лизинг «ажил» руу шилжихэд үлдэж,
+   *    хадгалалт дээр `paymentTermsForAttrs` нь `null` буцаасан ч форм дээр
+   *    харагдахгүй «далд» утга үлдэнэ ✗
+   */
+  const showPayments = hasPaymentTerms(form.section);
 
   /* ==========================================================================
      📱 МОБАЙЛ (<640px) — «АСУУЛГА БҮР НЭГ ДЭЛГЭЦ» (2026-10-02)
@@ -1014,6 +1070,17 @@ export default function AddListingClient() {
       title: `${f.icon ? `${f.icon} ` : ''}${f.label}`,
       group: 'attrs',
     }));
+    /**
+     * 💳 «Төлбөрийн нөхцөл» — 📱 мобайлд ӨӨРИЙН дэлгэцтэй (`required: true`).
+     * ⚠️ Дараалал нь DOM-той ИЖИЛ: аттрибутуудын дараа, «Талбай»-н өмнө ✓
+     * ⚠️ ЗӨВХӨН `showPayments` (үл хөдлөх/авто) — бусад хэсэгт дэлгэц нэмэхгүй ✓
+     */
+    if (showPayments) out.push({
+      key: 'payments',
+      title: '💳 Төлбөрийн нөхцөл',
+      group: 'payments',
+      required: !isEdit,
+    });
     if (isRealEstate) out.push({ key: 'area', title: 'Талбай (м²)', group: 'area' });
     if (showBathrooms) out.push({ key: 'bathrooms', title: 'Угаалгын өрөө', group: 'bathrooms' });
     if (showFloors && showApartment) out.push({ key: 'buildYear', title: 'Ашиглалтанд орсон он', group: 'floors-1' });
@@ -1049,17 +1116,44 @@ export default function AddListingClient() {
   const mobileLocBack = () => mobileStepBack(locScreens, mobileLocScreen, setMobileLocStep);
 
   /**
+   * 📱🖥 3-р алхмын «ЗААВАЛ» талбарын шалгалт — НЭГ ЭХ СУРВАЛЖ (2026-10-03).
+   *
+   * ⚠️ ЯАГААД ФУНКЦ ВЭ: 📱 `mobileDetailNext` (дэлгэц солих) ба 🖥
+   *    `validateStep('details')` (товч дарах / `firstInvalidStep`) хоёулаа
+   *    ЯГ ИЖИЛ дүрмийг мөрдөх ёстой — хоёр газарт тусад нь бичвэл нэг нь
+   *    мартагдаж, «дэлгэц дээр алдаа гарахгүй ч товч дарж болохгүй» (эсвэл
+   *    эсрэгээрээ) зөрүү үүснэ ✗
+   * ⚠️ `key` нь `detailScreens[].key` (`'title'`, `'payments'`, …) — зөвхөн
+   *    `required: true` талбарт дуудагдана ✓
+   *   • `title`  — «Зарын гарчиг» ЗААВАЛ (ШИНЭ зард: `isEdit` үед хуучин
+   *      зард гарчиг байхгүй байж болох тул шаардахгүй ✓)
+   *   • `payments` — «Төлбөрийн нөхцөл» ЗААВАЛ (мөн ШИНЭ зард л — хуучин
+   *      зарууд `attrs.payment_terms`-гүй ✓)
+   */
+  const requiredDetailMsg = (key) => {
+    if (key === 'title' && !isEdit && !String(form.title || '').trim()) {
+      return 'Зарын гарчигаа оруулна уу';
+    }
+    if (key === 'payments' && !isEdit && showPayments && !form.payments.length) {
+      return PAYMENT_REQUIRED_MSG;
+    }
+    return '';
+  };
+
+  /**
    * 📱 3-р алхмын «Дараагийн асуулт» — талбар бүр НЭГ ДЭЛГЭЦ (2026-10-02).
-   * ⚠️ Заавал талбар («Зарын гарчиг») хоосон бол ДАРААГИЙН ДЭЛГЭЦ РУУ ЯВАХГҮЙ ✗ —
-   *    `validateStep('details')`-тэй ИЖИЛ мессеж (нэг эх сурвалж) ✓
+   * ⚠️ Заавал талбар хоосон бол ДАРААГИЙН ДЭЛГЭЦ РУУ ЯВАХГҮЙ ✗ —
+   *    `validateStep('details')`-тэй ИЖИЛ мессеж (нэг эх сурвалж:
+   *    `requiredDetailMsg` ✓)
    * ⚠️ СҮҮЛИЙН дэлгэцээс цааш `goNext()` (дараагийн АЛХАМ): энэ салбар нь
    *    зөвхөн аюулгүйн зам — 📱 дээр сүүлийн дэлгэцэд wizard-ийн товч
    *    ХАРАГДАХГҮЙ (доорх `hide-below-sm`) ба хуучин «Үргэлжлүүлэх» л үлддэг ✓
    */
   const mobileDetailNext = () => {
     const cur = detailScreens[detailIdx];
-    if (cur && cur.required && !String(form.title || '').trim()) {
-      setError('Зарын гарчигаа оруулна уу');
+    const req = cur && cur.required ? requiredDetailMsg(cur.key) : '';
+    if (req) {
+      setError(req);
       return;
     }
     setError('');
@@ -1132,15 +1226,21 @@ export default function AddListingClient() {
     }
     if (key === 'details') {
       /**
-       * 🏷️ ЗАРЫН ГАРЧИГ (2026-10-02) — ШИНЭ ЗАРД ЗААВАЛ.
+       * 🏷️ ЗАРЫН ГАРЧИГ + 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — ШИНЭ ЗАРД ЗААВАЛ.
        * ⚠️ ЯАГААД ЗААВАЛ ВЭ: гарчиг нь зарын карт дээр үнийн доор харагддаг
        *    үндсэн мөр — хоосон орхивол карт дээр мөр ОГТ гарахгүй (0027) тул
-       *    «гарчиггүй» зар үүснэ ✗
-       * ⚠️ ЗАСАХ ГОРИМД ШААРДАХГҮЙ (`isEdit`): 0027 орохоос өмнөх зарууд дээр
-       *    (`null`) гарчиг БАЙХГҮЙ тул хуучин зарыг засахад хэрэглэгчийг
-       *    блоклохгүй ✓ (хүсвэл нэмж болно)
+       *    «гарчиггүй» зар үүснэ ✗; төлбөрийн нөхцөл нь хайлтын шүүлт
+       *    (jsonb `cs`) ажиллахын тулд ижил зар дээр БАЙХ ЁСТОЙ ✓
+       * ⚠️ ЗАСАХ ГОРИМД ШААРДАХГҮЙ (`isEdit`): 0027 орохоос өмнөх зарууд
+       *    дээр (`null`) гарчиг БАЙХГҮЙ тул хуучин зарыг засахад хэрэглэгчийг
+       *    блоклохгүй ✓ (хүсвэл нэмж болно; төлбөрийн нөхцөл ч мөн адил)
+       * ⚠️ Дүрэм нь `requiredDetailMsg()` (нэг эх сурвалж) — 📱 дэлгэц солих
+       *    шалгалттай ЗӨРӨХГҮЙ байхын тулд тэндээс дуудна ✓
+       * ⚠️ Дараалал нь 3-р алхмын ТАЛБАРУУДЫН дараалал (гарчиг → … →
+       *    төлбөрийн нөхцөл) — хэрэглэгч дээрээс доош бөглөж байгаатай ижил ✓
        */
-      if (!isEdit && !String(form.title || '').trim()) return 'Зарын гарчигаа оруулна уу';
+      const req = requiredDetailMsg('title') || requiredDetailMsg('payments');
+      if (req) return req;
       return '';
     }
     if (key === 'price') {
@@ -1272,6 +1372,17 @@ export default function AddListingClient() {
           const a = { ...(form.attrs || {}) };
           if (form.negotiable) a.negotiable = 'yes';
           else delete a.negotiable;
+          /**
+           * 💳 ТӨЛБӨРИЙН НӨХЦӨЛ (2026-10-03) — `attrs.payment_terms` МАССИВ.
+           * ⚠️ Дүрэм нь `paymentTermsForAttrs(section, payments)` (нэг эх
+           *    сурвалж): хэсэг дэмжихгүй (ж: «Ажил») эсвэл хоосон бол
+           *    `null` ⇒ түлхүүр УСТАНА. Ингэснээр «үл хөдлөх» дээр сонгосон
+           *    нөхцөл бусад хэсэг рүү шилжихэд `attrs`-д «үхсэн» утга
+           *    үлдэхгүй ✓ (`rooms: ''`, `area: ''`-тэй ижил зарчим)
+           */
+          const terms = paymentTermsForAttrs(form.section, form.payments);
+          if (terms) a.payment_terms = terms;
+          else delete a.payment_terms;
           return a;
         })(),
         price: form.price,
@@ -1820,6 +1931,67 @@ export default function AddListingClient() {
                     💻 Notebook-ийн үзүүлэлтүүд — заавал биш: дээрээс мэдэх хэсгээ л сонгоно уу
                   </p>
                 )}
+              </div>
+            )}
+
+            {/* ===== 💳 ТӨЛБӨРИЙН НӨХЦӨЛ (2026-10-03) =====
+                Хэрэглэгчийн хүсэлт: «Төлбөрийн нөхцөлийг Үл хөдлөх зарна,
+                Автомашин зарна гэсэн дээр хайх хэсэгт гардаг болгоё. Зар
+                оруулах үед хэрэглэгч үүнийг сонгож өгөх ёстой. Олон сонголт
+                хийж байгаа боломж…» ⇒ unegui.mn-ийн «Төлбөрийн нөхцөл»
+                checkbox блоктой ижил ЧИПҮҮД (ОЛОН сонголт — `aria-pressed`):
+                [💳 Хувь лизингээр] [💵 Бэлэн төлөлтөөр] [🏦 Банкны зээлээр]
+                [🔄 Бартер солирхоно]
+                ⚠️ Шошго/утга нь хайлтын sidebar-тай ЯГ ИЖИЛ
+                   (`lib/paymentFilter.mjs → PAYMENT_OPTIONS`) — нэг эх сурвалж ✓
+                ⚠️ ЗӨВХӨН `real-estate` ба `auto` хэсэгт (`showPayments`),
+                   📱 мобайлд ӨӨРИЙН дэлгэцтэй (`detailScreens` → `payments`),
+                   ШИНЭ ЗАРД ЗААВАЛ (`requiredDetailMsg` — мессеж нэг газар) ✓
+                ⚠️ `data-detail-field` / `data-detail-row` / `data-payment-value`
+                   нь 📱 CSS ба `scripts/cdp-*.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓ */}
+            {showPayments && (
+              <div
+                className="form-row-single"
+                data-form-row="details"
+                data-detail-row="payments"
+                data-mobile-active={detailRowActive('payments')}
+              >
+                <div
+                  className="form-group"
+                  data-detail-field="payments"
+                  data-mobile-active={detailFieldActive('payments')}
+                >
+                  <label>💳 Төлбөрийн нөхцөл</label>
+                  <div
+                    className="flex flex-wrap gap-1.5"
+                    data-payment-picker
+                    role="group"
+                    aria-label="Төлбөрийн нөхцөл"
+                  >
+                    {PAYMENT_OPTIONS.map((o) => {
+                      const on = form.payments.includes(o.value);
+                      return (
+                        <button
+                          key={o.value}
+                          type="button"
+                          aria-pressed={on}
+                          data-payment-value={o.value}
+                          onClick={() => togglePayment(o.value)}
+                          className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                        >
+                          {on && <span aria-hidden="true">✓</span>}
+                          <span aria-hidden="true">{o.icon}</span>
+                          {o.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="form-hint">
+                    {form.payments.length
+                      ? `✅ ${countPayments(form.payments)} нөхцөл сонгосон — хайлт дээр эдгээрийн АЛЬ НЭГ нь тохирох зарууд гарна`
+                      : 'Олон нөхцөл зэрэг сонгож болно (ж: «Хувь лизингээр» ба «Бартер солирхоно»)'}
+                  </p>
+                </div>
               </div>
             )}
 

@@ -52,6 +52,14 @@ import { DEFAULT_SORT, SORT_OPTIONS, normalizeSort } from '../lib/sortOptions.mj
 import {
   parseRoomList, roomsUrlValue, roomsFilterLabel, toggleRoomValue,
 } from '../lib/roomFilter.mjs';
+// 💳 ТӨЛБӨРИЙН НӨХЦӨЛ (2026-10-03) — ҮЛ ХӨДЛӨХ ЗАРНА ба АВТОМАШИН ЗАРНА
+//    хэсгийн «Дэлгэрэнгүй хайлт»-д ОЛОН СОНГОЛТТОЙ чипүүд (unegui.mn-ийн
+//    ☑ checkbox шиг). Цэвэр логик (утга/шошго/URL/`cs` шүүлт) нь
+//    `lib/paymentFilter.mjs` — UI, URL, DB бүгд тэр модулийг хэрэглэнэ ✓
+import {
+  PAYMENT_OPTIONS, countPayments, hasPaymentTerms, parsePaymentList,
+  paymentsFilterLabel, paymentsUrlValue, togglePaymentValue,
+} from '../lib/paymentFilter.mjs';
 
 // Нүүр хуудсны хайлтын анхдагч (хоосон) утга.
 // ⚠️ `khoroos` нь МАССИВ — хэрэглэгч ОЛОН хороог зэрэг сонгоно (unegui.mn-ийн
@@ -66,10 +74,16 @@ import {
 const EMPTY_FILTERS = {
   propertyType: '', rooms: [], city: '', district: '', khoroos: [], attrs: {},
   minPrice: '', maxPrice: '', minArea: '', maxArea: '',
+  // 💳 Төлбөрийн нөхцөл (2026-10-03) — «үл хөдлөх зарна» ба «автомашин зарна»
+  //    хэсэгт: ОЛОН СОНГОЛТТОЙ (`['lease','cash']`) — `lib/paymentFilter.mjs`.
+  //    ⚠️ Хоосон утга нь `''` БИШ `[]` (өрөөний тоотой ижил шалтгаан ✓)
+  payments: [],
 };
 
 /** Массив талбаруудыг ХУВААЛЦАХГҮЙ шинэ хоосон хайлт буцаана */
-const emptyFilters = () => ({ ...EMPTY_FILTERS, rooms: [], khoroos: [], attrs: {} });
+const emptyFilters = () => ({
+  ...EMPTY_FILTERS, rooms: [], khoroos: [], attrs: {}, payments: [],
+});
 
 /**
  * Шүүлт «хоосон» эсэх.
@@ -393,6 +407,12 @@ export default function HomeClient() {
     //    ⚠️ Хуучин НЭГ утгатай линк (`?rooms=3`) ч зөв уншигдана ✓
     //    ⚠️ Хүчингүй утгууд (`?rooms=abc`) ЧИМЭЭГҮЙ хасагдана (`parseRoomList`)
     if (sp.get('rooms')) next.rooms = parseRoomList(sp.get('rooms'));
+    // 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — ОЛОН СОНГОЛТ: `?payment=lease,cash`.
+    //    ⚠️ Хүчингүй утгууд (`?payment=abc`) ЧИМЭЭГҮЙ хасагдана
+    //       (`parsePaymentList` — зөвхөн `PAYMENT_VALUES` ✓)
+    //    ⚠️ Утга нь ASCII код (`lease`…`barter`) — кирилл биш тул линк
+    //       хуваалцахад ойлгомжтой, тогтвортой ✓
+    if (sp.get('payment')) next.payments = parsePaymentList(sp.get('payment'));
     // ⚠️ «Өрөө» талбаргүй төрөлд (ж: Худалдаа, үйлчилгээний талбай) өрөөний
     //    хайлт нь утгагүй тул хуучин линкээс ирсэн ч орхигдуулна.
     if (next.propertyType && !hasRoomsFields(next.propertyType)) next.rooms = [];
@@ -401,6 +421,10 @@ export default function HomeClient() {
       next.propertyType = '';
       next.rooms = [];
     }
+    // 💳 «Төлбөрийн нөхцөл» нь ЗӨВХӨН үл хөдлөх ба авто хэсэгт (`real-estate`,
+    //    `auto`) — бусад хэсэг рүү чиглэсэн ХУУЧИН/гараар бичсэн линк
+    //    (`?section=jobs&payment=lease`) ирвэл ЧИМЭЭГҮЙ орхигдуулна ✓
+    if (!hasPaymentTerms(secParam)) next.payments = [];
     // ---- ATTR шүүлтүүд — `?attr_brand=Toyota&attr_fuel=Хайбрид` ----
     const attrs = {};
     sp.forEach((value, key) => {
@@ -438,6 +462,10 @@ export default function HomeClient() {
         propertyType: filters.propertyType || undefined,
         // 🛏 ОЛОН СОНГОЛТ — `['1','3']`; хоосон бол шүүлт хийхгүй (`undefined`)
         rooms: filters.rooms.length ? filters.rooms : undefined,
+        // 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — ОЛОН СОНГОЛТ (`['lease','cash']`) — хоосон
+        //    бол `undefined` (шүүлт хийхгүй). `lib/queries.js` нь jsonb
+        //    containment (`cs`) ба OR болгож хөрвүүлнэ ✓
+        payments: filters.payments.length ? filters.payments : undefined,
         city: filters.city || undefined,
         district: filters.district || undefined,
         khoroos: filters.khoroos.length ? filters.khoroos : undefined,
@@ -532,6 +560,10 @@ export default function HomeClient() {
     // 🛏 ӨРӨӨНИЙ ТОО — ОЛОН СОНГОЛТ: `?rooms=1,3` (эсвэл `['5']` → `?rooms=5`)
     //    ⚠️ Хоосон үед БИЧИХГҮЙ (цэвэр линк ✓)
     if (filters.rooms.length) params.set('rooms', roomsUrlValue(filters.rooms));
+    // 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — ОЛОН СОНГОЛТ: `?payment=lease,cash`
+    //    ⚠️ Хоосон үед БИЧИХГҮЙ (цэвэр линк ✓); утга нь ASCII код тул
+    //       линк богино, хуваалцахад ойлгомжтой ✓
+    if (filters.payments.length) params.set('payment', paymentsUrlValue(filters.payments));
     // ⚠️ ATTR шүүлтүүд — `attr_brand=Toyota` (jsonb)
     Object.entries(filters.attrs || {}).forEach(([k, v]) => {
       if (v) params.set(`attr_${k}`, v);
@@ -595,6 +627,25 @@ export default function HomeClient() {
 
   /** 🛏 Сонгосон бүх өрөөг арилгах («✕ Цуцлах») */
   const clearRooms = () => setF('rooms', []);
+
+  /**
+   * 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — нэг дарж нэмэх/хасах (checkbox мэт, 2026-10-03).
+   * Хэрэглэгчийн хүсэлт: «Төлбөрийн нөхцөлийг Үл хөдлөх зарна, Автомашин
+   * зарна гэсэн дээр хайх хэсэгт гардаг болгоё … олон сонголт хийж байгаа
+   * боломж» → [💳 Хувь лизингээр] [💵 Бэлэн төлөлтөөр] … дарж
+   * `?payment=lease,cash` болно (OR — аль ч нөхцөлтэй зарууд ✓).
+   * ⚠️ Дүрэм нь `lib/paymentFilter.mjs → togglePaymentValue()` (нэг эх сурвалж):
+   *    шинэ массив буцаана, хүчингүй утгыг алгасна, давхцуулахгүй ✓
+   * ⚠️ 📄 1-р хуудас руу буцна — `toggleRooms`-той ижил шалтгаан ✓
+   */
+  const togglePayments = (value) => {
+    setPage(1);
+    setFilters((f) => ({ ...f, payments: togglePaymentValue(f.payments, value) }));
+  };
+
+  /** 💳 Сонгосон бүх нөхцөлийг арилгах («✕ Цуцлах») */
+  const clearPayments = () => setF('payments', []);
+
 
   /** ОЛОН ХОРОО — нэг дарж нэмэх/хасах (checkbox мэт) */
   const toggleKhoroo = (k) => {
@@ -662,7 +713,10 @@ export default function HomeClient() {
       setPage(1);
       // ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд
       setCategory((c) => (hasCategoryChoice(nextSection) && c !== 'all' ? c : 'all'));
-      setFilters((f) => ({ ...f, propertyType: '', rooms: [], attrs: {} }));
+      setFilters((f) => ({ ...f, propertyType: '', rooms: [], attrs: {}, payments: [] }));
+      // 💳 «Төлбөрийн нөхцөл» (2026-10-03) — шинэ хэсэгт ХҮЧИНГҮЙ (ж: «Ажил»
+      //    хэсэгт лизинг гэж байхгүй) тул хэсэг солих БҮРД цэвэрлэнэ ✓
+      //    ⚠️ `rooms` массив хоослохтой ЯГ ИЖИЛ хэв маяг (`[]`, `''` БИШ)
       // 🗂 өөр хэсэг = өөр бүлгүүд → accordion анхдагчдаа (хаалттай) ✓
       setGroupOpen(null);
       // ⚠️ 2026-09-27: `setFiltersOpen(false)` ХАСАГДСАН — панель үргэлж
@@ -803,6 +857,19 @@ export default function HomeClient() {
     && (!filters.propertyType || hasRoomsFields(filters.propertyType));
 
   /**
+   * 💳 ТӨЛБӨРИЙН НӨХЦӨЛ блок харагдах эсэх (2026-10-03) — ЗӨВХӨН
+   *   «Үл хөдлөх зарна» ба «Автомашин зарна» хэсэгт (хэрэглэгчийн хүсэлт:
+   *   «Төлбөрийн нөхцөлийг Үл хөдлөх зарна, Автомашин зарна гэсэн дээр
+   *   хайх хэсэгт гардаг болгоё»).
+   * ⚠️ Хэсэг сонгоогүй (`'all'`) үед ХАРАГДАХГҮЙ — тэр дэлгэцэнд бүх
+   *    хэсгийн зар холилдсон тул шүүлт утгагүй ✗
+   *    (`lib/paymentFilter.mjs → hasPaymentTerms`)
+   * ⚠️ `section` нь UI-ийн төлөв (URL-ийн `?section=…`) — breadcrumb/хэсэг
+   *    солих үед ч блок тэр даруй шинэчлэгдэнэ ✓
+   */
+  const showPayments = hasPaymentTerms(section);
+
+  /**
    * 🔢 ҮНИЙ хил (2026-09-30) — ХЭСГЭЭС хамаарна: 🏠 үл хөдлөх → 5 тэрбум,
    *   бусад → 500 сая.
    * ⚠️ Хил нь ЗӨВХӨН «хязгааргүй тал»-ыг тодорхойлоход хэрэглэгдэнэ (утга
@@ -939,6 +1006,9 @@ export default function HomeClient() {
     //    (`1, 2 өрөө` / `+5 өрөө` / `1, 5+ өрөө`) — хэдэн шүүлт тавснаа
     //    чип дээрээс шууд харна ✓. ⚠️ Шошго нь `lib/roomFilter.mjs` (нэг эх сурвалж)
     if (filters.rooms.length) chips.push({ key: 'rooms', label: `🛏 ${roomsFilterLabel(filters.rooms)}` });
+    // 💳 Төлбөрийн нөхцөл (2026-10-03) — сонгосон нөхцөлүүдийг БҮТНЭЭР
+    //    харуулна («Хувь лизингээр, Бэлэн төлөлтөөр») — чип дээрээс шууд харна ✓
+    if (filters.payments.length) chips.push({ key: 'payments', label: `💳 ${paymentsFilterLabel(filters.payments)}` });
     if (filters.city) chips.push({ key: 'city', label: `🏙 ${filters.city}` });
     if (filters.district) chips.push({ key: 'district', label: `📍 ${filters.district}` });
     // ⚠️ Хороо: 1 сонгосон бол нэрийг, олон бол «N хороо» гэж товчлон харуулна
@@ -977,7 +1047,7 @@ export default function HomeClient() {
       return;
     }
     if (key.startsWith('attr_')) { setAttr(key.slice(5), ''); return; }
-    setF(key, key === 'khoroos' || key === 'rooms' ? [] : '');
+    setF(key, key === 'khoroos' || key === 'rooms' || key === 'payments' ? [] : '');
   };
 
   // ---- ⚙️ «Дэлгэрэнгүй хайлт» панель — МОБАЙЛ дээр АВТОМАТААР НЭЭГДЭХГҮЙ ----
@@ -1808,6 +1878,72 @@ export default function HomeClient() {
                         <button
                           type="button"
                           onClick={clearRooms}
+                          className="self-start text-[12px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                        >
+                          ✕ Цуцлах
+                        </button>
+                      )}
+                    </div>
+                  </SideBlock>
+                )}
+
+                {/* ===== 💳 ТӨЛБӨРИЙН НӨХЦӨЛ (2026-10-03) =====
+                    Хэрэглэгчийн хүсэлт: «Төлбөрийн нөхцөлийг Үл хөдлөх
+                    зарна, Автомашин зарна гэсэн дээр хайх хэсэгт гардаг
+                    болгоё … олон сонголт хийж байгаа боломж» ⇒
+                    unegui.mn-ийн «Төлбөрийн нөхцөл» ☑ checkbox блоктой
+                    ижил: [💳 Хувь лизингээр] [💵 Бэлэн төлөлтөөр]
+                    [🏦 Банкны зээлээр] [🔄 Бартер солирхоно]
+                    ⚠️ ЗӨВХӨН `real-estate` ба `auto` хэсэгт (`showPayments`)
+                       — ажил/компьютер/бараа/үйлчилгээнд лизинг гэж байхгүй ✓
+                    ⚠️ Шүүлт нь `?payment=lease,cash` → `lib/queries.js` →
+                       `applyPaymentFilter()` (jsonb `cs` + OR) ✓
+                    ⚠️ `data-payment-filter` / `data-payment-value` нь
+                       `scripts/cdp-payments.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓ */}
+                {showPayments && (
+                  <SideBlock label="💳 Төлбөрийн нөхцөл">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[12px] font-semibold text-gray-500">
+                        Нөхцөл
+                        {filters.payments.length > 0 && (
+                          <span className="ml-1.5 rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
+                            {countPayments(filters.payments)} сонгосон
+                          </span>
+                        )}
+                      </span>
+                      <div
+                        className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
+                        data-payment-filter
+                        role="group"
+                        aria-label="Төлбөрийн нөхцөл"
+                      >
+                        <div className="flex flex-wrap gap-1.5">
+                          {PAYMENT_OPTIONS.map((o) => {
+                            const on = filters.payments.includes(o.value);
+                            return (
+                              <button
+                                key={o.value}
+                                type="button"
+                                aria-pressed={on}
+                                data-payment-value={o.value}
+                                onClick={() => togglePayments(o.value)}
+                                className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                              >
+                                {on && <span aria-hidden="true">✓</span>}
+                                <span aria-hidden="true">{o.icon}</span>
+                                {o.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <p className="text-[11.5px] leading-snug text-gray-500">
+                        Олон нөхцөл зэрэг сонгож болно — аль нэг нь тохирох зарууд гарна
+                      </p>
+                      {filters.payments.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={clearPayments}
                           className="self-start text-[12px] font-semibold text-gray-500 hover:text-primary hover:underline"
                         >
                           ✕ Цуцлах

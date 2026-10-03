@@ -845,6 +845,21 @@ Node дээр `chrome --headless=new --remote-debugging-port=9335` + `WebSocket`
   `test:format`) · `docs/IMPROVEMENTS.md` (энэ мөр)
   🔍 Хайх үг: `listingTitle`, `MAX_LISTING_TITLE_LENGTH`, `0027_listing_title.sql`,
   `Зарын гарчиг`
+- **💳 «ТӨЛБӨРИЙН НӨХЦӨЛ» (`attrs.payment_terms`) — 3-Р АЛХАМД ЧИП + ШИНЭ ЗАРД
+  ЗААВАЛ (2026-10-03 (5))** — 4 кодтой `jsonb` **массив** (`lease`/`cash`/`loan`/
+  `barter`; шошго: 💳 Хувь лизингээр · 💵 Бэлэн төлөлтөөр · 🏦 Банкны зээлээр ·
+  🔄 Бартер солирхоно). Форм нь 🏠 үл хөдлөх ба 🚗 авто дээр л харагдана
+  (`hasPaymentTerms`) — ⚠️ `attrs` биш **тусдаа түлхүүр** (`attrs.payment_terms`),
+  migration ШААРДЛАГАГҮЙ ✓. ⚠️ `paymentTermsForAttrs()` нь дэмжигдэхгүй/хоосон үед
+  `null` буцааж түлхүүрийг **УСТГАНА** (хоосон массив үлдэхгүй ✓). 📱 Мобайлд тусдаа
+  дэлгэц (`detailScreens`: гарчиг → аттр\* → **💳 төлбөр** → талбай → …) ба
+  `requiredDetailMsg('payments')` → «Төлбөрийн нөхцөл сонгоно уу» (засах горимд
+  ШААРДАХГҮЙ ✓). 🧪 `test:payments` **35 тест ✓** · `test:detail-wizard` (📱 8 мөр,
+  `payments` дэлгэц, `data-detail-field="payments"`) ✓ · `cdp:payments` **52 OK** ✓
+  📄 DOC: `README.md` (sidebar хүснэгт + ASCII + «💳 ТӨЛБӨРИЙН НӨХЦӨЛ» хэсэг +
+  скрипт хүснэгт) · `docs/IMPROVEMENTS.md` (энэ мөр)
+  🔍 Хайх үг: `paymentFilter`, `PAYMENT_OPTIONS`, `applyPaymentFilter`,
+  `data-payment-value`, `payment_terms`
 - **🛡️ 💻 «БАТАЛГААТ ХУГАЦАА» (`warranty`, label нь «Баталгаа» — Байгаа / Байхгүй)
   ТАЛБАР БҮРЭН ХАСАГДАВ (2026-10-01, 18 дахь засвар)** — хэрэглэгчийн хүсэлт:
   «Баталгаат хугацаа ч билүү тэрийг хассан шүү». ⚠️ Талбар нь `lib/locationData.js`-ийн
@@ -1047,7 +1062,7 @@ E.164 болгоно.
 | **Hero** | **Панорама зурагтай** толгой (`public/hero-ub.jpg` + хар overlay, **текстгүй** — зөвхөн хайлтын мөр) |
 | **Breadcrumb** | «Бүх зар › Үл хөдлөх › …» — **үргэлж** харагдана |
 | **Категори + Төрөл** | Зарах/Түрээслэх таб, дараа нь төрлийн табууд (зарын тоо бүхий) — **зөвхөн төрөл сонгоогүй үед** |
-| **Sidebar (зүүн)** | Байршил · **🛏 Өрөөний тоо** · Үнэ, ₮ · Талбай, м² (**доод/дээд тоо — цэгээр тусгаарлагдана**) — **зөвхөн төрөл сонгосон үед** гарна (`lg:sticky`). 🆕 **2026-10-03 (4): «🛏 Өрөөний тоо» блок БУЦАЖ ИРЭВ** — «Үнэ, ₮»-ний **ДЭЭР**, Хорооны блоктой ижил `chip-toggle` чипүүд (1 өрөө … +5 өрөө) ✓ (⏳ 2026-09-30 (4)-д хасагдсан байсан; зөвхөн өрөөтэй төрөлд — `hasRoomsFields`) |
+| **Sidebar (зүүн)** | Байршил · **🛏 Өрөөний тоо** · **💳 Төлбөрийн нөхцөл** · Үнэ, ₮ · Талбай, м² (**доод/дээд тоо — цэгээр тусгаарлагдана**) — **зөвхөн төрөл сонгосон үед** гарна (`lg:sticky`). 🆕 **2026-10-03 (4): «🛏 Өрөөний тоо» блок БУЦАЖ ИРЭВ** — «Үнэ, ₮»-ний **ДЭЭР**, Хорооны блоктой ижил `chip-toggle` чипүүд (1 өрөө … +5 өрөө) ✓ (⏳ 2026-09-30 (4)-д хасагдсан байсан; зөвхөн өрөөтэй төрөлд — `hasRoomsFields`) · 🆕 **2026-10-03 (5): «💳 Төлбөрийн нөхцөл» НЭМЭГДЭВ** — «Өрөөний тоо»-ны дараа, «Үнэ, ₮»-ний ӨМНӨ; зөвхөн **үл хөдлөх + авто** дээр (`hasPaymentTerms`) |
 | **Үр дүн (баруун)** | `<h1>` гарчиг + НИЙТ ТОО · идэвхтэй шүүлтийн чипүүд · картууд. ⚠️🗑 **өрөөний ЧИП МӨР (гарчиг доорх) ч 2026-09-30 (4)-д ХАСАГДАВ** |
 
 ```
@@ -1066,6 +1081,11 @@ E.164 болгоно.
 │ 🛏 Өрөөний тоо  [2 сонгосон] ← ҮНЭ-ний ДЭЭР │                               │
 │  [✓1 өрөө][2 өрөө][✓3 өрөө][4 өрөө][+5 өрөө]│                               │
 │  ✕ Цуцлах                                   │                               │
+│ ─────────────────────────────────────────── │                               │
+│ 💳 Төлбөрийн нөхцөл  [2 сонгосон]           │                               │
+│ [✓Хувь лизингээр][✓Бэлэн төлөлтөөр]         │                               │
+│   [… Банкны зээлээр][Бартер солирхоно]      │                               │
+│ ✕ Цуцлах  ← 🆕 2026-10-03 (5) ЗӨВХӨН 🏠🚗  │                               │
 │ ─────────────────────────────────────────── │                               │
 │ Үнэ, ₮                                      │                               │
 │  [Доод 3.000.000][Дээд 12.000.000]          │                               │
@@ -1114,6 +1134,7 @@ Sidebar нь `SideBlock` (дээрээ гарчиг + доор нь оролту
 | **Толгой** | **Голлосон** «🔍 Хайлт» + түүний хажууд **`activeFilterCount`** badge (зөвхөн идэвхтэй хайлт байвал). «✕ Хаах» товч (мобайл) нь `absolute right-3` — голыг хөдөлгөхгүй |
 | **Байршил** | `Хот/Аймаг` (select) → `Дүүрэг/Сум` (select, **НЭГ** сонголт) → `Хороо` (**ОЛОН** сонголттой чип, сонгосон дүүрэгт, скроллтой) |
 | **🛏 Өрөөний тоо** | 🆕 **2026-10-03 (4)-д ЭРГЭЖ ИРЭВ** (⏳ 2026-09-30 (4)-д түр хасагдсан байв) — `showRooms`, `ROOM_OPTIONS`, `toggleRoomValue`, `toggleRooms`/`clearRooms`, «N сонгосон» badge, «✕ Цуцлах» бүгд буцаж ирэв ✓. ⚠️ Байрлал: sidebar-д **«Үнэ, ₮»-ний ДЭЭР** (хэрэглэгчийн хүсэлт), ЭХНИЙ блок нь **«Байршил»** хэвээр · Хорооны блоктой ижил `chip-toggle` чипүүд · зөвхөн өрөөтэй төрөлд (`hasRoomsFields`) — доорх «🛏 ӨРӨӨНИЙ ТОО» хэсгийг үзнэ үү |
+| **💳 Төлбөрийн нөхцөл** | 🆕 **2026-10-03 (5)-д НЭМЭГДЭВ** — `showPayments` (= `hasPaymentTerms(propertyType)` → **зөвхөн үл хөдлөх + авто**), `PAYMENT_OPTIONS` (4 чип: 💳/💵/🏦/🔄), `togglePaymentValue`, «N сонгосон» badge, «✕ Цуцлах» · ⚠️ Байрлал: **«Өрөөний тоо»-ны ДАРАА, «Үнэ, ₮»-ний ӨМНӨ** (unegui.mn-тэй ижил); URL `?payment=lease,cash` → DB `attrs=cs.{"payment_terms":["lease"]}` / 2+ утга `or=(…)` — доорх «💳 ТӨЛБӨРИЙН НӨХЦӨЛ» хэсгийг үзнэ үү |
 | **Үнэ, ₮** | `RangeInput` — **«Доод / Дээд»** хоёр тоон оролт (2026-09-30 (3): өмнөх «Эхлэх / Дуусах» нэр солигдов); бичих ЯВЦАД тоо нь **цэгээр тусгаарлагдана** («3.000.000») + шүүлт идэвхтэй үед «₮250 сая – ₮2 тэрбум» шошго + ✕ арилгах — ⚠️ **«санал болгосон тоо» товч БАЙХГҮЙ** (хасагдсан ✓) |
 | **Талбай, м²** | Мөн `RangeInput` (`mode="decimal"`) → «75,5» монгол бутархайг зөвшөөрч, бүхэл хэсгийг нь цэгээр бүлэглэнэ («1.234,5» ✓) |
 
@@ -1182,6 +1203,69 @@ Sidebar нь `SideBlock` (дээрээ гарчиг + доор нь оролту
 > badge-тай, ижил мөр нь үр дүнгийн гарчиг доор ч гардаг байв — тэр UI ХАСАГДАВ.
 > `.chip-toggle` систем нь хорооны чип дээр хэвээр ашиглагдана ✓
 
+
+### 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — олон сонголттой чип + `attrs.payment_terms` jsonb (🆕 2026-10-03 (5))
+
+> **ХҮСЭЛТ (2026-10-03):** «Үл хөдлөх зарна / Автомашин зарна дээр **«Төлбөрийн
+> нөхцөл»** гэсэн ОЛОН сонголттой шүүлт нэмээрэй (unegui.mn шиг: Хувь лизингээр ·
+> Бэлэн төлөлтөөр · Банкны зээлээр · Бартер солирхоно), бас зар оруулах үед
+> энийг **ЗААВАЛ** сонгуулдаг болгоорой» → ① хайлтын sidebar-д блок
+> ② 3-р алхамд (📋 Дэлгэрэнгүй) чипүүд ③ **шинэ зард ЗААВАЛ** ✓
+
+```
+💳 Төлбөрийн нөхцөл  [2 сонгосон]                    ← «Хороо»/«Өрөө»-тэй ИЖИЛ хэв маяг
+┌─────────────────────────────────────────────────┐
+│ [✓💳 Хувь лизингээр] [✓💵 Бэлэн төлөлтөөр]        │
+│ [🏦 Банкны зээлээр] [🔄 Бартер солирхоно]         │
+└─────────────────────────────────────────────────┘
+✕ Цуцлах
+```
+
+⚠️ **ЗӨВХӨН 2 ХЭСЭГТ** харагдана: 🏠 **Үл хөдлөх** ба 🚗 **Авто** (`hasPaymentTerms`;
+ажил/компьютер/тавилга … дээр блок ОГТ БАЙХГҮЙ ✗). ⚠️ Sidebar нь PROGRESSIVE
+DISCLOSURE тул зөвхөн **төрөл сонгосон** үед л гарна (`?section=auto` гэж
+`&type=`-гүй орвол `<aside>` ч байхгүй ✓)
+
+| Дэлгэрэнгүй | Тайлбар |
+|---|---|
+| Хадгалалт | **`attrs.payment_terms`** — `jsonb` **массив**, утга нь **ASCII код** (`lease` · `cash` · `loan` · `barter`) ⇒ DB-д монгол үсэг хадгалахгүй, шошгыг UI бүрд `PAYMENT_OPTIONS`-оос авна ✓ |
+| URL | `?payment=lease,cash` — **канон дараалал** (сонголтын дараалал), давхардал/хоосон утга хасна; `?payment=abc, LEASE` → `abc` ЧИМЭЭГҮЙ хасагдаж `lease` болж нормчлогдоно ✓ |
+| Query | `lib/queries.js → applyPaymentFilter(query, payments)`: **1 утга** → `attrs=cs.{"payment_terms":["lease"]}` · **2+** → `or=(attrs.cs.{"payment_terms":["lease"]},attrs.cs.{"payment_terms":["cash"]})` — шүүлт байхгүй бол `attrs.cs.` ОГТ ЯВАХГҮЙ ✓ |
+| ⚠️ JSONB 2 ДҮРЭМ | ① `cs` (**contains**) ашиглана — `attrs.payment_terms` нь МАССИВ тул `->>` тохирохгүй ✗ ② `.or()`-ийн мөрөнд **таслал нь тусгаарлагч** ⇒ нөхцөл бүр **ЯГ НЭГ ЭЛЕМЕНТТЭЙ** массив байх ЁСТОЙ; `["lease","cash"]` гэж илгээвэл PostgREST **`22P02`** алдаа өгнө ✗ (CDP тест үүнийг бодит query мөрөөр шалгана ✓) |
+| Шошго | `paymentsFilterLabel(['lease','cash'])` → «💳 Хувь лизингээр, Бэлэн төлөлтөөр» — идэвхтэй чип ба «N сонгосон» badge НЭГ функцийг дуудна ✓ |
+| Цэвэрлэх 3 зам | ① чип toggle ② блокийн «✕ Цуцлах» ③ үр дүнгийн доорх идэвхтэй чип (`✕`) — гурвуулаа URL-аас `payment=`-г хасна ✓ |
+| Хэсэг солих | `?section=jobs&payment=lease` → ажил дээр payment **ИГНОРХИЙГДЭНЭ** (URL цэвэр, DB query-д `attrs.cs.` огт явахгүй) ✓ |
+| Форм (3-р алхам) | Мөн ижил чипүүд + «N сонгосон» + «✕ Цуцлах»; 📱 мобайлд **тусдаа дэлгэц** (`detailScreens` дараалал: гарчиг → аттр\* → **💳 төлбөр** → талбай → …) ✓ |
+| **ЗААВАЛ** | Шинэ зард (`!isEdit`) сонголт хоосон бол 3-р алхам **хөдлөхгүй** ✗ — `requiredDetailMsg('payments')` → «Төлбөрийн нөхцөл сонгоно уу»; засах горимд ШААРДАХГҮЙ (хуучин зарууд `attrs.payment_terms`-гүй байж болно ✓) |
+| DB migration | **ШААРДЛАГАГҮЙ** ✓ — `attrs` нь аль хэдийн `jsonb` (0003) тул зөвхөн түлхүүр нэмэгдэж байна |
+
+> ✅ **НЭГ ЭХ СУРВАЛЖ:** `lib/paymentFilter.mjs` — `PAYMENT_VALUES`/`PAYMENT_OPTIONS`
+> (шошго + icon), `normalizePaymentValue`, `isPaymentValue`, `parsePaymentList`,
+> `togglePaymentValue`, `paymentsUrlValue`, `paymentsFilterLabel`,
+> `paymentsFilterDescriptor`, `applyPaymentFilter`, `hasPaymentTerms`,
+> `paymentTermsForAttrs`; `getAttrRows` (`lib/locationData.js`) дээр
+> **«💳 Төлбөрийн нөхцөл»** мөр нэмэгдсэн (зарын дэлгэрэнгүй хуудсанд харагдана ✓)
+> · Хайлт (`HomeClient.jsx`), форм (`AddListingClient.jsx`), URL, DB (`queries.js`)
+> бүгд тэр модулийг дуудна — дүрэм НЭГ газар ✓
+> ⚠️ `paymentTermsForAttrs` нь дэмжигдэхгүй/хоосон үед **`null`** буцаана ⇒
+> `attrs.payment_terms` түлхүүр нь **УСТГАГДАНА** (хоосон массив үлдэхгүй) ✓
+>
+> 🧪 **ТЕСТ:** `npm run test:payments` → **35 тест ✓** (цэвэр модуль + эх файлын
+> гэрээ: `hasPaymentTerms` · `normalizePaymentValue`/`isPaymentValue` ·
+> `parsePaymentList` · `paymentsUrlValue` · `countPayments`/`isPaymentsEmpty` ·
+> `paymentOptionLabel`/`Icon` · `paymentsFilterLabel` · `togglePaymentValue` ·
+> `paymentsFilterDescriptor` · `paymentContainsJson` · `applyPaymentFilter`
+> (contains vs or, таслалын аюулгүй байдал) · `paymentTermsForAttrs` ·
+> `getAttrRows` 4 тохиолдол ✓)
+> 🐍 `npm run cdp:payments` → ✅ **52 OK, 0 FAIL** (бодит Chrome-д батлагдсан):
+> үл хөдлөх/авто дээр чип 4 байгаа ба ажил/компьютер/«Бүх зар» дээр блок 0 ·
+> блок «Өрөөний тоо»-ны дараа «Үнэ»-ний өмнө · чип дарж `?payment=lease` →
+> DB `attrs=cs.{"payment_terms":["lease"]}` · 2 чип дарж
+> `or=(…)` ба «2 сонгосон» · ⚠️ массив БҮР ЯГ 1 элементтэй (`22P02`-оос сэргийлнэ) ·
+> toggle · «✕ Цуцлах» · «✕» идэвхтэй чип · хуучин линк нормчлол (`abc, LEASE`) ·
+> хэсэг солиход цэвэрлэгдэх · breadcrumb · мобайл 390px overflow 0 · exception 0
+> ⚠️ **Ажиллуулахын өмнө:** `npm run build && npm run start` + Chrome
+> `--remote-debugging-port=9222` (Chrome байхгүй бол зөвхөн `npm run test:payments` ✓)
 
 ### 🔢 ТООНЫ ХҮРЭЭ — «дээд/доод» нь ЦЭГЭЭР тусгаарлагдана + ЭРЭМБЭЛЭЛТ (2026-09-30)
 
@@ -3511,6 +3595,7 @@ npm run test:phone       # 📞 утасны дугаараар хайх дүр�
 npm run test:format      # 💰 үнэ/мянгатын таслалт + 🤝 «Үнэ тохирно» (20 тест, 0₮)
 npm run test:filters     # 🔎 attrFilters-ийн гэрээ + 🧳 travel/🧺 home/🛋️ furniture/⚡ electric/⚽ hobby хялбар форм + 🆕 💻 Notebook-ийн 📺/⚙️/🧠/💾 сонголт + 🆕 🔧 хөдөлгүүр/🎨 өнгө (+ 🎨 өнгө нь «Загвар»-ын дараа — форм/sidebar/карт) + 🆕 🛡️ 💻 «Баталгаа» (`warranty`) ХАСАГДАВ + 🆕 📋 `getAttrRows` (зарын дэлгэрэнгүй 2 багана) + 🆕 «Шинэ / Шинэвтэр / Хуучин» (condition ЯГ 3 сонголттой, «Шинэвтэр» дунд) (87 тест, 0₮)
 npm run test:rooms       # 🛏🗑 ӨРӨӨНИЙ ТОО — UI ХАСАГДСАН, URL/DB/breadcrumb ХЭВЭЭР (44 тест, 0₮) ✓
+npm run test:payments    # 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — чип/URL/DB (jsonb `cs`) + формд ЗААВАЛ (35 тест, 0₮) ✓
 npm run test:search      # 🔢 тооны хүрээ (цэгээр бүлэглэлт) + 🔀 эрэмбэлэлт (49 тест, 0₮)
 npm run test:choices     # 🎡 МОБАЙЛ ДУГУЙ (iOS Timer) — тоон жагсаалт/дараалал/гэрээ (32 тест, 0₮)
 npm run test:wheel       # 🎡 дугуйны SSR рендэр — 27/48 мөр, `aria-selected`, 📱390/🖥1440 (10 тест, 0₮)
@@ -3518,6 +3603,9 @@ npm run cdp:wheel        # 🐍 БОДИТ Chrome (:9222) дээр 📱 дугу
                          #   ⚠️ Форм нь НЭВТЭРСЭН хэрэглэгчид харагддаг тул профайл нь
                          #   нэвтэрсэн байх ёстой; CDP/сесс байхгүй бол SKIP (exit 0) ✓
 npm run cdp:rooms        # 🐍 БОДИТ Chrome (:9222) дээр өрөөний ЧИП (UI + URL + DB) — 44 шалгалт ✓
+npm run cdp:payments     # 🐍 БОДИТ Chrome (:9222) дээр 💳 төлбөрийн ЧИП (UI + URL + DB) — 52 шалгалт ✓
+                         #   ⚠️ jsonb `attrs=cs.{"payment_terms":["lease"]}` ба OR-ийн
+                         #   мөрөнд массив БҮР ЯГ 1 элементтэй (`22P02`-оос сэргийлнэ ✓)
 npm run cdp:range        # 🐍 БОДИТ Chrome (:9222) дээр тооны хүрээ (цэгээр бүлэглэлт)/эрэмбэлэлт — 33 шалгалт
                          #   («Доод / Дээд» шошго + «санал болгосон тоо» 0 гэдгийг ч шалгана ✓)
                          #   ⚠️ `cdp:*` нь `npm run build && npm run start` (:3000) ба
@@ -3773,6 +3861,9 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 | `scripts/test-youtube.mjs` | **18 тест** — `npm run test:youtube` |
 | `scripts/cdp-rooms.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:rooms` (🆕 2026-10-03 (4): өрөөний **UI ЭРГЭЖ ИРСЭН** тул шалгалтууд ч шинэчлэгдэв — ① Орон сууц дээр `[data-room-filter]` **1** + `[data-room-value]` **5** («1 өрөө» … «+5 өрөө») ② «Өрөөний тоо» блок нь **«Үнэ, ₮»-ний ӨМНӨ** (`aside .divide-y > div` дарааллаар) ③ чип дарж `?rooms=1,3` → DB `rooms=in.(1,3)` + «2 сонгосон» badge + toggle ④ «✕ Цуцлах» → бүх сонголт арилж URL/DB цэвэр ⑤ «Оффис»/төрөл сонгоогүй үед блок БАЙХГҮЙ (`hasRoomsFields`) ⑥ `rooms=` агуулсан `HEAD` query ОГТ ЯВАХГҮЙ (зарын тоо хасагдсан хэвээр) ⑦ **ХУУЧИН линк ХЭВЭЭР:** `?rooms=1,3` → `in.(1,3)` · `?rooms=4,5` → `gte.4` · `?rooms=5` → `gte.5` · `?rooms=abc,3,9` → URL `rooms=3,5` + `or=(rooms.in.(3),rooms.gte.5)` ⑧ breadcrumb «1, 3 өрөө» + «Үл хөдлөх» линкээр `clearType` ⑨ идэвхтэй чип `🛏 1, 3 өрөө` ✕ дарж цэвэрлэх ⑩ мобайл 390px — чипүүд харагдана, overflow 0, JS exception 0 — ⚠️ сервер :3000 ба Chrome :9222 шаардна) |
 | `scripts/cdp-range.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:range` (2026-09-30 (3): 🔢 тооны хүрээний **33 шалгалт** — бичих ЯВЦАД цэг (`3000000` → `3.000.000`), ⏎/blur = 1 query, Esc буцаалт, талбай `1.234,5`, **🗑 «санал болгосон тоо» товч DOM-д 0**, **🏷 `placeholder` = «Доод / Дээд»** ба **`aria-label` = «Үнэ (доод хязгаар)» / «Үнэ (дээд хязгаар)»**, «Эхлэх / Дуусах» гэсэн үг DOM-д БАЙХГҮЙ, ✕ арилгах, оны хүрээ `attrs->>year`, `?sort=` → `order`, hero 13 option, слайдер БАЙХГҮЙ — ⚠️ сервер :3000 ба Chrome :9222 шаардна) |
+| `lib/paymentFilter.mjs` | 💳 **«Төлбөрийн нөхцөл» (цэвэр функцууд, 🆕 2026-10-03 (5))** — `PAYMENT_VALUES`/`PAYMENT_OPTIONS` (код + шошго + icon: `lease`/`cash`/`loan`/`barter`) · `normalizePaymentValue`/`isPaymentValue` · `parsePaymentList`/`paymentsUrlValue`/`togglePaymentValue` · `countPayments`/`isPaymentsEmpty` · `paymentOptionLabel`/`paymentOptionIcon` · `paymentsFilterLabel`/`paymentsFilterDescriptor` · `paymentContainsJson`/`applyPaymentFilter` (⚠️ `.or()`-д нөхцөл бүр **ЯГ 1 ЭЛЕМЕНТТЭЙ** массив) · `hasPaymentTerms` (шүүлт/блок харагдах эсэх) · `paymentTermsForAttrs` (форм → `attrs.payment_terms`, хоосон/дэмжигдэхгүй → **`null`** ⇒ түлхүүр УСТГАГДАНА) — ⚠️ React/`window`-оос ХАМААРАЛГҮЙ тул `test-payments` нь рендэргүйгээр шалгана ✓ |
+| `scripts/cdp-payments.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:payments` (🆕 2026-10-03 (5): 💳 **төлбөрийн нөхцөлийн 52 шалгалт** — ① 🏠 Орон сууц дээр `[data-payment-filter]` **1** + `[data-payment-value]` **4** (`lease,cash,loan,barter`) ба шошго нь «Хувь лизингээр · Бэлэн төлөлтөөр · Банкны зээлээр · Бартер солирхоно» ② блок нь **«Өрөөний тоо»-ны ДАРАА, «Үнэ, ₮»-ний ӨМНӨ** (`aside .divide-y > div` дарааллаар) ③ чип дарж `?payment=lease` → DB **`attrs=cs.{"payment_terms":["lease"]}`** (⚠️ `->>` БИШ) ④ 2 чип → `or=(attrs.cs.{…["lease"]},attrs.cs.{…["cash"]})` + «2 сонгосон» badge ба ⚠️ **нөхцөл бүр ЯГ 1 ЭЛЕМЕНТТЭЙ массив** (`22P02`-оос сэргийлнэ) ⑤ дахин дарж toggle · «✕ Цуцлах» · «✕» идэвхтэй чип ⑥ 🚗 Авто дээр ч чипүүд (⚠️ `&type=` ЗААВАЛ — progressive disclosure) ба ⛔ Ажил/Компьютер/«Бүх зар» дээр блок **0** ⑦ **хуучин линк** нормчлогдоно (`?payment=abc, LEASE` → зөвхөн `lease`) ⑧ хэсэг солиход `payment=` ИГНОРХИЙГДЭНЭ (URL/DB цэвэр) ⑨ breadcrumb «Үл хөдлөх» линк ⑩ 📱 мобайл 390px — чипүүд харагдана, **overflow 0**, JS exception **0** — ⚠️ сервер :3000 ба Chrome :9222 шаардна) |
+| `scripts/test-payments.mjs` | 🆕 **35 тест** — `npm run test:payments` (2026-10-03 (5): 💳 төлбөрийн нөхцөлийн гэрээг хамгаална — ① `lib/paymentFilter.mjs`-ийн цэвэр функцууд: `hasPaymentTerms` (зөвхөн `real-estate`/`auto` ✓) · `normalizePaymentValue`/`isPaymentValue` (trim + lowercase) · `parsePaymentList` (эвдэрсэн утга хасч, КАНОН дараалал) · `paymentsUrlValue` · `countPayments`/`isPaymentsEmpty` · `paymentOptionLabel`/`Icon` · `paymentsFilterLabel` · `togglePaymentValue` · `paymentsFilterDescriptor` ② `paymentContainsJson` ба `applyPaymentFilter` нь fake PostgREST builder-ээр: **1 утга → `attrs=cs.{"payment_terms":["x"]}`**, **2+ → `or=(…)`**, ⚠️ **`["a","b"]` гэсэн ХОЁР ЭЛЕМЕНТТЭЙ массив ХЭЗЭЭ Ч ЯВАХГҮЙ** (таслал `.or()`-ийг эвдэж `22P02` өгнө ✗) ③ `paymentTermsForAttrs` (дэмжигдэхгүй/хоосон → `null`) ④ `getAttrRows` — 💳 мөр зарын дэлгэрэнгүйд гарна (4 тохиолдол) ⑤ `lib/queries.js`/`HomeClient.jsx`/`AddListingClient.jsx`/`cdp-payments.mjs`/`package.json` дээрх ЭХ ФАЙЛЫН ГЭРЭЭ (regex) ✓) |
 | `scripts/test-rooms.mjs` | **44 тест** — `npm run test:rooms` (🆕 2026-10-03 (4): өрөөний **UI ЭРГЭЖ ИРСНИЙ** гэрээг хамгаална — `codeOnly()`-оор `data-room-filter`/`data-room-value`/`ROOM_OPTIONS`/`toggleRoomValue`/`toggleRooms`/`clearRooms`/`showRooms`/«Өрөөний тоо» **КОДОД БАЙНА** ✓ ба ⚠️ `data-room-filter` нь «Үнэ, ₮»-ний **ӨМНӨ** байрлана (`indexOf`) ✓; ⚠️ ХАДГАЛАГДСАН: `rooms: []`, `parseRoomList(sp.get('rooms'))`, `roomsUrlValue(filters.rooms)`, `roomsFilterLabel(filters.rooms)`; 📌 CDP скрипт нь `dom.chips === 5` (Орон сууц дээр чип 5 байна) ба `clickRoom(` (чип дарж URL/DB шалгах) замыг шаардана ✓. Мөн: `ROOM_VALUES`/`normalizeRoomValue` (`'5+'`/`+5`/`5` → `'5'`)/`parseRoomList` (эвдэрсэн `abc` хасаж, өсөх эрэмбээр)/`toggleRoomValue`/`isRoomsEmpty`/`countRooms`/`roomsUrlValue`/`roomsFilterLabel`/`roomsFilterDescriptor` ба `applyRoomFilter` fake builder-ээр — **`['5']`→`gte 5`, `['3']`→`in ['3']` (хуучин үр дүнтэй ЯГ ижил)**, `['4','5']`→`gte 4`, `['1','5']`→`or(…)`; ⚠️ 2026-09-30 (4)-д тестэд гарсан алдаа: `ROOM_OPTIONS`-ийн хүлээлт нь `'2 өрөө','2 өрөө'` гэж бичигдсэн байсныг `'1 өрөө'` болгож зассан ✓) |
 | `scripts/test-search.mjs` | **49 тест** — `npm run test:search` (2026-09-30: 🔢 `lib/rangeFilter.mjs` (`groupDigits`/`parseNum`/`formatGroupedInput`/`clampNum`/`snapNum`/`toFilterPair`/`isRangeActive`/`rangeLabel`/`yearBounds`) + 🔀 `lib/sortOptions.mjs` (`SORT_OPTIONS`/`normalizeSort`/`sortOrders`/`sortLabel`) — `order=price.asc.nullslast,id.desc` ба HomeClient/queries-ийн гэрээ ✓; 📌 регресс: ① слайдер (`RangeSlider`/`rangeSlider.mjs`/`role="slider"`/pointer handler) ХААНА Ч БАЙХГҮЙ ② он БҮЛЭГЛЭГДЭХГҮЙ («2.026» ✗) ③ «1.234,5» → `1234.5` ✓ ④ хил дээрх `0` → «₮0 – ₮5 тэрбум» (өмнө нь «₮ – …» хоосон ✗) ⑤ **2026-09-30 (3): `priceQuickPicks()` эскпорт БАЙХГҮЙ, `quickPicks`/`data-quick-pick`/`aria-pressed` КОДОД БАЙХГҮЙ (комментыг `codeOnly()`-оор хасч шалгана), `snapNum` ЦЭВЭР туслах хэвээр, шошго нь `placeholder="Доод"`/`"Дээд"` + `(доод хязгаар)`/`(дээд хязгаар)` — «Эхлэх / Дуусах» кодод БАЙХГҮЙ** ✓) |
 | `scripts/test-filters.mjs` | **87 тест** — `npm run test:filters` (🆕 2026-10-01 (13): 🎨 өнгө **12** сонголт — `assert.deepEqual`-ээр ЯГ дараалал (Цагаан … Бусад), давхардал 0 (`new Set().size === 12`), сүүлийнх нь «Бусад»; 2026-09-28: attrFilters-ийн гэрээ — 🚙 Загвар текст, 📅/📥 оны хүрээ, `parseAttrRangeKey`, `formatAttrsLine`; 2026-09-29: ⚽ hobby — `attrFilters`/`attrFields` зөвхөн `condition`, `hasSimpleForm`; ✅ «Шинэ / Хуучин» — attrFields ба attrFilters ХОЁУЛАА 2 сонголттой байв (2026-09-29; ⚠️ 2026-10-02-д **3** болов), хуучин 4 утга (Хэрэглэсэн — сайн/хэвийн, Засвар шаардлагатай, Хэвийн) БҮРЭН ХАСАГДСАН; 🆕 **2026-10-02: «Шинэ / Шинэвтэр / Хуучин» — attrFields ба attrFilters ХОЁУЛАА ЯГ 3 сонголттой** (ЯГ дараалал `Шинэ → Шинэвтэр → Хуучин` бүх 8 хэсэгт, `new Set().size === 3` давхардал 0, картын мөр `✅ Шинэвтэр` нэг л удаа, ⚠️ DB migration ШААРДЛАГАГҮЙ) → **87 тест** ✓; 2026-09-30: ⚡ electric — 8 бүлэг/26 дэд төрөл, 3 бүлэг `collapsed`, 4 дэх түвшин БАЙХГҮЙ, 🛋️ home-оос ХАСАГДСАН; 2026-09-30: 🛋️ home — 2 бүлэг (**«Тавилга» ЭХЭНД**)/22 дэд төрөл, хоёулаа `collapsed`, хуучин 9 хавтгай нэр ХАСАГДСАН, breadcrumb, картын мөр/шүүлт ХЭВЭЭР — ⚠️ 2026-09-30 (5)-д энэ мод ХУВААГДАВ; 2026-09-30 (5): **12 хэсэг ба ЯГ дараалал** (`SECTIONS.length === 12`), 🛋️ `furniture` 13 / 🧳 `travel` 12 / 🧺 `home` 9 / ⚽ `hobby` 6 дэд төрөл ЯГ таарах, дөрвүүлээ **ХАВТГАЙ** (`getSubtypeGroups` → `[]`), `hasSimpleForm` нь ⚽/🧺/⚡/🛋️/🧳 дээр `true` ба real-estate/auto/jobs/computers/services дээр `false` (тестээр түгжсэн 10 хэсэг), «Бусад» нь furniture/travel/electric/construction-д байгаа ба home/hobby-д **БАЙХГҮЙ**, ба `0026_furniture_travel_sections.sql`-ийн гэрээ (CHECK 12 утга, `home`→`furniture` 13, `hobby`→`travel` 12, «Аяллын хэрэгсэл» → «Бусад»/`travel`, `delete`/`truncate` БАЙХГҮЙ ✓); 🆕 **2026-09-30 (6): 💻 Notebook-ийн 📺/⚙️/🧠/💾 — 4 талбар `txt` → `sel`** (дараалал `brand·model·screen·cpu·ram·storage·condition·warranty`, сонголт 7/19/13/6, давхардал 0, `required` БАЙХГҮЙ, `attrFilters` нь `brand·condition` (🛡️ `warranty` 2026-10-01 (18)-д ХАСАГДСАН); талбар нь **ЗӨВХӨН** `PC_SPEC_SUBTYPES` = 21 Notebook брэнд (⚠️ «Бусад»-ГҮЙ) + «Иж бүрэн компьютер» + «Процессор, сервер» = **23** дэд төрөлд, харин «Бусад»/Mouse/Keyboard/Xbox/Чихэвч/тонер/Проектор/Дэлгэц/хоосон дэд төрөлд **ХАРАГДАХГҮЙ**; `getAttrField` нь `onlySubtypes`-аас ХАМААРАХГҮЙ (картын мөр/шүүлтэд хуучин утга харагдана ✓) ба бусад 11 хэсэгт талбар ХАСАГДАХГҮЙ; картын мөр `Lenovo ThinkPad T14 · ⚙️ Intel Core i5 · 16 GB · 512 GB · ✅ Шинэ` (📺 ОРООГҮЙ); хуучин/demo cpu (`Intel Core i5`…`Apple M2`) ба ram утга бүр шинэ сонголтод БАГТСАН, «512 GB SSD + 1 TB HDD» нь БАГТААГҮЙ (`legacy`-ээр хамгаалагдана); `AddListingModal.jsx`/`seed-sections.mjs`-ийн гэрээ; 🆕 **2026-10-01: 🔧 «Хөдөлгүүр» `txt` → `sel` (`ENGINE_OPTIONS` — ЯГ 7 утга: `1.5л хүртэл` … `Цахилгаан (EV)`, label нь зөвхөн «Хөдөлгүүр», ⚠️ шүүлтэд ОРООГҮЙ) ба 🎨 «Өнгө» НЭМЭГДЭВ (`AUTO_COLOR_OPTIONS` — 12 сонголт, форм **ба** sidebar); 🔀 «Хөтлөгч» (`drive`) форм/`attrFilters`/`CARD_ATTR_ORDER` **ГУРВААС** ХАСАГДАВ (хуучин `attrs.drive` карт дээр ГАРАХГҮЙ ✓); `formatAttrsLine` нь хүрээний утгад «л» **ДАВХАР залгахгүй** («1.5л - 2.0л»), зөвхөн ХУУЧИН тоон «2.5»-д залгана → 68 → **72 тест**; 🆕 **2026-10-01 (2): 🎨 «Өнгө» нь 🚙 «Загвар»-ын ЯГ ДАРАА — 3 газарт** (`attrFields` форм · `attrFilters` sidebar · `CARD_ATTR_ORDER.auto` картын мөр; ⚠️ дараалал нь массивын дараалал тул компонент дээр код засахгүй; карт дээр толгой нь «брэнд + загвар + он» нэг хэсэг тул «Өнгө» нь толгойн дараах ЭХНИЙ үзүүлэлт — `Toyota Prius, 2021 · 🎨 Цагаан · 95,200 км · …`; форм + sidebar дарааллын шинэ тест + картын мөрийн ЯГ тэнцэл → **80 тест** ✓; 🆕 **2026-10-01 (16): 📋 `getAttrRows` — зарын дэлгэрэнгүй хуудсанд `attrs` нь хэсгийн `attrFields`-ийн шошго/icon/дарааллаар 2 БАГАНАТ хүснэгт болж гарна** (4 тест: 🚗 `auto` → ЯГ 9 мөр `brand·model·color·year·importYear·mileage·transmission·engine·fuel`, 🛣️ гүйлт `146000` → **`146,000`** («км» шошгонд тул ДАВХАРДСАНГҮЙ), 🔧 «2.1л - 2.7л» давхар нэгжгүй ба хуучин тоон «2.5» → «2.5 л», `negotiable` ба **ХАСАГДСАН `drive`** ХАРАГДАХГҮЙ, `0` нь ХООСОН БИШ = `formatAttrsLine`-тэй ижил, `null`/`undefined`/`{}`/`'Toyota'` дээр КРАШГҮЙ, 💻 `onlySubtypes` → 📺/⚙️/🧠/💾 Notebook дээр л гарах ба Mouse-д ГАРАХГҮЙ, 🏠 `real-estate` (`attrFields: []`) → **0 мөр** ба 12 хэсэг бүгд крашгүй; 🆕 **2026-10-01 (18): 🛡️ 💻 «Баталгаа» (`warranty`) БҮРЭН ХАСАГДАВ** — форм · `attrFilters` · карт · `getAttrRows` ГУРВААС (💻 шүүлт 3 → **2**, форм талбар 8 → **7**; Notebook 8 → **7**, Mouse 4 → **3** мөр; ХУУЧИН `attrs.warranty`-тай зар карт/дэлгэрэнгүй дээр ГАРАХГҮЙ ✓; seed нь `warranty` ҮҮСГЭХГҮЙ; `getAttrField` → `null`) → 85 → **87 тест** ✓) |
