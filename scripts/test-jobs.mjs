@@ -152,8 +152,16 @@ t('📝 Форм: 4-р алхамд «Цалингийн хэмжээ» + «Ца
   assert.match(ADD_CODE, /\{priceNegotiableText\}/);
 });
 
-t('🎛 Форм: `formChips || chips` салбар — `.chip-toggle` + `data-attr-field`/`data-attr-value`', () => {
-  assert.match(ADD_CODE, /f\.formChips \|\| f\.chips \? \(/);
+t('🎛 Форм: `formChips` салбар — `.chip-toggle` + `data-attr-field`/`data-attr-value`', () => {
+  /**
+   * 🆕 2026-10-03 (19): салбарын нөхцөл нь `f.formChips` БОЛОВ (`|| f.chips` ХАСАГДАВ)
+   * — учир нь `chips: true` нь **зөвхөн ХАЙЛТЫН sidebar**-ийн туг (ж: 🎨
+   * «Өнгө», 🚗 авто) бөгөөд тэр талбар нь ФОРМ дээр хэвээр `<select>` байх
+   * ёстой ✗ (өмнө нь `chips` дангаараа формойн чипийг ч асаадаг байв —
+   * `AddListingClient` нь зөвхөн `formChips`-ыг шалгана ✓)
+   */
+  assert.match(ADD_CODE, /f\.formChips \? \(/);
+  assert.ok(!/f\.formChips \|\| f\.chips/.test(ADD_CODE), '`|| f.chips` хэвээр ✗');
   assert.match(ADD_CODE, /data-attr-field=\{f\.key\}/);
   assert.match(ADD_CODE, /data-attr-value=\{o\}/);
   assert.match(ADD_CODE, /aria-pressed=\{on\}/);

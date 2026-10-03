@@ -26,6 +26,7 @@
     "test:card": "node scripts/test-card.mjs",
     "test:jobs": "node scripts/test-jobs.mjs",
     "test:payments": "node scripts/test-payments.mjs",
+    "test:attrMulti": "node scripts/test-attr-multi.mjs",
     "test:choices": "node scripts/test-number-choices.mjs",
     "test:wheel": "node scripts/test-wheel-render.mjs",
     "test:wizard": "node scripts/test-detail-wizard.mjs",

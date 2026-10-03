@@ -144,6 +144,11 @@
  */
 const BASE = process.argv[2] || 'http://localhost:3000';
 const CDP = `http://127.0.0.1:${process.env.CDP_PORT || 9222}`;
+/**
+ * 🎨 2026-10-03 (19): sidebar-ийн «Өнгө»-ний чипүүд нь либын жагсаалттай
+ *    ЯГ ижил эсэхийг DOM↔ЛИБ харьцуулалтаар шалгана (давхар бичихгүй ✓)
+ */
+import { AUTO_COLOR_OPTIONS } from '../lib/locationData.js';
 
 let pass = 0;
 let fail = 0;
@@ -1285,12 +1290,32 @@ ok('sidebar: бүх 🔎 талбарын зай ≥ 6px (дүрс текстэ�
 
 // 🎨🔀 2026-10-01: sidebar-ийн ATTR шүүлтүүд (`select[aria-label]`) — «Өнгө» бий,
 //    «Хөтлөгч» БАЙХГҮЙ (форм ба sidebar НЭГ эх сурвалж: attrFields → attrFilters ✓)
+// 🆕 2026-10-03 (19): 🎨 «Өнгө» нь ОЛОН СОНГОЛТТОЙ ЧИП болов (`<select>` БИШ) —
+//    хэрэглэгчийн хүсэлт: «Зар хайлт дээр Авто машин сонголт дээр Өнгө ийг
+//    Төлбөрийн нөхцөл шиг олон сонголттой болго» ⇒ `select[aria-label]`-д
+//    🎨 БАЙХГҮЙ, харин `[data-attr-filter="color"][data-attr-multi="true"]`
+//    блокт 12 `chip-toggle` байна ✓ (формо дээр хэвээр `<select>` — ⑦′-д шалгана)
 const SIDE_SELECTS = `(() => [...document.querySelectorAll('select[aria-label]')]
   .map((s) => ({ aria: (s.getAttribute('aria-label') || '').trim(), n: s.options.length })))()`;
 const sideSelects = await evaluate(SIDE_SELECTS);
-// ⚠️ 2026-10-01 (13): `AUTO_COLOR_OPTIONS` 10 → 12 ⇒ «Бүгд»-тэй нийлээд 13 option
-ok('sidebar: 🎨 «Өнгө» шүүлт бий (12 сонголт + «Бүгд» мөр)',
-  sideSelects.some((s) => s.aria === 'Өнгө' && s.n === 13),
+const SIDE_CHIPS = `(() => {
+  const box = document.querySelector('[data-attr-filter="color"][data-attr-multi="true"]');
+  if (!box) return null;
+  return {
+    tag: box.tagName.toLowerCase(),
+    chips: [...box.querySelectorAll('.chip-toggle')].length,
+    buttons: [...box.querySelectorAll('.chip-toggle')].every((b) => b.tagName.toLowerCase() === 'button'),
+    values: [...box.querySelectorAll('.chip-toggle')].map((b) => b.getAttribute('data-attr-value')),
+  };
+})()`;
+const sideColorChips = await evaluate(SIDE_CHIPS);
+ok('sidebar: 🎨 «Өнгө» нь ЧИП болсон (`<select>` БИШ · 12 товч · `multi` ✓)',
+  Boolean(sideColorChips) && sideColorChips.tag === 'div' && sideColorChips.chips === 12
+    && sideColorChips.buttons === true
+    && JSON.stringify(sideColorChips.values) === JSON.stringify(AUTO_COLOR_OPTIONS),
+  JSON.stringify(sideColorChips));
+ok('sidebar: 🎨 «Өнгө» нь `select[aria-label]`-д ОГТ БАЙХГҮЙ (давхардал ✗)',
+  !sideSelects.some((s) => s.aria === 'Өнгө'),
   JSON.stringify(sideSelects));
 ok('sidebar: 🔀 «Хөтлөгч» шүүлт БАЙХГҮЙ (0 талбар)',
   !sideSelects.some((s) => s.aria === 'Хөтлөгч'),

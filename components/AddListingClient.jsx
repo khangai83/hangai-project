@@ -1196,20 +1196,24 @@ export default function AddListingClient() {
      ========================================================================== */
   /**
    * 📱 Мобайлд «2 БАГАНАТ ШУУД ЖАГСААЛТ»-аар сонгогдох талбар уу? (2026-10-03)
-   * ⚠️ 🎛 ЧИП талбар (`chips`/`formChips`, ж: 💼 ажлын 4 талбар) нь мобайлд ч
+   * ⚠️ 🎛 ЧИП талбар (`formChips`, ж: 💼 ажлын 4 талбар) нь мобайлд ч
    *    ЧИП хэвээр (2026-10-03 (11)-ийн хэрэглэгчийн хүсэлт + unegui-гийн АЖЛЫН
    *    форм) тул жагсаалт руу ОРУУЛАХГҮЙ — ⚠️ тэдгээр нь `type: 'select'` (!)
    *    тул шалгалтаас ЗААВАЛ хасна, эс бөгөөс доод товч нь хуурамчаар
    *    нуугдаж, мобайлд ЧИП талбар дээр урагшлах боломж ҮЛДЭХГҮЙ ✗
    *    (`cdp:chips` тестээр илэрсэн ✓)
+   *    🆕 2026-10-03 (19): ⚠️ ЗӨВХӨН `formChips`-ыг шалгана (`f.chips` БИШ) —
+   *       `chips: true` нь **зөвхөн ХАЙЛТЫН sidebar**-ийн туг (ж: 🎨 «Өнгө»)
+   *       тул тэр талбар нь ФОРМ дээр хэвээр `<select>` ба мобайлд 2 баганат
+   *       жагсаалттай (`isAttrPick` = true) байх ЁСТОЙ ✓
    * ⚠️ 🔎 ХАЙЛТТАЙ сонголт (`searchable`, ж: 🏷️ Үйлдвэрлэгч) нь бичиж хайдаг
    *    тул гар бичилт ХЭВЭЭР; 🚙 «Загвар» нь `optionsFrom` (брэндээс хамаарах
    *    combo) — ч бичилт ХЭВЭЭР ✓
-   * ⚠️ JSX-ийн салбарын ДАРААЛАЛТАЙ ИЖИЛ байх ЁСТОЙ: `formChips/chips` →
+   * ⚠️ JSX-ийн салбарын ДАРААЛАЛТАЙ ИЖИЛ байх ЁСТОЙ: `formChips` →
    *    `choices` → `searchable` → `optionsFrom` → `select` → input ✓
    */
   const isAttrPick = (f) => f.type === 'select' && !f.searchable && !f.optionsFrom
-    && !f.chips && !f.formChips;
+    && !f.formChips;
   const detailScreens = (() => {
     /** ⚠️ `required` — зөвхөн ШИНЭ зард (засах горимд `validateStep` ч шаарддаггүй ✓) */
     const out = [{ key: 'title', title: 'Зарын гарчиг', group: 'title', required: !isEdit }];
@@ -2103,7 +2107,7 @@ export default function AddListingClient() {
                     data-mobile-active={detailFieldActive(`attr-${f.key}`)}
                   >
                     <label>{f.icon ? `${f.icon} ` : ''}{f.label}</label>
-                    {f.formChips || f.chips ? (
+                    {f.formChips ? (
                       /**
                        * 🎛 ЧИП ТАЛБАР (2026-10-03 (11), хэрэглэгчийн хүсэлт:
                        *    «Ажлын цаг, Туршлага, Зарлагч, Мэргэжлийн түвшин
@@ -2114,9 +2118,14 @@ export default function AddListingClient() {
                        *    ЦУЦЛАГДАНА ✓).
                        *
                        * ⚠️ `f.formChips` (формойн чип) ба `f.chips` (sidebar-ийн
-                       *    чип ШҮҮЛТ) хоёулаа энэ салбар руу орно — 🕒 jobType
-                       *    нь ХОЁУЛАНД нь чип, бусад нь зөвхөн форм дээр ✓
-                       *    (`lib/locationData.js` → 💼 `jobs.attrFields`)
+                       *    чип ШҮҮЛТ) нь ТУСДАА туг — 🕒 jobType нь ХОЁУЛАНД нь
+                       *    чип (`formChips: true` тул энэ салбар руу орно);
+                       *    бусад нь (ж: 📊/🏷️/📈) зөвхөн форм дээр ✓
+                       *    🆕 2026-10-03 (19): 🎨 «Өнгө» (🚗 авто) нь `chips: true`
+                       *    БОЛОВ — гэхдээ `formChips` БАЙХГҮЙ тул энэ салбарт
+                       *    ОРОХГҮЙ: формо дээр хэвээр `<select>` (нэг өнгө
+                       *    хадгална), зөвхөн ХАЙЛТЫН sidebar нь чип болно ✓
+                       *    (`lib/locationData.js` → `sel()` туслахын тайлбарыг үзнэ)
                        * ⚠️ Утга нь `<select>`-тэй ЯГ ИЖИЛ: `attrs.<key>` (текст),
                        *    цуцлахад түлхүүр нь БҮРЭН УСТАНА (`setAttrCascade`
                        *    → `delete attrs[key]`) ⇒ форм/DB/`validateStep`

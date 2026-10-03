@@ -76,6 +76,16 @@ import {
   PAYMENT_OPTIONS, countPayments, hasPaymentTerms, parsePaymentList,
   paymentsFilterLabel, paymentsUrlValue, togglePaymentValue,
 } from '../lib/paymentFilter.mjs';
+// 🎨 ОЛОН СОНГОЛТТОЙ ATTR ШҮҮЛТ (2026-10-03 (19)) — хэрэглэгчийн хүсэлт:
+//   «Зар хайлт дээр Авто машин сонголт дээр Өнгө ийг Төлбөрийн нөхцөл шиг
+//   олон сонголттой болго» ⇒ 🎨 «Өнгө» (`lib/locationData.js` →
+//   `{ chips: true, multi: true }`) нь sidebar-д ОЛОН сонголттой ЧИП болов.
+//   ⚠️ Утга нь `filters.attrs.color` дотор МАССИВ (`['Хар','Цагаан']`) —
+//      URL нь хэвээр `?attr_color=Хар,Цагаан` (хуучин линк ч ажиллана ✓),
+//      DB нь `attrs->>color=in.(…)` (`lib/queries.js → applyAttrMultiFilter`) ✓
+import {
+  parseAttrList, attrListUrlValue, attrListFilterLabel, toggleAttrValue, countAttrValues,
+} from '../lib/attrMultiFilter.mjs';
 
 // Нүүр хуудсны хайлтын анхдагч (хоосон) утга.
 // ⚠️ `khoroos` нь МАССИВ — хэрэглэгч ОЛОН хороог зэрэг сонгоно (unegui.mn-ийн
@@ -446,9 +456,20 @@ export default function HomeClient() {
     //    (`?section=jobs&payment=lease`) ирвэл ЧИМЭЭГҮЙ орхигдуулна ✓
     if (!hasPaymentTerms(secParam)) next.payments = [];
     // ---- ATTR шүүлтүүд — `?attr_brand=Toyota&attr_fuel=Хайбрид` ----
+    // 🎨 ОЛОН СОНГОЛТТОЙ ATTR (2026-10-03 (19)): `multi: true` талбар (ж: 🎨
+    //    «Өнгө») нь МАССИВ болж уншигдана (`?attr_color=Хар,Цагаан`) —
+    //    ⚠️ ХУУЧИН нэг утгатай линк (`?attr_color=Хар`) ч зөв (нэг элементтэй
+    //    массив ✓). Бусад attr нь ХЭВЭЭР скаляр текст ✓
+    //    ⚠️ ДАВТАГДСАН параметр (`?attr_color=Хар&attr_color=Цагаан`) ч
+    //    нэгтгэгдэнэ (`getAll`) — гараар/гадаад хэрэгслээр үүссэн линк эвдрэхгүй ✓
     const attrs = {};
     sp.forEach((value, key) => {
       if (key.startsWith('attr_') && value) attrs[key.slice(5)] = value;
+    });
+    Object.keys(attrs).forEach((k) => {
+      const fld = getAttrField(secParam, k);
+      if (!fld || !fld.multi) return;
+      attrs[k] = parseAttrList(sp.getAll(`attr_${k}`));
     });
     /**
      * 🖥 2026-10-03 (7): ТУХАЙН ДЭД ТӨРӨЛД ХҮЧИНГҮЙ attr шүүлтийг хаана —
@@ -600,7 +621,15 @@ export default function HomeClient() {
     //       линк богино, хуваалцахад ойлгомжтой ✓
     if (filters.payments.length) params.set('payment', paymentsUrlValue(filters.payments));
     // ⚠️ ATTR шүүлтүүд — `attr_brand=Toyota` (jsonb)
+    // 🎨 ОЛОН СОНГОЛТТОЙ ATTR (2026-10-03 (19)) — утга нь МАССИВ бол
+    //    таслалаар нэгтгэнэ (`?attr_color=Хар,Цагаан`) — ⚠️ параметрийн НЭР
+    //    нь хуучин нэг утгатайтай ИЖИЛ тул хуучин линк/breadcrumb эвдрэхгүй ✓
+    //    ⚠️ Хоосон массив (`[]`) үед БИЧИХГҮЙ (цэвэр линк ✓)
     Object.entries(filters.attrs || {}).forEach(([k, v]) => {
+      if (Array.isArray(v)) {
+        if (v.length) params.set(`attr_${k}`, attrListUrlValue(v));
+        return;
+      }
       if (v) params.set(`attr_${k}`, v);
     });
     if (filters.city) params.set('city', filters.city);
@@ -813,7 +842,12 @@ export default function HomeClient() {
     setFilters((f) => {
       const prev = f.attrs || {};
       const attrs = { ...prev };
-      if (value) attrs[key] = value;
+      // ⚠️ ОЛОН СОНГОЛТТОЙ талбар (`multi: true`) — хоослох утга нь `''`
+      //    БИШ `[]`. `[]` нь ХҮЧИНТЭЙ (truthy) тул энгийн `if (value)` нь
+      //    «хоосон массив хадгална» ✗ → `length`-ээр шалгана ✓
+      //    (`clearRooms`/`clearPayments` нь `[]` тавьдагтай ижил зарчим)
+      const keep = Array.isArray(value) ? value.length > 0 : Boolean(value);
+      if (keep) attrs[key] = value;
       else delete attrs[key];
       // ⚠️ `attrFilters` нь доор (useMemo) тодорхойлогдоно — гэхдээ энэ нь
       //    ЗӨВХӨН event handler дотор дуудагдах тул аюулгүй ✓
@@ -821,8 +855,44 @@ export default function HomeClient() {
     });
   };
 
-  /** Хэсгийн attr шүүлтийн одоогийн утга */
-  const attrValue = (key) => (filters.attrs || {})[key] || '';
+  /**
+   * 🎨 ОЛОН СОНГОЛТТОЙ ATTR — нэг дарж нэмэх/хасах (checkbox мэт, 2026-10-03 (19)).
+   *
+   * Хэрэглэгчийн хүсэлт: «Зар хайлт дээр Авто машин сонголт дээр Өнгө ийг
+   * Төлбөрийн нөхцөл шиг олон сонголттой болго» → [Хар] [Цагаан] дарж
+   * `?attr_color=Хар,Цагаан` болно (OR — аль нэг өнгөтэй зарууд ✓).
+   * ⚠️ Дүрэм нь `lib/attrMultiFilter.mjs → toggleAttrValue()` (нэг эх сурвалж):
+   *    шинэ массив буцаана, хүчингүй утгыг алгасна, давхцуулахгүй ✓
+   * ⚠️ Утга нь `attrs` дотроо хадгалагдах тул `cascadeAttrs` ч дуудагдана
+   *    (ж: 🏷️ брэнд солигдоход 🚙 загвар цэвэрлэгддэг дүрэм ХЭВЭЭР ✓)
+   * ⚠️ 📄 1-р хуудас руу буцна (`toggleRooms`/`togglePayments`-тэй ижил ✓)
+   */
+  const toggleAttrMulti = (key, value) => {
+    setPage(1);
+    setFilters((f) => {
+      const prev = f.attrs || {};
+      const next = toggleAttrValue(prev[key], value);
+      const attrs = { ...prev };
+      if (next.length) attrs[key] = next;
+      else delete attrs[key];
+      return { ...f, attrs: cascadeAttrs(attrs, prev, key, attrFilters) };
+    });
+  };
+
+  /** Олон сонголттой attr-ийн УТГУУД (үргэлж массив — `attrValue` нь скаляр ✓) */
+  const attrArray = (key) => parseAttrList((filters.attrs || {})[key]);
+
+  /** Олон сонголттой attr-ийн бүх утгыг арилгах («✕ Цуцлах») */
+  const clearAttrMulti = (key) => setAttr(key, []);
+
+
+  /** Хэсгийн attr шүүлтийн одоогийн утга (⚠️ зөвхөн СКАЛЯР талбарт) */
+  const attrValue = (key) => {
+    const v = (filters.attrs || {})[key];
+    // 🎨 Олон сонголттой талбар (`multi: true`) нь МАССИВ — энэ getter нь
+    //    ЗӨВХӨН скаляр талбарт зориулагдсан (чипүүд `attrArray()`-ыг дуудна ✓)
+    return Array.isArray(v) ? '' : (v || '');
+  };
 
   /**
    * 📅 ХҮРЭЭНИЙ ATTR (оны хүрээ) — ХОЁР түлхүүрийг НЭГ дор тавина
@@ -1120,7 +1190,20 @@ export default function HomeClient() {
       const r = parseAttrRangeKey(k);
       if (r && rangeBases.has(r.base)) return;
       const field = getAttrField(section, k);
-      chips.push({ key: `attr_${k}`, label: `${(field && field.icon) || '🔎'} ${v}` });
+      const icon = (field && field.icon) || '🔎';
+      // 🎨 ОЛОН СОНГОЛТТОЙ ATTR (2026-10-03 (19)) — утга нь МАССИВ бол
+      //    утгуудыг ТОВЧЛОНО (1 сонголт → нэрээр, 2+ → «3 өнгө») — эс бөгөөс
+      //    «🎨 Цагаан, Сувдан цагаан, Хар, Саарал» гэсэн чип хэт урт болно ✗
+      //    (шошго нь `lib/attrMultiFilter.mjs` — нэг эх сурвалж ✓)
+      if (Array.isArray(v)) {
+        if (!v.length) return;
+        chips.push({
+          key: `attr_${k}`,
+          label: `${icon} ${attrListFilterLabel(v, (field && field.multiNoun) || 'сонголт')}`,
+        });
+        return;
+      }
+      chips.push({ key: `attr_${k}`, label: `${icon} ${v}` });
     });
     // 🛏 ӨРӨӨ — ОЛОН СОНГОЛТ (2026-09-30): чип нь сонгосон БҮХ утгыг харуулна
     //    (`1, 2 өрөө` / `+5 өрөө` / `1, 5+ өрөө`) — хэдэн шүүлт тавснаа
@@ -1169,7 +1252,13 @@ export default function HomeClient() {
       });
       return;
     }
-    if (key.startsWith('attr_')) { setAttr(key.slice(5), ''); return; }
+    if (key.startsWith('attr_')) {
+      // 🎨 Олон сонголттой attr (`multi: true`) — хоослох утга нь `''` БИШ `[]`
+      //    (`setAttr` нь `[]`-г «устгах» гэж ойлгоно ✓ — 2026-10-03 (19))
+      const cur = (filters.attrs || {})[key.slice(5)];
+      setAttr(key.slice(5), Array.isArray(cur) ? [] : '');
+      return;
+    }
     setF(key, key === 'khoroos' || key === 'districts' || key === 'rooms' || key === 'payments' ? [] : '');
   };
 
@@ -1993,6 +2082,63 @@ export default function HomeClient() {
                   return (
                   <SideBlock key={f.key} label={`${f.icon ? `${f.icon} ` : ''}${f.label}`}>
                     {f.chips ? (
+                      f.multi ? (
+                        /* 🎨 ОЛОН СОНГОЛТТОЙ ЧИП (2026-10-03 (19)) — хэрэглэгчийн
+                           хүсэлт: «Зар хайлт дээр Авто машин сонголт дээр Өнгө
+                           ийг Төлбөрийн нөхцөл шиг олон сонголттой болго».
+                           ⇒ ХЭВ нь «🛏 Өрөөний тоо» / «💳 Төлбөрийн нөхцөл»-тэй
+                           ЯГ ИЖИЛ: «N сонгосон» badge + хүрээтэй хайрцаг дотор
+                           `chip-toggle` чипүүд + «✕ Цуцлах» товч ✓
+                           ⚠️ Утга нь `attrs[f.key]` дотор МАССИВ (`['Хар',
+                           'Цагаан']`) → URL `?attr_color=Хар,Цагаан`,
+                           DB `attrs->>color=in.(…)` (`lib/attrMultiFilter.mjs`) ✓
+                           ⚠️ `data-attr-filter` (CDP-ийн дэгээ) нь хайрцаг дээр
+                           — `scripts/cdp-notebook-specs.mjs`-ийн `[data-attr-filter]`
+                           тоо ХЭВЭЭР (1 талбар = 1 дэгээ ✓); нэмэлт
+                           `data-attr-multi="true"` нь олон сонголтыг илтгэнэ ✓ */
+                        <>
+                          {attrArray(f.key).length > 0 && (
+                            <span className="self-start rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
+                              {countAttrValues(attrArray(f.key))} сонгосон
+                            </span>
+                          )}
+                          <div
+                            className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
+                            data-attr-filter={f.key}
+                            data-attr-multi="true"
+                            role="group"
+                            aria-label={f.label}
+                          >
+                            <div className="flex flex-wrap gap-1.5">
+                              {(f.options || []).map((o) => {
+                                const on = attrArray(f.key).includes(o);
+                                return (
+                                  <button
+                                    key={o}
+                                    type="button"
+                                    aria-pressed={on}
+                                    data-attr-value={o}
+                                    onClick={() => toggleAttrMulti(f.key, o)}
+                                    className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                                  >
+                                    {on && <span aria-hidden="true">✓</span>}
+                                    {o}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          {attrArray(f.key).length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => clearAttrMulti(f.key)}
+                              className="self-start text-[12px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                            >
+                              ✕ Цуцлах
+                            </button>
+                          )}
+                        </>
+                      ) : (
                       /* 🕒 ЧИП шүүлт (2026-10-03 (9)) — 💼 «Ажлын цаг» нь unegui.mn-ийн
                          ажлын хайлтын зурагтай ИЖИЛ бөөрөнхий товчнууд (чип) хэлбэрээр
                          харагдана. ⚠️ Утга нь НЭГ (`?attr_jobType=Бүтэн цагийн`) — идэвхтэй
@@ -2021,6 +2167,7 @@ export default function HomeClient() {
                           );
                         })}
                       </div>
+                      )
                     ) : f.searchable ? (
                       <SearchableSelect
                         value={attrValue(f.key)}

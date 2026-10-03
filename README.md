@@ -625,7 +625,10 @@ Node дээр `chrome --headless=new --remote-debugging-port=9335` + `WebSocket`
   уу» гэсэн `<h3>` ч хасагдав (хэрэглэгчийн хүсэлт: «энэ бүгдийг нь зайлуул, харахыг
   хүсэхгүй байна»). Асуулт нь `role="group"` + `aria-label` (screen reader, a11y)
   хэлбэрээр ХЭВЭЭР — CDP нь DOM текстээс хайгаад **0** гарсан эсэхийг шалгана ✓
-- 🧪 **CDP (бодит Chrome):** `npm run cdp:picker` → **145/145 ✓** (`scripts/cdp-picker.mjs` —
+- 🧪 **CDP (бодит Chrome):** `npm run cdp:picker` → **146/146 ✓** (`scripts/cdp-picker.mjs` —
+  🆕 2026-10-03 (19): sidebar-д 🎨 «Өнгө» нь ОЛОН СОНГОЛТТОЙ **ЧИП** (12 товч,
+  `<select>` БИШ) гэсэн 2 шалгалт нэмэгдсэн — «сонголтын 12 option» гэсэн хуучин
+  шалгалт нь чипийн гэрээ болов ✓;
   нэвтэрсэн Chrome профайл шаардана; 12 бүлэг шалгалт: 3 багана (**толгой 0** +
   сонгосон утга багана дотроо **ЯГ 1 УДАА** — 🆕 `pickerTitles` = 0 ба `dupe` = 1
   инвариант) · хавтгай хэсэг · бүлэг («Apple») · доод
@@ -857,7 +860,8 @@ Node дээр `chrome --headless=new --remote-debugging-port=9335` + `WebSocket`
   ⚠️ `dedupe_key` (0014) ХӨНДӨГДӨХГҮЙ (гарчиг давхардлын шалгалтад ОРОХГҮЙ) ✓;
   хуудас/`DETAIL_COLUMNS` нь `title` унасан ч крашгүй (`?? null` fallback) ✓.
   🧪 `test:format` 20 → **25/25 ✓** (🏷️ 5 тест: текст · хоосон · зай нэгтгэлт ·
-  120 таслалт · тоон утга) · `cdp:picker` **145/145 ✓** (регресс 0) ·
+  120 таслалт · тоон утга) · `cdp:picker` **146/146 ✓** (регресс 0; 🆕 2026-10-03 (19)-д
+  🎨 «Өнгө» чип болов — 145 → 146 ✓) ·
   `lint:migrations` **26/26 ✓** · `npm run build` ✓ · 🐍 БОДИТ CHROME (CDP,
   `/title-probe` temp хуудас + жинхэнэ нүүр) **43/43 ✓**: ① гарчиггүй зар дээр мөр
   **0** ба эхний мөр нь үнэ (18px/700) ② гарчигтай зар дээр ЯГ 1 мөр, 16px/700,
@@ -1199,6 +1203,7 @@ Sidebar нь `SideBlock` (дээрээ гарчиг + доор нь оролту
 | **🛏 Өрөөний тоо** | 🆕 **2026-10-03 (4)-д ЭРГЭЖ ИРЭВ** (⏳ 2026-09-30 (4)-д түр хасагдсан байв) — `showRooms`, `ROOM_OPTIONS`, `toggleRoomValue`, `toggleRooms`/`clearRooms`, «N сонгосон» badge, «✕ Цуцлах» бүгд буцаж ирэв ✓. ⚠️ Байрлал: sidebar-д **«Үнэ, ₮»-ний ДЭЭР** (хэрэглэгчийн хүсэлт), ЭХНИЙ блок нь **«Байршил»** хэвээр · Хорооны блоктой ижил `chip-toggle` чипүүд · зөвхөн өрөөтэй төрөлд (`hasRoomsFields`) — доорх «🛏 ӨРӨӨНИЙ ТОО» хэсгийг үзнэ үү |
 | **💳 Төлбөрийн нөхцөл** | 🆕 **2026-10-03 (5)-д НЭМЭГДЭВ** — `showPayments` (= `hasPaymentTerms(propertyType)` → **зөвхөн үл хөдлөх + авто**), `PAYMENT_OPTIONS` (4 чип: 💳/💵/🏦/🔄), `togglePaymentValue`, «N сонгосон» badge, «✕ Цуцлах» · ⚠️ Байрлал: **«Өрөөний тоо»-ны ДАРАА, «Үнэ, ₮»-ний ӨМНӨ** (unegui.mn-тэй ижил); URL `?payment=lease,cash` → DB `attrs=cs.{"payment_terms":["lease"]}` / 2+ утга `or=(…)` — 🆕 **(16): ХАЙЛТ нь «🛏 Өрөөний тоо»-той ЯГ ИЖИЛ ЧИП** ба 🆕 **(18): ФОРМ ч МӨН ТЭР ЧИП** (⏳ (6)-ийн 2 баганат ☑ `.pay-grid`/`.pay-check` бүрэн хасагдав) — доорх «💳 ТӨЛБӨРИЙН НӨХЦӨЛ» хэсгийг үзнэ үү |
 | **🖥 💻 Notebook-ийн шүүлт** | 🆕 **2026-10-03 (7)-д НЭМЭГДЭВ** — 💻 `computers` хэсгийн sidebar-д **📺 Дэлгэцийн хэмжээ (инч) · ⚙️ Процессор (CPU) · 🧠 Санах ой (RAM) · 💾 Хард диск (SSD / HDD)** гэсэн 4 `<select>` («Бүгд» анхдагчтай) — ⚠️ **зөвхөн Notebook-ийн 21 брэнд** ба «Иж бүрэн компьютер»/«Процессор, сервер» сонгосон үед (`onlySubtypes`); Mouse/Keyboard/тонер/чихэвч ба **дэд төрөл сонгоогүй** үед ХАРАГДАХГҮЙ · Байрлал: 🏷️ Брэнд-ийн ДАРАА, ✅ Төлөв-ийн ӨМНӨ (формтой ижил дараалал) · URL `?attr_cpu=Intel+Core+i5` → DB `attrs->>cpu=eq.Intel Core i5` — доорх «🖥 💻 NOTEBOOK-ИЙН ШҮҮЛТ» хэсгийг үзнэ үү |
+| **🎨 Өнгө (🚗 авто)** | 🆕 **2026-10-03 (19)-д ОЛОН СОНГОЛТТОЙ ЧИП БОЛОВ** (хэрэглэгчийн хүсэлт: «Зар хайлт дээр Авто машин сонголт дээр Өнгө ийг Төлбөрийн нөхцөл шиг олон сонголттой болго») — `AUTO_COLOR_OPTIONS` (12) нь `<select>` БИШ, «💳 Төлбөрийн нөхцөл»/«🛏 Өрөөний тоо»-той ЯГ ИЖИЛ `chip-toggle` чипүүд («N сонгосон» badge · хүрээтэй хайрцаг · «✕ Цуцлах»); `lib/locationData.js → sel(…, { chips: true, multi: true, multiNoun: 'өнгө' })` · URL `?attr_color=Хар,Цагаан` (⚠️ параметрийн нэр ХУУЧИН нэг утгатайтай ижил — хуучин линк эвдрэхгүй) · DB `attrs->>color=in.(Хар,Цагаан)` (**OR** — аль нэг өнгөтэй зар; `->>` учир нь `attrs.color` нь МАССИВ БИШ скаляр ✓) · идэвхтэй чип 1 утга → «🎨 Хар», олон → «🎨 2 өнгө» · ⚠️ **ФОРМ ХӨНДӨГДӨӨГҮЙ** (3-р алхамд «Өнгө» нь `<select>` — `formChips` туг БАЙХГҮЙ ✓) · DB MIGRATION ШААРДЛАГАГҮЙ — дүрэм нь `lib/attrMultiFilter.mjs`, 🧪 `test:attrMulti` (19) ба `cdp:specs` ⑦b (бодит Chrome) |
 | **Үнэ, ₮** | `RangeInput` — **«Доод / Дээд»** хоёр тоон оролт (2026-09-30 (3): өмнөх «Эхлэх / Дуусах» нэр солигдов); бичих ЯВЦАД тоо нь **цэгээр тусгаарлагдана** («3.000.000») + шүүлт идэвхтэй үед «₮250 сая – ₮2 тэрбум» шошго + ✕ арилгах — ⚠️ **«санал болгосон тоо» товч БАЙХГҮЙ** (хасагдсан ✓) |
 | **Талбай, м²** | Мөн `RangeInput` (`mode="decimal"`) → «75,5» монгол бутархайг зөвшөөрч, бүхэл хэсгийг нь цэгээр бүлэглэнэ («1.234,5» ✓) |
 
@@ -1406,7 +1411,7 @@ Sidebar нь `SideBlock` (дээрээ гарчиг + доор нь оролту
 > filters.propertyType)`, `pruneGatedAttrs` 2 зам, `data-attr-filter`) ⑥
 > `pruneGatedAttrs` цэвэр функц — хүрээний түлхүүр (`year_from`), формойн `model`,
 > `null`/массив хөндөгдөхгүй ✓)
-> 🐍 `npm run cdp:specs` → ✅ **38 OK, 0 FAIL** (бодит Chrome): `?section=computers&type=Apple`
+> 🐍 `npm run cdp:specs` → ✅ **63 OK, 0 FAIL** (бодит Chrome): `?section=computers&type=Apple`
 > дээр `[data-attr-filter]` **5** (4 үзүүлэлт + ✅ төлөв) ба DOM-ийн шошго/сонголт нь
 > **ЛИБЭЭС ижил** (7/19/13/6/3 + «Бүгд») · ⚙️ «Intel Core i5» сонгоход URL
 > `?attr_cpu=Intel+Core+i5` + DB `attrs->>cpu=eq.Intel Core i5` + идэвхтэй чип
@@ -2379,6 +2384,24 @@ npm run check:supabase                               # → ✅ 0016 — зары
     `AUTO_COLOR_OPTIONS` 10 → 12 — «Бор»/«Беж» нь «Хүрэн»/«Сувдан цагаан»-аар
     нарийвчлагдаж, «Хөх» ба «Ягаан» нэмэгдэв): Цагаан · Сувдан цагаан · Хар ·
     Саарал · Мөнгөлөг · Хөх · Хүрэн · Цэнхэр · Улаан · Ягаан · Ногоон · Бусад
+  · 🎨 **ХАЙЛТЫН SIDEBAR ДЭЭР «ӨНГӨ» НЬ ОЛОН СОНГОЛТТОЙ ЧИП БОЛОВ**
+    (2026-10-03 (19), хэрэглэгчийн хүсэлт: «Зар хайлт дээр Авто машин сонголт
+    дээр Өнгө ийг Төлбөрийн нөхцөл шиг олон сонголттой болго») ⇒ 🎨 нь
+    `<select>` БИШ, **12 `chip-toggle` товч** («💳 Төлбөрийн нөхцөл» ба
+    «🛏 Өрөөний тоо»-той ЯГ ИЖИЛ хэв: «N сонгосон» badge · хүрээтэй хайрцаг ·
+    «✕ Цуцлах»):
+      · «Хар» + «Цагаан» дарахад URL `?attr_color=Хар,Цагаан` (таслалаар,
+        ⚠️ параметрийн нэр ХУУЧИН нэг утгатайтай ЯГ ИЖИЛ — хуучин линк эвдрэхгүй ✓)
+      · DB нь `attrs->>color=in.(Хар,Цагаан)` — **OR** (аль нэг өнгөтэй зар) ✓
+      · идэвхтэй шүүлтийн чип 1 утгатай үед «🎨 Хар», олон үед **«🎨 2 өнгө»**
+        гэж товчлогдоно (`multiNoun`)
+      · ⚠️ ФОРМ (зар оруулах 3-р алхам) ХӨНДӨГДӨӨГҮЙ — «Өнгө» нь хэвээр
+        `<select>` ба `attrs.color` нь нэг ТЕКСТ (`formChips` туг БАЙХГҮЙ ✓)
+      · ⚠️ DB migration ШААРДЛАГАГҮЙ (jsonb-ийн утга өөрчлөгдөөгүй, зөвхөн шүүлт ✓)
+      · Дүрэм нь `lib/attrMultiFilter.mjs` (цэвэр, тестлэгддэг; БОДИТ Supabase
+        дээр `in.()` нь 200 OK — зайтай утга «Сувдан цагаан» ч зөв ✓)
+      🧪 `npm run test:attrMulti` → **19 тест ✓** · `npm run cdp:specs`-ийн ⑦
+      нь БОДИТ Chrome дээр чип/URL/DB-г түгждэг ✓
   · 🔀 `drive` — **«Хөтлөгч» БҮРЭН ХАСАГДАВ** (форм · sidebar · `CARD_ATTR_ORDER`)
   · 🎨 **2026-10-01 (2) (хэрэглэгчийн хүсэлт: «өнгийг загварын дараа оруулах»)** —
     `color` нь **3 ГАЗАРТ** 🚙 «Загвар»-ын ЯГ дараа: `attrFields` (форм) ·
@@ -3794,10 +3817,11 @@ npm run check:verify -- 99112233   # verify.mn-ээр БОДИТ SMS турши�
 npm run test:verify      # verify.mn offline тест (mock, 0₮)
 npm run test:phone       # 📞 утасны дугаараар хайх дүрэм (11 тест, 0₮)
 npm run test:format      # 💰 үнэ/мянгатын таслалт + 🤝 «Үнэ тохирно» (20 тест, 0₮)
-npm run test:filters     # 🔎 attrFilters-ийн гэрээ + 🧳 travel/🧺 home/🛋️ furniture/⚡ electric/⚽ hobby хялбар форм + 💻 Notebook-ийн 📺/⚙️/🧠/💾 сонголт + 🔧 хөдөлгүүр/🎨 өнгө (+ 🎨 өнгө нь «Загвар»-ын дараа — форм/sidebar/карт) + 🛡️ 💻 «Баталгаа» (`warranty`) ХАСАГДАВ + 📋 `getAttrRows` (зарын дэлгэрэнгүй 2 багана) + «Шинэ / Шинэвтэр / Хуучин» (condition ЯГ 3 сонголттой, «Шинэвтэр» дунд) + 🆕 💻 Notebook-ийн 4 ШҮҮЛТ дэд төрлөөр (`getAttrFilters(section, subtype)`) + 🆕 `pruneGatedAttrs` (үл үзэгдэх шүүлт цэвэрлэнэ) (94 тест, 0₮)
+npm run test:filters     # 🔎 attrFilters-ийн гэрээ + 🧳 travel/🧺 home/🛋️ furniture/⚡ electric/⚽ hobby хялбар форм + 💻 Notebook-ийн 📺/⚙️/🧠/💾 сонголт + 🔧 хөдөлгүүр/🎨 өнгө (+ 🎨 өнгө нь «Загвар»-ын дараа — форм/sidebar/карт) + 🛡️ 💻 «Баталгаа» (`warranty`) ХАСАГДАВ + 📋 `getAttrRows` (зарын дэлгэрэнгүй 2 багана) + «Шинэ / Шинэвтэр / Хуучин» (condition ЯГ 3 сонголттой, «Шинэвтэр» дунд) + 🆕 💻 Notebook-ийн 4 ШҮҮЛТ дэд төрлөөр (`getAttrFilters(section, subtype)`) + 🆕 `pruneGatedAttrs` (үл үзэгдэх шүүлт цэвэрлэнэ) + 🆕 🎨 ӨНГӨ нь ОЛОН СОНГОЛТТОЙ ЧИП (`chips`/`multi`/`multiNoun` — зөвхөн sidebar; форм `<select>` ХЭВЭЭР) — 98 тест, 0₮)
 npm run test:rooms       # 🛏🗑 ӨРӨӨНИЙ ТОО — UI ХАСАГДСАН, URL/DB/breadcrumb ХЭВЭЭР (44 тест, 0₮) ✓
 npm run test:districts   # 🗺 ДҮҮРЭГ / СУМ — ОЛОН сонголттой чип (eq/in, нэгдэл, шошго) (40 тест, 0₮) ✓
 npm run test:payments    # 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — хайлтад ЧИП (өрөөний тоотой ижил), формд ☑/URL/DB (jsonb `cs`) + ЗААВАЛ (36 тест, 0₮) ✓
+npm run test:attrMulti   # 🎨 🚗 АВТО «ӨНГӨ» — ОЛОН сонголттой ЧИП шүүлт (URL `attr_color=А,Б` / DB `attrs->>color=in.(…)`) (19 тест, 0₮) ✓
 npm run test:card        # 📇 ЗАРЫН КАРТ — unegui.mn хэв (ТОМ зураг 42% · үнэ/гарчиг/тайлбар · нийтлэгчийн band · 🖼 1/N · ❤️) (16 тест, 0₮) ✓
 npm run test:jobs        # 💼 АЖЛЫН ЗАР — шинэ 5 талбар (🕒/📊/🏷️/📈/💰) + чип шүүлт + «Үнэ→Цалин» (17 тест, 0₮) ✓
 npm run test:search      # 🔢 тооны хүрээ (цэгээр бүлэглэлт) + 🔀 эрэмбэлэлт (49 тест, 0₮)
@@ -3815,9 +3839,13 @@ npm run cdp:districts    # 🐍 БОДИТ Chrome (:9222) дээр 🗺 ДҮҮР
 npm run cdp:payments     # 🐍 БОДИТ Chrome (:9222) дээр 💳 төлбөрийн ЧИП (хайлт) + ☑ (форм) — UI + хэв + URL + DB — 58 шалгалт ✓
                          #   ⚠️ jsonb `attrs=cs.{"payment_terms":["lease"]}` ба OR-ийн
                          #   мөрөнд массив БҮР ЯГ 1 элементтэй (`22P02`-оос сэргийлнэ ✓)
-npm run cdp:specs        # 🐍 БОДИТ Chrome (:9222) дээр 💻 Notebook-ийн 📺/⚙️/🧠/💾 ШҮҮЛТ — 38 шалгалт ✓
+npm run cdp:specs        # 🐍 БОДИТ Chrome (:9222) дээр 💻 Notebook-ийн 📺/⚙️/🧠/💾 ШҮҮЛТ + 🎨 АВТО «ӨНГӨ»-ний ОЛОН СОНГОЛТТОЙ ЧИП — 63 шалгалт ✓
                          #   ⚠️ `?type=Mouse&attr_cpu=…` гэх мэт хүчингүй хослол
                          #   ЧИМЭЭГҮЙ хасагдана (`pruneGatedAttrs` — үл үзэгдэх шүүлт БАЙХГҮЙ ✓)
+                         #   🎨 ⑦b: 🎨 нь `<select>` БИШ 12 чип; «Хар»+«Цагаан» →
+                         #   `?attr_color=Хар,Цагаан` · «2 сонгосон» badge · чип
+                         #   «🎨 2 өнгө» · DB `attrs->>color=in.(Хар,Цагаан)` (OR) ·
+                         #   toggle/«✕ Цуцлах» · хуучин 1 утгатай линк ч зөв ✓
 npm run cdp:range        # 🐍 БОДИТ Chrome (:9222) дээр тооны хүрээ (цэгээр бүлэглэлт)/эрэмбэлэлт — 33 шалгалт
                          #   («Доод / Дээд» шошго + «санал болгосон тоо» 0 гэдгийг ч шалгана ✓)
 npm run cdp:chips        # 🐍 БОДИТ Chrome (:9222) дээр 💼 АЖЛЫН ЗАРЫН 4 ЧИП ТАЛБАР — 38 шалгалт ✓
@@ -3826,6 +3854,14 @@ npm run cdp:chips        # 🐍 БОДИТ Chrome (:9222) дээр 💼 АЖЛЫ
                          #   ⚠️ `cdp:*` нь `npm run build && npm run start` (:3000) ба
                          #   Chrome-ыг `--remote-debugging-port=9222`-оор нээсэн байхыг шаардна
                          #   ⚠️ ХОЁР cdp скриптийг ЗЭРЭГ ажиллуулж БОЛОХГҮЙ (нэг Chrome таб)
+                         #   ⚠️ 2026-10-03 (19): `npm run build`-ыг АЖИЛЛАЖ БАЙГАА
+                         #   `npm run dev`-ийн дээр ажиллуулж БОЛОХГҮЙ — тэр нь `.next`-ийг
+                         #   дарж, dev сервер `/_next/static/**` дээр **404** буцааж,
+                         #   хуудас hydrate болохгүй (URL ч уншигдахгүй) → CDP тестүүд
+                         #   «sidebar хоосон / `[data-attr-filter]` 0» гэж УНАХ болно ✗
+                         #   (шинж тэмдэг: `Network.loadingFailed`-д `/_next/...` 404)
+                         #   ⇒ build-ийн дараа dev-ээ ДАХИН эхлүүлнэ (`pkill -f 'next dev'`
+                         #   → `npm run dev`) эсвэл `npm run build && npm run start` ашиглана ✓
 
 npm run make:admin -- 88093663     # хэрэглэгчийг админ болгох
 npm run make:admin -- --list       # админуудыг харуулах
@@ -4080,7 +4116,8 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 | `scripts/cdp-range.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:range` (2026-09-30 (3): 🔢 тооны хүрээний **33 шалгалт** — бичих ЯВЦАД цэг (`3000000` → `3.000.000`), ⏎/blur = 1 query, Esc буцаалт, талбай `1.234,5`, **🗑 «санал болгосон тоо» товч DOM-д 0**, **🏷 `placeholder` = «Доод / Дээд»** ба **`aria-label` = «Үнэ (доод хязгаар)» / «Үнэ (дээд хязгаар)»**, «Эхлэх / Дуусах» гэсэн үг DOM-д БАЙХГҮЙ, ✕ арилгах, оны хүрээ `attrs->>year`, `?sort=` → `order`, hero 13 option, слайдер БАЙХГҮЙ — ⚠️ сервер :3000 ба Chrome :9222 шаардна) |
 | `lib/paymentFilter.mjs` | 💳 **«Төлбөрийн нөхцөл» (цэвэр функцууд, 🆕 2026-10-03 (5); дизайн (6))** — `PAYMENT_VALUES`/`PAYMENT_OPTIONS` (код + шошго + icon: `lease`/`cash`/`loan`/`barter`; ⚠️ шошго нь «Бартер **сонирхоно**», icon нь UI-д ХАРАГДАХГҮЙ — (6)) · `normalizePaymentValue`/`isPaymentValue` · `parsePaymentList`/`paymentsUrlValue`/`togglePaymentValue` · `countPayments`/`isPaymentsEmpty` · `paymentOptionLabel`/`paymentOptionIcon` · `paymentsFilterLabel`/`paymentsFilterDescriptor` · `paymentContainsJson`/`applyPaymentFilter` (⚠️ `.or()`-д нөхцөл бүр **ЯГ 1 ЭЛЕМЕНТТЭЙ** массив) · `hasPaymentTerms` (шүүлт/блок харагдах эсэх) · `paymentTermsForAttrs` (форм → `attrs.payment_terms`, хоосон/дэмжигдэхгүй → **`null`** ⇒ түлхүүр УСТГАГДАНА) — ⚠️ React/`window`-оос ХАМААРАЛГҮЙ тул `test-payments` нь рендэргүйгээр шалгана ✓ |
 | `scripts/cdp-payments.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:payments` (🆕 2026-10-03 (5); дизайн (6), хайлтын чип (16): 💳 **төлбөрийн нөхцөлийн 58 шалгалт** — ① 🏠 Орон сууц дээр `[data-payment-filter]` **1** + `[data-payment-value]` **4** (`lease,cash,loan,barter`) ба шошго нь «Хувь лизингээр · Бэлэн төлөлтөөр · Банкны зээлээр · Бартер сонирхоно» ①b 🎛 **ЧИП (өрөөний тоотой ЯГ ИЖИЛ): жинхэнэ `<button>` 4 · НЭГ `<input>` Ч БАЙХГҮЙ · `.chip-toggle` + `flex-wrap` · хэмжээ 124x33** (⏳ (6)-ийн 2 баганат ☑ нь ЗӨВХӨН ФОРМД) ② блок нь **«Өрөөний тоо»-ны ДАРАА, «Үнэ, ₮»-ний ӨМНӨ** (`aside .divide-y > div` дарааллаар) ③ чип дарж `?payment=lease` → DB **`attrs=cs.{"payment_terms":["lease"]}`** (⚠️ `->>` БИШ) ④ 2 чип → `or=(attrs.cs.{…["lease"]},attrs.cs.{…["cash"]})` + «2 сонгосон» badge ба ⚠️ **нөхцөл бүр ЯГ 1 ЭЛЕМЕНТТЭЙ массив** (`22P02`-оос сэргийлнэ) ⑤ дахин дарж toggle · «✕ Цуцлах» · «✕» идэвхтэй чип ⑥ 🚗 Авто дээр чипүүд (🆕 2026-10-03 (13): ХЭСГИЙН түвшинд `?section=auto` (төрөл ГҮЙ) ч блок **1** — `hasPaymentTerms(section)` ✓, progressive ХАСАГДАВ) ба ⛔ Ажил/Компьютер дээр блок **0**, «Бүх зар» дээр блок **0** ч sidebar **БИЙ** (📍 Байршил · 💰 Үнэ ✓) ⑦ **хуучин линк** нормчлогдоно (`?payment=abc, LEASE` → зөвхөн `lease`) ⑧ хэсэг солиход `payment=` ИГНОРХИЙГДЭНЭ (URL/DB цэвэр) ⑨ breadcrumb «Үл хөдлөх» линк ⑩ 📱 мобайл 390px — чипүүд (139x33) харагдана, **overflow 0**, JS exception **0** — ⚠️ сервер :3000 ба Chrome :9222 шаардна) |
-| `scripts/cdp-notebook-specs.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:specs` (🆕 **2026-10-03 (7): 💻 Notebook-ийн 📺/⚙️/🧠/💾 40 шалгалт** — ① `?section=computers&type=Apple` дээр `[data-attr-filter]` **5** (4 үзүүлэлт + ✅ төлөв), дараалал `screen→cpu→ram→storage→condition`, шошго/сонголт нь **`lib/locationData.js`-тэй DOM↔ЛИБ харьцуулалтаар ЯГ ижил** (7/19/13/6/3 + «Бүгд»), блок дараалал 🏷️ Брэнд → 📺 → ⚙️ → 🧠 → 💾 → «Үнэ, ₮» ② ⚙️ «Intel Core i5» сонгоход URL `?attr_cpu=Intel+Core+i5` + DB **`attrs->>cpu=eq.Intel Core i5`** (⚠️ `ilike` БИШ) + чип «⚙️ Intel Core i5» + үр дүн буурна ③ линкээр ороход утга талбар дээр тэмдэглэгдэж URL ХАСАГДАХГҮЙ ④ 🖱 `type=Mouse` дээр 4 шүүлт **0** ба DB-д `attrs->>cpu` ОГТ ЯВАХГҮЙ ⑤ 🕳 `?type=Mouse&attr_cpu=…` → URL/DB цэвэр (`pruneGatedAttrs`) ⑥ 🆕 2026-10-03 (13): дэд төрөл сонгоогүй Ч sidebar **БАЙНА** (хэсэг = 2-р түвшин; `[data-attr-filter]` нь либээс ижил, 📺/⚙️/🧠/💾 нь ГАРАХГҮЙ ХЭВЭЭР) ⑦ 🚗 авто дээр 3 (`color·transmission·fuel`, `attrs->>fuel=eq.Хайбрид` — бусад хэсэг хөндөгдөөгүй) ⑧ 📱 390px overflow 0 ⑨ exception 0 — ⚠️ сервер :3000 ба Chrome :9222 шаардна; `+` = зай (`dbQ` нь хөрвүүлнэ ✓)) |
+| `scripts/cdp-notebook-specs.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:specs` (🆕 **2026-10-03 (7): 💻 Notebook-ийн 📺/⚙️/🧠/💾 40 шалгалт; 🆕 (19): + 🎨 АВТО «ӨНГӨ»-ний ОЛОН СОНГОЛТТОЙ ЧИП → 63 шалгалт** — ① `?section=computers&type=Apple` дээр `[data-attr-filter]` **5** (4 үзүүлэлт + ✅ төлөв), дараалал `screen→cpu→ram→storage→condition`, шошго/сонголт нь **`lib/locationData.js`-тэй DOM↔ЛИБ харьцуулалтаар ЯГ ижил** (7/19/13/6/3 + «Бүгд»), блок дараалал 🏷️ Брэнд → 📺 → ⚙️ → 🧠 → 💾 → «Үнэ, ₮» ② ⚙️ «Intel Core i5» сонгоход URL `?attr_cpu=Intel+Core+i5` + DB **`attrs->>cpu=eq.Intel Core i5`** (⚠️ `ilike` БИШ) + чип «⚙️ Intel Core i5» + үр дүн буурна ③ линкээр ороход утга талбар дээр тэмдэглэгдэж URL ХАСАГДАХГҮЙ ④ 🖱 `type=Mouse` дээр 4 шүүлт **0** ба DB-д `attrs->>cpu` ОГТ ЯВАХГҮЙ ⑤ 🕳 `?type=Mouse&attr_cpu=…` → URL/DB цэвэр (`pruneGatedAttrs`) ⑥ 🆕 2026-10-03 (13): дэд төрөл сонгоогүй Ч sidebar **БАЙНА** (хэсэг = 2-р түвшин; `[data-attr-filter]` нь либээс ижил, 📺/⚙️/🧠/💾 нь ГАРАХГҮЙ ХЭВЭЭР) ⑦ 🚗 авто дээр 3 (`color·transmission·fuel`, `attrs->>fuel=eq.Хайбрид` — бусад хэсэг хөндөгдөөгүй) ба 🆕 **(19) 🎨 «ӨНГӨ» нь ОЛОН СОНГОЛТТОЙ ЧИП**: `<div data-attr-filter="color" data-attr-multi="true">` дотор 12 `<button class="chip-toggle">` (`<select>` БИШ, `options` БАЙХГҮЙ — тиймээс пробын сонголт/утга нь ЗӨВХӨН `<select>`-үүдээр уншигдана ✓), «Хар»+«Цагаан» дарахад URL `?attr_color=Хар,Цагаан` · badge «2 сонгосон» · идэвхтэй чип «🎨 2 өнгө» · DB `attrs->>color=in.(Хар,Цагаан)` (OR) · дахин дарахад toggle · «✕ Цуцлах» → URL/DB бүрэн цэвэр · ХУУЧИН 1 утгатай линк (`?attr_color=Хар`) ч зөв · массив(color)+скаляр(fuel) хоёр ЗЭРЭГ ажиллана ⑧ 📱 390px overflow 0 ⑨ exception 0 — ⚠️ сервер :3000 ба Chrome :9222 шаардна; `+` = зай (`dbQ` нь хөрвүүлнэ ✓)) |
+| `scripts/test-attr-multi.mjs` | 🆕 **19 тест** — `npm run test:attrMulti` (2026-10-03 (19): 🎨 «Өнгө»-ний ОЛОН СОНГОЛТТОЙ ШҮҮЛТИЙН гэрээг хамгаална — ① `lib/attrMultiFilter.mjs`-ийн цэвэр функцууд: `normalizeAttrValue` (trim; ⚠️ таслал → зай; ТОМ/ЖИЖИГ үсэг ХӨНДӨХГҮЙ) · `parseAttrList` (массив/текст; **массив ДОТОРХ таслалт ч хуваагдана** — `URLSearchParams.getAll()` нь `['Хар,Цагаан']` гэж буцаадаг тул ⚠️ энэ нь БОДИТ АЛДААНЫГ бариулсан шалгалт ✓; давхцал/эвдэрсэн утга хасна; ИРСЭН дараалал — URL тогтвортой) · `toggleAttrValue` · `attrListUrlValue` · `countAttrValues`/`isAttrListEmpty` · `attrListFilterLabel` (1 → нэрээр, 2+ → «3 өнгө» ✓) · `attrMultiFilterDescriptor` (`none`/`in`) ② `applyAttrMultiFilter` нь fake PostgREST builder-ээр **`in('attrs->>color', ['Хар','Цагаан'])` ЯГ нэг удаа** (`cs` containment БИШ — `attrs.color` нь скаляр ✓), хоосон дээр шүүлт ХИЙХГҮЙ ③ `lib/locationData.js`-ийн гэрээ: `getAttrField('auto','color')` нь `chips`/`multi`/`multiNoun` тугтай, `type: 'select'` ба `formChips` БАЙХГҮЙ (форм `<select>` ХЭВЭЭР ✓), 🚗 л `multi` (бусад 12 хэсэг ХӨНДӨГДӨӨГҮЙ), `getAttrFilters('auto')` нь 7 шүүлт + дараалал хэвээр (`color` 3 дахь) ④ `lib/queries.js`-ийн ЭХ ФАЙЛЫН ГЭРЭЭ: `applyAttrMultiFilter` import + массив шалгалт нь range/searchable-ийн **ӨМНӨ** (эс бөгөөс `String(v)` салаа руу орно ✗) ⑤ `HomeClient.jsx`: `toggleAttrMulti`/`clearAttrMulti` (`setAttr(key, [])`), `attrValue` нь массивыг `''` болгоно, URL-д `attrListUrlValue`, `data-attr-multi`, ба ⛔ `AddListingClient.jsx` дээр олон сонголтын код ОРООГҮЙ ✓) |
 | `scripts/test-payments.mjs` | 🆕 **36 тест** — `npm run test:payments` (2026-10-03 (5): 💳 төлбөрийн нөхцөлийн гэрээг хамгаална — ① `lib/paymentFilter.mjs`-ийн цэвэр функцууд: `hasPaymentTerms` (зөвхөн `real-estate`/`auto` ✓) · `normalizePaymentValue`/`isPaymentValue` (trim + lowercase) · `parsePaymentList` (эвдэрсэн утга хасч, КАНОН дараалал) · `paymentsUrlValue` · `countPayments`/`isPaymentsEmpty` · `paymentOptionLabel`/`Icon` · `paymentsFilterLabel` · `togglePaymentValue` · `paymentsFilterDescriptor` ② `paymentContainsJson` ба `applyPaymentFilter` нь fake PostgREST builder-ээр: **1 утга → `attrs=cs.{"payment_terms":["x"]}`**, **2+ → `or=(…)`**, ⚠️ **`["a","b"]` гэсэн ХОЁР ЭЛЕМЕНТТЭЙ массив ХЭЗЭЭ Ч ЯВАХГҮЙ** (таслал `.or()`-ийг эвдэж `22P02` өгнө ✗) ③ `paymentTermsForAttrs` (дэмжигдэхгүй/хоосон → `null`) ④ `getAttrRows` — 💳 мөр зарын дэлгэрэнгүйд гарна (4 тохиолдол) ⑤ `lib/queries.js`/`HomeClient.jsx`/`AddListingClient.jsx`/`cdp-payments.mjs`/`package.json` дээрх ЭХ ФАЙЛЫН ГЭРЭЭ (regex) ✓ + 🆕 **(16) ХАЙЛТ нь ЧИП:** `HomeClient.jsx`-д `chip-toggle`/`aria-pressed`/`<button>` байна, `pay-grid`/`type="checkbox"` БАЙХГҮЙ, icon харагдахгүй ✓ + 🆕 **(18) ФОРМ Ч МӨН ЧИП:** `AddListingClient` нь `chip-toggle`/`aria-pressed`/`<button>` ба `pay-grid`/`pay-check`/`type="checkbox"`/`checked` **БАЙХГҮЙ** ✓, `globals.css`-ээс ☑-ийн дүрмүүд (`.pay-grid`/`.pay-check`/`appearance:none`/SVG) **УСТГАГДАВ** ба хайлт=форм нэг хэв (`.chip-toggle`) ✓) — ⚠️ `scripts/cdp-payments.mjs` нь БОДИТ DOM дээр чипийн хэмжээ (124x33), `aria-pressed`, `flex-wrap`-ыг хэмжинэ ✓) |
 | `scripts/test-districts.mjs` | **40 тест** — `npm run test:districts` (🆕 2026-10-03 (12): 🗺 дүүргийн **ОЛОН сонголтын** гэрээ — 🏷️ 2026-10-03 (14): `districtsFilterLabel` нь **«2 дүүрэг»** (өмнө «2 дүүрэг/сум») · `normalizeDistrict` (зай/таслалт/хүчингүй утга) · `parseDistrictList` (эвдэрсэн гишүүн хасаж, дараалал хадгална) · `isDistrictsEmpty`/`countDistricts` · `toggleDistrictValue` (checkbox мэт) · `districtsUrlValue` · `districtsFilterLabel` (**1 → нэрээр** «Баянгол» · 2+ → «2 дүүрэг») · `districtsFilterDescriptor`/`applyDistrictFilter` fake builder-ээр — **`['Баянгол']` → `eq`** (хуучин гэрээ ЯГ ижил ✓), 2+ → `in`; `getKhoroosForDistricts` (нэгдэл, хорооны нэрээр давхцалгүй, танихгүй хот → `[]`) · `lib/queries.js` ба `lib/breadcrumb.js` нь модулийг дуудна (`codeOnly()` эх кодын гэрээ) · `HomeClient.jsx`-д `<select>` БАЙХГҮЙ + `data-district-filter`/`data-district-value` БАЙНА, «Өрөө» илүүц текст БАЙХГҮЙ · `scripts/cdp-districts.mjs` нь чип дарах замыг шалгана ✓) |
 

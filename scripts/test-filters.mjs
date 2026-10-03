@@ -100,6 +100,22 @@ t('🎨 Өнгө — форм ба sidebar ХОЁУЛАА (12 сонголт, «
   assert.equal(new Set(f.options).size, 12);
   assert.equal(f.options[11], 'Бусад');
   assert.ok(getAttrFilters('auto').some((x) => x.key === 'color'));
+  /*
+   * 🎨 2026-10-03 (19) — ХАЙЛТЫН SIDEBAR ДЭЭР ОЛОН СОНГОЛТТОЙ ЧИП
+   * (хэрэглэгчийн хүсэлт: «Зар хайлт дээр Авто машин сонголт дээр Өнгө ийг
+   * Төлбөрийн нөхцөл шиг олон сонголттой болго»):
+   *   • `chips: true` → sidebar-д `<select>` биш, `chip-toggle` чипүүд
+   *   • `multi: true` → `filters.attrs.color` нь МАССИВ → URL
+   *     `?attr_color=Хар,Цагаан` ба DB `attrs->>color=in.(…)`
+   *     (`lib/attrMultiFilter.mjs`; дэлгэрэнгыг `scripts/test-attr-multi.mjs` ✓)
+   *   • `multiNoun: 'өнгө'` → идэвхтэй чип «🎨 3 өнгө» гэж товчлогдоно
+   *   ⚠️ ФОРМ ХӨНДӨГДӨӨГҮЙ (`formChips` туг БАЙХГҮЙ) — 3-р алхамд «Өнгө» нь
+   *      хэвээр `<select>` (нэг өнгө хадгална ✓)
+   */
+  assert.equal(f.chips, true, 'голтонд чип туг алга ✗');
+  assert.equal(f.multi, true, 'олон сонголтын туг алга ✗');
+  assert.equal(f.multiNoun, 'өнгө');
+  assert.ok(!f.formChips, 'форм дээр чип болжээ ✗ (зөвхөн хайлт ✓)');
 });
 
 t('🔀 Хөтлөгч форм, шүүлт, картын мөр ГУРВААС ХАСАГДАВ', () => {
