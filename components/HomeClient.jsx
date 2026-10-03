@@ -11,7 +11,7 @@ import {
 } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
 import {
-  CITIES, getDistricts, getKhoroos,
+  CITIES, getDistricts, getKhoroos, ROOM_OPTIONS,
   hasRoomsFields, SECTIONS, getSection, getSubtypes, getSectionCategories,
   hasCategoryChoice, getAttrFilters, getAttrField, formatAttrsLine,
   parseAttrRangeKey, getAttrRangeKeys,   // 📅 оны хүрээ (2026-09-28)
@@ -41,14 +41,17 @@ import { AREA_BOUNDS, formatGroupedInput, priceBounds, yearBounds } from '../lib
 // 🔀 Эрэмбэлэх сонголт (eBay-ийн «Sort: Best Match ▾» шиг) — цэвэр логик нь
 //    `lib/sortOptions.mjs`, DB тал нь `lib/queries.js → sortOrders()`
 import { DEFAULT_SORT, SORT_OPTIONS, normalizeSort } from '../lib/sortOptions.mjs';
-// 🛏 ӨРӨӨНИЙ ТОО — цэвэр логик нь `lib/roomFilter.mjs`
+// 🛏 ӨРӨӨНИЙ ТОО — ОЛОН СОНГОЛТ — цэвэр логик нь `lib/roomFilter.mjs`
 //    (URL, DB, breadcrumb бүгд тэр модулийг хэрэглэнэ) ✓
-// ⚠️🆕 2026-09-30 (4): хуудас дээрх «1 өрөө … +5 өрөө» ЧИПҮҮД БҮРЭН
-//    ХАСАГДАВ (хэрэглэгчийн хүсэлт) — UI-д өрөө сонгох ТОВЧ ОГТ БАЙХГҮЙ ✗
-//    Гэхдээ доод түвшний дэмжлэг ХЭВЭЭР: `?rooms=1,3` линк уншигдана, DB
-//    (`applyRoomFilter`) шүүлт хийнэ, breadcrumb «1, 3 өрөө» гэж харуулна,
-//    «идэвхтэй шүүлт» чип (`🛏 1, 3 өрөө` ✕) ч гарсаар байна ✓
-import { parseRoomList, roomsUrlValue, roomsFilterLabel } from '../lib/roomFilter.mjs';
+// 🆕 2026-10-03 (4): ХЭРЭГЛЭГЧИЙН ХҮСЭЛТЭЭР UI ЭРГЭЖ ИРЭВ —
+//    «Орон сууц → Дэлгэрэнгүй хайлт» дээр өрөөний тоог ХОРООНЫ блоктой
+//    ИЖИЛ `chip-toggle` чипүүдээр, «Үнэ, ₮»-ний ДЭЭР сонгоно ✓
+// ⚠️ 2026-09-30 (4)-д UI нь хасагдсан байсныг сэргээв (модуль бүрэн бүтэн
+//    байсан тул зөвхөн UI-г дахин холбов) — доод түвшин (URL/DB/breadcrumb)
+//    өөрчлөгдөөгүй, хуучин линкүүд эвдрэхгүй ✓
+import {
+  parseRoomList, roomsUrlValue, roomsFilterLabel, toggleRoomValue,
+} from '../lib/roomFilter.mjs';
 
 // Нүүр хуудсны хайлтын анхдагч (хоосон) утга.
 // ⚠️ `khoroos` нь МАССИВ — хэрэглэгч ОЛОН хороог зэрэг сонгоно (unegui.mn-ийн
@@ -57,8 +60,8 @@ import { parseRoomList, roomsUrlValue, roomsFilterLabel } from '../lib/roomFilte
 // 🆕 `rooms` нь БАС МАССИВ (2026-09-30, хэрэглэгчийн хүсэлт: «өрөөний тоог
 //    олон сонголттой болго») — ж: `['1','3']` = «1 эсвэл 3 өрөөтэй».
 //    ⚠️ Хоосон утга нь `''` БИШ `[]` — эс бөгөөс `.length`/`.includes` унана ✗
-// ⚠️ 2026-09-30 (4): UI-д өрөө сонгох чип БАЙХГҮЙ болсон ч утга нь URL-аас
-//    (`?rooms=1,3`) ба breadcrumb-ийн линкээс ирдэг тул МАССИВ хэвээр ✓
+// ℹ️ 2026-10-03 (4): UI (чипүүд) эргэж ирсэн тул утга нь UI-ААС, URL-аас
+//    (`?rooms=1,3`) ба breadcrumb-ийн линкээс ХОЁУЛАНД ирж болно ✓
 // ℹ️ `district` нь НЭГ утга (string) — олон дүүрэг зэрэг сонгох нь ХАСАГДСАН.
 const EMPTY_FILTERS = {
   propertyType: '', rooms: [], city: '', district: '', khoroos: [], attrs: {},
@@ -575,13 +578,23 @@ export default function HomeClient() {
   };
 
   /**
-   * 🛏 ӨРӨӨНИЙ ТОО — 2026-09-30 (4): хуудас дээрх сонголтын ЧИПҮҮД БҮРЭН
-   *   ХАСАГДАВ (хэрэглэгчийн хүсэлт: «1 өрөө … +5 өрөө» товчнууд харагдахгүй
-   *   байх») → `toggleRooms`/`clearRooms` функц ХЭРЭГГҮЙ болсон ✗
-   * ⚠️ Утга нь зөвхөн URL-аас (`?rooms=1,3`) уншигдаж DB-д хэрэглэгдэнэ —
-   *    цэвэрлэх цорын ганц зам нь «идэвхтэй шүүлт» чип дээрх ✕
-   *    (`clearFilter('rooms')`) ба breadcrumb-ийн `clearType` ✓
+   * 🛏 ОЛОН ӨРӨӨ — нэг дарж нэмэх/хасах (checkbox мэт).
+   * 🆕 2026-10-03 (4): UI нь ХОРООНЫ блоктой ИЖИЛ хэв маяг (чипүүд `✓`
+   *    тэмдэгтэй, «N сонгосон» badge, «✕ Цуцлах» ✓)
+   * Хэрэглэгчийн хүсэлт: «өрөөний тоог олон сонголт хийх боломжтой байх» →
+   *   [1 өрөө] [2 өрөө] [3 өрөө] дарж `?rooms=1,2,3` болно (OR — аль ч).
+   * ⚠️ Дүрэм нь `lib/roomFilter.mjs → toggleRoomValue()` (нэг эх сурвалж):
+   *    шинэ массив буцаана, хүчингүй утгыг алгасна, давхцуулахгүй ✓
+   * ⚠️ 📄 1-р хуудас руу буцна — эс бөгөөс шүүсэн үр дүн цөөн байхад
+   *    «хоосон» хуудас харагдана ✗ (`setF`-тэй ижил зарчим)
    */
+  const toggleRooms = (value) => {
+    setPage(1);
+    setFilters((f) => ({ ...f, rooms: toggleRoomValue(f.rooms, value) }));
+  };
+
+  /** 🛏 Сонгосон бүх өрөөг арилгах («✕ Цуцлах») */
+  const clearRooms = () => setF('rooms', []);
 
   /** ОЛОН ХОРОО — нэг дарж нэмэх/хасах (checkbox мэт) */
   const toggleKhoroo = (k) => {
@@ -775,9 +788,19 @@ export default function HomeClient() {
     [filters.city, filters.district]
   );
   /** ХЭСГИЙН тодорхойлолт ба уламжлагдсан утгууд (0016)
-   *  ⚠️ `noSection` нь ДЭЭР (бүх hook-ийн өмнө) зарлагдсан. */
+   *  ⚠️ `noSection` нь ДЭЭР (бүх hook-ийн өмнө) зарлагдсан.
+   *  ⚠️ `sec`/`isRealEstate` нь `showRooms`-ООС ӨМНӨ байх ЁСТОЙ (TDZ алдаа). */
   const sec = getSection(noSection ? 'real-estate' : section);
   const isRealEstate = section === 'real-estate';
+
+  /**
+   * 🛏 ӨРӨӨНИЙ ТООНЫ блок харагдах эсэх — 🆕 2026-10-03 (4) UI сэргээв.
+   * ⚠️ «Өрөө» ойлголтгүй төрөл (Газар, Оффис, Худалдааны талбай, Үйлдвэр …)
+   *    сонгосон үед нуугдана — тэнд өрөөний шүүлт нь утгагүй ✗
+   *    (`lib/locationData.js → PROPERTY_TYPE_DEFS` дэх `rooms: true` туг)
+   */
+  const showRooms = isRealEstate
+    && (!filters.propertyType || hasRoomsFields(filters.propertyType));
 
   /**
    * 🔢 ҮНИЙ хил (2026-09-30) — ХЭСГЭЭС хамаарна: 🏠 үл хөдлөх → 5 тэрбум,
@@ -1569,13 +1592,12 @@ export default function HomeClient() {
               </div>
 
               <div className="divide-y divide-gray-100 px-4">
-                {/* ⚠️🗑 2026-09-30 (4): «🛏 Өрөөний тоо» — sidebar-ийн ЭХНИЙ
-                    блок (2026-09-30-нд нэмэгдсэн) БҮРЭН ХАСАГДАВ.
-                    Хэрэглэгчийн хүсэлт: хуудас дээр «1 өрөө … +5 өрөө»
-                    товчнууд харагдахгүй байх ✓
-                    Тиймээс sidebar-ийн ЭХНИЙ блок одоо «Байршил» ✓
-                    ⚠️ Утга (`filters.rooms`) нь URL-аас уншигдаж, DB-д
-                       хэрэглэгдсэн хэвээр — зөвхөн СОНГОХ UI байхгүй ✗ */}
+                {/* 🆕ℹ️ 2026-10-03 (4): 2026-09-30 (4)-д хасагдсан
+                    «🛏 Өрөөний тоо» блок ЭРГЭЖ ИРЭВ (хэрэглэгчийн хүсэлт) —
+                    гэхдээ ЭХНИЙ биш, «Үнэ, ₮»-ний өмнө байрлана ✓
+                    Sidebar-ийн дараалал:
+                    «Байршил» → [attr шүүлтүүд] → «🛏 Өрөөний тоо»
+                    → «Үнэ, ₮» → «Талбай, м²» ✓ */}
 
                 {/* ===== БАЙРШИЛ — Хот/Аймаг · Дүүрэг · ХОРОО =====
                     ⚠️ «Төрөл» энд БАЙХГҮЙ — төрлийг BREADCRUMB-ээс сольж буцаана
@@ -1733,6 +1755,67 @@ export default function HomeClient() {
                   </SideBlock>
                   );
                 })}
+
+                {/* ===== 🛏 ӨРӨӨНИЙ ТОО — ХОРООНЫ блоктой ИЖИЛ ХЭВ МАЯГ =====
+                    🆕 2026-10-03 (4) (хэрэглэгчийн хүсэлт: «орон сууцны
+                    өрөөний тоогоор хайх ... 1 өрөө 2 өрөө 3 өрөө 4 өрөө
+                    5+ өрөө ... Хороо сонгодог хэсэгтэй адилхан, Үнийн дээр»)
+                    ⚠️ 2026-09-30 (4)-д хасагдсан байсныг ЯГ ТЭР хэв маягаар
+                       нь сэргээв: `chip-toggle` чипүүд, `✓` тэмдэг,
+                       «N сонгосон» badge, «✕ Цуцлах» товч ✓
+                    ⚠️ Утгууд нь `lib/roomFilter.mjs → ROOM_VALUES` (1,2,3,4,+5;
+                       «+5» = `rooms >= 5` ХҮРЭЭ) — «Хороо»-той ижил
+                       олон сонголт (checkbox мэт) ✓
+                    ⚠️ Утга нь МАССИВ (`['1','3']`) → `?rooms=1,3` ба DB дээр
+                       `rooms IN (1,3)` / завсартай бол `.or()`
+                       (`lib/queries.js → applyRoomFilter`) ✓
+                    ⚠️ `showRooms` — үл хөдлөх БА (төрөл сонгоогүй эсвэл
+                       өрөөтэй төрөл). Газар/Оффис/Үйлдвэрт өрөө гэж байхгүй ✗
+                    ⚠️ `data-room-filter` / `data-room-value` нь CDP тестийн
+                       (`scripts/cdp-rooms.mjs`) дэгээ — УСТГАХГҮЙ ✓ */}
+                {showRooms && (
+                  <SideBlock label="🛏 Өрөөний тоо">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[12px] font-semibold text-gray-500">
+                        Өрөө
+                        {filters.rooms.length > 0 && (
+                          <span className="ml-1.5 rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
+                            {filters.rooms.length} сонгосон
+                          </span>
+                        )}
+                      </span>
+                      <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-2" data-room-filter role="group" aria-label="Өрөөний тоо">
+                        <div className="flex flex-wrap gap-1.5">
+                          {ROOM_OPTIONS.map((r) => {
+                            const on = filters.rooms.includes(r.value);
+                            return (
+                              <button
+                                key={r.value}
+                                type="button"
+                                aria-pressed={on}
+                                data-room-value={r.value}
+                                onClick={() => toggleRooms(r.value)}
+                                className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                              >
+                                {on && <span aria-hidden="true">✓</span>}
+                                {r.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      {filters.rooms.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={clearRooms}
+                          className="self-start text-[12px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                        >
+                          ✕ Цуцлах
+                        </button>
+                      )}
+                    </div>
+                  </SideBlock>
+                )}
 
                 {/* ===== ҮНЭ, ₮ — 2026-09-30: ЧИРДЭГ ХҮРЭЭ БА ТҮРГЭН ХҮРЭЭ ХАСАГДАВ =====
                     ⚠️ Хэрэглэгчийн хүсэлт (1): «дээд доод үнэ, талбай дээр чирдэгээ

@@ -8,13 +8,13 @@
 //   ④ ЭХ ФАЙЛЫН ГЭРЭЭ: `HomeClient.jsx`, `breadcrumb.js` нь `roomFilter.mjs`-ийг
 //      хэрэглэж, хоосон утга нь `''` БИШ `[]` байгаа эсэх
 //
-// ⚠️🗑 2026-09-30 (4) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «1 өрөө … +5 өрөө» ТОВЧНУУД
-//    хуудсанд харагдахгүй байх → `components/HomeClient.jsx`-ийн өрөө сонгох
-//    UI (sidebar-ийн блок БА үр дүнгийн мөр) БҮРЭН ХАСАГДАВ.
-//    ⚠️ Гэхдээ модуль/URL/DB/breadcrumb БҮГД ХЭВЭЭР: `?rooms=1,3` линк
-//    уншигдаж, DB дээр `rooms IN (1,3)` болж, breadcrumb «1, 3 өрөө» гэж
-//    харуулсаар байна — ТИЙМЭЭС доорх тестүүд утгаа ХАДГАЛСАН ✓
-//    (⑩ хэсэгт «UI байхгүй» гэсэн РЕГРЕСС тестүүд нэмэгдэв)
+// 🆕🛏 2026-10-03 (4) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Орон сууц → Дэлгэрэнгүй хайлт
+//    дээр орон сууцны өрөөний тоогоор хайх ... 1 өрөө ... 5+ өрөө ...
+//    Хороо сонгодог хэсэгтэй адилхан, Үнийн дээр» → `components/HomeClient.jsx`
+//    дээр өрөө сонгох UI (2026-09-30 (4)-д хасагдсан байсан) ЭРГЭЖ ИРЭВ:
+//    «Үнэ, ₮»-ний ӨМНӨ `chip-toggle` чипүүд + «N сонгосон» + «✕ Цуцлах» ✓
+//    ⚠️ Доод түвшин (модуль/URL/DB/breadcrumb) ӨӨРЧЛӨГДӨӨГҮЙ — доорх
+//    тестүүд бүгд ХЭВЭЭР; ⑩ хэсэгт UI-ийн ГЭРЭЭ (нэг эх сурвалж) бичигдэв ✓
 //
 // ЯАГААД ХЭРЭГТЭЙ ВЭ:
 //   Олон сонголт нь 3 газарт нэгэн зэрэг бичигддэг: UI (чип), URL (`?rooms=1,3`)
@@ -314,16 +314,30 @@ t('lib/queries.js: `applyRoomFilter`-ийг хэрэглэнэ (дүрмийг �
   assert.ok(!/Number\(value\) >= 5/.test(src), 'хуучин давхар дүрэм үлдсэн ✗');
 });
 
-t('🗑 РЕГРЕСС: HomeClient.jsx-д өрөө сонгох UI (товч) БАЙХГҮЙ — 2026-09-30 (4)', () => {
-  // Хэрэглэгчийн хүсэлт: «1 өрөө … +5 өрөө» товчнууд хуудсанд харагдахгүй байх
-  const ui = codeOnly(readSrc('components/HomeClient.jsx'));
-  assert.doesNotMatch(ui, /data-room-filter/, 'өрөөний блок DOM-д үлдсэн ✗');
-  assert.doesNotMatch(ui, /data-room-value/, 'өрөөний чип үлдсэн ✗');
-  assert.doesNotMatch(ui, /ROOM_OPTIONS/, 'ROOM_OPTIONS импорт үлдсэн ✗');
-  assert.doesNotMatch(ui, /toggleRooms|clearRooms/, 'чип дарах/цуцлах функц үлдсэн ✗');
-  assert.doesNotMatch(ui, /toggleRoomValue/, 'toggleRoomValue импорт үлдсэн ✗');
-  assert.doesNotMatch(ui, /showRooms/, 'showRooms нөхцөл үлдсэн ✗');
-  assert.doesNotMatch(ui, /Өрөөний тоо/, '«Өрөөний тоо» блокын шошго үлдсэн ✗');
+t('🛏 HomeClient.jsx: өрөө сонгох UI ЭРГЭЖ ИРЭВ + «Үнэ»-ний ӨМНӨ — 2026-10-03 (4)', () => {
+  const src = readSrc('components/HomeClient.jsx');
+  const ui = codeOnly(src);
+  // ① Блок ба чипүүд DOM-д байгаа (CDP тестийн дэгээнүүд ✓)
+  assert.match(ui, /data-room-filter/, 'өрөөний блокийн дэгээ алга ✗');
+  assert.match(ui, /data-room-value/, 'өрөөний чипийн дэгээ алга ✗');
+  // ② НЭГ ЭХ СУРВАЛЖ — модулийн импорт/функцууд (дүрмийг давхар бичихгүй ✓)
+  assert.match(ui, /ROOM_OPTIONS/, 'ROOM_OPTIONS импорт/хэрэглээ алга ✗');
+  assert.match(ui, /toggleRoomValue/, 'toggleRoomValue импорт алга ✗');
+  assert.match(ui, /toggleRooms/, 'toggleRooms функц алга ✗');
+  assert.match(ui, /clearRooms/, 'clearRooms функц алга ✗');
+  assert.match(ui, /showRooms/, 'showRooms нөхцөл алга ✗');
+  assert.match(src, /Өрөөний тоо/, '«Өрөөний тоо» блокын шошго алга ✗');
+  // ③ БАЙРЛАЛ: чип нь «Үнэ, ₮» блокийн ӨМНӨ байх ЁСТОЙ (хэрэглэгчийн хүсэлт)
+  const roomsAt = ui.indexOf('data-room-filter');
+  const priceAt = ui.indexOf('Үнэ, ₮');
+  assert.ok(roomsAt > 0, 'өрөөний блок олдсонгүй ✗');
+  assert.ok(priceAt > 0, '«Үнэ, ₮» блок олдсонгүй ✗');
+  assert.ok(roomsAt < priceAt, 'өрөөний блок «Үнэ»-ний ДАРАА байна ✗');
+  // ④ ХОРООНЫ блоктой ИЖИЛ хэв маяг (`chip-toggle` + «N сонгосон»)
+  assert.match(ui, /chip-toggle-active/, 'чипийн идэвхтэй хэв маяг алга ✗');
+  assert.match(src, /сонгосон/, '«N сонгосон» badge алга ✗');
+  // ⑤ Зөвхөн өрөөтэй төрөлд (`hasRoomsFields`) — хорооны нөхцөлтэй ижил зарчим
+  assert.match(ui, /hasRoomsFields\(filters\.propertyType\)/, 'showRooms-ийн нөхцөл алга ✗');
 });
 
 t('✅ ХАДГАЛАГДСАН: URL ба DB нь `rooms`-ыг ХЭВЭЭР дэмжинэ (хуучин линк эвдрэхгүй)', () => {
@@ -337,11 +351,14 @@ t('✅ ХАДГАЛАГДСАН: URL ба DB нь `rooms`-ыг ХЭВЭЭР дэ
   assert.ok(!/filters\.rooms ===/.test(ui), 'хуучин `===` харьцуулалт үлдсэн ✗');
 });
 
-t('🐍 CDP скрипт нь «DOM-д өрөөний товч ЯГ 0» гэж шалгана (дарах код үлдэхгүй)', () => {
+t('🐍 CDP скрипт нь чип БАЙГААГ ба дарах замыг шалгана — 2026-10-03 (4)', () => {
   const cdp = readSrc('scripts/cdp-rooms.mjs');
-  assert.match(cdp, /data-room-filter/, 'DOM-д байхгүйг CDP-ээр шалгана ✗');
-  assert.match(cdp, /=== 0/, 'товшны тоо ЯГ 0 байх ёстой ✗');
-  assert.doesNotMatch(cdp, /clickRoom\(/, 'чип дарах код үлдэх ёсгүй ✗');
+  assert.match(cdp, /data-room-value/, 'чипийг DOM-оос олдоггүй ✗');
+  assert.match(cdp, /data-room-filter/, 'блокийг олдоггүй ✗');
+  assert.match(cdp, /clickRoom\(/, 'чип дарах код алга ✗');
+  assert.match(cdp, /dom\.chips === 5/, '«Орон сууц дээр чип 5 байна» гэж шалгахгүй ✗');
+  // ⚠️ Хуучин «DOM-д ОГТ БАЙХГҮЙ» гэсэн шалгалтууд бүгд солигдсон байх ЁСТОЙ
+  assert.doesNotMatch(cdp, /ОГТ БАЙХГҮЙ/, 'хуучин «огт байхгүй» шалгалт үлдсэн ✗');
 });
 
 t('lib/breadcrumb.js: URL ба «хоослох» нь модулиар (rooms: [] / isRoomsEmpty)', () => {

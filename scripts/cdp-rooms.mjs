@@ -1,25 +1,32 @@
 /**
- * 🛏🗑 CDP ШАЛГАЛТ — «Өрөөний тоо» UI ХАСАГДСАН (2026-09-30 (4))
+ * 🛏 CDP ШАЛГАЛТ — «Өрөөний тоо» шүүлт (UI + URL + DB + breadcrumb)
  *
- * Хэрэглэгчийн хүсэлт: хуудсанд «1 өрөө · 2 өрөө · 3 өрөө · 4 өрөө · +5 өрөө»
- *   гэсэн ТОВЧНУУД харагдахгүй байх → 2026-09-30-нд нэмэгдсэн ХОЁР UI
- *   (sidebar-ийн ЭХНИЙ блок БА үр дүнгийн гарчиг доорх мөр) БҮРЭН ХАСАГДАВ ✓
+ * 🆕 2026-10-03 (4): ХЭРЭГЛЭГЧИЙН ХҮСЭЛТЭЭР UI ЭРГЭЖ ИРЭВ —
+ *   «Орон сууц → Дэлгэрэнгүй хайлт» дээр «1 өрөө … +5 өрөө» чипүүд нь
+ *   ХОРООНЫ блоктой ИЖИЛ хэв маягаар, «Үнэ, ₮»-ний ДЭЭР байрлана ✓
+ *   ⚠️ 2026-09-30 (4)-д «товчнууд харагдахгүй байх» гэсэн хүсэлтээр
+ *      хасагдсан байсан тул энэ скрипт тэр үед «DOM-д ЯГ 0» гэж шалгадаг байв ✗
  *
  * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ:
- *   ① DOM-д өрөө сонгох блок/товч ОГТ БАЙХГҮЙ (`[data-room-filter]` === 0,
- *      `[data-room-value]` === 0) — sidebar БА үр дүнгийн хэсэг ХОЁУЛАНД
- *   ② «1 өрөө» … «+5 өрөө» гэсэн ЯГ ТААРСАН тексттэй `<button>` БАЙХГҮЙ
- *      (selector өөрчлөгдсөн ч барих нэмэлт хамгаалалт ✓)
- *   ③ Sidebar-ийн ЭХНИЙ блок нь «Байршил» (хуучнаар «🛏 Өрөөний тоо» байв)
- *   ④ `rooms=` агуулсан HEAD query ОГТ ЯВАХГҮЙ (`fetchRoomCounts` ✓)
- *   ⑤ ⚠️ ДООД ТҮВШНИЙ ДЭМЖЛЭГ ХЭВЭЭР байх ЁСТОЙ — хуучин линк ЭВДРЭХГҮЙ:
- *      `?rooms=1,3` → DB `rooms=in.(1,3)` · `?rooms=4,5` → `rooms=gte.4` ·
- *      `?rooms=5` → `rooms=gte.5` (хуучин гэрээ) · `?rooms=abc,3,9` →
- *      URL `rooms=3,5` + DB `or=(rooms.in.(3),rooms.gte.5)`
+ *   ① Орон сууц дээр чип БАЙГАА: `[data-room-filter]` === 1,
+ *      `[data-room-value]` === 5, шошгууд «1 өрөө» … «+5 өрөө»; «Өрөөний тоо»
+ *      блок нь «Үнэ, ₮»-ний ӨМНӨ байрлана (хэрэглэгчийн хүсэлт ✓)
+ *   ①b ЧИП ДАРАХ: «1 өрөө» + «3 өрөө» → URL `?rooms=1,3` · DB
+ *      `rooms=in.(1,3)` · «2 сонгосон» badge · дахин дарвал ЦУЦЛАГДАНА (toggle)
+ *   ② Өрөөгүй төрөл (Оффис, Гараж …) ба төрөл сонгоогүй үед блок
+ *      ХАРАГДАХГҮЙ (`hasRoomsFields` — хорооны блоктой ижил зарчим ✓)
+ *   ③ ХУУЧИН линк: `?rooms=1,3` → чип дээр ТЭМДЭГЛЭГДЭж, DB `in.(1,3)`
+ *   ④ Идэвхтэй шүүлтийн чип `🛏 1, 3 өрөө` дээрх ✕ → `rooms: []`
+ *   ④b «✕ Цуцлах» товч → БҮХ сонголт арилж, URL/DB цэвэр болно
+ *   ⑤ DB ДҮРЭМ (хуучин линк эвдрэхгүй): `?rooms=4,5` → `gte.4` ·
+ *      `?rooms=5` → `gte.5` (хуучин гэрээ) · `?rooms=abc,3,9` → URL `rooms=3,5`
+ *      + DB `or=(rooms.in.(3),rooms.gte.5)`
  *   ⑥ `breadcrumb` нь «1, 3 өрөө» гэж харуулж, «Үл хөдлөх» линк дээр дарахад
  *      өрөөний шүүлт цэвэрлэгдэнэ (`clearType`)
- *   ⑦ Идэвхтэй шүүлтийн чип `🛏 1, 3 өрөө` + ✕ дарж цэвэрлэх
- *   ⑧ 📱 Мобайл 390px: хэвтээ гүйлт (overflow) ГАРАХГҮЙ, JS exception 0
+ *   ⑦ 📱 Мобайл 390px: чипүүд харагдана, хэвтээ гүйлт (overflow) ГАРАХГҮЙ
+ *   ⑧ 🗑 Чип дээрх «зарын тоо» ХЭВЭЭР БАЙХГҮЙ — `rooms=` агуулсан HEAD query
+ *      ОГТ ЯВАХГҮЙ (`fetchRoomCounts` 2026-09-30-нд хасагдсан ✓) ·
+ *      консол дээр JS exception 0
  *
  * ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
  *   1) `npm run build && npm run start` — сервер http://localhost:3000 дээр
@@ -155,17 +162,36 @@ const go = async (url) => {
   await sleep(700);
 };
 
-/** 🗑 DOM-д өрөө сонгох UI үлдсэн эсэх (0 байх ЁСТОЙ) */
+/** 🛏 DOM дахь өрөөний чипүүдийн төлөв (`data-room-*` дэгээгээр) */
 const roomUi = () => evalJs(`(() => {
   const btns = [...document.querySelectorAll('button')];
   const labelOnly = /^(\\+\\d|\\d) өрөө$/;
+  const chips = [...document.querySelectorAll('[data-room-value]')];
   return {
     blocks: document.querySelectorAll('[data-room-filter]').length,
-    chips: document.querySelectorAll('[data-room-value]').length,
+    chips: chips.length,
+    labels: chips.map((b) => b.textContent.trim()),
+    selected: chips.filter((b) => b.getAttribute('aria-pressed') === 'true')
+      .map((b) => b.getAttribute('data-room-value')),
     labelBtns: btns.filter((b) => labelOnly.test(b.textContent.trim())).map((b) => b.textContent.trim()),
-    toggles: btns.filter((b) => /өрөөний тоо/i.test(b.getAttribute('aria-label') || '')).length,
+    // ⚠️ aria-label="Өрөөний тоо" нь бүлэг (role=group div) дээр байдаг —
+    //    зөвхөн button дундаас хайвал 0 гарч ХУУРАМЧ улаан өгнө ✗
+    toggles: [...document.querySelectorAll('[aria-label]')]
+      .filter((e) => /өрөөний тоо/i.test(e.getAttribute('aria-label') || '')).length,
   };
 })()`);
+
+/** 🛏 Нэг чипийг дарах (утга `1`…`5`; «5» = «+5 өрөө») */
+const clickRoom = (value) => evalJs(`(() => {
+  const b = document.querySelector('[data-room-value="${value}"]');
+  if (!b) return 'NO_CHIP';
+  b.click();
+  return 'OK';
+})()`);
+
+/** 🧭 Sidebar блокүүдийн гарчгууд (дарааллаар — байрлал шалгахад) */
+const sideLabels = () => evalJs(`[...document.querySelectorAll('aside .divide-y > div')]
+  .map((b) => (b.firstElementChild?.textContent || '').trim())`);
 
 let pass = 0; let fail = 0;
 const check = (label, ok, extra = '') => {
@@ -177,37 +203,67 @@ const dbQ = (...frags) => listingReqs.some((u) => frags.every((f) => decodeURICo
 const lastQ = () => decodeURIComponent(listingReqs[listingReqs.length - 1] || '').split('?')[1] || '(query байхгүй)';
 const body = () => evalJs('document.body.textContent');
 
-console.log('\n🛏🗑 CDP — өрөөний тооны UI ХАСАГДСАН эсэх\n');
+console.log('\n🛏 CDP — өрөөний тооны шүүлт (UI + URL + DB + breadcrumb)\n');
 
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1280, height: 1400, deviceScaleFactor: 1, mobile: false });
-// ═══════ ① ОРОН СУУЦ ХУУДАС: ӨРӨӨНИЙ ТОВЧ ОГТ БАЙХГҮЙ ═══════
+// ═══════ ① ОРОН СУУЦ: ЧИПҮҮД БАЙГАА + БАЙРЛАЛ НЬ ЗӨВ ═══════
 roomCountReqs.length = 0;
 await go(`${BASE}/?section=real-estate&type=${encodeURIComponent('Орон сууц')}`);
 const dom = await roomUi();
-check('🗑 DOM-д өрөөний блок ОГТ БАЙХГҮЙ (`[data-room-filter]` === 0)', dom.blocks === 0, `blocks=${dom.blocks}`);
-check('🗑 Өрөөний чип ОГТ БАЙХГҮЙ (`[data-room-value]` === 0)', dom.chips === 0, `chips=${dom.chips}`);
-check('🗑 «1 өрөө» … «+5 өрөө» товч БАЙХГҮЙ (текстээр нэмж шалгав)',
-  dom.labelBtns.length === 0, dom.labelBtns.join(' · ') || '(0 товч ✓)');
-check('🗑 `aria-label="Өрөөний тоо"` бүлэг БАЙХГҮЙ', dom.toggles === 0);
-check('📊 Зарын тоо татдаг `rooms=` HEAD query ОГТ ЯВАХГҮЙ',
+check('🛏 Өрөөний блок БАЙНА (`[data-room-filter]` === 1)', dom.blocks === 1, `blocks=${dom.blocks}`);
+check('🛏 Чип 5 байна (`[data-room-value]` === 5 — 1,2,3,4,+5)', dom.chips === 5, `chips=${dom.chips}`);
+check('🛏 Шошгууд нь «1 өрөө» … «+5 өрөө»',
+  dom.labels.join(' · ') === '1 өрөө · 2 өрөө · 3 өрөө · 4 өрөө · +5 өрөө',
+  dom.labels.join(' · '));
+check('🛏 `aria-label="Өрөөний тоо"` бүлэг ТААРЛАА (хороотой ижил хэв маяг)',
+  dom.toggles === 1, `toggles=${dom.toggles}`);
+const labels1 = await sideLabels();
+check('🧭 Sidebar-ийн ЭХНИЙ блок «Байршил» (өрөөний блок ЭХНИЙ биш ✓)',
+  /Байршил/.test(labels1[0] || ''), labels1.join(' → '));
+const roomsIdx = labels1.findIndex((l) => /Өрөөний тоо/.test(l));
+const priceIdx = labels1.findIndex((l) => /Үнэ/.test(l));
+check('🧭 «Өрөөний тоо» блок «Үнэ, ₮»-ний ӨМНӨ байрлана (хэрэглэгчийн хүсэлт ✓)',
+  roomsIdx > 0 && priceIdx > 0 && roomsIdx < priceIdx,
+  `#${roomsIdx} → #${priceIdx} · ${labels1.join(' → ')}`);
+check('📊 Зарын тоо татдаг `rooms=` HEAD query ОГТ ЯВАХГҮЙ (хэвээр ✓)',
   roomCountReqs.filter((u) => u.includes('rooms=')).length === 0,
   `${roomCountReqs.filter((u) => u.includes('rooms=')).length} rooms-query (нийт ${roomCountReqs.length} HEAD)`);
-const sideLabels = await evalJs(`[...document.querySelectorAll('aside .divide-y > div')]
-  .map((b) => (b.firstElementChild?.textContent || '').trim())`);
-check('🧭 Sidebar-ийн ЭХНИЙ блок «Байршил» (хуучнаар «🛏 Өрөөний тоо» байв ✓)',
-  /Байршил/.test(sideLabels[0] || ''), sideLabels.join(' → '));
-check('🧭 Sidebar-д «Өрөөний тоо» блок БАЙХГҮЙ',
-  !sideLabels.some((l) => /Өрөөний тоо/.test(l)), sideLabels.join(' → '));
 
-// ═══════ ② ТӨРӨЛ СОНГООГҮЙ Ч ХУУДАС ЦЭВЭР ═══════
+// ═══════ ①b ЧИП ДАРАХ → URL/DB/TOGGLE (шинэ UI-ийн гол зам) ═══════
+listingReqs.length = 0;
+const click1 = await clickRoom('1');
+const click3 = await clickRoom('3');
+check('🛏 «1 өрөө» чип дардагдав', click1 === 'OK', click1);
+check('🛏 «3 өрөө» чип дардагдав', click3 === 'OK', click3);
+await waitFor(`decodeURIComponent(location.search).includes('rooms=1,3')`);
+check('🔗 Дарахад URL `?rooms=1,3` болов',
+  decodeURIComponent(await url()).includes('rooms=1,3'), decodeURIComponent(await url()));
+await sleep(1200);   // ⏳ DB query дуустахыг хүлээ (детермен)
+check('🔎 DB: rooms=in.(1,3) — чипээр шүүлт ХИЙГДЭВ', dbQ('rooms=in.(1,3)'), lastQ());
+const afterClick = await roomUi();
+check('🛏 Сонгосон чипүүд `✓` төлөвтэй (`aria-pressed`)',
+  afterClick.selected.join(',') === '1,3', `selected=[${afterClick.selected.join(',')}]`);
+check('🛏 Badge «2 сонгосон» харагдана', /2 сонгосон/.test(await body()));
+await clickRoom('1');
+await waitFor(`!decodeURIComponent(location.search).includes('1,3')`);
+const afterToggle = await roomUi();
+check('🛏 Дахин дарвал ЦУЦЛАГДАВ (checkbox мэт toggle ✓) — зөвхөн «3» үлдэв',
+  afterToggle.selected.join(',') === '3', `selected=[${afterToggle.selected.join(',')}]`);
+
+// ═══════ ② ӨРӨӨГҮЙ ТӨРӨЛ БА ТӨРӨЛ СОНГООГҮЙ ҮЕД БЛОК ХАРАГДАХГҮЙ ═══════
 await go(`${BASE}/?section=real-estate`);
 const domNoType = await roomUi();
-check('🗑 Төрөл сонгоогүй үед ч өрөөний блок/товч БАЙХГҮЙ',
-  domNoType.blocks === 0 && domNoType.labelBtns.length === 0);
-const noTypeLabels = await evalJs(`[...document.querySelectorAll('aside .divide-y > div')]
-  .map((b) => (b.firstElementChild?.textContent || '').trim())`);
+check('🧭 Төрөл сонгоогүй үед sidebar огт байхгүй ⇒ өрөөний блок БАЙХГҮЙ',
+  domNoType.blocks === 0 && domNoType.labelBtns.length === 0,
+  `blocks=${domNoType.blocks}`);
+const noTypeLabels = await sideLabels();
 check('🧭 Төрөл сонгоогүй үед ч «Өрөөний тоо» блок БАЙХГҮЙ',
   !noTypeLabels.some((l) => /Өрөөний тоо/.test(l)), noTypeLabels.join(' → ') || '(aside байхгүй ✓)');
+await go(`${BASE}/?section=real-estate&type=${encodeURIComponent('Оффис')}`);
+const domOffice = await roomUi();
+check('🛏 Өрөөгүй төрөл (Оффис) дээр ч блок ХАРАГДАХГҮЙ (`hasRoomsFields` ✓)',
+  domOffice.blocks === 0 && domOffice.chips === 0,
+  `blocks=${domOffice.blocks}, chips=${domOffice.chips}`);
 
 // ═══════ ③ ХУУЧИН ЛИНК `?rooms=1,3` — URL/DB ХЭВЭЭР (линк эвдрэхгүй) ═══════
 listingReqs.length = 0;
@@ -219,7 +275,11 @@ check('🔎 DB: rooms=in.(1,3) — шүүлт ХЭВЭЭР ажиллана', db
 check('🏷 Шошго «1, 3 өрөө» харагдана (breadcrumb ба идэвхтэй чип)', /1, 3 өрөө/.test(await body()));
 check('🍞 Breadcrumb дээр «1, 3 өрөө» байна',
   /1, 3 өрөө/.test(await evalJs(`document.querySelector('nav')?.textContent || ''`)));
-check('🗑 Гэхдээ өрөөний товч БАЙХГҮЙ (шүүлт нь зөвхөн линкээс ирнэ ✓)', (await roomUi()).chips === 0);
+const linkUi = await roomUi();
+check('🛏 Линкээс ирсэн утга нь чип дээр ТЭМДЭГЛЭГДЭВ (`aria-pressed`: 1,3)',
+  linkUi.selected.join(',') === '1,3', `selected=[${linkUi.selected.join(',')}]`);
+check('🛏 «+5 өрөө» СОНГОГДООГҮЙ (линкээр зөвхөн 1 ба 3 ✓)',
+  !linkUi.selected.includes('5'), `selected=[${linkUi.selected.join(',')}]`);
 // ═══════ ④ ИДЭВХТЭЙ ШҮҮЛТИЙН ЧИПИЙГ ✕ дарж цэвэрлэх ═══════
 const CHIP_BTN = `[...document.querySelectorAll('button')]
   .find((x) => /хайлтыг хасах/.test(x.getAttribute('aria-label') || '')
@@ -237,6 +297,31 @@ await waitFor(`!/rooms=/.test(location.search)`);
 check('🎛 ✕ дарвал URL-аас rooms арилав', !/rooms=/.test(await url()), (await url()) || '(хоосон)');
 await sleep(1200);
 check('🔎 DB: rooms шүүлт ч арилав', !dbQ('rooms='), lastQ());
+
+// ═══════ ④b «✕ ЦУЦЛАХ» ТОВЧ — БҮХ ӨРӨӨНИЙ СОНГОЛТЫГ АРИЛГАНА ═══════
+// ⚠️ Энэ нь чип toggle-ээс гадна хоёр дахь зам — уншилтын цонхонд (`dbQ`)
+//    ЗӨВХӨН цэвэрлэсний ДАРААХ query орох ёстой тул `listingReqs`-ийг
+//    ЯГ дарахын ӨМНӨ хоослоно ✓ (эс бөгөөс хуучин rooms-query нь «үлдсэн»
+//    мэт харагдаж, тест ХУУРАМЧ улаан өгнө ✗)
+await go(`${BASE}/?section=real-estate&type=${encodeURIComponent('Орон сууц')}&rooms=2,4`);
+const CLEAR_BTN = `[...document.querySelectorAll('button')].find((x) => x.textContent.trim() === '✕ Цуцлах')`;
+const clearVis = await evalJs(`(() => ${CLEAR_BTN} ? 'OK' : 'NO_BTN')()`);
+check('🛏 Сонголттой үед «✕ Цуцлах» товч ХАРАГДАВ', clearVis === 'OK', clearVis);
+const beforeClear = await roomUi();
+check('🛏 Линкээр «2» ба «4» сонгогдсон (selected=2,4)',
+  beforeClear.selected.join(',') === '2,4', `selected=[${beforeClear.selected.join(',')}]`);
+listingReqs.length = 0;   // ⏳ зөвхөн цэвэрлэсний дараах query-г харна
+const clickedClear = await evalJs(`(() => { const b = ${CLEAR_BTN}; if (!b) return 'NO_BTN'; b.click(); return 'OK'; })()`);
+check('🛏 «✕ Цуцлах» дардагдав', clickedClear === 'OK', clickedClear);
+await waitFor(`!/rooms=/.test(location.search)`);
+check('🧹 URL-аас `rooms` арилав', !/rooms=/.test(await url()), (await url()) || '(хоосон)');
+await sleep(1200);
+check('🧹 Цэвэрлэсний дараах DB query-д `rooms=` ОРОХГҮЙ', !dbQ('rooms='), lastQ());
+const afterClear = await roomUi();
+check('🛏 Бүх чип СОНГОГДООГҮЙ болов (selected=[])',
+  afterClear.selected.length === 0, `selected=[${afterClear.selected.join(',')}]`);
+check('🛏 «✕ Цуцлах» товч ХАРАГДАХАА БОЛИВ (сонголт байхгүй ⇒ hidden ✓)',
+  (await evalJs(`(() => ${CLEAR_BTN} ? 'OK' : 'NO_BTN')()`)) === 'NO_BTN');
 
 // ═══════ ⑤ DB ДҮРЭМ ХЭВЭЭР (хуучин линкүүд эвдрэхгүй) ═══════
 listingReqs.length = 0;
@@ -271,7 +356,11 @@ check('🍞 Дарахад өрөөний шүүлт ЦЭВЭРЛЭГДЭВ (roo
 // ═══════ ⑦ МОБАЙЛ (390×844) ═══════
 await rpc('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 3, mobile: true });
 await go(`${BASE}/?section=real-estate&type=${encodeURIComponent('Орон сууц')}&rooms=2`);
-check('📱 Мобайл: өрөөний товч БАЙХГҮЙ', (await roomUi()).chips === 0);
+const mobileUi = await roomUi();
+check('📱 Мобайл: өрөөний чипүүд ХАРАГДАНА (5 — 2026-10-03 (4) UI-тэй ✓)',
+  mobileUi.chips === 5, `chips=${mobileUi.chips}`);
+check('📱 Мобайл: линкээр «2 өрөө» сонгогдсон төлөвтэй',
+  mobileUi.selected.join(',') === '2', `selected=[${mobileUi.selected.join(',')}]`);
 check('📱 Мобайл: хэвтээ гүйлт (overflow) ГАРАХГҮЙ',
   await evalJs('document.documentElement.scrollWidth <= window.innerWidth + 1'),
   await evalJs('document.documentElement.scrollWidth + "/" + window.innerWidth'));
