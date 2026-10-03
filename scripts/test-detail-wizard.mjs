@@ -9,8 +9,8 @@
 //
 // ХАМРАХ ХҮРЭЭ (DB/React/CDP ХОЛБОГДОХГҮЙ — зөвхөн Node):
 //   ① Төлөв ба дэлгэцийн жагсаалт — `mobileDetailStep` + `detailScreens`
-//      (дараалал: гарчиг → аттр* → талбай → угаалгын өрөө → он → нийт давхар
-//      → давхар → тагт → гараж; «Өрөө» БАЙХГҮЙ — 1-р алхмын drill-down ✓)
+//      (дараалал: гарчиг → аттр* → талбай → он → нийт давхар → давхар →
+//      Угаалгын өрөөний тоо → тагт → гараж; «Өрөө» БАЙХГҮЙ — 1-р алхмын drill-down ✓)
 //   ② Заавал талбарын ХААЛТ — мессеж нь `validateStep('details')`-тэй ИЖИЛ
 //   ③ DOM маркууд — `data-detail-row` / `data-detail-field` / `data-mobile-active`
 //      (талбар бүр ТУСДАА, «нэг дэлгэцэд нэг талбар» ✓)
@@ -96,12 +96,12 @@ t('📱 `mobileDetailStep` нь эхний дэлгэц `title`-ээр эхэл�
 
 const screensBody = bodyOf(FORM, 'const detailScreens = (() => {');
 
-t('📱 `detailScreens` нь ЗӨВ дараалалтай (гарчиг → аттр* → 💳 төлбөр → талбай → угаалгын өрөө → он → нийт давхар → давхар → тагт → гараж ✓)', () => {
+t('📱 `detailScreens` нь ЗӨВ дараалалтай (гарчиг → аттр* → 💳 төлбөр → талбай → он → нийт давхар → давхар → угаалгын өрөөний тоо → тагт → гараж ✓)', () => {
   const order = [...screensBody.matchAll(/key:\s*'([^']+)'|key:\s*`attr-\$\{f\.key\}`/g)]
     .map((m) => m[1] || 'attr-<key>');
   assert.deepEqual(order, [
-    'title', 'attr-<key>', 'payments', 'area', 'bathrooms',
-    'buildYear', 'totalFloors', 'floor', 'balconies', 'garage',
+    'title', 'attr-<key>', 'payments', 'area',
+    'buildYear', 'totalFloors', 'floor', 'bathrooms', 'balconies', 'garage',
   ]);
 });
 
@@ -208,8 +208,8 @@ const step3 = (() => {
   return FORM.slice(from, to);
 })();
 
-t('📱 8 МӨР (title · attrs · 💳 payments · area · bathrooms · floors-1 · floors-2 · garage) бүгд `data-detail-row` + `data-mobile-active`-тай (CSS-ийн НЭГ эх сурвалж ✓)', () => {
-  const rows = ['title', 'attrs', 'payments', 'area', 'bathrooms', 'floors-1', 'floors-2', 'garage'];
+t('📱 7 МӨР (title · attrs · 💳 payments · area · floors-1 · floors-2 [давхар+угаалгын өрөөний тоо+тагт] · garage) бүгд `data-detail-row` + `data-mobile-active`-тай (CSS-ийн НЭГ эх сурвалж ✓)', () => {
+  const rows = ['title', 'attrs', 'payments', 'area', 'floors-1', 'floors-2', 'garage'];
   rows.forEach((name) => {
     const re = new RegExp('data-detail-row="' + name + '"[\\s\\S]{0,200}?'
       + "data-mobile-active=\\{detailRowActive\\('" + name + "'\\)\\}");

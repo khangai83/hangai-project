@@ -20,12 +20,12 @@
  *   ①d 🗑 «Өрөө» гэсэн ИЛҮҮЦЭЛ шошго DOM-д БАЙХГҮЙ (хүсэлт ②) — «Өрөөний
  *      тоо» блокийн гарчиг хэвээр, badge нь «N сонгосон» ✓
  *   ② Аймаг (Дархан-Уул) дээр СУМдын чип гарна (4) ба хорооны блок ГАРАХГҮЙ
- *      (💡 «Дүүрэг / сумаа сонгоход хорооны жагсаалт нээгдэнэ» гэсэн зөвлөгөө)
+ *      (💡 «Дүүрэг сонгоход хорооны жагсаалт нээгдэнэ» гэсэн зөвлөгөө)
  *   ③ ХУУЧИН линк `?district=Баянгол` — чип тэмдэглэгдэж, DB `district=eq.…`
  *      (`.in()` БИШ!) ба breadcrumb нь «Баянгол» гэж хэвээр ✓
- *   ④ Идэвхтэй шүүлтийн чип `📍 2 дүүрэг/сум` дээрх ✕ → дүүрэг цэвэрлэгдэнэ
+ *   ④ Идэвхтэй шүүлтийн чип `📍 2 дүүрэг` дээрх ✕ → дүүрэг цэвэрлэгдэнэ
  *   ⑤ «✕ Цуцлах» товч → БҮХ дүүрэг арилж, URL/DB цэвэр болно
- *   ⑥ breadcrumb: 2 дүүрэг → «2 дүүрэг/сум» · «Үл хөдлөх» линк → төрөл арилна, ХАРИН sidebar ХЭВЭЭР (🆕 2026-10-03 (13): progressive disclosure ХАСАГДАВ — хэсгийн түвшинд ч панель гарна ✓) — дүүрэг URL + crumb-д ХЭВЭЭР
+ *   ⑥ breadcrumb: 2 дүүрэг → «2 дүүрэг» · «Үл хөдлөх» линк → төрөл арилна, ХАРИН sidebar ХЭВЭЭР (🆕 2026-10-03 (13): progressive disclosure ХАСАГДАВ — хэсгийн түвшинд ч панель гарна ✓) — дүүрэг URL + crumb-д ХЭВЭЭР
  *   ⑦ 📱 Мобайл 390px: чипүүд харагдана, хэвтээ гүйлт (overflow) ГАРАХГҮЙ
  *   ⑧ Консол дээр JS exception 0
  *
@@ -155,10 +155,14 @@ const districtUi = () => evalJs(`(() => {
     labels: chips.map((b) => b.textContent.trim().replace(/^✓/, '').trim()),
     selected: chips.filter((b) => b.getAttribute('aria-pressed') === 'true')
       .map((b) => b.getAttribute('data-district-value')),
-    // ⚠️ aria-label="Дүүрэг / Сум" нь бүлэг (role=group div) дээр байдаг —
+    // ⚠️ aria-label="Дүүрэг" нь бүлэг (role=group div) дээр байдаг —
     //    зөвхөн button дундаас хайвал 0 гарч ХУУРАМЧ улаан өгнө ✗
+    // 🏷️ 2026-10-03 (14): шошго «Дүүрэг / Сум» → «Дүүрэг» болов ⇒ regex БИШ
+    //    ЯГ ТЭНЦҮҮ (===) шалгана — /Дүүрэг/ гэвэл идэвхтэй шүүлтийн чипийн
+    //    aria-label («2 дүүрэг хайлтыг хасах») бас тоологдож ХУУРАМЧ өгнө ✗
+    //    ⚠️ ЭНЭ PROBE нь TEMPLATE LITERAL — коммент дотор BACKTICK БИЧИХГҮЙ ✗
     groups: [...document.querySelectorAll('[aria-label]')]
-      .filter((e) => /Дүүрэг \\/ Сум/.test(e.getAttribute('aria-label') || '')).length,
+      .filter((e) => e.getAttribute('aria-label') === 'Дүүрэг').length,
     // ⚠️ ХУУЧИН нэг сонголттой select товч БҮРЭН арилсан эсэх (хүсэлт ①)
     //    (⚠️ ХҮСНЭГТ доторх текст — энд BACKTICK бичих ХЯЗГААРТАЙ: template
     //     literal-ыг тасалж, Node талд «select is not defined» алдаа өгнө ✗)
@@ -224,7 +228,7 @@ const lastQ = () => dec(listingReqs[listingReqs.length - 1] || '').split('?')[1]
 const body = () => evalJs('document.body.textContent');
 const UB = `${BASE}/?section=real-estate&type=${encodeURIComponent('Орон сууц')}&city=${encodeURIComponent('Улаанбаатар')}`;
 
-console.log('\n🗺 CDP — дүүрэг / сумын шүүлт (UI + URL + DB + breadcrumb)\n');
+console.log('\n🗺 CDP — дүүргийн шүүлт (UI + URL + DB + breadcrumb)\n');
 
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1280, height: 1400, deviceScaleFactor: 1, mobile: false });
 // ═══════ ① ОРОН СУУЦ + УБ: ДҮҮРЭГ НЬ ОЛОН СОНГОЛТТОЙ ЧИП (хүсэлт ①) ═══════
@@ -237,7 +241,7 @@ check('🗺 Чип 9 байна (`[data-district-value]` === 9 — УБ-ын 9 �
 check('🗺 Шошгууд нь дүүргийн нэрс',
   dom.labels.join(', ') === 'Баянгол, Баянзүрх, Сүхбаатар, Хан-Уул, Чингэлтэй, Сонгинохайрхан, Налайх, Багануур, Багахангай',
   dom.labels.join(', '));
-check('🗺 `aria-label="Дүүрэг / Сум"` бүлэг ТААРЛАА (хороотой ижил хэв маяг)',
+check('🗺 `aria-label="Дүүрэг"` бүлэг ТААРЛАА (хороотой ижил хэв маяг)',
   dom.groups === 1, `groups=${dom.groups}`);
 check('🗺 ХУУЧИН нэг сонголттой `<select>` БҮРЭН арилав (`select` дотор «Дүүрэг» БАЙХГҮЙ)',
   dom.selects === 0, `selects=${dom.selects}`);
@@ -334,13 +338,15 @@ check('🍞 Breadcrumb нэг дүүргийг НЭРЭЭР нь харуулн�
 
 // ═══════ ④ ИДЭВХТЭЙ ШҮҮЛТИЙН ЧИП ✕ — дүүргийг бүрэн цэвэрлэнэ ═══════
 await go(`${UB}&district=${encodeURIComponent('Баянгол,Сүхбаатар')}`);
-// ⚠️ Чип нь «📍 2 дүүрэг/сум» гэсэн ШОШГОТОЙ байх ёстой (нэг утгатай үед нэрээ ✓)
+// ⚠️ Чип нь «📍 2 дүүрэг» гэсэн ШОШГОТОЙ байх ёстой (нэг утгатай үед нэрээ ✓)
+// 🏷️ 2026-10-03 (14): шошго нь «дүүрэг» гэж эхэлсээр байгаа тул доорх
+//    `/дүүрэг/` шүүлт хэвээр ажиллана (⚠️ «дүүрэг/сум» БИШ) ✓
 const DIST_CHIP = `[...document.querySelectorAll('button')].find((x) => {
   const a = x.getAttribute('aria-label') || '';
   return /хайлтыг хасах/.test(a) && /дүүрэг/.test(a);
 })`;
 const chipLabel = await evalJs(`(() => { const b = ${DIST_CHIP}; return b ? b.getAttribute('aria-label') : 'NO_CHIP'; })()`);
-check('🎛 Идэвхтэй шүүлтийн чип `📍 2 дүүрэг/сум` олдлоо', chipLabel !== 'NO_CHIP', chipLabel);
+check('🎛 Идэвхтэй шүүлтийн чип `📍 2 дүүрэг` олдлоо', chipLabel !== 'NO_CHIP', chipLabel);
 listingReqs.length = 0;
 const chipClicked = await evalJs(`(() => { const b = ${DIST_CHIP}; if (!b) return 'NO_CHIP'; b.click(); return 'OK'; })()`);
 check('🎛 Чипийн ✕ товч дардагдав', chipClicked === 'OK', chipClicked);
@@ -375,11 +381,12 @@ check('🗺 «✕ Цуцлах» товч ХАРАГДАХАА БОЛИВ',
   (await evalJs(`(() => ${DIST_CLEAR} ? 'OK' : 'NO_BTN')()`)) === 'NO_BTN');
 
 
-// ═══════ ⑥ BREADCRUMB — ОЛОН ДҮҮРЭГ «2 дүүрэг/сум» БОЛЖ ХАРАГДАНА ═══════
+// ═══════ ⑥ BREADCRUMB — ОЛОН ДҮҮРЭГ «2 дүүрэг» БОЛЖ ХАРАГДАНА ═══════
 await go(`${UB}&district=${encodeURIComponent('Баянгол,Сүхбаатар')}`);
 const crumbs = await evalJs(`[...document.querySelectorAll('nav')].map((n) => n.textContent).join(' | ')`);
-check('🍞 Breadcrumb олон дүүргийг «2 дүүрэг/сум» гэж харуулна',
-  /2 дүүрэг\/сум/.test(crumbs), crumbs.slice(0, 140));
+// 🏷️ 2026-10-03 (14): шошго «2 дүүрэг/сум» → «2 дүүрэг» (`districtsFilterLabel`)
+check('🍞 Breadcrumb олон дүүргийг «2 дүүрэг» гэж харуулна',
+  /2 дүүрэг/.test(crumbs), crumbs.slice(0, 140));
 // ⚠️ `clearType` (эсвэл crumb-ийн `nav.filters`) нь зөвхөн төрөл/өрөөг цэвэрлэнэ —
 //    БАЙРШИЛ (дүүрэг, хороо, хот) нь БИЕ ДААСАН шүүлт тул ХЭВЭЭР байх ЁСТОЙ ✓
 const crumbClick = await evalJs(`(() => {
@@ -406,8 +413,8 @@ check('🍞 Төрөл цэвэрлэгдэхэд sidebar ХЭВЭЭР (blocks=1
 check('🗺 Дүүргийн чипүүд 2 сонгогдсон ХЭВЭЭР (байршил нь төрлөөс үл хамаарна ✓)',
   afterCrumb.chips === 9 && afterCrumb.selected.join(',') === 'Баянгол,Сүхбаатар',
   `chips=${afterCrumb.chips} selected=[${afterCrumb.selected.join(',')}]`);
-check('🍞 «2 дүүрэг/сум» breadcrumb мөрөндөө ХЭВЭЭР (байршил үл хамаарах ✓)',
-  /2 дүүрэг\/сум/.test(await evalJs(`[...document.querySelectorAll('nav')].map((n) => n.textContent).join(' | ')`)));
+check('🍞 «2 дүүрэг» breadcrumb мөрөндөө ХЭВЭЭР (байршил үл хамаарах ✓)',
+  /2 дүүрэг/.test(await evalJs(`[...document.querySelectorAll('nav')].map((n) => n.textContent).join(' | ')`)));
 // ⚠️ Төрлийг ЭРГҮҮЛЭН сонгоход хорооны нэгдэл (33) ба чипүүд ХЭВЭЭР байх
 //    ЁСТОЙ — URL-аас сэргээгдэж байгаа эсэхийг батлана ✓
 await go(`${BASE}/?section=real-estate&type=${encodeURIComponent('Орон сууц')}&city=${encodeURIComponent('Улаанбаатар')}&district=${encodeURIComponent('Баянгол,Сүхбаатар')}`);
@@ -436,7 +443,7 @@ check('🧯 Консол дээр exception ГАРАГҮЙ', exceptions.length =
 check('🧯 Ямар ч алдаатай (4xx/5xx) listings query ГАРАГҮЙ',
   !listingReqs.some((u) => /district=in\.\(\)/.test(decodeURIComponent(u))),
   listingReqs.slice(-1)[0] || '(query байхгүй)');
-console.log(`\n${fail === 0 ? '✅' : '❌'} CDP дүүрэг/сум — ${pass} OK, ${fail} FAIL\n`);
+console.log(`\n${fail === 0 ? '✅' : '❌'} CDP дүүрэг — ${pass} OK, ${fail} FAIL\n`);
 ws.close();
 await closeOwnTab();
 process.exit(fail === 0 ? 0 : 1);

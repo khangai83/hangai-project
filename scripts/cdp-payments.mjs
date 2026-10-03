@@ -6,24 +6,28 @@
  * үүнийг сонгож өгөх ёстой. Олон сонголт хийж байгаа боломж…»
  *
  * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ:
- *   ① 🏠 «Үл хөдлөх зарна» дээр ☑ checkbox БАЙГАА: `[data-payment-filter]` === 1,
+ *   ① 🏠 «Үл хөдлөх зарна» дээр ЧИПҮҮД БАЙГАА: `[data-payment-filter]` === 1,
  *      `[data-payment-value]` === 4 (lease/cash/loan/barter) ба шошгууд нь
  *      «Хувь лизингээр … Бартер сонирхоно» (unegui.mn-тэй ижил ✓)
- *   ①b 🎨 ДИЗАЙН (2026-10-03 (6) — хэрэглэгчийн заавар + unegui.mn-ийн зураг):
- *      ☑ нь ЖИНХЭНЭ `<input type="checkbox">`, 2 БАГАНАТ grid (unegui.mn-ийн
- *      хэв — [лизинг][бэлэн] нэг мөрд, [зээл][бартер] дараагийн мөрд),
- *      ХАРАГДАХ хэмжээтэй (18px — `appearance:none` хэв ажиллаж байна ✓)
+ *   ①b 🎛 ХЭВ (2026-10-03 (16) — хэрэглэгчийн хүсэлт: «Зар хайх хэсэгийн
+ *      💳 Төлбөрийн нөхцөлийг өрөөний тоо шиг сонгодог болго»): сонголт нь
+ *      «🛏 Өрөөний тоо»-той ЯГ ИЖИЛ ЧИП —
+ *      `<button class="chip-toggle" aria-pressed>` (☑ `<input>` БИШ ✓),
+ *      `flex-wrap` мөр, идэвхтэй нь `chip-toggle-active` + `✓` тэмдэг,
+ *      ХАРАГДАХ хэмжээтэй (≥60×24px — CSS ачаалагдсан ✓)
+ *      ⏳ (6)-д ☑ checkbox (2 баганат `.pay-grid`) байсан — одоо ЗӨВХӨН
+ *         ЗАР ОРУУЛАХ ФОРМ дээр (`AddListingClient.jsx`) ✓
  *   ①c БАЙРЛАЛ: блок нь «Өрөөний тоо»-ны ДАРАА, «Үнэ, ₮»-ний ӨМНӨ
  *   ② 🚗 «Автомашин зарна» дээр БАЙНА; ⛔ «Ажил»/«Компьютер»/«Бүх зар»
  *      дээр БАЙХГҮЙ (`hasPaymentTerms` ✓ — лизинг гэдэг ойлголт байхгүй)
- *   ③ 🖱 ☑ ДАРАХ (ОЛОН СОНГОЛТ — ХАМГИЙН ЧУХАЛ): «Хувь лизингээр» +
- *      «Бэлэн төлөлтөөр» → URL `?payment=lease,cash` · ☑-үүд `checked`
- *      · «2 сонгосон» badge · DB `or=(attrs.cs.{"payment_terms":["lease"]},
+ *   ③ 🖱 ЧИП ДАРАХ (ОЛОН СОНГОЛТ — ХАМГИЙН ЧУХАЛ): «Хувь лизингээр» +
+ *      «Бэлэн төлөлтөөр» → URL `?payment=lease,cash` · чипүүд
+ *      `aria-pressed=true` төлөвтэй · «2 сонгосон» badge · DB
+ *      `or=(attrs.cs.{"payment_terms":["lease"]},
  *      attrs.cs.{"payment_terms":["cash"]})` (OR — аль нэг нь тохирох зар)
- *      ⚠️ ШОШГО дээр дарж шалгана (`label` → `input` холбоос ✓)
- *   ③b Дахин дарахад ЦУЦЛАГДАНА (checkbox мэт toggle) → `?payment=lease`
- *      ба DB нь НЭГ нөхцөл (`attrs=cs.…`) болж буурна ✓
- *   ④ 🔗 ХУУЧИН/гараар бичсэн линк: `?payment=cash,lease` → ☑-үүд
+ *   ③b Дахин дарахад ЦУЦЛАГДАНА (чип мэт toggle — өрөөний тоотой ижил) →
+ *      `?payment=lease` ба DB нь НЭГ нөхцөл (`attrs=cs.…`) болж буурна ✓
+ *   ④ 🔗 ХУУЧИН/гараар бичсэн линк: `?payment=cash,lease` → чипүүд
  *      тэмдэглэгдэж, URL нь КАНОН болно (`lease,cash`); `?payment=abc,lease`
  *      → хүчингүй утга ЧИМЭЭГҮЙ хасагдана ✓
  *   ⑤ 🎛 Идэвхтэй шүүлтийн чип `💳 Хувь лизингээр, Бэлэн төлөлтөөр` дээрх ✕
@@ -31,7 +35,8 @@
  *   ⑥ 🧹 ХЭСЭГ СОЛИХ: `?section=jobs&payment=lease` (эсвэл breadcrumb) →
  *      payment утга ЦЭВЭРЛЭГДЭНЭ (`next.payments = []`) — ажил дээр лизинг
  *      үлдэж, DB шүүлт «юу ч олдохгүй» болох ОНОВЧТОЙ АЛДААНЫГ бариулна ✗
- *   ⑦ 📱 Мобайл 390px: ☑-үүд харагдана (мобайлд Ч 2 багана ✓), хэвтээ
+ *   ⑦ 📱 Мобайл 390px: чипүүд харагдана (өрөөний тооны чиптэй ижил хэв —
+ *      шаардлагатай бол `flex-wrap`-ээр 2 дахь мөрөнд бууна ✓), хэвтээ
  *      гүйлт (overflow) ГАРАХГҮЙ
  *   ⑧ 🧯 Консол дээр JS exception 0
  *
@@ -157,63 +162,69 @@ const go = async (url) => {
   await sleep(700);
 };
 
-/** 💳 DOM дахь төлбөрийн ☑ checkbox-үүдийн төлөв (`data-payment-*` дэгээгээр)
- *  ⚠️ 2026-10-03 (6): UI нь ЧИП БИШ ☑ CHECKBOX (хэрэглэгчийн заавар +
- *     unegui.mn-ийн зураг) — утга нь
- *     `<input type="checkbox" data-payment-value="lease" checked>` дээр,
- *     шошго нь `label.pay-check > span` дотор, төлөв нь `checked` ПРОПЕРТ ✓
- *     (`aria-pressed` БИШ — натив checkbox нь өөрийн төлөвтэй ✓) */
+/** 💳 DOM дахь төлбөрийн СОНГОЛТУУДЫН төлөв (`data-payment-*` дэгээгээр)
+ *  ⚠️ 2026-10-03 (16): хайлтын UI нь «🛏 Өрөөний тоо»-той ЯГ ИЖИЛ ЧИП болов
+ *     (хэрэглэгчийн хүсэлт: «Зар хайх хэсэгийн 💳 Төлбөрийн нөхцөлийг
+ *     өрөөний тоо шиг сонгодог болго») ⇒ утга нь
+ *     `<button class="chip-toggle" aria-pressed="true" data-payment-value="lease">`
+ *     дээр, шошго нь товчны ТЕКСТ дотор, төлөв нь `aria-pressed` +
+ *     `chip-toggle-active` класс ✓
+ *     ⏳ 2026-10-03 (6)-д ☑ checkbox (`<input type="checkbox" checked>`) байсан —
+ *        тэр хэв ОДОО ЗӨВХӨН ЗАР ОРУУЛАХ ФОРМ дээр (`data-payment-picker`) ✓ */
 const paymentUi = () => evalJs(`(() => {
-  const boxes = [...document.querySelectorAll('[data-payment-value]')];
+  const chips = [...document.querySelectorAll('[data-payment-value]')];
   const box = document.querySelector('[data-payment-filter]');
   const val = (el) => el.getAttribute('data-payment-value');
-  const top = (el) => Math.round(el.getBoundingClientRect().top);
   const size = (el) => {
     const r = el.getBoundingClientRect();
     return Math.round(r.width) + 'x' + Math.round(r.height);
   };
+  const press = (el) => el.getAttribute('aria-pressed') === 'true';
   return {
     blocks: document.querySelectorAll('[data-payment-filter]').length,
-    chips: boxes.length,
-    labels: boxes.map((i) => ((i.closest('label') || i.parentElement || i).textContent || '')
+    chips: chips.length,
+    labels: chips.map((i) => i.textContent
       .replace(/\\s+/g, ' ').trim()),
-    values: boxes.map(val),
-    selected: boxes.filter((i) => i.checked === true).map(val),
-    // ☑ нь ЖИНХЭНЭ <input type="checkbox"> (натив — гар/хүртээмж ✓)
-    inputs: boxes.filter((i) => i.tagName === 'INPUT' && i.type === 'checkbox').length,
-    // 🎨 ДИЗАЙН: 2 БАГАНАТ grid (unegui.mn-ийн хэв) — gridTemplateColumns нь
-    //    «xpx ypx» ХОЁР утгатай (нэг багана бол 1 ✗)
-    cols: box ? getComputedStyle(box).gridTemplateColumns.split(' ').filter(Boolean).length : 0,
-    // 🎨 ☑ нь ХАРАГДАХ хэмжээтэй (0x0 биш — appearance:none хэв ажиллаж байна ✓)
-    size: boxes.length ? size(boxes[0]) : '0x0',
-    // 🎨 БАЙРЛАЛ: [лизинг][бэлэн] НЭГ МӨРД, [зээл][бартер] ДАРААГИЙН мөрд ✓
-    rows: (() => {
-      const tops = boxes.map(top);
-      return tops.length === 4 && tops[0] === tops[1] && tops[2] === tops[3] && tops[1] < tops[2];
-    })(),
-    // «N сонгосон» нь блокийн толгойд (☑-үүдийн ЭЦЭГ эгч) — тоог тэмдэглэнэ
+    values: chips.map(val),
+    selected: chips.filter(press).map(val),
+    // 🎛 Чип нь ЖИНХЭНЭ <button> (гар/хүртээмж ✓ — ☑ БИШ ✓)
+    buttons: chips.filter((i) => i.tagName === 'BUTTON').length,
+    // ⚠️ checkbox (<input>) ХАЙЛТ дээр ОГТ байхгүй байх ёстой (форм дээр л ✓)
+    inputs: chips.filter((i) => i.tagName === 'INPUT').length,
+    // 🎨 Хэв нь «Өрөөний тоо»-той ЯГ ИЖИЛ: <code>chip-toggle</code> класс ✓
+    chipsStyled: chips.every((i) => i.classList.contains('chip-toggle')),
+    // 🎨 Мөр нь flex-wrap (өрөөний тооны хайрцагтай ижил ✓)
+    wrapped: box && box.firstElementChild
+      ? getComputedStyle(box.firstElementChild).flexWrap === 'wrap' : false,
+    // 🎨 Идэвхтэй чип нь chip-toggle-active (брэнд өнгөөр дүүрнэ ✓)
+    active: chips.filter((i) => i.classList.contains('chip-toggle-active')).length,
+    // 🎨 Чип ХАРАГДАХ хэмжээтэй (0x0 биш — CSS ачаалагдсан ✓)
+    size: chips.length ? size(chips[0]) : '0x0',
+    // «N сонгосон» нь блокийн толгойд (чипүүдийн ЭЦЭГ эгч) — тоог тэмдэглэнэ
     badge: (() => {
       const m = (box && box.parentElement ? box.parentElement.textContent : '').match(/(\\d+) сонгосон/);
       return m ? Number(m[1]) : 0;
     })(),
     // ⚠️ aria-label="Төлбөрийн нөхцөл" нь БҮЛЭГ (role=group div) дээр —
-    //    зөвхөн input дундаас хайвал 0 гарч ХУУРАМЧ улаан өгнө ✗
+    //    зөвхөн товч дундаас хайвал 0 гарч ХУУРАМЧ улаан өгнө ✗
     toggles: [...document.querySelectorAll('[aria-label]')]
       .filter((e) => /төлбөрийн нөхцөл/i.test(e.getAttribute('aria-label') || '')).length,
     clear: [...document.querySelectorAll('button')].filter((b) => b.textContent.trim() === '✕ Цуцлах').length,
   };
 })()`);
 
-/** 💳 Нэг ☑-ийг дарах (`data-payment-value="lease"`)
- *  ⚠️ Хэрэглэгч ШОШГО дээр дардаг тул `label`-ыг дарж шалгана —
- *     `label` → `input` холбоос (`label`-ийн доторх input) батлагдана ✓ */
+/** «WxH» → [w, h] (чипийн харагдах хэмжээг шалгахад) */
+const px = (s) => String(s).split('x').map(Number);
+
+/** 💳 Нэг чипийг дарах (`data-payment-value="lease"`)
+ *  ⚠️ 2026-10-03 (16): утга нь `<button>` дээр — шууд `click()` ✓
+ *     (`closest('label')` нь зөвхөн хуучин ☑ хэвэнд байсан — одоо ХЭРЭГГҮЙ) ✓ */
 const clickPayment = (value) => evalJs(`(() => {
   const i = document.querySelector('[data-payment-value="${value}"]');
   if (!i) return 'NO_CHIP';
-  (i.closest('label') || i).click();
+  i.click();
   return 'OK';
 })()`);
-
 /** 💳 Блок доторх «✕ Цуцлах» (шүүлтийг бүхэлд нь арилгана) */
 const PAY_CLEAR = `(() => {
   const box = document.querySelector('[data-payment-filter]');
@@ -242,26 +253,27 @@ await rpc('Emulation.setDeviceMetricsOverride', { width: 1280, height: 1400, dev
 await go(`${BASE}/?section=real-estate&type=${encodeURIComponent('Орон сууц')}`);
 const dom = await paymentUi();
 check('💳 Төлбөрийн блок БАЙНА (`[data-payment-filter]` === 1)', dom.blocks === 1, `blocks=${dom.blocks}`);
-check('💳 ☑ checkbox 4 байна (`[data-payment-value]` === 4)', dom.chips === 4, `chips=${dom.chips}`);
+check('💳 Сонголт 4 байна (`[data-payment-value]` === 4)', dom.chips === 4, `chips=${dom.chips}`);
 check('💳 Утгууд нь lease/cash/loan/barter (кодууд — URL/jsonb ✓)',
   dom.values.join(',') === 'lease,cash,loan,barter', dom.values.join(','));
 check('💳 Шошгууд нь «Хувь лизингээр … Бартер сонирхоно» (unegui.mn-тэй ижил)',
   dom.labels.map((l) => l.replace(/[^\p{L}\s]/gu, '').trim()).join(' · ') ===
     'Хувь лизингээр · Бэлэн төлөлтөөр · Банкны зээлээр · Бартер сонирхоно',
   dom.labels.join(' · '));
-// 🎨 ДИЗАЙН (2026-10-03 (6) — хэрэглэгчийн заавар + unegui.mn-ийн зураг):
-//   ЧИП БИШ ☑ checkbox, 2 БАГАНАТ, ХАРАГДАХ хэмжээтэй (натив input ✓)
-check('🎨 ☑ нь ЖИНХЭНЭ `<input type="checkbox">` (натив 4 — `aria-pressed` БИШ ✓)',
-  dom.inputs === 4, `inputs=${dom.inputs}`);
-check('🎨 ДИЗАЙН: «Төлбөрийн нөхцөл» нь 2 БАГАНАТ (unegui.mn-ийн хэв — grid 2 ✓)',
-  dom.cols === 2, `gridTemplateColumns=${dom.cols} багана`);
-check('🎨 ДИЗАЙН: [лизинг][бэлэн] НЭГ мөрд, [зээл][бартер] ДАРААГИЙН мөрд ✓',
-  dom.rows, `rows=${dom.rows}`);
-check('🎨 ☑ нь ХАРАГДАХ хэмжээтэй (16-24px — `appearance:none` хэв ажиллаж байна ✓)',
-  /^(1[6-9]|2[0-4])x(1[6-9]|2[0-4])$/.test(dom.size), dom.size);
+// 🎛 ХЭВ (2026-10-03 (16) — хэрэглэгчийн хүсэлт: «Төлбөрийн нөхцөлийг өрөөний
+//   тоо шиг сонгодог болго»): «🛏 Өрөөний тоо»-той ЯГ ИЖИЛ ЧИП —
+//   `<button class="chip-toggle" aria-pressed>` (☑ `<input>` БИШ ✓) + `flex-wrap`
+check('🎛 Сонголт нь ЖИНХЭНЭ `<button>` (4) — ☑ checkbox БИШ (`aria-pressed` ✓)',
+  dom.buttons === 4 && dom.inputs === 0, `buttons=${dom.buttons} inputs=${dom.inputs}`);
+check('🎛 Хэв нь өрөөний тооны чиптэй ИЖИЛ (`.chip-toggle` + `flex-wrap` ✓)',
+  dom.chipsStyled && dom.wrapped, `chip-toggle=${dom.chipsStyled} wrap=${dom.wrapped}`);
+check('🎛 Сонголтгүй үед `chip-toggle-active` 0 (брэнд өнгө ГАРАХГҮЙ ✓)',
+  dom.active === 0, `active=${dom.active}`);
+const [chipW, chipH] = px(dom.size);
+check('🎛 Чип ХАРАГДАХ хэмжээтэй (≥60×24px — өрөөний тооны чиптэй ижил ✓)',
+  chipW >= 60 && chipH >= 24, dom.size);
 check('💳 `aria-label="Төлбөрийн нөхцөл"` бүлэг ТААРЛАА (хороо/өрөөтэй ижил хэв маяг)',
   dom.toggles === 1, `toggles=${dom.toggles}`);
-check('💳 Сонголтгүй үед «✕ Цуцлах» ХАРАГДАХГҮЙ', !(await evalJs(`(() => ${PAY_CLEAR} ? 'OK' : 'NO')()`) === 'OK'));
 const labels1 = await sideLabels();
 const roomsIdx = labels1.findIndex((l) => /Өрөөний тоо/.test(l));
 const payIdx = labels1.findIndex((l) => /Төлбөрийн нөхцөл/.test(l));
@@ -279,12 +291,12 @@ check('🧭 «Төлбөрийн нөхцөл» нь «Өрөөний тоо»-�
 //    ГАРНА ✓ (эхлээд хэсгийн түвшинг шалгаад дараа нь төрөлтэй нь ✓)
 await go(`${BASE}/?section=auto`);
 const autoSecUi = await paymentUi();
-check('🆕 🚗 Хэсгийн түвшинд (`?section=auto`, төрөл ГҮЙ) ч ☑ блок БАЙНА',
+check('🆕 🚗 Хэсгийн түвшинд (`?section=auto`, төрөл ГҮЙ) ч ЧИП блок БАЙНА',
   autoSecUi.blocks === 1 && autoSecUi.chips === 4,
   `blocks=${autoSecUi.blocks} chips=${autoSecUi.chips}`);
 await go(`${BASE}/?section=auto&type=${encodeURIComponent('Суудлын машин')}`);
 const autoUi = await paymentUi();
-check('🚗 «Автомашин зарна» дээр ☑ checkbox-үүд БАЙНА', autoUi.blocks === 1 && autoUi.chips === 4,
+check('🚗 «Автомашин зарна» дээр ЧИПҮҮД БАЙНА', autoUi.blocks === 1 && autoUi.chips === 4,
   `blocks=${autoUi.blocks} chips=${autoUi.chips}`);
 check('🚗 Авто дээрх шошгууд нь ч ЯГ ИЖИЛ (нэг эх сурвалж `PAYMENT_OPTIONS` ✓)',
   autoUi.values.join(',') === 'lease,cash,loan,barter', autoUi.values.join(','));
@@ -319,7 +331,7 @@ await sleep(1200);
 check('🔎 DB: `attrs=cs.{"payment_terms":["lease"]}` (jsonb containment ✓ — `->>` БИШ)',
   dbQ('attrs=cs.{"payment_terms":["lease"]}'), lastQ());
 let ui1 = await paymentUi();
-check('🖱 ☑ СОНГОГДСОН төлөвтэй (`checked=true` — натив checkbox ✓)', ui1.selected.join(',') === 'lease',
+check('🖱 ЧИП СОНГОГДСОН (`aria-pressed=true` + `chip-toggle-active` ✓)', ui1.selected.join(',') === 'lease',
   `selected=[${ui1.selected.join(',')}]`);
 check('🔢 «1 сонгосон» badge ХАРАГДАВ', ui1.badge === 1, `badge=${ui1.badge}`);
 check('💳 «✕ Цуцлах» товч ХАРАГДАВ (сонголт байгаа үед ✓)',
@@ -348,7 +360,7 @@ check('🔢 «2 сонгосон» badge', ui1.badge === 2, `badge=${ui1.badge}`
 check('🎛 Идэвхтэй шүүлтийн чип нь БҮТЭН шошгыг харуулна (`💳 Хувь лизингээр, Бэлэн төлөлтөөр`)',
   await evalJs(`[...document.querySelectorAll('button,span')].some((e) => /💳 Хувь лизингээр, Бэлэн төлөлтөөр/.test(e.textContent))`));
 
-// ═══ ③c Дахин дарахад ЦУЦЛАГДАНА (checkbox мэт) ═══
+// ═══ ③c Дахин дарахад ЦУЦЛАГДАНА (чип мэт toggle) ═══
 listingReqs.length = 0;
 await clickPayment('lease');
 await waitFor(`/payment=cash/.test(location.search)`);
@@ -402,14 +414,14 @@ await sleep(1200);
 check('🔎 DB: payment шүүлт ч арилав (`attrs.cs.` ОГТ ЯВАХГҮЙ ✓)',
   !dbQ('attrs.cs.{"payment_terms"'), lastQ());
 const afterChip = await paymentUi();
-check('🎛 ☑-үүд СОНГОГДООГҮЙ болов (selected=[])',
+check('🎛 Чипүүд СОНГОГДООГҮЙ болов (selected=[])',
   afterChip.selected.length === 0, `selected=[${afterChip.selected.join(',')}]`);
 check('🎛 Блок нь ХЭВЭЭР байна (шүүлт цэвэрлэх нь блокыг нуухгүй ✓)', afterChip.blocks === 1);
 
 // ═══════ ⑤b «✕ Цуцлах» — бүх сонголтыг арилгана ═══════
 // ⚠️ `&type=…` (дээрхтэй ижил шалтгаан — `<aside>` нь төрөл сонгосон үед л бий ✓)
 await go(`${BASE}/?section=auto&type=${encodeURIComponent('Суудлын машин')}&payment=lease,cash,loan`);
-check('🚗 Авто дээр 3 ☑ сонгогдсон', (await paymentUi()).selected.length === 3);
+check('🚗 Авто дээр 3 ЧИП сонгогдсон', (await paymentUi()).selected.length === 3);
 listingReqs.length = 0;
 const clearClicked = await evalJs(`(() => { const b = ${PAY_CLEAR}; if (!b) return 'NO_BTN'; b.click(); return 'OK'; })()`);
 check('💳 «✕ Цуцлах» дарагдав', clearClicked === 'OK', clearClicked);
@@ -447,10 +459,11 @@ check('🍞 Дарахад «Орон сууц» төрөл цэвэрлэгдэ
 await rpc('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 3, mobile: true });
 await go(`${BASE}/?section=real-estate&type=${encodeURIComponent('Орон сууц')}&payment=lease`);
 const mobileUi = await paymentUi();
-check('📱 Мобайл: төлбөрийн ☑ checkbox-үүд ХАРАГДАНА (4)',
+check('📱 Мобайл: төлбөрийн чипүүд ХАРАГДАХ (4)',
   mobileUi.chips === 4, `chips=${mobileUi.chips}`);
-check('📱 Мобайл: ☑-үүд МӨН 2 БАГАНАТ (390px — unegui.mn-ийн хэв ✓)',
-  mobileUi.cols === 2, `cols=${mobileUi.cols}`);
+const [mw, mh] = px(mobileUi.size);
+check('📱 Мобайл: чип ХАРАГДАХ хэмжээтэй (≥60×24px — 390px дээр ч ✓)',
+  mw >= 60 && mh >= 24, mobileUi.size);
 check('📱 Мобайл: линкээр «Хувь лизингээр» сонгогдсон төлөвтэй',
   mobileUi.selected.join(',') === 'lease', `selected=[${mobileUi.selected.join(',')}]`);
 check('📱 Мобайл: хэвтээ гүйлт (overflow) ГАРАХГҮЙ',

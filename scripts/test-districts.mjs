@@ -184,9 +184,10 @@ t('districtsFilterLabel: 1 сонголт → НЭРЭЭР («Баянгол»)'
   assert.equal(districtsFilterLabel('Баянгол'), 'Баянгол');
 });
 
-t('districtsFilterLabel: 2+ сонголт → «N дүүрэг/сум» (чип хэт урт болохгүй)', () => {
-  assert.equal(districtsFilterLabel(['Баянгол', 'Сүхбаатар']), '2 дүүрэг/сум');
-  assert.equal(districtsFilterLabel('А,Б,В'), '3 дүүрэг/сум');
+t('districtsFilterLabel: 2+ сонголт → «N дүүрэг» (чип хэт урт болохгүй)', () => {
+  // 🏷️ 2026-10-03 (14): хэрэглэгчийн хүсэлт — «дүүрэг/сум» БИШ, «дүүрэг» ✓
+  assert.equal(districtsFilterLabel(['Баянгол', 'Сүхбаатар']), '2 дүүрэг');
+  assert.equal(districtsFilterLabel('А,Б,В'), '3 дүүрэг');
 });
 
 t("districtsFilterLabel: хоосон → '' (шошго ГАРАХГҮЙ)", () => {
@@ -384,13 +385,14 @@ t('buildHomeBreadcrumb: 1 дүүрэг → НЭРЭЭР (хуучин зан Х�
   assert.deepEqual(legacy, list);
 });
 
-t('buildHomeBreadcrumb: 2 дүүрэг → «2 дүүрэг/сум» + линк `district=…,Сүхбаатар`', () => {
+t('buildHomeBreadcrumb: 2 дүүрэг → «2 дүүрэг» + линк `district=…,Сүхбаатар`', () => {
   const items = buildHomeBreadcrumb({
     section: 'real-estate', category: 'sell', propertyType: 'Орон сууц',
     districts: ['Баянгол', 'Сүхбаатар'],
   });
   const last = items[items.length - 1];
-  assert.equal(last.label, '2 дүүрэг/сум');
+  // 🏷️ 2026-10-03 (14): «2 дүүрэг/сум» → «2 дүүрэг» (`districtsFilterLabel`)
+  assert.equal(last.label, '2 дүүрэг');
   assert.match(decodeURIComponent(last.href), /district=Баянгол,Сүхбаатар/);
   // 🛣 Crumb дээр дарахад дүүрэг/хороо БҮГД арилна (бусад шүүлт хэвээр)
   assert.deepEqual(last.nav.filters, { districts: [], khoroos: [] });

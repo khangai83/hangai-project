@@ -63,9 +63,13 @@ import {
   parseDistrictList, districtsUrlValue, districtsFilterLabel, toggleDistrictValue,
 } from '../lib/districtFilter.mjs';
 // 💳 ТӨЛБӨРИЙН НӨХЦӨЛ (2026-10-03) — ҮЛ ХӨДЛӨХ ЗАРНА ба АВТОМАШИН ЗАРНА
-//    хэсгийн «Дэлгэрэнгүй хайлт»-д ОЛОН СОНГОЛТТОЙ ☑ checkbox (unegui.mn-ийн
-//    2 баганат хэв — CSS нь `app/globals.css`: `.pay-grid`/`.pay-check` ✓).
-//    🆕 2026-10-03 (6): хэрэглэгчийн заавраар ЧИП → ☑ CHECKBOX болсон ✓
+//    хэсгийн «Дэлгэрэнгүй хайлт»-д ОЛОН СОНГОЛТТОЙ шүүлт.
+//    🆕 2026-10-03 (16): хэрэглэгчийн хүсэлтээр («Өрөөний тоо шиг
+//    сонгодог болго») ХАЙЛТ нь `chip-toggle` ЧИП болсон ✓ — CSS нь
+//    `app/globals.css` (`chip-toggle` нь өрөө/хороотой НЭГ класс ✓).
+//    ⏳ 2026-10-03 (6)-д ☑ checkbox (2 баганат `.pay-grid`/`.pay-check`)
+//    байсан — тэр хэв нь ОДОО ЗӨВХӨН ЗАР ОРУУЛАХ ФОРМД
+//    (`AddListingClient.jsx → data-payment-picker`) ✓
 //    Цэвэр логик (утга/шошго/URL/`cs` шүүлт) нь `lib/paymentFilter.mjs` —
 //    UI, URL, DB бүгд тэр модулийг хэрэглэнэ ✓
 import {
@@ -1127,7 +1131,7 @@ export default function HomeClient() {
     if (filters.payments.length) chips.push({ key: 'payments', label: `💳 ${paymentsFilterLabel(filters.payments)}` });
     if (filters.city) chips.push({ key: 'city', label: `🏙 ${filters.city}` });
     // 🗺 ДҮҮРЭГ / СУМ — ОЛОН СОНГОЛТ (2026-10-03): 1 сонголт → нэрээр,
-    //    олон → «N дүүрэг/сум» (шошго нь `lib/districtFilter.mjs` — нэг эх
+    //    олон → «N дүүрэг» (шошго нь `lib/districtFilter.mjs` — нэг эх
     //    сурвалж; нэрсийг бүтнээр жагсаавал чип хэт урт болно ✗)
     if (filters.districts.length) chips.push({ key: 'districts', label: `📍 ${districtsFilterLabel(filters.districts)}` });
     // ⚠️ Хороо: 1 сонгосон бол нэрийг, олон бол «N хороо» гэж товчлон харуулна
@@ -1844,11 +1848,17 @@ export default function HomeClient() {
                          `district IN (…)` (нэг утгатай үед хуучин
                          `district=eq.…` ХЭВЭЭР — `lib/districtFilter.mjs`) ✓
                       ⚠️ `data-district-filter` / `data-district-value` нь CDP
-                         тестийн (`scripts/cdp-districts.mjs`) дэгээ — УСТГАХГҮЙ ✓ */}
+                         тестийн (`scripts/cdp-districts.mjs`) дэгээ — УСТГАХГҮЙ ✓
+                      ⚠️ 2026-10-03 (14): бүлгийн `aria-label` ба гарчиг нь ЯГ
+                         «Дүүрэг» (өмнө «Дүүрэг / Сум») — CDP тест нь
+                         `aria-label === 'Дүүрэг'` гэж ТЭНЦҮҮ шалгана ✓ */}
                   {districtOptions.length > 0 && (
                     <div className="flex flex-col gap-1.5">
+                      {/* 🏷️ 2026-10-03 (14): хэрэглэгчийн хүсэлт — блокийн шошго
+                          «Дүүрэг / Сум» БИШ, зөвхөн «Дүүрэг» ✓ (⚠️ утгууд нь
+                          аймаг дээр сум хэвээр байж болно — зөвхөн НЭР солигдов) */}
                       <span className="text-[12px] font-semibold text-gray-500">
-                        Дүүрэг / Сум
+                        Дүүрэг
                         {filters.districts.length > 0 && (
                           <span className="ml-1.5 rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
                             {filters.districts.length} сонгосон
@@ -1859,7 +1869,7 @@ export default function HomeClient() {
                         className="max-h-[150px] overflow-y-auto rounded-lg border border-gray-200 bg-gray-50/70 p-2"
                         data-district-filter
                         role="group"
-                        aria-label="Дүүрэг / Сум"
+                        aria-label="Дүүрэг"
                       >
                         <div className="flex flex-wrap gap-1.5">
                           {districtOptions.map((d) => {
@@ -1929,7 +1939,7 @@ export default function HomeClient() {
                   ) : (
                     <p className="text-[12px] text-gray-500">
                       {filters.city
-                        ? '💡 Дүүрэг / сумаа сонгоход хорооны жагсаалт нээгдэнэ.'
+                        ? '💡 Дүүрэг сонгоход хорооны жагсаалт нээгдэнэ.'
                         : '💡 Эхлээд хот/аймгаа сонгоно уу.'}
                     </p>
                   )}
@@ -2145,15 +2155,22 @@ export default function HomeClient() {
                     Хэрэглэгчийн хүсэлт: «Төлбөрийн нөхцөлийг Үл хөдлөх
                     зарна, Автомашин зарна гэсэн дээр хайх хэсэгт гардаг
                     болгоё … олон сонголт хийж байгаа боломж»
-                    🆕 DESIGN 2026-10-03 (6) — хэрэглэгчийн заавар + unegui.mn-ийн
-                       зураг: ЧИП БИШ ⇒ ЯГ ИЖИЛ ☑ CHECKBOX жагсаалт (2 БАГАНАТ,
-                       шошго нь уртасгаад 2 мөр болно):
-                         [☑ Хувь лизингээр] [☐ Бэлэн төлөлтөөр]
-                         [☐ Банкны зээлээр] [☑ Бартер сонирхоно]
-                       ⚠️ Чипээр хийвэл урт шошго («Хувь лизингээр») 4 мөр
-                          болж, нэг багана мэт харагдана ✗
-                       ⇒ CSS нь нэг газар: `app/globals.css` (`.pay-grid` +
-                          `.pay-check` + `input:checked` — appearance:none) ✓
+                    🆕 ХЭВ 2026-10-03 (16) — хэрэглэгчийн хүсэлт: «Зар хайх
+                       хэсэгийн 💳 Төлбөрийн нөхцөлийг ӨРӨӨНИЙ ТОО шиг
+                       СОНГОДОГ болго»:
+                         [✓ 💳 Хувь лизингээр] [Бэлэн төлөлтөөр]
+                         [Банкны зээлээр] [Бартер сонирхоно]
+                       ⇒ «🛏 Өрөөний тоо»-той ЯГ ИЖИЛ хэв: rounded-lg
+                          хайрцаг + `chip-toggle` чипүүд (flex-wrap) +
+                          `aria-pressed` + идэвхтэй үед `✓` ба
+                          `chip-toggle-active` ✓
+                       ⏳ (6) 2026-10-03: unegui.mn-ийн зурагт тулгуурлан
+                          ☑ checkbox (2 баганат `.pay-grid`) байсан — энэ
+                          нь ОДОО ЗӨВХӨН ЗАР ОРУУЛАХ ФОРМ дээр
+                          (`AddListingClient.jsx → data-payment-picker`) ✓
+                       ⚠️ CSS нь нэг газар (`app/globals.css`): хайлт нь
+                          `.chip-toggle` (өрөө/хороотой НЭГ класс),
+                          форм нь `.pay-grid`/`.pay-check` ✓
                     ⚠️ ЗӨВХӨН `real-estate` ба `auto` хэсэгт (`showPayments`)
                        — ажил/компьютер/бараа/үйлчилгээнд лизинг гэж байхгүй ✓
                     ⚠️ Шүүлт нь `?payment=lease,cash` → `lib/queries.js` →
@@ -2161,7 +2178,7 @@ export default function HomeClient() {
                        өөрчлөлт нь URL/DB-д ОГТ хүрэхгүй ✓
                     ⚠️ `data-payment-filter` / `data-payment-value` нь
                        `scripts/cdp-payments.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓
-                       (одоо утга нь `<input type="checkbox">` дээр ✓) */}
+                       (2026-10-03 (16)-аас утга нь `<button>` дээр ✓) */}
                 {showPayments && (
                   <SideBlock label="💳 Төлбөрийн нөхцөл">
                     {filters.payments.length > 0 && (
@@ -2169,18 +2186,25 @@ export default function HomeClient() {
                         {countPayments(filters.payments)} сонгосон
                       </span>
                     )}
-                    <div className="pay-grid" data-payment-filter role="group" aria-label="Төлбөрийн нөхцөл">
-                      {PAYMENT_OPTIONS.map((o) => (
-                        <label key={o.value} className="pay-check">
-                          <input
-                            type="checkbox"
-                            data-payment-value={o.value}
-                            checked={filters.payments.includes(o.value)}
-                            onChange={() => togglePayments(o.value)}
-                          />
-                          <span>{o.label}</span>
-                        </label>
-                      ))}
+                    <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-2" data-payment-filter role="group" aria-label="Төлбөрийн нөхцөл">
+                      <div className="flex flex-wrap gap-1.5">
+                        {PAYMENT_OPTIONS.map((o) => {
+                          const on = filters.payments.includes(o.value);
+                          return (
+                            <button
+                              key={o.value}
+                              type="button"
+                              aria-pressed={on}
+                              data-payment-value={o.value}
+                              onClick={() => togglePayments(o.value)}
+                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                            >
+                              {on && <span aria-hidden="true">✓</span>}
+                              {o.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                     {filters.payments.length > 0 && (
                       <button

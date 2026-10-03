@@ -27,7 +27,7 @@ import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 
 import {
-  YEAR_FROM, YEAR_TO, FLOOR_MAX, BATHROOM_MAX, YEAR_CHOICES,
+  YEAR_FROM, YEAR_TO, FLOOR_MAX, BATHROOM_MAX, PLUS_VALUE, YEAR_CHOICES,
   countChoices, yearChoices, floorChoices, toChoiceItems, choiceText,
   nearestChoiceIndex, indexFromScroll, scrollTopForIndex,
 } from '../lib/numberChoices.mjs';
@@ -122,9 +122,26 @@ t("🏢 Хуучин утга («30») нь `includeValue`-ээр ОРУУЛГД
   assert.deepEqual(list.slice(0, 3), ['1', '2', '3']);
 });
 
-t('🚿 Угаалгын өрөөний жагсаалт нь 1–6 (түгээмэл утгууд ✓)', () => {
-  assert.equal(BATHROOM_MAX, 6);
-  assert.deepEqual(countChoices(1, BATHROOM_MAX), ['1', '2', '3', '4', '5', '6']);
+t('🚿 Угаалгын өрөөний жагсаалт нь 1, 2, 3, 4 ба «+5» (хэрэглэгчийн хүсэлт ✓)', () => {
+  assert.equal(BATHROOM_MAX, 5);
+  assert.equal(PLUS_VALUE, '5');
+  assert.deepEqual(countChoices(1, BATHROOM_MAX), ['1', '2', '3', '4', '5']);
+});
+
+t('➕ `toChoiceItems(…, { plusValue })` — сүүлийн мөр нь «+5» ХҮРЭЭ (утга нь ЦЭВЭР `5` ✓)', () => {
+  const items = toChoiceItems(countChoices(1, BATHROOM_MAX), { emptyLabel: '—', plusValue: PLUS_VALUE });
+  assert.deepEqual(items.map((it) => it.label), ['—', '1', '2', '3', '4', '+5']);
+  /** ⚠️ Утга нь форм/DB рүү ЧИМЭЭГҮЙ «+5» болж орохгүй — зөвхөн ШОШГО ✓ */
+  assert.deepEqual(items.map((it) => it.value), ['', '1', '2', '3', '4', '5']);
+  const balcony = toChoiceItems([1, 2, 3, 4, 5], { unit: 'тагт', plusValue: PLUS_VALUE });
+  assert.deepEqual(balcony.map((it) => it.label), ['1 тагт', '2 тагт', '3 тагт', '4 тагт', '+5 тагт']);
+});
+
+t('🔘 `choiceText(v, unit, plusValue)` — товч дээр «+5 тагт» / «+5 өрөө» ✓', () => {
+  assert.equal(choiceText('5', 'тагт', PLUS_VALUE), '+5 тагт');
+  assert.equal(choiceText('5', 'өрөө', PLUS_VALUE), '+5 өрөө');
+  assert.equal(choiceText('4', 'тагт', PLUS_VALUE), '4 тагт', 'бусад утга ХӨНДӨГДӨХГҮЙ ✓');
+  assert.equal(choiceText('5', 'тагт'), '5 тагт', 'plusValue байхгүй бол хуучин зан ХЭВЭЭР ✓');
 });
 
 // ────────────────────────────────────────────────────────────
@@ -267,6 +284,31 @@ t('🧩 ГЭРЭЭ: `AddListingClient` нь жагсаалтаа `numberChoices.
   assert.match(src, /yearChoices\(\)/, 'оны жагсаалт 1980…2026 ✓');
   assert.match(src, /BALCONY_OPTIONS/, 'тагт нь `locationData`-ийн жагсаалттай ижил ✓');
   assert.match(src, /BATHROOM_MAX/, 'угаалгын өрөөний дээд хязгаар ✓');
+});
+
+t('🧩 ГЭРЭЭ: «+5» нь НЭГ ЭХ СУРВАЛЖ (`PLUS_VALUE`) — форм дээр ч тэр ✓', () => {
+  const src = readSrc('components/AddListingClient.jsx');
+  assert.match(src, /import \{[\s\S]{0,200}PLUS_VALUE,[\s\S]{0,200}\} from '\.\.\/lib\/numberChoices\.mjs'/,
+    'импорт ✓');
+  assert.match(src, /plusValue: PLUS_VALUE/, 'items жагсаалт (тагт + угаалгын өрөө) ✓');
+  assert.match(src, /plusValue=\{PLUS_VALUE\}/, 'ChoiceField-ийн товч/дугуй ✓');
+});
+
+t('🚿 ГЭРЭЭ: «Угаалгын өрөөний тоо» нь ТАГТНЫ ЯГ ӨМНӨ (`floors-2` мөр) байрлана ✓', () => {
+  const src = readSrc('components/AddListingClient.jsx');
+  const at = src.lastIndexOf('data-detail-row="floors-2"');
+  const row = src.slice(at);
+  const block = row.slice(0, row.indexOf('data-detail-row="garage"'));
+  const iBath = block.indexOf('testId="bathrooms"');
+  const iBalcony = block.indexOf('testId="balconies"');
+  const iFloor = block.indexOf('testId="floor"');
+  assert.ok(iBath > -1 && iBalcony > -1 && iFloor > -1, '3 талбар нэг мөрөнд ✓');
+  assert.ok(iFloor < iBath && iBath < iBalcony, 'давхар → угаалгын өрөөний тоо → тагт дараалал ✓');
+  /** ⚠️ Тусдаа `data-detail-row="bathrooms"` мөр БАЙХГҮЙ болсон ✓ */
+  assert.equal((src.match(/data-detail-row="bathrooms"/g) || []).length, 0);
+  /** ⚠️ Хуучин «гар бичилт» (`min`/`max`-тай input) БАЙХГҮЙ — сонголт (select) ✓ */
+  assert.match(block, /label="Угаалгын өрөөний тоо"[\s\S]{0,300}desktopControl="select"/);
+  assert.doesNotMatch(block, /max=\{BATHROOM_MAX\}/, '🖥 ч сонголттой болов ✓');
 });
 
 t('🧩 ГЭРЭЭ: форм нь 📱 мобайл дугуйг (`WheelPicker`) ХЭРЭГЛЭНЭ', () => {

@@ -38,7 +38,7 @@ import {
  *    БҮГД нэг эх сурвалжтай ✓
  */
 import {
-  YEAR_FROM, YEAR_TO, FLOOR_MAX, BATHROOM_MAX,
+  YEAR_FROM, YEAR_TO, FLOOR_MAX, BATHROOM_MAX, PLUS_VALUE,
   countChoices, floorChoices, yearChoices, toChoiceItems, choiceText,
 } from '../lib/numberChoices.mjs';
 import WheelPicker from './WheelPicker';
@@ -327,11 +327,11 @@ const EMPTY_ROW = '—';
 const YEAR_ITEMS = toChoiceItems(yearChoices(), { emptyLabel: EMPTY_ROW });
 /** 🏢 Нийт давхар `1…150` (`FLOOR_MAX` — 2026-10-03-нд 26 → 150 болов) ✓ */
 const FLOOR_ITEMS = toChoiceItems(countChoices(1, FLOOR_MAX), { emptyLabel: EMPTY_ROW });
-/** 🌇 Тагт — `BALCONY_OPTIONS` (`1…4`, нэг эх сурвалж) — desktop `<select>`-ийн
- *  шошготой ЯГ ижил («2 тагт») ✓ */
-const BALCONY_ITEMS = toChoiceItems(BALCONY_OPTIONS, { emptyLabel: EMPTY_ROW, unit: 'тагт' });
-/** 🚿 Угаалгын өрөө — `1…6` түгээмэл утгууд ✓ */
-const BATHROOM_ITEMS = toChoiceItems(countChoices(1, BATHROOM_MAX), { emptyLabel: EMPTY_ROW });
+/** 🌇 Тагт — `BALCONY_OPTIONS` (`1…4` ба «+5», нэг эх сурвалж) — desktop
+ *  `<select>`-ийн шошготой ЯГ ижил («2 тагт», «+5 тагт») ✓ */
+const BALCONY_ITEMS = toChoiceItems(BALCONY_OPTIONS, { emptyLabel: EMPTY_ROW, unit: 'тагт', plusValue: PLUS_VALUE });
+/** 🚿 Угаалгын өрөө — `1, 2, 3, 4, +5` (`BATHROOM_MAX` = «+5» хүрээ) ✓ */
+const BATHROOM_ITEMS = toChoiceItems(countChoices(1, BATHROOM_MAX), { emptyLabel: EMPTY_ROW, plusValue: PLUS_VALUE });
 
 /**
  * 📅 Оны мөрүүд — хэрэв ОДООГИЙН утга хүрээнээс ГАДУУР байвал (ж: хуучин
@@ -392,6 +392,8 @@ const attrWheelUnit = (f) => f.choiceUnit || (f.type === 'number' ? 'он' : '')
  * @param {Array}    items     `[{ value, label }]` (дугуйн мөрүүд — хоосон
  *   мөр нь `value: ''` байж БОЛНО ✓)
  * @param {string}   [unit]    товч дээрх нэгж (ж: `'давхар'`, `'он'`)
+ * @param {string}   [plusValue] «+5» ХҮРЭЭНИЙ утга (ж: `'5'`) — товч дээр
+ *   «+5 тагт» / «+5 өрөө» гэж гаргана (`items`-ийн шошго нь ч мөн адил) ✓
  * @param {string}   [testId]  `data-choice-trigger`/`data-choice-input`-ийн утга
  * @param {string}   [placeholder] 🖥 гар бичилтийн placeholder
  * @param {number}   [min]/[max] 🖥 гар бичилтийн хязгаар
@@ -408,10 +410,10 @@ const attrWheelUnit = (f) => f.choiceUnit || (f.type === 'number' ? 'он' : '')
 function ChoiceField({
   label, icon = '', hint = '', wheelHint = '', value = '', items = [], unit = '',
   testId, placeholder = '', min, max, desktopControl = 'input', onChange, openWheel,
-  fieldKey = '', mobileActive,
+  fieldKey = '', mobileActive, plusValue = '',
 }) {
-  /** 🎛 Товч/дугуй дээрх бичиг: `'5 давхар'` · `'2015 он'` (хоосон бол `''`) */
-  const shown = choiceText(value, unit);
+  /** 🎛 Товч/дугуй дээрх бичиг: `'5 давхар'` · `'2015 он'` · `'+5 тагт'` */
+  const shown = choiceText(value, unit, plusValue);
   /** ⚠️ Жагсаалтад БАЙХГҮЙ хуучин утга — `<select>`-д мөр нэмнэ (алга болохгүй ✓) */
   const legacy = value && !items.some((it) => it.value === String(value)) ? String(value) : '';
   return (
@@ -1023,7 +1025,7 @@ export default function AddListingClient() {
     },
     {
       key: 'district',
-      title: form.city || 'Дүүрэг / Сум',
+      title: form.city || 'Дүүрэг',
       items: districtItems,
       value: form.district,
       onPick: (v) => {
@@ -1092,11 +1094,19 @@ export default function AddListingClient() {
       required: !isEdit,
     });
     if (isRealEstate) out.push({ key: 'area', title: 'Талбай (м²)', group: 'area' });
-    if (showBathrooms) out.push({ key: 'bathrooms', title: 'Угаалгын өрөө', group: 'bathrooms' });
     if (showFloors && showApartment) out.push({ key: 'buildYear', title: 'Ашиглалтанд орсон он', group: 'floors-1' });
     if (showFloors) out.push({ key: 'totalFloors', title: 'Барилгын нийт давхар', group: 'floors-1' });
     if (showFloors) out.push({ key: 'floor', title: 'Байрны давхар', group: 'floors-2' });
-    if (showFloors && showApartment) out.push({ key: 'balconies', title: 'Тагт (1-4)', group: 'floors-2' });
+    /**
+     * 🚿 «Угаалгын өрөөний тоо» — 🆕 2026-10-03 (хэрэглэгчийн хүсэлт:
+     *    «тагтны өмнө угаалгын өрөөний тоо оруулах хэсгийг оруул») ⇒
+     *    ТАГТНЫ ЯГ ӨМНӨ, DOM-той ИЖИЛ дарааллаар ✓
+     * ⚠️ Мобайл дэлгэц нь `floors-2` бүлэгтэй — талбар нь ч мөн тэр мөрөнд
+     *    (`data-detail-row="floors-2"`); мөр ба талбарын `data-mobile-active`
+     *    хоёр ТУСДАА тул «нэг дэлгэцэд нэг талбар» ХЭВЭЭР ✓
+     */
+    if (showBathrooms) out.push({ key: 'bathrooms', title: 'Угаалгын өрөөний тоо', group: 'floors-2' });
+    if (showFloors && showApartment) out.push({ key: 'balconies', title: 'Тагт', group: 'floors-2' });
     if (showApartment) out.push({ key: 'garage', title: 'Гараж', group: 'garage' });
     return out;
   })();
@@ -1658,14 +1668,16 @@ export default function AddListingClient() {
                 emptyText="Хот / Аймаг байхгүй"
                 className="bg-white"
               />
-              {/* ② ДҮҮРЭГ / СУМ — хорооны жагсаалт ЗӨВХӨН эндээс хамаарна ✓ */}
+              {/* ② ДҮҮРЭГ — хорооны жагсаалт ЗӨВХӨН эндээс хамаарна ✓ */}
+              {/* 🏷️ 2026-10-03 (14): шошго «Дүүрэг / Сум» → «Дүүрэг» (хэрэглэгчийн
+                  хүсэлт) — `title` ба `mobileLabel` ба `emptyText` БҮГД ✓ */}
               <PickerColumn
                 pickRole="loc-district"
-                mobileLabel="Дүүрэг / Сум"
+                mobileLabel="Дүүрэг"
                 items={districtItems}
                 value={form.district}
                 onPick={changeDistrict}
-                emptyText="Дүүрэг / Сум байхгүй"
+                emptyText="Дүүрэг байхгүй"
                 className="bg-white"
               />
               {/* ③ ХОРОО — ⚡ `simpleForm` (hobby/home/…) дээр ГАРАХГҮЙ ✓
@@ -1696,7 +1708,7 @@ export default function AddListingClient() {
                   {!simpleForm && form.khoroo ? <> › <b className="text-gray-900">{form.khoroo}</b></> : null}
                 </>
               ) : (
-                'Хот/Аймаг → дүүрэг/сум → хороогоо дараалан сонгоно уу.'
+                'Хот/Аймаг → дүүрэг → хороогоо дараалан сонгоно уу.'
               )}
             </p>
             </>
@@ -2096,36 +2108,9 @@ export default function AddListingClient() {
               </div>
               )}
             </div>
-            {/* ===== 🚿 УГААЛГЫН ӨРӨӨ (0012_listing_bathrooms.sql) =====
-                АОС/хаус төрөлд ҮРГЭЛЖ, мөн 3 ба түүнээс олон өрөөтэй зарт
-                харагдана (lib/locationData.js → hasBathroomFields). */}
-            {showBathrooms && (
-              <div
-                className="form-row-single"
-                data-form-row="details"
-                data-detail-row="bathrooms"
-                data-mobile-active={detailRowActive('bathrooms')}
-              >
-                {/* 🆕 2026-10-02: 📱 мобайлд ДУГУЙ (1–6 түгээмэл утга), 🖥 дээр
-                    гар бичилт ХЭВЭЭР (жагсаалтад байхгүй тоог ч бичиж болно ✓) */}
-                <ChoiceField
-                  label="Угаалгын өрөө"
-                  value={form.bathrooms}
-                  items={BATHROOM_ITEMS}
-                  unit="өрөө"
-                  testId="bathrooms"
-                  fieldKey="bathrooms"
-                  mobileActive={activeDetail.key === 'bathrooms'}
-                  placeholder="1"
-                  min={0}
-                  max={BATHROOM_MAX}
-                  hint="Хэдэн угаалгын өрөөтэй вэ? (сонголтоор)"
-                  wheelHint={`Сонголт: 1–${BATHROOM_MAX} (эсвэл гар бичилт)`}
-                  onChange={(v) => set('bathrooms', v)}
-                  openWheel={setWheel}
-                />
-              </div>
-            )}
+            {/* 🚿 УГААЛГЫН ӨРӨӨНИЙ ТОО — 2026-10-03-аас хойш `floors-2` мөрөнд
+                (ТАГТНЫ ЯГ ӨМНӨ) харагдана ↓ — хэрэглэгчийн хүсэлт:
+                «тагтны өмнө угаалгын өрөөний тоо оруулах хэсгийг оруул» ✓ */}
 
             {/* ===== Орон сууцны нэмэлт мэдээлэл (зөвхөн Орон сууц сонгосон үед) =====
                 🆕 2026-10-02 (хэрэглэгчийн хүсэлт): он/давхар/тагт нь 📱 мобайлд
@@ -2173,7 +2158,7 @@ export default function AddListingClient() {
               </div>
             )}
 
-            {showFloors && (
+            {(showFloors || showBathrooms) && (
               <div
                 className="form-row-single"
                 data-form-row="details"
@@ -2182,33 +2167,59 @@ export default function AddListingClient() {
               >
                 {/* ⚠️ Давхрын жагсаалт нь «Барилгын нийт давхар»-аас ХЭТРЭХГҮЙ
                     (ж: 9 давхарт 12-р давхар сонгох боломжгүй ✓) */}
-                <ChoiceField
-                  label="Байрны давхар"
-                  value={form.floor}
-                  items={floorItemsFor(form.floor, form.totalFloors)}
-                  unit="давхар"
-                  testId="floor"
-                  fieldKey="floor"
-                  mobileActive={activeDetail.key === 'floor'}
-                  placeholder="5"
-                  min={1}
-                  max={FLOOR_MAX}
-                  wheelHint={form.totalFloors
-                    ? `Сонголт: 1–${Math.min(FLOOR_MAX, Number(form.totalFloors) || FLOOR_MAX)} давхар (нийт давхраас)`
-                    : `Сонголт: 1–${FLOOR_MAX} давхар`}
-                  onChange={(v) => set('floor', v)}
-                  openWheel={setWheel}
-                />
-                {showApartment && (
+                {showFloors && (
                   <ChoiceField
-                    label="Тагт (1-4)"
+                    label="Байрны давхар"
+                    value={form.floor}
+                    items={floorItemsFor(form.floor, form.totalFloors)}
+                    unit="давхар"
+                    testId="floor"
+                    fieldKey="floor"
+                    mobileActive={activeDetail.key === 'floor'}
+                    placeholder="5"
+                    min={1}
+                    max={FLOOR_MAX}
+                    wheelHint={form.totalFloors
+                      ? `Сонголт: 1–${Math.min(FLOOR_MAX, Number(form.totalFloors) || FLOOR_MAX)} давхар (нийт давхраас)`
+                      : `Сонголт: 1–${FLOOR_MAX} давхар`}
+                    onChange={(v) => set('floor', v)}
+                    openWheel={setWheel}
+                  />
+                )}
+                {/* ===== 🚿 УГААЛГЫН ӨРӨӨНИЙ ТОО (0012_listing_bathrooms.sql) =====
+                    🆕 2026-10-03 (хэрэглэгчийн хүсэлт): ТАГТНЫ ЯГ ӨМНӨ байрлана
+                    (`floors-2` мөр) — сонголт нь `1, 2, 3, 4, +5` (BATHROOM_ITEMS).
+                    ⚠️ Харагдах нөхцөл: `lib/locationData.js → hasBathroomFields`
+                       (Орон сууц + АОС/хаус ҮРГЭЛЖ, бусад 3+ өрөөтэй үед) ✓ */}
+                {showBathrooms && (
+                  <ChoiceField
+                    label="Угаалгын өрөөний тоо"
+                    value={form.bathrooms}
+                    items={BATHROOM_ITEMS}
+                    unit="өрөө"
+                    plusValue={PLUS_VALUE}
+                    desktopControl="select"
+                    testId="bathrooms"
+                    fieldKey="bathrooms"
+                    mobileActive={activeDetail.key === 'bathrooms'}
+                    hint="Хэдэн угаалгын өрөөтэй вэ? (сонголтоор)"
+                    wheelHint="Сонголт: 1, 2, 3, 4 эсвэл +5 (5 ба түүнээс дээш)"
+                    onChange={(v) => set('bathrooms', v)}
+                    openWheel={setWheel}
+                  />
+                )}
+                {showFloors && showApartment && (
+                  <ChoiceField
+                    label="Тагт"
                     value={form.balconies}
                     items={BALCONY_ITEMS}
+                    unit="тагт"
+                    plusValue={PLUS_VALUE}
                     desktopControl="select"
                     testId="balconies"
                     fieldKey="balconies"
                     mobileActive={activeDetail.key === 'balconies'}
-                    wheelHint="Хэдэн тагттай вэ?"
+                    wheelHint="Хэдэн тагттай вэ? (1, 2, 3, 4 эсвэл +5)"
                     onChange={(v) => set('balconies', v)}
                     openWheel={setWheel}
                   />
@@ -2375,7 +2386,14 @@ export default function AddListingClient() {
             {step === 3 && (
             <>
             <div className="form-group">
-              <label>Нэмэлт тайлбар</label>
+              {/* 🏷️ 2026-10-03 (14) (хэрэглэгчийн хүсэлт: «байрны зар оруулахад
+                  Нэмэлт тайлбар гэхийг зүгээр л Тайлбар гэчих»): шошго
+                  «Нэмэлт тайлбар» → «Тайлбар» болов ✓
+                  ⚠️ Зөвхөн ХАРАГДАХ НЭР солигдов — талбар (`form.description`),
+                     DB багана (`listings.description` — 0001_schema.sql),
+                     `set('description', …)`, `placeholder`, `rows` бүгд
+                     ХӨНДӨГДӨӨГҮЙ ✓ (карт/дэлгэрэнгүй хуудас ХЭВЭЭР ✓) */}
+              <label>Тайлбар</label>
               <textarea rows="4" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Зарын дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..." />
             </div>
 
