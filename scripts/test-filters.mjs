@@ -325,14 +325,16 @@ t('🏷️ Үйлдвэрлэгч нь хайлттай combobox хэвээр (�
   assert.ok(f.options.length >= 95); // 38 → 95 болж өргөжсөн
 });
 
-t("Бусад хэсгийн шүүлт (jobs: 3, computers: 2, furniture/home/travel: 1, electric: 1, 🧱 1, 🏭 1, services: 3)", () => {
+t("Бусад хэсгийн шүүлт (jobs: 3, computers: 1, furniture/home/travel: 1, electric: 1, 🧱 1, 🏭 1, services: 3)", () => {
   const count = (s) => getAttrFilters(s).length;
   assert.equal(count('jobs'), 3);
   // 🛡️ 2026-10-01 (18): 💻 computers — 🛡️ «Баталгаа» (`warranty`) ХАСАГДСАН (3 → 2) ✓
   //    🖥 2026-10-03 (7): `attrFilters` нь 6 болов (📺/⚙️/🧠/💾 нэмэгдэв) — гэхдээ
   //       тэдгээр нь `onlySubtypes`-тай тул ДЭД ТӨРӨЛГҮЙ дуудлагад ОРОХГҮЙ ⇒ 2 ✓
   //       (Notebook брэнд дээр 6 — доорх «🖥» тестүүд ✓)
-  assert.equal(count('computers'), 2);
+  //    🏷️ 2026-10-03 (20): 🏷️ «Брэнд» Ч `filterSubtypes`-тай ⇒ дэд төрөлгүй
+  //       дуудлагад 1 л үлдэв (✅ Шинэ / Шинэвтэр / Хуучин) ✓
+  assert.equal(count('computers'), 1);
   assert.equal(getAttrFilters('computers', 'Dell').length, 6);
   // ⚡ 2026-09-29: `home` (Гэр ахуйн бараа) мөн ХЯЛБАР ФОРМ болсон тул
   //    `📦 Хүргэлт` ХАСАГДАВ — зөвхөн `✅ Шинэ / Шинэвтэр / Хуучин` үлдэнэ (2 → 1) ✓
@@ -755,7 +757,9 @@ t('💻 Notebook: 4 үзүүлэлт нь СОНГОЛТТОЙ болов (📺 
   //    🖥 2026-10-03 (7): 📺/⚙️/🧠/💾 нь `attrFilters`-д НЭМЭГДЭВ — гэхдээ
   //       `onlySubtypes`-тай тул ДЭД ТӨРӨЛ дамжуулахгүй үед ХАРАГДАХГҮЙ
   //       (доорх «🖥» тестүүдийг үзнэ үү) ⇒ энэ дуудлага ХЭВЭЭР 2 ✓
-  assert.deepEqual(getAttrFilters('computers').map((f) => f.key), ['brand', 'condition']);
+  //    🏷️ 2026-10-03 (20): 🏷️ «Брэнд» Ч `filterSubtypes`-тай болов ⇒ дэд
+  //       төрөл дамжуулахгүй үед шүүлтэд ГАРАХГҮЙ (1 л үлдэв — ✅ төлөв) ✓
+  assert.deepEqual(getAttrFilters('computers').map((f) => f.key), ['condition']);
   assert.deepEqual(getAttrFilters('computers', 'Apple').map((f) => f.key),
     ['brand', 'screen', 'cpu', 'ram', 'storage', 'condition']);
 });
@@ -847,11 +851,54 @@ t('🖥 21 Notebook брэнд + 2 PC дэд төрөлд 4 шүүлт; ХОЛД
     assert.deepEqual(getAttrFilters('computers', sub).map((f) => f.key),
       ['brand', ...spec, 'condition'], `«${sub}»`);
   }
+  // 🏷️ 2026-10-03 (20): холдуу дэд төрөл дээр 🏷️ «Брэнд» Ч ХАРАГДАХГҮЙ
+  //    (`filterSubtypes` — Notebook-ийн гэр бүлд л шүүлт болно ✓)
   for (const sub of ['', 'Бусад', 'Mouse', 'Keyboard', 'Xbox', 'Чихэвч', 'Дэлгэц',
     'Принтер, Хувилагч, Сканнер, Ламинатор', 'iPad, Tablet, Kindle']) {
     assert.deepEqual(getAttrFilters('computers', sub).map((f) => f.key),
-      ['brand', 'condition'], `«${sub || '(хоосон)'}»: холдуу шүүлт гарч байна ✗`);
+      ['condition'], `«${sub || '(хоосон)'}»: холдуу шүүлт гарч байна ✗`);
   }
+});
+
+// ---------- 🏷️ 2026-10-03 (20): 💻 «БРЭНД» НЬ ЗӨВХӨН ХАЙЛТАД хязгаарлагдав ----------
+// ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Notebook ээс бусад хайлтын хэсэгт Брэнд гэж
+// баймааргүй байна даа» ⇒ 🏷️ «Брэнд» нь `filterSubtypes: PC_SPEC_SUBTYPES` тугтай
+// болж, SIDEBAR (хайлт)-д ЗӨВХӨН Notebook-ийн гэр бүлд гарна — ⚠️ ФОРМ
+// ХӨНДӨӨГДӨХГҮЙ (iPad/принтер/Mouse дээр Брэнд бичих боломж ХЭВЭЭР ✓)
+t('🏷️ 💻 «Брэнд» — ХАЙЛТАД Notebook-ийн гэр бүлд л; ФОРМ ХӨНДӨГДӨӨГҮЙ', () => {
+  const brand = getAttrField('computers', 'brand');
+  // ① Талбар нь `filterSubtypes`-тай (sidebar-only хязгаарлалт)
+  assert.deepEqual(brand.filterSubtypes, PC_SPEC_SUBTYPES);
+  assert.equal(brand.onlySubtypes, undefined, 'форм хөндөгдөх ёстой ✗');
+  assert.equal(brand.searchable, true, 'хайлттай combobox хэвээр байх ёстой ✗');
+  // ② Хайлт (sidebar): зөвхөн Notebook-ийн гэр бүлд
+  for (const sub of PC_SPEC_SUBTYPES) {
+    assert.ok(getAttrFilters('computers', sub).some((f) => f.key === 'brand'), `«${sub}»: Брэнд алга ✗`);
+  }
+  for (const sub of ['', 'Mouse', 'Keyboard', 'Дэлгэц', 'iPad, Tablet, Kindle',
+    'Принтер, Хувилагч, Сканнер, Ламинатор', 'Принтер, Хувилагчийн хор',
+    'PS, XBox, Nintendo тоглоом суулгана', 'Чихэвч', 'Бусад сэлбэг']) {
+    assert.ok(!getAttrFilters('computers', sub).some((f) => f.key === 'brand'),
+      `«${sub || '(хоосон)'}»: ХАЙЛТАД Брэнд гарч байна ✗`);
+  }
+  // ③ Форм: БҮХ дэд төрөлд хэвээр (зөвхөн sidebar хязгаарлагдав)
+  for (const sub of ['', 'Mouse', 'iPad, Tablet, Kindle', 'Дэлгэц', 'Apple']) {
+    assert.ok(getAttrFields('computers', sub).some((f) => f.key === 'brand'),
+      `«${sub || '(хоосон)'}»: формоос Брэнд алга болсон ✗`);
+  }
+  // ④ `getAttrField` (картын мөр/«Зарын дэлгэрэнгүй») ХӨНДӨГДӨӨГҮЙ
+  assert.equal(getAttrField('computers', 'brand').label, 'Брэнд');
+  // ⑤ Зөвхөн 💻-ийн `brand` нь `filterSubtypes`-тай — бусад 12 хэсэгт БАЙХГҮЙ
+  const flagged = SECTIONS.flatMap((s) => (s.attrFields || [])
+    .filter((f) => f.filterSubtypes).map((f) => `${s.value}.${f.key}`));
+  assert.deepEqual(flagged, ['computers.brand']);
+  // ⑥ Бусад 12 хэсгийн шүүлт ХӨНДӨГДӨӨГҮЙ (ж: 🚗 авто «Үйлдвэрлэгч» шүүлт хэвээр ✓)
+  for (const s of SECTIONS) {
+    if (s.value === 'computers') continue;
+    assert.deepEqual(getAttrFilters(s.value).map((f) => f.key),
+      getAttrFilters(s.value, getSubtypes(s.value)[0] || '').map((f) => f.key), s.value);
+  }
+  assert.equal(getAttrFilters('auto').length, 7);
 });
 
 t('🖥 Бусад 11 хэсгийн шүүлт ХӨНДӨГДӨӨГҮЙ (subtype дамжуулсан ч ЯГ ижил)', () => {
@@ -881,18 +928,22 @@ t('🖥 ГЭРЭЭ: HomeClient нь дэд төрлийг дамжуулна + �
 
 t('🖥 pruneGatedAttrs: Notebook-ийн ⚙️ CPU нь Mouse сонгоход ЦЭВЭРЛЭГДЭНЭ (үл үзэгдэх шүүлт үлдэхгүй)', () => {
   const attrs = { brand: 'Apple', cpu: 'Intel Core i5', ram: '16 GB' };
-  // ⚠️ Mouse дээр 4 шүүлт ХАРАГДАХГҮЙ ⇒ утга нь URL/DB-д ҮЛДЭХ ЁСГҮЙ ✗
-  assert.deepEqual(pruneGatedAttrs('computers', 'Mouse', attrs), { brand: 'Apple' });
+  // ⚠️ Mouse дээр 5 шүүлт ХАРАГДАХГҮЙ (4 үзүүлэлт + 🏷️ Брэнд) ⇒ утга нь
+  //    URL/DB-д ҮЛДЭХ ЁСГҮЙ ✗ (🏷️ 2026-10-03 (20): `filterSubtypes` — brand ч мөн)
+  assert.deepEqual(pruneGatedAttrs('computers', 'Mouse', attrs), {});
   // ⚠️ Notebook брэнд дээр шүүлт ХАРАГДАНА ⇒ хөндөгдөхгүй (ИЖИЛ объект ✓)
   assert.equal(pruneGatedAttrs('computers', 'Apple', attrs), attrs);
-  // ⚠️ Дэд төрөл СОНГООГҮЙ (`''`) үед ч 4 шүүлт харагдахгүй ⇒ хасагдана
-  assert.deepEqual(pruneGatedAttrs('computers', '', attrs), { brand: 'Apple' });
+  // ⚠️ Дэд төрөл СОНГООГҮЙ (`''`) үед ч 5 шүүлт харагдахгүй ⇒ хасагдана
+  //    (🏷️ 2026-10-03 (20): `filterSubtypes` — brand ч мөн ✓)
+  assert.deepEqual(pruneGatedAttrs('computers', '', attrs), {});
 });
 
 t('🖥 pruneGatedAttrs: хүрээний түлхүүр, формойн `model`, бусад 11 хэсэг ХӨНДӨГДӨХГҮЙ + КРАШГҮЙ', () => {
   const auto = { brand: 'Toyota', model: 'Prius 30', year_from: '2015', year_to: '2020' };
   assert.equal(pruneGatedAttrs('auto', 'Суудлын машин', auto), auto);
-  // ⚠️ 11 хэсэгт `onlySubtypes` БАЙХГҮЙ ⇒ ямар ч түлхүүр хасагдахгүй ✓
+  // ⚠️ 12 хэсэгт `onlySubtypes`/`filterSubtypes` БАЙХГҮЙ ⇒ ямар ч түлхүүр
+  //    хасагдахгүй ✓ (💻-ийн эхний дэд төрөл «Иж бүрэн компьютер» нь
+  //    `PC_SPEC_SUBTYPES`-д багтах тул 🏷️ brand ч хэвээр ✓)
   SECTIONS.forEach((s) => {
     const a = { brand: 'x', model: 'y', year_from: '2015' };
     assert.equal(pruneGatedAttrs(s.value, getSubtypes(s.value)[0] || '', a), a, s.value);
@@ -1569,10 +1620,12 @@ t('🛡️ 💻 «Баталгаа» (`warranty`) форм · шүүлт · ка
     assert.ok(!getAttrFields('computers', sub).some((f) => f.key === 'warranty'),
       `«${sub || '(хоосон)'}»: формоос хасагдаагүй ✗`);
   }
-  // ② Sidebar: `?warranty=` шүүлт БАЙХГҮЙ (💻-д 2 шүүлт үлдэв) ✓
+  // ② Sidebar: `?warranty=` шүүлт БАЙХГҮЙ ✓
   //    🖥 2026-10-03 (7): 📺/⚙️/🧠/💾 нэмэгдсэн ч `warranty` БУЦАЖ ОРООГҮЙ ✓
+  //    🏷️ 2026-10-03 (20): 🏷️ «Брэнд» нь `filterSubtypes`-тай болов ⇒ дэд
+  //       төрөл дамжуулахгүй үед ЗӨВХӨН `condition` үлдэнэ ✓
   assert.ok(!getAttrFilters('computers').some((f) => f.key === 'warranty'));
-  assert.deepEqual(getAttrFilters('computers').map((f) => f.key), ['brand', 'condition']);
+  assert.deepEqual(getAttrFilters('computers').map((f) => f.key), ['condition']);
   assert.ok(!getAttrFilters('computers', 'HP').some((f) => f.key === 'warranty'));
   // ③ `getAttrField` нь `null` → карт ба «Зарын дэлгэрэнгүй» хоёулаа алгасна ✓
   assert.equal(getAttrField('computers', 'warranty'), null);

@@ -19,6 +19,11 @@
  *      (URL бичигдэхдээ ХАСАГДАХГҮЙ ✓)
  *   ④ ХОЛДУУ ДЭД ТӨРӨЛ (`type=Mouse`): 4 шүүлт ГАРАХГҮЙ
  *      (`[data-attr-filter]` === 1) ба DB query-д `attrs->>cpu` ОГТ ЯВАХГҮЙ ✓
+ *   ④b 🏷️ 2026-10-03 (20) (хэрэглэгчийн хүсэлт: «Notebook ээс бусад хайлтын
+ *      хэсэгт Брэнд гэж баймааргүй байна даа»): 🏷️ «Брэнд» Ч хайлтад
+ *      `filterSubtypes`-ээр хязгаарлагдав ⇒ Mouse/хэсгийн түвшинд «Брэнд»
+ *      блок ОГТ БАЙХГҮЙ, `?type=Mouse&attr_brand=Apple` линкээр орвол
+ *      `attr_brand` ЧИМЭЭГҮЙ хасагдана (форм дээр ХЭВЭЭР ✓)
  *   ⑤ ҮЛ ҮЗЭГДЭХ ШҮҮЛТ (архитектурын урхи): `?type=Mouse&attr_cpu=…` линкээр
  *      орвол `attr_cpu` нь ЧИМЭЭГҮЙ хасагдана (`pruneGatedAttrs`) — эс бөгөөс
  *      sidebar-д харагдахгүй шүүлт заруудыг шүүж, «0 үр дүн» гарах байв ✗
@@ -346,6 +351,14 @@ check('🖱 Зөвхөн ✅ төлөв шүүлт (`[data-attr-filter]` === 1)'
   mouse.total === 1 && mouse.keys[0] === 'condition', `keys=[${mouse.keys.join(', ')}]`);
 check('🖱 📺/⚙️/🧠/💾 нь ОГТ БАЙХГҮЙ (холдуу дэд төрөлд гарахгүй ✓)',
   !/Дэлгэц|CPU|RAM|Хард/.test(mouse.labels.join(' ')), mouse.labels.join(' | '));
+/**
+ * 🏷️ 2026-10-03 (20): «Брэнд» Ч хайлтад хязгаарлагдав — ⚠️ энэ нь
+ *    `[data-attr-filter]`-ээр БАРИГДАХГҮЙ (combobox, `SearchableSelect`) тул
+ *    sidebar-ийн БЛОКУУДЫН толгойгоор (`blocks` — `#advanced-filters .divide-y > div`)
+ *    шалгана ✓
+ */
+check('🏷 Mouse дээр «Брэнд» блок ОГТ БАЙХГҮЙ (хайлтад хязгаарлагдав ✓)',
+  !/Брэнд/.test(mouse.blocks.join(' ')), mouse.blocks.join(' | '));
 check('🔎 DB: `attrs->>cpu` ОГТ ЯВАХГҮЙ', !dbQ('attrs->>cpu'), lastQ());
 
 // ═══════ ⑤ 🕳 ҮЛ ҮЗЭГДЭХ ШҮҮЛТ (архитектурын урхи) ═══════
@@ -363,12 +376,31 @@ check('🔎 DB: `attrs->>cpu` ОГТ ЯВАХГҮЙ (үл үзэгдэх шүү�
   !dbQ('attrs->>cpu'), lastQ());
 check('🖱 Шүүлт 1 хэвээр (Mouse — зөвхөн ✅ төлөв ✓)', pruned.total === 1, `total=${pruned.total}`);
 
+/**
+ * 🏷️ 2026-10-03 (20): 🏷️ «Брэнд» Ч МӨН — Notebook-ийн гэр бүлээс өөр дэд
+ *    төрөл дээр шүүлтээс ГАРСАН тул `?type=Mouse&attr_brand=Apple` нь ТҮҮНТЭЙ
+ *    АДИЛ цэвэрлэгдэнэ (эс бөгөөс sidebar-д харагдахгүй Брэнд шүүлт заруудыг
+ *    шүүж «0 үр дүн» гарна ✗). ⚠️ ФОРМ дээр Брэнд ХЭВЭЭР байгаа нь
+ *    ЗӨРЧИЛГҮЙ — шүүлт нь тусдаа (sidebar-only) тугтай ✓
+ */
+listingReqs.length = 0;
+await go(`${BASE}/?section=computers&type=Mouse&attr_brand=Apple`);
+await waitFor(`!/attr_brand/.test(location.search)`);
+await sleep(1200);
+check('🕳 URL-аас `attr_brand` АРИЛАВ (үл үзэгдэх Брэнд шүүлт үлдэхгүй ✓)',
+  !/attr_brand/.test(decodeURIComponent(await url())), (await url()) || '(хоосон)');
+check('🔎 DB: `attrs->>brand` ОГТ ЯВАХГҮЙ (харагдахгүй шүүлт явахгүй ✓)',
+  !dbQ('attrs->>brand'), lastQ());
+check('🏷 Харьцуулбал Notebook брэнд (Apple) дээр «Брэнд» блок БАЙНА (ялгаа тод ✓)',
+  /Брэнд/.test(apple.blocks.join(' ')), apple.blocks.join(' | '));
+
 // ═══ ⑥ 🆕 ДЭД ТӨРӨЛ СОНГООГҮЙ Ч SIDEBAR БАЙНА (хэсэг = 2-р түвшин) ═══
 // 🆕 2026-10-03 (13) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Дэлгэрэнгүй хайлт 3р түвшний
 //    сонголт дээр орж ирж байна (Бүх зар › Автомашин › Суудлын машин) —
 //    2р түвшин дээр гаргаж ирээд, бүх зар дээр шүүдэг болго» ⇒
 //    `?section=computers` (дэд төрөл ГҮЙ) дээр ч панель БИЙ ✓
-// ⚠️ Гэхдээ `onlySubtypes`-тай 📺/⚙️/🧠/💾 нь ХАРАГДАХГҮЙ ХЭВЭЭР — эхлээд
+// ⚠️ Гэхдээ `onlySubtypes`-тай 📺/⚙️/🧠/💾 ба 🏷️ 2026-10-03 (20)-нд
+//    `filterSubtypes`-тай 🏷️ «Брэнд» нь ХАРАГДАХГҮЙ ХЭВЭЭР — эхлээд
 //    Notebook-ийн брэндийг сонгоно ✓ (формойн `getAttrFields`-тэй ижил дүрэм)
 const EXPECT_NO_TYPE = getAttrFilters('computers', '').filter((f) => !f.searchable);
 await go(`${BASE}/?section=computers`);
@@ -382,6 +414,13 @@ check('🆕 Хэсгийн түвшинд `[data-attr-filter]` нь ЛИБЭЭС
 check('🆕 📺/⚙️/🧠/💾 нь хэсгийн түвшинд ОГТ БАЙХГҮЙ (дэд төрөл хэрэгтэй ✓)',
   noType.total > 0 && !/Дэлгэц|CPU|RAM|Хард/.test(noType.labels.join(' ')),
   noType.labels.join(' | '));
+// 🏷️ 2026-10-03 (20): хэсгийн түвшин (дэд төрөл ГҮЙ) бол «Notebook» БИШ ⇒
+//    «Брэнд» ч байхгүй (хэрэглэгчийн хүсэлт: «Notebook ээс бусад …»)
+check('🏷 Хэсгийн түвшинд «Брэнд» блок БАЙХГҮЙ (Notebook-ийн гэр бүлд л ✓)',
+  !/Брэнд/.test(noType.blocks.join(' ')), noType.blocks.join(' | '));
+check('🏷 ЛИБ ч ижил — дэд төрөлгүй дуудлагад 🏷 Брэнд ОРООГҮЙ ✓',
+  !getAttrFilters('computers', '').some((f) => f.key === 'brand'),
+  `keys=[${EXPECT_NO_TYPE.map((f) => f.key).join(', ')}]`);
 
 // ═══════ ⑦ 🚗 БУСАД ХЭСЭГ + 🎨 ОЛОН СОНГОЛТТОЙ «ӨНГӨ» (2026-10-03 (19)) ═══════
 // Хэрэглэгчийн хүсэлт: «Зар хайлт дээр Авто машин сонголт дээр Өнгө ийг
