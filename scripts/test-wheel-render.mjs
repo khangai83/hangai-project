@@ -15,7 +15,7 @@
 // ХАМРАХ ХҮРЭЭ (ЯГ юу түгжигдэх вэ):
 //   ① `open={false}` → DOM-д ОГТ гарахгүй ('' буцаана ✓)
 //   ② Мөрүүд: ТОО нь ЯГ `items.length`, ДАРААЛАЛ нь жагсаалтын дараалалтай
-//      ижил (давхар: «—» + 1…26; он: 2026 → 1980 ✓)
+//      ижил (давхар: «—» + 1…150; он: 2026 → 1980 ✓)
 //   ③ Мөр бүр `<button type="button" role="option">` — форм дотор submit
 //      ХИЙХГҮЙ ✓ · зөвхөн НЭГ мөр `aria-selected="true"` ✓
 //   ④ iOS Timer-ийн бүтэц: `snap-y snap-mandatory` + мөр бүр `snap-center`
@@ -127,7 +127,7 @@ t(`③ Мөрүүд: «—» + 1…${FLOOR_MAX} = ${FLOOR_MAX + 1} мөр, ДА�
   const vals = valuesOf(openFloor);
   assert.equal(vals.length, FLOOR_MAX + 1, 'мөрийн тоо');
   assert.equal(vals[0], '', 'эхний мөр нь ХООСОН («—») ✓');
-  assert.deepEqual(vals.slice(1), countChoices(1, FLOOR_MAX), '1…26 дарааллаараа ✓');
+  assert.deepEqual(vals.slice(1), countChoices(1, FLOOR_MAX), `1…${FLOOR_MAX} дарааллаараа ✓`);
 });
 
 t('④ Мөр бүр `<button type="button" role="option">` — форм submit ХИЙХГҮЙ ✓', () => {

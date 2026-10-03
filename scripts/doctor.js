@@ -110,7 +110,15 @@ function listeningPorts() {
 
   // ---------- 2. HTML-ийн дууддаг asset-ууд ----------
   const html = await (await fetch(`${BASE}/`, { cache: 'no-store' })).text();
-  const assets = [...new Set(html.match(/\/_next\/static\/[^"?\s]*/g) || [])].sort();
+  // ⚠️ Next.js нь RSC flight payload (`self.__next_f.push([1,"…"])`) дахь урт мөрийг
+  //    2 `<script>`-ын ХООРОНД хуваадаг (ж: `…/css/app/la` ‖ `yout.css?v=…`). Тиймээс
+  //    түүхий HTML-ээс `\/_next\/static\/[^"?\s]*` regex-ээр татахад `/_next/static/css/app/la`
+  //    гэсэн ХИЙСВЭР (тасархай) зам гарч ирээд 404 болдог → ХУУЧААР «client bundle
+  //    ЭВДЭРСЭН» гэж ХУУРАМЧ дохиолдог байв ✗ (ж: 2026-10-03). Жинхэнэ файл ЗААВАЛ
+  //    өргөтгөлтэй (`.js`/`.css`/… тул) → зөвхөн өргөтгөлтэй замыг л тооцно ✓.
+  const assets = [...new Set(html.match(/\/_next\/static\/[^"?\s]*/g) || [])]
+    .filter((a) => /\.(js|mjs|cjs|css|json|txt|map|svg|png|jpe?g|webp|gif|ico|woff2?|ttf|eot)$/.test(a))
+    .sort();
 
   const broken = [];
   for (const a of assets) {

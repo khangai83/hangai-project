@@ -297,7 +297,7 @@ const MOBILE_ROOM_ITEMS = [
 const EMPTY_ROW = '—';
 /** 📅 Онууд — `1980…2026`, БУУРАХ (шинэ он эхэнд) ✓ */
 const YEAR_ITEMS = toChoiceItems(yearChoices(), { emptyLabel: EMPTY_ROW });
-/** 🏢 Нийт давхар `1…26` (хэрэглэгчийн хэлсэн хүрээ) ✓ */
+/** 🏢 Нийт давхар `1…150` (`FLOOR_MAX` — 2026-10-03-нд 26 → 150 болов) ✓ */
 const FLOOR_ITEMS = toChoiceItems(countChoices(1, FLOOR_MAX), { emptyLabel: EMPTY_ROW });
 /** 🌇 Тагт — `BALCONY_OPTIONS` (`1…4`, нэг эх сурвалж) — desktop `<select>`-ийн
  *  шошготой ЯГ ижил («2 тагт») ✓ */

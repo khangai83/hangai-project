@@ -55,8 +55,10 @@ t(`📅 ОНЫ хүрээ нь ${YEAR_FROM}–${YEAR_TO} (хэрэглэгчий
   assert.equal(YEAR_TO, 2026);
 });
 
-t(`🏢 ДАВХРЫН дээд хязгаар нь 1–${FLOOR_MAX} (хэрэглэгчийн хүсэлт «1 2 3 4 … 26» ✓)`, () => {
-  assert.equal(FLOOR_MAX, 26);
+t(`🏢 ДАВХРЫН дээд хязгаар нь 1–${FLOOR_MAX} — «150 давхар» UI-аас СОНГОГДОНО ✓`, () => {
+  assert.equal(FLOOR_MAX, 150, '2026-10-03: 26 → 150 (150 давхартай барилга)');
+  assert.ok(countChoices(1, FLOOR_MAX).includes('150'), '«150» нь жагсаалтад БАЙНА ✓');
+  assert.ok(floorChoices().includes('150'), '«Байрны давхар» ч 150 хүртэл ✓');
 });
 
 
@@ -91,9 +93,9 @@ t("📅 Хүрээнээс ГАДУУР хуучин он («1965») — `includ
 });
 
 // ────────────────────────────────────────────────────────────
-// ③ ДАВХАР — нэмэгдэх эрэмбэ («1 2 3 4 … 26»)
+// ③ ДАВХАР — нэмэгдэх эрэмбэ («1 2 3 4 … 150»)
 // ────────────────────────────────────────────────────────────
-t(`🏢 \`countChoices(1, ${FLOOR_MAX})\` — нэмэгдэх эрэмбээр 26 мөр («1 2 3 4» ✓)`, () => {
+t(`🏢 \`countChoices(1, ${FLOOR_MAX})\` — нэмэгдэх эрэмбээр ${FLOOR_MAX} мөр («1 2 3 4» ✓)`, () => {
   const list = countChoices(1, FLOOR_MAX);
   assert.equal(list.length, FLOOR_MAX);
   assert.equal(list[0], '1');
@@ -231,7 +233,8 @@ t('🎡 `indexFromScroll()` — ЭВДЭРСЭН оролтод Ч тоо буц
 t('🎡 `scrollTopForIndex()` — индекс → гүйлгээний байрлал (мөрийг ТӨВД нь тавина)', () => {
   assert.equal(scrollTopForIndex(0, 40), 0);
   assert.equal(scrollTopForIndex(4, 40), 160);
-  assert.equal(scrollTopForIndex(25, 40), 1000, '26 давхар = 1000px ✓');
+  assert.equal(scrollTopForIndex(25, 40), 1000, 'индекс 25 = 26 дахь мөр = 1000px ✓');
+  assert.equal(scrollTopForIndex(FLOOR_MAX, 40), FLOOR_MAX * 40, `сүүлийн мөр («${FLOOR_MAX}») хүртэл ✓`);
   assert.equal(scrollTopForIndex(-5, 40), 0, 'сөрөг индекс → 0 ✓');
   assert.equal(scrollTopForIndex(2.7, 40), 80, 'бутархай индекс бүхэлчилнэ ✓');
 });

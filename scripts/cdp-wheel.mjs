@@ -40,6 +40,12 @@
 const BASE = process.argv[2] || 'http://localhost:3000';
 const CDP = `http://127.0.0.1:${process.env.CDP_PORT || 9222}`;
 
+/**
+ * ⚠️ Мөрүүдийн тоо/сүүлийн утга нь `FLOOR_MAX`-оос ХАМААРНА (2026-10-03: 26 → 150)
+ *    — хатуу «27»/«26» бичихгүй, модулиас авна ✓
+ */
+const { FLOOR_MAX } = await import('../lib/numberChoices.mjs');
+
 let pass = 0;
 let fail = 0;
 const ok = (name, cond, extra = '') => {
@@ -334,14 +340,15 @@ ok('📱 тоон талбар бүр ӨӨРИЙН дэлгэц дээр: ДУГ
 await detailTo('totalFloors');
 
 // ────────────────────────────────────────────────────────────
-console.log('\n── ③ 🎡 ДУГУЙ НЭЭГДЭХ + МӨРҮҮД («—» + 1…26, iOS Timer бүтэц) ──');
+console.log(`\n── ③ 🎡 ДУГУЙ НЭЭГДЭХ + МӨРҮҮД («—» + 1…${FLOOR_MAX}, iOS Timer бүтэц) ──`);
 await click('[data-choice-trigger="totalFloors"]');
 const w1 = await wheel();
 ok('товч дарахад дугуй НЭЭГДЭВ (`[data-wheel]` DOM-д ирэв)', w1.open === true);
 ok('гарчиг = «Барилгын нийт давхар» + `role="dialog"`', w1.title === 'Барилгын нийт давхар' && w1.dialog, w1.title);
-ok('💡 чиглүүлэг = «Сонголт: 1–26 давхар»', w1.hint.includes('1–26'), w1.hint);
-ok('мөрүүд = «—» + 1…26 = 27 (утгууд нь ТЕКСТ, дараалал өсөх ✓)',
-  w1.rows === 27 && w1.values[0] === '' && w1.values[1] === '1' && w1.values[26] === '26',
+ok(`💡 чиглүүлэг = «Сонголт: 1–${FLOOR_MAX} давхар»`, w1.hint.includes(`1–${FLOOR_MAX}`), w1.hint);
+ok(`мөрүүд = «—» + 1…${FLOOR_MAX} = ${FLOOR_MAX + 1} (утгууд нь ТЕКСТ, дараалал өсөх ✓)`,
+  w1.rows === FLOOR_MAX + 1 && w1.values[0] === '' && w1.values[1] === '1'
+    && w1.values[FLOOR_MAX] === String(FLOOR_MAX),
   `rows=${w1.rows} first=${JSON.stringify(w1.values.slice(0, 3))}`);
 ok('төвд байгаа мөр: утга хоосон тул «—» («Сонгох»-ыг төвд тавина ✓)',
   w1.active === 0 && w1.activeText === '—', `active=${w1.active} text=${JSON.stringify(w1.activeText)}`);
@@ -370,17 +377,20 @@ const w3 = await wheel();
 ok('scrollTop 240px (=индекс 6) → товч «6 давхар» болов', f3.trigText === '6 давхар', f3.trigText);
 ok('төвд байгаа мөр = индекс 6 (`aria-selected` бодитоор шилжив ✓)',
   w3.active === 6 && w3.values[6] === '6', `active=${w3.active}`);
-await scrollTo(4000);
+/** ⚠️ Сүүлийн мөр = индекс `FLOOR_MAX` ⇒ `FLOOR_MAX * 40px` (2026-10-03: 6000px).
+ *  Илүү их гүйлгэхэд хязгаарлана (`indexFromScroll` → `maxIndex`) ✓ */
+await scrollTo(FLOOR_MAX * 40 + 4000);
 const f4 = await field('totalFloors');
-ok('хэт доош гүйлгэхэд СҮҮЛИЙН мөр («26 давхар») — хязгаар ажиллана ✓', f4.trigText === '26 давхар', f4.trigText);
+ok(`хэт доош гүйлгэхэд СҮҮЛИЙН мөр («${FLOOR_MAX} давхар») — хязгаар ажиллана ✓`,
+  f4.trigText === `${FLOOR_MAX} давхар`, f4.trigText);
 
 // ────────────────────────────────────────────────────────────
 console.log('\n── ⑥ ХААХ: `Escape` · ард тал · «Болсон» (3 зам) ──');
 await pressEscape();
 ok('`Escape` → дугуй ХААГДАВ', (await wheel()).open === false);
 await click('[data-choice-trigger="totalFloors"]');
-ok('дахин нээхэд өмнө сонгосон утга ХЭВЭЭР («26 давхар»)',
-  (await field('totalFloors')).trigText === '26 давхар' && (await wheel()).open === true);
+ok(`дахин нээхэд өмнө сонгосон утга ХЭВЭЭР («${FLOOR_MAX} давхар»)`,
+  (await field('totalFloors')).trigText === `${FLOOR_MAX} давхар` && (await wheel()).open === true);
 await click('[data-wheel-backdrop]');
 ok('ард тал (бараан хэсэг) дарахад ХААГДАВ', (await wheel()).open === false);
 await click('[data-choice-trigger="totalFloors"]');

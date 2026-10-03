@@ -49,7 +49,8 @@
     "messages:check": "node scripts/setup-messages.js --check",
     "report:usage": "node scripts/db-usage.js",
     "normalize:condition": "node scripts/normalize-condition.mjs",
-    "delete:demo": "node scripts/delete-demo-listings.mjs"
+    "delete:demo": "node scripts/delete-demo-listings.mjs",
+    "set:floor": "node scripts/set-floor.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1145.0",
