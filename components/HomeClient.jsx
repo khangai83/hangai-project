@@ -11,7 +11,7 @@ import {
 } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
 import {
-  CITIES, getDistricts, getKhoroos, ROOM_OPTIONS,
+  CITIES, getDistricts, getKhoroosForDistricts, ROOM_OPTIONS,
   hasRoomsFields, SECTIONS, getSection, getSubtypes, getSectionCategories,
   hasCategoryChoice, getAttrFilters, pruneGatedAttrs, getAttrField, formatAttrsLine,
   parseAttrRangeKey, getAttrRangeKeys,   // 📅 оны хүрээ (2026-09-28)
@@ -53,6 +53,15 @@ import { DEFAULT_SORT, SORT_OPTIONS, normalizeSort } from '../lib/sortOptions.mj
 import {
   parseRoomList, roomsUrlValue, roomsFilterLabel, toggleRoomValue,
 } from '../lib/roomFilter.mjs';
+// 🗺 ДҮҮРЭГ / СУМ — ОЛОН СОНГОЛТ (2026-10-03) — хэрэглэгчийн хүсэлт:
+//    «Дэлгэрэнгүй хайлтын Дүүрэг / Сум ийг Өрөөний тоо хайх тай адилхан олон
+//    сонгол хийх боломжтой болго» → sidebar-ийн `<select>` нь ЧИП болов ✓
+//    ⚠️ Цэвэр логик (утга/шошго/URL/`district` шүүлт) нь
+//    `lib/districtFilter.mjs` — UI, URL, DB, breadcrumb бүгд тэр модулийг
+//    хэрэглэнэ (нэг эх сурвалж) ✓
+import {
+  parseDistrictList, districtsUrlValue, districtsFilterLabel, toggleDistrictValue,
+} from '../lib/districtFilter.mjs';
 // 💳 ТӨЛБӨРИЙН НӨХЦӨЛ (2026-10-03) — ҮЛ ХӨДЛӨХ ЗАРНА ба АВТОМАШИН ЗАРНА
 //    хэсгийн «Дэлгэрэнгүй хайлт»-д ОЛОН СОНГОЛТТОЙ ☑ checkbox (unegui.mn-ийн
 //    2 баганат хэв — CSS нь `app/globals.css`: `.pay-grid`/`.pay-check` ✓).
@@ -73,9 +82,13 @@ import {
 //    ⚠️ Хоосон утга нь `''` БИШ `[]` — эс бөгөөс `.length`/`.includes` унана ✗
 // ℹ️ 2026-10-03 (4): UI (чипүүд) эргэж ирсэн тул утга нь UI-ААС, URL-аас
 //    (`?rooms=1,3`) ба breadcrumb-ийн линкээс ХОЁУЛАНД ирж болно ✓
-// ℹ️ `district` нь НЭГ утга (string) — олон дүүрэг зэрэг сонгох нь ХАСАГДСАН.
+// 🆕 2026-10-03 (10): `districts` нь БАС МАССИВ (хэрэглэгчийн хүсэлт:
+//    «Дүүрэг / Сум-ийг Өрөөний тоо хайхтай адилхан олон сонголт хийх
+//    боломжтой болго») — ж: `['Баянгол','Сүхбаатар']`. URL нь хэвээр
+//    `?district=Баянгол,Сүхбаатар` (хуучин нэг утгатай линк ч ажиллана ✓).
+//    ⚠️ Хоосон утга нь `''` БИШ `[]` — эс бөгөөс `.length`/`.includes` унана ✗
 const EMPTY_FILTERS = {
-  propertyType: '', rooms: [], city: '', district: '', khoroos: [], attrs: {},
+  propertyType: '', rooms: [], city: '', districts: [], khoroos: [], attrs: {},
   minPrice: '', maxPrice: '', minArea: '', maxArea: '',
   // 💳 Төлбөрийн нөхцөл (2026-10-03) — «үл хөдлөх зарна» ба «автомашин зарна»
   //    хэсэгт: ОЛОН СОНГОЛТТОЙ (`['lease','cash']`) — `lib/paymentFilter.mjs`.
@@ -85,7 +98,7 @@ const EMPTY_FILTERS = {
 
 /** Массив талбаруудыг ХУВААЛЦАХГҮЙ шинэ хоосон хайлт буцаана */
 const emptyFilters = () => ({
-  ...EMPTY_FILTERS, rooms: [], khoroos: [], attrs: {}, payments: [],
+  ...EMPTY_FILTERS, rooms: [], districts: [], khoroos: [], attrs: {}, payments: [],
 });
 
 /**
@@ -448,10 +461,12 @@ export default function HomeClient() {
     if (sp.get('city')) next.city = sp.get('city');
     // ⚠️ ХОРОО: URL-д `khoroo=1-р хороо,3-р хороо` (таслалаар) — хуваалцсан
     //    линк эвдрэхгүйн тулд НЭГ утгатай хуучин линкийг ч зөв уншина.
-    // ⚠️ ДҮҮРЭГ нь НЭГ утга. Хуучин ОЛОН дүүрэгтэй линк (`district=А,Б`)
-    //    ирвэл ЭХНИЙ дүүргийг л авна (олон дүүрэг сонгох нь хасагдсан).
+    // ⚠️ ДҮҮРЭГ — ОЛОН СОНГОЛТ (2026-10-03): URL-д `district=А,Б` (таслалаар,
+    //    хэлбэр нь ХУУЧИН нэг утгатай линктэй ЯГ ижил) → `filters.districts`
+    //    массив болно. ⚠️ Хүчингүй/хоосон утгууд ЧИМЭЭГҮЙ хасагдана
+    //    (`parseDistrictList` — таслал/зай цэвэрлэнэ ✓)
     const districtRaw = sp.get('district');
-    if (districtRaw) next.district = parseListParam(districtRaw)[0] || '';
+    if (districtRaw) next.districts = parseDistrictList(districtRaw);
     const khorooRaw = sp.get('khoroo');
     if (khorooRaw) next.khoroos = parseListParam(khorooRaw);
     if (sp.get('minPrice')) next.minPrice = sp.get('minPrice');
@@ -481,7 +496,9 @@ export default function HomeClient() {
         //    containment (`cs`) ба OR болгож хөрвүүлнэ ✓
         payments: filters.payments.length ? filters.payments : undefined,
         city: filters.city || undefined,
-        district: filters.district || undefined,
+        // 🗺 ОЛОН ДҮҮРЭГ/СУМ — `['Баянгол','Сүхбаатар']`; хоосон бол
+        //    шүүлт хийхгүй (`undefined`) ⇒ бүх дүүрэг гарна ✓
+        districts: filters.districts.length ? filters.districts : undefined,
         khoroos: filters.khoroos.length ? filters.khoroos : undefined,
         minPrice: filters.minPrice || undefined,
         maxPrice: filters.maxPrice || undefined,
@@ -583,7 +600,10 @@ export default function HomeClient() {
       if (v) params.set(`attr_${k}`, v);
     });
     if (filters.city) params.set('city', filters.city);
-    if (filters.district) params.set('district', filters.district);
+    // 🗺 ДҮҮРЭГ / СУМ — ОЛОН СОНГОЛТ: `?district=Баянгол,Сүхбаатар`
+    //    (⚠️ параметрийн НЭР нь хуучин нэг утгатайтай ИЖИЛ — хуучин линк,
+    //    breadcrumb, bookmark бүгд эвдрэхгүй ✓; хоосон үед БИЧИХГҮЙ ✓)
+    if (filters.districts.length) params.set('district', districtsUrlValue(filters.districts));
     if (filters.khoroos.length) params.set('khoroo', filters.khoroos.join(','));
     if (filters.minPrice) params.set('minPrice', filters.minPrice);
     if (filters.maxPrice) params.set('maxPrice', filters.maxPrice);
@@ -614,9 +634,10 @@ export default function HomeClient() {
     setFilters((f) => {
       const next = { ...f, [k]: v };
       // Хот/аймаг солигдвол дүүрэг, хорооны сонголт ХҮЧИНГҮЙ болно (жагсаалт өөр)
-      if (k === 'city') { next.district = ''; next.khoroos = []; }
-      // Дүүрэг солигдвол хороодын жагсаалт өөр болно
-      if (k === 'district') { next.khoroos = []; }
+      if (k === 'city') { next.districts = []; next.khoroos = []; }
+      // 🗺 Дүүрэг/сум солигдвол хороодын жагсаалт өөр болно (нэгдэл өөр) →
+      //    хорооны сонголтыг ЦЭВЭРЛЭНЭ (хуучин нэг утгатай үеийн ЯГ ИЖИЛ зан ✓)
+      if (k === 'districts' || k === 'district') { next.khoroos = []; }
       // «Өрөө» талбаргүй төрөл сонговол өрөөний хайлтыг цэвэрлэнэ (ж: Худалдаа…)
       if (k === 'propertyType' && v && !hasRoomsFields(v)) next.rooms = [];
       /**
@@ -672,6 +693,29 @@ export default function HomeClient() {
   /** 💳 Сонгосон бүх нөхцөлийг арилгах («✕ Цуцлах») */
   const clearPayments = () => setF('payments', []);
 
+
+  /**
+   * 🗺 ОЛОН ДҮҮРЭГ/СУМ — нэг дарж нэмэх/хасах (checkbox мэт, 2026-10-03).
+   * Хэрэглэгчийн хүсэлт: «Дэлгэрэнгүй хайлтын Дүүрэг / Сум ийг Өрөөний тоо
+   * хайх тай адилхан олон сонгол хийх боломжтой болго» →
+   *   [Баянгол] [Сүхбаатар] дарж `?district=Баянгол,Сүхбаатар` болно (OR ✓).
+   * ⚠️ Дүрэм нь `lib/districtFilter.mjs → toggleDistrictValue()` (нэг эх
+   *    сурвалж): шинэ массив буцаана, хоосон утгыг алгасна, давхцуулахгүй ✓
+   * ⚠️ Хороодын сонголтыг ЦЭВЭРЛЭНЭ — сонгосон дүүргүүд өөрчлөгдөхөд
+   *    хорооны НЭГДЭЛ жагсаалт ч өөр болно (`getKhoroosForDistricts`) ✓
+   * ⚠️ 📄 1-р хуудас руу буцна (`toggleRooms`-той ижил шалтгаан ✓)
+   */
+  const toggleDistrict = (d) => {
+    setPage(1);
+    setFilters((f) => ({
+      ...f,
+      districts: toggleDistrictValue(f.districts, d),
+      khoroos: [], // жагсаалт өөр болов ⇒ хуучин хорооны сонголт хүчингүй ✓
+    }));
+  };
+
+  /** 🗺 Сонгосон бүх дүүрэг/сумыг арилгах («✕ Цуцлах») */
+  const clearDistricts = () => setF('districts', []);
 
   /** ОЛОН ХОРОО — нэг дарж нэмэх/хасах (checkbox мэт) */
   const toggleKhoroo = (k) => {
@@ -860,12 +904,15 @@ export default function HomeClient() {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  /** Дүүргийн сонголтууд (сонгосон хот/аймагт) — НЭГ сонголттой */
+  /** Дүүрэг/сумын сонголтууд (сонгосон хот/аймагт) — ОЛОН сонголттой чип */
   const districtOptions = useMemo(() => getDistricts(filters.city), [filters.city]);
-  /** Хороодын сонголтууд (сонгосон хот + дүүрэгт) */
+  /** Хороодын сонголтууд (сонгосон хот + БҮХ сонгосон дүүрэг/сумын НЭГДЭЛ)
+   *  ⚠️ 2026-10-03: дүүрэг олон сонголттой болов → `getKhoroos` (нэг) биш
+   *     `getKhoroosForDistricts` (массив) — 2 дүүрэг сонговол хоёулангийн
+   *     хороо (давхцалгүй) гарна ✓ (хэрэглэгчийн хүсэлтийн үргэлжлэл) */
   const khoroos = useMemo(
-    () => getKhoroos(filters.city, filters.district),
-    [filters.city, filters.district]
+    () => getKhoroosForDistricts(filters.city, filters.districts),
+    [filters.city, filters.districts]
   );
   /** ХЭСГИЙН тодорхойлолт ба уламжлагдсан утгууд (0016)
    *  ⚠️ `noSection` нь ДЭЭР (бүх hook-ийн өмнө) зарлагдсан.
@@ -1056,7 +1103,10 @@ export default function HomeClient() {
     //    харуулна («Хувь лизингээр, Бэлэн төлөлтөөр») — чип дээрээс шууд харна ✓
     if (filters.payments.length) chips.push({ key: 'payments', label: `💳 ${paymentsFilterLabel(filters.payments)}` });
     if (filters.city) chips.push({ key: 'city', label: `🏙 ${filters.city}` });
-    if (filters.district) chips.push({ key: 'district', label: `📍 ${filters.district}` });
+    // 🗺 ДҮҮРЭГ / СУМ — ОЛОН СОНГОЛТ (2026-10-03): 1 сонголт → нэрээр,
+    //    олон → «N дүүрэг/сум» (шошго нь `lib/districtFilter.mjs` — нэг эх
+    //    сурвалж; нэрсийг бүтнээр жагсаавал чип хэт урт болно ✗)
+    if (filters.districts.length) chips.push({ key: 'districts', label: `📍 ${districtsFilterLabel(filters.districts)}` });
     // ⚠️ Хороо: 1 сонгосон бол нэрийг, олон бол «N хороо» гэж товчлон харуулна
     if (filters.khoroos.length) {
       chips.push({
@@ -1093,7 +1143,7 @@ export default function HomeClient() {
       return;
     }
     if (key.startsWith('attr_')) { setAttr(key.slice(5), ''); return; }
-    setF(key, key === 'khoroos' || key === 'rooms' || key === 'payments' ? [] : '');
+    setF(key, key === 'khoroos' || key === 'districts' || key === 'rooms' || key === 'payments' ? [] : '');
   };
 
   // ---- ⚙️ «Дэлгэрэнгүй хайлт» панель — МОБАЙЛ дээр АВТОМАТААР НЭЭГДЭХГҮЙ ----
@@ -1276,7 +1326,7 @@ export default function HomeClient() {
             section,
             propertyType: filters.propertyType,
             rooms: filters.rooms,
-            district: filters.district,
+            districts: filters.districts,
             /* 🎯 FOCUS (2026-09-30) — «Notebook» гэх мэт `collapsed` бүлэг
                НЭЭЛТТЭЙ бол хэсгийн crumb нь линк болно (`linkLast`) ✓
                ⚠️ `focusedGroup` нь ДЭЭР (мөр 713) бодогдсон — панелийн
@@ -1743,8 +1793,9 @@ export default function HomeClient() {
                 {/* ===== БАЙРШИЛ — Хот/Аймаг · Дүүрэг · ХОРОО =====
                     ⚠️ «Төрөл» энд БАЙХГҮЙ — төрлийг BREADCRUMB-ээс сольж буцаана
                        (төрөл сонгосон үед дээрх табууд хаагддаг тул).
-                    ⚠️ Дүүрэг нь НЭГ сонголттой `<select>` (олон дүүрэг сонгох нь
-                       хасагдсан), харин хороо нь ОЛОН сонголттой чип. */}
+                    ⚠️ 2026-10-03 (10): Дүүрэг/Сум нь ч ОЛОН сонголттой ЧИП болов
+                       (хэрэглэгчийн хүсэлт) — хороотой ИЖИЛ хэв маяг;
+                       утга нь `filters.districts` (МАССИВ) ✓ */}
                 <SideBlock label="Байршил">
                   <select
                     className="form-select"
@@ -1756,20 +1807,68 @@ export default function HomeClient() {
                     {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
 
+                  {/* ===== 🗺 ДҮҮРЭГ / СУМ — ОЛОН СОНГОЛТ (2026-10-03) =====
+                      ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Дэлгэрэнгүй хайлтын Дүүрэг /
+                      Сум ийг Өрөөний тоо хайх тай адилхан олон сонгол хийх
+                      боломжтой болго» → `<select>` (нэг сонголт) нь
+                      ХОРООНЫ блоктой ИЖИЛ `chip-toggle` чипүүд болов ✓
+                      ⚠️ Утга нь МАССИВ (`['Баянгол','Сүхбаатар']`) →
+                         `?district=Баянгол,Сүхбаатар` ба DB дээр
+                         `district IN (…)` (нэг утгатай үед хуучин
+                         `district=eq.…` ХЭВЭЭР — `lib/districtFilter.mjs`) ✓
+                      ⚠️ `data-district-filter` / `data-district-value` нь CDP
+                         тестийн (`scripts/cdp-districts.mjs`) дэгээ — УСТГАХГҮЙ ✓ */}
                   {districtOptions.length > 0 && (
-                    <select
-                      className="form-select"
-                      aria-label="Дүүрэг / Сум"
-                      value={filters.district}
-                      onChange={(e) => setF('district', e.target.value)}
-                    >
-                      <option value="">Дүүрэг / Сум — Бүгд</option>
-                      {districtOptions.map((d) => <option key={d} value={d}>{d}</option>)}
-                    </select>
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[12px] font-semibold text-gray-500">
+                        Дүүрэг / Сум
+                        {filters.districts.length > 0 && (
+                          <span className="ml-1.5 rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
+                            {filters.districts.length} сонгосон
+                          </span>
+                        )}
+                      </span>
+                      <div
+                        className="max-h-[150px] overflow-y-auto rounded-lg border border-gray-200 bg-gray-50/70 p-2"
+                        data-district-filter
+                        role="group"
+                        aria-label="Дүүрэг / Сум"
+                      >
+                        <div className="flex flex-wrap gap-1.5">
+                          {districtOptions.map((d) => {
+                            const on = filters.districts.includes(d);
+                            return (
+                              <button
+                                key={d}
+                                type="button"
+                                aria-pressed={on}
+                                data-district-value={d}
+                                onClick={() => toggleDistrict(d)}
+                                className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                              >
+                                {on && <span aria-hidden="true">✓</span>}
+                                {d}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      {filters.districts.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={clearDistricts}
+                          className="self-start text-[12px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                        >
+                          ✕ Цуцлах
+                        </button>
+                      )}
+                    </div>
                   )}
 
-                  {/* ХОРОО — ОЛОН СОНГОЛТ. Сонгосон дүүргийн хороодыг харуулна
-                      (40+ хороо багтах ёстой тул жагсаалт скроллтой). */}
+                  {/* ХОРОО — ОЛОН СОНГОЛТ. Сонгосон дүүрэг/сум БҮРИЙН хорооны
+                      НЭГДЛИЙГ харуулна (2026-10-03 (10): дүүрэг ч олон
+                      сонголттой болов — `getKhoroosForDistricts`) —
+                      40+ хороо багтах ёстой тул жагсаалт скроллтой. */}
                   {khoroos.length ? (
                     <div className="flex flex-col gap-1.5">
                       <span className="text-[12px] font-semibold text-gray-500">
@@ -1803,7 +1902,7 @@ export default function HomeClient() {
                   ) : (
                     <p className="text-[12px] text-gray-500">
                       {filters.city
-                        ? '💡 Дүүргээ сонгоход хорооны жагсаалт нээгдэнэ.'
+                        ? '💡 Дүүрэг / сумаа сонгоход хорооны жагсаалт нээгдэнэ.'
                         : '💡 Эхлээд хот/аймгаа сонгоно уу.'}
                     </p>
                   )}
@@ -1963,18 +2062,25 @@ export default function HomeClient() {
                     ⚠️ `showRooms` — үл хөдлөх БА (төрөл сонгоогүй эсвэл
                        өрөөтэй төрөл). Газар/Оффис/Үйлдвэрт өрөө гэж байхгүй ✗
                     ⚠️ `data-room-filter` / `data-room-value` нь CDP тестийн
-                       (`scripts/cdp-rooms.mjs`) дэгээ — УСТГАХГҮЙ ✓ */}
+                       (`scripts/cdp-rooms.mjs`) дэгээ — УСТГАХГҮЙ ✓
+                    🗑 2026-10-03 (10): «🛏 Өрөөний тоо»-гийн ДООРХ «Өрөө»
+                       гэсэн ИЛҮҮЦЭЛ шошго ХАСАГДАВ (хэрэглэгчийн хүсэлт:
+                       «🛏 Өрөөний тоо гэдгийн доор Өрөө гэсэн байгаа text ийг
+                       арилга») — блокийн гарчиг аль хэдийн «Өрөөний тоо» гэж
+                       хэлж байгаа тул давхар бичих шаардлагагүй ✗
+                       ⚠️ «N сонгосон» badge ХЭВЭЭР (CDP тест үүнийг шалгана) —
+                          зөвхөн «Өрөө» гэсэн ТЕКСТ арилав ✓ */}
                 {showRooms && (
                   <SideBlock label="🛏 Өрөөний тоо">
                     <div className="flex flex-col gap-1.5">
-                      <span className="text-[12px] font-semibold text-gray-500">
-                        Өрөө
-                        {filters.rooms.length > 0 && (
-                          <span className="ml-1.5 rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
-                            {filters.rooms.length} сонгосон
-                          </span>
-                        )}
-                      </span>
+                      {/* ⚠️ Энд «Өрөө» гэсэн шошго БАЙХГҮЙ (2026-10-03 (10)-д
+                          хэрэглэгчийн хүсэлтээр хасагдсан) — зөвхөн сонголтын
+                          тоог харуулах badge үлдэв ✓ */}
+                      {filters.rooms.length > 0 && (
+                        <span className="self-start rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
+                          {filters.rooms.length} сонгосон
+                        </span>
+                      )}
                       <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-2" data-room-filter role="group" aria-label="Өрөөний тоо">
                         <div className="flex flex-wrap gap-1.5">
                           {ROOM_OPTIONS.map((r) => {
