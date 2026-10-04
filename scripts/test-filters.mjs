@@ -8,6 +8,14 @@
 //   хэрэглэгч «шүүлт тавьсан ч 0 үр дүн» гэж гайхана ✗ — энэ тест тэр
 //   эрсдэлийг барьж, ОНЫ ХҮРЭЭ ба ТЕКСТ шүүлтийн гэрээг түгждэг ✓
 //
+// 🆕 2026-10-05 (43): ✅ «Шинэ / Шинэвтэр / Хуучин» → **«Төлөв»** нэртэй болов
+//    (хэрэглэгчийн хүсэлт: «Шинэ, Шинэвтэр, Хуучин ийг Төлөв гэж нэрлэ») ба мөн
+//    💻 📺 Дэлгэц · ⚙️ CPU · 🧠 RAM · 💾 Хард-той хамт `filterBar: true` болов ⇒
+//    үр дүнгийн дээрх ХЭВТЭЭ `#filter-bar`-т ОЛОН СОНГОЛТТОЙ PILL (⌄ панель).
+//    ⚠️ `getAttrFilters` нь эдгээрийг ХЭВЭЭР буцаана (утга/URL/DB хөндөгдөхгүй ✓)
+//    — зөвхөн `components/HomeClient.jsx` нь `.filter((f) => !f.filterBar)`-ээр
+//    САЙДБАРААС хасна (2 өөр UI БАЙХГҮЙ ✓); шалгалтыг доорх «🎛» тест хийнэ ✓
+//
 // АЖИЛЛУУЛАХ:  npm run test:filters
 //
 // ⚠️ `lib/locationData.js` нь ЯМАР Ч импортгүй цэвэр өгөгдлийн модуль тул
@@ -444,13 +452,20 @@ t('formatAttrsLine: importYear хоосон бол мөрөнд ОРОХГҮЙ (
 // ---- ⑤ ⚽ Аяллын хэрэгсэл (hobby): ХЯЛБАР ФОРМ (2026-09-29) ----
 // Хэрэглэгчийн хүсэлт: «зөвхөн байршил, шинэ эсвэл хуучин, үнэ, утас, тайлбар
 // асуудаг байя». ⚠️ Энэ тест нь form/шүүлт/`simpleForm` гэрээг түгждэг.
-t('⚽ hobby: ЗӨВХӨН «Шинэ / Шинэвтэр / Хуучин» (condition) шүүлттэй', () => {
+t('⚽ hobby: ЗӨВХӨН «Төлөв» (condition) шүүлттэй', () => {
   const keys = getAttrFilters('hobby').map((f) => f.key);
   assert.deepEqual(keys, ['condition']);
   const f = getAttrFilters('hobby')[0];
-  assert.equal(f.label, 'Шинэ / Шинэвтэр / Хуучин');
+  // 🆕 2026-10-05 (43): нэр нь «Шинэ / Шинэвтэр / Хуучин» → «Төлөв» болов
+  //    (`CONDITION_LABEL` — форм БА шүүлт НЭГ эх сурвалж ✓)
+  assert.equal(f.label, 'Төлөв');
+  assert.equal(f.icon, '✅');
   // ✅ 2026-10-02 (хэрэглэгчийн шаардлага): ЯГ 3 сонголт — 2026-09-29-д 2 байв
   assert.deepEqual(f.options, ['Шинэ', 'Шинэвтэр', 'Хуучин']);
+  // 🆕 2026-10-05 (43): үр дүнгийн дээрх `#filter-bar` PILL (`filterBar: true`)
+  assert.equal(f.filterBar, true, '✅ нь pill болоогүй ✗');
+  assert.equal(f.chips, true);
+  assert.equal(f.multi, true);
 });
 
 // ---- ⑤б ✅ «ШИНЭ / ШИНЭВТЭР / ХУУЧИН» — БҮХ хэсэгт НЭГ ижил (2026-10-02) ----
@@ -465,27 +480,33 @@ t('✅ Форм (attrFields) ба шүүлт (attrFilters) — condition нь 3 
   assert.ok(sections.length >= 2, 'condition талбартай хэсэг байх ёстой');
   sections.forEach((s) => {
     const field = getAttrField(s.value, 'condition');
-    assert.equal(field.label, 'Шинэ / Шинэвтэр / Хуучин', `${s.value}: формоны нэр`);
+    assert.equal(field.label, 'Төлөв', `${s.value}: формоны нэр`);   // 🆕 (43)
     assert.deepEqual(field.options, ['Шинэ', 'Шинэвтэр', 'Хуучин'], `${s.value}: формоны сонголт`);
     /**
      * 🆕 2026-10-03 (21): хайлтын шүүлт нь ОЛОН СОНГОЛТТОЙ ЧИП (`chips`+`multi`,
      * «✅ 2 төлөв» шошго) — ⚠️ ФОРМ ХӨНДӨӨГДӨӨГҮЙ (`formChips` туг БАЙХГҮЙ тул
      * 3-р алхамд хэвээр `<select>` — `components/AddListingClient.jsx` ✓).
-     * Дэлгэрэнгыг `scripts/test-attr-multi.mjs` (22 тест ✓) түгждэг
+     * 🆕 2026-10-05 (43): мөн `filterBar: true` — хайлтын талд САЙДБАР БИШ,
+     * үр дүнгийн дээрх хэвтээ `#filter-bar` pill («Төлөв ⌄» ✓).
+     * Дэлгэрэнгыг `scripts/test-attr-multi.mjs` түгждэг
      */
-    assert.equal(field.chips, true, `${s.value}: sidebar чип болоогүй ✗`);
+    assert.equal(field.chips, true, `${s.value}: чип болоогүй ✗`);
     assert.equal(field.multi, true, `${s.value}: олон сонголт болоогүй ✗`);
     assert.equal(field.multiNoun, 'төлөв', `${s.value}: «N төлөв» шошго ✗`);
+    assert.equal(field.filterBar, true, `${s.value}: pill болоогүй ✗`);
     assert.ok(!field.formChips, `${s.value}: форм дээр чип болжээ ✗`);
     // Шүүлтэд харагдах хувилбар нь МӨН ижил байх ёстой (нэг эх сурвалж ✓)
     const filter = getAttrFilters(s.value).find((f) => f.key === 'condition');
     if (filter) {
-      assert.equal(filter.label, 'Шинэ / Шинэвтэр / Хуучин', `${s.value}: шүүлтийн нэр`);
+      assert.equal(filter.label, 'Төлөв', `${s.value}: шүүлтийн нэр`);
       assert.deepEqual(filter.options, ['Шинэ', 'Шинэвтэр', 'Хуучин'], `${s.value}: шүүлтийн сонголт`);
       // 🆕 2026-10-03 (21): чип тугууд нь sidebar-ийн шүүлтэд ч ИЖИЛ ✓
       assert.equal(filter.chips, true, `${s.value}: шүүлт чип биш ✗`);
       assert.equal(filter.multi, true, `${s.value}: шүүлт нэг утгатай ✗`);
       assert.equal(filter.multiNoun, 'төлөв');
+      // 🆕 2026-10-05 (43): pill туг ч ИЖИЛ (нэг эх сурвалж ✓)
+      assert.equal(filter.filterBar, true, `${s.value}: шүүлт pill биш ✗`);
+      assert.equal(filter, field, `${s.value}: форм ба шүүлт ӨӨР объект ✗`);
     }
   });
 });
@@ -511,11 +532,20 @@ t('🚫 «Хэрэглэсэн — сайн/хэвийн», «Засвар ша�
   SECTIONS.forEach((s) => {
     const field = s.attrFields.find((f) => f.key === 'condition');
     if (!field) return;
-    ['Хэрэглэсэн — сайн', 'Хэрэглэсэн — хэвийн', 'Засвар шаардлагатай', 'Хэвийн', 'Төлөв', 'Шинэ эсвэл хуучин']
+    // ⚠️ ⚠️ «Төлөв» нь 2026-10-05 (43)-аас ХҮЧИНТЭЙ ШОШГО (`label`) болов —
+    //    энэ жагсаалт нь ЗӨВХӨН СОНГОЛТ (value) ✓ (`Шинэ / Шинэвтэр / Хуучин`
+    //    нь мөн л сонголт байж БОЛОХГҮЙ)
+    ['Хэрэглэсэн — сайн', 'Хэрэглэсэн — хэвийн', 'Засвар шаардлагатай', 'Хэвийн',
+      'Төлөв', 'Шинэ эсвэл хуучин', 'Шинэ / Шинэвтэр / Хуучин']
       .forEach((bad) => {
         assert.ok(!field.options.includes(bad), `${s.value}: «${bad}» сонголт үлдсэн ✗`);
+      });
+    // ⚠️ ХУУЧИН ШОШГО (2026-10-05 (43)-д «Төлөв» болов) буцаж ирэхгүй ✓
+    ['Шинэ / Шинэвтэр / Хуучин', 'Шинэ эсвэл хуучин', 'Төлөв байдал']
+      .forEach((bad) => {
         assert.notEqual(field.label, bad, `${s.value}: хуучин нэр «${bad}» үлдсэн ✗`);
       });
+    assert.equal(field.label, 'Төлөв', `${s.value}: нэр нь «Төлөв» биш ✗`);
   });
 });
 
@@ -613,12 +643,13 @@ t('🧳 travel: 12 дэд төрөл — хэрэглэгчийн жагсаал
 
 // ---- ⑤в 🛋️ Гэр ахуйн бараа (home): МӨН ХЯЛБАР ФОРМ (2026-09-29) ----
 // Хэрэглэгчийн хүсэлт: «Гэр ахуйн барааг мөн адил ийм форматтай болго, хурдан хий».
-t('🛋️ home: ЗӨВХӨН «Шинэ / Шинэвтэр / Хуучин» шүүлттэй — 🚚 Хүргэлт ХАСАГДСАН', () => {
+t('🛋️ home: ЗӨВХӨН «Төлөв» шүүлттэй — 🚚 Хүргэлт ХАСАГДСАН', () => {
   const keys = getAttrFilters('home').map((f) => f.key);
   assert.deepEqual(keys, ['condition']);
   const f = getAttrFilters('home')[0];
-  assert.equal(f.label, 'Шинэ / Шинэвтэр / Хуучин');
+  assert.equal(f.label, 'Төлөв');   // 🆕 2026-10-05 (43)
   assert.deepEqual(f.options, ['Шинэ', 'Шинэвтэр', 'Хуучин']);
+  assert.equal(f.filterBar, true);  // 🆕 (43): үр дүнгийн дээрх pill ✓
 });
 
 t('🛋️ home: форм дээр зөвхөн condition (brand/material/size/color/delivery ХАСАГДСАН)', () => {
@@ -869,7 +900,25 @@ t('🖥 Шүүлтийн сонголт нь формойн сонголттой
     // ⚠️ `searchable` БИШ — утга нь ЯГ тэнцүү (`attrs->>cpu=eq.…`); 6–19 сонголт
     //    богино тул combobox шаардлагагүй ✓ (форм ч `<select>` хэвээр)
     assert.equal(f.searchable, undefined, `«${key}»: combobox болсон ✗`);
+    /**
+     * 🆕 2026-10-05 (43): 4 талбар нь ОЛОН СОНГОЛТТОЙ PILL болов
+     * (хэрэглэгчийн хүсэлт: «Дэлгэцийн хэмжээ, CPU, RAM, SSD Hard, Төлөв
+     * эдгээрийг мөн хайдаг болгоод өг») — `PC_SPEC_FILTER_EXTRA` ✓
+     */
+    assert.equal(f.chips, true, `«${key}»: чип болоогүй ✗`);
+    assert.equal(f.multi, true, `«${key}»: олон сонголт болоогүй ✗`);
+    assert.equal(f.filterBar, true, `«${key}»: pill болоогүй ✗`);
+    assert.ok(f.multiNoun, `«${key}»: «N …» шошго БАЙХГҮЙ ✗`);
+    // ⛔ ФОРМ ХӨНДӨӨГДӨӨГҮЙ — `formChips` туг БАЙХГҮЙ тул 3-р алхамд `<select>` ✓
+    assert.ok(!f.formChips, `«${key}»: форм дээр чип болжээ ✗`);
+    assert.deepEqual(f.onlySubtypes, PC_SPEC_SUBTYPES, `«${key}»: Notebook-д л харагдах ёстой ✗`);
   }
+  // ⚠️ «N …» нэгж нь талбар тус бүрд ЯЛГААТАЙ (`PC_SPEC_FILTER_EXTRA(noun)` ✓)
+  assert.deepEqual(
+    ['screen', 'cpu', 'ram', 'storage']
+      .map((k) => getAttrField('computers', k).multiNoun),
+    ['хэмжээ', 'процессор', 'санах ой', 'хард'],
+  );
 });
 
 t('🖥 21 Notebook брэнд + 2 PC дэд төрөлд 4 шүүлт; ХОЛДУУ дэд төрөл ба СОНГООГҮЙ үед 0', () => {
@@ -887,7 +936,62 @@ t('🖥 21 Notebook брэнд + 2 PC дэд төрөлд 4 шүүлт; ХОЛД
   }
 });
 
-// ---------- 🏷️ 2026-10-03 (20): 💻 «БРЭНД» НЬ ЗӨВХӨН ХАЙЛТАД хязгаарлагдав ----------
+// ---------- 🎛 2026-10-05 (43): `filterBar` — PILL-ийн ГЭРЭЭ (18 талбар) ----------
+/**
+ * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Шинэ, Шинэвтэр, Хуучин ийг Төлөв гэж нэрлэ» +
+ * «Дэлгэцийн хэмжээ, CPU, RAM, SSD Hard, Төлөв эдгээрийг мөн хайдаг болгоод өг».
+ *
+ * ⚠️ `filterBar: true` гэдэг нь «энэ шүүлт нь САЙДБАРТ (SideBlock) БИШ, үр
+ *    дүнгийн дээрх ХЭВТЭЭ `#filter-bar`-т ОЛОН СОНГОЛТТОЙ PILL (⌄ панель)»
+ *    гэсэн НЭГ утгатай гэрээ:
+ *    ① `chips` + `multi` ЗААВАЛ (эс бөгөөс pill нь олон утга авч чадахгүй ✗)
+ *    ② утга/URL/DB ХӨНДӨӨГДӨХГҮЙ — `getAttrFilters` нь талбарыг ХЭВЭЭР
+ *       буцаана (URL-аас уншигдах ёстой ✓); ЗӨВХӨН `HomeClient` нь
+ *       `.filter((f) => !f.filterBar)`-ээр сайдбараас хасна (2 ӨӨР UI БАЙХГҮЙ ✓)
+ */
+t('🎛 `filterBar` туг: ЗААВАЛ `chips`+`multi` ба ЯГ 18 талбар (2 өөр UI БАЙХГҮЙ)', () => {
+  const bar = [];
+  SECTIONS.forEach((s) => (s.attrFields || []).forEach((f) => {
+    if (!f.filterBar) return;
+    bar.push(`${s.value}.${f.key}`);
+    assert.equal(f.chips, true, `${s.value}.${f.key}: filterBar ч chips БАЙХГҮЙ ✗`);
+    assert.equal(f.multi, true, `${s.value}.${f.key}: filterBar ч multi БАЙХГҮЙ ✗`);
+    // ⚠️ `attrFilters`-д БАЙХААР (утга нь URL-аас уншигдана ✓)
+    assert.ok((s.attrFilters || []).includes(f.key),
+      `${s.value}.${f.key}: attrFilters-д БАЙХГҮЙ ⇒ URL-аас уншигдахгүй ✗`);
+    // ⚠️ `getAttrFilters` ч ХЭВЭЭР буцаана (хасалт нь ЗӨВХӨН HomeClient ✓)
+    const sub = s.value === 'computers' ? 'Apple' : '';
+    assert.ok(getAttrFilters(s.value, sub).some((x) => x.key === f.key),
+      `${s.value}.${f.key}: getAttrFilters-д БАЙХГҮЙ ✗`);
+  }));
+  assert.deepEqual(bar, [
+    // 🚗 авто (37): 🎨 өнгө · ⚙️ хайрцаг · ⛽ түлш
+    'auto.color', 'auto.transmission', 'auto.fuel',
+    // 💼 (42): 🕒 ажлын цаг · 📊 туршлага · 📈 мэргэжлийн түвшин
+    'jobs.jobType', 'jobs.experience', 'jobs.jobLevel',
+    // 🖥 (43): 📺 дэлгэц · ⚙️ CPU · 🧠 RAM · 💾 хард
+    'computers.screen', 'computers.cpu', 'computers.ram', 'computers.storage',
+    // ✅ (43): «Төлөв» — 8 хэсэгт НЭГ туг (`CONDITION_FILTER_EXTRA` ✓)
+    'computers.condition', 'furniture.condition', 'home.condition', 'electric.condition',
+    'construction.condition', 'equipment.condition', 'travel.condition', 'hobby.condition',
+  ], `pill талбарууд: ${bar.join(', ')}`);
+});
+
+t('🎛 HomeClient: pill нь ЗӨВХӨН `chips && multi && filterBar`; сайдбараас `!f.filterBar`', () => {
+  const src = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
+  // ⚠️ Нэг эх сурвалж: pill-ийн жагсаалт нь ЛИБ-ийн тугуудаас (хатуу массив БАЙХГҮЙ ✓)
+  assert.match(src, /attrFilters\.filter\(\(f\) => f\.chips && f\.multi && f\.filterBar\)/);
+  // ⚠️ 2 ӨӨР UI БАЙХГҮЙ — сайдбар нь filterBar талбарыг ХАСНА ✓
+  assert.match(src, /\.filter\(\(f\) => !f\.filterBar\)/);
+  // ⚠️ Pill нь CDP-ийн дэгээтэй (DOM ↔ либ харьцуулалт — `cdp:specs` ✓)
+  assert.match(src, /data-filter-pill=\{testKey\}/);
+  assert.match(src, /data-filter-bar/);
+  // ⚠️ Идэвхтэй тоо нь `countAttrValues` (хоосон = 0 ✓), цэвэрлэгээ `[]`
+  assert.match(src, /count=\{countAttrValues\(attrArray\(f\.key\)\)\}/);
+  assert.match(src, /onClick=\{\(\) => toggleAttrMulti\(f\.key, o\)\}/);
+});
+
+
 // ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Notebook ээс бусад хайлтын хэсэгт Брэнд гэж
 // баймааргүй байна даа» ⇒ 🏷️ «Брэнд» нь `filterSubtypes: PC_SPEC_SUBTYPES` тугтай
 // болж, SIDEBAR (хайлт)-д ЗӨВХӨН Notebook-ийн гэр бүлд гарна — ⚠️ ФОРМ
@@ -1320,14 +1424,15 @@ t('🧱/🏭 Хавтгай хэсэг: `getSubtypeGroups` → [], бүлэг д
   assert.equal(withGroups.length, 3);
 });
 
-t('🧱/🏭 Хялбар форм (🛋️/⚡/⚽-той ижил): зөвхөн «Шинэ / Шинэвтэр / Хуучин» шүүлт', () => {
+t('🧱/🏭 Хялбар форм (🛋️/⚡/⚽-той ижил): зөвхөн «Төлөв» шүүлт', () => {
   for (const s of ['construction', 'equipment']) {
     assert.equal(hasSimpleForm(s), true);
     assert.deepEqual(getAttrFilters(s).map((f) => f.key), ['condition']);
     assert.deepEqual(getSection(s).attrFields.map((f) => f.key), ['condition']);
     const f = getAttrFilters(s)[0];
-    assert.equal(f.label, 'Шинэ / Шинэвтэр / Хуучин');
+    assert.equal(f.label, 'Төлөв');   // 🆕 2026-10-05 (43)
     assert.deepEqual(f.options, ['Шинэ', 'Шинэвтэр', 'Хуучин']);
+    assert.equal(f.filterBar, true);  // 🆕 (43): pill ✓
   }
 });
 

@@ -37,6 +37,21 @@
 //    `lib/locationData.js`-ийн тугууд (`chips` + `multi`) нэмэгдэв ✓
 //    ⚠️ ФОРМ ХӨНДӨӨГДӨӨГҮЙ (`formChips` хэвээр — форм нэг утга хадгална ✓)
 //
+// 🆕 2026-10-05 (43): ① ✅ **«Шинэ / Шинэвтэр / Хуучин»** нь **«Төлөв»** нэртэй
+//    болов (хэрэглэгчийн хүсэлт: «Шинэ, Шинэвтэр, Хуучин ийг Төлөв гэж нэрлэ»)
+//    — ⚠️ `label` нь ЗӨВХӨН ШОШГО, утгууд (`Шинэ`/`Шинэвтэр`/`Хуучин`) ба
+//    URL/DB-ийн түлхүүр (`attr_condition`) ХӨНДӨГДӨХГҮЙ ✓ (хуучин линк ажиллана ✓)
+//    ② 💻 **«Дэлгэцийн хэмжээ» (`screen`) · «CPU» (`cpu`) · «RAM» (`ram`) ·
+//    «SSD Hard» (`storage`)** ч ОЛОН СОНГОЛТТОЙ болов (хэрэглэгчийн хүсэлт:
+//    «Дэлгэцийн хэмжээ, CPU, RAM, SSD Hard, Төлөв эдгээрийг мөн хайдаг болгоод
+//    өг») ⇒ `?attr_cpu=Intel Core i5,Intel Core i7` ба
+//    `attrs->>cpu=in.(…)` ✓
+//    ③ Эдгээр 5 талбар (✅ + 💻 4) ба 🚗 🎨/⚙️/⛽, 💼 🕒/📊/📈 нь мөн
+//    **`filterBar: true`** — үр дүнгийн дээрх ХЭВТЭЭ `#filter-bar`-т OЛОН
+//    СОНГОЛТТОЙ PILL (⌄ панель) болов ⇒ САЙДБАРТ ДАВХАРДАХГҮЙ ✓
+//    ⚠️ Утга/URL/DB ХӨНДӨӨГДӨХГҮЙ — `getAttrFilters` нь талбарыг ХЭВЭЭР
+//    буцаана (хасалт нь ЗӨВХӨН `components/HomeClient.jsx`-ийн дүрслэл ✓)
+//
 // ХАМРАХ ХҮРЭЭ (4 давхарга — бүгд НЭГ эх сурвалж `lib/attrMultiFilter.mjs`):
 //   ① `lib/attrMultiFilter.mjs` — цэвэр логик (normalize → parse → toggle →
 //      шошго → URL → `in.()` / `or(…ilike…)` мөр)
@@ -358,7 +373,10 @@ t("🔒 Олон сонголттой талбарууд нь ЯГ ТОДОРХ�
     // 💼 2026-10-05 (42): 🕒 Ажлын цаг · 📊 Туршлага · 📈 Мэргэжлийн түвшин
     //    («🛏 Өрөөний тоо» шиг ОЛОН СОНГОЛТТОЙ ЧИП ✓)
     'jobs.jobType', 'jobs.experience', 'jobs.jobLevel',
-    // ✅ 8 хэсгийн «Шинэ / Шинэвтэр / Хуучин» (21)
+    // ✅ 2026-10-05 (43): «Төлөв» (хуучин «Шинэ / Шинэвтэр / Хуучин», 21) — 8 хэсэг
+    //    ⚠️ 💻 📺/⚙️/🧠/💾 нь `onlySubtypes`-тай тул `getAttrFields('computers')`
+    //       (дэд төрөлгүй) дээр ГАРАХГҮЙ ⇒ жагсаалтад ОРООГҮЙ ✓ — тэдгээрийг
+    //       доорх ⑧г тест дэд төрөл дамжуулж шалгана ✓
     'computers.condition', 'furniture.condition', 'home.condition', 'electric.condition',
     'construction.condition', 'equipment.condition', 'travel.condition', 'hobby.condition',
   ], `multi талбарууд: ${multiKeys.join(', ')}`);
@@ -419,8 +437,8 @@ t("🎯 applyAttrMultiFilter: transmission/fuel ч ижил дүрэм (`in.()` 
   assert.deepEqual(callsFor('transmission', []), []);
 });
 
-// ---------- ⑧б 🆕 2026-10-03 (21): ✅ «Шинэ / Шинэвтэр / Хуучин» ----------
-t("✅ condition (8 хэсэг): `chips` + `multi` + `multiNoun: 'төлөв'`, форм `<select>` хэвээр", () => {
+// ---------- ⑧б 🆕 2026-10-03 (21), 🆕 2026-10-05 (43): ✅ «Төлөв» ----------
+t("✅ «Төлөв» (8 хэсэг): `chips` + `multi` + `multiNoun: 'төлөв'` + `filterBar`, форм `<select>` хэвээр", () => {
   const sections = SECTIONS.filter((s) => s.attrFields.some((f) => f.key === 'condition'));
   assert.deepEqual(sections.map((s) => s.value), [
     'computers', 'furniture', 'home', 'electric', 'construction', 'equipment', 'travel', 'hobby',
@@ -428,20 +446,64 @@ t("✅ condition (8 хэсэг): `chips` + `multi` + `multiNoun: 'төлөв'`, 
   sections.forEach((s) => {
     const f = getAttrField(s.value, 'condition');
     assert.equal(f.type, 'select');           // ⚠️ форм нь `<select>` хэвээр ✓
-    assert.equal(f.chips, true, `${s.value}: sidebar чип болоогүй ✗`);
+    assert.equal(f.chips, true, `${s.value}: чип болоогүй ✗`);
     assert.equal(f.multi, true, `${s.value}: олон сонголт болоогүй ✗`);
     assert.equal(f.multiNoun, 'төлөв', `${s.value}: «N төлөв» шошго ✗`);
-    assert.equal(f.label, 'Шинэ / Шинэвтэр / Хуучин');
+    // 🆕 2026-10-05 (43): ШОШГО нь «Шинэ / Шинэвтэр / Хуучин» → «Төлөв»
+    //    ⚠️ ЗӨВХӨН шошго — утгууд ба URL/DB түлхүүр ХӨНДӨӨГДӨӨГҮЙ ✓
+    assert.equal(f.label, 'Төлөв', `${s.value}: нэр нь «Төлөв» биш ✗`);
     assert.equal(f.icon, '✅');
-    assert.deepEqual(f.options, ['Шинэ', 'Шинэвтэр', 'Хуучин']);
+    assert.deepEqual(f.options, ['Шинэ', 'Шинэвтэр', 'Хуучин'], `${s.value}: утгууд ХӨНДӨГДӨВ ✗`);
+    // 🆕 2026-10-05 (43): үр дүнгийн дээрх ХЭВТЭЭ `#filter-bar`-ийн PILL болов
+    assert.equal(f.filterBar, true, `${s.value}: pill болоогүй ✗`);
     // ⛔ Форм дээр чип БОЛОХГҮЙ — `formChips` туг ЗОРИУДАА БАЙХГҮЙ ✓
     assert.ok(!f.formChips, `${s.value}: форм дээр чип болжээ ✗ (зөвхөн хайлт ✓)`);
     // ⚠️ Шүүлт (sidebar) нь ЯГ ТЭР объект (нэг эх сурвалж ✓)
     assert.equal(getAttrFilters(s.value).find((x) => x.key === 'condition'), f);
+    // 🆕 (43): `filterBar` тул HomeClient нь сайдбараас ХАСНА — гэхдээ
+    //    `getAttrFilters` нь ХЭВЭЭР буцаана (URL-аас уншигдах ёстой ✓)
+    assert.ok((s.attrFilters || []).includes('condition'));
     // ⚠️ Дэд төрөл дамжуулахад ч ХАСАГДАХГҮЙ (`onlySubtypes`/`filterSubtypes` БАЙХГҮЙ ✓)
     assert.ok(getAttrFilters(s.value, 'ямар ч дэд төрөл').some((x) => x.key === 'condition'),
       `${s.value}: дэд төрөл дээр condition хасагдсан ✗`);
   });
+});
+
+// ---------- ⑧г 🆕 2026-10-05 (43): 💻 📺/⚙️/🧠/💾 — ОЛОН СОНГОЛТТОЙ PILL ----------
+/**
+ * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Дэлгэцийн хэмжээ, CPU, RAM, SSD Hard, Төлөв эдгээрийг
+ * мөн хайдаг болгоод өг» ⇒ Notebook-ийн 4 техникийн талбар ч ОЛОН СОНГОЛТТОЙ
+ * PILL (⌄ панель) болов. ⚠️ ФОРМ ХӨНДӨӨГДӨӨГҮЙ: `type: 'select'` + утга нь
+ * ЯГ ТЭНЦҮҮ (`attrs->>cpu=in.(…)` — `ilike` БИШ, учир нь сонголтууд нь хаалттай
+ * жагсаалт ✓), `formChips` туг БАЙХГҮЙ ✓
+ */
+t('💻 (43) 📺/⚙️/🧠/💾: `type: select` ХЭВЭЭР ч `chips` + `multi` + `filterBar`; утга нь ЯГ тэнцүү', () => {
+  const spec = [
+    ['screen', 'хэмжээ'], ['cpu', 'процессор'], ['ram', 'санах ой'], ['storage', 'хард'],
+  ];
+  spec.forEach(([key, noun]) => {
+    const f = getAttrField('computers', key);
+    assert.equal(f.type, 'select', `${key}: форм <select> ХӨНДӨГДӨВ ✗`);
+    assert.equal(f.chips, true, `${key}: чип болоогүй ✗`);
+    assert.equal(f.multi, true, `${key}: олон сонголт болоогүй ✗`);
+    assert.equal(f.multiNoun, noun, `${key}: «N ${noun}» шошго ✗`);
+    assert.equal(f.filterBar, true, `${key}: pill болоогүй ✗`);
+    assert.ok(!f.formChips, `${key}: форм дээр чип болжээ ✗`);
+    assert.ok(!f.searchable, `${key}: combobox болжээ ✗ (6–19 хаалттай сонголт ✓)`);
+    // ⚠️ Утга нь ЯГ ТЭНЦҮҮ (`eq` ⇄ `in`) — 🚙 загвар шиг `ilike` БИШ ✓
+    assert.deepEqual(callsFor(key, ['Intel Core i5', 'Intel Core i7']),
+      [['in', `attrs->>${key}`, ['Intel Core i5', 'Intel Core i7']]], key);
+    // ⚠️ ХУУЧИН нэг утгатай линк (`?attr_cpu=Intel Core i5`) ч ижил зам ✓
+    assert.deepEqual(callsFor(key, 'Intel Core i5'),
+      [['in', `attrs->>${key}`, ['Intel Core i5']]], key);
+    assert.deepEqual(callsFor(key, []), [], key);
+  });
+  // ⚠️ Зөвхөн Notebook-ийн гэр бүлд (📺/⚙️/🧠/💾 нь `onlySubtypes` — хэвээр ✓)
+  assert.ok(getAttrFilters('computers', 'Lenovo').some((x) => x.key === 'cpu'));
+  assert.ok(!getAttrFilters('computers', 'Mouse').some((x) => x.key === 'cpu'));
+  // ⚠️ Хуучин шүүлтийн дараалал ХӨНДӨГДӨӨГҮЙ (`brand → … → condition` ✓)
+  assert.deepEqual(getAttrFilters('computers', 'Lenovo').map((x) => x.key),
+    ['brand', 'screen', 'cpu', 'ram', 'storage', 'condition']);
 });
 
 t("🎯 applyAttrMultiFilter: condition ч ижил дүрэм (`attrs->>condition=in.(…)`)", () => {
@@ -518,6 +580,22 @@ t('🖥 HomeClient: чипүүд `toggleAttrMulti`-ээр (олон) + `setAttr(
   // ⚠️ CDP-ийн дэгээ хэвээр (1 талбар = 1 `data-attr-filter`) + шинэ `data-attr-multi`
   assert.match(src, /data-attr-filter=\{f\.key\}/);
   assert.match(src, /data-attr-multi="true"/);
+  /**
+   * 🆕 2026-10-05 (43): `filterBar: true` талбар (🚗 🎨/⚙️/⛽, 💼 🕒/📊/📈,
+   * 💻 📺/⚙️/🧠/💾 ба ✅ «Төлөв») нь үр дүнгийн дээрх ХЭВТЭЭ `#filter-bar`-т
+   * PILL болсон (@see `scripts/test-filters.mjs` → «🎛» тестүүд). ⚠️ ЭНД
+   * зөвхөн HomeClient-ийн ДҮРСЛЭЛИЙН гэрээг түгждэг:
+   *   ① pill-ийн жагсаалт нь ЛИБ-ийн тугуудаас (`chips && multi && filterBar`)
+   *   ② сайдбар нь эдгээрийг ХАСНА (`.filter((f) => !f.filterBar)`) ⇒ 2 өөр
+   *      UI БАЙХГҮЙ ✓
+   *   ③ pill нь CDP-ийн дэгээтэй (`data-filter-pill` / `data-attr-value` ✓)
+   */
+  assert.match(src, /const filterBarAttrs = useMemo\(\s*\(\) => attrFilters\.filter\(\(f\) => f\.chips && f\.multi && f\.filterBar\)/);
+  assert.match(src, /\.filter\(\(f\) => !f\.filterBar\)/);
+  assert.match(src, /data-filter-pill=\{testKey\}/);
+  assert.match(src, /testKey=\{f\.key\}/);
+  assert.match(src, /label=\{f\.label\}/);
+  assert.match(src, /data-attr-value=\{o\}/);
 });
 
 t('⛔ ФОРМ (`AddListingClient.jsx`) ХӨНДӨГДӨӨГҮЙ — өнгө нэг утгатай хэвээр', () => {
