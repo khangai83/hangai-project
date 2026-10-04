@@ -1930,11 +1930,21 @@ export default function HomeClient() {
               📱 МОБАЙЛ дээрх дараалал (aside нь DOM-д результатовын ӨМНӨ):
                  [төрөл] → [Дэлгэрэнгүй хайлт панель] → [гарчиг + өрөөний тоо]
                  → [чипүүд] → [картууд]
-              ⚠️ `lg:sticky lg:top-4` — desktop дээр гүйлгэхэд хамт гүйлгэхгүй ✓ */}
+              ⚠️ `lg:sticky lg:top-4` — desktop дээр гүйлгэхэд хамт гүйлгэхгүй ✓
+              🔴 2026-10-04 (26) АСУУДАЛ: панелийн агуулга (10+ блок) нь
+                 дэлгэцээс ӨНДӨР (бодит хэмжилт 1440×800 дээр **1732px**) тул
+                 `sticky` нь дээрээ наалдаж, доод хэсэг (🔍 Хайх товч) нь
+                 гүйлгэхэд ХҮРЭХГҮЙ байв ✗ (зөвхөн хуудасны хамгийн төгсгөлд
+                 хүрсэн үед л гарч ирнэ) — хэрэглэгч «хайлтын товч гарч
+                 ирэхгүй» гэж мэдэгдэв.
+              ✅ ШИЙДЭЛ: `lg:max-h-[calc(100vh-2rem)]` + `lg:overflow-y-auto`
+                 → панель өөрөө дотроо гүйлгэгдэнэ (2rem = `top-4`-ийн 1rem +
+                 доод 1rem); 🔍 Хайх нь доор `sticky bottom-0` тул ҮРГЭЛЖ
+                 харагдана ✓ (мобайл `<lg` ХӨНДӨӨГДӨӨГҮЙ — sticky нь `lg:` ✓) */}
           {showAdvancedFilters && (
           <aside
             id="advanced-filters"
-            className="w-full shrink-0 lg:sticky lg:top-4 lg:w-[280px]"
+            className="w-full shrink-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:w-[280px] lg:overflow-y-auto"
           >
             <div className="rounded-xl border border-gray-200 bg-white shadow-card">
               {/* Толгой — unegui.mn-д тусдаа гарчиг байхгүй ч «N шүүлт» badge нь
@@ -2473,8 +2483,12 @@ export default function HomeClient() {
 
               {/* Доод хэсэг — unegui.mn-ийн «N зар харуулах» хэсэг.
                   ⚠️ Шүүлт нь амьд (real-time) хэрэгждэг тул энэ товч нь зөвхөн
-                     мобайл дээрх sheet-ийг хаана — unegui.mn-тэй ижил байрлал. */}
-              <div className="border-t border-gray-100 px-4 py-3.5">
+                     мобайл дээрх sheet-ийг хаана — unegui.mn-тэй ижил байрлал.
+                  🆕 2026-10-04 (26): `sticky bottom-0` (+`bg-white`) — панель
+                     дотроо гүйлгэгдэх үед (дээрх `lg:overflow-y-auto`) энэ мөр
+                     (🔍 Хайх + «N зар харуулах» + «↺ Хайлтыг цэвэрлэх») ҮРГЭЛЖ
+                     доор харагдана ✓ (товч хүрэхгүй байсан алдааг зассан) */}
+              <div className="sticky bottom-0 z-10 rounded-b-xl border-t border-gray-100 bg-white px-4 py-3.5">
                 {/* ⚠️ 2026-09-27: шүүлт нь АМЬД (real-time) ✓ — товч нь зөвхөн
                     ҮР ДҮН рүү гүйлгэж хүргэнэ (мобайлд хэрэгтэй ✓).
                     Урьд нь мобайл sheet-ийг ХААДАГ байсан ✗ — одоо панель

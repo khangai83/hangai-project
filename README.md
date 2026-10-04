@@ -2264,6 +2264,37 @@ sel('condition', CONDITION_LABEL, CONDITION_OPTIONS, '✅', CONDITION_FILTER_EXT
 
 
 
+#### 🩹🖥 SIDEBAR-ИЙН «🔍 Хайх» ТОВЧ ГҮЙЛГЭХЭД ХАРАГДАХГҮЙ БАЙСНЫГ ЗАСАВ (🆕 2026-10-04 (26))
+
+> 🆕 **ХЭРЭГЛЭГЧИЙН МЭДЭГДЭЛ (2026-10-04):** «дээш доош гүйлгэхэд хайлтын
+> Хайх товч гарч ирэхгүй байна» (өмнөх (25)-ын дараа мэдэгдэв).
+
+🔴 **АСУУДАЛ:** `<aside>` нь `lg:sticky lg:top-4` байсан ч **`max-height` / `overflow`
+БАЙХГҮЙ** байв. Панелийн агуулга (10+ блок) нь дэлгэцээс ӨНДӨР — бодит хэмжилт
+(1440×800): `aside.scrollHeight` = **1773px**, `clientHeight` = **800px** — тул
+`sticky` нь дээрээ наалдаж, доод хэсэг (🔍 Хайх товч) нь **гүйлгэхэд ХҮРЭХГҮЙ**,
+зөвхөн хуудасны хамгийн төгсгөлд хүрсэн үед л гарч ирдэг байв ✗
+
+✅ **ШИЙДЭЛ (`components/HomeClient.jsx`):**
+
+| Газраа | Өмнө | Одоо |
+|---|---|---|
+| `<aside id="advanced-filters">` class | `lg:sticky lg:top-4 lg:w-[280px]` | + **`lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto`** |
+| Доод үйлдлийн мөр (🔍 Хайх + «N зар харуулах» + «↺ Хайлтыг цэвэрлэх») | `border-t border-gray-100 px-4 py-3.5` | + **`sticky bottom-0 z-10 rounded-b-xl bg-white`** |
+
+- ⚙️ `2rem` = `top-4`-ийн 1rem + доод 1rem → панель дэлгэцээс хэзээ ч өндөр болохгүй ✓
+- ⚙️ 🔍 Хайх мөр нь `sticky bottom-0` тул панель дотроо гүйлгэгдэх ч **ҮРГЭЛЖ доор харагдана** ✓
+- 📱 Мобайл (`<lg`) **ХӨНДӨГДӨӨГҮЙ** — `sticky` / `max-h` / `overflow` нь зөвхөн `lg:` prefix-тэй ✓
+- ⚠️ DB / логик / URL / query ХӨНДӨГДӨӨГҮЙ — migration ШААРДЛАГАГҮЙ ✓
+- 🐍 **CDP (1440×800, гүйлгээний 5 байрлал):** панель `sticky` болсны дараа
+  🔍 Хайх нь `btnVisibleInViewport = true` (frac 0.5 / 0.75 / 1) ·
+  `overflow-y: auto` · `aside.clientHeight 768 = 100vh − 2rem` ✓; JS exception 0
+- 🧪 `test:card` 16 ✓ · `test:filters` 101 ✓ · `test:rooms` 44 ✓ · `test:jobs` 19 ✓ ·
+  `test:payments` 36 ✓ · `test:search` 49 ✓ · `test:attrMulti` 24 ✓ ·
+  `test:breadcrumb` 17 ✓ · `test:format` 25 ✓ · `test:districts` 40 ✓;
+  🐍 `cdp:rooms` **45 OK, 0 FAIL**; `npm run build` ✓ EXIT=0
+
+
 #### ⚡ ХЯЛБАР ФОРМ — 🧳 «Аяны бараа», 🧺 «Гэр ахуйн бараа», ⚡ «Цахилгаан бараа», 🛋️ «Тавилга» ба ⚽ «Аялал, Спорт, Хобби» хэсэгт ЗӨВХӨН 5 зүйл асууна (2026-09-29 · 2026-09-30)
 
 Хэрэглэгчийн хүсэлт: «Аяллын хэрэгсэл хэсэгт бараа нэмэхэд зөвхөн байршил,
