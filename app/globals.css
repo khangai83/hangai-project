@@ -183,7 +183,7 @@
     @apply inline-flex flex-wrap items-center gap-1 rounded-full border border-gray-200/80 bg-gray-100/90 p-1;
   }
   .segmented-item {
-    @apply rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold text-gray-500
+    @apply rounded-full px-3.5 py-1.5 text-[13.5px] font-semibold text-gray-500
            transition-all duration-150 ease-out hover:text-gray-800;
   }
   .segmented-item-active {
@@ -197,7 +197,7 @@
         сонгогдсон үед цагаан. */
   .chip-toggle {
     @apply inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white
-           px-3 py-1.5 text-[12.5px] font-medium text-gray-600
+           px-3.5 py-1.5 text-[14px] font-medium text-gray-600
            transition-all duration-150 ease-out
            hover:border-primary/60 hover:text-primary
            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40;
@@ -216,9 +216,29 @@
      ✅ Хайлт БА форм ХОЁУЛАА ОДОО НЭГ ХЭВ: `.chip-toggle` (дээрх чип) —
         «🛏 Өрөөний тоо»/«Хороо»/«Чип шүүлт»-тэй ЯГ ИЖИЛ класс ✓ */
 
+ /* ════════════════════════════════════════════════════════════════
+    🆕 2026-10-04 (24): «ХАЙЛТ + ЗАР НЭГДМЭЛ» — ФОНТ +1…2px
+    ────────────────────────────────────────────────────────────────
+    ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Хайлтын хэсгийг зарын хэсгээсээ тусдаа
+    харагдахгүй нэгдмэл харагдуул. Одоо байгаа font ийг бага зэрэг
+    томруул» (unegui.mn-ийн хайлтын хуудасны жишээ зурагтай).
+    ⚠️ Урьд нь хайлтын панель 11–14px, зарын карт 13–22px байсан тул
+       хоёр багана ТУСДАА салаа мэт харагддаг байв ✗
+    ✅ Одоо нийтлэг контролууд +1…2px (доорх утгууд) — «нэг нүдэнд
+       нэг масштаб» болов ✓
+       • `.form-input/.form-select/.form-textarea` 14 → **15px**
+       • `.form-label` 13 → **14px** · `.form-hint` 12 → **13px**
+       • `.chip-toggle` 12.5 → **14px** (`px-3` → `px-3.5`)
+       • `.segmented-item` 12.5 → **13.5px** · `.badge` 11 → **12px**
+    ⚠️ `AddListingClient` (зар оруулах) ба `AuthModal` ч ЭДГЭЭР классыг
+       ашигладаг тул тэд ч хамт томров — санаатай (нэгдмэл байдал ✓).
+    ⚠️ `ListingCard`-ийн ҮНЭ (`text-[22px]`) ба ГАРЧИГ (`text-[15px]`)
+       ХӨНДӨГДӨӨГҮЙ (хэрэглэгчийн шийдвэр; `scripts/test-card.mjs`-д
+       түгжсэн гэрээ ✓) — зөвхөн мета/тайлбар/доод мөр +1px болов. */
+
  /* ---------- Form controls ---------- */
   .form-label {
-    @apply mb-1 block text-[13px] font-semibold text-gray-700;
+    @apply mb-1 block text-[14px] font-semibold text-gray-700;
   }
   .form-label-upper {
     @apply mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-500;
@@ -226,7 +246,7 @@
   .form-input,
   .form-select,
   .form-textarea {
-    @apply w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900
+    @apply w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-[15px] text-gray-900
            outline-none transition placeholder:text-gray-400
            focus:border-primary focus:ring-[3px] focus:ring-primary-light
            disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70;
@@ -235,7 +255,7 @@
     @apply min-h-[100px] resize-y;
   }
   .form-hint {
-    @apply mt-1 text-xs text-gray-500;
+    @apply mt-1 text-[13px] text-gray-500;
   }
   .form-error {
     @apply my-1 text-[13px] text-red-600;
@@ -265,14 +285,14 @@
     @apply flex flex-col gap-1;
   }
   .form-group label {
-    @apply mb-1 block text-[13px] font-semibold text-gray-700;
+    @apply mb-1 block text-[14px] font-semibold text-gray-700;
   }
   /* ⚠️ 2026-10-01: checkbox/radio ГАДУУР — `.form-group`-ийн input загвар нь
      (specificity (0,1,1) > Tailwind `w-4` (0,1,0)) чекбоксыг `w-full` (бүтэн
      өргөн) + padding/border-той болгож, чекбокс нь текстийн ДЭЭР том хайрцаг
      мэт гарахад хүргэдэг байв ✗ Одоо зөвхөн текст талбаруудад хамаарна ✓ */
   .form-group :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]) {
-    @apply w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition
+    @apply w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-[15px] text-gray-900 outline-none transition
            placeholder:text-gray-400 focus:border-primary focus:ring-[3px] focus:ring-primary-light
            disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70;
   }
@@ -399,7 +419,7 @@
    * 🔍 Хайх үг: choice-trigger, data-choice-trigger, дугуй сонгогч
    */
   .choice-trigger {
-    @apply flex w-full items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-left text-sm text-gray-900 outline-none transition active:bg-gray-50;
+    @apply flex w-full items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-left text-[15px] text-gray-900 outline-none transition active:bg-gray-50;
   }
   /* Хоосон үед «Сонгох» нь placeholder шиг цайвар ✓ */
   .choice-trigger[data-empty="true"] {
@@ -465,7 +485,7 @@
 
  /* ---------- Badges ---------- */
   .badge {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white;
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-[12px] font-semibold text-white;
   }
   .badge-sell {
     @apply bg-primary;

@@ -126,7 +126,7 @@ export default function ListingCard({ listing, author, attrsLine }) {
         {author?.displayName && (
           <div className="mb-3 flex items-center gap-2 border-b border-gray-100 pb-2.5">
             <Avatar src={author.avatarUrl} name={author.displayName} size={28} />
-            <span className="truncate text-[13px] font-semibold text-gray-800" title={author.displayName}>
+            <span className="truncate text-[13.5px] font-semibold text-gray-800" title={author.displayName}>
               {author.displayName}
             </span>
             <VerifiedBadge size={13} className="text-primary" />
@@ -154,7 +154,7 @@ export default function ListingCard({ listing, author, attrsLine }) {
             ⚠️ Хоёулаа хоосон бол мөр ОГТ ГАРАХГҮЙ (`false`/`''`) ✓ */}
         {isRealEstate
           ? hasPropertyLine && (
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-gray-600">
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-gray-600">
                 {listing.rooms > 0 && <span>🛏 {listing.rooms} өрөө</span>}
                 {listing.bathrooms > 0 && <span>🚿 {listing.bathrooms} угаалгын өрөө</span>}
                 {listing.area > 0 && <span>📐 {listing.area} м²</span>}
@@ -163,14 +163,14 @@ export default function ListingCard({ listing, author, attrsLine }) {
               </div>
             )
           : attrsLine && (
-              <div className="mt-1.5 truncate text-[13px] text-gray-600" title={attrsLine}>
+              <div className="mt-1.5 truncate text-[14px] text-gray-600" title={attrsLine}>
                 {attrsLine}
               </div>
             )}
 
         {/* 📝 ТАЙЛБАР — 2 мөр хүртэл (unegui: бүдэг саарал) */}
         {description && (
-          <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-gray-500">{description}</p>
+          <p className="mt-1.5 line-clamp-2 text-[14px] leading-relaxed text-gray-500">{description}</p>
         )}
 
         {/* 📅 ДООД МЕТА МӨР — 🕒 огноо | 📍 хаяг   …   👁 үзсэн  ❤️/🤍 таалагдсан
@@ -180,7 +180,7 @@ export default function ListingCard({ listing, author, attrsLine }) {
                ≥640px-д `sm:order-none sm:flex-1` → нэг мөрөнд буцаж эгнэнэ ✓
             ⚠️ `pr-20` — /favorites-ийн «Хасах» товч утсанд баруун ДОО буланд
                буудаг тул ❤️-тэй мөргөлдөхөөс сэргийлнэ (`sm:pr-0` — desktop-д чөлөө) */}
-        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-gray-100 pt-2.5 pr-20 text-[12.5px] text-gray-500 sm:flex-nowrap sm:pr-0">
+        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-gray-100 pt-2.5 pr-20 text-[13.5px] text-gray-500 sm:flex-nowrap sm:pr-0">
           <span className="whitespace-nowrap" title="Нийтэлсэн огноо">🕒 {timeAgo(listing.created_at)}</span>
           {address && (
             <span className="order-last w-full truncate sm:order-none sm:w-auto sm:flex-1" title={address}>

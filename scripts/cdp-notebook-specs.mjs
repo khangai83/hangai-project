@@ -29,8 +29,8 @@
  *      sidebar-д харагдахгүй шүүлт заруудыг шүүж, «0 үр дүн» гарах байв ✗
  *   ⑥ Дэд төрөл СОНГООГҮЙ (`?section=computers`) үед sidebar БАЙХГҮЙ ✓
  *   ⑦ 🚗 БУСАД ХЭСЭГ: авто дээр `[data-attr-filter]` === 3 (🎨 өнгө · 🔀 хайрцаг ·
- *      ⛽ түлш — 🏷️ брэнд нь combobox, он нь хүрээ) ба ⛽ «Хайбрид» нь
- *      `attrs->>fuel=eq.Хайбрид` хэвээр ажиллана ✓
+ *      ⛽ түлш — 🏷️ брэнд нь combobox, он нь хүрээ; ⚠️ 2026-10-03 (22)-оос 🔀 ба
+ *      ⛽ ХОЁУЛАА ЧИП болсон тул авто дээр НЭГ Ч `<select>` БАЙХГҮЙ ✓)
  *   ⑦b 🎨 **ОЛОН СОНГОЛТТОЙ «ӨНГӨ»** (2026-10-03 (19), хэрэглэгчийн хүсэлт:
  *      «Зар хайлт дээр Авто машин сонголт дээр Өнгө ийг Төлбөрийн нөхцөл шиг
  *      олон сонголттой болго»): 🎨 нь `<select>` БИШ, 12 `chip-toggle`
@@ -39,8 +39,25 @@
  *      чип «🎨 2 өнгө» · DB `attrs->>color=in.(Хар,Цагаан)` (OR ✓); дахин
  *      дарахад toggle, «✕ Цуцлах»-аар бүрэн цэвэрлэгдэнэ; хуучин нэг утгатай
  *      линк (`?attr_color=Хар`) ч зөв уншигдана ✓
+ *   ⑦e 🆕 **2026-10-03 (22): 🔀 «Хурдны хайрцаг» ба ⛽ «Түлш» ч ОЛОН
+ *      СОНГОЛТТОЙ ЧИП** (хэрэглэгчийн хүсэлт: «мөн автомашин хайлт дээр бас
+ *      ⚙️ Хурдны хайрцаг -ийг 💳 Төлбөрийн нөхцөл шиг болго. бас ⛽ Түлш ийг»)
+ *      ⇒ 🎨 өнгөтэй ЯГ ИЖИЛ; «Хайбрид» дархад `?attr_fuel=Хайбрид` ба DB
+ *      `attrs->>fuel=in.(Хайбрид)` (OR ✓; ⚠️ урьд нь `eq.` байв ✗); 2 дахь
+ *      түлш нэмэхэд `in.(Хайбрид,Бензин)`; хуучин нэг утгатай линк хэвээр ✓
  *   ⑧ 📱 Мобайл 390px: 5 шүүлт харагдаж, хэвтээ гүйлт (overflow) 0 ✓
- *   ⑨ Консол дээр JS exception 0 ✓
+ *   ⑨ 🆕 **2026-10-03 (21): ✅ «Шинэ / Шинэвтэр / Хуучин» ОЛОН СОНГОЛТТОЙ ЧИП**
+ *      (хэрэглэгчийн хүсэлт: «хайлт дээр Шинэ / Шинэвтэр / Хуучин ийг бас 💳
+ *      Төлбөрийн нөхцөл шиг олон сонголт хийх боломжтой болго»): 🧺 `home`
+ *      дээр ✅ нь `<select>` БИШ, 3 `chip-toggle` `<button>`
+ *      (`data-attr-multi="true"`); «Шинэ» + «Хуучин» дарахад URL
+ *      `?attr_condition=Шинэ,Хуучин` · badge «2 сонгосон» · идэвхтэй чип
+ *      «✅ 2 төлөв» · DB `attrs->>condition=in.(Шинэ,Хуучин)` (OR ✓); дахин
+ *      дарахад toggle, ХУУЧИН нэг утгатай линк ч зөв уншигдана ✓
+ *   ⑨b 🏷️ Идэвхтэй шүүлтийн чип 1 утгатай үед «✅ Шинэ» гэж НЭРЭЭРЭЭ гарна ✓
+ *   ⑨c 💻 Notebook дээр ✅ нь ЧИП, харин 📺/⚙️/🧠/💾 нь `<select>` ХЭВЭЭР ✓
+ *   ⑨d 🖱 Mouse / дэд төрөл ГҮЙ үед ч ✅ нь ЧИП (📺/⚙️/🧠/💾-тэй ХОЛДУУ БИШ ✓)
+ *   ⑩ Консол дээр JS exception 0 ✓
  *
  * ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
  *   1) `npm run build && npm run start` — сервер http://localhost:3000 дээр
@@ -269,6 +286,13 @@ const lastQ = () => decodeURIComponent(listingReqs[listingReqs.length - 1] || ''
  *       — тэр нь `[data-attr-filter]` дэгээгүй ✗ ⇒ харьцуулалтаас ХАСНА
  */
 const EXPECT = getAttrFilters('computers', 'Apple').filter((f) => !f.searchable);
+/**
+ * 🆕 2026-10-03 (21): ✅ «Шинэ / Шинэвтэр / Хуучин» нь ЧИП блок болов
+ *    (`chips: true`) — тэр нь `.options`/`.value` БАЙХГҮЙ (`<select>` БИШ) тул
+ *    `<select>`-ийн харьцуулалтаас (тоо/утга/«Бүгд») ХАСНА ✓
+ */
+const EXPECT_SELECTS = EXPECT.filter((f) => !f.chips);
+const EXPECT_CHIPS = EXPECT.filter((f) => f.chips);
 
 console.log('\n🖥 CDP — 💻 Notebook-ийн шүүлт (📺 Дэлгэц · ⚙️ CPU · 🧠 RAM · 💾 Хард)\n');
 
@@ -288,14 +312,23 @@ check('🖥 Дараалал нь ФОРМТОЙ ижил (screen → cpu → ra
   `${apple.keys.join(',')} ↔ ${EXPECT.map((f) => f.key).join(',')}`);
 check('🏷 Шошгууд нь формтой ижил (`aria-label`)',
   apple.labels.join(' | ') === EXPECT.map((f) => f.label).join(' | '), apple.labels.join(' | '));
-check('🖥 Сонголтын ТОО нь ЛИБЭЭС ижил (7/19/13/6/3 + «Бүгд»)',
-  apple.counts.join(',') === EXPECT.map((f) => f.options.length + 1).join(','),
+check('🖥 Сонголтын ТОО нь ЛИБЭЭС ижил (7/19/13/6 + «Бүгд» · ✅ нь чип тул ОРООГҮЙ)',
+  apple.counts.join(',') === EXPECT_SELECTS.map((f) => f.options.length + 1).join(','),
   apple.counts.join(','));
 check('🖥 Сонголтын УТГА нь ч ЛИБЭЭС ижил (давхар хуулбар БАЙХГҮЙ ✓)',
-  apple.options.map((o) => o.join('·')).join('|') === EXPECT.map((f) => f.options.join('·')).join('|'),
+  apple.options.map((o) => o.join('·')).join('|') === EXPECT_SELECTS.map((f) => f.options.join('·')).join('|'),
   `⚙️: ${apple.options[1].slice(0, 4).join(' · ')} …`);
 check('🖥 Бүх шүүлтийн эхний сонголт нь «Бүгд» (unegui.mn-ийн хэв ✓)',
   apple.first.every((t) => t === 'Бүгд'), apple.first.join(' | '));
+check('✅ 2026-10-03 (21): ✅ төлөв нь ЧИП блок (3 товч · `data-attr-multi` · сонголт 0)',
+  apple.chipBlocks.length === EXPECT_CHIPS.length && apple.chipBlocks[0].key === 'condition'
+    && apple.chipBlocks[0].multi === true && apple.chipBlocks[0].total === 3
+    && apple.chipBlocks[0].kinds.every((k) => k === 'button')
+    && apple.chipBlocks[0].pressed.length === 0,
+  JSON.stringify(apple.chipBlocks));
+check('⛔ Notebook дээр ✅ нь `<select>` БИШ · 📺/⚙️/🧠/💾 нь `<select>` ХЭВЭЭР',
+  !apple.selectKeys.includes('condition')
+    && apple.selectKeys.join(',') === 'screen,cpu,ram,storage', `selects=[${apple.selectKeys.join(', ')}]`);
 const bi = apple.blocks.findIndex((b) => /Брэнд/.test(b));
 const si = apple.blocks.findIndex((b) => /Дэлгэц/.test(b));
 const ci = apple.blocks.findIndex((b) => /CPU/.test(b));
@@ -349,6 +382,11 @@ const mouse = await specUi();
 check('🖱 Sidebar БАЙНА (хэсэг нь хэвээр ✓)', mouse.sidebar);
 check('🖱 Зөвхөн ✅ төлөв шүүлт (`[data-attr-filter]` === 1)',
   mouse.total === 1 && mouse.keys[0] === 'condition', `keys=[${mouse.keys.join(', ')}]`);
+check('🖱 2026-10-03 (21): ✅ нь Mouse дээр ч ЧИП блок (3 товч · олон сонголт ✓)',
+  mouse.chipBlocks.length === 1 && mouse.chipBlocks[0].key === 'condition'
+    && mouse.chipBlocks[0].multi === true && mouse.chipBlocks[0].total === 3
+    && mouse.chipBlocks[0].pressed.length === 0,
+  JSON.stringify(mouse.chipBlocks));
 check('🖱 📺/⚙️/🧠/💾 нь ОГТ БАЙХГҮЙ (холдуу дэд төрөлд гарахгүй ✓)',
   !/Дэлгэц|CPU|RAM|Хард/.test(mouse.labels.join(' ')), mouse.labels.join(' | '));
 /**
@@ -414,6 +452,10 @@ check('🆕 Хэсгийн түвшинд `[data-attr-filter]` нь ЛИБЭЭС
 check('🆕 📺/⚙️/🧠/💾 нь хэсгийн түвшинд ОГТ БАЙХГҮЙ (дэд төрөл хэрэгтэй ✓)',
   noType.total > 0 && !/Дэлгэц|CPU|RAM|Хард/.test(noType.labels.join(' ')),
   noType.labels.join(' | '));
+check('🆕 2026-10-03 (21): хэсгийн түвшинд ч ✅ нь ЧИП блок (📺/⚙️/🧠/💾-тэй ХОЛДУУ БИШ ✓)',
+  noType.chipBlocks.length === 1 && noType.chipBlocks[0].key === 'condition'
+    && noType.chipBlocks[0].multi === true && noType.chipBlocks[0].total === 3,
+  JSON.stringify(noType.chipBlocks));
 // 🏷️ 2026-10-03 (20): хэсгийн түвшин (дэд төрөл ГҮЙ) бол «Notebook» БИШ ⇒
 //    «Брэнд» ч байхгүй (хэрэглэгчийн хүсэлт: «Notebook ээс бусад …»)
 check('🏷 Хэсгийн түвшинд «Брэнд» блок БАЙХГҮЙ (Notebook-ийн гэр бүлд л ✓)',
@@ -434,16 +476,33 @@ check('🚗 Авто дээр `[data-attr-filter]` === 3 (🎨 өнгө · 🔀 
 check('🚗 Дараалал нь `attrFilters`-ийн дараалал (color → transmission → fuel)',
   auto.keys.join(',') === 'color,transmission,fuel', auto.keys.join(','));
 check('🎨 «Өнгө» нь ЧИП блок (12 товч · `data-attr-multi` · `<button>` · сонголт 0)',
-  auto.chipBlocks.length === 1 && auto.chipBlocks[0].key === 'color'
+  auto.chipBlocks[0] && auto.chipBlocks[0].key === 'color'
     && auto.chipBlocks[0].multi === true && auto.chipBlocks[0].total === 12
     && auto.chipBlocks[0].kinds.every((k) => k === 'button')
     && auto.chipBlocks[0].pressed.length === 0,
-  JSON.stringify(auto.chipBlocks));
-check('⛔ «Өнгө» нь `<select>` БИШ (🔀/⛽ нь `<select>` ХЭВЭЭР ✓)',
-  !auto.selectKeys.includes('color') && auto.selectKeys.join(',') === 'transmission,fuel',
-  `selects=[${auto.selectKeys.join(', ')}]`);
-check('🚗 Үлдсэн талбарууд нь «Бүгд»-тэй (хуучин зан төлөв ХЭВЭЭР ✓)',
-  auto.first.every((t) => t === 'Бүгд'), auto.first.join(' | '));
+  JSON.stringify(auto.chipBlocks[0]));
+/**
+ * 🆕 2026-10-03 (22): 🔀 «Хурдны хайрцаг» ба ⛽ «Түлш» ХОЁУЛАА ч
+ *    ОЛОН СОНГОЛТТОЙ ЧИП болов (хэрэглэгчийн хүсэлт: «мөн автомашин хайлт дээр
+ *    бас ⚙️ Хурдны хайрцаг -ийг 💳 Төлбөрийн нөхцөл шиг болго. бас ⛽ Түлш ийг»)
+ *    ⇒ 🎨 өнгөтэй ЯГ ИЖИЛ: `data-attr-multi="true"` · `.chip-toggle` `<button>`
+ *    · сонголт 0 ✓ (⚠️ ФОРМ ХӨНДӨӨГДӨӨГҮЙ — `formChips` туг БАЙХГҮЙ)
+ */
+check('🔀 (22): «Хурдны хайрцаг» ч ЧИП блок (2 товч · `data-attr-multi` · `<button>` · сонголт 0)',
+  auto.chipBlocks[1] && auto.chipBlocks[1].key === 'transmission'
+    && auto.chipBlocks[1].multi === true && auto.chipBlocks[1].total === 2
+    && auto.chipBlocks[1].kinds.every((k) => k === 'button')
+    && auto.chipBlocks[1].pressed.length === 0,
+  JSON.stringify(auto.chipBlocks[1]));
+check('⛽ (22): «Түлш» ч ЧИП блок (6 товч · `data-attr-multi` · `<button>` · сонголт 0)',
+  auto.chipBlocks[2] && auto.chipBlocks[2].key === 'fuel'
+    && auto.chipBlocks[2].multi === true && auto.chipBlocks[2].total === 6
+    && auto.chipBlocks[2].kinds.every((k) => k === 'button')
+    && auto.chipBlocks[2].pressed.length === 0,
+  JSON.stringify(auto.chipBlocks[2]));
+check('⛔ 🎨/🔀/⛽ БҮГД ЧИП — авто дээр НЭГ Ч `<select>` БАЙХГҮЙ ✓',
+  auto.chipBlocks.length === 3 && auto.selectKeys.length === 0,
+  `chipBlocks=${auto.chipBlocks.length} · selects=[${auto.selectKeys.join(', ')}]`);
 
 // ---- ⑦a 🎨 1 ӨНГӨ → `in.(Хар)` · badge «1 сонгосон» · чип «🎨 Хар» ----
 listingReqs.length = 0;
@@ -528,18 +587,133 @@ check('🔗 ХУУЧИН нэг утгатай линк (`?attr_color=Хар`) �
   link1.chipBlocks[0].pressed.join(',') === 'Хар',
   `pressed=[${link1.chipBlocks[0].pressed.join(', ')}]`);
 
-// ---- ⑦e ⛽ Түлш (`<select>`) нь ХӨНДӨГДӨӨГҮЙ + массив/скаляр зэрэг ажиллана ----
+// ---- ⑦e 🆕 2026-10-03 (22): ⛽ «Түлш» ч ЧИП болов — 🎨 + ⛽ зэрэг (AND) ----
 listingReqs.length = 0;
 await go(`${BASE}/?section=auto&type=${encodeURIComponent('Суудлын машин')}&attr_color=Хар`);
 await sleep(1200);
-const fuelPicked = await setSelect('fuel', 'Хайбрид');
-check('🎛 ⛽ Түлш дээр «Хайбрид» сонгогдов', fuelPicked === 'OK', fuelPicked);
+const fuelPicked = await clickChip('fuel', 'Хайбрид');
+check('🎛 ⛽ Түлш дээр «Хайбрид» ЧИП дарлаа (⏳ урьд нь `<select>` байв ✗)', fuelPicked === 'OK', fuelPicked);
 await waitFor(`/attr_fuel=/.test(location.search)`);
 await sleep(1500);
-check('🔗 URL-д `attr_fuel=Хайбрид` болов (скаляр attr ХЭВЭЭР ✓)',
+check('🔗 URL-д `attr_fuel=Хайбрид` болов (⚠️ скаляр БИШ — массив attr ✓)',
   /attr_fuel=Хайбрид/.test(decodeURIComponent(await url())), decodeURIComponent(await url()));
-check('🔎 DB: `attrs->>color=in.(Хар)` БА `attrs->>fuel=eq.Хайбрид` ХАМТ (AND ✓)',
-  dbQ('attrs->>color=in.(Хар)', 'attrs->>fuel=eq.Хайбрид'), lastQ());
+check('🔎 DB: `attrs->>color=in.(Хар)` БА `attrs->>fuel=in.(Хайбрид)` ХАМТ (AND ✓)',
+  dbQ('attrs->>color=in.(Хар)', 'attrs->>fuel=in.(Хайбрид)'), lastQ());
+// ---- ⑦e′ ⛽ 2 ТҮЛШ (ОЛОН СОНГОЛТ) → `in.(Хайбрид,Бензин)` (OR) ----
+listingReqs.length = 0;
+check('⛽ «Бензин» дарлаа (2 дахь түлш НЭМЭГДЭНЭ ✓)', (await clickChip('fuel', 'Бензин')) === 'OK');
+await waitFor(`/attr_fuel=Хайбрид,Бензин/.test(decodeURIComponent(location.search))`);
+await sleep(1500);
+check('🔎 DB: `attrs->>fuel=in.(Хайбрид,Бензин)` — OR (аль нэг түлштэй зар ✓)',
+  dbQ('attrs->>fuel=in.(Хайбрид,Бензин)'), lastQ());
+
+
+// ═══ ⑨ ✅ «ШИНЭ / ШИНЭВТЭР / ХУУЧИН» — ОЛОН СОНГОЛТТОЙ ЧИП (🆕 2026-10-03 (21)) ═══
+/**
+ * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «хайлт дээр Шинэ / Шинэвтэр / Хуучин ийг бас 💳
+ * Төлбөрийн нөхцөл шиг олон сонголт хийх боломжтой болго» ⇒ ✅ нь `<select>`
+ * БИШ, 3 `chip-toggle` товч (олон сонголт) ба DB дээр
+ * `attrs->>condition=in.(…)` ✓
+ * ⚠️ Шалгах хэсэг нь 🧺 `home` — тэр нь sidebar-д ЗӨВХӨН ✅ гэсэн 1 шүүлттэй
+ *    (`attrFilters: ['condition']`) тул чип блок нь `chipBlocks[0]` ✓
+ * ⚠️ `go()` нь `[data-attr-filter]` хүртэл хүлээдэг тул сонголтгүй үед
+ *    (анхны ачаалалт) шалгалт бүр `specUi()`-г ДАХИН дуудна ✓
+ */
+listingReqs.length = 0;
+await go(`${BASE}/?section=home`);
+const home = await specUi();
+check('✅ 🧺 home: ✅ төлөв нь ЧИП блок (3 товч · `data-attr-multi` · сонголт 0)',
+  home.chipBlocks.length === 1 && home.chipBlocks[0].key === 'condition'
+    && home.chipBlocks[0].multi === true && home.chipBlocks[0].total === 3
+    && home.chipBlocks[0].kinds.every((k) => k === 'button')
+    && home.chipBlocks[0].pressed.length === 0,
+  JSON.stringify(home.chipBlocks));
+check('⛔ ✅ нь `<select>` БИШ (чип блок тул `selectKeys`-д ОРООГҮЙ ✓)',
+  !home.selectKeys.includes('condition'), `selects=[${home.selectKeys.join(', ')}]`);
+check('🔎 Шүүлт хоосон үед DB query-д `attrs->>condition` ОРООГҮЙ',
+  !dbQ('attrs->>condition'), lastQ());
+
+// ---- ⑨a 1 ТӨЛӨВ → `in.(Шинэ)` · badge «1 сонгосон» · чип НЭРЭЭРЭЭ ----
+listingReqs.length = 0;
+check('✅ «Шинэ» дарлаа (чип нь `<button>` ✓)', (await clickChip('condition', 'Шинэ')) === 'OK');
+await waitFor(`/attr_condition=/.test(location.search)`);
+await sleep(1500);
+const cond1 = await specUi();
+check('🔗 URL-д `attr_condition=Шинэ` болов (параметрийн нэр ХУУЧИН хэвээр ✓)',
+  /attr_condition=Шинэ/.test(decodeURIComponent(await url())),
+  decodeURIComponent(await url()));
+check('🔎 DB: `attrs->>condition=in.(Шинэ)` (нэг утга — OR-ийн нэг элемент ✓)',
+  dbQ('attrs->>condition=in.(Шинэ)'), lastQ());
+check('✅ «1 сонгосон» badge + чип `aria-pressed=true`',
+  cond1.multiBadges.includes('1 сонгосон') && cond1.chipBlocks[0].pressed.join(',') === 'Шинэ',
+  `badges=[${cond1.multiBadges.join(' | ')}] · pressed=[${cond1.chipBlocks[0].pressed.join(', ')}]`);
+check('✅ ⑨b Идэвхтэй шүүлтийн чип 1 утгатай үед НЭРЭЭРЭЭ («✅ Шинэ» ✓)',
+  cond1.chips.some((c) => c === '✅ Шинэ'), `chips=[${cond1.chips.join(' | ')}]`);
+
+// ---- ⑨b 2 ТӨЛӨВ (ХАМГИЙН ЧУХАЛ — ОЛОН СОНГОЛТ) → `in.(Шинэ,Хуучин)` ----
+listingReqs.length = 0;
+check('✅ «Хуучин» дарлаа (2 дахь сонголт НЭМЭГДЭНЭ, эхнийх ЦУЦЛАГДАХГҮЙ ✓)',
+  (await clickChip('condition', 'Хуучин')) === 'OK');
+await waitFor(`/attr_condition=Шинэ/.test(location.search)`);
+await sleep(1500);
+const cond2 = await specUi();
+check('🔗 URL-д `attr_condition=Шинэ,Хуучин` (таслалаар · дарсан дараалал ✓)',
+  /attr_condition=Шинэ,Хуучин/.test(decodeURIComponent(await url())), decodeURIComponent(await url()));
+check('🔎 DB: `attrs->>condition=in.(Шинэ,Хуучин)` — OR (аль нэг төлөвтэй зар ✓)',
+  dbQ('attrs->>condition=in.(Шинэ,Хуучин)'), lastQ());
+check('✅ «2 сонгосон» badge + 2 чип идэвхтэй (⚠️ DOM дараалал = `CONDITION_OPTIONS`)',
+  cond2.multiBadges.includes('2 сонгосон')
+    && [...cond2.chipBlocks[0].pressed].sort().join(',') === ['Шинэ', 'Хуучин'].sort().join(','),
+  `badges=[${cond2.multiBadges.join(' | ')}] · pressed=[${cond2.chipBlocks[0].pressed.join(', ')}]`);
+check('✅ Идэвхтэй шүүлтийн чип нь ТОВЧЛОГДОВ («✅ 2 төлөв» — `multiNoun` ✓)',
+  cond2.chips.some((c) => c === '✅ 2 төлөв'), `chips=[${cond2.chips.join(' | ')}]`);
+
+// ---- ⑨c ЦУЦЛАХ: чип дээр дахин дарах ба «✕ Цуцлах» товч ----
+listingReqs.length = 0;
+check('✅ «Шинэ» дээр ДАХИН дарлаа (toggle — хасагдана ✓)',
+  (await clickChip('condition', 'Шинэ')) === 'OK');
+await waitFor(`/attr_condition=Хуучин/.test(location.search)`);
+await sleep(1500);
+check('🔗 URL-д зөвхөн `attr_condition=Хуучин` үлдэв',
+  /attr_condition=Хуучин/.test(decodeURIComponent(await url())), decodeURIComponent(await url()));
+check('🔎 DB: `attrs->>condition=in.(Хуучин)` болов (Шинэ хасагдав ✓)',
+  dbQ('attrs->>condition=in.(Хуучин)') && !dbQ('attrs->>condition=in.(Шинэ,Хуучин)'), lastQ());
+listingReqs.length = 0;
+const condCleared = await evalJs(`(() => {
+  const b = [...document.querySelectorAll('#advanced-filters button')]
+    .find((x) => (x.textContent || '').trim() === '✕ Цуцлах');
+  if (!b) return 'NO_BTN';
+  b.click();
+  return 'OK';
+})()`);
+check('✅ ✅-төлөвийн «✕ Цуцлах» товч дарлаа', condCleared === 'OK', condCleared);
+await waitFor(`!/attr_condition/.test(location.search)`);
+await sleep(1200);
+check('🔗 URL-аас `attr_condition` БҮРЭН АРИЛАВ (цэвэр линк ✓)',
+  !/attr_condition/.test(decodeURIComponent(await url())), (await url()) || '(хоосон)');
+check('🔎 DB: `attrs->>condition` ОГТ ЯВАХГҮЙ (шүүлт хийгдэхгүй ✓)',
+  !dbQ('attrs->>condition'), lastQ());
+const condBack = await specUi();
+check('✅ `aria-pressed` бүгд false ба badge АРИЛАВ (төлөв цэвэр ✓)',
+  condBack.chipBlocks[0].pressed.length === 0 && condBack.multiBadges.length === 0,
+  JSON.stringify(condBack.chipBlocks));
+
+// ---- ⑨d 🔗 ХУУЧИН/гараар бичсэн линк: 1 ба 2 утга хоёулаа зөв уншигдана ----
+listingReqs.length = 0;
+await go(`${BASE}/?section=furniture&type=${encodeURIComponent('Буйдан, кресло')}&attr_condition=Шинэ,Хуучин`);
+await sleep(1500);
+const condLink2 = await specUi();
+check('🔗 🛋️ Тавилга дээр линкээр орсон 2 төлөв чип дээр ТЭМДЭГЛЭГДЭВ ✓',
+  [...condLink2.chipBlocks[0].pressed].sort().join(',') === ['Шинэ', 'Хуучин'].sort().join(','),
+  `pressed=[${condLink2.chipBlocks[0].pressed.join(', ')}]`);
+check('🔎 DB: линкээс `attrs->>condition=in.(Шинэ,Хуучин)` (URL ХАСАГДАХГҮЙ ✓)',
+  dbQ('attrs->>condition=in.(Шинэ,Хуучин)'), lastQ());
+await go(`${BASE}/?section=home&attr_condition=Хуучин`);   // ⚠️ ХУУЧИН нэг утгатай линк
+await sleep(1500);
+check('🔗 ХУУЧИН нэг утгатай линк (`?attr_condition=Хуучин`) ч зөв (эвдрэхгүй ✓)',
+  (await specUi()).chipBlocks[0].pressed.join(',') === 'Хуучин');
+check('🔎 DB: `attrs->>condition=in.(Хуучин)` (нэг утга ч `in.()` ✓)',
+  dbQ('attrs->>condition=in.(Хуучин)'), lastQ());
 
 
 // ═══════ ⑧ 📱 МОБАЙЛ (390×844) ═══════

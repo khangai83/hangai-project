@@ -75,7 +75,7 @@ export default function TextFilter({
     <div className="relative">
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-gray-400"
+        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-gray-400"
       >
         🔎
       </span>
@@ -100,7 +100,7 @@ export default function TextFilter({
           //    тул blur нь даралтыг дарж чадахгүй ✓ (combobox-той ижил)
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => commit('')}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-1.5 text-[14px] text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-1.5 text-[15px] text-gray-400 hover:bg-gray-100 hover:text-gray-700"
         >
           ✕
         </button>

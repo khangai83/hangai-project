@@ -159,7 +159,7 @@ export default function SearchableSelect({
       <div className="relative">
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-gray-400"
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-gray-400"
         >
           🔎
         </span>
@@ -190,7 +190,7 @@ export default function SearchableSelect({
             type="button"
             aria-label="Арилгах"
             onClick={() => commit('')}
-            className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-[13px] text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-[14px] text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
           >
             ✕
           </button>
@@ -205,7 +205,7 @@ export default function SearchableSelect({
           className="absolute left-0 right-0 z-30 mt-1 max-h-56 overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-card"
         >
           {rows.length === 0 && (
-            <p className="px-3 py-2 text-[13px] text-gray-500">Олдсонгүй — өөр үсгээр бичнэ үү</p>
+            <p className="px-3 py-2 text-[14px] text-gray-500">Олдсонгүй — өөр үсгээр бичнэ үү</p>
           )}
           {rows.map((r, i) => {
             const on = r.value === value;
@@ -218,7 +218,7 @@ export default function SearchableSelect({
                 // ⚠️ `preventDefault` — input-ийн focus алдагдахгүй тул
                 //    `onBlur`-ийн commit нь даралтыг дарж чадахгүй ✓
                 onMouseDown={(e) => { e.preventDefault(); commit(r.value); }}
-                className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-[13px] transition ${
+                className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-[14px] transition ${
                   i === hi
                     ? 'bg-primary-light text-primary-dark'
                     : r.free

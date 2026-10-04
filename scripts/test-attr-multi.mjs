@@ -5,6 +5,21 @@
 // Төлбөрийн нөхцөл шиг олон сонголттой болго» ⇒ 🚗 `auto` хэсгийн sidebar-д
 // 🎨 «Өнгө» нь `<select>` БИШ, ОЛОН СОНГОЛТТОЙ ЧИП болов.
 //
+// 🆕 2026-10-03 (21): мөн дүрмээр ✅ **«Шинэ / Шинэвтэр / Хуучин»** (`condition`)
+//    нь 8 хэсгийн sidebar-д ОЛОН СОНГОЛТТОЙ ЧИП болов (хэрэглэгчийн хүсэлт:
+//    «хайлт дээр Шинэ / Шинэвтэр / Хуучин ийг бас 💳 Төлбөрийн нөхцөл шиг олон
+//    сонголт хийх боломжтой болго») ⇒ `?attr_condition=Шинэ,Хуучин` ба DB
+//    `attrs->>condition=in.(Шинэ,Хуучин)`. ⚠️ ХӨДӨЛГӨХ КОД БАЙХГҮЙ — модуль нь
+//    attr-ийн түлхүүрээс ХАМААРАХГҮЙ (зөвхөн либын ТУГ нэмэгдэв ✓)
+//
+// 🆕 2026-10-03 (22): мөн дүрмээр 🚗 авто-ийн ⚙️ **«Хурдны хайрцаг»**
+//    (`transmission`) ба ⛽ **«Түлш»** (`fuel`) нь sidebar-д ОЛОН СОНГОЛТТОЙ
+//    ЧИП болов (хэрэглэгчийн хүсэлт: «мөн автомашин хайлт дээр бас ⚙️ Хурдны
+//    хайрцаг -ийг 💳 Төлбөрийн нөхцөл шиг болго. бас ⛽ Түлш ийг») ⇒
+//    `?attr_transmission=Автомат,Механик` · `?attr_fuel=Хайбрид,Цахилгаан`
+//    ба DB `attrs->>transmission=in.(…)` / `attrs->>fuel=in.(…)`.
+//    ⚠️ ХӨДӨЛГӨХ КОД БАЙХГҮЙ — модуль нь attr-ийн түлхүүрээс ХАМААРАХГҮЙ ✓
+//
 // ХАМРАХ ХҮРЭЭ (4 давхарга — бүгд НЭГ эх сурвалж `lib/attrMultiFilter.mjs`):
 //   ① `lib/attrMultiFilter.mjs` — цэвэр логик (normalize → parse → toggle →
 //      шошго → URL → `in.()` мөр)
@@ -30,7 +45,7 @@ import {
   toggleAttrValue, attrListUrlValue, attrListFilterLabel,
   attrMultiFilterDescriptor, applyAttrMultiFilter,
 } from '../lib/attrMultiFilter.mjs';
-import { getAttrField, getAttrFilters, getAttrFields, SECTIONS } from '../lib/locationData.js';
+import { getAttrField, getAttrFilters, getAttrFields, pruneGatedAttrs, SECTIONS } from '../lib/locationData.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(here, '..');
@@ -210,16 +225,106 @@ t("🎨 auto → color: `chips` + `multi` + `multiNoun` тугтай, `type: 'se
   assert.equal(getAttrFields('auto').find((x) => x.key === 'color'), f);
 });
 
-t("🔒 БУСАД хэсэг/талбар ХӨНДӨГДӨӨГҮЙ — зөвхөн 🚗 auto/color нь олон сонголттой", () => {
+t("🔒 Олон сонголттой талбарууд нь ЯГ ТОДОРХОЙ жагсаалт (🚗 auto: color·transmission·fuel + ✅ 8 хэсгийн condition)", () => {
   const multiKeys = [];
   SECTIONS.forEach((s) => {
     getAttrFields(s.value).forEach((f) => {
       if (f.multi) multiKeys.push(`${s.value}.${f.key}`);
       // ⚠️ `multi` нь ЗААВАЛ `chips`-тай хамт (UI болон утгын төрөл зөрөхгүй ✓)
       if (f.multi) assert.equal(f.chips, true, `${s.value}.${f.key} — multi ч chips БИЙ ✗`);
+      // ⚠️ Олон сонголттой талбар нь ЗААВАЛ sidebar-ийн шүүлтэд Ч байх ЁСТОЙ
+      //    (эс бөгөөс чипийн UI нь ХЭЗЭЭ Ч харагдахгүй «үхсэн туг» болно ✗)
+      if (f.multi) assert.ok((s.attrFilters || []).includes(f.key),
+        `${s.value}.${f.key} — multi ч attrFilters-д БАЙХГҮЙ ✗`);
     });
   });
-  assert.deepEqual(multiKeys, ['auto.color'], `multi талбарууд: ${multiKeys.join(', ')}`);
+  assert.deepEqual(multiKeys, [
+    // 🚗 авто: 3 чип (🎨 өнгө · ⚙️ хайрцаг (22) · ⛽ түлш (22))
+    'auto.color', 'auto.transmission', 'auto.fuel',
+    // ✅ 8 хэсгийн «Шинэ / Шинэвтэр / Хуучин» (21)
+    'computers.condition', 'furniture.condition', 'home.condition', 'electric.condition',
+    'construction.condition', 'equipment.condition', 'travel.condition', 'hobby.condition',
+  ], `multi талбарууд: ${multiKeys.join(', ')}`);
+});
+
+// ---------- ⑧в 🆕 2026-10-03 (22): 🔀 ⛽ «Хурдны хайрцаг» + «Түлш» ----------
+t("🔀⛽ (22) transmission & fuel: `chips` + `multi` + `multiNoun`, форм `<select>` хэвээр", () => {
+  const cases = [
+    ['transmission', 'Хурдны хайрцаг', '⚙️', ['Автомат', 'Механик'], 'хайрцаг'],
+    ['fuel', 'Түлш', '⛽', ['Бензин', 'Дизель', 'Хайбрид', 'Цахилгаан', 'Хий', 'Бусад'], 'түлш'],
+  ];
+  cases.forEach(([key, label, icon, options, noun]) => {
+    const f = getAttrField('auto', key);
+    assert.equal(f.type, 'select');     // ⚠️ форм нь `<select>` хэвээр ✓
+    assert.equal(f.chips, true, `${key}: sidebar чип болоогүй ✗`);
+    assert.equal(f.multi, true, `${key}: олон сонголт болоогүй ✗`);
+    assert.equal(f.multiNoun, noun, `${key}: «N ${noun}» шошго ✗`);
+    assert.equal(f.label, label, `${key}: шошго`);
+    assert.equal(f.icon, icon, `${key}: icon`);
+    assert.deepEqual(f.options, options, `${key}: сонголт`);
+    // ⛔ Форм дээр чип БОЛОХГҮЙ — `formChips` туг ЗОРИУДАА БАЙХГҮЙ ✓
+    assert.ok(!f.formChips, `${key}: форм дээр чип болжээ ✗ (зөвхөн хайлт ✓)`);
+    // ⚠️ Шүүлт (sidebar) нь ЯГ ТЭР объект (нэг эх сурвалж ✓)
+    assert.equal(getAttrFilters('auto').find((x) => x.key === key), f);
+  });
+});
+
+t("🎯 applyAttrMultiFilter: transmission/fuel ч ижил дүрэм (`in.()` · скаляр ХЭВЭЭР ✓)", () => {
+  // ⚠️ `->>` (текст) — `attrs.transmission`/`attrs.fuel` нь СКАЛЯР ТЕКСТ ✓
+  assert.deepEqual(callsFor('fuel', ['Хайбрид', 'Бензин']),
+    [['in', 'attrs->>fuel', ['Хайбрид', 'Бензин']]]);
+  // ⚠️ ХУУЧИН нэг утгатай линк (`?attr_fuel=Хайбрид`) ч ижил зам (нэг элемент ✓)
+  assert.deepEqual(callsFor('fuel', 'Хайбрид'), [['in', 'attrs->>fuel', ['Хайбрид']]]);
+  assert.deepEqual(callsFor('transmission', ['Автомат', 'Механик']),
+    [['in', 'attrs->>transmission', ['Автомат', 'Механик']]]);
+  assert.deepEqual(callsFor('transmission', []), []);
+});
+
+// ---------- ⑧б 🆕 2026-10-03 (21): ✅ «Шинэ / Шинэвтэр / Хуучин» ----------
+t("✅ condition (8 хэсэг): `chips` + `multi` + `multiNoun: 'төлөв'`, форм `<select>` хэвээр", () => {
+  const sections = SECTIONS.filter((s) => s.attrFields.some((f) => f.key === 'condition'));
+  assert.deepEqual(sections.map((s) => s.value), [
+    'computers', 'furniture', 'home', 'electric', 'construction', 'equipment', 'travel', 'hobby',
+  ], `condition талбартай хэсгүүд: ${sections.map((s) => s.value).join(', ')}`);
+  sections.forEach((s) => {
+    const f = getAttrField(s.value, 'condition');
+    assert.equal(f.type, 'select');           // ⚠️ форм нь `<select>` хэвээр ✓
+    assert.equal(f.chips, true, `${s.value}: sidebar чип болоогүй ✗`);
+    assert.equal(f.multi, true, `${s.value}: олон сонголт болоогүй ✗`);
+    assert.equal(f.multiNoun, 'төлөв', `${s.value}: «N төлөв» шошго ✗`);
+    assert.equal(f.label, 'Шинэ / Шинэвтэр / Хуучин');
+    assert.equal(f.icon, '✅');
+    assert.deepEqual(f.options, ['Шинэ', 'Шинэвтэр', 'Хуучин']);
+    // ⛔ Форм дээр чип БОЛОХГҮЙ — `formChips` туг ЗОРИУДАА БАЙХГҮЙ ✓
+    assert.ok(!f.formChips, `${s.value}: форм дээр чип болжээ ✗ (зөвхөн хайлт ✓)`);
+    // ⚠️ Шүүлт (sidebar) нь ЯГ ТЭР объект (нэг эх сурвалж ✓)
+    assert.equal(getAttrFilters(s.value).find((x) => x.key === 'condition'), f);
+    // ⚠️ Дэд төрөл дамжуулахад ч ХАСАГДАХГҮЙ (`onlySubtypes`/`filterSubtypes` БАЙХГҮЙ ✓)
+    assert.ok(getAttrFilters(s.value, 'ямар ч дэд төрөл').some((x) => x.key === 'condition'),
+      `${s.value}: дэд төрөл дээр condition хасагдсан ✗`);
+  });
+});
+
+t("🎯 applyAttrMultiFilter: condition ч ижил дүрэм (`attrs->>condition=in.(…)`)", () => {
+  // ⚠️ `->>` (текст) — `attrs.condition` нь СКАЛЯР (`payment_terms` шиг массив БИШ ✓)
+  assert.deepEqual(callsFor('condition', ['Шинэ', 'Хуучин']),
+    [['in', 'attrs->>condition', ['Шинэ', 'Хуучин']]]);
+  // ⚠️ ХУУЧИН нэг утгатай линк (`?attr_condition=Шинэ`) ч ижил зам (нэг элемент ✓)
+  assert.deepEqual(callsFor('condition', 'Шинэ'), [['in', 'attrs->>condition', ['Шинэ']]]);
+  assert.deepEqual(callsFor('condition', []), []);
+  assert.deepEqual(callsFor('condition', ['Шинэ', 'Шинэ']), [['in', 'attrs->>condition', ['Шинэ']]]);
+});
+
+t('🧹 pruneGatedAttrs: condition (бүх дэд төрөлд харагдана) ХЭЗЭЭ Ч хасагдахгүй', () => {
+  const attrs = { condition: ['Шинэ', 'Хуучин'], cpu: ['Intel Core i5'] };
+  // Mouse-д 📺/⚙️/🧠/💾 хасагдана — ✅ condition МАССИВ ч ХЭВЭЭР ✓
+  const out = pruneGatedAttrs('computers', 'Mouse', attrs);
+  assert.deepEqual(Object.keys(out), ['condition']);
+  assert.deepEqual(out.condition, ['Шинэ', 'Хуучин']);
+  // ⚠️ Хасах зүйл БАЙХГҮЙ бол ИЖИЛ объектаа буцаана (шинэ объект үүсгэхгүй ✓)
+  assert.equal(pruneGatedAttrs('home', 'Буйдан, кресло', attrs), attrs);
+  // ⚠️ Дэд төрөл СОНГООГҮЙ үед ч (ж: `?section=computers`) condition ҮЛДЭНЭ ✓
+  assert.deepEqual(pruneGatedAttrs('computers', '', attrs), { condition: ['Шинэ', 'Хуучин'] });
 });
 
 t("🚗 `getAttrFilters('auto')` — 7 шүүлт, дараалал ХЭВЭЭР (color нь 3 дахь ✓)", () => {

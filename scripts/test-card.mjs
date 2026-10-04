@@ -78,7 +78,10 @@ t('🏷️ Гарчиг нь 2 МӨР (`line-clamp-2`) — `listingTitle` (0027)
 });
 
 t('📝 Тайлбар нь 2 мөр (`line-clamp-2`) — `listing.description`', () => {
-  assert.match(CARD_CODE, /line-clamp-2 text-\[13px\] leading-relaxed/, 'тайлбар 2 мөр биш ✗');
+  // 🆕 2026-10-04 (24): «Хайлт + Зар НЭГДМЭЛ» — тайлбар/мета нь 13 → **14px**
+  //    болов (хэрэглэгчийн хүсэлт: «Одоо байгаа font ийг бага зэрэг томруул»).
+  //    ⚠️ Үнэ (`text-[22px]`) ба гарчиг (`text-[15px]`) ХӨНДӨӨГДӨӨГҮЙ ✓
+  assert.match(CARD_CODE, /line-clamp-2 text-\[14px\] leading-relaxed/, 'тайлбар 2 мөр биш ✗');
   assert.match(CARD_CODE, /listing\.description/, '`listing.description` уншихгүй ✗');
 });
 

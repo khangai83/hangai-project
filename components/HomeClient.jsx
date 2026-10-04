@@ -12,7 +12,7 @@ import {
 import { normalizeError } from '../lib/errors';
 import {
   CITIES, getDistricts, getKhoroosForDistricts, ROOM_OPTIONS,
-  hasRoomsFields, SECTIONS, getSection, getSubtypes, getSectionCategories,
+  hasRoomsFields, SECTIONS, getSection, getSubtypes, getSectionCategoryChoices,
   hasCategoryChoice, getAttrFilters, pruneGatedAttrs, getAttrField, formatAttrsLine,
   parseAttrRangeKey, getAttrRangeKeys,   // 📅 оны хүрээ (2026-09-28)
   priceWord,   // 💼 ажил → «Цалин», бусад → «Үнэ» (2026-10-03 (9))
@@ -76,13 +76,16 @@ import {
   PAYMENT_OPTIONS, countPayments, hasPaymentTerms, parsePaymentList,
   paymentsFilterLabel, paymentsUrlValue, togglePaymentValue,
 } from '../lib/paymentFilter.mjs';
-// 🎨 ОЛОН СОНГОЛТТОЙ ATTR ШҮҮЛТ (2026-10-03 (19)) — хэрэглэгчийн хүсэлт:
-//   «Зар хайлт дээр Авто машин сонголт дээр Өнгө ийг Төлбөрийн нөхцөл шиг
-//   олон сонголттой болго» ⇒ 🎨 «Өнгө» (`lib/locationData.js` →
+// 🎨⚙️⛽ ОЛОН СОНГОЛТТОЙ ATTR ШҮҮЛТ (2026-10-03 (19), 🆕 (22)) — хэрэглэгчийн
+//   хүсэлт: «Зар хайлт дээр Авто машин сонголт дээр Өнгө ийг Төлбөрийн нөхцөл
+//   шиг олон сонголттой болго» + «мөн автомашин хайлт дээр бас ⚙️ Хурдны
+//   хайрцаг -ийг 💳 Төлбөрийн нөхцөл шиг болго. бас ⛽ Түлш ийг» ⇒ 🎨 «Өнгө»,
+//   ⚙️ «Хурдны хайрцаг», ⛽ «Түлш» (`lib/locationData.js` →
 //   `{ chips: true, multi: true }`) нь sidebar-д ОЛОН сонголттой ЧИП болов.
-//   ⚠️ Утга нь `filters.attrs.color` дотор МАССИВ (`['Хар','Цагаан']`) —
-//      URL нь хэвээр `?attr_color=Хар,Цагаан` (хуучин линк ч ажиллана ✓),
-//      DB нь `attrs->>color=in.(…)` (`lib/queries.js → applyAttrMultiFilter`) ✓
+//   ⚠️ Утга нь `filters.attrs.<key>` дотор МАССИВ (`['Хар','Цагаан']` ·
+//      `['Автомат','Механик']` · `['Хайбрид','Цахилгаан']`) — URL нь хэвээр
+//      `?attr_color=Хар,Цагаан` (хуучин нэг утгатай линк ч ажиллана ✓),
+//      DB нь `attrs->>key=in.(…)` (`lib/queries.js → applyAttrMultiFilter`) ✓
 import {
   parseAttrList, attrListUrlValue, attrListFilterLabel, toggleAttrValue, countAttrValues,
 } from '../lib/attrMultiFilter.mjs';
@@ -214,11 +217,26 @@ function GroupHeading({ label, collapsible = false, open = false, onToggle }) {
 /**
  * Sidebar-ийн НЭГ БЛОК — unegui.mn загвараар: дээрээ БОЛД гарчиг,
  * доор нь оролтууд. Блокууд нь `divide-y`-ээр тусгаарлагдана.
+ *
+ * 🆕 2026-10-04 (24): гарчиг нь `text-[13px]` → `text-[15px]` болов — зарын
+ *    картын гарчигтай (`ListingCard` → `text-[15px]`) ИЖИЛ хэмжээ
+ *    (хэрэглэгчийн хүсэлт: «Хайлтын хэсэг зарын хэсгээсээ тусдаа
+ *    харагдахгүй нэгдмэл харагдаж байна. Үүн шиг болгох хэрэгтэй») ✓
+ *
+ * 🆕 2026-10-04 (25): гарчиг нь `text-[15px] text-gray-800` →
+ *    **`text-[16px] text-gray-900`** болж, блок хоорондын зай `py-3.5` →
+ *    `py-4` — unegui.mn-ийн хайлтын панелийн ЖИШИГ зурагтай нийцүүлэв
+ *    (хэрэглэгчийн хүсэлт: «харагдац нь ийм байвал зүгээр юм… ийм болгоё»).
+ *    ⚠️ Талбарын текст нь `.form-*` 15px ХЭВЭЭР — зөвхөн ГАРЧИГ нь
+ *       илүү том/хар болж, жишгийн ЯЛГАРАХ шатлал (гарчиг > талбар)
+ *       бий болно ✓
+ *    ⚠️ Зарын картын үнэ/гарчиг (`text-[22px]`/`text-[15px]`) ХӨНДӨГДӨӨГҮЙ
+ *       (`scripts/test-card.mjs` түгжсэн гэрээ ✓)
  */
 function SideBlock({ label, children }) {
   return (
-    <div className="py-3.5">
-      <span className="mb-2 block text-[13px] font-bold text-gray-800">{label}</span>
+    <div className="py-4">
+      <span className="mb-2 block text-[16px] font-bold text-gray-900">{label}</span>
       <div className="flex flex-col gap-2">{children}</div>
     </div>
   );
@@ -275,7 +293,7 @@ function Pagination({ page, pageCount, total, hasMore, onChange }) {
         >
           ← Өмнөх
         </button>
-        <span className="px-1 text-[13px] font-semibold text-gray-700">
+        <span className="px-1 text-[14px] font-semibold text-gray-700">
           {page}
           {known ? ` / ${pageCount}` : ''}
         </span>
@@ -330,7 +348,7 @@ function Pagination({ page, pageCount, total, hasMore, onChange }) {
 
       {/* ---- ℹ️ Мэдээлэл: «1–50 / нийт 690» ---- */}
       {known && (
-        <p className="text-[12.5px] text-gray-500">
+        <p className="text-[13.5px] text-gray-500">
           {(page - 1) * LISTINGS_PAGE_SIZE + 1}–
           {Math.min(total, page * LISTINGS_PAGE_SIZE)} / нийт {total}
         </p>
@@ -456,9 +474,12 @@ export default function HomeClient() {
     //    (`?section=jobs&payment=lease`) ирвэл ЧИМЭЭГҮЙ орхигдуулна ✓
     if (!hasPaymentTerms(secParam)) next.payments = [];
     // ---- ATTR шүүлтүүд — `?attr_brand=Toyota&attr_fuel=Хайбрид` ----
-    // 🎨 ОЛОН СОНГОЛТТОЙ ATTR (2026-10-03 (19)): `multi: true` талбар (ж: 🎨
-    //    «Өнгө») нь МАССИВ болж уншигдана (`?attr_color=Хар,Цагаан`) —
-    //    ⚠️ ХУУЧИН нэг утгатай линк (`?attr_color=Хар`) ч зөв (нэг элементтэй
+    // 🎨⚙️⛽ ОЛОН СОНГОЛТТОЙ ATTR (2026-10-03 (19), ✅ (21), ⚙️⛽ (22)):
+    //    `multi: true` талбар (ж: 🎨 «Өнгө», ⚙️ «Хурдны хайрцаг», ⛽ «Түлш»,
+    //    ✅ «Шинэ / Шинэвтэр / Хуучин») нь МАССИВ болж уншигдана
+    //    (`?attr_color=Хар,Цагаан` · `?attr_fuel=Хайбрид,Цахилгаан` ·
+    //    `?attr_condition=Шинэ,Хуучин`) —
+    //    ⚠️ ХУУЧИН нэг утгатай линк (`?attr_fuel=Хайбрид`) ч зөв (нэг элементтэй
     //    массив ✓). Бусад attr нь ХЭВЭЭР скаляр текст ✓
     //    ⚠️ ДАВТАГДСАН параметр (`?attr_color=Хар&attr_color=Цагаан`) ч
     //    нэгтгэгдэнэ (`getAll`) — гараар/гадаад хэрэгслээр үүссэн линк эвдрэхгүй ✓
@@ -621,9 +642,10 @@ export default function HomeClient() {
     //       линк богино, хуваалцахад ойлгомжтой ✓
     if (filters.payments.length) params.set('payment', paymentsUrlValue(filters.payments));
     // ⚠️ ATTR шүүлтүүд — `attr_brand=Toyota` (jsonb)
-    // 🎨 ОЛОН СОНГОЛТТОЙ ATTR (2026-10-03 (19)) — утга нь МАССИВ бол
-    //    таслалаар нэгтгэнэ (`?attr_color=Хар,Цагаан`) — ⚠️ параметрийн НЭР
-    //    нь хуучин нэг утгатайтай ИЖИЛ тул хуучин линк/breadcrumb эвдрэхгүй ✓
+    // 🎨⚙️⛽ ОЛОН СОНГОЛТТОЙ ATTR (2026-10-03 (19), ✅ (21), ⚙️⛽ (22)) — утга
+    //    нь МАССИВ бол таслалаар нэгтгэнэ (`?attr_color=Хар,Цагаан` ·
+    //    `?attr_fuel=Хайбрид,Цахилгаан`) — ⚠️ параметрийн НЭР нь хуучин нэг
+    //    утгатайтай ИЖИЛ тул хуучин линк/breadcrumb эвдрэхгүй ✓
     //    ⚠️ Хоосон массив (`[]`) үед БИЧИХГҮЙ (цэвэр линк ✓)
     Object.entries(filters.attrs || {}).forEach(([k, v]) => {
       if (Array.isArray(v)) {
@@ -856,11 +878,19 @@ export default function HomeClient() {
   };
 
   /**
-   * 🎨 ОЛОН СОНГОЛТТОЙ ATTR — нэг дарж нэмэх/хасах (checkbox мэт, 2026-10-03 (19)).
+   * 🎨⚙️⛽ ОЛОН СОНГОЛТТОЙ ATTR — нэг дарж нэмэх/хасах (checkbox мэт,
+   * 2026-10-03 (19); ✅ «Шинэ / Шинэвтэр / Хуучин» — (21); ⚙️ «Хурдны хайрцаг»
+   * ба ⛽ «Түлш» — (22)).
    *
    * Хэрэглэгчийн хүсэлт: «Зар хайлт дээр Авто машин сонголт дээр Өнгө ийг
-   * Төлбөрийн нөхцөл шиг олон сонголттой болго» → [Хар] [Цагаан] дарж
-   * `?attr_color=Хар,Цагаан` болно (OR — аль нэг өнгөтэй зарууд ✓).
+   * Төлбөрийн нөхцөл шиг олон сонголттой болго» ба «хайлт дээр Шинэ / Шинэвтэр /
+   * Хуучин ийг бас 💳 Төлбөрийн нөхцөл шиг олон сонголт хийх боломжтой болго»
+   * ба «мөн автомашин хайлт дээр бас ⚙️ Хурдны хайрцаг -ийг 💳 Төлбөрийн нөхцөл
+   * шиг болго. бас ⛽ Түлш ийг»
+   * → [Хар] [Цагаан] дарж `?attr_color=Хар,Цагаан` (OR — аль нэг өнгөтэй зар ✓),
+   * [Шинэ] [Хуучин] дарж `?attr_condition=Шинэ,Хуучин` (OR — аль нэг төлөвтэй зар ✓),
+   * [Автомат] [Механик] дарж `?attr_transmission=Автомат,Механик` (OR ✓),
+   * [Хайбрид] [Цахилгаан] дарж `?attr_fuel=Хайбрид,Цахилгаан` (OR ✓).
    * ⚠️ Дүрэм нь `lib/attrMultiFilter.mjs → toggleAttrValue()` (нэг эх сурвалж):
    *    шинэ массив буцаана, хүчингүй утгыг алгасна, давхцуулахгүй ✓
    * ⚠️ Утга нь `attrs` дотроо хадгалагдах тул `cascadeAttrs` ч дуудагдана
@@ -1112,7 +1142,13 @@ export default function HomeClient() {
         : null,
     [groupOpen, subtypeGroups]
   );
-  const sectionCategories = useMemo(() => getSectionCategories(section), [section]);
+  /**
+   * 🖥📱 2026-10-04: ХЭСГИЙН ПАНЕЛИЙН «Зарах / Түрээслэх» сонголт — БҮТЭН
+   *    шошготой («Үл хөдлөх зарна» / «Үл хөдлөх түрээслүүлнэ») ба «Бүгд» нь
+   *    ХАМГИЙН СҮҮЛД. ⚠️ Шошго/дараалал нь `lib/locationData.js →
+   *    getSectionCategoryChoices` (нэг эх сурвалж) — хатуу бичсэн нэр БАЙХГҮЙ ✓
+   */
+  const categoryChoices = useMemo(() => getSectionCategoryChoices(section), [section]);
   /**
    * 🖥 2026-10-03 (7): `attrFilters` нь ДЭД ТӨРЛӨӨС хамаарна — 💻 Notebook-ийн
    *    📺 Дэлгэц · ⚙️ CPU · 🧠 RAM · 💾 Хард шүүлтүүд нь зөвхөн Notebook-ийн
@@ -1191,8 +1227,9 @@ export default function HomeClient() {
       if (r && rangeBases.has(r.base)) return;
       const field = getAttrField(section, k);
       const icon = (field && field.icon) || '🔎';
-      // 🎨 ОЛОН СОНГОЛТТОЙ ATTR (2026-10-03 (19)) — утга нь МАССИВ бол
-      //    утгуудыг ТОВЧЛОНО (1 сонголт → нэрээр, 2+ → «3 өнгө») — эс бөгөөс
+      // 🎨 ОЛОН СОНГОЛТТОЙ ATTR (2026-10-03 (19); ✅ «Шинэ / Шинэвтэр / Хуучин»
+      //    ч мөн адил — (21)) — утга нь МАССИВ бол
+      //    утгуудыг ТОВЧЛОНО (1 сонголт → нэрээр, 2+ → «3 өнгө» / «2 төлөв») — эс бөгөөс
       //    «🎨 Цагаан, Сувдан цагаан, Хар, Саарал» гэсэн чип хэт урт болно ✗
       //    (шошго нь `lib/attrMultiFilter.mjs` — нэг эх сурвалж ✓)
       if (Array.isArray(v)) {
@@ -1385,7 +1422,7 @@ export default function HomeClient() {
             data-hero-section
             value={section}
             onChange={(e) => changeHeroSection(e.target.value)}
-            className="hidden shrink-0 border-none bg-transparent py-3.5 pl-4 pr-2 text-[13px] font-semibold text-gray-700 outline-none sm:block"
+            className="hidden shrink-0 border-none bg-transparent py-3.5 pl-4 pr-2 text-[14px] font-semibold text-gray-700 outline-none sm:block"
           >
             <option value="all">🔎 Бүх хэсэг</option>
             {SECTIONS.map((s) => (
@@ -1404,11 +1441,11 @@ export default function HomeClient() {
             placeholder="Хайх..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="min-w-0 flex-1 border-none px-4 py-3.5 text-sm text-gray-900 outline-none placeholder:text-gray-400"
+            className="min-w-0 flex-1 border-none px-4 py-3.5 text-[15px] text-gray-900 outline-none placeholder:text-gray-400"
           />
           <button
             type="submit"
-            className="shrink-0 bg-gradient-to-b from-[#4B8EF8] via-[#3B82F6] to-[#1D4ED8] px-6 text-sm font-bold text-white transition-all duration-150 ease-out hover:from-[#3B82F6] hover:to-[#1E3FAE]"
+            className="shrink-0 bg-gradient-to-b from-[#4B8EF8] via-[#3B82F6] to-[#1D4ED8] px-6 text-[15px] font-bold text-white transition-all duration-150 ease-out hover:from-[#3B82F6] hover:to-[#1E3FAE]"
           >
             🔍 Хайх
           </button>
@@ -1514,15 +1551,16 @@ export default function HomeClient() {
                    ⚠️ ТОВЧНЫ ҮЙЛДЭЛ ХЭВЭЭР (`setSectionOpen(false)`) — дарвал панель
                      хаагдаж 7 ХЭСГИЙН tile дэлгэц гарна ✓ (хэрэглэгчийн сонголт:
                      «одоогийн ажиллагаа хэвээр, зөвхөн текст солигдоно»)
-                🔤 ФОНТ (2026-09-27, хэрэглэгчийн хүсэлт: «фонтыг жаахан нэм»):
-                   толгойн товч `text-[13px]` → **`text-[14px] sm:text-[15px]`**
-                   (⚠️ мобайлд 15px нь урт мөрийг 2 болгож байв ✗ → мобайл 14px ✓);
-                   тоолуур `text-[12px]` → `text-[13px]`
+                🔤 ФОНТ (2026-09-27, хэрэглэгчийн хүсэлт: «фонтыг жаахан нэм»;
+                   🆕 2026-10-04 (24): «Хайлт ба Зар НЭГДМЭЛ харагдац» — +1px):
+                   толгойн товч `text-[13px]` → **`text-[15px] sm:text-[16px]`**
+                   (⚠️ мобайлд урт мөр 2 болж болзошгүй тул `flex-wrap` хэвээр ✓);
+                   тоолуур `text-[12px]` → **`text-[14px]`**
                    ℹ️ Шинэ текст БОГИНО (хашилт ба «категорийн бүх зарууд» арилсан,
                    тоо хэвээр) тул 390px дээр ч 1 мөрөнд багтана ✓
                 🎨 КОНТРАСТ (панелийн дэвсгэр `bg-gray-100` #F4F1EA — CDP-ээр
                    бодит хэмжилт): толгой `text-primary` #2563eb → **4.58:1 ✅ AA**
-                   (15px bold нь «том текст» (≥18.66px bold) БИШ тул 4.5:1
+                   (15–16px bold нь «том текст» (≥18.66px bold) БИШ тул 4.5:1
                    шаардлага хүчинтэй — 4.58 нь АРАЙ л багтаж байна ⚠️);
                    тоолуур `text-gray-600` #5D5747 → **6.38:1 ✅ AA**.
                 ⚠️ ХАМТ ЗАССАН алдаа: тоолуур нь `text-gray-500` (#776F5E) байсан
@@ -1532,19 +1570,19 @@ export default function HomeClient() {
                    ХУВААГДАНА (товчны өндөр өснө) ✓ — одоо зөвхөн нэр + тоо тул ийм
                    тохиолдол бараг гарахгүй ✓
                 🔧 ФОНТ/жинг өөрчлөх: доорх `<button>`-ийн класс
-                   (`text-[14px] sm:text-[15px]`); тоо нь түүний доторх `<span>`.
+                   (`text-[15px] sm:text-[16px]`); тоо нь түүний доторх `<span>`.
                 ⚠️ «Бүх зар» гэсэн BREADCRUMB нь ЭНЭ ФАЙЛД БИШ — `components/
-                   Breadcrumb.jsx` (мөр 32, `text-[14px]`) ✓ */}
+                   Breadcrumb.jsx` (мөр 32, `text-[15px]`) ✓ */}
             <div className="mb-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
               <button
                 type="button"
                 onClick={() => setSectionOpen(false)}
                 title="Энэ хэсгийн БҮХ зарыг харах"
-                className="flex items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[14px] font-bold text-primary transition hover:bg-white sm:text-[15px]"
+                className="flex items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[15px] font-bold text-primary transition hover:bg-white sm:text-[16px]"
               >
                 {sec.label}
                 {sectionTotal > 0 && (
-                  <span className="text-[13px] font-normal text-gray-600">{formatCount(sectionTotal)}</span>
+                  <span className="text-[14px] font-normal text-gray-600">{formatCount(sectionTotal)}</span>
                 )}
               </button>
             </div>
@@ -1552,23 +1590,39 @@ export default function HomeClient() {
             {/* ---------- SEPARATOR ---------- */}
             <div className="mb-1.5 h-px w-full bg-gray-200" />
 
-            {/* ---------- КАТЕГОРИ (зөвхөн үл хөдлөх) ---------- */}
-            {showCategories && (
-              <div className="mb-2 flex flex-wrap items-center justify-center gap-1.5">
-                {sectionCategories.map((c) => (
-                  <button
-                    key={c.value}
-                    type="button"
-                    onClick={() => setCategory(c.value)}
-                    className={`rounded-md px-3 py-1 text-[12px] font-semibold transition ${
-                      category === c.value
-                        ? 'bg-primary text-white'
-                        : 'text-gray-600 hover:bg-white hover:text-primary'
-                    }`}
-                  >
-                    {c.label}
-                  </button>
-                ))}
+            {/* ---------- КАТЕГОРИ (зөвхөн үл хөдлөх) ----------
+                🆕 2026-10-04 (хэрэглэгчийн хүсэлт): «Үл хөдлөх зарна» /
+                   «Үл хөдлөх түрээслүүлнэ» — БҮТЭН шошготой `segmented`
+                   контроль (unegui.mn-ийн мобайл «Зарна / Түрээслүүлнэ» хэв).
+                   ⚠️ «Бүгд» нь ХАМГИЙН СҮҮЛД (3 дахь сонголт) — хэрэглэгчийн
+                   сонголт («Бүгд»-ийг хасахгүй).
+                📱 <640px: БОГИНО шошго («Зарна»/«Түрээслүүлнэ»/«Бүгд»);
+                   🖥 ≥640px: БҮТЭН шошго — эс бөгөөс 390px дээр 3 урт
+                   шошго нэг мөрөнд багтахгүй гүйлгэнэ ✗
+                ⚠️ Шошго/дараалал нь `lib/locationData.js →
+                   getSectionCategoryChoices` (нэг эх сурвалж) — хатуу
+                   бичсэн нэр БАЙХГҮЙ ✓
+                ⚠️ `data-category-value` нь CDP тестийн тогтвортой дэгээ ✓ */}
+            {showCategories && categoryChoices.length > 0 && (
+              <div className="mb-2 flex justify-center">
+                <div className="segmented" role="group" aria-label="Зарах эсвэл түрээслэх">
+                  {categoryChoices.map((c) => {
+                    const active = category === c.value;
+                    return (
+                      <button
+                        key={c.value}
+                        type="button"
+                        aria-pressed={active}
+                        data-category-value={c.value}
+                        onClick={() => setCategory(c.value)}
+                        className={`segmented-item ${active ? 'segmented-item-active' : ''}`}
+                      >
+                        <span className="hidden sm:inline">{c.label}</span>
+                        <span className="sm:hidden">{c.shortLabel}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -1892,7 +1946,7 @@ export default function HomeClient() {
                   </span>
                   Дэлгэрэнгүй хайлт
                   {activeFilterCount > 0 && (
-                    <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-bold text-white">
+                    <span className="rounded-full bg-primary px-2 py-0.5 text-[12px] font-bold text-white">
                       {activeFilterCount}
                     </span>
                   )}
@@ -1946,10 +2000,10 @@ export default function HomeClient() {
                       {/* 🏷️ 2026-10-03 (14): хэрэглэгчийн хүсэлт — блокийн шошго
                           «Дүүрэг / Сум» БИШ, зөвхөн «Дүүрэг» ✓ (⚠️ утгууд нь
                           аймаг дээр сум хэвээр байж болно — зөвхөн НЭР солигдов) */}
-                      <span className="text-[12px] font-semibold text-gray-500">
+                      <span className="text-[14px] font-semibold text-gray-700">
                         Дүүрэг
                         {filters.districts.length > 0 && (
-                          <span className="ml-1.5 rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
+                          <span className="ml-1.5 rounded-full bg-primary-light px-1.5 py-px text-[12px] font-bold text-primary">
                             {filters.districts.length} сонгосон
                           </span>
                         )}
@@ -1983,7 +2037,7 @@ export default function HomeClient() {
                         <button
                           type="button"
                           onClick={clearDistricts}
-                          className="self-start text-[12px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                          className="self-start text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
                         >
                           ✕ Цуцлах
                         </button>
@@ -1997,10 +2051,10 @@ export default function HomeClient() {
                       40+ хороо багтах ёстой тул жагсаалт скроллтой. */}
                   {khoroos.length ? (
                     <div className="flex flex-col gap-1.5">
-                      <span className="text-[12px] font-semibold text-gray-500">
+                      <span className="text-[14px] font-semibold text-gray-700">
                         Хороо
                         {filters.khoroos.length > 0 && (
-                          <span className="ml-1.5 rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
+                          <span className="ml-1.5 rounded-full bg-primary-light px-1.5 py-px text-[12px] font-bold text-primary">
                             {filters.khoroos.length} сонгосон
                           </span>
                         )}
@@ -2026,7 +2080,7 @@ export default function HomeClient() {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-[12px] text-gray-500">
+                    <p className="text-[13px] text-gray-500">
                       {filters.city
                         ? '💡 Дүүрэг сонгоход хорооны жагсаалт нээгдэнэ.'
                         : '💡 Эхлээд хот/аймгаа сонгоно уу.'}
@@ -2083,14 +2137,18 @@ export default function HomeClient() {
                   <SideBlock key={f.key} label={`${f.icon ? `${f.icon} ` : ''}${f.label}`}>
                     {f.chips ? (
                       f.multi ? (
-                        /* 🎨 ОЛОН СОНГОЛТТОЙ ЧИП (2026-10-03 (19)) — хэрэглэгчийн
-                           хүсэлт: «Зар хайлт дээр Авто машин сонголт дээр Өнгө
-                           ийг Төлбөрийн нөхцөл шиг олон сонголттой болго».
+                        /* 🎨 ОЛОН СОНГОЛТТОЙ ЧИП (2026-10-03 (19); ✅ «Шинэ /
+                           Шинэвтэр / Хуучин» ч мөн адил — 2026-10-03 (21)) —
+                           хэрэглэгчийн хүсэлт: «Зар хайлт дээр Авто машин сонголт
+                           дээр Өнгө ийг Төлбөрийн нөхцөл шиг олон сонголттой
+                           болго» ба «хайлт дээр Шинэ / Шинэвтэр / Хуучин ийг бас
+                           💳 Төлбөрийн нөхцөл шиг олон сонголт хийх боломжтой болго».
                            ⇒ ХЭВ нь «🛏 Өрөөний тоо» / «💳 Төлбөрийн нөхцөл»-тэй
                            ЯГ ИЖИЛ: «N сонгосон» badge + хүрээтэй хайрцаг дотор
                            `chip-toggle` чипүүд + «✕ Цуцлах» товч ✓
                            ⚠️ Утга нь `attrs[f.key]` дотор МАССИВ (`['Хар',
-                           'Цагаан']`) → URL `?attr_color=Хар,Цагаан`,
+                           'Цагаан']` · `['Шинэ','Хуучин']`) → URL
+                           `?attr_color=Хар,Цагаан` / `?attr_condition=Шинэ,Хуучин`,
                            DB `attrs->>color=in.(…)` (`lib/attrMultiFilter.mjs`) ✓
                            ⚠️ `data-attr-filter` (CDP-ийн дэгээ) нь хайрцаг дээр
                            — `scripts/cdp-notebook-specs.mjs`-ийн `[data-attr-filter]`
@@ -2098,7 +2156,7 @@ export default function HomeClient() {
                            `data-attr-multi="true"` нь олон сонголтыг илтгэнэ ✓ */
                         <>
                           {attrArray(f.key).length > 0 && (
-                            <span className="self-start rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
+                            <span className="self-start rounded-full bg-primary-light px-1.5 py-px text-[12px] font-bold text-primary">
                               {countAttrValues(attrArray(f.key))} сонгосон
                             </span>
                           )}
@@ -2132,7 +2190,7 @@ export default function HomeClient() {
                             <button
                               type="button"
                               onClick={() => clearAttrMulti(f.key)}
-                              className="self-start text-[12px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                              className="self-start text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
                             >
                               ✕ Цуцлах
                             </button>
@@ -2261,7 +2319,7 @@ export default function HomeClient() {
                           хэрэглэгчийн хүсэлтээр хасагдсан) — зөвхөн сонголтын
                           тоог харуулах badge үлдэв ✓ */}
                       {filters.rooms.length > 0 && (
-                        <span className="self-start rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
+                        <span className="self-start rounded-full bg-primary-light px-1.5 py-px text-[12px] font-bold text-primary">
                           {filters.rooms.length} сонгосон
                         </span>
                       )}
@@ -2289,7 +2347,7 @@ export default function HomeClient() {
                         <button
                           type="button"
                           onClick={clearRooms}
-                          className="self-start text-[12px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                          className="self-start text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
                         >
                           ✕ Цуцлах
                         </button>
@@ -2329,7 +2387,7 @@ export default function HomeClient() {
                 {showPayments && (
                   <SideBlock label="💳 Төлбөрийн нөхцөл">
                     {filters.payments.length > 0 && (
-                      <span className="self-start rounded-full bg-primary-light px-1.5 py-px text-[11px] font-bold text-primary">
+                      <span className="self-start rounded-full bg-primary-light px-1.5 py-px text-[12px] font-bold text-primary">
                         {countPayments(filters.payments)} сонгосон
                       </span>
                     )}
@@ -2357,7 +2415,7 @@ export default function HomeClient() {
                       <button
                         type="button"
                         onClick={clearPayments}
-                        className="self-start text-[12px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                        className="self-start text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
                       >
                         ✕ Цуцлах
                       </button>
@@ -2431,7 +2489,7 @@ export default function HomeClient() {
                 >
                   🔍 Хайх
                 </button>
-                <p className="mt-2 text-center text-[12px] text-gray-500">
+                <p className="mt-2 text-center text-[13px] text-gray-500">
                   {loadError
                     ? 'холболтын алдаа'
                     : listings !== null
@@ -2443,7 +2501,7 @@ export default function HomeClient() {
                   <button
                     type="button"
                     onClick={resetAll}
-                    className="mt-1.5 w-full text-center text-[12px] font-semibold text-primary hover:underline"
+                    className="mt-1.5 w-full text-center text-[13px] font-semibold text-primary hover:underline"
                   >
                     ↺ Хайлтыг цэвэрлэх
                   </button>
@@ -2461,23 +2519,23 @@ export default function HomeClient() {
             {/* ГАРЧИГ + НИЙТ ТОО — unegui.mn: «Өрөө байр зарна 16,345» */}
             <div className="mb-3 flex flex-wrap items-start justify-between gap-x-1 gap-y-1">
               <div className="min-w-0">
-                <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">
+                <h1 className="text-2xl font-bold text-gray-900 sm:text-[26px]">
                   {pageTitle}
                   {listings !== null && !loadError && (
-                    <span className="ml-2 align-middle text-base font-normal text-gray-500">
+                    <span className="ml-2 align-middle text-[17px] font-normal text-gray-500">
                       {/* 📄 НИЙТ зарын тоо (`count`) — хуудасны биш ✓ */}
                       {formatCount(total ?? listings.length)}
                     </span>
                   )}
                 </h1>
-                {query && <p className="mt-0.5 text-[13px] text-gray-500">«{query}» хайлтын үр дүн</p>}
+                {query && <p className="mt-0.5 text-[14px] text-gray-500">«{query}» хайлтын үр дүн</p>}
                 {/* 📄 Хуудас 2+ үед «N дэх хуудас» гэж тодруулна (төөрөгдөлөөс сэргийлэв) */}
                 {page > 1 && listings !== null && !loadError && (
-                  <p className="mt-0.5 text-[13px] text-gray-500">
+                  <p className="mt-0.5 text-[14px] text-gray-500">
                     📄 {page} дэх хуудас
                   </p>
                 )}
-                {loadError && <p className="mt-0.5 text-[13px] text-red-600">Өгөгдлийн сантай холбогдож чадсангүй</p>}
+                {loadError && <p className="mt-0.5 text-[14px] text-red-600">Өгөгдлийн сантай холбогдож чадсангүй</p>}
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -2502,11 +2560,11 @@ export default function HomeClient() {
                        эс бөгөөс 3-р хуудсан дээр дараалал солиход «дунд»
                        байрлалд орж, хэрэглэгч төөрнө ✗ */}
                 <label className="flex items-center gap-1.5" htmlFor="listing-sort">
-                  <span className="text-[12.5px] font-semibold text-gray-500">Эрэмбэлэх</span>
+                  <span className="text-[13.5px] font-semibold text-gray-500">Эрэмбэлэх</span>
                   <select
                     id="listing-sort"
                     data-listing-sort
-                    className="form-select w-auto py-1.5 text-[13px] font-semibold"
+                    className="form-select w-auto py-1.5 text-[14px] font-semibold"
                     value={sort}
                     onChange={(e) => changeSort(e.target.value)}
                   >
@@ -2569,13 +2627,13 @@ export default function HomeClient() {
                    ИЖИЛ `activeFilterCount` — хоёр газар хоёр өөр тоо гарахгүй ✓) */}
             {activeFilterChips.length > 0 && (
           <div className="mb-5 flex flex-wrap items-center gap-1.5">
-            <span className="mr-0.5 text-[12px] font-semibold uppercase tracking-wide text-gray-400">
+            <span className="mr-0.5 text-[13px] font-semibold uppercase tracking-wide text-gray-400">
               Хайлт{activeFilterCount > 0 && ` (${activeFilterCount})`}
             </span>
             {activeFilterChips.map((chip) => (
               <span
                 key={chip.key}
-                className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white py-1 pl-2.5 pr-1 text-[12px] font-medium text-gray-700"
+                className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white py-1 pl-2.5 pr-1 text-[13px] font-medium text-gray-700"
               >
                 {chip.label}
                 <button
@@ -2588,7 +2646,7 @@ export default function HomeClient() {
                 </button>
               </span>
             ))}
-            <button type="button" onClick={resetAll} className="ml-0.5 text-[12px] font-semibold text-primary hover:underline">
+            <button type="button" onClick={resetAll} className="ml-0.5 text-[13px] font-semibold text-primary hover:underline">
               Бүгдийг цэвэрлэх
             </button>
           </div>
@@ -2602,7 +2660,7 @@ export default function HomeClient() {
             </div>
             {/* 📄 Хуудаслалттай үед газрын зураг ЗӨВХӨН тухайн хуудны зарыг
                 (50 хүртэл) харуулна — тодорхой хэлж өгнө (төөрөгдөлөөс сэргийлэв) */}
-            <p className="mt-2 text-[12.5px] text-gray-500">
+            <p className="mt-2 text-[13.5px] text-gray-500">
               🗺 Газрын зураг нь зөвхөн <b>энэ хуудны</b> зарыг харуулна
               {total !== null && total > LISTINGS_PAGE_SIZE ? ` (нийт ${total} зарыг хуудаслаж үзнэ үү)` : ''}
             </p>

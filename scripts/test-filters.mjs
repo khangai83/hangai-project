@@ -30,6 +30,8 @@ import {
   // 💼 2026-10-03 (9): ажлын зарын шинэ талбарууд + «Цалин/Үнэ» үг
   JOB_TIME_OPTIONS, JOB_EXPERIENCE_OPTIONS, JOB_ADVERTISER_OPTIONS,
   JOB_LEVEL_OPTIONS, JOB_SALARY_TYPE_OPTIONS, priceWord, isJobsSection,
+  // 🖥📱 2026-10-04: нүүр хуудсны хэсгийн панелийн «Зарах / Түрээслэх» сонголт
+  getSectionCategoryChoices, getSectionCategories,
 } from '../lib/locationData.js';
 // 🚗🌈 2026-10-01: 🏷️ «Үйлдвэрлэгч» → 🚙 «Загвар» (cascading) — зөвхөн ЦЭВЭР
 //    функцууд + өгөгдөл (сүлжээ/DB-д хүрэхгүй тул шууд ачаалж болно ✓)
@@ -454,11 +456,25 @@ t('✅ Форм (attrFields) ба шүүлт (attrFilters) — condition нь 3 
     const field = getAttrField(s.value, 'condition');
     assert.equal(field.label, 'Шинэ / Шинэвтэр / Хуучин', `${s.value}: формоны нэр`);
     assert.deepEqual(field.options, ['Шинэ', 'Шинэвтэр', 'Хуучин'], `${s.value}: формоны сонголт`);
+    /**
+     * 🆕 2026-10-03 (21): хайлтын шүүлт нь ОЛОН СОНГОЛТТОЙ ЧИП (`chips`+`multi`,
+     * «✅ 2 төлөв» шошго) — ⚠️ ФОРМ ХӨНДӨӨГДӨӨГҮЙ (`formChips` туг БАЙХГҮЙ тул
+     * 3-р алхамд хэвээр `<select>` — `components/AddListingClient.jsx` ✓).
+     * Дэлгэрэнгыг `scripts/test-attr-multi.mjs` (22 тест ✓) түгждэг
+     */
+    assert.equal(field.chips, true, `${s.value}: sidebar чип болоогүй ✗`);
+    assert.equal(field.multi, true, `${s.value}: олон сонголт болоогүй ✗`);
+    assert.equal(field.multiNoun, 'төлөв', `${s.value}: «N төлөв» шошго ✗`);
+    assert.ok(!field.formChips, `${s.value}: форм дээр чип болжээ ✗`);
     // Шүүлтэд харагдах хувилбар нь МӨН ижил байх ёстой (нэг эх сурвалж ✓)
     const filter = getAttrFilters(s.value).find((f) => f.key === 'condition');
     if (filter) {
       assert.equal(filter.label, 'Шинэ / Шинэвтэр / Хуучин', `${s.value}: шүүлтийн нэр`);
       assert.deepEqual(filter.options, ['Шинэ', 'Шинэвтэр', 'Хуучин'], `${s.value}: шүүлтийн сонголт`);
+      // 🆕 2026-10-03 (21): чип тугууд нь sidebar-ийн шүүлтэд ч ИЖИЛ ✓
+      assert.equal(filter.chips, true, `${s.value}: шүүлт чип биш ✗`);
+      assert.equal(filter.multi, true, `${s.value}: шүүлт нэг утгатай ✗`);
+      assert.equal(filter.multiNoun, 'төлөв');
     }
   });
 });
@@ -1645,6 +1661,47 @@ t('📋 getAttrRows — 🏠 ҮЛ ХӨДЛӨХ (`attrFields: []`) → 0 мөр, 
   assert.deepEqual(getAttrRows('real-estate', { brand: 'Toyota', area: 75 }), []);
   // ⚠️ БУСАД 11 хэсэг бүгд КРАШГҮЙ ажиллана (хоосон `attrs` дээр 0 мөр)
   SECTIONS.forEach((s) => assert.deepEqual(getAttrRows(s.value, {}), []));
+});
+
+t('🖥📱 getSectionCategoryChoices — үл хөдлөхөд ЯГ 3 (sell→rent→all), бусад 11 хэсэгт `[]`', () => {
+  // ⚠️ 2026-10-04 (хэрэглэгчийн хүсэлт): «🏠 Үл хөдлөх» рүү орох үед
+  //    «💰 Зарах / 🔑 Түрээслэх» гэсэн БОГИНО шошго БИШ, «Үл хөдлөх зарна /
+  //    Үл хөдлөх түрээслүүлнэ» гэсэн БҮТЭН шошго — ба «Бүгд» ХАМГИЙН СҮҮЛД
+  assert.deepEqual(getSectionCategoryChoices('real-estate'), [
+    { value: 'sell', label: 'Үл хөдлөх зарна', shortLabel: 'Зарна' },
+    { value: 'rent', label: 'Үл хөдлөх түрээслүүлнэ', shortLabel: 'Түрээслүүлнэ' },
+    { value: 'all', label: 'Бүгд', shortLabel: 'Бүгд' },
+  ]);
+  // ⚠️ Дараалал нь `CATEGORIES` массив (`[all, sell, rent]`) БИШ —
+  //    «Бүгд» ХАМГИЙН СҮҮЛД байх ЁСТОЙ ✓
+  const vals = getSectionCategoryChoices('real-estate').map((c) => c.value);
+  assert.deepEqual(vals, ['sell', 'rent', 'all']);
+  // ⚠️ `CATEGORIES` ХӨНДӨӨГДӨӨГҮЙ (форм хуучнаараа) — зөвхөн нүүр хуудсны туслах
+  assert.deepEqual(getSectionCategories('real-estate').map((c) => c.value), ['all', 'sell', 'rent']);
+  // ⚠️ Бусад 11 хэсэгт категори сонголт БАЙХГҮЙ ⇒ `[]` (крашгүй ✓)
+  SECTIONS.filter((s) => s.value !== 'real-estate')
+    .forEach((s) => assert.deepEqual(getSectionCategoryChoices(s.value), [], s.value));
+});
+
+t('🖥 ГЭРЭЭ: HomeClient — категори нь `segmented` + `getSectionCategoryChoices` + `data-category-value`', () => {
+  const home = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
+  // ① Шошго/дараалал нь НЭГ ЭХ СУРВАЛЖААС (`lib/locationData.js`) — хатуу бичсэн нэр БАЙХГҮЙ ✓
+  assert.ok(/getSectionCategoryChoices\(section\)/.test(home),
+    'HomeClient нь `getSectionCategoryChoices`-г дуудахгүй ✗');
+  assert.ok(!/getSectionCategories\(/.test(home),
+    'хуучин `getSectionCategories` дуудлага ҮЛДСЭН байна ✗');
+  assert.ok(/data-category-value=\{c\.value\}/.test(home),
+    'CDP дэгээ (`data-category-value`) алга ✗');
+  // ② Харагдац нь `.segmented` (unegui.mn-ийн «Зарна / Түрээслүүлнэ» хэв) ✓
+  assert.ok(/className="segmented"/.test(home), '`segmented` контроль алга ✗');
+  assert.ok(/segmented-item-active/.test(home), 'идэвхтэй сегментийн класс алга ✗');
+  assert.ok(/aria-pressed=\{active\}/.test(home), '`aria-pressed` алга ✗');
+  // ③ 📱 <640px богино шошго / 🖥 ≥640px бүтэн шошго (390px дээр гүйлэхгүй ✓)
+  assert.ok(/hidden sm:inline/.test(home) && /sm:hidden/.test(home),
+    'шошгын мобайл/десктоп солилт алга ✗');
+  // ④ Хуучин БОГИНО шошго (`💰 Зарах` / `🔑 Түрээслэх`) нүүр хуудснаас БҮРЭН ХАСАГДАВ ✓
+  assert.ok(!/💰 Зарах/.test(home) && !/🔑 Түрээслэх/.test(home),
+    'хуучин категори шошго нүүр хуудсанд ҮЛДСЭН байна ✗');
 });
 
 console.log(`\n✅ БҮГД ОК: ${passed} тест\n`);

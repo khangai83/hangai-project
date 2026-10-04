@@ -162,13 +162,13 @@ export default function RangeInput({
       {/* ---- ② Шүүлт идэвхтэй үед: уншигдах хүрээ + ✕ арилгах ---- */}
       {active && (
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[11.5px] font-bold text-gray-600" data-range-label>{hint}</span>
+          <span className="text-[13px] font-bold text-gray-600" data-range-label>{hint}</span>
           <button
             type="button"
             onClick={clear}
             data-range-clear={label}
             aria-label={`${label}: шүүлтийг арилгах`}
-            className="rounded-md px-1 text-[11px] font-bold text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            className="rounded-md px-1 text-[12.5px] font-bold text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
           >
             ✕ арилгах
           </button>

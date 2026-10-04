@@ -82,7 +82,7 @@ export default function Breadcrumb({
 
   return (
     <nav
-      className="flex flex-wrap items-center gap-1.5 py-3 text-[14px] text-gray-400"
+      className="flex flex-wrap items-center gap-1.5 py-3 text-[15px] text-gray-400"
       aria-label="Замчилсан цэс"
     >
       {list.map((it, i) => {
