@@ -9,9 +9,18 @@
 //    ① чип блок БАЙНА + сонголтын тоо (5/2/3/5) ② дарж СОНГОХ
 //    (mutual exclusive) ③ дахин дарж ЦУЦЛАХ (toggle — бүх чип идэвхгүй,
 //    бусдыг ХӨНДӨХГҮЙ) ④ 💰 `salaryType` нь `<select>` ХЭВЭЭР
-//    ⑤ 📱 390px — 4 талбар БҮГД хүрэх + overflow 0 ⑥ sidebar
-//    (`data-attr-filter`) ХӨНДӨГДӨӨГҮЙ (форм блок 0, 🕒 5 чип, 📊/📈 `<select>`)
-//    ⑦ JS exception / console.error 0
+//    ⑤ 📱 390px — 4 талбар БҮГД хүрэх + overflow 0 ⑥ ХАЙЛТЫН ХУУДАС: 🕒/📊/📈
+//    нь сайдбарт БИШ — үр дүнгийн дээрх `#filter-bar`-т «pill + ⌄ панель»
+//    (`data-filter-pill`; чип 12 = 5+2+5; ⚠️ `aside [data-attr-filter]` 0)
+//    ⑥b pill нээж чип дарж `?attr_jobType=Бүтэн цагийн,Цагийн` (⛔ цуцлагдахгүй,
+//    badge «2» + «2 сонгосон» + «✕ Цуцлах») ⑦ JS exception / console.error 0
+//
+// 🆕 2026-10-05 (42): ⏳ (9)-д форм дээр 4 чип нэмэгдсэн ч ХАЙЛТЫН sidebar-д
+//    зөвхөн 🕒 нь чип, 📊/📈 нь `<select>` байв — хэрэглэгчийн хүсэлт («Ажлын
+//    цаг, Туршлага, Мэргэжлийн түвшиныг Өрөөний тоо шиг болго, хайлтыг хэлж
+//    байгаа биз дээ») ⇒ 🛏 «Өрөөний тоо» · 💳 «Төлбөрийн нөхцөл»-ийн ЯГ ИЖИЛ
+//    `#filter-bar` pill болов (`lib/locationData.js → filterBar: true` ✓)
+//    (⚠️ ФОРМ ХӨНДӨГДӨӨГҮЙ — ③④ нэг сонголттой чип хэвээр ✓)
 //
 // ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
 //   1) сервер http://localhost:3000 (`npm run build && npm run start`)
@@ -30,8 +39,12 @@
 //    select` · `[data-detail-field="title"]` · `[data-picker="section"]` /
 //    `[data-picker="level2"]` (`button[data-picker-value]`) ·
 //    `[data-step-current]` · `[data-mobile-detail-next]`
-//    ℹ️ sidebar нь `data-attr-filter` (ӨӨР туг: `chips`) — форм нь
+//    ℹ️ ХАЙЛТЫН pill нь `[data-filter-pill="…"]` (товч + `[data-filter-panel]`)
+//       бөгөөд чип нь дотор нь `[data-attr-filter]`/`data-attr-multi` — форм нь
 //       `data-attr-field` (`formChips`) тул ХОЛИГДОХГҮЙ ✓
+//       ⚠️ Форм дээрх чип нь НЭГ сонголттой хэвээр тул ③④ ХӨНДӨГДӨӨГҮЙ ✓
+//       ⚠️ `#filter-bar` нь `#listing-results`-ийн ДЭЭР; ⌄ панель нь хаалттай
+//          үед `visibility:hidden` ⇒ текст уншихын тулд эхлээд НЭЭНЭ ✓
 //
 // ⚠️ МЭДЭГДЭХҮЙ АРГУУД (энэ скриптээр батлагдсан):
 //    ⓐ React-ийн `state.attrs`-ыг fiber-ээс уншихад COMMIT-ийн 1 АЛХАМ
@@ -49,7 +62,8 @@
 //    ⓔ засах горим (④b) нь 💼 АЖЛЫН ЗАР шаардна — демо хэрэглэгчид
 //       ажлын зар БАЙХГҮЙ бол ④b-г АЛГАСНА (бусад шалгалт хэвээр ✓)
 // 🔍 Хайх үг: cdp-job-chips, formChips, chip-toggle, data-attr-field,
-//    data-attr-value, attr-salaryType, jobs
+//    data-attr-value, attr-salaryType, jobs, filterBar, data-filter-pill,
+//    #filter-bar, Өрөөний тоо шиг
 // ============================================================
 const BASE = process.argv[2] || 'http://localhost:3000';
 const CDP = `http://127.0.0.1:${process.env.CDP_PORT || 9222}`;
@@ -500,59 +514,207 @@ ok('📱 хэвтээ гүйлт (overflow) ГАРАХГҮЙ', !!mobInfo && mobI
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1200, deviceScaleFactor: 1, mobile: false });
 await wait(800);
 
-// ═══════ ⑥ SIDEBAR ХӨНДӨГДӨӨГҮЙ ═══════
-// 🆕 2026-10-03 (13): `<aside>` нь ХЭСЭГ (2-р түвшин) ба «Бүх зар» дээр Ч
-//    рендэрлэгддэг (`showAdvancedFilters` ✓ — progressive disclosure ХАСАГДАВ).
-//    ⏳ урьд нь `{filters.propertyType && (<aside id="advanced-filters">)}` тул
-//       зөвхөн дэд төрөл сонгосон үед байв ✗
-//    ⚠️ Энэ шалгалт нь форм дээрх сонголттой ЖИШИХ тул `?section=jobs&type=<дэд
-//       төрөл>` хаягийг ХЭВЭЭР ашиглана ✓
-console.log('\n⑥ SIDEBAR — /?section=jobs&type=… (формтой холилдоогүй эсэх)');
+// ═══════ ⑥ #FILTER-BAR PILL (2026-10-05 (42)) ═══════
+// 🆕 2026-10-05 (42) (хэрэглэгчийн хүсэлт: «Ажлын цаг, Туршлага, Мэргэжлийн
+//    түвшиныг Өрөөний тоо шиг болго … хайлтыг хэлж байгаа биз дээ»): 3 шүүлт
+//    нь САЙДБАРТ БИШ — үр дүнгийн ДЭЭРХ ХЭВТЭЭ `#filter-bar`-т «pill + ⌄
+//    хөвөг панель» (🛏 «Өрөөний тоо» · 💳 «Төлбөрийн нөхцөл»-ийн ЯГ ИЖИЛ хэв).
+//    ⚠️ `aside`-д нь «Цалин, ₮» л үлдэнэ (`data-attr-filter` 0 — 2 өөр UI
+//       БАЙХГҮЙ ✓); `#filter-bar` нь `#listing-results`-ийн ДЭЭР байрлана ✓
+console.log('\n⑥ #FILTER-BAR — /?section=jobs&type=… (pill + ⌄ панель, формтой холилдоогүй)');
 const SIDE_URL = BASE + '/?section=jobs&type=' + encodeURIComponent('Борлуулалт, худалдаа');
 await rpc('Page.navigate', { url: SIDE_URL });
 let side = '';
 for (let i = 0; i < 12; i += 1) {
   await wait(1500);
   side = await evaluate(`(() => { const a = document.querySelector('aside'); return a ? a.innerText : ''; })()`);
-  if (/Ажлын цаг/.test(side)) break;
+  if (/Цалин, ₮/.test(side)) break;
 }
 console.log('   aside=' + JSON.stringify(side.replace(/\n/g, ' | ').slice(0, 240)));
 ok('sidebar: «Цалин, ₮» байна', /Цалин, ₮/.test(side));
-ok('sidebar: 🕒 Ажлын цаг ЧИП (Бүтэн/Түр хугацааны)', /Бүтэн цагийн/.test(side) && /Түр хугацааны/.test(side));
-const sideInfo = await evaluate(`(() => {
-  const exp = document.querySelector('[data-attr-filter="experience"]');
-  const lvl = document.querySelector('[data-attr-filter="jobLevel"]');
-  const jt = document.querySelector('[data-attr-filter="jobType"]');
+ok('🆕 (42) sidebar: attr шүүлт (🕒/📊/📈) ГАРСАН — aside-д «Ажлын цаг»/«Туршлага» БАЙХГҮЙ',
+  !/Ажлын цаг|Туршлага|Мэргэжлийн түвшин/.test(side) && !/Бүтэн цагийн/.test(side));
+/** 🆕 (42): `#filter-bar` + `aside` + форм блок бүгдийг НЭГ удаа уншина */
+const barInfo = await evaluate(`(() => {
+  const all = (sel) => [...document.querySelectorAll(sel)];
+  const pill = (k) => {
+    const p = document.querySelector('[data-filter-pill="' + k + '"]');
+    if (!p) return { found: false };
+    const panel = p.querySelector('[data-filter-panel="' + k + '"]');
+    const block = p.querySelector('[data-attr-filter="' + k + '"]');
+    const trg = p.querySelector('button');
+    return {
+      found: true,
+      label: trg ? trg.textContent.replace(/\\d+/g, '').trim() : '',
+      panel: !!panel,
+      open: trg ? trg.getAttribute('aria-expanded') : null,
+      multi: block ? block.dataset.attrMulti === 'true' : false,
+      role: block ? block.getAttribute('role') : null,
+      chips: block ? block.querySelectorAll('[data-attr-value]').length : 0,
+      selects: block ? block.querySelectorAll('select').length : 0,
+    };
+  };
+  const top = (sel) => { const el = document.querySelector(sel); if (!el) return -1; return Math.round(el.getBoundingClientRect().top + window.scrollY); };
+  const bar = document.querySelector('#filter-bar');
+  const sort = document.querySelector('[data-listing-sort]');
+  const results = document.querySelector('#listing-results');
   return {
-    jobTypeChips: jt ? jt.querySelectorAll('[data-attr-value]').length : 0,
-    jobTypeTag: jt ? jt.tagName : null,
-    expTag: exp ? exp.tagName : null,
-    expOptions: exp ? exp.options.length : 0,
-    lvlTag: lvl ? lvl.tagName : null,
-    lvlOptions: lvl ? lvl.options.length : 0,
-    chipToggles: document.querySelectorAll('[data-attr-filter] .chip-toggle').length,
-    chipKeys: [...document.querySelectorAll('[data-attr-filter] .chip-toggle')].map((c) => c.closest('[data-attr-filter]').dataset.attrFilter),
-    asideSelects: [...document.querySelectorAll('aside select')].length,
-    selectKeys: [...document.querySelectorAll('aside select[data-attr-filter]')].map((s) => s.dataset.attrFilter),
-    filterBlocks: document.querySelectorAll('[data-attr-filter]').length,
-    formBlocks: document.querySelectorAll('[data-attr-field]').length,
+    bar: !!document.querySelector('#filter-bar[data-filter-bar]'),
+    pills: all('#filter-bar [data-filter-pill]').map((p) => p.dataset.filterPill),
+    jobType: pill('jobType'), experience: pill('experience'), jobLevel: pill('jobLevel'),
+    chips: all('#filter-bar [data-attr-filter] .chip-toggle').length,
+    chipKeys: all('#filter-bar [data-attr-filter] .chip-toggle').map((c) => c.closest('[data-attr-filter]').dataset.attrFilter),
+    asideFilters: all('aside [data-attr-filter]').length,
+    asideSelects: all('aside select').length,
+    formBlocks: all('[data-attr-field]').length,
+    barTop: top('#filter-bar'),
+    barInResults: !!(bar && results && results.contains(bar)),
+    barAfterSort: !!(bar && sort
+      && (sort.compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING)),
   };
 })()`);
-console.log('   ' + JSON.stringify(sideInfo));
-ok('sidebar: форм блок 0 · шүүлтийн блок 3 (`data-attr-filter`: 🕒/📊/📈)',
-  sideInfo.formBlocks === 0 && sideInfo.filterBlocks === 3, JSON.stringify(sideInfo));
-ok('sidebar: 🕒 jobType нь ЧИП блок (`<div role="group">` + 5 чип)',
-  sideInfo.jobTypeTag === 'DIV' && sideInfo.jobTypeChips === 5,
-  `${sideInfo.jobTypeTag}/${sideInfo.jobTypeChips}`);
-ok('sidebar: 📊 experience нь хэвээр `<select>` (3 сонголт: Бүгд + 2)',
-  sideInfo.expTag === 'SELECT' && sideInfo.expOptions === 3, `${sideInfo.expTag}/${sideInfo.expOptions}`);
-ok('sidebar: 📈 jobLevel нь хэвээр `<select>` (6 сонголт: Бүгд + 5)',
-  sideInfo.lvlTag === 'SELECT' && sideInfo.lvlOptions === 6, `${sideInfo.lvlTag}/${sideInfo.lvlOptions}`);
-ok('sidebar: ШИНЭ чип ГАРАГДААГҮЙ (`.chip-toggle` 5 нь БҮГД 🕒 jobType дотор)',
-  sideInfo.chipToggles === 5 && sideInfo.chipKeys.every((k) => k === 'jobType'), JSON.stringify(sideInfo.chipKeys));
-ok('sidebar: native select 2 (📊/📈) + «Байршил» 1 (`data-attr-filter` нь `<select>` дээр өөрөө ✓)',
-  JSON.stringify(sideInfo.selectKeys) === JSON.stringify(['experience', 'jobLevel']) && sideInfo.asideSelects === 3,
-  JSON.stringify(sideInfo.selectKeys) + ' aside=' + sideInfo.asideSelects);
+console.log('   ' + JSON.stringify(barInfo));
+ok('🆕 (42) `#filter-bar` БАЙНА · pill = ЯГ 3 (`jobType` → `experience` → `jobLevel`)',
+  barInfo.bar && JSON.stringify(barInfo.pills) === JSON.stringify(['jobType', 'experience', 'jobLevel']),
+  JSON.stringify(barInfo.pills));
+ok('🆕 (42) pill-үүд нь jobs attr шүүлтийн ШОШГО-той (`Ажлын цаг` · `Туршлага` · `Мэргэжлийн түвшин`)',
+  barInfo.jobType.label === 'Ажлын цаг' && barInfo.experience.label === 'Туршлага'
+    && barInfo.jobLevel.label === 'Мэргэжлийн түвшин',
+  JSON.stringify([barInfo.jobType.label, barInfo.experience.label, barInfo.jobLevel.label]));
+ok('🆕 (42) 🕒 jobType pill: ⌄ панель + `<div role="group">` + 5 чип + `data-attr-multi` (⛔ `<select>` БАЙХГҮЙ)',
+  barInfo.jobType.panel && barInfo.jobType.role === 'group' && barInfo.jobType.chips === 5
+    && barInfo.jobType.multi && barInfo.jobType.selects === 0,
+  JSON.stringify(barInfo.jobType));
+ok('🆕 (42) 📊 experience pill: ⌄ панель + 2 чип + `data-attr-multi` (⛔ `<select>` БАЙХГҮЙ)',
+  barInfo.experience.panel && barInfo.experience.role === 'group' && barInfo.experience.chips === 2
+    && barInfo.experience.multi && barInfo.experience.selects === 0,
+  JSON.stringify(barInfo.experience));
+ok('🆕 (42) 📈 jobLevel pill: ⌄ панель + 5 чип + `data-attr-multi` (⛔ `<select>` БАЙХГҮЙ)',
+  barInfo.jobLevel.panel && barInfo.jobLevel.role === 'group' && barInfo.jobLevel.chips === 5
+    && barInfo.jobLevel.multi && barInfo.jobLevel.selects === 0,
+  JSON.stringify(barInfo.jobLevel));
+ok('🆕 (42) чипүүд нь ЯГ 3 pill-д (12 = 5+2+5) · ⌄ панель нь эхэндээ ХААЛТТАЙ',
+  barInfo.chips === 12
+    && barInfo.chipKeys.every((k) => ['jobType', 'experience', 'jobLevel'].includes(k))
+    && [barInfo.jobType, barInfo.experience, barInfo.jobLevel].every((p) => p.open === 'false'),
+  `${barInfo.chips} ${JSON.stringify(barInfo.chipKeys)}`);
+ok('⛔ sidebar-д attr шүүлт БАЙХГҮЙ (`aside [data-attr-filter]` 0 — «Цалин, ₮» л үлдэв ✓)',
+  barInfo.asideFilters === 0, `${barInfo.asideFilters} (aside select=${barInfo.asideSelects})`);
+ok('⛔ форм блок (`data-attr-field`) хайлтын хуудсан дээр 0 (формтой холилдоогүй ✓)',
+  barInfo.formBlocks === 0, String(barInfo.formBlocks));
+ok('🧭 Байрлал: `#filter-bar` нь үр дүнгийн баганад (`#listing-results`) — «Эрэмбэлэх»-ийн ДООР ✓',
+  barInfo.barInResults === true && barInfo.barAfterSort === true,
+  `inResults=${barInfo.barInResults} afterSort=${barInfo.barAfterSort} top=${barInfo.barTop}`);
+
+// ═══════ ⑥b #FILTER-BAR PILL НЭЭХ + ЧИП ДАРАХ — ОЛОН СОНГОЛТ ═══════
+// 🎯 Гол шаардлага: «Ажлын цаг, Туршлага, Мэргэжлийн түвшиныг Өрөөний тоо шиг
+//    болго» ⇒ pill дарж ⌄ панель нээгээд ХОЁР чип ЗЭРЭГ идэвхжинэ
+//    (`?attr_jobType=A,B`) — ⛔ хуучин нэг сонголттой зан төлөв (шинэ чип
+//    дарвал хуучин нь УНТРАХ) БАЙХГҮЙ ✓
+// ⚠️ Панель нь `open` биш үед `invisible` (visibility:hidden) тул `innerText`
+//    ХООСОН болно ⇒ эхлээд pill-ийг НЭЭЖ байж badge/«N сонгосон»/«✕ Цуцлах»
+//    текстийг уншина ✓ (React-ийн `onClick` нь programmatic `.click()`-д ч
+//    ажиллана ✓)
+console.log('\n⑥b #FILTER-BAR — pill нээх + чип дарах ⇒ ОЛОН утга (`?attr_jobType=A,B`)');
+/** ⌄ pill-ийг нээнэ (`aria-expanded` → true) */
+const pillOpen = (key) => evaluate(
+  '(() => { const p = document.querySelector(\'[data-filter-pill="' + key + '"]\'); if (!p) return "NO_PILL"; const b = p.querySelector(\'button\'); if (!b) return "NO_TRIGGER"; if (b.getAttribute("aria-expanded") !== "true") b.click(); return "OK"; })()',
+);
+/** Pill-ийн ⌄ панель доторх чип (`[data-attr-filter] [data-attr-value]`) дарна */
+const pillChip = (key, value) => evaluate(
+  '(() => { const b = document.querySelector(\'[data-filter-pill="' + key + '"] [data-attr-value="' + value + '"]\'); if (!b) return "NO_CHIP"; b.click(); return "OK"; })()',
+);
+/**
+ * 3 pill + URL-ыг уншина (`+` → зай: URLSearchParams нь зайг `+` болгодог тул
+ * `?attr_jobType=Бүтэн+цагийн` — ⚠️ түүнгүй бол regex ХУУРАМЧ ✗)
+ * ℹ️ badge нь pill-ийн ТОВЧ дотор (`{count}` span), «N сонгосон»/«✕ Цуцлах» нь
+ *    ⌄ панель дотор — `visibility:hidden` үед `innerText` хоосон тул панель
+ *    НЭЭЛТТЭЙ үед л уншигдана ✓
+ */
+const pillRead = () => evaluate(`(() => {
+  const read = (k) => {
+    const p = document.querySelector('[data-filter-pill="' + k + '"]');
+    if (!p) return null;
+    const block = p.querySelector('[data-attr-filter="' + k + '"]');
+    const trg = p.querySelector('button');
+    const txt = p.innerText;
+    const m = txt.match(/(\\d+)\\s+сонгосон/);
+    return {
+      active: block ? [...block.querySelectorAll('[data-attr-value]')]
+        .filter((c) => c.getAttribute('aria-pressed') === 'true').map((c) => c.dataset.attrValue) : [],
+      count: m ? Number(m[1]) : 0,
+      badge: trg ? Number((trg.textContent.match(/\\d+/) || [0])[0]) : 0,
+      clear: /Цуцлах/.test(txt),
+      open: trg ? trg.getAttribute('aria-expanded') : null,
+    };
+  };
+  return {
+    jobType: read('jobType'), experience: read('experience'), jobLevel: read('jobLevel'),
+    url: decodeURIComponent(location.search).replace(/\\+/g, ' '),
+  };
+})()`);
+
+ok('🕒 jobType pill нээв (`aria-expanded=true`)', (await pillOpen('jobType')) === 'OK');
+await wait(700);
+let sw = await pillRead();
+ok('🆕 (42) pill нээхэд ⌄ панель нээгдэнэ · badge 0 (⛔ «0 сонгосон» гарахгүй ✓)',
+  sw.jobType.open === 'true' && sw.jobType.count === 0 && sw.jobType.badge === 0,
+  JSON.stringify(sw.jobType));
+
+ok('🕒 «Бүтэн цагийн» дарав (pill)', (await pillChip('jobType', 'Бүтэн цагийн')) === 'OK');
+await wait(1200);
+sw = await pillRead();
+ok('🕒 1 идэвхтэй чип + pill badge «1» + «1 сонгосон» + «✕ Цуцлах» + URL `attr_jobType=Бүтэн цагийн`',
+  sw.jobType.active.length === 1 && sw.jobType.active[0] === 'Бүтэн цагийн'
+    && sw.jobType.count === 1 && sw.jobType.badge === 1 && sw.jobType.clear
+    && /attr_jobType=Бүтэн цагийн(&|$)/.test(sw.url), JSON.stringify(sw));
+
+ok('🕒 «Цагийн» дарав (2 дахь — ОЛОН СОНГОЛТ)', (await pillChip('jobType', 'Цагийн')) === 'OK');
+await wait(1200);
+sw = await pillRead();
+ok('🆕 🕒 2 чип ЗЭРЭГ идэвхтэй (⛔ хуучин нь УНТРАХГҮЙ) + badge «2» + URL `attr_jobType=Бүтэн цагийн,Цагийн`',
+  sw.jobType.active.length === 2
+    && ['Бүтэн цагийн', 'Цагийн'].every((v) => sw.jobType.active.includes(v))
+    && sw.jobType.count === 2 && sw.jobType.badge === 2
+    && /attr_jobType=Бүтэн цагийн,Цагийн(&|$)/.test(sw.url), JSON.stringify(sw));
+
+ok('🕒 идэвхтэй чип дээр дахин дарав (toggle-off)', (await pillChip('jobType', 'Бүтэн цагийн')) === 'OK');
+await wait(1200);
+sw = await pillRead();
+ok('🕒 ЗӨВХӨН тэр чип унав (2→1, бусдыг ХӨНДӨӨГҮЙ) + badge «1 сонгосон»',
+  JSON.stringify(sw.jobType.active) === JSON.stringify(['Цагийн']) && sw.jobType.count === 1
+    && /attr_jobType=Цагийн(&|$)/.test(sw.url), JSON.stringify(sw));
+
+/** 🆕 (42): ⌄ панель доторх «✕ Цуцлах» товчийг дарна (pill-ийн хүрээ дотор) */
+const clearClicked = await evaluate(`(() => {
+  const p = document.querySelector('[data-filter-pill="jobType"]');
+  const b = p && [...p.querySelectorAll('button')].find((x) => /Цуцлах/.test(x.innerText));
+  if (!b) return 'NO_CLEAR';
+  b.click(); return 'OK';
+})()`);
+await wait(1200);
+sw = await pillRead();
+ok('🕒 «✕ Цуцлах» → БҮХ чип идэвхгүй + badge/товч ГАРСАН + URL-ээс `attr_jobType` АРИЛСАН',
+  clearClicked === 'OK' && sw.jobType.active.length === 0 && sw.jobType.count === 0
+    && sw.jobType.badge === 0 && !sw.jobType.clear
+    && !/attr_jobType/.test(sw.url), `${clearClicked} ${JSON.stringify(sw)}`);
+ok('⛔ 📊/📈 ХӨНДӨГДӨӨГҮЙ (0 идэвхтэй, URL-д тэдгээрийн түлхүүр БАЙХГҮЙ)',
+  sw.experience.active.length === 0 && sw.jobLevel.active.length === 0
+    && !/attr_experience|attr_jobLevel/.test(sw.url), JSON.stringify(sw));
+
+// 📊 Туршлага ч мөн ИЖИЛ (1 pill = 2 утга) — тусдаа механизм биш, НЭГ ✓
+ok('📊 experience pill нээв', (await pillOpen('experience')) === 'OK');
+await wait(600);
+ok('📊 «Шаардлагагүй» + «Шаардлагатай» — 2 утга ЗЭРЭГ (📈 ч хөндөгдөхгүй)',
+  (await pillChip('experience', 'Шаардлагагүй')) === 'OK');
+await wait(1000);
+await pillChip('experience', 'Шаардлагатай');
+await wait(1200);
+sw = await pillRead();
+ok('📊 2 сонголт + badge «2» + URL `attr_experience=Шаардлагагүй,Шаардлагатай` (📈 хэвээр 0)',
+  sw.experience.active.length === 2 && sw.experience.count === 2 && sw.experience.badge === 2
+    && /attr_experience=Шаардлагагүй,Шаардлагатай(&|$)/.test(sw.url)
+    && sw.jobLevel.active.length === 0 && sw.jobType.active.length === 0, JSON.stringify(sw));
 
 // ═══════ ⑦ ДҮГНЭЛТ ═══════
 const real = problems.filter((p) => !/Failed to load resource/.test(p));

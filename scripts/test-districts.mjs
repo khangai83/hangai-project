@@ -401,8 +401,14 @@ t('🛏 HomeClient.jsx: «Өрөөний тоо»-гийн доорх «Өрөө
   assert.match(src, /Өрөөний тоо/, '«Өрөөний тоо» гарчиг алга болсон ✗');
   assert.match(ui, /data-room-filter/, 'өрөөний блок алга болсон ✗');
   assert.match(ui, /data-room-value/, 'өрөөний чип алга болсон ✗');
-  // ⚠️ badge нь «N сонгосон» хэвээр (CDP тест `cdp-rooms.mjs` үүнийг шалгана ✓)
-  assert.match(ui, /filters\.rooms\.length > 0 && \(/, 'өрөөний badge-ийн нөхцөл алга ✗');
+  /**
+   * ⚠️ badge нь «N сонгосон» хэвээр (`cdp-rooms.mjs` бодит текстээр шалгана ✓)
+   * 🆕 2026-10-04 (38): «Өрөөний тоо» нь `#filter-bar` pill dropdown болов ⇒
+   *    badge-ийн текст нь `FilterPill` дотор (`{count} сонгосон`) render болж,
+   *    утга нь `count={filters.rooms.length}`-ээр холбогдоно ✓
+   */
+  assert.match(ui, /count=\{filters\.rooms\.length\}/, 'өрөөний pill-ийн count холбоо алга ✗');
+  assert.match(ui, /data-filter-pill=\{testKey\}/, '`FilterPill`-ийн `data-filter-pill` дэгээ алга ✗');
 });
 
 t('lib/breadcrumb.js: `districts` (массив) → URL ба шошго модулиар', () => {

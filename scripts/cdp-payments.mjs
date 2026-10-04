@@ -30,8 +30,9 @@
  *   ④ 🔗 ХУУЧИН/гараар бичсэн линк: `?payment=cash,lease` → чипүүд
  *      тэмдэглэгдэж, URL нь КАНОН болно (`lease,cash`); `?payment=abc,lease`
  *      → хүчингүй утга ЧИМЭЭГҮЙ хасагдана ✓
- *   ⑤ 🎛 Идэвхтэй шүүлтийн чип `💳 Хувь лизингээр, Бэлэн төлөлтөөр` дээрх ✕
+ *   ⑤ 🎛 Идэвхтэй шүүлтийн чип `Хувь лизингээр, Бэлэн төлөлтөөр` дээрх ✕
  *      → `payments: []` (URL/DB цэвэр) — архитектурын урхи: `''` биш `[]` ✓
+ *      (🗑 2026-10-04 (39): чипийн emoji `💳` ХАСАГДАВ ✓)
  *   ⑥ 🧹 ХЭСЭГ СОЛИХ: `?section=jobs&payment=lease` (эсвэл breadcrumb) →
  *      payment утга ЦЭВЭРЛЭГДЭНЭ (`next.payments = []`) — ажил дээр лизинг
  *      үлдэж, DB шүүлт «юу ч олдохгүй» болох ОНОВЧТОЙ АЛДААНЫГ бариулна ✗
@@ -276,11 +277,20 @@ check('💳 `aria-label="Төлбөрийн нөхцөл"` бүлэг ТААРЛ
   dom.toggles === 1, `toggles=${dom.toggles}`);
 const labels1 = await sideLabels();
 const roomsIdx = labels1.findIndex((l) => /Өрөөний тоо/.test(l));
-const payIdx = labels1.findIndex((l) => /Төлбөрийн нөхцөл/.test(l));
 const priceIdx = labels1.findIndex((l) => /Үнэ/.test(l));
-check('🧭 «Төлбөрийн нөхцөл» нь «Өрөөний тоо»-ны ДАРАА, «Үнэ, ₮»-ний ӨМНӨ',
-  roomsIdx > 0 && payIdx > roomsIdx && priceIdx > payIdx,
-  `өрөө=#${roomsIdx} төлбөр=#${payIdx} үнэ=#${priceIdx} — ${labels1.join(' → ')}`);
+/**
+ * 🆕 2026-10-04 (37): 💳 «Төлбөрийн нөхцөл» нь САЙДБАРААС ГАРЧ, үр дүнгийн
+ *    дээрх ХЭВТЭЭ шүүлтийн мөр (`#filter-bar`) руу «eBay-ийн Color ⌄» шиг pill
+ *    болж шилжсэн (хэрэглэгчийн хүсэлт) ⇒ сайдбарт ОГТ БАЙХГҮЙ, харин
+ *    `#filter-bar` дотор 1 (`[data-payment-filter]`) байна ✓
+ */
+const payBar = await evalJs(`document.querySelectorAll('#filter-bar [data-payment-filter]').length`);
+check('🧭 💳 сайдбарт БАЙХГҮЙ, харин `#filter-bar`-т БИЙ (pill dropdown ✓)',
+  labels1.every((l) => !/Төлбөрийн нөхцөл/.test(l)) && payBar === 1,
+  `payBar=${payBar} — ${labels1.join(' → ')}`);
+check('🧭 Сайдбар: «Өрөөний тоо» ч ГАРСАН (`#filter-bar` pill ✓), «Үнэ, ₮» бий',
+  roomsIdx < 0 && priceIdx > 0,
+  `өрөө=#${roomsIdx} үнэ=#${priceIdx} — ${labels1.join(' → ')}`);
 
 // ═══════ ② 🚗 АВТО: БАЙНА · ⛔ АЖИЛ/КОМПЬЮТЕР/«БҮХ ЗАР»: БАЙХГҮЙ ═══════
 // 🆕 2026-10-03 (13): progressive disclosure ХАСАГДАВ — `<aside>` нь хэсэг
@@ -357,8 +367,8 @@ ui1 = await paymentUi();
 check('🖱 ХОЁР ☑ сонгогдсон (ОЛОН СОНГОЛТ ажиллаж байна ✓)',
   ui1.selected.join(',') === 'lease,cash', `selected=[${ui1.selected.join(',')}]`);
 check('🔢 «2 сонгосон» badge', ui1.badge === 2, `badge=${ui1.badge}`);
-check('🎛 Идэвхтэй шүүлтийн чип нь БҮТЭН шошгыг харуулна (`💳 Хувь лизингээр, Бэлэн төлөлтөөр`)',
-  await evalJs(`[...document.querySelectorAll('button,span')].some((e) => /💳 Хувь лизингээр, Бэлэн төлөлтөөр/.test(e.textContent))`));
+check('🎛 Идэвхтэй шүүлтийн чип нь БҮТЭН шошгыг харуулна (`Хувь лизингээр, Бэлэн төлөлтөөр` — 🗑 2026-10-04 (39): emoji-гүй ✓)',
+  await evalJs(`[...document.querySelectorAll('button,span')].some((e) => /Хувь лизингээр, Бэлэн төлөлтөөр/.test(e.textContent))`));
 
 // ═══ ③c Дахин дарахад ЦУЦЛАГДАНА (чип мэт toggle) ═══
 listingReqs.length = 0;
@@ -397,9 +407,9 @@ check('🔎 DB: зөвхөн `attrs=cs.{"payment_terms":["lease"]}` (abc огт 
 await go(`${BASE}/?section=real-estate&type=${encodeURIComponent('Орон сууц')}&payment=lease,cash`);
 const CHIP_BTN = `[...document.querySelectorAll('button')]
   .find((x) => /хайлтыг хасах/.test(x.getAttribute('aria-label') || '')
-    && /💳/.test(x.getAttribute('aria-label') || ''))`;
+    && /Хувь лизингээр/.test(x.getAttribute('aria-label') || ''))`;
 const chipLabel = await evalJs(`(() => { const b = ${CHIP_BTN}; return b ? b.getAttribute('aria-label') : 'NO_CHIP'; })()`);
-check('🎛 Идэвхтэй шүүлтийн чип `💳 Хувь лизингээр, Бэлэн төлөлтөөр` олдлоо',
+check('🎛 Идэвхтэй шүүлтийн чип `Хувь лизингээр, Бэлэн төлөлтөөр` олдлоо (🗑 2026-10-04 (39): emoji-гүй)',
   chipLabel !== 'NO_CHIP' && /Хувь лизингээр, Бэлэн төлөлтөөр/.test(chipLabel), chipLabel);
 listingReqs.length = 0;
 // ⚠️ Чип олдоогүй бол `click` ХИЙХГҮЙ — эс бөгөөс доорх `waitFor` 9с хүлээж

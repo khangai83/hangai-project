@@ -224,11 +224,18 @@ check('🛏 `aria-label="Өрөөний тоо"` бүлэг ТААРЛАА (хо
 const labels1 = await sideLabels();
 check('🧭 Sidebar-ийн ЭХНИЙ блок «Байршил» (өрөөний блок ЭХНИЙ биш ✓)',
   /Байршил/.test(labels1[0] || ''), labels1.join(' → '));
-const roomsIdx = labels1.findIndex((l) => /Өрөөний тоо/.test(l));
-const priceIdx = labels1.findIndex((l) => /Үнэ/.test(l));
-check('🧭 «Өрөөний тоо» блок «Үнэ, ₮»-ний ӨМНӨ байрлана (хэрэглэгчийн хүсэлт ✓)',
-  roomsIdx > 0 && priceIdx > 0 && roomsIdx < priceIdx,
-  `#${roomsIdx} → #${priceIdx} · ${labels1.join(' → ')}`);
+/**
+ * 🆕 2026-10-04 (38): 🛏 «Өрөөний тоо» нь сайдбараас ГАРЧ, үр дүнгийн ДЭЭРХ
+ *    ХЭВТЭЭ мөр (`#filter-bar`) руу «Төлбөрийн нөхцөл шиг» pill dropdown болов
+ *    (хэрэглэгчийн хүсэлт) ⇒ сайдбарт БАЙХГҮЙ, `#filter-bar`-т 💳-ийн ӨМНӨ ✓
+ */
+check('🧭 «Өрөөний тоо» сайдбарт БАЙХГҮЙ (1 → #filter-bar ✓)',
+  labels1.every((l) => !/Өрөөний тоо/.test(l)), labels1.join(' → '));
+const barOrder1 = await evalJs(`[...document.querySelectorAll('#filter-bar [data-filter-pill]')].map((p) => p.getAttribute('data-filter-pill'))`);
+const ri1 = barOrder1.indexOf('rooms');
+const pi1 = barOrder1.indexOf('payment');
+check('🧭 `#filter-bar`: 🛏 «Өрөөний тоо» нь 💳 «Төлбөрийн нөхцөл»-ийн ӨМНӨ ✓',
+  ri1 >= 0 && pi1 >= 0 && ri1 < pi1, barOrder1.join(' → '));
 check('📊 Зарын тоо татдаг `rooms=` HEAD query ОГТ ЯВАХГҮЙ (хэвээр ✓)',
   roomCountReqs.filter((u) => u.includes('rooms=')).length === 0,
   `${roomCountReqs.filter((u) => u.includes('rooms=')).length} rooms-query (нийт ${roomCountReqs.length} HEAD)`);
@@ -266,8 +273,11 @@ check('🆕 Хэсгийн түвшинд (төрөл ГҮЙ) ч «Өрөөни�
   domNoType.blocks === 1 && domNoType.chips === 5,
   `blocks=${domNoType.blocks} chips=${domNoType.chips}`);
 const noTypeLabels = await sideLabels();
-check('🆕 Sidebar нь ч БИЙ (төрөл хэрэггүй болсон ✓) — «Байршил» ЭХНИЙ, «Өрөөний тоо» бий',
-  /Байршил/.test(noTypeLabels[0] || '') && noTypeLabels.some((l) => /Өрөөний тоо/.test(l)),
+const noTypeBar = await evalJs(`[...document.querySelectorAll('#filter-bar [data-filter-pill]')].map((p) => p.getAttribute('data-filter-pill'))`);
+check('🆕 Хэсгийн түвшинд (төрөл ГҮЙ) ч `#filter-bar`-т «Өрөөний тоо» pill БИЙ (`showRooms` ✓)',
+  noTypeBar.includes('rooms'), noTypeBar.join(','));
+check('🆕 Sidebar нь ч БИЙ — «Байршил» ЭХНИЙ, «Өрөөний тоо» сайдбарт БАЙХГҮЙ ✓',
+  /Байршил/.test(noTypeLabels[0] || '') && noTypeLabels.every((l) => !/Өрөөний тоо/.test(l)),
   noTypeLabels.join(' → '));
 await go(`${BASE}/?section=auto`);
 check('🚗 Үл хөдлөх БИШ хэсэгт «Өрөөний тоо» блок БАЙХГҮЙ (`isRealEstate` ✗)',
@@ -298,7 +308,7 @@ const CHIP_BTN = `[...document.querySelectorAll('button')]
   .find((x) => /хайлтыг хасах/.test(x.getAttribute('aria-label') || '')
     && /өрөө/.test(x.getAttribute('aria-label') || ''))`;
 const chipLabel = await evalJs(`(() => { const b = ${CHIP_BTN}; return b ? b.getAttribute('aria-label') : 'NO_CHIP'; })()`);
-check('🎛 Идэвхтэй шүүлтийн чип `🛏 1, 3 өрөө` олдлоо', chipLabel !== 'NO_CHIP', chipLabel);
+check('🎛 Идэвхтэй шүүлтийн чип `1, 3 өрөө` олдлоо (🗑 2026-10-04 (39): emoji-гүй)', chipLabel !== 'NO_CHIP', chipLabel);
 listingReqs.length = 0;
 // ⚠️ Чип олдоогүй бол `click` ХИЙХГҮЙ — эс бөгөөс доорх `waitFor` хоосон
 //    30с хүлээж скрипт «timeout» алдаагаар унана ✗ (тест унах ёстой, гацахгүй)

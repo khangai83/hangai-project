@@ -52,6 +52,7 @@
     "doctor": "node scripts/doctor.js",
     "seed:more": "node scripts/seed-more-listings.mjs",
     "seed:sections": "node scripts/seed-sections.mjs",
+    "seed:category": "node scripts/seed-per-category.mjs",
     "seed:bathrooms": "node scripts/seed-bathrooms.mjs",
     "stats:setup": "node scripts/setup-stats.js",
     "stats:check": "node scripts/setup-stats.js --check",

@@ -29,6 +29,14 @@
 //    ⚠️ UI нь sidebar-ийн чип БИШ, `components/CarPicker.jsx` пикер —
 //       тиймээс `chips` туг БАЙХГҮЙ ч `multi` нь хүчинтэй ✓
 //
+// 🆕 2026-10-05 (42): 💼 **«Ажлын цаг» (`jobType`) · «Туршлага» (`experience`) ·
+//    «Мэргэжлийн түвшин» (`jobLevel`)** ч ОЛОН СОНГОЛТТОЙ ЧИП болов
+//    (хэрэглэгчийн хүсэлт: «Ажлын цаг, Туршлага, Мэргэжлийн түвшиныг Өрөөний тоо
+//    шиг болго, хайлтыг хэлж байгаа биз дээ») ⇒ `?attr_jobType=Бүтэн цагийн,Цагийн`
+//    ба DB `attrs->>jobType=in.(…)`. ⚠️ ХӨДӨЛГӨХ КОД БАЙХГҮЙ — зөвхөн
+//    `lib/locationData.js`-ийн тугууд (`chips` + `multi`) нэмэгдэв ✓
+//    ⚠️ ФОРМ ХӨНДӨӨГДӨӨГҮЙ (`formChips` хэвээр — форм нэг утга хадгална ✓)
+//
 // ХАМРАХ ХҮРЭЭ (4 давхарга — бүгд НЭГ эх сурвалж `lib/attrMultiFilter.mjs`):
 //   ① `lib/attrMultiFilter.mjs` — цэвэр логик (normalize → parse → toggle →
 //      шошго → URL → `in.()` / `or(…ilike…)` мөр)
@@ -55,7 +63,7 @@ import {
   attrMultiFilterDescriptor, applyAttrMultiFilter,
   likePattern, orSafeAttrValue, attrLikeExpressions, applyAttrMultiLikeFilter,
 } from '../lib/attrMultiFilter.mjs';
-import { getAttrField, getAttrFilters, getAttrFields, pruneGatedAttrs, SECTIONS } from '../lib/locationData.js';
+import { getAttrField, getAttrFilters, getAttrFields, getSection, pruneGatedAttrs, SECTIONS } from '../lib/locationData.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(here, '..');
@@ -347,10 +355,35 @@ t("🔒 Олон сонголттой талбарууд нь ЯГ ТОДОРХ�
   assert.deepEqual(multiKeys, [
     // 🚗 авто: 🚙 загвар (36) + 3 чип (🎨 өнгө · ⚙️ хайрцаг (22) · ⛽ түлш (22))
     'auto.model', 'auto.color', 'auto.transmission', 'auto.fuel',
+    // 💼 2026-10-05 (42): 🕒 Ажлын цаг · 📊 Туршлага · 📈 Мэргэжлийн түвшин
+    //    («🛏 Өрөөний тоо» шиг ОЛОН СОНГОЛТТОЙ ЧИП ✓)
+    'jobs.jobType', 'jobs.experience', 'jobs.jobLevel',
     // ✅ 8 хэсгийн «Шинэ / Шинэвтэр / Хуучин» (21)
     'computers.condition', 'furniture.condition', 'home.condition', 'electric.condition',
     'construction.condition', 'equipment.condition', 'travel.condition', 'hobby.condition',
   ], `multi талбарууд: ${multiKeys.join(', ')}`);
+});
+
+t('💼 (42) jobs → 🕒/📊/📈: `chips` + `multi` (sidebar-д «Өрөөний тоо» шиг чип)', () => {
+  // Хэрэглэгчийн хүсэлт: «Ажлын цаг, Туршлага, Мэргэжлийн түвшиныг Өрөөний тоо
+  // шиг болго, хайлтыг хэлж байгаа биз дээ» ⇒ 3 нь ОЛОН СОНГОЛТТОЙ ЧИП болов.
+  // ⚠️ `type` нь `'select'` ХЭВЭЭР (форм нэг утга хадгална — чип болгож
+  //    болгох нь `formChips` туг 2026-10-03 (11) ✓)
+  ['jobType', 'experience', 'jobLevel'].forEach((k) => {
+    const f = getAttrField('jobs', k);
+    assert.equal(f.type, 'select', `${k}.type ✗`);
+    assert.equal(f.chips, true, `${k}: sidebar чип болоогүй ✗`);
+    assert.equal(f.multi, true, `${k}: олон сонголт болоогүй ✗`);
+    assert.equal(f.formChips, true, `${k}.formChips (форм чип) ХӨНДӨГДӨВ ✗`);
+    assert.ok((getSection('jobs').attrFilters || []).includes(k), `${k} attrFilters-д БАЙХГҮЙ ✗`);
+  });
+  // ⛔ 🏷️ «Зарлагч» нь sidebar-ийн шүүлт БИШ (форм дээр л) — `multi` аваагүй ✓
+  assert.ok(!getAttrField('jobs', 'advertiser').multi, '🏷️ advertiser multi болжээ ✗');
+  // 🎯 DB мөр: `in.()` (текст биш чип талбаруудын ИЖИЛ дүрэм — `attrs->>jobType`)
+  const calls = [];
+  const q = { in: (c, v) => { calls.push([c, v]); return q; } };
+  applyAttrMultiFilter(q, 'jobType', ['Бүтэн цагийн', 'Цагийн']);
+  assert.deepEqual(calls, [['attrs->>jobType', ['Бүтэн цагийн', 'Цагийн']]]);
 });
 
 // ---------- ⑧в 🆕 2026-10-03 (22): 🔀 ⛽ «Хурдны хайрцаг» + «Түлш» ----------

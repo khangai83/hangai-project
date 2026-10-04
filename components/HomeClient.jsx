@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ListingCard from './ListingCard';
 import MapView from './MapView';
@@ -28,6 +28,9 @@ import {
   //    (нэг эх сурвалж: `lib/locationData.js` ✓)
   ROOM_OPTIONS,
   hasRoomsFields, SECTIONS, getSection, getSubtypes, getSectionCategoryChoices,
+  // 🏢 2026-10-04: «Орон сууц» төрөлд давхар/он-ы нэмэлт хүрээний шүүлт
+  //    харагдах эсэхийг шийднэ (`apartment: true` туг — `PROPERTY_TYPE_DEFS`)
+  hasApartmentFields,
   // 🏠 2026-10-04: хэсгийн панельд дэд төрөл харагдах эсэх (2 алхамт drill) —
   //    нэг эх сурвалж нь `lib/locationData.js` ✓
   showsSectionSubtypes,
@@ -36,7 +39,7 @@ import {
   priceWord,   // 💼 ажил → «Цалин», бусад → «Үнэ» (2026-10-03 (9))
   getSubtypeGroups,   // 🛠 3 дахь түвшин (2026-09-27) — зөвхөн `services`
 } from '../lib/locationData';
-import { getCategoryLabel, getPropertyIcon, getPropertyTypeLabel, formatPrice, formatCount, shortPrice } from '../lib/format';
+import { getCategoryLabel, getPropertyTypeLabel, formatPrice, formatCount, shortPrice } from '../lib/format';
 import { buildHomeBreadcrumb } from '../lib/breadcrumb';
 import Breadcrumb from './Breadcrumb';
 import SearchableSelect from './SearchableSelect';
@@ -56,7 +59,7 @@ import RangeInput from './RangeInput';
 //          байхгүй болго») ✓
 //    ⚠️ Хил нь ХЭСГЭЭС хамаарна: 🏠 үл хөдлөх нь 5 тэрбум хүртэл, бусад нь
 //       500 сая — зөвхөн «хязгааргүй тал»-ыг тодорхойлоход хэрэглэгдэнэ ✓
-import { AREA_BOUNDS, formatGroupedInput, priceBounds, yearBounds } from '../lib/rangeFilter.mjs';
+import { AREA_BOUNDS, FLOOR_BOUNDS, buildYearBounds, formatGroupedInput, priceBounds, yearBounds } from '../lib/rangeFilter.mjs';
 // 🔀 Эрэмбэлэх сонголт (eBay-ийн «Sort: Best Match ▾» шиг) — цэвэр логик нь
 //    `lib/sortOptions.mjs`, DB тал нь `lib/queries.js → sortOrders()`
 import { DEFAULT_SORT, SORT_OPTIONS, normalizeSort } from '../lib/sortOptions.mjs';
@@ -104,6 +107,11 @@ import {
 //      `['Автомат','Механик']` · `['Хайбрид','Цахилгаан']`) — URL нь хэвээр
 //      `?attr_color=Хар,Цагаан` (хуучин нэг утгатай линк ч ажиллана ✓),
 //      DB нь `attrs->>key=in.(…)` (`lib/queries.js → applyAttrMultiFilter`) ✓
+//   🆕 2026-10-05 (42): 💼-ийн 🕒 «Ажлын цаг» · 📊 «Туршлага» · 📈 «Мэргэжлийн
+//      түвшин» ч мөн адил ОЛОН СОНГОЛТТОЙ ЧИП болов (хэрэглэгчийн хүсэлт:
+//      «Ажлын цаг, Туршлага, Мэргэжлийн түвшиныг Өрөөний тоо шиг болго») ⇒
+//      `?attr_jobType=Бүтэн цагийн,Цагийн` · `?attr_experience=…` ·
+//      `?attr_jobLevel=…` — DB `attrs->>jobType=in.(…)` ✓
 //   🚙 2026-10-04 (36): 🚙 «Загвар» ч МАССИВ болов (`attr_model=Prius 30,Harrier`)
 //      — ⚠️ гэхдээ DB дээр `in.(…)` БИШ `or=(…ilike…)`, учир нь талбар нь
 //      ХАЙЛТТАЙ ТЕКСТ («pri» гэж бүрэн бус бичихэд ч олдоно ✓)
@@ -128,6 +136,15 @@ import {
 const EMPTY_FILTERS = {
   propertyType: '', rooms: [], city: '', districts: [], khoroos: [], attrs: {},
   minPrice: '', maxPrice: '', minArea: '', maxArea: '',
+  // 🏢📅 2026-10-04: Орон сууцны нэмэлт хүрээний шүүлт (ХЭСЭГ: `real-estate` +
+  //    төрөл «Орон сууц»). Баганууд нь `0003_listing_details.sql` —
+  //    ⚠️ `attrs` БИШ тул тусдаа талбараар (`minArea`-гийн адил) хадгална ✓
+  //      • Барилгын давхар  → `total_floors`
+  //      • Хэдэн давхарт    → `floor`
+  //      • Ашиглалтанд орсон он → `build_year`
+  minTotalFloors: '', maxTotalFloors: '',
+  minFloor: '', maxFloor: '',
+  minBuildYear: '', maxBuildYear: '',
   // 💳 Төлбөрийн нөхцөл (2026-10-03) — «үл хөдлөх зарна» ба «автомашин зарна»
   //    хэсэгт: ОЛОН СОНГОЛТТОЙ (`['lease','cash']`) — `lib/paymentFilter.mjs`.
   //    ⚠️ Хоосон утга нь `''` БИШ `[]` (өрөөний тоотой ижил шалтгаан ✓)
@@ -259,6 +276,117 @@ function SideBlock({ label, children }) {
     <div className="py-4">
       <span className="mb-2 block text-[16px] font-bold text-gray-900">{label}</span>
       <div className="flex flex-col gap-2">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * 🎛 2026-10-04 (37) · 🆕 2026-10-05 (42): «eBay Color» хэвээр ҮР ДҮҮНГИЙН
+ *    ДЭЭР гарах ХЭВТЭЭ шүүлтийн мөрөнд ордог attr талбарууд нь ЭНД биш —
+ *    `lib/locationData.js`-ийн талбар бүрийн **`filterBar: true`** туг
+ *    (НЭГ ЭХ СУРВАЛЖ ✓).
+ *
+ * ⚠️ ЯАГААД ХАТУУ ЖАГСААЛТ БАЙХГҮЙ ВЭ: өмнө нь энэ файлд
+ *    `FILTER_BAR_ATTR_KEYS = ['color','transmission','fuel']` гэж бичигдсэн
+ *    байв — 🆕 (42)-д 💼-ийн 🕒/📊/📈 ч нэгдэхэд «хайлтын ДҮРСЛЭЛ» (HomeClient)
+ *    дотор attr-ийн нэрийг мэдэх шаардлагагүй болов: зөвхөн ТУГИЙГ уншина ✓
+ *    (шинэ талбар нэмэхэд `lib/locationData.js`-д 1 мөр л нэмнэ ✓)
+ *
+ * ⚠️ Эдгээр талбар нь САЙДБАРААС ГАРСАН (2 ӨӨР UI БАЙХГҮЙ ✓) — зөвхөн 1 л
+ *    газар (үр дүнгийн дээрх мөр) дүрслэгдэнэ; утга/URL/DB ХӨНДӨГДӨХГҮЙ ✓
+ * ⚠️ ✅ «Шинэ / Хуучин» (`condition`) нь туггүй тул сайдбарт ЧИП хэвээр ✓
+ */
+
+/**
+ * 🧩🎛 ХАЙЛТЫН ШҮҮЛТИЙН PILL + ХӨВӨГ (floating) DROPDOWN — 2026-10-04 (37).
+ *
+ * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Түлш, Хурдны хайрцаг, Төлбөрийн нөхцөл, Өнгө
+ * эдгээрийг ebay-ийн дээр байгаа Color шиг болгоод өг, Төлбөрийн нөхцөл ба
+ * Өнгө олон сонголт хийх боломжтой байх» ⇒ сайдбарын БАЙНГА задарсан чип
+ * блок БИШ, үр дүнгийн ДЭЭР ХЭВТЭЭ мөрөнд «Color ⌄» шиг pill товч болж,
+ * дарахад доошоо хөвөг панель гарч checkbox мөрүүдийг үзүүлнэ ✓
+ *
+ * ⚠️ ХЭВ нь ХӨНДӨГДӨӨГҮЙ (нэг эх сурвалж): панель доторх сонголтууд нь
+ *    хуучин `.chip-toggle` `<button aria-pressed>` + `data-attr-*` /
+ *    `data-payment-*` дэгээнүүд ХЭВЭЭР — зөвхөн ГАДНА хүрээ (trigger + панель)
+ *    шинэ ✓ (`children`-ээр дамжуулна — талбар бүрийн утга/logic нь дуудагч
+ *    дээрээ үлдэнэ ✓)
+ * ⚠️ Панель нь `absolute` ба ЗААВАЛ DOM-д бий — `open` биш үед `invisible`
+ *    класс (зөвхөн харагдацыг НУУХ, `display:none` БИШ) тул элемент ХЭМЖЭЭТЭЙ
+ *    хэвээр үлдэж, CDP-ийн хэмжилт (`getBoundingClientRect`) ба `.click()`
+ *    дэгээнүүд бүгд ажиллана ✓
+ * ⚠️ Гадна дарах (`mousedown`) / ESC — хаана; дахин дарахад toggle ✓
+ * ⚠️ «N сонгосон» badge нь ЗӨВХӨН `count > 0` үед — тэг үед огт render
+ *    болохгүй (CDP `multiBadges` нь «0 сонгосон»-ыг тоохгүй ✓)
+ * 🗑 2026-10-04 (39): pill-ийн өмнөх EMOJI (`icon` проп) ХАСАГДАВ —
+ *    хэрэглэгчийн хүсэлт: «…түлш, үйлдвэрлэсэн он гэх мэт бүх үгний өмнө
+ *    байгаа emoji-г байхгүй болго» ⇒ зөвхөн ШОШГО (текст) харагдана ✓
+ */
+function FilterPill({ label, count, onClear, testKey, children }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDocDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDocDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+  const active = count > 0;
+  return (
+    <div ref={ref} data-filter-pill={testKey} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[14px] font-semibold transition ${
+          active
+            ? 'border-primary bg-primary-light text-primary'
+            : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+        }`}
+      >
+        {label}
+        {active && (
+          <span className="rounded-full bg-primary px-1.5 text-[12px] font-bold text-white">
+            {count}
+          </span>
+        )}
+        <ChevronDownIcon
+          className={`h-4 w-4 shrink-0 opacity-60 transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {/* ⚠️ Панель нь ҮРГЭЛЖ DOM-д (CDP дэгээ/хэмжилт ✓) — зөвхөн харагдац солигдоно */}
+      <div
+        data-filter-panel={testKey}
+        className={`absolute left-0 top-full z-30 mt-2 w-[280px] rounded-xl border border-gray-200 bg-white p-3 shadow-card ${
+          open ? 'visible' : 'invisible pointer-events-none'
+        }`}
+      >
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          {active ? (
+            <span className="text-[13px] font-semibold text-gray-600">{count} сонгосон</span>
+          ) : (
+            <span className="text-[13px] text-gray-400">Сонгоно уу</span>
+          )}
+          {active && (
+            <button
+              type="button"
+              onClick={onClear}
+              className="text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
+            >
+              ✕ Цуцлах
+            </button>
+          )}
+        </div>
+        {children}
+      </div>
     </div>
   );
 }
@@ -646,7 +774,8 @@ export default function HomeClient() {
     // ---- ATTR шүүлтүүд — `?attr_brand=Toyota&attr_fuel=Хайбрид` ----
     // 🎨⚙️⛽ ОЛОН СОНГОЛТТОЙ ATTR (2026-10-03 (19), ✅ (21), ⚙️⛽ (22)):
     //    `multi: true` талбар (ж: 🎨 «Өнгө», ⚙️ «Хурдны хайрцаг», ⛽ «Түлш»,
-    //    ✅ «Шинэ / Шинэвтэр / Хуучин») нь МАССИВ болж уншигдана
+    //    ✅ «Шинэ / Шинэвтэр / Хуучин», 🆕 2026-10-05 (42): 💼 🕒/📊/📈) нь
+    //    МАССИВ болж уншигдана
     //    (`?attr_color=Хар,Цагаан` · `?attr_fuel=Хайбрид,Цахилгаан` ·
     //    `?attr_condition=Шинэ,Хуучин`) —
     //    ⚠️ ХУУЧИН нэг утгатай линк (`?attr_fuel=Хайбрид`) ч зөв (нэг элементтэй
@@ -689,6 +818,14 @@ export default function HomeClient() {
     if (sp.get('maxPrice')) next.maxPrice = sp.get('maxPrice');
     if (sp.get('minArea')) next.minArea = sp.get('minArea');
     if (sp.get('maxArea')) next.maxArea = sp.get('maxArea');
+    // 🏢📅 Орон сууцны нэмэлт хүрээ (2026-10-04) — `?minTotalFloors=3&maxFloor=20&
+    //    minBuildYear=2010` (хуваалцсан линк ШУУД ажиллана ✓)
+    if (sp.get('minTotalFloors')) next.minTotalFloors = sp.get('minTotalFloors');
+    if (sp.get('maxTotalFloors')) next.maxTotalFloors = sp.get('maxTotalFloors');
+    if (sp.get('minFloor')) next.minFloor = sp.get('minFloor');
+    if (sp.get('maxFloor')) next.maxFloor = sp.get('maxFloor');
+    if (sp.get('minBuildYear')) next.minBuildYear = sp.get('minBuildYear');
+    if (sp.get('maxBuildYear')) next.maxBuildYear = sp.get('maxBuildYear');
     if (Object.entries(next).some(([, v]) => !isFilterValueEmpty(v))) setFilters(next);
 
     setUrlReady(true);
@@ -720,6 +857,15 @@ export default function HomeClient() {
         maxPrice: filters.maxPrice || undefined,
         minArea: filters.minArea || undefined,
         maxArea: filters.maxArea || undefined,
+        // 🏢📅 Орон сууцны нэмэлт хүрээ (2026-10-04) — `total_floors`/`floor`/
+        //    `build_year` багана (`lib/queries.js` → `.gte()/.lte()`); хоосон
+        //    үед `undefined` (шүүлт хийхгүй ✓)
+        minTotalFloors: filters.minTotalFloors || undefined,
+        maxTotalFloors: filters.maxTotalFloors || undefined,
+        minFloor: filters.minFloor || undefined,
+        maxFloor: filters.maxFloor || undefined,
+        minBuildYear: filters.minBuildYear || undefined,
+        maxBuildYear: filters.maxBuildYear || undefined,
       }, { page, sort });
 
       // 📄 ХЭТ ӨНДӨР ХУУДАС (`?page=999`) → ХАМГИЙН СҮҮЛИЙН хуудас руу засна.
@@ -834,6 +980,13 @@ export default function HomeClient() {
     if (filters.maxPrice) params.set('maxPrice', filters.maxPrice);
     if (filters.minArea) params.set('minArea', filters.minArea);
     if (filters.maxArea) params.set('maxArea', filters.maxArea);
+    // 🏢📅 Орон сууцны нэмэлт хүрээ (2026-10-04) — хоосон үед БИЧИХГҮЙ (цэвэр линк ✓)
+    if (filters.minTotalFloors) params.set('minTotalFloors', filters.minTotalFloors);
+    if (filters.maxTotalFloors) params.set('maxTotalFloors', filters.maxTotalFloors);
+    if (filters.minFloor) params.set('minFloor', filters.minFloor);
+    if (filters.maxFloor) params.set('maxFloor', filters.maxFloor);
+    if (filters.minBuildYear) params.set('minBuildYear', filters.minBuildYear);
+    if (filters.maxBuildYear) params.set('maxBuildYear', filters.maxBuildYear);
     if (view === 'map') params.set('view', 'map');
     // 🔀 ЭРЭМБЭЛЭХ — анхдагч («шинээр») нь URL-д БИЧИГДЭХГҮЙ (цэвэр линк ✓)
     if (sort !== DEFAULT_SORT) params.set('sort', sort);
@@ -865,6 +1018,16 @@ export default function HomeClient() {
       if (k === 'districts' || k === 'district') { next.khoroos = []; }
       // «Өрөө» талбаргүй төрөл сонговол өрөөний хайлтыг цэвэрлэнэ (ж: Худалдаа…)
       if (k === 'propertyType' && v && !hasRoomsFields(v)) next.rooms = [];
+      // 🏢📅 «Орон сууц» БИШ төрөл сонговол давхар/оны хүрээг ЦЭВЭРЛЭНЭ (ж: Газар,
+      //    Оффис …) — эс бөгөөс сайдбарт ХАРАГДАХГҮЙ «үл үзэгдэх шүүлт» үлдэж,
+      //    хэрэглэгч «0 үр дүн» гэж гайхана ✗ (`rooms`-ийн дүрэмтэй ЯГ ижил ✓)
+      if (k === 'propertyType' && v && !hasApartmentFields(v)) {
+        Object.assign(next, {
+          minTotalFloors: '', maxTotalFloors: '',
+          minFloor: '', maxFloor: '',
+          minBuildYear: '', maxBuildYear: '',
+        });
+      }
       /**
        * 🖥 2026-10-03 (7): дэд төрөл солигдоход ТУХАЙН ДЭД ТӨРӨЛД ХҮЧИНГҮЙ
        *    болсон attr шүүлтийг ЦЭВЭРЛЭНЭ (ж: 💻 Notebook-ийн ⚙️ CPU → Mouse).
@@ -988,7 +1151,14 @@ export default function HomeClient() {
       setPage(1);
       // ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд
       setCategory((c) => (hasCategoryChoice(nextSection) && c !== 'all' ? c : 'all'));
-      setFilters((f) => ({ ...f, propertyType: '', rooms: [], attrs: {}, payments: [] }));
+      setFilters((f) => ({
+        ...f, propertyType: '', rooms: [], attrs: {}, payments: [],
+        // 🏢📅 2026-10-04: өөр хэсэг = давхар/оны хүрээ ХҮЧИНГҮЙ (ж: 🚗 авто
+        //    руу шилжихэд үлдвэл «үл үзэгдэх шүүлт» болно ✗)
+        minTotalFloors: '', maxTotalFloors: '',
+        minFloor: '', maxFloor: '',
+        minBuildYear: '', maxBuildYear: '',
+      }));
       // 💳 «Төлбөрийн нөхцөл» (2026-10-03) — шинэ хэсэгт ХҮЧИНГҮЙ (ж: «Ажил»
       //    хэсэгт лизинг гэж байхгүй) тул хэсэг солих БҮРД цэвэрлэнэ ✓
       //    ⚠️ `rooms` массив хоослохтой ЯГ ИЖИЛ хэв маяг (`[]`, `''` БИШ)
@@ -1036,11 +1206,14 @@ export default function HomeClient() {
    * Төлбөрийн нөхцөл шиг олон сонголттой болго» ба «хайлт дээр Шинэ / Шинэвтэр /
    * Хуучин ийг бас 💳 Төлбөрийн нөхцөл шиг олон сонголт хийх боломжтой болго»
    * ба «мөн автомашин хайлт дээр бас ⚙️ Хурдны хайрцаг -ийг 💳 Төлбөрийн нөхцөл
-   * шиг болго. бас ⛽ Түлш ийг»
+   * шиг болго. бас ⛽ Түлш ийг» ба 🆕 «Ажлын цаг, Туршлага, Мэргэжлийн түвшиныг
+   * Өрөөний тоо шиг болго» (2026-10-05 (42))
    * → [Хар] [Цагаан] дарж `?attr_color=Хар,Цагаан` (OR — аль нэг өнгөтэй зар ✓),
    * [Шинэ] [Хуучин] дарж `?attr_condition=Шинэ,Хуучин` (OR — аль нэг төлөвтэй зар ✓),
    * [Автомат] [Механик] дарж `?attr_transmission=Автомат,Механик` (OR ✓),
-   * [Хайбрид] [Цахилгаан] дарж `?attr_fuel=Хайбрид,Цахилгаан` (OR ✓).
+   * [Хайбрид] [Цахилгаан] дарж `?attr_fuel=Хайбрид,Цахилгаан` (OR ✓),
+   * [Бүтэн цагийн] [Цагийн] дарж `?attr_jobType=Бүтэн цагийн,Цагийн` (OR ✓),
+   * [Мэргэжилтэн] [Анхан шатны] дарж `?attr_jobLevel=Мэргэжилтэн,Анхан шатны` (OR ✓).
    * ⚠️ Дүрэм нь `lib/attrMultiFilter.mjs → toggleAttrValue()` (нэг эх сурвалж):
    *    шинэ массив буцаана, хүчингүй утгыг алгасна, давхцуулахгүй ✓
    * ⚠️ Утга нь `attrs` дотроо хадгалагдах тул `cascadeAttrs` ч дуудагдана
@@ -1196,6 +1369,20 @@ export default function HomeClient() {
     && (!filters.propertyType || hasRoomsFields(filters.propertyType));
 
   /**
+   * 🏢📅 Орон сууцны НЭМЭЛТ ХҮРЭЭНИЙ блок (2026-10-04) — «Барилгын давхар»
+   *    (`total_floors`), «Хэдэн давхарт» (`floor`), «Ашиглалтанд орсон он»
+   *    (`build_year`).
+   * ⚠️ `showRooms`-той ЯГ ИЖИЛ дүрэм: 🏠 үл хөдлөх БА (төрөл сонгоогүй эсвэл
+   *    «Орон сууц» — `apartment: true` туг дахь `PROPERTY_TYPE_DEFS`).
+   *    Газар/Оффис/Худалдааны талбайд давхар/он тохирохгүй ✗
+   *    (`lib/locationData.js → hasApartmentFields`, нэг эх сурвалж ✓)
+   * ⚠️ Төрөл солиход ХҮЧИНГҮЙ утга ЦЭВЭРЛЭГДЭНЭ (`setF` дотор `rooms`-той
+   *    ижил дүрэм) — «үл үзэгдэх шүүлт» үлдэхгүй ✓
+   */
+  const showApartmentRanges = isRealEstate
+    && (!filters.propertyType || hasApartmentFields(filters.propertyType));
+
+  /**
    * 💳 ТӨЛБӨРИЙН НӨХЦӨЛ блок харагдах эсэх (2026-10-03) — ЗӨВХӨН
    *   «Үл хөдлөх зарна» ба «Автомашин зарна» хэсэгт (хэрэглэгчийн хүсэлт:
    *   «Төлбөрийн нөхцөлийг Үл хөдлөх зарна, Автомашин зарна гэсэн дээр
@@ -1242,6 +1429,11 @@ export default function HomeClient() {
    *    бичиж байгаа текст алга болно ✗
    */
   const priceLimit = useMemo(() => priceBounds(isRealEstate), [isRealEstate]);
+  /**
+   * 📅 АШИГЛАЛТАНД ОРСОН ОНЫ хил (1980…одоогийн он, `build_year`) — `useMemo`
+   *    (объект нь render бүрд ШИНЭ болохгүй; `priceLimit`-тэй ижил шалтгаан ✓)
+   */
+  const buildYearLimit = useMemo(() => buildYearBounds(), []);
 
   // ⚠️ Хэсэг сонгоогүй бол дэд төрөл БАЙХГҮЙ (дэмий query явуулахгүй)
   const subtypes = useMemo(
@@ -1318,6 +1510,25 @@ export default function HomeClient() {
     () => getAttrFilters(section, filters.propertyType),
     [section, filters.propertyType]
   );
+
+  /**
+   * 🧩🎛 2026-10-04 (37) · 🆕 2026-10-05 (42): ҮР ДҮҮНГИЙН ДЭЭРХ ХЭВТЭЭ
+   *    ШҮҮЛТИЙН МӨР (eBay-ийн «Color ⌄» шиг) — 🎨 Өнгө · ⚙️ Хурдны хайрцаг ·
+   *    ⛽ Түлш (🚗 авто) ба 🆕 💼 🕒 Ажлын цаг · 📊 Туршлага · 📈 Мэргэжлийн
+   *    түвшин; 💳 Төлбөрийн нөхцөл ба 🛏 Өрөөний тоо нь тусдаа pill (доор
+   *    `showPayments`/`showRooms`).
+   * ⚠️ Аль талбар ЭНД ирэх нь `lib/locationData.js`-ийн **`filterBar: true`**
+   *    тугаар шийдэгдэнэ — хатуу жагсаалт (`FILTER_BAR_ATTR_KEYS`) БАЙХГҮЙ
+   *    болсон тул хайлтын дүрслэл attr-ийн нэрийг мэдэхгүй ✓ (нэг эх сурвалж)
+   * ⚠️ Эдгээр нь САЙДБАРААС ГАРСАН (доорх `.filter` нь хаана) — 2 өөр UI
+   *    БАЙХГҮЙ ✓; утга/URL/DB (`lib/attrMultiFilter.mjs`, `lib/paymentFilter.mjs`)
+   *    ХӨНДӨГДӨХГҮЙ ✓
+   */
+  const filterBarAttrs = useMemo(
+    () => attrFilters.filter((f) => f.chips && f.multi && f.filterBar),
+    [attrFilters]
+  );
+  const hasFilterBar = filterBarAttrs.length > 0 || showRooms || showPayments;
   /** «Зарах / Түрээслэх» сонголт харагдах эсэх — ⚠️ ЗӨВХӨН үл хөдлөхөд */
   const showCategories = hasCategoryChoice(section);
   /**
@@ -1370,7 +1581,9 @@ export default function HomeClient() {
   const activeFilterChips = useMemo(() => {
     const chips = [];
     if (filters.propertyType) {
-      chips.push({ key: 'propertyType', label: `${getPropertyIcon(filters.propertyType, section)} ${getPropertyTypeLabel(filters.propertyType, category)}` });
+      // 🗑 2026-10-04 (39): чипийн өмнөх 🏠/🚗 дүрс ХАСАГДАВ (emoji-гүй болгох
+      //    хүсэлт) ⇒ зөвхөн төрлийн нэр («Орон сууц зарна») харагдана ✓
+      chips.push({ key: 'propertyType', label: getPropertyTypeLabel(filters.propertyType, category) });
     }
     // ⚠️ 📅 ОНЫ ХҮРЭЭ (2026-09-28) нь ХОЁР түлхүүрээр (`year_from`/`year_to`)
     //    хадгалагддаг тул НЭГ чип болгож нэгтгэнэ — эс бөгөөс «📅 2015» +
@@ -1387,20 +1600,19 @@ export default function HomeClient() {
       const from = (filters.attrs || {})[keys.from] || '';
       const to = (filters.attrs || {})[keys.to] || '';
       if (!from && !to) return;
-      const field = getAttrField(section, base);
       const rangeLabel = from && to
         ? `${from} — ${to}`
         : from ? `${from} оноос` : `${to} он хүртэл`;
-      chips.push({ key: `attrRange_${base}`, label: `${(field && field.icon) || '📅'} ${rangeLabel}` });
+      // 🗑 2026-10-04 (39): чипийн өмнөх 📅 дүрс ХАСАГДАВ ✓
+      chips.push({ key: `attrRange_${base}`, label: rangeLabel });
     });
-    // ⚠️ ATTR шүүлтүүд (0016) — ж: «🏷️ Toyota», «⛽ Хайбрид», «🚙 Prius»
+    // ⚠️ ATTR шүүлтүүд (0016) — ж: «Toyota», «Хайбрид», «Prius» (emoji-гүй ✓)
     Object.entries(filters.attrs || {}).forEach(([k, v]) => {
       if (!v) return;
       // Хүрээний түлхүүр (`*_from` / `*_to`) нь ДЭЭР нэг чип болсон → алгасна
       const r = parseAttrRangeKey(k);
       if (r && rangeBases.has(r.base)) return;
       const field = getAttrField(section, k);
-      const icon = (field && field.icon) || '🔎';
       // 🎨 ОЛОН СОНГОЛТТОЙ ATTR (2026-10-03 (19); ✅ «Шинэ / Шинэвтэр / Хуучин»
       //    ч мөн адил — (21)) — утга нь МАССИВ бол
       //    утгуудыг ТОВЧЛОНО (1 сонголт → нэрээр, 2+ → «3 өнгө» / «2 төлөв») — эс бөгөөс
@@ -1410,29 +1622,31 @@ export default function HomeClient() {
         if (!v.length) return;
         chips.push({
           key: `attr_${k}`,
-          label: `${icon} ${attrListFilterLabel(v, (field && field.multiNoun) || 'сонголт')}`,
+          label: attrListFilterLabel(v, (field && field.multiNoun) || 'сонголт'),
         });
         return;
       }
-      chips.push({ key: `attr_${k}`, label: `${icon} ${v}` });
+      chips.push({ key: `attr_${k}`, label: `${v}` });
     });
-    // 🛏 ӨРӨӨ — ОЛОН СОНГОЛТ (2026-09-30): чип нь сонгосон БҮХ утгыг харуулна
+    // 🗑 2026-10-04 (39): доорх БҮХ идэвхтэй чип нь emoji-гүй болов
+    //    (хэрэглэгчийн хүсэлт: «…бүх үгний өмнө байгаа emoji-г байхгүй болго») ✓
+    // ӨРӨӨ — ОЛОН СОНГОЛТ (2026-09-30): чип нь сонгосон БҮХ утгыг харуулна
     //    (`1, 2 өрөө` / `+5 өрөө` / `1, 5+ өрөө`) — хэдэн шүүлт тавснаа
     //    чип дээрээс шууд харна ✓. ⚠️ Шошго нь `lib/roomFilter.mjs` (нэг эх сурвалж)
-    if (filters.rooms.length) chips.push({ key: 'rooms', label: `🛏 ${roomsFilterLabel(filters.rooms)}` });
+    if (filters.rooms.length) chips.push({ key: 'rooms', label: roomsFilterLabel(filters.rooms) });
     // 💳 Төлбөрийн нөхцөл (2026-10-03) — сонгосон нөхцөлүүдийг БҮТНЭЭР
     //    харуулна («Хувь лизингээр, Бэлэн төлөлтөөр») — чип дээрээс шууд харна ✓
-    if (filters.payments.length) chips.push({ key: 'payments', label: `💳 ${paymentsFilterLabel(filters.payments)}` });
-    if (filters.city) chips.push({ key: 'city', label: `🏙 ${filters.city}` });
+    if (filters.payments.length) chips.push({ key: 'payments', label: paymentsFilterLabel(filters.payments) });
+    if (filters.city) chips.push({ key: 'city', label: filters.city });
     // 🗺 ДҮҮРЭГ / СУМ — ОЛОН СОНГОЛТ (2026-10-03): 1 сонголт → нэрээр,
     //    олон → «N дүүрэг» (шошго нь `lib/districtFilter.mjs` — нэг эх
     //    сурвалж; нэрсийг бүтнээр жагсаавал чип хэт урт болно ✗)
-    if (filters.districts.length) chips.push({ key: 'districts', label: `📍 ${districtsFilterLabel(filters.districts)}` });
+    if (filters.districts.length) chips.push({ key: 'districts', label: districtsFilterLabel(filters.districts) });
     // ⚠️ Хороо: 1 сонгосон бол нэрийг, олон бол «N хороо» гэж товчлон харуулна
     if (filters.khoroos.length) {
       chips.push({
         key: 'khoroos',
-        label: filters.khoroos.length === 1 ? `🏘 ${filters.khoroos[0]}` : `🏘 ${filters.khoroos.length} хороо`,
+        label: filters.khoroos.length === 1 ? `${filters.khoroos[0]}` : `${filters.khoroos.length} хороо`,
       });
     }
     if (filters.minPrice) chips.push({ key: 'minPrice', label: `₮${formatPrice(filters.minPrice)}-с дээш` });
@@ -1442,6 +1656,15 @@ export default function HomeClient() {
     //    — `lib/queries.js → toNumber` тэр хэлбэрийг зөв уншина)
     if (filters.minArea) chips.push({ key: 'minArea', label: `${formatGroupedInput(filters.minArea, { mode: 'decimal' })} м²-с дээш` });
     if (filters.maxArea) chips.push({ key: 'maxArea', label: `${formatGroupedInput(filters.maxArea, { mode: 'decimal' })} м² хүртэл` });
+    // 🏢📅 Орон сууцны нэмэлт хүрээ (2026-10-04) — чип нь талбарын НЭР-ийг
+    //    хамт харуулна (гурвуулаа тоо тул «3+» гэвэл аль нь болох нь
+    //    ойлгомжгүй болно ✗ — `SideBlock` гарчигтай ЯГ ижил үг ✓)
+    if (filters.minTotalFloors) chips.push({ key: 'minTotalFloors', label: `Барилгын давхар ${filters.minTotalFloors}+` });
+    if (filters.maxTotalFloors) chips.push({ key: 'maxTotalFloors', label: `Барилгын давхар ${filters.maxTotalFloors} хүртэл` });
+    if (filters.minFloor) chips.push({ key: 'minFloor', label: `Хэдэн давхарт ${filters.minFloor}+` });
+    if (filters.maxFloor) chips.push({ key: 'maxFloor', label: `Хэдэн давхарт ${filters.maxFloor} хүртэл` });
+    if (filters.minBuildYear) chips.push({ key: 'minBuildYear', label: `Ашиглалтанд орсон он ${filters.minBuildYear}+` });
+    if (filters.maxBuildYear) chips.push({ key: 'maxBuildYear', label: `Ашиглалтанд орсон он ${filters.maxBuildYear} хүртэл` });
     return chips;
   }, [filters, category, section]);
 
@@ -2172,12 +2395,12 @@ export default function HomeClient() {
           >
             <div className="rounded-xl border border-gray-200 bg-white shadow-card">
               {/* Толгой — unegui.mn-д тусдаа гарчиг байхгүй ч «N шүүлт» badge нь
-                  хэрэглэгчид ямар нэг зүйл сонгосноо мэдэгдэхэд тустай. */}
+                  хэрэглэгчид ямар нэг зүйл сонгосноо мэдэгдэхэд тустай.
+                  🗑 2026-10-04 (39): гарчгийн өмнөх ⚙️ badge ХАСАГДАВ —
+                  хэрэглэгчийн хүсэлт: «Дэлгэрэнгүй хайлт … бүх үгний өмнө байгаа
+                  emoji-г байхгүй болго» ⇒ зөвхөн «Дэлгэрэнгүй хайлт» текст ✓ */}
               <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3.5">
                 <h2 className="flex items-center gap-2 text-[15px] font-bold text-gray-900">
-                  <span aria-hidden="true" className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-[12px] text-white">
-                    ⚙️
-                  </span>
                   Дэлгэрэнгүй хайлт
                   {activeFilterCount > 0 && (
                     <span className="rounded-full bg-primary px-2 py-0.5 text-[12px] font-bold text-white">
@@ -2303,7 +2526,6 @@ export default function HomeClient() {
                           : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
-                      <span aria-hidden="true" className="shrink-0">🚗</span>
                       <span className="min-w-0 flex-1 truncate">{carLabel}</span>
                       <ChevronDownIcon className="h-4 w-4 shrink-0 opacity-60" />
                     </button>
@@ -2370,10 +2592,17 @@ export default function HomeClient() {
                        харагдана — `getAttrFilters(section, filters.propertyType)`
                        нь формойн `getAttrFields`-тэй ЯГ ИЖИЛ `onlySubtypes` дүрмийг
                        хэрэглэнэ ✓ (Mouse/Keyboard/тонер дээр ГАРАХГҮЙ)
-                    🕒 ⑥ ЧИП ШҮҮЛТ (`f.chips`, 2026-10-03 (9), хэрэглэгчийн
-                       хүсэлт: «ажлын зар хайх хэсгийн Design ийг … хийгээрэй»):
-                       💼 «Ажлын цаг» нь бөөрөнхий ТОВЧНУУД (чип) — unegui.mn-ийн
-                       ажлын хайлтын зурагтай ИЖИЛ. ⚠️ Утга нь НЭГ (`?attr_jobType=…`),
+                    🕒 ⑥ ОЛОН СОНГОЛТТОЙ ЧИП ШҮҮЛТ (`f.chips` + `f.multi`,
+                       2026-10-03 (9) · 🆕 2026-10-05 (42), хэрэглэгчийн хүсэлт:
+                       «ажлын зар хайх хэсгийн Design ийг … хийгээрэй» ба
+                       «Ажлын цаг, Туршлага, Мэргэжлийн түвшиныг Өрөөний тоо шиг
+                       болго»): ⚠️ 2026-10-05 (42)-д 💼-ийн 🕒/📊/📈 нь
+                       `filterBar: true` тул ЭНД ИРЭХГҮЙ — үр дүнгийн дээрх
+                       `#filter-bar` pill болсон (🛏 «Өрөөний тоо»-той ЯГ ИЖИЛ
+                       хэв ✓). Энэ салбар нь туггүй `chips`+`multi` талбарт
+                       (ирээдүйд нэмэгдвэл) generically ажиллана ✓
+                       ⚠️ Утга нь МАССИВ
+                       (`?attr_jobType=Бүтэн цагийн,Цагийн`),
                     ⚠️ 🚗 АВТО-гийн 🏷️ `brand` / 🚙 `model` нь ЭНД ИРЭХГҮЙ — тэдгээр
                        нь дээрх `CarPicker` (modal) руу шилжсэн тул `isAuto`
                        үед жагсаалтаас ШҮҮГДЭНЭ (2 өөр UI БАЙХГҮЙ ✓)
@@ -2381,6 +2610,11 @@ export default function HomeClient() {
                        `model`-ыг ХЭВЭЭР буцаана (форм, URL, DB нэг эх сурвалж ✓) —
                        зөвхөн сайдбарын ДҮРСЛЭЛ энд шүүгдэнэ */}
                 {attrFilters
+                  // 🎛 2026-10-04 (37) · 🆕 2026-10-05 (42): `filterBar: true`
+                  //    талбар (🎨/⚙️/⛽ + 💼 🕒/📊/📈) нь үр дүнгийн дээрх
+                  //    ХЭВТЭЭ мөр (pill dropdown) руу шилжсэн — сайдбарт
+                  //    ДАВХАРДАХГҮЙ ✓ (`lib/locationData.js` — нэг эх сурвалж)
+                  .filter((f) => !f.filterBar)
                   .filter((f) => !(isAuto && (f.key === 'brand' || f.key === 'model')))
                   .map((f) => {
                   /**
@@ -2392,7 +2626,7 @@ export default function HomeClient() {
                     ? lookupMap(f.optionsMap, attrValue(f.optionsFrom))
                     : [];
                   return (
-                  <SideBlock key={f.key} label={`${f.icon ? `${f.icon} ` : ''}${f.label}`}>
+                  <SideBlock key={f.key} label={f.label}>
                     {f.chips ? (
                       f.multi ? (
                         /* 🎨 ОЛОН СОНГОЛТТОЙ ЧИП (2026-10-03 (19); ✅ «Шинэ /
@@ -2455,10 +2689,15 @@ export default function HomeClient() {
                           )}
                         </>
                       ) : (
-                      /* 🕒 ЧИП шүүлт (2026-10-03 (9)) — 💼 «Ажлын цаг» нь unegui.mn-ийн
-                         ажлын хайлтын зурагтай ИЖИЛ бөөрөнхий товчнууд (чип) хэлбэрээр
-                         харагдана. ⚠️ Утга нь НЭГ (`?attr_jobType=Бүтэн цагийн`) — идэвхтэй
-                         чип дээр дахин дарвал ЦУЦЛАГДАНА (`chip-toggle` хэв = «Хороо»/«Өрөө»)
+                      /* 🕒 НЭГ СОНГОЛТТОЙ ЧИП шүүлт (`f.chips` бий, `f.multi` БАЙХГҮЙ)
+                         — утга нь НЭГ (`?attr_jobType=Бүтэн цагийн`), идэвхтэй чип дээр
+                         дахин дарвал ЦУЦЛАГДАНА (`chip-toggle` хэв = «Хороо»/«Өрөө»)
+                         ⏳ 2026-10-03 (9)-д 💼 «Ажлын цаг» ЭНЭ салбараар явдаг байв —
+                            🆕 2026-10-05 (42)-д `multi: true` + `filterBar: true`
+                            нэмэгдэж үр дүнгийн дээрх `#filter-bar` pill болов ⇒
+                            бүх `chips` талбар `multi`-тай болсон (энэ салбар
+                            одоогоор хэрэглэгдэхгүй ч нэг сонголттой чип талбар
+                            нэмэгдвэл generically ажиллана ✓)
                          ⚠️ `data-attr-filter` / `data-attr-value` нь CDP тестийн дэгээ ✓ */
                       <div
                         className="flex flex-wrap gap-1.5"
@@ -2546,7 +2785,13 @@ export default function HomeClient() {
                   );
                 })}
 
-                {/* ===== 🛏 ӨРӨӨНИЙ ТОО — ХОРООНЫ блоктой ИЖИЛ ХЭВ МАЯГ =====
+                {/* ⏳ ИСТОРИ: 🛏 «ӨРӨӨНИЙ ТОО» — 2026-10-04 (38)-д сайдбараас ГАРЧ,
+                    үр дүнгийн ДЭЭРХ ХЭВТЭЭ мөр (`#filter-bar`) руу 💳 Төлбөрийн
+                    нөхцөлийн ЯГ ӨМНӨ pill dropdown болов (`FilterPill
+                    testKey="rooms"`; хэрэглэгчийн хүсэлт: «Хайлтын өрөөний тоог
+                    төлбөр нөхцөл шиг болго, Төлбөрийн нөхцөлийн урд оруулаарай»).
+                    Доорх нь ТҮҮХЭН тайлбар — одоо ЭНД UI БАЙХГҮЙ ✓
+                    ═══ (2026-10-03 (4): ХОРООНЫ блоктой ИЖИЛ ХЭВ МАЯГ) ═══
                     🆕 2026-10-03 (4) (хэрэглэгчийн хүсэлт: «орон сууцны
                     өрөөний тоогоор хайх ... 1 өрөө 2 өрөө 3 өрөө 4 өрөө
                     5+ өрөө ... Хороо сонгодог хэсэгтэй адилхан, Үнийн дээр»)
@@ -2570,49 +2815,8 @@ export default function HomeClient() {
                        хэлж байгаа тул давхар бичих шаардлагагүй ✗
                        ⚠️ «N сонгосон» badge ХЭВЭЭР (CDP тест үүнийг шалгана) —
                           зөвхөн «Өрөө» гэсэн ТЕКСТ арилав ✓ */}
-                {showRooms && (
-                  <SideBlock label="🛏 Өрөөний тоо">
-                    <div className="flex flex-col gap-1.5">
-                      {/* ⚠️ Энд «Өрөө» гэсэн шошго БАЙХГҮЙ (2026-10-03 (10)-д
-                          хэрэглэгчийн хүсэлтээр хасагдсан) — зөвхөн сонголтын
-                          тоог харуулах badge үлдэв ✓ */}
-                      {filters.rooms.length > 0 && (
-                        <span className="self-start rounded-full bg-primary-light px-1.5 py-px text-[12px] font-bold text-primary">
-                          {filters.rooms.length} сонгосон
-                        </span>
-                      )}
-                      <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-2" data-room-filter role="group" aria-label="Өрөөний тоо">
-                        <div className="flex flex-wrap gap-1.5">
-                          {ROOM_OPTIONS.map((r) => {
-                            const on = filters.rooms.includes(r.value);
-                            return (
-                              <button
-                                key={r.value}
-                                type="button"
-                                aria-pressed={on}
-                                data-room-value={r.value}
-                                onClick={() => toggleRooms(r.value)}
-                                className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
-                              >
-                                {on && <span aria-hidden="true">✓</span>}
-                                {r.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      {filters.rooms.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={clearRooms}
-                          className="self-start text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
-                        >
-                          ✕ Цуцлах
-                        </button>
-                      )}
-                    </div>
-                  </SideBlock>
-                )}
+                {/* 🆕 2026-10-04 (38): 🛏 «Өрөөний тоо» нь ЭНД (сайдбарт) БИШ —
+                    `#filter-bar`-т 💳 Төлбөрийн нөхцөлийн ӨМНӨ pill dropdown ✓ */}
 
                 {/* ===== 💳 ТӨЛБӨРИЙН НӨХЦӨЛ (2026-10-03) =====
                     Хэрэглэгчийн хүсэлт: «Төлбөрийн нөхцөлийг Үл хөдлөх
@@ -2642,44 +2846,15 @@ export default function HomeClient() {
                     ⚠️ `data-payment-filter` / `data-payment-value` нь
                        `scripts/cdp-payments.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓
                        (2026-10-03 (16)-аас утга нь `<button>` дээр ✓) */}
-                {showPayments && (
-                  <SideBlock label="💳 Төлбөрийн нөхцөл">
-                    {filters.payments.length > 0 && (
-                      <span className="self-start rounded-full bg-primary-light px-1.5 py-px text-[12px] font-bold text-primary">
-                        {countPayments(filters.payments)} сонгосон
-                      </span>
-                    )}
-                    <div className="rounded-lg border border-gray-200 bg-gray-50/70 p-2" data-payment-filter role="group" aria-label="Төлбөрийн нөхцөл">
-                      <div className="flex flex-wrap gap-1.5">
-                        {PAYMENT_OPTIONS.map((o) => {
-                          const on = filters.payments.includes(o.value);
-                          return (
-                            <button
-                              key={o.value}
-                              type="button"
-                              aria-pressed={on}
-                              data-payment-value={o.value}
-                              onClick={() => togglePayments(o.value)}
-                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
-                            >
-                              {on && <span aria-hidden="true">✓</span>}
-                              {o.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    {filters.payments.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={clearPayments}
-                        className="self-start text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
-                      >
-                        ✕ Цуцлах
-                      </button>
-                    )}
-                  </SideBlock>
-                )}
+                {/* 🎛 2026-10-04 (37): 💳 «Төлбөрийн нөхцөл» нь ЭНД (сайдбарт) БИШ —
+                    үр дүнгийн ДЭЭРХ ХЭВТЭЭ шүүлтийн мөрөнд (`#filter-bar`,
+                    `FilterPill`) «eBay-ийн Color ⌄» шиг pill + хөвөг dropdown
+                    болж шилжсэн (хэрэглэгчийн хүсэлт: «…Color шиг болгоод өг,
+                    Төлбөрийн нөхцөл ба Өнгө олон сонголт хийх боломжтой байх»)
+                    ⇒ 2 өөр UI БАЙХГҮЙ ✓
+                    ⚠️ Утга (`filters.payments`), URL (`?payment=lease,cash`), DB
+                    (`lib/queries.js → applyPaymentFilter`, jsonb `cs` + OR) БҮГД
+                    ХЭВЭЭР ✓ — зөвхөн ХАРАГДАЦ солигдов */}
 
                 {/* ===== ҮНЭ, ₮ — 2026-09-30: ЧИРДЭГ ХҮРЭЭ БА ТҮРГЭН ХҮРЭЭ ХАСАГДАВ =====
                     ⚠️ Хэрэглэгчийн хүсэлт (1): «дээд доод үнэ, талбай дээр чирдэгээ
@@ -2727,6 +2902,64 @@ export default function HomeClient() {
                 </SideBlock>
                 )}
 
+                {/* ===== 🏢📅 ОРОН СУУЦНЫ НЭМЭЛТ ХҮРЭЭ (2026-10-04) =====
+                    Хэрэглэгчийн хүсэлт: «орон сууц дээр эдгээр шүүлтийг
+                    оруулаарай» (зурагт: Барилгын давхар · Хэдэн давхарт ·
+                    Ашиглалтанд орсон он).
+                    ⚠️ Хэв нь ҮНЭ/ТАЛБАЙТАЙ ЯГ ИЖИЛ — `RangeInput` («Доод /
+                       Дээд» хоёр тоон оролт, ⏎/blur-д л commit). ⚠️ Зурган дээрх
+                       «Эхлэх / Дуусах» DROPDOWN БИШ — хэрэглэгч текст оролтыг
+                       сонгосон ✓ (`scripts/test-search.mjs` нь RangeInput дотор
+                       «Эхлэх/Дуусах» үгийг ХОРИГЛОДОГ).
+                    ⚠️ Утгууд нь `attrs` (jsonb) БИШ, `0003`-ийн ЖИНХЭНЭ багана →
+                       URL `?minTotalFloors=3&maxFloor=20&minBuildYear=2010`,
+                       DB `total_floors` / `floor` / `build_year` `.gte()/.lte()`
+                       (`lib/queries.js`) — DB MIGRATION ШААРДЛАГАГҮЙ ✓
+                    ⚠️ Хил: давхар 1…150 (`FLOOR_BOUNDS`), он 1980…одоо
+                       (`buildYearLimit`) — зөвхөн «хязгааргүй тал» ба уншигдах
+                       шошгыг бодоход, бичсэн утгыг ХЯЗГААРЛАХГҮЙ ✓
+                    ⚠️ `data-range-filter` дэгээ нь label-аас үүснэ (гурвуулаа
+                       ЯЛГААТАЙ нэр — CDP/тестэд тогтвортой ✓)
+                    ⚠️ Харагдац нь `showApartmentRanges` — 🏠 үл хөдлөх БА төрөл
+                       сонгоогүй/«Орон сууц» үед л (`showRooms`-той ижил) ✓ */}
+                {showApartmentRanges && (
+                  <>
+                    <SideBlock label="Барилгын давхар">
+                      <RangeInput
+                        label="Барилгын давхар"
+                        unit="давхар"
+                        mode="int"
+                        bounds={FLOOR_BOUNDS}
+                        from={filters.minTotalFloors}
+                        to={filters.maxTotalFloors}
+                        onChange={(a, b) => { setF('minTotalFloors', a); setF('maxTotalFloors', b); }}
+                      />
+                    </SideBlock>
+                    <SideBlock label="Хэдэн давхарт">
+                      <RangeInput
+                        label="Хэдэн давхарт"
+                        unit="давхар"
+                        mode="int"
+                        bounds={FLOOR_BOUNDS}
+                        from={filters.minFloor}
+                        to={filters.maxFloor}
+                        onChange={(a, b) => { setF('minFloor', a); setF('maxFloor', b); }}
+                      />
+                    </SideBlock>
+                    <SideBlock label="Ашиглалтанд орсон он">
+                      <RangeInput
+                        label="Ашиглалтанд орсон он"
+                        unit="он"
+                        mode="year"
+                        bounds={buildYearLimit}
+                        from={filters.minBuildYear}
+                        to={filters.maxBuildYear}
+                        onChange={(a, b) => { setF('minBuildYear', a); setF('maxBuildYear', b); }}
+                      />
+                    </SideBlock>
+                  </>
+                )}
+
               </div>
 
               {/* Доод хэсэг — unegui.mn-ийн «N зар харуулах» хэсэг.
@@ -2749,7 +2982,7 @@ export default function HomeClient() {
                   }}
                   className="btn btn-primary btn-sm w-full"
                 >
-                  🔍 Хайх
+                  Хайх
                 </button>
                 <p className="mt-2 text-center text-[13px] text-gray-500">
                   {loadError
@@ -2857,6 +3090,143 @@ export default function HomeClient() {
                 </div>
               </div>
             </div>
+
+            {/* ===== 🎛🍽 ҮР ДҮҮНГИЙН ДЭЭРХ ХЭВТЭЭ ШҮҮЛТИЙН МӨР (eBay-ийн «Color ⌄») =====
+                🆕 2026-10-04 (37): хэрэглэгчийн хүсэлт: «Түлш, Хурдны хайрцаг,
+                Төлбөрийн нөхцөл, Өнгө эдгээрийг ebay-ийн дээр байгаа Color шиг
+                болгоод өг, Төлбөрийн нөхцөл ба Өнгө олон сонголт хийх боломжтой
+                байх» ⇒ ⛽ Түлш · ⚙️ Хурдны хайрцаг · 🎨 Өнгө (албан ёсны «auto»
+                хэсэг) ба 💳 Төлбөрийн нөхцөл нь сайдбараас ГАРЧ, ЭНД «Color ⌄»
+                шиг pill товч болж, дарахад доошоо хөвөг панель (checkbox мөр)
+                гарна ✓ — бүгд ОЛОН СОНГОЛТТОЙ (OR) ХЭВЭЭР.
+                🆕 2026-10-05 (42): 💼-ийн 🕒 Ажлын цаг · 📊 Туршлага · 📈
+                Мэргэжлийн түвшин ч («фильтр задарсан sidebar биш, Өрөөний тоо/
+                Төлбөрийн нөхцөл шиг хайдаг байх» гэсэн хүсэлт) мөн ЭНЭ МӨРӨНД
+                pill болж нэгдэв — `lib/locationData.js`-ийн `filterBar: true`
+                туг л шийднэ ✓ (хатуу жагсаалт байхгүй).
+                ⚠️ `#filter-bar` нь албан ёсны тогтвортой дэгээ (CDP —
+                `scripts/cdp-notebook-specs.mjs` / `cdp-payments.mjs` /
+                `cdp-job-chips.mjs`).
+                ⚠️ Утга/URL/DB ХӨНДӨГДӨӨГҮЙ: `?attr_color=Хар,Цагаан`,
+                   `?attr_transmission=Автомат,Механик`, `?attr_fuel=Хайбрид`,
+                   `?attr_jobType=Бүтэн цагийн,Цагийн`, `?payment=lease,cash` →
+                   `lib/queries.js` (`in.(…)` / `cs.{…}`) ✓
+                ⚠️ ✅ «Шинэ / Хуучин» нь хэрэглэгчийн хүсэлтэд ороогүй тул
+                   сайдбарт ЧИП хэвээр (`filterBar` туггүй ✓) */}
+            {hasFilterBar && (
+              <div id="filter-bar" data-filter-bar className="mb-3 flex flex-wrap items-center gap-2">
+                {filterBarAttrs.map((f) => (
+                  <FilterPill
+                    key={f.key}
+                    testKey={f.key}
+                    label={f.label}
+                    count={countAttrValues(attrArray(f.key))}
+                    onClear={() => clearAttrMulti(f.key)}
+                  >
+                    <div
+                      className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
+                      data-attr-filter={f.key}
+                      data-attr-multi="true"
+                      role="group"
+                      aria-label={f.label}
+                    >
+                      <div className="flex flex-wrap gap-1.5">
+                        {(f.options || []).map((o) => {
+                          const on = attrArray(f.key).includes(o);
+                          return (
+                            <button
+                              key={o}
+                              type="button"
+                              aria-pressed={on}
+                              data-attr-value={o}
+                              onClick={() => toggleAttrMulti(f.key, o)}
+                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                            >
+                              {on && <span aria-hidden="true">✓</span>}
+                              {o}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </FilterPill>
+                ))}
+                {/* 🆕 2026-10-04 (38): 🛏 «Өрөөний тоо» — сайдбараас ГАРЧ,
+                    💳 «Төлбөрийн нөхцөл»-ийн ЯГ ӨМНӨ pill dropdown болов
+                    (хэрэглэгчийн хүсэлт: «Хайлтын өрөөний тоог төлбөр нөхцөл
+                    шиг болго, Төлбөрийн нөхцөлийн урд оруулаарай») ✓
+                    ⚠️ Утга (`filters.rooms` МАССИВ), URL (`?rooms=1,3`), DB
+                    (`lib/queries.js → applyRoomFilter`) БҮГД ХӨНДӨГДӨӨГҮЙ ✓ */}
+                {showRooms && (
+                  <FilterPill
+                    testKey="rooms"
+                    label="Өрөөний тоо"
+                    count={filters.rooms.length}
+                    onClear={clearRooms}
+                  >
+                    <div
+                      className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
+                      data-room-filter
+                      role="group"
+                      aria-label="Өрөөний тоо"
+                    >
+                      <div className="flex flex-wrap gap-1.5">
+                        {ROOM_OPTIONS.map((r) => {
+                          const on = filters.rooms.includes(r.value);
+                          return (
+                            <button
+                              key={r.value}
+                              type="button"
+                              aria-pressed={on}
+                              data-room-value={r.value}
+                              onClick={() => toggleRooms(r.value)}
+                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                            >
+                              {on && <span aria-hidden="true">✓</span>}
+                              {r.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </FilterPill>
+                )}
+                {showPayments && (
+                  <FilterPill
+                    testKey="payment"
+                    label="Төлбөрийн нөхцөл"
+                    count={countPayments(filters.payments)}
+                    onClear={clearPayments}
+                  >
+                    <div
+                      className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
+                      data-payment-filter
+                      role="group"
+                      aria-label="Төлбөрийн нөхцөл"
+                    >
+                      <div className="flex flex-wrap gap-1.5">
+                        {PAYMENT_OPTIONS.map((o) => {
+                          const on = filters.payments.includes(o.value);
+                          return (
+                            <button
+                              key={o.value}
+                              type="button"
+                              aria-pressed={on}
+                              data-payment-value={o.value}
+                              onClick={() => togglePayments(o.value)}
+                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                            >
+                              {on && <span aria-hidden="true">✓</span>}
+                              {o.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </FilterPill>
+                )}
+              </div>
+            )}
 
             {/* ⚠️🗑 2026-09-30 (4): «ӨРӨӨНИЙ ТООНЫ МӨР» (үр дүнгийн толгойн
                 доорх «1 өрөө · 2 өрөө · 3 өрөө · 4 өрөө · +5 өрөө» товчнууд)

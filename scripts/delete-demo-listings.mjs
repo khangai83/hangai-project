@@ -6,11 +6,12 @@
 //   npm run delete:demo -- --apply # УСТГАНА (service_role шаардана)
 //
 // ⚠️ ЯАГААД ХЭРЭГТЭЙ ВЭ (хэрэглэгчийн хүсэлт 2026-10-02):
-//   `seed-sections.mjs` (MARKER = '#demo-heseg10') ба
-//   `seed-more-listings.mjs` (MARKER = '#demo-turul10') нь демо заруудыг
-//   `description` дотор тэмдэг үлдээж оруулдаг. Энэ скрипт нь ЗӨВХӨН
-//   эдгээр тэмдэгтэй (⇒ системээс оруулсан) зарыг устгана — хэрэглэгчийн
-//   ГАРААР оруулсан зар ХӨНДӨГДӨХГҮЙ ✓
+//   `seed-sections.mjs` (MARKER = '#demo-heseg10'),
+//   `seed-more-listings.mjs` (MARKER = '#demo-turul10') ба
+//   🆕 `seed-per-category.mjs` (MARKER = '#demo-cat3', 2026-10-04) нь демо
+//   заруудыг `description` дотор тэмдэг үлдээж оруулдаг. Энэ скрипт нь
+//   ЗӨВХӨН эдгээр тэмдэгтэй (⇒ системээс оруулсан) зарыг устгана —
+//   хэрэглэгчийн ГАРААР оруулсан зар ХӨНДӨГДӨХГҮЙ ✓
 //
 // ⚠️ ЗУРГИЙН САН: demo заруудын зураг нь `public/uploads/property-*.svg`
 //    (локал файл) эсвэл `[]` тул R2 / Supabase Storage-д устах зүйл БАЙХГҮЙ ✓
@@ -23,8 +24,9 @@ import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const { getAdminClient } = require('../lib/authServer');
 
-/** Seed тэмдгүүд — `seed-sections.mjs` ба `seed-more-listings.mjs` */
-const MARKERS = ['#demo-heseg10', '#demo-turul10'];
+/** Seed тэмдгүүд — `seed-sections.mjs`, `seed-more-listings.mjs`,
+ *  🆕 `seed-per-category.mjs` (`seed:category`, 2026-10-04 — хэсэг бүрт 3 зар) */
+const MARKERS = ['#demo-heseg10', '#demo-turul10', '#demo-cat3'];
 const APPLY = process.argv.includes('--apply');
 const PAGE = 1000; // PostgREST-ийн мөрийн дээд хязгаар
 const CHUNK = 200; // нэг delete хүсэлтэд устгах мөрийн тоо

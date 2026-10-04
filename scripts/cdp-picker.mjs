@@ -1342,16 +1342,27 @@ ok('sidebar: 🔀 «Хөтлөгч» шүүлт БАЙХГҮЙ (0 талбар)'
   JSON.stringify(sideSelects.map((s) => s.aria)));
 
 // ⚠️ 2026-10-04 (35): 🏷️ «Үйлдвэрлэгч»/🚙 «Загвар» нь сайдбараас ГАРЧ,
-//    `CarPicker` (modal) руу шилжсэн тул сайдбарын attr жагсаалт нь
-//    🎨 «Өнгө»-өөр ЭХЭЛНЭ (`attrFilters.filter(…)` — brand/model шүүгдсэн ✓)
+//    `CarPicker` (modal) руу шилжсэн
+// 🆕 2026-10-04 (37): 🎨 «Өнгө» (ба ⚙️/⛽) ч сайдбараас ГАРЧ, үр дүнгийн ДЭЭРХ
+//    ХЭВТЭЭ шүүлтийн мөр (`#filter-bar`) руу «eBay-ийн Color ⌄» шиг pill болов
+//    (хэрэглэгчийн хүсэлт: «Түлш, Хурдны хайрцаг, Төлбөрийн нөхцөл, Өнгө
+//    эдгээрийг ebay-ийн дээр байгаа Color шиг болгоод өг») ⇒ sidebar-д attr
+//    шүүлт ОГТ ҮЛДЭХГҮЙ, бүгд `#filter-bar` дотор ✓
 const SIDE_ORDER = `(() => [...document.querySelectorAll('aside [aria-label]')]
   .map((el) => (el.getAttribute('aria-label') || '').trim()).filter(Boolean))()`;
 const sideOrder = await evaluate(SIDE_ORDER);
 ok('🚗 sidebar: 🏷️ «Үйлдвэрлэгч» / 🚙 «Загвар» сайдбарт БАЙХГҮЙ (modal руу шилжсэн ✓)',
   !sideOrder.includes('Загвар') && !sideOrder.includes('Үйлдвэрлэгч'),
   JSON.stringify(sideOrder));
-ok('sidebar: attr шүүлтийн эхнийх нь 🎨 «Өнгө» (пикерийн дараа)',
-  sideOrder[0] === 'Өнгө', JSON.stringify(sideOrder));
+const sideAttrCount = await evaluate(
+  `document.querySelectorAll('aside [data-attr-filter]').length`);
+ok('🎛 sidebar: attr шүүлт БАЙХГҮЙ (0 — бүгд `#filter-bar` руу шилжсэн ✓)',
+  sideAttrCount === 0, `sideAttr=${sideAttrCount}`);
+const BAR_ORDER = `(() => [...document.querySelectorAll('#filter-bar [aria-label]')]
+  .map((el) => (el.getAttribute('aria-label') || '').trim()).filter(Boolean))()`;
+const barOrder = await evaluate(BAR_ORDER);
+ok('🎛 #filter-bar: attr шүүлтийн эхнийх нь 🎨 «Өнгө» (eBay-ийн «Color ⌄» ✓)',
+  barOrder[0] === 'Өнгө', JSON.stringify(barOrder));
 
 // ── ⑦‴ 🏷️🚙 SIDEBAR → `CarPicker` (modal): Үйлдвэрлэгч → Загвар КАСКАД ──
 /**

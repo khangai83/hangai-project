@@ -54,7 +54,9 @@ import { getCarModels } from '../lib/carModels.mjs';
 const require = createRequire(import.meta.url);
 const { getAdminClient, findUserByPhone } = require('../lib/authServer');
 
-const MARKER = '#demo-heseg10';
+// ⚠️ 2026-10-04 (40): `export` — `scripts/seed-per-category.mjs` (3 зар/хэсэг) нь
+//    энэ тэмдгийг мэдэж, өөрийн мөрүүдээ л устгах ёстой (бусад demo-г ХӨНДӨХГҮЙ) ✓
+export const MARKER = '#demo-heseg10';
 const PER_SUBTYPE = 10;
 const DEMO_PHONE = process.argv[2] || '88093663';
 const IMG_COUNT = 20; // public/uploads/property-N.svg
@@ -1319,8 +1321,16 @@ function makeDescription(section, subtype) {
   return `${body}\n\n${MARKER}`;
 }
 
-/** Нэг зарын мөр бүтээх */
-function buildRow(section, subtype, k) {
+/** Нэг зарын мөр бүтээх
+ *  ⚠️ 2026-10-04 (40): `export` — `scripts/seed-per-category.mjs` (хэсэг/категори
+ *     бүрт 3 зар) нь ЯГ ИЖИЛ үнэ/attrs/тайлбарын логикийг дахин ашиглана
+ *     (хуулбар код → үнэ/талбарын дүрэм 2 газар зөрөх эрсдэлээс сэргийлэв) ✓
+ *  @param {string} section хэсгийн value (`real-estate` …)
+ *  @param {string} subtype дэд төрөл (үл хөдлөхөд `PROPERTY_TYPE_DEFS` утга)
+ *  @param {number} k хувилбарын дугаар (0…9) — ⚠️ үл хөдлөхөд `k % 2` нь
+ *     `category`-г тодорхойлно (тэгш = sell, сондгой = rent) ✓
+ */
+export function buildRow(section, subtype, k) {
   const loc = makeLocation();
   const isRE = section === 'real-estate';
   // ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд — бусад хэсэгт `sell`
@@ -1444,7 +1454,14 @@ function buildRow(section, subtype, k) {
 
 
 // ---- Ажиллуулах ---------------------------------------------------------
-(async () => {
+// ⚠️ 2026-10-04 (40): `scripts/seed-per-category.mjs` нь энэ файлын `buildRow`-ыг
+//    ДАХИН АШИГЛАХ болсон тул `import` хийхэд үндсэн ажиллагаа (DB-д устгах/
+//    оруулах) АЖИЛЛАХГҮЙ байх ЁСТОЙ ⇒ зөвхөн ШУУД ажиллуулахад
+//    (`node scripts/seed-sections.mjs …`) л IIFE-г дуудна ✓
+//    (`npm run seed:sections` — өөрчлөгдөөгүй, зөвхөн import-ийн үед хамгаална)
+const IS_DIRECT_RUN =
+  !!process.argv[1] && /seed-sections\.mjs$/.test(process.argv[1]);
+if (IS_DIRECT_RUN) (async () => {
   const admin = getAdminClient();
 
   // ⚠️ 2026-10-03 (10): `jobs`-ийн [компани, тушаал] хосуудын шалгалт УСТСАН —

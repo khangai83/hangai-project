@@ -180,7 +180,9 @@ const go = async (address) => {
    *    ℹ️ Энэ скриптийн бүх хуудас ≥1 шүүлттэй (computers/Apple = 5 ·
    *       Mouse = 1 · `?section=computers` = 1 · 🚗 авто = 3) тул тохирно ✓
    */
-  await waitFor(`document.querySelectorAll('#advanced-filters [data-attr-filter]').length > 0`, 15000);
+  // 🆕 2026-10-04 (37): 🎨/⚙️/⛽ (ба 💳) нь үр дүнгийн дээрх ХЭВТЭЭ мөр
+  //    (`#filter-bar`) руу шилжсэн ⇒ ХОЁР газрыг хамт хүлээнэ ✓
+  await waitFor(`document.querySelectorAll('#advanced-filters [data-attr-filter], #filter-bar [data-attr-filter]').length > 0`, 15000);
   await sleep(500);
 };
 
@@ -193,7 +195,17 @@ const go = async (address) => {
  */
 const specUi = () => evalJs(`(() => {
   const aside = document.getElementById('advanced-filters');
-  const sels = [...(aside ? aside.querySelectorAll('[data-attr-filter]') : [])];
+  /**
+   * 🆕 2026-10-04 (37): 🎨/⚙️/⛽ (ба 💳) нь сайдбараас гарч, үр дүнгийн ДЭЭРХ
+   *    ХЭВТЭЭ шүүлтийн мөр (#filter-bar) руу шилжсэн (eBay-ийн «Color ⌄» шиг)
+   *    ⇒ [data-attr-filter]-ыг ХОЁР газраас хайна; querySelectorAll нь
+   *    документийн дарааллаар буцаана (sidebar-ийн дараа filter-bar ✓)
+   *    ⚠️ Тайлбар дотор BACKTICK БИЧИХГҮЙ — энэ бүхэн evalJs-ийн ТЕМПЛЭЙТ
+   *       ЛИТЕРАЛ дотор байгаа тул backtick нь литэрэлыг ХААЖ хасна ✗
+   *       (2026-10-04 (39): синтакс алдаа зассан — node --check ✓)
+   */
+  const sels = [...document.querySelectorAll(
+    '#advanced-filters [data-attr-filter], #filter-bar [data-attr-filter]')];
   const txt = (el) => (el && el.textContent ? el.textContent.trim() : '');
   const footer = aside
     ? [...aside.querySelectorAll('p')].find((p) => /зар харуулах/.test(p.textContent))
@@ -235,7 +247,7 @@ const specUi = () => evalJs(`(() => {
       .map((b) => txt(b.firstElementChild)),
     // 🎨 «N сонгосон» badge-ууд (олон сонголттой блок бүрийн толгойд —
     //    2026-10-03 (19): 🎨 «Өнгө», 🛏 «Өрөөний тоо», 💳 «Төлбөрийн нөхцөл» ✓)
-    multiBadges: [...document.querySelectorAll('#advanced-filters span')]
+    multiBadges: [...document.querySelectorAll('#advanced-filters span, #filter-bar span')]
       .map(txt).filter((t) => /^[0-9]+ сонгосон$/.test(t)),
     chips: [...document.querySelectorAll('[aria-label$="хайлтыг хасах"]')]
       .map((b) => (b.getAttribute('aria-label') || '').replace(' хайлтыг хасах', '')),
@@ -277,8 +289,13 @@ const dbQ = (...frags) => listingReqs.some((u) => {
   const s = decodeURIComponent(u).replace(/\+/g, ' ');
   return frags.every((f) => s.includes(f));
 });
-const lastQ = () => decodeURIComponent(listingReqs[listingReqs.length - 1] || '')
-  .split('?')[1].replace(/\+/g, ' ') || '(query байхгүй)';
+const lastQ = () => {
+  // ⚠️ 2026-10-04 (39): query МӨРГҮЙ линк (ж: цэвэр `/?section=auto`) дээр
+  //    `.split('?')[1]` нь `undefined` болж `.replace` TypeError өгнө ✗
+  //    ⇒ бүх suite-ийг унагахын оронд ТОДОРХОЙ текст буцаана ✓
+  const q = decodeURIComponent(listingReqs[listingReqs.length - 1] || '').split('?')[1];
+  return q ? q.replace(/\+/g, ' ') : '(query байхгүй)';
+};
 
 /**
  * ⚠️ Хүлээгдэж буй жагсаалт нь ЛИБЭЭС (`lib/locationData.js`) — DOM-той харьцуулна ✓
@@ -358,8 +375,8 @@ check('🔎 DB: `attrs->>cpu=eq.Intel Core i5` (ЯГ тэнцүү — ilike БИ
 const cpuUi = await specUi();
 check('🎛 Утга нь талбар дээр ХЭВЭЭР (React-ийн controlled select ✓)',
   cpuUi.values[cpuUi.selectKeys.indexOf('cpu')] === 'Intel Core i5', `values=[${cpuUi.values.join(', ')}]`);
-check('🏷 Идэвхтэй шүүлтийн чип «⚙️ Intel Core i5» гарлаа',
-  cpuUi.chips.some((c) => c === '⚙️ Intel Core i5'), `chips=[${cpuUi.chips.join(' | ')}]`);
+check('🏷 Идэвхтэй шүүлтийн чип «Intel Core i5» гарлаа (🗑 2026-10-04 (39): emoji-гүй)',
+  cpuUi.chips.some((c) => c === 'Intel Core i5'), `chips=[${cpuUi.chips.join(' | ')}]`);
 check('📉 Үр дүнгийн тоо БУУРСАН (шүүлт бодит DB дээр ажиллаж байна ✓)',
   typeof cpuUi.count === 'number' && cpuUi.count <= allCount,
   `${cpuUi.count} ≤ ${allCount} (шүүлттэй тоо ХЭЗЭЭ Ч илүү гарахгүй ✓)`);
@@ -517,8 +534,8 @@ check('🔎 DB: `attrs->>color=in.(Хар)` (нэг утга — OR-ийн нэ�
 check('🎨 «1 сонгосон» badge + чип `aria-pressed=true`',
   one.multiBadges.includes('1 сонгосон') && one.chipBlocks[0].pressed.join(',') === 'Хар',
   `badges=[${one.multiBadges.join(' | ')}] · pressed=[${one.chipBlocks[0].pressed.join(', ')}]`);
-check('🏷 Идэвхтэй шүүлтийн чип «🎨 Хар» гарлаа',
-  one.chips.some((c) => c === '🎨 Хар'), `chips=[${one.chips.join(' | ')}]`);
+check('🏷 Идэвхтэй шүүлтийн чип «Хар» гарлаа (🗑 2026-10-04 (39): emoji-гүй)',
+  one.chips.some((c) => c === 'Хар'), `chips=[${one.chips.join(' | ')}]`);
 
 // ---- ⑦b 🎨 2 ӨНГӨ (ХАМГИЙН ЧУХАЛ — ОЛОН СОНГОЛТ) → `in.(Хар,Цагаан)` ----
 listingReqs.length = 0;
@@ -535,8 +552,8 @@ check('🎨 «2 сонгосон» badge + 2 чип идэвхтэй (⚠️ DOM
   two.multiBadges.includes('2 сонгосон')
     && [...two.chipBlocks[0].pressed].sort().join(',') === ['Хар', 'Цагаан'].sort().join(','),
   `badges=[${two.multiBadges.join(' | ')}] · pressed=[${two.chipBlocks[0].pressed.join(', ')}]`);
-check('🏷 Идэвхтэй шүүлтийн чип нь ТОВЧЛОГДОВ («🎨 2 өнгө» — нэрсийг жагсаахгүй ✓)',
-  two.chips.some((c) => c === '🎨 2 өнгө'), `chips=[${two.chips.join(' | ')}]`);
+check('🏷 Идэвхтэй шүүлтийн чип нь ТОВЧЛОГДОВ («2 өнгө» — нэрсийг жагсаахгүй ✓; 🗑 2026-10-04 (39): emoji-гүй)',
+  two.chips.some((c) => c === '2 өнгө'), `chips=[${two.chips.join(' | ')}]`);
 
 // ---- ⑦c ЦУЦЛАХ: чип дээр дахин дарах ба «✕ Цуцлах» товч ----
 listingReqs.length = 0;
@@ -553,8 +570,15 @@ check('🎨 «1 сонгосон» badge хэвээр (нэг утга үлдс�
   toggled.multiBadges.includes('1 сонгосон'), `badges=[${toggled.multiBadges.join(' | ')}]`);
 listingReqs.length = 0;
 const cleared = await evalJs(`(() => {
-  const b = [...document.querySelectorAll('#advanced-filters button')]
+  // ⚠️ 2026-10-04 (37): «Өнгө» pill нь #filter-bar руу шилжсэн ⇒ «✕ Цуцлах»
+  //    товч нь pill-ийн панель дотор ([data-filter-panel="color"]) ✓
+  // ⚠️ 2026-10-04 (39): comma-селектор нь документын дарааллаар буцаадаг тул
+  //    сайдбарын (aside нь #filter-bar-аас ӨМНӨ) «✕ Цуцлах» давамгайлж болно ✗
+  //    ⇒ pill-ийн товчийг ЭХЭНД хайж, сайдбарыг зөвхөн нөөцөөр (regression) хайна
+  const pick = (sel) => [...document.querySelectorAll(sel)]
     .find((x) => (x.textContent || '').trim() === '✕ Цуцлах');
+  const b = pick('#filter-bar [data-filter-panel="color"] button')
+    || pick('#advanced-filters button');
   if (!b) return 'NO_BTN';
   b.click();
   return 'OK';
@@ -647,8 +671,8 @@ check('🔎 DB: `attrs->>condition=in.(Шинэ)` (нэг утга — OR-ийн
 check('✅ «1 сонгосон» badge + чип `aria-pressed=true`',
   cond1.multiBadges.includes('1 сонгосон') && cond1.chipBlocks[0].pressed.join(',') === 'Шинэ',
   `badges=[${cond1.multiBadges.join(' | ')}] · pressed=[${cond1.chipBlocks[0].pressed.join(', ')}]`);
-check('✅ ⑨b Идэвхтэй шүүлтийн чип 1 утгатай үед НЭРЭЭРЭЭ («✅ Шинэ» ✓)',
-  cond1.chips.some((c) => c === '✅ Шинэ'), `chips=[${cond1.chips.join(' | ')}]`);
+check('✅ ⑨b Идэвхтэй шүүлтийн чип 1 утгатай үед НЭРЭЭРЭЭ («Шинэ» ✓; 🗑 2026-10-04 (39): emoji-гүй)',
+  cond1.chips.some((c) => c === 'Шинэ'), `chips=[${cond1.chips.join(' | ')}]`);
 
 // ---- ⑨b 2 ТӨЛӨВ (ХАМГИЙН ЧУХАЛ — ОЛОН СОНГОЛТ) → `in.(Шинэ,Хуучин)` ----
 listingReqs.length = 0;
@@ -665,8 +689,8 @@ check('✅ «2 сонгосон» badge + 2 чип идэвхтэй (⚠️ DOM 
   cond2.multiBadges.includes('2 сонгосон')
     && [...cond2.chipBlocks[0].pressed].sort().join(',') === ['Шинэ', 'Хуучин'].sort().join(','),
   `badges=[${cond2.multiBadges.join(' | ')}] · pressed=[${cond2.chipBlocks[0].pressed.join(', ')}]`);
-check('✅ Идэвхтэй шүүлтийн чип нь ТОВЧЛОГДОВ («✅ 2 төлөв» — `multiNoun` ✓)',
-  cond2.chips.some((c) => c === '✅ 2 төлөв'), `chips=[${cond2.chips.join(' | ')}]`);
+check('✅ Идэвхтэй шүүлтийн чип нь ТОВЧЛОГДОВ («2 төлөв» — `multiNoun` ✓; 🗑 2026-10-04 (39): emoji-гүй)',
+  cond2.chips.some((c) => c === '2 төлөв'), `chips=[${cond2.chips.join(' | ')}]`);
 
 // ---- ⑨c ЦУЦЛАХ: чип дээр дахин дарах ба «✕ Цуцлах» товч ----
 listingReqs.length = 0;

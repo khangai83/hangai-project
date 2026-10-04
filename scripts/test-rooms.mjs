@@ -327,16 +327,19 @@ t('🛏 HomeClient.jsx: өрөө сонгох UI ЭРГЭЖ ИРЭВ + «Үнэ�
   assert.match(ui, /clearRooms/, 'clearRooms функц алга ✗');
   assert.match(ui, /showRooms/, 'showRooms нөхцөл алга ✗');
   assert.match(src, /Өрөөний тоо/, '«Өрөөний тоо» блокын шошго алга ✗');
-  // ③ БАЙРЛАЛ: чип нь «Үнэ, ₮» блокийн ӨМНӨ байх ЁСТОЙ (хэрэглэгчийн хүсэлт)
-  // ⚠️ 2026-10-03 (9): үнийн блок нь одоо НЭГ эх сурвалж (`priceSideBlock`) болов
-  //    — ажлын зарт «Цалин, ₮» болж attr шүүлтүүдийн ӨМНӨ гардаг (`{isJobs && …}`),
-  //    харин үл хөдлөхөд ХУУЧИН байрлалдаа (`{!isJobs && priceSideBlock}`) ✓
-  //    ⇒ өрөөний чип нь `{!isJobs && priceSideBlock}`-ийн ӨМНӨ байх ёстой ✓
+  /**
+   * ③ БАЙРЛАЛ (🆕 2026-10-04 (38), хэрэглэгчийн хүсэлт: «Хайлтын өрөөний тоог
+   *    төлбөр нөхцөл шиг болго, Төлбөрийн нөхцөлийн урд оруулаарай»):
+   *    өрөөний чип нь сайдбараас ГАРЧ, үр дүнгийн ДЭЭРХ ХЭВТЭЭ мөр
+   *    (`#filter-bar`) руу 💳 «Төлбөрийн нөхцөл»-ийн ЯГ ӨМНӨ pill болов ✓
+   *    (⏳ 2026-10-03 (4)-д «Үнэ, ₮»-ний өмнө сайдбарт байсан — ОДОО тийм БИШ)
+   */
+  assert.match(ui, /id="filter-bar"/, '#filter-bar (үр дүнгийн дээрх мөр) алга ✗');
   const roomsAt = ui.indexOf('data-room-filter');
-  const priceAt = ui.indexOf('{!isJobs && priceSideBlock}');
+  const payAt = ui.indexOf('data-payment-filter');
   assert.ok(roomsAt > 0, 'өрөөний блок олдсонгүй ✗');
-  assert.ok(priceAt > 0, 'үнийн блок (`!isJobs && priceSideBlock`) олдсонгүй ✗');
-  assert.ok(roomsAt < priceAt, 'өрөөний блок үнийн ДАРАА байна ✗');
+  assert.ok(payAt > 0, 'төлбөрийн блок олдсонгүй ✗');
+  assert.ok(roomsAt < payAt, 'өрөөний pill төлбөрийн ДАРАА байна ✗ (урд байх ёстой)');
   // ④ ХОРООНЫ блоктой ИЖИЛ хэв маяг (`chip-toggle` + «N сонгосон»)
   assert.match(ui, /chip-toggle-active/, 'чипийн идэвхтэй хэв маяг алга ✗');
   assert.match(src, /сонгосон/, '«N сонгосон» badge алга ✗');

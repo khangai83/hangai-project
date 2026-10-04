@@ -539,7 +539,8 @@ await waitFor(`!document.querySelector('[data-location-picker]')`);
 
 // ═══════ ④ ИДЭВХТЭЙ ШҮҮЛТИЙН ЧИП ✕ — дүүргийг бүрэн цэвэрлэнэ ═══════
 await go(`${UB}&district=${encodeURIComponent('Баянгол,Сүхбаатар')}`);
-// ⚠️ Чип нь «📍 2 дүүрэг» гэсэн ШОШГОТОЙ байх ёстой (нэг утгатай үед нэрээ ✓)
+// ⚠️ Чип нь «2 дүүрэг» гэсэн ШОШГОТОЙ байх ёстой (нэг утгатай үед нэрээ ✓)
+// 🗑 2026-10-04 (39): emoji (`📍`) ХАСАГДАВ — зөвхөн «2 дүүрэг» ✓
 // 🏷️ 2026-10-03 (14): шошго нь «дүүрэг» гэж эхэлсээр байгаа тул доорх
 //    `/дүүрэг/` шүүлт хэвээр ажиллана (⚠️ «дүүрэг/сум» БИШ) ✓
 const DIST_CHIP = `[...document.querySelectorAll('button')].find((x) => {
@@ -547,7 +548,7 @@ const DIST_CHIP = `[...document.querySelectorAll('button')].find((x) => {
   return /хайлтыг хасах/.test(a) && /дүүрэг/.test(a);
 })`;
 const chipLabel = await evalJs(`(() => { const b = ${DIST_CHIP}; return b ? b.getAttribute('aria-label') : 'NO_CHIP'; })()`);
-check('🎛 Идэвхтэй шүүлтийн чип `📍 2 дүүрэг` олдлоо', chipLabel !== 'NO_CHIP', chipLabel);
+check('🎛 Идэвхтэй шүүлтийн чип `2 дүүрэг` олдлоо (🗑 2026-10-04 (39): emoji-гүй)', chipLabel !== 'NO_CHIP', chipLabel);
 listingReqs.length = 0;
 const chipClicked = await evalJs(`(() => { const b = ${DIST_CHIP}; if (!b) return 'NO_CHIP'; b.click(); return 'OK'; })()`);
 check('🎛 Чипийн ✕ товч дардагдав', chipClicked === 'OK', chipClicked);

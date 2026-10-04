@@ -26,8 +26,8 @@ import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 
 import {
-  AREA_BOUNDS, PRICE_BOUNDS, YEAR_START,
-  clampNum, formatGroupedInput, groupDigits, isRangeActive,
+  AREA_BOUNDS, BUILD_YEAR_START, FLOOR_BOUNDS, PRICE_BOUNDS, YEAR_START,
+  buildYearBounds, clampNum, formatGroupedInput, groupDigits, isRangeActive,
   parseNum, priceBounds, rangeLabel, snapNum,
   toFilterPair, yearBounds,
 } from '../lib/rangeFilter.mjs';
@@ -307,6 +307,30 @@ t('yearBounds(2026): 1990–2026, алхам 1 · эвдэрсэн онд ч э�
   assert.ok(yearBounds('x').max > 1990);
 });
 
+// ---------- ⑥′ 🏢📅 ОРОН СУУЦНЫ НЭМЭЛТ ХҮРЭЭ (2026-10-04) ----------
+t('FLOOR_BOUNDS: 1–150 (`FLOOR_MAX`), алхам 1 — «Барилгын давхар»/«Хэдэн давхарт»', () => {
+  assert.deepEqual(FLOOR_BOUNDS, { min: 1, max: 150, step: 1 });
+});
+
+t('buildYearBounds(2026): 1980–2026, алхам 1 · эвдэрсэн онд ч эвдрэхгүй', () => {
+  assert.deepEqual(buildYearBounds(2026), { min: 1980, max: 2026, step: 1 });
+  assert.equal(buildYearBounds(1970).max, BUILD_YEAR_START);
+  assert.ok(buildYearBounds('x').max > 1980);
+  // ⚠️ Машины `yearBounds` (1990) ба барилгын `buildYearBounds` (1980) — ЭХЛЭЛ нь
+  //    ЯЛГААТАЙ (форм нь 1980-аас сонгодог ✓)
+  assert.notEqual(BUILD_YEAR_START, YEAR_START);
+});
+
+t('FLOOR/ОН хүрээ: ХИЛИЙН тал нь «шүүлт БАЙХГҮЙ» (URL/DB цэвэр)', () => {
+  // ⚠️ `minArea`-гийн ЯГ ижил дүрэм — давхар 1/150 ба он 1980/2026 дээр `''`
+  assert.deepEqual(toFilterPair(1, 150, FLOOR_BOUNDS), { from: '', to: '' });
+  assert.deepEqual(toFilterPair(3, 20, FLOOR_BOUNDS), { from: '3', to: '20' });
+  assert.deepEqual(toFilterPair(3, 150, FLOOR_BOUNDS), { from: '3', to: '' });
+  const yb = buildYearBounds(2026);
+  assert.deepEqual(toFilterPair(1980, 2026, yb), { from: '', to: '' });
+  assert.deepEqual(toFilterPair(2010, 2020, yb), { from: '2010', to: '2020' });
+});
+
 console.log('\n🧪 Эрэмбэлэх сонголт (lib/sortOptions.mjs)\n');
 
 // ---------- ⑦ SORT_OPTIONS · normalizeSort ----------
@@ -372,6 +396,32 @@ t('ГЭРЭЭ: HomeClient нь RangeInput-ийг импортолж, хил 3-ы
   assert.match(src, /priceBounds\(/, 'үнийн хил (хэсгээс хамаарна)');
   assert.match(src, /yearBounds\(/, ' оны хил (одоогийн он)');
   assert.match(src, /AREA_BOUNDS/, 'талбайн хил');
+  // 🏢📅 2026-10-04: орон сууцны давхар/оны хүрээ
+  assert.match(src, /FLOOR_BOUNDS/, 'давхрын хил (1–150)');
+  assert.match(src, /buildYearBounds\(/, 'ашиглалтанд орсон оны хил (1980…)');
+});
+
+t('🏢📅 ГЭРЭЭ: орон сууцны давхар/он шүүлт — URL↔state↔DB бүрэн холбогдсон', () => {
+  const home = readSrc('components/HomeClient.jsx');
+  const q = readSrc('lib/queries.js');
+  // ① Төлөв/URL түлхүүрүүд (6 — 3 хүрээ × доод/дээд)
+  ['minTotalFloors', 'maxTotalFloors', 'minFloor', 'maxFloor', 'minBuildYear', 'maxBuildYear']
+    .forEach((k) => assert.ok(home.includes(k), `HomeClient: «${k}» алга ✗`));
+  // ② URL-аас уншина (хуваалцсан линк ажиллана)
+  assert.match(home, /sp\.get\('minTotalFloors'\)/);
+  assert.match(home, /sp\.get\('maxBuildYear'\)/);
+  // ③ DB — `attrs` (jsonb) БИШ, ЖИНХЭНЭ багана (0003): `.gte()/.lte()`
+  assert.match(q, /\.gte\('total_floors'/, 'total_floors ≥');
+  assert.match(q, /\.lte\('total_floors'/, 'total_floors ≤');
+  assert.match(q, /\.gte\('floor'/, 'floor ≥');
+  assert.match(q, /\.lte\('floor'/, 'floor ≤');
+  assert.match(q, /\.gte\('build_year'/, 'build_year ≥');
+  assert.match(q, /\.lte\('build_year'/, 'build_year ≤');
+  // ④ Зөвхөн «Орон сууц»-д харагдана — `hasApartmentFields` (нэг эх сурвалж,
+  //    `showRooms`-той ижил дүрэм)
+  assert.match(home, /const showApartmentRanges = isRealEstate[\s\S]{0,80}hasApartmentFields\(filters\.propertyType\)/);
+  // ⑤ Төрөл/хэсэг солиход ХҮЧИНГҮЙ утга ЦЭВЭРЛЭГДЭНЭ («үл үзэгдэх шүүлт» үлдэхгүй)
+  assert.match(home, /!hasApartmentFields\(v\)/, 'propertyType солиход цэвэрлэх дүрэм');
 });
 
 t('📌 РЕГРЕСС: ЧИРДЭГ слайдер БҮРЭН хасагдсан (хэрэглэгчийн хүсэлт ✓)', () => {

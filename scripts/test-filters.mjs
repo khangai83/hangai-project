@@ -1423,16 +1423,19 @@ t('💼 jobs: зөвхөн 2 нэр 🛠️ services-тэй ДАВХАРДАЖ �
   assert.equal(getSubtypes('jobs').length - 2, 24);
 });
 
-t('💼 jobs: 2 түвшин, 3 шүүлт (🕒 чип · 📊 · 📈), хялбар форм БИШ', () => {
+t('💼 jobs: 2 түвшин, 3 шүүлт (🕒 · 📊 · 📈 — гурвуулаа ОЛОН СОНГОЛТТОЙ ЧИП), хялбар форм БИШ', () => {
   assert.equal(getSection('jobs').label, 'Ажлын зар');
   assert.equal(getSection('jobs').icon, '💼');
   assert.deepEqual(getAttrFilters('jobs').map((f) => f.key), ['jobType', 'experience', 'jobLevel']);
-  // 🕒 «Ажлын цаг» нь ЧИП (`chips: true`) — бусад 2 нь энгийн select ✓
-  assert.equal(getAttrField('jobs', 'jobType').chips, true);
-  assert.equal(getAttrField('jobs', 'experience').chips, undefined);
-  assert.equal(getAttrField('jobs', 'jobLevel').chips, undefined);
+  // 🆕 2026-10-05 (42): «🛏 Өрөөний тоо»-той ЯГ ИЖИЛ — ГУРВУУЛАА `chips`+`multi`
+  //    (хэрэглэгчийн хүсэлт: «Ажлын цаг, Туршлага, Мэргэжлийн түвшиныг Өрөөний
+  //    тоо шиг болго»); ⏳ (9)-д зөвхөн 🕒 нь чип байв
+  ['jobType', 'experience', 'jobLevel'].forEach((k) => {
+    assert.equal(getAttrField('jobs', k).chips, true, `${k}.chips ✗`);
+    assert.equal(getAttrField('jobs', k).multi, true, `${k}.multi ✗`);
+  });
   // 🎛 2026-10-03 (11): ФОРМ дээр 4 талбар нь чип (`formChips`) —
-  //    ⚠️ энэ нь sidebar-ийн `chips`-ээс ТУСДАА туг (sidebar хөндөгдөхгүй ✓)
+  //    ⚠️ энэ нь sidebar-ийн `chips`-ээс ТУСДАА туг (форм нэг утга хадгална ✓)
   ['jobType', 'experience', 'advertiser', 'jobLevel'].forEach((k) => {
     assert.equal(getAttrField('jobs', k).formChips, true, `${k}.formChips ✗`);
   });
