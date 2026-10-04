@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ListingCard from './ListingCard';
 import MapView from './MapView';
-import { useToast, useUI } from './AppProviders';
+// 📍 БАЙРШЛЫН ПИКЕР (modal, 2026-10-04 (27)) — «📍 Бүх байршил» товч дарахад
+//    «Байршлаа сонгоно уу» цонх (Хот → Дүүрэг → Хороо каскад) нээгдэнэ ✓
+import LocationPicker from './LocationPicker';
+import { useToast, useUI, useHeaderSlot } from './AppProviders';
 import {
   fetchListings, fetchPropertyTypeCounts, fetchProfilesByIds,
   LISTINGS_PAGE_SIZE,
@@ -243,6 +246,81 @@ function SideBlock({ label, children }) {
 }
 
 /**
+ * 🖥🔍 ХАЙЛТЫН МӨР — толгойн мөр (2026-10-04 (27)).
+ *
+ * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (жишээ зурагтай): «хайлт хэсгийн вэб дээд хэсэгт болгож
+ * өөрчил» — хайлтын мөр нь толгойн мөрөнд (лого ба баруун товчнуудын ДҮНД)
+ * байрлана. Бүтэц нь `unegui.mn`-ийн хэвтэй ижил:
+ *   [ ☰ Ангилал ▾ ] [ 🔍 <хайлтын талбар> ] [ Хайх ] [ 📍 Бүх байршил ]
+ *
+ * ⚠️ HERO-ийн хуучин хэлбэр (зурагтай дэвсгэр) ХАСАГДАВ — мөр нь цул цагаан
+ *    толгойн мөрөнд шилжив; `data-hero-section` (13 option) дэгээ ХЭВЭЭР ✓
+ *    (`scripts/cdp-range.mjs` шинэ газраас ч олно ✓)
+ * ⚠️ `variant`:
+ *      • `'header'` — толгойн МӨР (≥xl, ≥1280px). `data-hero-section` дэгээг
+ *        ЗӨВХӨН энэ хувилбар авна (CDP нь `[data-hero-section] option` === 13
+ *        гэж шалгана — ДАВХАР дэгээ гарвал 26 болж ХУУРАМЧ улаан өгнө ✗)
+ *      • `'mobile'` — толгойн ДООРХ наалдамхай мөр (`<xl`). ID нь өөр тул
+ *        DOM дээр давхардсан `id` үүсэхгүй ✓ (дэгээгүй — зөвхөн UI ✓)
+ * ⚠️ Утгууд нь `HomeClient`-ийн төлөвөөс; илгээх нь Enter БА «Хайх» товч
+ *    ХОЁУЛАА `onSubmit`-оор ажиллана ✓ (a11y дээр зөв — `<form role="search">`)
+ * ⚠️ `<select>` нь `max-w-[150px]` — native select-ийн өргөн нь ХАМГИЙН УРТ
+ *    option-оор тодорхойлогддог (бодит хэмжилт 269px!) тул хязгаарлахгүй бол
+ *    390px дээр мөр хэвтээ гүйлт (overflow) үүсгэнэ ✗ */
+function HeaderSearchBar({
+  variant = 'header',
+  section, search, total, locationLabel, hasLocation,
+  onSectionChange, onSearchChange, onSubmit, onOpenLocation,
+}) {
+  const placeholder = total != null ? `${formatCount(total)} зар байна` : 'Хайх...';
+  const isHeader = variant === 'header';
+  const idBase = isHeader ? 'home-search' : 'home-search-mobile';
+  return (
+    <form role="search" onSubmit={onSubmit} className="flex w-full min-w-0 items-center gap-2">
+      <label className="sr-only" htmlFor={`${idBase}-section`}>Хэсэг сонгох</label>
+      <select
+        id={`${idBase}-section`}
+        aria-label="Хэсэг сонгох"
+        {...(isHeader ? { 'data-hero-section': true } : {})}
+        value={section}
+        onChange={(e) => onSectionChange(e.target.value)}
+        className="h-10 max-w-[150px] shrink-0 rounded-lg border border-gray-200 bg-gray-100 pl-3 pr-2 text-[13px] font-semibold text-gray-700 outline-none hover:bg-gray-200"
+      >
+        <option value="all">☰ Ангилал</option>
+        {SECTIONS.map((s) => <option key={s.value} value={s.value}>{s.icon} {s.label}</option>)}
+      </select>
+      <label className="sr-only" htmlFor={idBase}>Зар хайх</label>
+      <input
+        id={idBase}
+        type="text"
+        placeholder={placeholder}
+        value={search}
+        onChange={(e) => onSearchChange(e.target.value)}
+        className="h-10 min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-4 text-[14px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary"
+      />
+      <button
+        type="submit"
+        className="h-10 shrink-0 rounded-lg bg-gray-900 px-5 text-[14px] font-bold text-white transition hover:bg-gray-800"
+      >
+        Хайх
+      </button>
+      <button
+        type="button"
+        onClick={onOpenLocation}
+        className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[14px] font-semibold transition ${
+          hasLocation ? 'bg-primary-light text-primary' : 'text-gray-700 hover:bg-gray-100'
+        }`}
+      >
+        <span aria-hidden="true">📍</span>
+        {/* ⚠️ `<sm` (ж: 390px) дээр зөвхөн ИКОН — шошго хэт урт байвал
+            мөр хэвтээ гүйлт (overflow) үүсгэнэ ✗ (`sm`+ дээр бүтэн шошго ✓) */}
+        <span className="hidden max-w-[130px] truncate sm:inline">{locationLabel}</span>
+      </button>
+    </form>
+  );
+}
+
+/**
  * Хуудасны дугааруудын цонх — урт жагсаалтыг товчлоно.
  * ж: page=7, pageCount=20 → [1, '…', 5, 6, 7, 8, 9, '…', 20]
  * ⚠️ Эхний ба сүүлийн хуудас ҮРГЭЛЖ харагдана (хэрэглэгч төгсгөл рүү
@@ -360,7 +438,12 @@ function Pagination({ page, pageCount, total, hasMore, onChange }) {
 export default function HomeClient() {
   const { showToast } = useToast();
   const { dataVersion } = useUI();
+  // 🖥 header-ийн ГОЛ хэсгийн завсар (2026-10-04 (27)) — доор хайлтын мөрийг
+  //    `homeSearchBar`-аар дүүргэнэ (AppProviders нь зөвхөн байр өгнө ✓)
+  const { setHeaderSlot } = useHeaderSlot();
   const router = useRouter();
+  // 📍 Байршлын пикер (modal) нээлттэй эсэх (2026-10-04 (27))
+  const [locOpen, setLocOpen] = useState(false);
 
   const [category, setCategory] = useState('all');
   const [search, setSearch] = useState('');
@@ -1355,102 +1438,86 @@ export default function HomeClient() {
     </SideBlock>
   );
 
+  /** 📍 Байршлын шошго (товч дээр) — «Бүх байршил» / «Улаанбаатар» /
+   *  «Улаанбаатар, 2 дүүрэг» / «Улаанбаатар, 3 хороо» (2026-10-04 (27)) */
+  const locationLabel = useMemo(() => {
+    if (!filters.city) return 'Бүх байршил';
+    if (filters.khoroos.length) return `${filters.city}, ${filters.khoroos.length} хороо`;
+    if (filters.districts.length) return `${filters.city}, ${filters.districts.length} дүүрэг`;
+    return filters.city;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.city, filters.districts.length, filters.khoroos.length]);
+
+  /** 🖥🔍 Хайлтын мөрийг угсарна — толгойн мөр (`header`) БА мобайл (`mobile`)
+   *  ХОЁУЛАА энэ НЭГ эх сурвалжийг ашиглана (давхардсан логик БАЙХГҮЙ ✓) */
+  const renderSearchBar = (variant) => (
+    <HeaderSearchBar
+      variant={variant}
+      section={section}
+      search={search}
+      total={total}
+      locationLabel={locationLabel}
+      hasLocation={Boolean(filters.city)}
+      onSectionChange={(v) => changeHeroSection(v)}
+      onSearchChange={setSearch}
+      onSubmit={(e) => { e.preventDefault(); setPage(1); setQuery(search); }}
+      onOpenLocation={() => setLocOpen(true)}
+    />
+  );
+
+  /** ⚠️ deps нь ЗӨВХӨН энгийн утгууд — `changeHeroSection` шиг ФУНКЦИЙГ
+   *  deps-д оруулбал render БҮРТ шинэ болж `setHeaderSlot` ↔ re-render LOOP
+   *  үүснэ ✗ (функцүүд дотроо зөвхөн эдгээр утга + тогтвортой setState-үүдийг
+   *  ашигладаг тул хуучин closure ч ЗӨВ ажиллана ✓) */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const homeSearchBar = useMemo(() => renderSearchBar('header'),
+    [section, search, total, locationLabel, filters.city]);
+
+  // 🖥 Хайлтын мөрийг header-ийн ГОЛ хэсэгт оруулна (AppProviders-ийн завсар)
+  useEffect(() => {
+    if (setHeaderSlot) setHeaderSlot(homeSearchBar);
+  }, [setHeaderSlot, homeSearchBar]);
+  // 🧹 Цэвэрлэгээ — зөвхөн unmount дээр (бусад хуудас руу шилжихэд завсар хоосорно ✓)
+  useEffect(() => () => { if (setHeaderSlot) setHeaderSlot(null); }, [setHeaderSlot]);
+
+  /** 📍 Пикерээс ирсэн байршлыг `filters` руу хэрэглэнэ (2026-10-04 (27)) —
+   *  утга нь пикер дээр бүтэн (каск ад) сонгогдсон тул энд зөвхөн тавина ✓ */
+  const applyLocation = ({ city, districts, khoroos }) => {
+    setPage(1); // 📄 байршил солигдсон → 1-р хуудас
+    setFilters((f) => ({ ...f, city, districts, khoroos }));
+  };
+
   return (
     <>
-      {/* HERO — 2026-09-27 (хэрэглэгчийн хүсэлт #2): «Ард байгаа цэнхэр
-          дэвсгэртэй хэсгийг ӨМНӨХ ЗУРГААР сольж, «🏠 Үл хөдлөх хөрөнгийн
-          зар» + «Худалдаа, түрээсийн …» ТЕКСТИЙГ БАЙХГҮЙ болгох» ✓
-          ⚠️ Тиймээс: (1) фон зураг `public/hero-ub.jpg` (342 KB) БУЦАЖ
-             ИРЭВ ✓ (2) `<h1>` БА тайлбар `<p>` ХАСАГДАВ ✗
-          ✅ Үлдсэн нь: ЗӨВХӨН хайлтын мөр (цагаан карт + цэнхэр товч) ✓
-          ⚠️ OVERLAY ХЭВЭЭР (хөнгөрүүлэв 70/55/75 → 55/45/55): уншигдацын
-             биш, ГҮНИЙ зорилготой — цагаан хайлтын картыг тод нар
-             жаргах тэнгэрээс ялгаж, гүнзгий харагдуулна ✓
-          ⚠️ ЦАГААН ТЕКСТ БҮРЭН БАЙХГҮЙ (гарчиг, тайлбар хоёулаа хасагдсан)
-             → контрастын шаардлага (WCAG) ч хүчингүй ✓
-          ⚠️ `isolate` + `-z-10` нь overlay-г контентын АРД, гэхдээ
-             хуудасны дэвсгэрээс ГАДНА байлгана ✓ (хэвээр)
-          ⚠️ Хуудасны ГОЛ `<h1>` нь доорх үр дүнгийн толгой (мөр ~958,
-             «Бүх зар · N») — hero-д h1 БАЙХГҮЙ ч a11y/SEO эвдрэхгүй ✓
-          📱 Мобайл: `py-14` (зураг хангалттай харагдах өндөр) → `sm:py-20` ✓
-             ⚠️ Өмнөх `py-10` нь 128px л өндөр (48px форм + 40px×2) болж,
-                панорама нимгэн судал мэт харагдсан ✗ → 160px/208px болгов ✓
-          ⚠️ Зураг солих: `public/hero-ub.jpg`-г ИЖИЛ НЭРЭЭР дарж бичихэд
-             хангалттай — код засахгүй ✓ (`next.config.mjs` нь
-             `images: { unoptimized: true }` тул CSS background
-             автоматаар оптимизацлагдахгүй — WebP болговол хөнгөн) */}
-      <section className="relative isolate overflow-hidden bg-primary-dark px-4 py-14 sm:py-20">
-        {/* ① Фон зураг */}
-        <span
-          aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url('/hero-ub.jpg')" }}
-        />
-        {/* ② Гүн өгөх overlay (уншигдацын биш — текст байхгүй ✓) */}
-        <span
-          aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-gradient-to-b from-black/55 via-black/45 to-black/55"
-        />
+      {/* 🖥🔍 ХАЙЛТЫН МӨР — ТОЛГОЙН мөрөнд (2026-10-04 (27)).
+          ⚠️ HERO-ийн ЗУРАГТАЙ дэвсгэр ХАСАГДАВ (хэрэглэгчийн хүсэлт: «хайлт
+             хэсгийн вэб дээд хэсэгт болгож өөрчил», жишээ зурагтай) — хайлтын
+             мөр нь `AppProviders`-ийн header-ийн ГОЛ хэсэгт (лого ба баруун
+             товчнуудын ДУНД) шилжив ✓ (`useHeaderSlot()` → `homeSearchBar`).
+          ⚠️ Хуудасны ГОЛ `<h1>` нь доорх үр дүнгийн толгой («Бүх зар · N») —
+             толгойд h1 БАЙХГҮЙ ч a11y/SEO эвдрэхгүй ✓
+          📱 `xl`-ээс доош — доорх наалдамхай (`sticky top-16`) мөрөнд; `xl`+ дээр
+             мөр нь толгойд гардаг тул энэ нь `xl:hidden` ✓ */}
 
-        {/* ===== ЦОРЫН ГАНЦ ХАЙЛТЫН МӨР =====
-            ⚠️ ЯАГААД НЭГ ВЭ: дараа нь «⚙️ Дэлгэрэнгүй хайлт» товчтой ЦАГААН
-               КАРТ байсныг «статус мөр» болгож бууруулсан (доор) → дэлгэц
-               дээр хайлт нэг л удаа харагдана. Хайлтын мөр нь `<form>` тул
-               Enter дарахад ч, товч дарахад ч ИЖИЛ ажиллана (a11y дээр зөв).
-            ⚠️ Товч нь .btn БИШ: container нь `rounded-xl overflow-hidden` тул
-               дотроос нь брэнд градиентаар дүүрнэ (товчны pill хэлбэр хэрэггүй).
-            🆕 2026-09-30 (хэрэглэгчийн хүсэлт: «зар хайх хэсэг eBay их таалагдлаа,
-               үүнээс сурацаад хийж өгөөч») — eBay-ийн хайлтын мөр нь
-               `[ All Categories ▾ ][ бичих хэсэг ][ 🔍 Search ]` гэсэн
-               ГУРВАН хэсэгтэй. Тийнхүү зүүн талд «Бүх хэсэг ▾» сонголт нэмэв ✓
-               ⚠️ Сонголт нь ХЭСЭГ солино (`changeHeroSection()`) — хэрэглэгч
-                  «Автомашин» гэж сонгоод «prius» бичихэд зөвхөн авто дотроос
-                  хайна (хайлтын үг ХӨНДӨГДӨХГҮЙ ✓)
-               ⚠️ Мобайлд (`sm`-ээс доош) НУУГДАНА — 390px дээр хайлтын бичих
-                  талбар хэт нарийсах байсан ✗ (eBay-ийн мобайл дээр ч нуугддаг)
-               ⚠️ Брэнд нэг л байх ёстой: сонголт нь `text-gray-700` +
-                  `font-semibold` (цэнхэр нь ЗӨВХӨН «🔍 Хайх» товчид ✓) */}
-        <form
-          className="mx-auto flex w-full max-w-[680px] overflow-hidden rounded-xl bg-white shadow-card-hover"
-          onSubmit={(e) => { e.preventDefault(); setPage(1); setQuery(search); }}
-          role="search"
-        >
-          <label className="sr-only" htmlFor="home-search-section">Хэсэг сонгох</label>
-          <select
-            id="home-search-section"
-            aria-label="Хэсэг сонгох"
-            data-hero-section
-            value={section}
-            onChange={(e) => changeHeroSection(e.target.value)}
-            className="hidden shrink-0 border-none bg-transparent py-3.5 pl-4 pr-2 text-[14px] font-semibold text-gray-700 outline-none sm:block"
-          >
-            <option value="all">🔎 Бүх хэсэг</option>
-            {SECTIONS.map((s) => (
-              <option key={s.value} value={s.value}>{s.icon} {s.label}</option>
-            ))}
-          </select>
-          {/* Тусгаарлагч зураас (eBay-ийн сонголт ба бичих хэсгийн хооронд ✓) */}
-          <span aria-hidden="true" className="my-3 hidden w-px shrink-0 bg-gray-200 sm:block" />
-          <label className="sr-only" htmlFor="home-search">Зар хайх</label>
-          <input
-            id="home-search"
-            type="text"
-            /* ⚠️ 2026-09-29: «99112233» нэмэв — утасны дугаараар ч хайж
-               болохыг хэрэглэгчид ШУУД хэлж өгнө (зарын эзний бүх зар
-               гарна ✓ `lib/queries.js` → `phone.ilike`) */
-            placeholder="Хайх..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="min-w-0 flex-1 border-none px-4 py-3.5 text-[15px] text-gray-900 outline-none placeholder:text-gray-400"
-          />
-          <button
-            type="submit"
-            className="shrink-0 bg-gradient-to-b from-[#4B8EF8] via-[#3B82F6] to-[#1D4ED8] px-6 text-[15px] font-bold text-white transition-all duration-150 ease-out hover:from-[#3B82F6] hover:to-[#1E3FAE]"
-          >
-            🔍 Хайх
-          </button>
-        </form>
-      </section>
+      {/* 📱 ХАЙЛТЫН МӨР — толгойн (h-16) ЯГ ДООР наалдана (≥lg, <xl ба мобайл) */}
+      <div className="sticky top-16 z-30 border-b border-gray-200 bg-white px-4 py-2.5 xl:hidden">
+        {renderSearchBar('mobile')}
+      </div>
+
+      {/* 📍 БАЙРШЛЫН ПИКЕР (modal) — «📍 Бүх байршил» товч дарахад нээгдэнэ;
+          «Байршлыг хэрэглэх» дарахад л `applyLocation` → `filters` шинэчлэгдэнэ ✓ */}
+      <LocationPicker
+        open={locOpen}
+        onClose={() => setLocOpen(false)}
+        city={filters.city}
+        districts={filters.districts}
+        khoroos={filters.khoroos}
+        onApply={applyLocation}
+      />
+
+      {/* 🖼 HERO-ийн зурагтай дэвсгэр ба хайлтын карт 2026-10-04 (27)-д ХАСАГДАВ —
+          хайлтын мөр нь толгойн мөрөнд (`useHeaderSlot` → `homeSearchBar`)
+          болон мобайлд дээрх `sticky top-16` мөрөнд шилжив ✓ */}
 
       <div className="page-container">
         {/* BREADCRUMB — хэрэглэгч хаана явж байгаа (unegui.mn загвар).

@@ -44,11 +44,21 @@ function friendlySignInError(error) {
 const AuthContext = createContext(null);
 const ToastContext = createContext(null);
 const UIContext = createContext(null);
+/* 🖥🆕 «ХАЙЛТ ТОЛГОЙН МӨРӨНД» — header-ийн ГОЛ хэсгийн ЗАВСАР (2026-10-04 (27)).
+   Хэрэглэгчийн хүсэлт (жишээ зурагтай): «хайлт хэсгийн вэб дээд хэсэгт болгож
+   өөрчил» — хайлтын мөр нь лого ба баруун товчнуудын ДУНД (толгойн мөрөнд)
+   гарна ✓. ⚠️ Хайлтын мөр нь HomeClient-ийн төлөвт (section/search/filters)
+   холбогдсон тул AppProviders нь зөвхөн БАЙР (slot) өгнө — агуулгыг ХУУДАС
+   өөрөө `useHeaderSlot().setHeaderSlot(<HeaderSearchBar …/>)`-аар дүүргэнэ
+   (нэг эх сурвалж, h2 header хэвээр ✓) */
+const HeaderSlotContext = createContext(null);
 
 // ---------------- Hooks ----------------
 export function useAuth() { return useContext(AuthContext); }
 export function useToast() { return useContext(ToastContext); }
 export function useUI() { return useContext(UIContext); }
+/** 🖥 header-ийн гол хэсэгт агуулга (нүүр хуудасны хайлтын мөр) оруулах дэгээ ✓ */
+export function useHeaderSlot() { return useContext(HeaderSlotContext); }
 
 // ============================================================
 // AppProviders — auth, toast, modal удирдлагыг нэгтгэн,
@@ -258,6 +268,13 @@ export default function AppProviders({ children }) {
 
   const displayName = profileName || user?.phone || '';
 
+  /** 🖥 header-ийн ГОЛ хэсгийн агуулга (нүүр хуудасны хайлтын мөр) — 2026-10-04 (27).
+   *  ⚠️ `HomeClient` нь `useHeaderSlot().setHeaderSlot(<HeaderSearchBar …/>)`-аар
+   *     дүүргэнэ; `null` үед хоосон зай — бусад хуудас ОГТ хөндөгдөхгүй ✓
+   *  ⚠️ `headerSlotValue` нь `useMemo` тул дэгээ нь тогтвортой (render loop БАЙХГҮЙ ✓) */
+  const [headerSlot, setHeaderSlot] = useState(null);
+  const headerSlotValue = useMemo(() => ({ setHeaderSlot }), []);
+
   /** 📱 ИДЭВХТЭЙ таб эсэх (Facebook-маягийн доод цэс — 2026-09-29).
    *  ⚠️ `startsWith` нь ДЭД ЗАМЫГ ч хамарна: `/messages/123` дээр
    *     «✉️ Мессеж» таб идэвхтэй харагдана ✓ (`href` нь `/messages`)
@@ -268,6 +285,7 @@ export default function AppProviders({ children }) {
     <AuthContext.Provider value={authValue}>
       <ToastContext.Provider value={toastValue}>
         <UIContext.Provider value={uiValue}>
+          <HeaderSlotContext.Provider value={headerSlotValue}>
           {/* ===== HEADER =====
               ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «Гар утасаар ороход ЛОГО-г
                  ГОЛЛУУЛЖ (төвд) харуулаарай» → мобайлд `justify-center` ✓
@@ -299,6 +317,17 @@ export default function AppProviders({ children }) {
               >
                 🏠 ZARLAA<span className="text-gray-900">.MN</span>
               </Link>
+              {/* ===== 🖥 ХАЙЛТЫН МӨР — header-ийн ГОЛ хэсэг (2026-10-04 (27)) =====
+                  Нүүр хуудас (`HomeClient`) нь `useHeaderSlot()`-оор энэ завсрыг
+                  дүүргэнэ (лого ба баруун товчнуудын ДУНД — жишээ зурагтай ижил ✓).
+                  ⚠️ `xl` (≥1280px) — бидний толгойн `max-w-[1280px]` хүрээ баруун
+                     товчнуудтай (➕/❤️/✉️/👤) хамт хайлтад ХАНГАЛТТАЙ зай үлдээдэг
+                     цорын ганц хэмжээ (1024–1279px дээр хайлтын мөр багтахгүй ✗)
+                  ⚠️ `xl`-ээс ДООШ дээр ХАРАГДАХГҮЙ — тэнд хайлтын мөр нь header-ийн
+                     доорх наалдамхай мөрөөр гарна (`HomeClient`-д `xl:hidden` ✓) */}
+              {headerSlot && (
+                <div className="hidden min-w-0 flex-1 items-center px-2 xl:flex xl:px-3">{headerSlot}</div>
+              )}
               {/* ⚠️ БҮХ ЦЭСЭН ТОВЧ НЭГ ХЭМЖЭЭТЭЙ (`btn-sm` = 13px, font-semibold):
                   урьд нь «Зар нэмэх» нь `btn` (14px) байсан бол «Таалагдсан»,
                   «Нэвтрэх», хэрэглэгчийн нэр нь `btn-sm` (13px) байв → дэлгэц
@@ -568,6 +597,7 @@ export default function AppProviders({ children }) {
               {toast.msg}
             </div>
           )}
+          </HeaderSlotContext.Provider>
         </UIContext.Provider>
       </ToastContext.Provider>
     </AuthContext.Provider>
