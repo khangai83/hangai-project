@@ -192,7 +192,10 @@ t('💼 Sidebar дараалал: ажилд үнэ нь attr шүүлтүүди
   assert.match(HOME_CODE, /\{isJobs && priceSideBlock\}/);
   assert.match(HOME_CODE, /\{!isJobs && priceSideBlock\}/);
   const beforeAttr = HOME_CODE.indexOf('{isJobs && priceSideBlock}');
-  const attrStart = HOME_CODE.indexOf('{attrFilters.map((f) => {');
+  // ⚠️ 2026-10-04 (35): attr жагсаалт нь `CarPicker`-ийн төлөө `.filter(…)`-тэй
+  //    болов (`{attrFilters\n .filter(…)`) тул `'{attrFilters.map('` гэсэн
+  //    ХАТУУ мөр олдохгүй ✗ → зөвхөн блокийн ЭХЛЭЛИЙГ хайна ✓
+  const attrStart = HOME_CODE.indexOf('{attrFilters');
   const afterAttr = HOME_CODE.indexOf('{!isJobs && priceSideBlock}');
   assert.ok(beforeAttr > 0 && attrStart > 0 && afterAttr > 0, 'блок олдсонгүй ✗');
   assert.ok(beforeAttr < attrStart, 'ажлын үнэ attr шүүлтүүдийн ДАРАА байна ✗');

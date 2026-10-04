@@ -7,6 +7,10 @@ import MapView from './MapView';
 // 📍 БАЙРШЛЫН ПИКЕР (modal, 2026-10-04 (27)) — «📍 Бүх байршил» товч дарахад
 //    «Байршлаа сонгоно уу» цонх (Хот → Дүүрэг → Хороо каскад) нээгдэнэ ✓
 import LocationPicker from './LocationPicker';
+// 🏷️🚙 МАШИНЫ ПИКЕР (modal, 2026-10-04 (35)) — толгойн/сайдбарын «Үйлдвэрлэгч,
+//    загвар» товч дарахад «Машинаа сонгоно уу» цонх (Үйлдвэрлэгч → Загвар
+//    каскад + хайлт) нээгдэнэ — 📍 Байршилтай ЯГ ИЖИЛ хэв ✓
+import CarPicker from './CarPicker';
 // 🧩 ТОЛГОЙН МӨРНИЙ ИКОНУУД (2026-10-04 (28)) — emoji (`📋 📍 ▾ 🔍`) БИШ
 //    `currentColor` SVG: өнгө нь идэвхтэй/идэвхгүй төлвөөр солигдоно,
 //    OS бүр дээр ЯГ ижил харагдана ✓ (`components/HeaderIcons.jsx`)
@@ -100,6 +104,9 @@ import {
 //      `['Автомат','Механик']` · `['Хайбрид','Цахилгаан']`) — URL нь хэвээр
 //      `?attr_color=Хар,Цагаан` (хуучин нэг утгатай линк ч ажиллана ✓),
 //      DB нь `attrs->>key=in.(…)` (`lib/queries.js → applyAttrMultiFilter`) ✓
+//   🚙 2026-10-04 (36): 🚙 «Загвар» ч МАССИВ болов (`attr_model=Prius 30,Harrier`)
+//      — ⚠️ гэхдээ DB дээр `in.(…)` БИШ `or=(…ilike…)`, учир нь талбар нь
+//      ХАЙЛТТАЙ ТЕКСТ («pri» гэж бүрэн бус бичихэд ч олдоно ✓)
 import {
   parseAttrList, attrListUrlValue, attrListFilterLabel, toggleAttrValue, countAttrValues,
 } from '../lib/attrMultiFilter.mjs';
@@ -521,6 +528,9 @@ export default function HomeClient() {
   const router = useRouter();
   // 📍 Байршлын пикер (modal) нээлттэй эсэх (2026-10-04 (27))
   const [locOpen, setLocOpen] = useState(false);
+  // 🏷️🚙 Машины пикерийн нээлттэй төлөв (2026-10-04 (35)) — 📍 `locOpen`-ийн
+  //    ЯГ ИЖИЛ зарчим (HomeClient-ийн `filters.attrs.brand/model`-ыг удирдана ✓)
+  const [carOpen, setCarOpen] = useState(false);
 
   const [category, setCategory] = useState('all');
   const [search, setSearch] = useState('');
@@ -1167,6 +1177,16 @@ export default function HomeClient() {
   const isJobs = section === 'jobs';
 
   /**
+   * 🚗 АВТОМАШИН эсэх (2026-10-04 (35)) — зөвхөн энэ хэсэгт 🏷️ Үйлдвэрлэгч ба
+   *    🚙 Загвар нь ХОЁР тусдаа талбар БИШ, НЭГ товч → `CarPicker` (modal,
+   *    каскад + хайлт) болно — 📍 Байршилтай ЯГ ИЖИЛ хэв ✓
+   *    ⚠️ Утга нь `filters.attrs.brand` / `.model` ХЭВЭЭР (URL/DB/query/breadcrumb/
+   *       чип бүгд ХӨНДӨГДӨХГҮЙ ✓ migration ШААРДЛАГАГҮЙ)
+   *    ⚠️ Бусад хэсэгт (💻 Брэнд …) талбарууд нь ХУУЧИН хэвээрээ (combo/select) ✓
+   */
+  const isAuto = section === 'auto';
+
+  /**
    * 🛏 ӨРӨӨНИЙ ТООНЫ блок харагдах эсэх — 🆕 2026-10-03 (4) UI сэргээв.
    * ⚠️ «Өрөө» ойлголтгүй төрөл (Газар, Оффис, Худалдааны талбай, Үйлдвэр …)
    *    сонгосон үед нуугдана — тэнд өрөөний шүүлт нь утгагүй ✗
@@ -1519,6 +1539,25 @@ export default function HomeClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.city, filters.districts.length, filters.khoroos.length]);
 
+  /**
+   * 🏷️🚙 МАШИНЫ шошго (товч дээр) — 2026-10-04 (35), ОЛОН ЗАГВАР (36)
+   *   • юу ч сонгоогоогүй → «Бүх үйлдвэрлэгч, загвар»
+   *   • брэнд л сонгосон → «Toyota»
+   *   • брэнд + 1 загвар  → «Toyota Prius 30»        ← ХУУЧИНТАЙ ЯГ ижил
+   *   • брэнд + 2+ загвар → «Toyota 2 загвар»        ← олон сонголт (товчилно)
+   *
+   * ⚠️ `filters.attrs.brand` нь СКАЛЯР (нэг утга — каскадын эцэг), харин
+   *    `attrs.model` нь МАССИВ (2026-10-04 (36) — хэрэглэгчийн хүсэлт
+   *    «машины загвараас олоныг сонгох боломжтой болго») ⇒ `attrArray()`
+   * ⚠️ Олон загварын шошго нь 📍 «Улаанбаатар, 2 дүүрэг»-ийн ИЖИЛ зарчим —
+   *    нэрсийг бүтнээр жагсаавал товч хэт урт болно ✗ (`attrListFilterLabel`)
+   */
+  const carBrand = attrValue('brand');
+  const carModels = attrArray('model');
+  const carLabel = carBrand
+    ? (carModels.length ? `${carBrand} ${attrListFilterLabel(carModels, 'загвар')}` : carBrand)
+    : 'Бүх үйлдвэрлэгч, загвар';
+
   /** 🖥🔍 Хайлтын мөрийг угсарна — толгойн мөр (`header`) БА мобайл (`mobile`)
    *  ХОЁУЛАА энэ НЭГ эх сурвалжийг ашиглана (давхардсан логик БАЙХГҮЙ ✓) */
   const renderSearchBar = (variant) => (
@@ -1558,6 +1597,31 @@ export default function HomeClient() {
     setFilters((f) => ({ ...f, city, districts, khoroos }));
   };
 
+  /**
+   * 🏷️🚙 Пикерээс ирсэн машиныг `filters.attrs` руу ХЭРЭГЛЭНЭ (2026-10-04 (35))
+   * — брэнд ба загварыг НЭГ ДОР (нэг `setFilters`) бичнэ.
+   *
+   * ⚠️ `setAttr`-ыг 2 удаа дуудаж БОЛОХГҮЙ: эхний дуудлага нь `cascadeAttrs`-аар
+   *    загварыг ЦЭВЭРЛЭЭД, дараагийнх нь дахин тавина — ажиллах ч төвөгтэй,
+   *    илүү чухал нь «хэрэглэх» нь АТОМ үйлдэл байх ёстой (нэг render ✓)
+   * ⚠️ Хоосон утгыг `delete` хийнэ — эс бөгөөс `?attr_brand=` гэсэн ХООСОН
+   *    түлхүүр URL-д үлдэж, `lib/queries.js` бүх зарыг хааж эвдэнэ ✗
+   */
+  const applyCar = ({ brand, model }) => {
+    setPage(1); // 📄 шүүлт солигдсон → 1-р хуудас
+    setFilters((f) => {
+      const attrs = { ...(f.attrs || {}) };
+      // 🚙🌂 ОЛОН ЗАГВАР (2026-10-04 (36)): `model` нь МАССИВ — цэвэрлэж,
+      //    давхардлыг арилгана (`parseAttrList`). ⚠️ `[]` нь ХҮЧИНТЭЙ
+      //    (truthy) тул энгийн `if (model)` нь `attrs.model = []` гэсэн
+      //    ХООСОН массив үлдээх байв ✗ → уртаар шалгана ✓
+      const models = parseAttrList(model);
+      if (brand) attrs.brand = brand; else delete attrs.brand;
+      if (models.length) attrs.model = models; else delete attrs.model;
+      return { ...f, attrs };
+    });
+  };
+
   return (
     <>
       {/* 🖥🔍 ХАЙЛТЫН МӨР — ТОЛГОЙН мөрөнд (2026-10-04 (27)).
@@ -1584,6 +1648,18 @@ export default function HomeClient() {
         districts={filters.districts}
         khoroos={filters.khoroos}
         onApply={applyLocation}
+      />
+
+      {/* 🏷️🚙 МАШИНЫ ПИКЕР (modal) — «Үйлдвэрлэгч, загвар» товч дарахад
+          нээгдэнэ (`?section=auto` дээр); «Машиныг хэрэглэх» дарахад л
+          `applyCar` → `filters.attrs.brand/model` шинэчлэгдэнэ ✓
+          ⚠️ `models` нь МАССИВ (олон загвар — 2026-10-04 (36)) ✓ */}
+      <CarPicker
+        open={carOpen}
+        onClose={() => setCarOpen(false)}
+        brand={carBrand}
+        models={carModels}
+        onApply={applyCar}
       />
 
       {/* 🖼 HERO-ийн зурагтай дэвсгэр ба хайлтын карт 2026-10-04 (27)-д ХАСАГДАВ —
@@ -2200,6 +2276,73 @@ export default function HomeClient() {
                     хайлтын зурагтай ИЖИЛ); бусад хэсэгт доор (хуучин байрлал) ✓ */}
                 {isJobs && priceSideBlock}
 
+                {/* ===== 🏷️🚙 ҮЙЛДВЭРЛЭГЧ, ЗАГВАР — НЭГ ТОВЧ → `CarPicker` (modal) =====
+                    ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-04 (35)): «Автомашины хайлтын
+                    Үйлдвэрлэгч, Загварыг Байршил шиг хайдаг болгоод өг».
+                    ⇒ сайдбарын ХОЁР тусдаа талбар (🏷️ `SearchableSelect` 95
+                    брэнд + 🚙 combo/TextFilter) БҮРЭН ХАСАГДАВ.
+                    🆕 ОРОНД нь 📍 Байршилтай ЯГ ИЖИЛ НЭГ товч — дарахад
+                       `CarPicker` нээгдэж, Үйлдвэрлэгч → Загварыг НЭГ цонхонд
+                       ХАЙЛТТАЙ каскадаар сонгоно ✓
+                    ⚠️ Урсгалын утга ХЭВЭЭР: `filters.attrs.brand` / `.model`
+                       → URL (`?attr_brand=…&attr_model=…`), DB (`attrs->>… ilike`),
+                       «Гүйцэтгэсэн шүүлт» чипүүд, `activeFilterCount`,
+                       breadcrumb БҮГД өөрчлөгдөхгүй ✓
+                    ⚠️ `data-sidebar-car` — CDP дэгээ (`scripts/cdp-picker.mjs` §7)
+                    🔍 Хайх үг: data-sidebar-car, CarPicker, applyCar, carLabel */}
+                {isAuto && (
+                  <SideBlock label="Үйлдвэрлэгч, загвар">
+                    <button
+                      type="button"
+                      data-sidebar-car
+                      aria-haspopup="dialog"
+                      onClick={() => setCarOpen(true)}
+                      className={`flex h-11 w-full items-center gap-2 rounded-xl border px-3 text-left text-[14px] font-semibold transition ${
+                        carBrand || carModels.length
+                          ? 'border-primary bg-primary-light text-primary'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span aria-hidden="true" className="shrink-0">🚗</span>
+                      <span className="min-w-0 flex-1 truncate">{carLabel}</span>
+                      <ChevronDownIcon className="h-4 w-4 shrink-0 opacity-60" />
+                    </button>
+
+                    {/* Сонгосон машины жижиг шошгууд + «✕ Цэвэрлэх» — пикер
+                        нээлгүй ч юу сонгосон нь харагдана (📍 Байршлын ИЖИЛ)
+                        ⚠️ 🚙 Загвар нь ОЛОН сонголттой (2026-10-04 (36)) тул
+                           нэг pill нь ТОВЧЛОСОН шошго — «Prius 30» (1) /
+                           «2 загвар» (2+); бүтэн жагсаалтыг пикер дотор
+                           чипээр харна ✓ (`data-car-model-count` — CDP дэгээ) */}
+                    {(carBrand || carModels.length > 0) && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {carBrand && (
+                          <span data-car-pill="brand" className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] font-semibold text-gray-700">
+                            {carBrand}
+                          </span>
+                        )}
+                        {carModels.length > 0 && (
+                          <span
+                            data-car-pill="model"
+                            data-car-model-count={carModels.length}
+                            className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] text-gray-600"
+                          >
+                            {attrListFilterLabel(carModels, 'загвар')}
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          data-car-clear
+                          onClick={() => applyCar({ brand: '', model: [] })}
+                          className="text-[13px] font-semibold text-gray-500 underline-offset-2 hover:text-primary hover:underline"
+                        >
+                          ✕ Цэвэрлэх
+                        </button>
+                      </div>
+                    )}
+                  </SideBlock>
+                )}
+
                 {/* ===== ХЭСГИЙН ATTR ШҮҮЛТҮҮД (0016, өргөтгөсөн 2026-09-28) =====
                     ⚠️ Хэсэг тус бүрийн `attrFilters` — оролтын төрөл 3:
                       ① энгийн `<select>` (цөөн сонголт: Түлш, Өнгө)
@@ -2231,8 +2374,15 @@ export default function HomeClient() {
                        хүсэлт: «ажлын зар хайх хэсгийн Design ийг … хийгээрэй»):
                        💼 «Ажлын цаг» нь бөөрөнхий ТОВЧНУУД (чип) — unegui.mn-ийн
                        ажлын хайлтын зурагтай ИЖИЛ. ⚠️ Утга нь НЭГ (`?attr_jobType=…`),
-                       идэвхтэй чип дээр дахин дарвал цуцлагдана (`chip-toggle` хэв) ✓ */}
-                {attrFilters.map((f) => {
+                    ⚠️ 🚗 АВТО-гийн 🏷️ `brand` / 🚙 `model` нь ЭНД ИРЭХГҮЙ — тэдгээр
+                       нь дээрх `CarPicker` (modal) руу шилжсэн тул `isAuto`
+                       үед жагсаалтаас ШҮҮГДЭНЭ (2 өөр UI БАЙХГҮЙ ✓)
+                    ⚠️ `lib/locationData.js → getAttrFilters('auto')` нь `brand`/
+                       `model`-ыг ХЭВЭЭР буцаана (форм, URL, DB нэг эх сурвалж ✓) —
+                       зөвхөн сайдбарын ДҮРСЛЭЛ энд шүүгдэнэ */}
+                {attrFilters
+                  .filter((f) => !(isAuto && (f.key === 'brand' || f.key === 'model')))
+                  .map((f) => {
                   /**
                    * 🌈 БРЭНДЭЭС ХАМААРАХ СОНГОЛТУУД (`f.optionsFrom` = 'brand') —
                    *    СОНГОСОН брэндийн загварууд; хоосон бол ③ (TextFilter) ✓

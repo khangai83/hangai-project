@@ -187,11 +187,20 @@ t('🚗 Картын мөр: «Өнгө» нь толгойн (Загвар/он
     'Toyota Prius, 2021 · 🎨 Цагаан · 📥 2022 онд орж ирсэн · 95,200 км · ⚙️ Автомат · 1.5л - 2.0л · ⛽ Хайбрид');
 });
 
-t('🚙 Загвар нь ЧӨЛӨӨТ ТЕКСТ шүүлт (filterable, select БИШ)', () => {
+t('🚙 Загвар нь ЧӨЛӨӨТ ТЕКСТ шүүлт (filterable, select БИШ) + ОЛОН СОНГОЛТТОЙ', () => {
   const f = getAttrFilters('auto').find((x) => x.key === 'model');
   assert.equal(f.type, 'text');
   assert.equal(f.filterable, true);
   assert.equal(f.range, undefined);
+  // 🆕 2026-10-04 (36) — хэрэглэгчийн хүсэлт «машины загвараас олоныг сонгох
+  //    боломжтой болго»: `?attr_model=Prius 30,Harrier` (массив) ✓
+  // ⚠️ DB нь `in.()` БИШ `or=(…ilike…)` (`lib/attrMultiFilter.mjs`) — талбар
+  //    нь хайлттай текст тул бүрэн бус «pri» ч олдох ёстой ✓
+  assert.equal(f.multi, true);
+  assert.equal(f.multiNoun, 'загвар');
+  // ⛔ `chips` БАЙХГҮЙ — UI нь `components/CarPicker.jsx` пикер (sidebar-ийн
+  //    2 дахь UI ҮҮСЭХГҮЙ ✓)
+  assert.ok(!f.chips);
 });
 
 // ---- 🌈 БРЭНД → ЗАГВАР (cascading, 2026-10-01) ----

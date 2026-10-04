@@ -20,9 +20,18 @@
 //    ба DB `attrs->>transmission=in.(…)` / `attrs->>fuel=in.(…)`.
 //    ⚠️ ХӨДӨЛГӨХ КОД БАЙХГҮЙ — модуль нь attr-ийн түлхүүрээс ХАМААРАХГҮЙ ✓
 //
+// 🆕 2026-10-04 (36): 🚙 **«Загвар»** (`model`, зөвхөн `auto`) ч ОЛОН СОНГОЛТТОЙ
+//    болов (хэрэглэгчийн хүсэлт: «машины загвараас олоныг сонгох боломжтой
+//    болго») ⇒ `?attr_model=Prius 30,Harrier`. ⚠️ ГЭХДЭЭ DB дээр `in.(…)` БИШ
+//    `or=(attrs->>model.ilike.%A%,attrs->>model.ilike.%B%)` — учир нь талбар нь
+//    ХАЙЛТТАЙ ТЕКСТ (`filterable`): «pri» гэж бүрэн бус бичихэд ч олдох ёстой ✓
+//    (`applyAttrMultiLikeFilter`; 1 утга нь хуучин скаляр `ilike`-тай ЯГ ижил ✓)
+//    ⚠️ UI нь sidebar-ийн чип БИШ, `components/CarPicker.jsx` пикер —
+//       тиймээс `chips` туг БАЙХГҮЙ ч `multi` нь хүчинтэй ✓
+//
 // ХАМРАХ ХҮРЭЭ (4 давхарга — бүгд НЭГ эх сурвалж `lib/attrMultiFilter.mjs`):
 //   ① `lib/attrMultiFilter.mjs` — цэвэр логик (normalize → parse → toggle →
-//      шошго → URL → `in.()` мөр)
+//      шошго → URL → `in.()` / `or(…ilike…)` мөр)
 //   ② `lib/locationData.js`   — талбарын туг (`chips`/`multi`/`multiNoun`)
 //      ба `getAttrFilters('auto')`-ийн гэрээ (7 шүүлт, дараалал хэвээр ✓)
 //   ③ `lib/queries.js`        — PostgREST-ийн мөр ЯГ зөв үүсэх эсэх (ХУУЧИР builder)
@@ -44,6 +53,7 @@ import {
   normalizeAttrValue, parseAttrList, isAttrListEmpty, countAttrValues,
   toggleAttrValue, attrListUrlValue, attrListFilterLabel,
   attrMultiFilterDescriptor, applyAttrMultiFilter,
+  likePattern, orSafeAttrValue, attrLikeExpressions, applyAttrMultiLikeFilter,
 } from '../lib/attrMultiFilter.mjs';
 import { getAttrField, getAttrFilters, getAttrFields, pruneGatedAttrs, SECTIONS } from '../lib/locationData.js';
 
@@ -63,6 +73,8 @@ function fakeQuery() {
   const q = {
     calls,
     in(col, val) { calls.push(['in', col, val]); return q; },
+    ilike(col, val) { calls.push(['ilike', col, val]); return q; },
+    or(str) { calls.push(['or', str]); return q; },
   };
   return q;
 }
@@ -70,6 +82,12 @@ function fakeQuery() {
 const callsFor = (key, list) => {
   const q = fakeQuery();
   applyAttrMultiFilter(q, key, list);
+  return q.calls;
+};
+/** 🚙 `applyAttrMultiLikeFilter`-ийн дуудлагууд (2026-10-04 (36) ✓) */
+const likeCallsFor = (key, list) => {
+  const q = fakeQuery();
+  applyAttrMultiLikeFilter(q, key, list);
   return q.calls;
 };
 
@@ -209,7 +227,86 @@ t('parseAttrList: ШИНЭ массив буцаана (эх массивыг ө
   assert.notEqual(out, src);
 });
 
+// ---------- ⑦б 🚙 2026-10-04 (36): ХАЙЛТТАЙ ТЕКСТ талбарын ОЛОН СОНГОЛТ ----
+// 🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «машины загвараас олоныг сонгох боломжтой болго»
+t('🔎 likePattern: `%`, `_`, `\\` ESCAPE хийгдэнэ (өөр утга бүх зарыг татахгүй ✓)', () => {
+  assert.equal(likePattern('Prius 30'), '%Prius 30%');
+  assert.equal(likePattern('Mercedes_'), '%Mercedes\\_%');
+  assert.equal(likePattern('100%'), '%100\\%%');
+  assert.equal(likePattern('a\\b'), '%a\\\\b%');
+  // ⚠️ Хоосон/`null` нь `'%null%'` БИШ `'%%'` (бүх зар) — `String(null)` биш ✓
+  assert.equal(likePattern(''), '%%');
+  assert.equal(likePattern(null), '%%');
+});
+
+t('🚙 orSafeAttrValue: `, ( ) : " \\` → ЗАЙ (PostgREST-ийн logic tree хамгаалалт ✓)', () => {
+  // ⚠️ Хаалт нь `or=(…)`-ийг эвдэж 400 алдаа үүсгэдэг тул ЗАЙ болно ✓
+  assert.equal(orSafeAttrValue('Prius (30)'), 'Prius 30');
+  assert.equal(orSafeAttrValue('  Prius   30  '), 'Prius 30');
+  assert.equal(orSafeAttrValue('A,B'), 'A B');       // таслал ч мөн адил ✓
+  assert.equal(orSafeAttrValue('a:b"c'), 'a b c');
+  // ⚠️ Объект/`null` нь `'[object Object]'` гэсэн ХОГ утга үүсгэхгүй ✓
+  assert.equal(orSafeAttrValue({}), '');
+  assert.equal(orSafeAttrValue(null), '');
+});
+
+t("🔎 attrLikeExpressions: `['Prius 30','Harrier']` → `attrs->>model.ilike.%…%` ×2", () => {
+  assert.deepEqual(attrLikeExpressions('model', ['Prius 30', 'Harrier']), [
+    'attrs->>model.ilike.%Prius 30%',
+    'attrs->>model.ilike.%Harrier%',
+  ]);
+  assert.deepEqual(attrLikeExpressions('model', []), []);
+  // ⚠️ Давхцал (`?attr_model=A,A`) нэг л илэрхийлэл болно ✓
+  assert.equal(attrLikeExpressions('model', 'A,A').length, 1);
+});
+
+t('🚙🌂 applyAttrMultiLikeFilter: 1 утга → `ilike` (скаляртай ИЖИЛ ✓) · 2+ → `or(…)`', () => {
+  // ① Нэг утга — ХУУЧИН скаляр зам ЯГ хэвээр (`attrs->>model=ilike.%Prius 30%`)
+  assert.deepEqual(likeCallsFor('model', ['Prius 30']),
+    [['ilike', 'attrs->>model', '%Prius 30%']]);
+  // ⚠️ Хуучин линк (`?attr_model=Prius 30`) нь МАССИВ болж уншигдана ч query нь
+  //    ЯГ ижил байх ЁСТОЙ (URL/DB-ийн гэрээ эвдрэхгүй ✓)
+  assert.deepEqual(likeCallsFor('model', 'Prius 30'), likeCallsFor('model', ['Prius 30']));
+  // ② Хоёр утга — `or(...)`: аль нэг загвартай зар (OR ✓) — `in.()` БИШ!
+  assert.deepEqual(likeCallsFor('model', ['Prius 30', 'Harrier']), [[
+    'or',
+    'attrs->>model.ilike.%Prius 30%,attrs->>model.ilike.%Harrier%',
+  ]]);
+  // ③ Хоосон үед шүүлт ХИЙХГҮЙ («Бүх зар» ✓)
+  [[], '', null, undefined].forEach((v) => {
+    assert.deepEqual(likeCallsFor('model', v), [], `«${JSON.stringify(v)}» ✗`);
+  });
+  // ④ АЮУЛГҮЙ БОЛГОЛТ: хаалт/цэг/хашилт нь `or()` мөрийг эвдэхгүй (400 алдаа БАЙХГҮЙ ✓)
+  const risky = likeCallsFor('model', ['Prius (30)', 'A:B']);
+  assert.equal(risky.length, 1);
+  assert.equal(risky[0][1], 'attrs->>model.ilike.%Prius 30%,attrs->>model.ilike.%A B%');
+  assert.ok(!/[()]/.test(risky[0][1]), '`or()` дотор хаалт үлдэв ✗');
+  // ⚠️ Таслал нь URL-ийн ТУСГААРЛАГЧ тул нэг утга дотор байх боломжгүй —
+  //    `parseAttrList` 2 утга болгоно (URL ба DB ижил ойлголцол ✓)
+  assert.equal(likeCallsFor('model', ['A,B'])[0][1],
+    'attrs->>model.ilike.%A%,attrs->>model.ilike.%B%');
+});
+
+
 // ---------- ⑧ lib/locationData.js — талбарын ГЭРЭЭ ----------
+// ⚠️ 🚙 2026-10-04 (36): «Загвар» нь `multi` болов — гэхдээ `chips` БАЙХГҮЙ
+//    (UI нь sidebar-ийн чип БИШ, `components/CarPicker.jsx` пикер ✓)
+t('🚙 auto → model: `multi` + `multiNoun: \'загвар\'` + чөлөөт текст ХЭВЭЭР', () => {
+  const f = getAttrField('auto', 'model');
+  assert.equal(f.multi, true);            // 🚙🌂 олон сонголт ✓
+  assert.equal(f.multiNoun, 'загвар');    // «2 загвар» шошго ✓
+  // ⚠️ Талбарын ТӨРӨЛ ХӨНДӨГДӨӨГҮЙ — DB нь `ilike %…%` хэвээр ✓
+  assert.equal(f.type, 'text');
+  assert.equal(f.filterable, true);
+  assert.equal(f.optionsFrom, 'brand');
+  // ⛔ `chips` БАЙХГҮЙ: талбар нь sidebar-д ГАРАХГҮЙ (пикерээр сонгоно ✓)
+  assert.ok(!f.chips, '🚙 model нь sidebar-ийн чип болжээ ✗ (пикер л ✓)');
+  // ⚠️ Форм дээр ч хөндөгдөхгүй (`formChips` туг байхгүй — форм нэг утга ✓)
+  assert.ok(!f.formChips, 'форм дээр чип болжээ ✗');
+  // ⚠️ Форм ба шүүлт нь ИЖИЛ Объект (нэг эх сурвалж ✓)
+  assert.equal(getAttrFields('auto').find((x) => x.key === 'model'), f);
+});
+
 t("🎨 auto → color: `chips` + `multi` + `multiNoun` тугтай, `type: 'select'` хэвээр", () => {
   const f = getAttrField('auto', 'color');
   assert.equal(f.type, 'select');       // ⚠️ форм нь `<select>` хэвээр ✓
@@ -225,22 +322,31 @@ t("🎨 auto → color: `chips` + `multi` + `multiNoun` тугтай, `type: 'se
   assert.equal(getAttrFields('auto').find((x) => x.key === 'color'), f);
 });
 
-t("🔒 Олон сонголттой талбарууд нь ЯГ ТОДОРХОЙ жагсаалт (🚗 auto: color·transmission·fuel + ✅ 8 хэсгийн condition)", () => {
+t("🔒 Олон сонголттой талбарууд нь ЯГ ТОДОРХОЙ жагсаалт (🚗 auto: model·color·transmission·fuel + ✅ 8 хэсгийн condition)", () => {
   const multiKeys = [];
   SECTIONS.forEach((s) => {
     getAttrFields(s.value).forEach((f) => {
       if (f.multi) multiKeys.push(`${s.value}.${f.key}`);
-      // ⚠️ `multi` нь ЗААВАЛ `chips`-тай хамт (UI болон утгын төрөл зөрөхгүй ✓)
-      if (f.multi) assert.equal(f.chips, true, `${s.value}.${f.key} — multi ч chips БИЙ ✗`);
+      /* ⚠️ `multi` талбар нь ЗААВАЛ НЭГ UI-тэй байх ЁСТОЙ:
+         ① `chips: true` → sidebar-д ОЛОН СОНГОЛТТОЙ ЧИП (🎨 Өнгө, ⚙️⛽…)
+         ② ✍️ `type: 'text'` + `filterable` (🚙 Загвар — 2026-10-04 (36)):
+            sidebar-д чип БАЙХГҮЙ (талбар нь `components/CarPicker.jsx`
+            пикерээр сонгогддог) — гэхдээ утга нь МАССИВ ба DB нь
+            `or=(…ilike…)` ✓
+         ⚠️ Аль нь ч биш бол утга нь массив болж, скаляр хүлээсэн UI эвдэрнэ ✗ */
+      if (f.multi) {
+        const hasMultiUi = f.chips === true || (f.type === 'text' && f.filterable === true);
+        assert.ok(hasMultiUi, `${s.value}.${f.key} — multi ч чип/пикер UI-гүй ✗`);
+      }
       // ⚠️ Олон сонголттой талбар нь ЗААВАЛ sidebar-ийн шүүлтэд Ч байх ЁСТОЙ
-      //    (эс бөгөөс чипийн UI нь ХЭЗЭЭ Ч харагдахгүй «үхсэн туг» болно ✗)
+      //    (эс бөгөөс URL-ээс уншигдахгүй, «үхсэн туг» болно ✗)
       if (f.multi) assert.ok((s.attrFilters || []).includes(f.key),
         `${s.value}.${f.key} — multi ч attrFilters-д БАЙХГҮЙ ✗`);
     });
   });
   assert.deepEqual(multiKeys, [
-    // 🚗 авто: 3 чип (🎨 өнгө · ⚙️ хайрцаг (22) · ⛽ түлш (22))
-    'auto.color', 'auto.transmission', 'auto.fuel',
+    // 🚗 авто: 🚙 загвар (36) + 3 чип (🎨 өнгө · ⚙️ хайрцаг (22) · ⛽ түлш (22))
+    'auto.model', 'auto.color', 'auto.transmission', 'auto.fuel',
     // ✅ 8 хэсгийн «Шинэ / Шинэвтэр / Хуучин» (21)
     'computers.condition', 'furniture.condition', 'home.condition', 'electric.condition',
     'construction.condition', 'equipment.condition', 'travel.condition', 'hobby.condition',
@@ -340,16 +446,24 @@ t("🚗 `getAttrFilters('auto')` — 7 шүүлт, дараалал ХЭВЭЭР
 });
 
 // ---------- ⑨ lib/queries.js — DB шүүлт ----------
-t('🗄 queries.js: массив утгыг `applyAttrMultiFilter`-ээр шүүнэ (import + дуудлага ✓)', () => {
+t('🗄 queries.js: массив утгыг ТЕКСТ БИШ бол `applyAttrMultiFilter` (`in`) — ТЕКСТ бол `or(…ilike…)`', () => {
   const src = codeOnly(readSrc('lib/queries.js'));
-  assert.match(src, /import \{ applyAttrMultiFilter \} from '\.\/attrMultiFilter\.mjs'/);
+  assert.match(src,
+    /import \{ applyAttrMultiFilter, applyAttrMultiLikeFilter, likePattern \} from '\.\/attrMultiFilter\.mjs'/);
   // ⚠️ Массивыг СКАЛЯР гэж үзэх зам руу оруулахгүй — `Array.isArray` шалгалт
   //    нь `String(v)`/range/searchable шалгалтуудын ӨМНӨ байх ЁСТОЙ ✓
-  assert.match(src, /if \(Array\.isArray\(v\)\) \{ applyAttrMultiFilter\(query, k, v\); return; \}/);
+  assert.match(src,
+    /if \(Array\.isArray\(v\)\) \{[\s\S]{0,300}?applyAttrMultiLikeFilter\(query, k, v\);[\s\S]{0,80}?else applyAttrMultiFilter\(query, k, v\);[\s\S]{0,40}?return;/);
   const atArray = src.indexOf('Array.isArray(v)');
   const atRange = src.indexOf('const rangeKey');
   assert.ok(atArray > 0 && atRange > 0 && atArray < atRange,
     'массивын шалгалт range-ийн дараа байна ✗');
+  // ⚠️ «Текст эсэх» дүрэм нь НЭГ газар (`isTextLikeAttr`) — скаляр (`ilike`)
+  //    ба олон утгатай (`or(…ilike…)`) хоёулаа ЯГ ижил дүрмийг хэрэглэнэ ✓
+  assert.match(src, /function isTextLikeAttr\(section, key\) \{/);
+  assert.match(src, /if \(isTextLikeAttr\(filters\.section, k\)\) \{\n\s+query\.ilike\(`attrs->>\$\{k\}`/);
+  // ⚠️ Локал `likePattern` ХАСАГДСАН — зөвхөн модулиас импортолно (нэг эх сурвалж ✓)
+  assert.ok(!/const likePattern = /.test(src), 'queries.js дээр likePattern ДАХИН бичигдсэн ✗');
 });
 
 // ---------- ⑩ components/HomeClient.jsx — UI-ийн гэрээ ----------

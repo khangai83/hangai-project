@@ -148,7 +148,7 @@ const CDP = `http://127.0.0.1:${process.env.CDP_PORT || 9222}`;
  * 🎨 2026-10-03 (19): sidebar-ийн «Өнгө»-ний чипүүд нь либын жагсаалттай
  *    ЯГ ижил эсэхийг DOM↔ЛИБ харьцуулалтаар шалгана (давхар бичихгүй ✓)
  */
-import { AUTO_COLOR_OPTIONS } from '../lib/locationData.js';
+import { AUTO_COLOR_OPTIONS, CAR_BRANDS } from '../lib/locationData.js';
 
 let pass = 0;
 let fail = 0;
@@ -1278,15 +1278,35 @@ ok('🌈 сэлбэгийн брэнд («Bosch») → «Загвар» нь Ч�
 const pickerProblems = problems.slice();
 await rpc('Page.navigate', { url: `${BASE}/?section=auto&category=all&type=${encodeURIComponent('Суудлын машин')}` });
 await wait(2500);
-await waitForSel('input[aria-label="Үйлдвэрлэгч"]', 15000);
-const sideFields = await evaluate(ICON_PROBE);
-ok('sidebar: 🔎 дүрстэй талбарт «Үйлдвэрлэгч» ба «Загвар» бий (hero хайлттай хамт)',
-  sideFields.some((f) => f.aria.includes('Үйлдвэрлэгч'))
-  && sideFields.some((f) => f.aria.includes('Загвар')),
-  JSON.stringify(sideFields.map((f) => f.aria)));
-ok('sidebar: бүх 🔎 талбарын зай ≥ 6px (дүрс текстээ халхлахгүй)',
-  sideFields.length >= 2 && sideFields.every((f) => f.gap >= 6),
-  JSON.stringify(sideFields.map((f) => `${f.aria.slice(0, 14)}:${f.gap}px`)));
+/**
+ * 🏷️🚙 2026-10-04 (35) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Автомашины хайлтын
+ *    Үйлдвэрлэгч, Загварыг Байршил шиг хайдаг болгоод өг» ⇒ сайдбарын ХОЁР
+ *    тусдаа талбар (`input[aria-label="Үйлдвэрлэгч"]` + `Загвар`) БҮРЭН
+ *    ХАСАГДАЖ, оронд нь 📍 Байршилтай ЯГ ИЖИЛ **НЭГ товч → `CarPicker`**
+ *    (modal: хайлт + Үйлдвэрлэгч → Загвар каскад) болов ⇒ хуучин `ICON_PROBE`
+ *    (🔎 дүрсний зай) шалгалт энэ хэсэгт УТГАГҮЙ (талбар байхгүй) ✓
+ */
+await waitForSel('[data-sidebar-car]', 15000);
+ok('🚗 sidebar: «Үйлдвэрлэгч, загвар» НЭГ товч (`data-sidebar-car`) бий', true);
+
+const SIDE_CAR_DUP = `(() => {
+  const aside = document.querySelector('aside');
+  if (!aside) return { none: true };
+  return {
+    brandInputs: aside.querySelectorAll('input[aria-label="Үйлдвэрлэгч"]').length,
+    modelInputs: aside.querySelectorAll('input[aria-label="Загвар"]').length,
+    brandBlocks: aside.querySelectorAll('[data-attr-filter="brand"]').length,
+    modelBlocks: aside.querySelectorAll('[data-attr-filter="model"]').length,
+    carButton: aside.querySelectorAll('[data-sidebar-car]').length,
+  };
+})()`;
+const dupBefore = await evaluate(SIDE_CAR_DUP);
+ok('🚗 sidebar: ХУУЧИН 🏷️/🚙 талбар БАЙХГҮЙ (2 өөр UI ✗) — 0/0/0/0 · товч 1',
+  !dupBefore.none && dupBefore.carButton === 1
+    && dupBefore.brandInputs === 0 && dupBefore.modelInputs === 0
+    && dupBefore.brandBlocks === 0 && dupBefore.modelBlocks === 0,
+  JSON.stringify(dupBefore));
+
 
 // 🎨🔀 2026-10-01: sidebar-ийн ATTR шүүлтүүд (`select[aria-label]`) — «Өнгө» бий,
 //    «Хөтлөгч» БАЙХГҮЙ (форм ба sidebar НЭГ эх сурвалж: attrFields → attrFilters ✓)
@@ -1321,117 +1341,182 @@ ok('sidebar: 🔀 «Хөтлөгч» шүүлт БАЙХГҮЙ (0 талбар)'
   !sideSelects.some((s) => s.aria === 'Хөтлөгч'),
   JSON.stringify(sideSelects.map((s) => s.aria)));
 
-// ⚠️ 2026-10-01 (2): sidebar (`attrFilters`) ч формой ИЖИЛ дараалалтай —
-//    🎨 «Өнгө» нь 🚙 «Загвар»-ын ЯГ дараа (DOM дараалал: `aside [aria-label]`)
-//    ⚠️ «Загвар» нь ТЕКСТ талбар (`input`), «Өнгө» нь `<select>` тул дээрх
-//       `select[aria-label]` дангаараа ХАНГАЛТГҮЙ ✗ → бүх aria-label уншина ✓
+// ⚠️ 2026-10-04 (35): 🏷️ «Үйлдвэрлэгч»/🚙 «Загвар» нь сайдбараас ГАРЧ,
+//    `CarPicker` (modal) руу шилжсэн тул сайдбарын attr жагсаалт нь
+//    🎨 «Өнгө»-өөр ЭХЭЛНЭ (`attrFilters.filter(…)` — brand/model шүүгдсэн ✓)
 const SIDE_ORDER = `(() => [...document.querySelectorAll('aside [aria-label]')]
   .map((el) => (el.getAttribute('aria-label') || '').trim()).filter(Boolean))()`;
 const sideOrder = await evaluate(SIDE_ORDER);
-const sideModelAt = sideOrder.indexOf('Загвар');
-const sideColorAt = sideOrder.indexOf('Өнгө');
-ok('sidebar: 🎨 «Өнгө» нь «Загвар»-ын ЯГ дараа (шүүлтүүдийн дараалал)',
-  sideModelAt >= 0 && sideColorAt === sideModelAt + 1, JSON.stringify(sideOrder));
+ok('🚗 sidebar: 🏷️ «Үйлдвэрлэгч» / 🚙 «Загвар» сайдбарт БАЙХГҮЙ (modal руу шилжсэн ✓)',
+  !sideOrder.includes('Загвар') && !sideOrder.includes('Үйлдвэрлэгч'),
+  JSON.stringify(sideOrder));
+ok('sidebar: attr шүүлтийн эхнийх нь 🎨 «Өнгө» (пикерийн дараа)',
+  sideOrder[0] === 'Өнгө', JSON.stringify(sideOrder));
 
-// ── ⑦‴ 🌈 SIDEBAR: 🏷️ «Үйлдвэрлэгч» сонгоход 🚙 «Загвар» нь тухайн брэндийн combo ──
+// ── ⑦‴ 🏷️🚙 SIDEBAR → `CarPicker` (modal): Үйлдвэрлэгч → Загвар КАСКАД ──
 /**
- * ⚠️ Sidebar нь ШҮҮЛТ тавих горим (`commitOnType` БАЙХГҮЙ) — тиймээс утга нь
- *    сонголт дарах / ⏎ / гадна дарах (blur) үед л хүчинтэй болно ✓
- *    Мөн брэнд солигдоход хуучирсан загварын шүүлт URL-аас АРИЛНА
- *    (`cascadeAttrs` — формтой ЯГ ИЖИЛ дүрэм ✓)
- *
- * ⚠️ 2026-10-01: `&type=…` хэрэгтэй байв — sidebar нь PROGRESSIVE DISCLOSURE
- *    байсан тул `<aside>` нь ЗӨВХӨН ТӨРӨЛ сонгосон үед render болдог байв ✗
- *    🆕 2026-10-03 (13): progressive disclosure ХАСАГДАВ — `showAdvancedFilters`
- *    нь ҮРГЭЛЖ тул `?section=auto&attr_brand=Toyota` (type-ГҮЙ) дээр ч
- *    `aside` БИЙ ✓ (`HomeClient.jsx`: `{showAdvancedFilters && (<aside …>)}`)
- *    ⚠️ Гэхдээ шалгалт нь ТӨРӨЛ сонгосон URL-тай ХЭВЭЭР — форм дээр сонгосон
- *    утгатай (3-р түвшин) ЯГ ИЖИЛ байх ёстой тул ✓
+ * 🎯 2026-10-04 (35) (хэрэглэгчийн хүсэлт: «Автомашины хайлтын Үйлдвэрлэгч,
+ *    Загварыг Байршил шиг хайдаг болгоод өг») ⇒ сайдбарын 🏷️/🚙 талбарууд
+ *    БАЙХГҮЙ — зөвхөн НЭГ товч (`[data-sidebar-car]`) бөгөөд дарахад
+ *    `[data-car-picker]` (modal) нээгдэнэ. БОДИТ DOM дээр батална:
+ *      ① товч нь `?attr_brand=Toyota`-г харуулна (URL → товч ✓)
+ *      ② пикер нээгдэхэд хайлтын талбар + 🏷️ бүх мөр (Toyota СОНГОГДСОН)
+ *      ③ 🔍 «pri» бичихэд 🚙 загварын жагсаалт шүүгдэнэ (Байршил шиг ✓)
+ *      ④ «Prius 30» сонгоод «Машиныг хэрэглэх» → `?attr_model=Prius 30`
+ *      ⑤ 🏷️ брэндээ «Nissan» болгоход хуучирсан загвар АРИЛНА (cascade ✓)
+ *    ⚠️ Утга нь `filters.attrs.brand/model` ХЭВЭЭР (`lib/queries.js` `ilike` ✓)
  */
 await rpc('Page.navigate', { url: `${BASE}/?section=auto&category=all&type=${encodeURIComponent('Суудлын машин')}&attr_brand=Toyota` });
 await wait(3500);
 /**
  * ⚠️ dev сервер дээр энэ нь ШИНЭ хуудас (эхний compile удаан байж болно) тул
- *    sidebar бүрэн ачаалагдсаныг ХҮЛЭЭНЭ ✓ (эс бөгөөд `aside` хоосон байж,
- *    дараагийн бүх шалгалт хуурамчаар ✗ болно)
+ *    sidebar бүрэн ачаалагдсаныг ХҮЛЭЭНЭ ✓
  */
-const sideReady = await waitForSel('aside input[aria-label="Үйлдвэрлэгч"]', 25000);
-ok('🌈 sidebar: хуудас ачаалагдав (🏷️ Үйлдвэрлэгч шүүлт DOM-д бий)', sideReady === true);
+const sideReady = await waitForSel('[data-sidebar-car]', 25000);
+const carBtnText = sideReady ? await evaluate(`document.querySelector('[data-sidebar-car]').innerText`) : '';
+ok('🌈 sidebar: хуудас ачаалагдав + товч нь `?attr_brand=Toyota`-г харуулав',
+  sideReady === true && /Toyota/.test(carBtnText || ''),
+  JSON.stringify({ sideReady, carBtnText }));
 
-const SIDE_DEP = `(() => {
-  const as = [...document.querySelectorAll('aside [aria-label]')];
-  const get = (t) => as.find((el) => ((el.getAttribute('aria-label') || '').trim() === t));
-  const brand = get('Үйлдвэрлэгч');
-  const model = get('Загвар');
+// ── товч дарж пикерийг НЭЭНЭ (📍 байршлын пикертэй ЯГ ИЖИЛ зам ✓) ──
+await click('[data-sidebar-car]');
+const modalReady = await waitForSel('[data-car-picker]', 10000);
+ok('📍 пикер нээгдэв (modal бодитоор гарч ирэв)', modalReady === true);
+
+/**
+ * ⚠️ Пикерийн төлөв — хайлтын талбар, 🏷️/🚙 багана, сонголт, товчнууд.
+ *    ⚠️ Энэ нь template literal тул дотор нь BACKTICK бичиж БОЛОХГҮЙ ✗
+ */
+const CAR_PROBE = `(() => {
+  const m = document.querySelector('[data-car-picker]');
+  if (!m) return { none: true };
+  const brandCol = m.querySelector('[data-car-brand-filter]');
+  const modelCol = m.querySelector('[data-car-model-filter]');
   return {
-    brandTag: brand ? brand.tagName.toLowerCase() : 'MISSING',
-    brandValue: brand ? brand.value : null,
-    modelTag: model ? model.tagName.toLowerCase() : 'MISSING',
-    modelRole: model ? (model.getAttribute('role') || '') : '',
+    search: Boolean(m.querySelector('#car-search')),
+    brandRows: m.querySelectorAll('[data-car-brand-value]').length,
+    brandSel: brandCol ? [...brandCol.querySelectorAll('[aria-pressed="true"]')].map((b) => b.getAttribute('data-car-brand-value')) : [],
+    modelRows: m.querySelectorAll('[data-car-model-value]').length,
+    modelVals: modelCol ? [...modelCol.querySelectorAll('[data-car-model-value]')].map((b) => b.getAttribute('data-car-model-value')) : [],
+    apply: Boolean(m.querySelector('[data-apply-car]')),
+    clear: Boolean(m.querySelector('[data-clear-car]')),
   };
 })()`;
-const sd1 = await evaluate(SIDE_DEP);
-ok('🌈 sidebar: `?attr_brand=Toyota` үед 🚙 «Загвар» нь COMBOBOX болов',
-  sd1.brandValue === 'Toyota' && sd1.modelTag === 'input' && sd1.modelRole === 'combobox',
-  JSON.stringify(sd1));
+const cm1 = await evaluate(CAR_PROBE);
+ok('🔍🏷️🚙 пикер: хайлт + «Машиныг хэрэглэх»/«✕ Цэвэрлэх» + 🏷️ бүх мөр (' + CAR_BRANDS.length + ')',
+  cm1.search === true && cm1.apply === true && cm1.clear === true
+    && cm1.brandRows === CAR_BRANDS.length,
+  JSON.stringify(cm1));
+ok('🌈 пикер: `?attr_brand=Toyota` → 🏷️ Toyota СОНГОГДСОН + 🚙 Toyota-гийн моделууд',
+  JSON.stringify(cm1.brandSel) === JSON.stringify(['Toyota'])
+    && ['Prius 30', 'Harrier', 'Camry'].every((x) => cm1.modelVals.includes(x)),
+  JSON.stringify({ brandSel: cm1.brandSel, modelVals: cm1.modelVals.slice(0, 8) }));
 
-/** ⚠️ `click()` (headless-д `focus()` нь `onFocus` өдөөхгүй ✓) */
+
+/**
+ * 🔍 ХАЙЛТЫН талбар — «pri» гэж бичихэд 🚙 жагсаалт ШУУД шүүгдэнэ
+ *    (хэрэглэгчийн хүсэлт: «Байршил шиг хайдаг болгоод өг» ✓)
+ * ⚠️ React-ийн хяналттай оролт тул native `setter`-ээр бичнэ (cascade тестийн ИЖИЛ арга)
+ */
 await evaluate(`(() => {
-  const m = [...document.querySelectorAll('aside input[role="combobox"]')]
-    .find((x) => ((x.getAttribute('aria-label') || '').trim() === 'Загвар'));
-  if (m) m.click();
+  const i = document.querySelector('#car-search');
+  if (!i) return 'NO_INPUT';
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  setter.call(i, 'pri');
+  i.dispatchEvent(new Event('input', { bubbles: true }));
   return 'OK';
 })()`);
 await wait(500);
-const sideOpts = await evaluate(`(() => {
-  const m = [...document.querySelectorAll('aside input[role="combobox"]')]
-    .find((x) => ((x.getAttribute('aria-label') || '').trim() === 'Загвар'));
-  const box = m ? m.parentElement.parentElement.querySelector('[role="listbox"]') : null;
-  return box ? [...box.querySelectorAll('[role="option"]')].map((b) => (b.innerText || '').trim()) : [];
+const afterSearch = await evaluate(`(() => {
+  const m = document.querySelector('[data-car-picker]');
+  if (!m) return { none: true };
+  return {
+    models: [...m.querySelectorAll('[data-car-model-value]')].map((b) => b.getAttribute('data-car-model-value')),
+    brands: m.querySelectorAll('[data-car-brand-value]').length,
+    brandFree: Boolean(m.querySelector('[data-car-brand-free]')),
+    modelFree: Boolean(m.querySelector('[data-car-model-free]')),
+  };
 })()`);
-ok('🌈 sidebar: жагсаалтад Toyota-гийн загварууд (Prius 30 · Harrier · Camry)',
-  ['Prius 30', 'Harrier', 'Camry'].every((x) => sideOpts.includes(x)),
-  JSON.stringify(sideOpts.slice(0, 6)));
+ok('🔍 пикер: «pri» бичихэд 🚙 зөвхөн Prius-ууд үлдэв (хайлт ажиллаж байна ✓)',
+  afterSearch.models.length > 0
+    && afterSearch.models.every((x) => String(x).toLowerCase().includes('pri')),
+  JSON.stringify(afterSearch.models));
+ok('🔍 пикер: олдоогүй үед ЧӨЛӨӨТ ТЕКСТ мөр гарна (`🔍 «pri» гэж хайх` — өмнөх зан ✓)',
+  afterSearch.brands === 0 && afterSearch.brandFree === true && afterSearch.modelFree === true,
+  JSON.stringify(afterSearch));
 
-// Сонголт дарах → `?attr_model=…` URL-д орно (шүүлт хүчинтэй болов)
+
+// ✅ «Prius 30» сонгоод «Машиныг хэрэглэх» → `?attr_model=Prius 30`
+//    ⚠️ Хайлтыг эхлээд цэвэрлэнэ (эс бөгөөс «pri» гэсэн шүүлт жагсаалтыг барих ч
+//       мөр нь харагдаж байгаа тул сонголт хийгдэнэ ✓ — илүү тодорхой болгох үүднээс)
 await evaluate(`(() => {
-  const m = [...document.querySelectorAll('aside input[role="combobox"]')]
-    .find((x) => ((x.getAttribute('aria-label') || '').trim() === 'Загвар'));
-  const box = m ? m.parentElement.parentElement.querySelector('[role="listbox"]') : null;
-  const opt = box ? [...box.querySelectorAll('[role="option"]')]
-    .find((b) => ((b.innerText || '').trim() === 'Prius 30')) : null;
-  if (!opt) return 'NO_OPTION';
-  opt.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+  const i = document.querySelector('#car-search');
+  if (!i) return 'NO_INPUT';
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  setter.call(i, '');
+  i.dispatchEvent(new Event('input', { bubbles: true }));
   return 'OK';
 })()`);
+await wait(400);
+await click('[data-car-model-value="Prius 30"]');
+const picked = await evaluate(`(() => {
+  const b = document.querySelector('[data-car-picker] [data-car-model-value="Prius 30"]');
+  return b ? b.getAttribute('aria-pressed') : 'MISSING';
+})()`);
+ok('🚙 пикер: «Prius 30» мөр сонгогдов (`aria-pressed=true`)', picked === 'true', String(picked));
+
+await click('[data-apply-car]');
 await wait(1200);
+const carPickerGone = await evaluate(`!document.querySelector('[data-car-picker]')`);
 // ⚠️ `decodeURIComponent(location.search)` нь `+`-ыг ЗАЙ болгохгүй, харин
 //    `URLSearchParams` нь зайг `+` болгож бичдэг (`attr_model=Prius+30`) — тиймээс
 //    `includes('attr_model=Prius 30')` нь буруу ✗. Параметрээр ШУУД уншина ✓
 const modelAfterPick = await evaluate(`new URLSearchParams(location.search).get('attr_model')`);
-ok('🌈 sidebar: «Prius 30» сонгоход `?attr_model=Prius 30` (шүүлт хүчинтэй болов)',
-  modelAfterPick === 'Prius 30', JSON.stringify({ model: modelAfterPick }));
+const brandAfterPick = await evaluate(`new URLSearchParams(location.search).get('attr_brand')`);
+ok('✅ «Машиныг хэрэглэх» → пикер ХААГДАЖ `?attr_model=Prius 30` (брэнд Toyota ХЭВЭЭР ✓)',
+  carPickerGone === true && modelAfterPick === 'Prius 30' && brandAfterPick === 'Toyota',
+  JSON.stringify({ carPickerGone, modelAfterPick, brandAfterPick }));
 
-// 🏷️ Брэндээ «Nissan» болгох (commit → cascade) → хуучирсан загвар АРИЛНА ✓
-//    ⚠️ `blur()` нь headless горимд React-ийн `onBlur`-ыг ӨДӨӨХГҮЙ (React нь
-//       `onBlur`-ыг `focusout` үйл явдалд холбодог) → `focusout`-ыг ШУУД илгээнэ ✓
-await evaluate(`(() => {
-  const b = [...document.querySelectorAll('aside input[role="combobox"]')]
-    .find((x) => ((x.getAttribute('aria-label') || '').trim() === 'Үйлдвэрлэгч'));
-  if (!b) return 'NO_BRAND';
-  b.focus();
-  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-  setter.call(b, 'Nissan');
-  b.dispatchEvent(new Event('input', { bubbles: true }));
-  b.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
-  return 'OK';
+
+// 🌈 🏷️ брэндээ «Nissan» болгоход хуучирсан 🚙 Загвар АРИЛНА (cascade ✓)
+//    ⚠️ Пикер нь өмнөх «хэрэглэх»-ээр хаагдсан тул ДАХИН нээнэ ✓
+await click('[data-sidebar-car]');
+await waitForSel('[data-car-picker]', 10000);
+// ⚠️ Нээгдэхэд ноорог нь `filters`-ээс шинээр авагдана (Toyota + Prius 30 ✓)
+const draftBefore = await evaluate(`(() => {
+  const m = document.querySelector('[data-car-picker]');
+  const b = m && m.querySelector('[data-car-brand-filter] [aria-pressed="true"]');
+  const mo = m && m.querySelector('[data-car-model-value="Prius 30"]');
+  return { brand: b ? b.getAttribute('data-car-brand-value') : null, modelOn: mo ? mo.getAttribute('aria-pressed') : 'MISSING' };
 })()`);
+ok('🔄 пикер: дахин нээгдэхэд ноорог `filters`-ээс шинээр авагдав (Toyota + Prius 30)',
+  draftBefore.brand === 'Toyota' && draftBefore.modelOn === 'true',
+  JSON.stringify(draftBefore));
+
+await click('[data-car-brand-value="Nissan"]');
+const nisProbe = await evaluate(`(() => {
+  const m = document.querySelector('[data-car-picker]');
+  if (!m) return { none: true };
+  const col = m.querySelector('[data-car-model-filter]');
+  return {
+    brandSel: [...m.querySelectorAll('[data-car-brand-filter] [aria-pressed="true"]')].map((b) => b.getAttribute('data-car-brand-value')),
+    modelSel: [...m.querySelectorAll('[data-car-model-filter] [aria-pressed="true"]')].length,
+    models: col ? [...col.querySelectorAll('[data-car-model-value]')].map((b) => b.getAttribute('data-car-model-value')).slice(0, 5) : [],
+  };
+})()`);
+ok('🌈 пикер: «Nissan» сонгоход 🚙 Загвар ЦЭВЭРЛЭГДЭВ (зөрчсөн хос үлдэхгүй ✓)',
+  JSON.stringify(nisProbe.brandSel) === JSON.stringify(['Nissan'])
+    && nisProbe.modelSel === 0 && nisProbe.models.length > 0,
+  JSON.stringify(nisProbe));
+
+await click('[data-apply-car]');
 await wait(1500);
 const brandAfter = await evaluate(`new URLSearchParams(location.search).get('attr_brand')`);
 const modelAfterBrand = await evaluate(`new URLSearchParams(location.search).get('attr_model')`);
-ok('🌈 sidebar: брэнд «Nissan» болоход `attr_model` АРИЛАВ (зөрчсөн шүүлт үлдэхгүй ✓)',
+ok('🌈 «Машиныг хэрэглэх» → `attr_brand=Nissan`, `attr_model` АРИЛАВ (зөрчсөн шүүлт үлдэхгүй ✓)',
   brandAfter === 'Nissan' && !modelAfterBrand,
   JSON.stringify({ brand: brandAfter, model: modelAfterBrand }));
+
 
 console.log('\n── ⑧ CONSOLE / EXCEPTION ──');
 ok('JS exception / console.error БАЙХГҮЙ (picker + Үйлдвэрлэгч форм)',
