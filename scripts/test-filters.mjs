@@ -1134,12 +1134,37 @@ t('💻 ГЭРЭЭ: форм (`AddListingClient` — `/listings/new`) + seed н�
   assert.ok(/NOTEBOOK_SCREEN_OPTIONS, NOTEBOOK_CPU_OPTIONS, NOTEBOOK_RAM_OPTIONS, NOTEBOOK_STORAGE_OPTIONS/.test(seed));
 });
 
-t('🛠 services: бүлгүүдэд `collapsed` туг БАЙХГҮЙ (бүгд ШУУД нээлттэй хэвээр)', () => {
+t('🛠 services: 8 бүлэг, бүгд ШУУД нээлттэй (`collapsed` туг БАЙХГҮЙ)', () => {
   // ⚠️ Regress-ийн хамгаалалт: 2026-09-29-ний хүсэлтээр services дээр бүх бүлэг
   //    шууд нээлттэй байх ёстой — компьютерийн accordion тэнд ХҮРЭХГҮЙ ✓
   const groups = getSubtypeGroups('services');
-  assert.equal(groups.length, 7);
+  // ✏️ 2026-10-05 (44): 7 → **8** бүлэг («Эмнэлэг» нэмэгдэв); 28 → **32** дэд
+  //    төрөл («Гагнуурын үйлчилгээ» + «Эмнэлэг»-ийн 3 нь) — доорх гэрээнүүд
+  //    (`getSubtypes`-д leaf бүр байх, бүлэг нь өөрөө хадгалагдахгүй) ХЭВЭЭР ✓
+  assert.equal(groups.length, 8);
   assert.equal(groups.filter((g) => g.collapsed).length, 0);
+  // ⚠️ Байрлал: шинэ «Эмнэлэг» бүлэг нь ХАМГИЙН СҮҮЛД — хуучин 7 бүлгийн
+  //    дараалал ХӨНДӨГДӨӨГҮЙ (индексээр ажилладаг код эвдрэхээс сэргийлэв ✓)
+  assert.equal(groups[groups.length - 1].label, 'Эмнэлэг');
+  assert.deepEqual(groups[groups.length - 1].items, [
+    'Шүдний эмнэлэг', 'Эрэгтэйчүүдийн эмнэлэг', 'Эмэгтэйчүүдийн эмнэлэг',
+  ]);
+  // ⚠️ «Гагнуурын үйлчилгээ» нь «Барилга & Засвар үйлчилгээ» бүлгийн LEAF
+  //    (шинэ бүлэг БИШ) — 5 → 6 item, хуучин 5 нь ХӨНДӨӨГДӨӨГҮЙ ✓
+  const build = groups.find((g) => g.label === 'Барилга & Засвар үйлчилгээ');
+  assert.equal(build.items.length, 6);
+  assert.ok(build.items.includes('Гагнуурын үйлчилгээ'));
+  // ⚠️ Шинэ 4 leaf нь `getSubtypes`-д ЗААВАЛ байх ёстой (форм/шүүлт/тоо/
+  //    breadcrumb бүгд `getSubtypes`-ээр ажиллана) ✓
+  const subtypes = getSubtypes('services');
+  [
+    'Гагнуурын үйлчилгээ', 'Шүдний эмнэлэг', 'Эрэгтэйчүүдийн эмнэлэг',
+    'Эмэгтэйчүүдийн эмнэлэг',
+  ].forEach((s) => assert.ok(subtypes.includes(s), `${s} дэд төрөлд алга ✗`));
+  assert.equal(subtypes.length, 32);
+  // ⚠️ Бүлгийн НЭР нь `property_type` БИШ ⇒ `getSubtypes`-д ОРОХГҮЙ ✓
+  //    (тиймээс «Эмнэлэг» гэсэн зар DB-д ХЭЗЭЭ Ч хадгалагдахгүй)
+  assert.ok(!subtypes.includes('Эмнэлэг'));
 });
 
 t('🛠/💻/⚡ Ерөнхий гэрээ: бүх бүлгийн leaf нь `getSubtypes`-д ЗААВАЛ байна', () => {
@@ -1180,7 +1205,7 @@ t('⚡ electric: 8 бүлэг — 3 нь доод түвшинтэй (accordion)
   const leaves = groups.filter((g) => g.items.length === 0);
   assert.equal(leaves.length, 5);
   assert.equal(leaves.filter((g) => g.collapsed).length, 0);
-  // 🤝 `services` (7 бүлэг, бүгд нээлттэй) ХӨНДӨГДӨӨГҮЙ — regress-ийн хамгаалалт
+  // 🤝 `services` (8 бүлэг, бүгд нээлттэй) ХӨНДӨГДӨӨГҮЙ — regress-ийн хамгаалалт
   assert.equal(getSubtypeGroups('services').filter((g) => g.collapsed).length, 0);
 });
 

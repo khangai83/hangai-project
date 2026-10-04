@@ -42,6 +42,7 @@
     "cdp:wheel": "node scripts/cdp-wheel.mjs",
     "cdp:chips": "node scripts/cdp-job-chips.mjs",
     "cdp:sections": "node scripts/cdp-sections.mjs",
+    "cdp:services": "node scripts/cdp-services.mjs",
     "test:messages": "node scripts/test-messages.mjs",
     "test:youtube": "node scripts/test-youtube.mjs",
     "migration:copy": "node scripts/setup-migration.js",
