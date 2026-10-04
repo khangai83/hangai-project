@@ -7,6 +7,10 @@ import MapView from './MapView';
 // 📍 БАЙРШЛЫН ПИКЕР (modal, 2026-10-04 (27)) — «📍 Бүх байршил» товч дарахад
 //    «Байршлаа сонгоно уу» цонх (Хот → Дүүрэг → Хороо каскад) нээгдэнэ ✓
 import LocationPicker from './LocationPicker';
+// 🧩 ТОЛГОЙН МӨРНИЙ ИКОНУУД (2026-10-04 (28)) — emoji (`📋 📍 ▾ 🔍`) БИШ
+//    `currentColor` SVG: өнгө нь идэвхтэй/идэвхгүй төлвөөр солигдоно,
+//    OS бүр дээр ЯГ ижил харагдана ✓ (`components/HeaderIcons.jsx`)
+import { ChevronDownIcon, ListIcon, PinIcon, SearchIcon } from './HeaderIcons';
 import { useToast, useUI, useHeaderSlot } from './AppProviders';
 import {
   fetchListings, fetchPropertyTypeCounts, fetchProfilesByIds,
@@ -14,8 +18,15 @@ import {
 } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
 import {
-  CITIES, getDistricts, getKhoroosForDistricts, ROOM_OPTIONS,
+  // ⚠️ 2026-10-04 (28): `CITIES` / `getDistricts` / `getKhoroosForDistricts`
+  //    эндээс ХАСАГДАВ — сайдбарын Байршил блок нь `LocationPicker` руу
+  //    шилжсэн тул тэдгээрийг ЗӨВХӨН `components/LocationPicker.jsx` дуудна
+  //    (нэг эх сурвалж: `lib/locationData.js` ✓)
+  ROOM_OPTIONS,
   hasRoomsFields, SECTIONS, getSection, getSubtypes, getSectionCategoryChoices,
+  // 🏠 2026-10-04: хэсгийн панельд дэд төрөл харагдах эсэх (2 алхамт drill) —
+  //    нэг эх сурвалж нь `lib/locationData.js` ✓
+  showsSectionSubtypes,
   hasCategoryChoice, getAttrFilters, pruneGatedAttrs, getAttrField, formatAttrsLine,
   parseAttrRangeKey, getAttrRangeKeys,   // 📅 оны хүрээ (2026-09-28)
   priceWord,   // 💼 ажил → «Цалин», бусад → «Үнэ» (2026-10-03 (9))
@@ -63,7 +74,7 @@ import {
 //    `lib/districtFilter.mjs` — UI, URL, DB, breadcrumb бүгд тэр модулийг
 //    хэрэглэнэ (нэг эх сурвалж) ✓
 import {
-  parseDistrictList, districtsUrlValue, districtsFilterLabel, toggleDistrictValue,
+  parseDistrictList, districtsUrlValue, districtsFilterLabel,
 } from '../lib/districtFilter.mjs';
 // 💳 ТӨЛБӨРИЙН НӨХЦӨЛ (2026-10-03) — ҮЛ ХӨДЛӨХ ЗАРНА ба АВТОМАШИН ЗАРНА
 //    хэсгийн «Дэлгэрэнгүй хайлт»-д ОЛОН СОНГОЛТТОЙ шүүлт.
@@ -259,14 +270,26 @@ function SideBlock({ label, children }) {
  * ⚠️ `variant`:
  *      • `'header'` — толгойн МӨР (≥xl, ≥1280px). `data-hero-section` дэгээг
  *        ЗӨВХӨН энэ хувилбар авна (CDP нь `[data-hero-section] option` === 13
- *        гэж шалгана — ДАВХАР дэгээ гарвал 26 болж ХУУРАМЧ улаан өгнө ✗)
- *      • `'mobile'` — толгойн ДООРХ наалдамхай мөр (`<xl`). ID нь өөр тул
- *        DOM дээр давхардсан `id` үүсэхгүй ✓ (дэгээгүй — зөвхөн UI ✓)
+ *        гэж шалгана — ДАВХАР дэгээ гарвал 26 болж ХУУРАМЧ улаан өгнө ✗);
+ *        ⚠️ «Хэсэг» `<select>` нь ЗӨВХӨН ЭНЭ хувилбарт (2026-10-04 (34))
+ *      • `'mobile'` — толгойн ДООРХ наалдамхай мөр (`<xl`). 🗑 2026-10-04 (34):
+ *        «Хэсэг» `<select>` (`#home-search-mobile-section` — хэрэглэгчийн
+ *        хүсэлт «байхгүй болгоё») нь БҮРЭН ХАСАГДАВ ⇒ мобайлд хэсэг солих нь
+ *        доорх tile панелаар (`data-section-panel`, мөрний ЯГ доор) хийгддэг
+ *        тул pill нь илүүдэл давхарга байв; мөр нь [🔍 талбар][Хайх][📍] болов ✓
  * ⚠️ Утгууд нь `HomeClient`-ийн төлөвөөс; илгээх нь Enter БА «Хайх» товч
  *    ХОЁУЛАА `onSubmit`-оор ажиллана ✓ (a11y дээр зөв — `<form role="search">`)
- * ⚠️ `<select>` нь `max-w-[150px]` — native select-ийн өргөн нь ХАМГИЙН УРТ
- *    option-оор тодорхойлогддог (бодит хэмжилт 269px!) тул хязгаарлахгүй бол
- *    390px дээр мөр хэвтээ гүйлт (overflow) үүсгэнэ ✗ */
+ * ⚠️ БҮТЭЦ (2026-10-04 (28) — «нимгэн» pill хэв) — бүх элемент `rounded-full`,
+ *    иконууд нь emoji БИШ `currentColor` SVG (`components/HeaderIcons.jsx`):
+ *   [≡ Ангилал ▾] [🔍 <хайлтын талбар>] [Хайх] [📍 Бүх байршил]
+ * ⚠️ `<select>` — 2026-10-04 (33): `[field-sizing:content]` (pill нь СОНГОСОН
+ *    option-ийн нэрээр сунана) + уян `max-w` (`160px → sm:200px → 2xl:300px`).
+ *    ⏳ Урьд нь `max-w-[120px]` байсан тул «🏠 Үл хөдлөх» (текст **82px** +
+ *    padding 68px = **150px**) нь ТАСАРЧ «🏠 Ул хө» болдог байв ✗ (хэрэглэгчийн
+ *    гомдол). ⚠️ Native select-ийн ЭНГИЙН өргөн нь ХАМГИЙН УРТ option-оор
+ *    (бодит хэмжилт **294px**) тодорхойлогддог тул ЗААВАЛ хязгаарлана — эс
+ *    бөгөөс 390px дээр хэвтээ гүйлт үүсгэнэ ✗. `field-sizing` дэмждэггүй хөтөч
+ *    (жишээ нь Firefox) дээр зөвхөн `max-w`-ийн утга харагдана (эвдрэхгүй ✓) */
 function HeaderSearchBar({
   variant = 'header',
   section, search, total, locationLabel, hasLocation,
@@ -277,41 +300,95 @@ function HeaderSearchBar({
   const idBase = isHeader ? 'home-search' : 'home-search-mobile';
   return (
     <form role="search" onSubmit={onSubmit} className="flex w-full min-w-0 items-center gap-2">
-      <label className="sr-only" htmlFor={`${idBase}-section`}>Хэсэг сонгох</label>
-      <select
-        id={`${idBase}-section`}
-        aria-label="Хэсэг сонгох"
-        {...(isHeader ? { 'data-hero-section': true } : {})}
-        value={section}
-        onChange={(e) => onSectionChange(e.target.value)}
-        className="h-10 max-w-[150px] shrink-0 rounded-lg border border-gray-200 bg-gray-100 pl-3 pr-2 text-[13px] font-semibold text-gray-700 outline-none hover:bg-gray-200"
-      >
-        <option value="all">☰ Ангилал</option>
-        {SECTIONS.map((s) => <option key={s.value} value={s.value}>{s.icon} {s.label}</option>)}
-      </select>
-      <label className="sr-only" htmlFor={idBase}>Зар хайх</label>
-      <input
-        id={idBase}
-        type="text"
-        placeholder={placeholder}
-        value={search}
-        onChange={(e) => onSearchChange(e.target.value)}
-        className="h-10 min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-4 text-[14px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary"
-      />
+      {/* ⚙️ ХЭСЭГ («Ангилал») — ДУГУЙ pill — ⚠️ ЗӨВХӨН ТОЛГОЙН хувилбарт (≥xl).
+          🗑 2026-10-04 (34): МОБАЙЛ хувилбараас БҮРЭН ХАСАГДАВ (хэрэглэгчийн
+             хүсэлт: «home-search-mobile-section ийг … байхгүй болгоё»).
+             ⏳ Мобайлд дөрвүүлээ ([pill][талбар][Хайх][📍]) 390px-д багтахын
+             тулд хайлтын талбар 67px болтлоо шахагддаг байв ✗; хэсэг солих нь
+             доорх tile панелаар (`data-section-panel`, мөрний ЯГ доор) ч
+             хийгддэг тул pill нь ИЛҮҮДЭЛ давхарга байв ⇒ DOM-оос бүрэн арилав
+             (`#home-search-mobile-section` дэгээ ОГТ БАЙХГҮЙ ✓ — CDP шалгана)
+          ⚠️ native `<select>` ХЭВЭЭР (солигдоогүй): ① гар утасны OS-ийн
+             сонголтын жагсаалт (a11y) ✓ ② `data-hero-section` + 13 option
+             дэгээ (`scripts/cdp-range.mjs`) ✓
+          Зөвхөн ХАРАГДАЦ солигдов: `appearance-none` нь OS-ийн сумыг арилгаж,
+          оронд нь `ListIcon` (зүүн) + `ChevronDownIcon` (баруун) тавина —
+          эс бөгөөс «сонголт хийх боломжтой» гэдэг нь мэдэгдэхгүй болно ✗
+          ⚠️ 2026-10-04 (33): `[field-sizing:content]` — pill нь СОНГОСОН
+             option-ийн нэрээр сунана (ж: «🏠 Үл хөдлөх» = **152px**, «Ангилал»
+             = 125px) ⇒ нэр ТАСРАХГҮЙ ✓; `max-w` нь дээд хязгаар
+             (`160 → sm:200 → 2xl:300`) — ⚠️ `2xl` (≥1536px) дээр хамгийн урт
+             нэр («💻 Компьютер, Дагалдах хэрэгсэл», 294px) ч бүтэн багтана ✓.
+             ⚠️ Native select-ийн ЭНГИЙН өргөн нь ХАМГИЙН УРТ option-оор
+                тодорхойлогддог (294px) тул хязгаарлахгүй бол хэвтээ гүйлт
+                үүсгэнэ ✗ */}
+      {isHeader && (
+        <div className="relative shrink-0">
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+          >
+            <ListIcon className="h-4 w-4" />
+          </span>
+          <label className="sr-only" htmlFor={`${idBase}-section`}>Хэсэг сонгох</label>
+          <select
+            id={`${idBase}-section`}
+            aria-label="Хэсэг сонгох"
+            data-hero-section
+            value={section}
+            onChange={(e) => onSectionChange(e.target.value)}
+            className="h-10 max-w-[160px] shrink-0 cursor-pointer appearance-none rounded-full border border-gray-200 bg-gray-100 pl-9 pr-8 text-[13px] font-semibold text-gray-700 outline-none transition [field-sizing:content] hover:bg-gray-200 focus-visible:ring-2 focus-visible:ring-primary/40 sm:max-w-[200px] 2xl:max-w-[300px]"
+          >
+            <option value="all">Ангилал</option>
+            {SECTIONS.map((s) => <option key={s.value} value={s.value}>{s.icon} {s.label}</option>)}
+          </select>
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500"
+          >
+            <ChevronDownIcon className="h-4 w-4" />
+          </span>
+        </div>
+      )}
+      {/* 🔍 ХАЙЛТЫН ТАЛБАР — дотор нь томруулдаг шил (`unegui.mn` шиг) ✓ */}
+      <div className="relative min-w-0 flex-1">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"
+        >
+          <SearchIcon className="h-[18px] w-[18px]" />
+        </span>
+        <label className="sr-only" htmlFor={idBase}>Зар хайх</label>
+        <input
+          id={idBase}
+          type="text"
+          placeholder={placeholder}
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="h-10 w-full rounded-full border border-gray-200 bg-white pl-10 pr-4 text-[14px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary"
+        />
+      </div>
       <button
         type="submit"
-        className="h-10 shrink-0 rounded-lg bg-gray-900 px-5 text-[14px] font-bold text-white transition hover:bg-gray-800"
+        className="h-10 shrink-0 rounded-full bg-gray-900 px-5 text-[13px] font-bold text-white transition hover:bg-gray-800"
       >
         Хайх
       </button>
+      {/* 📍 БАЙРШИЛ — дарахад `LocationPicker` (каскад) нээгдэнэ.
+          ⚠️ Сайдбарын «Байршил» блок нь 2026-10-04 (28)-аас энэ ЯГ ижил
+             товч/зам руу шилжсэн (`data-sidebar-location`) ✓
+          ⚠️ `data-header-location` нь зөвхөн толгойн хувилбарт (CDP дэгээ —
+             давхардвал `querySelector` эхнийхийг л авна ✗) */}
       <button
         type="button"
         onClick={onOpenLocation}
-        className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-3 text-[14px] font-semibold transition ${
+        aria-haspopup="dialog"
+        {...(isHeader ? { 'data-header-location': true } : {})}
+        className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold transition ${
           hasLocation ? 'bg-primary-light text-primary' : 'text-gray-700 hover:bg-gray-100'
         }`}
       >
-        <span aria-hidden="true">📍</span>
+        <PinIcon className="h-[18px] w-[18px]" />
         {/* ⚠️ `<sm` (ж: 390px) дээр зөвхөн ИКОН — шошго хэт урт байвал
             мөр хэвтээ гүйлт (overflow) үүсгэнэ ✗ (`sm`+ дээр бүтэн шошго ✓) */}
         <span className="hidden max-w-[130px] truncate sm:inline">{locationLabel}</span>
@@ -832,37 +909,17 @@ export default function HomeClient() {
   const clearPayments = () => setF('payments', []);
 
 
-  /**
-   * 🗺 ОЛОН ДҮҮРЭГ/СУМ — нэг дарж нэмэх/хасах (checkbox мэт, 2026-10-03).
-   * Хэрэглэгчийн хүсэлт: «Дэлгэрэнгүй хайлтын Дүүрэг / Сум ийг Өрөөний тоо
-   * хайх тай адилхан олон сонгол хийх боломжтой болго» →
-   *   [Баянгол] [Сүхбаатар] дарж `?district=Баянгол,Сүхбаатар` болно (OR ✓).
-   * ⚠️ Дүрэм нь `lib/districtFilter.mjs → toggleDistrictValue()` (нэг эх
-   *    сурвалж): шинэ массив буцаана, хоосон утгыг алгасна, давхцуулахгүй ✓
-   * ⚠️ Хороодын сонголтыг ЦЭВЭРЛЭНЭ — сонгосон дүүргүүд өөрчлөгдөхөд
-   *    хорооны НЭГДЭЛ жагсаалт ч өөр болно (`getKhoroosForDistricts`) ✓
-   * ⚠️ 📄 1-р хуудас руу буцна (`toggleRooms`-той ижил шалтгаан ✓)
-   */
-  const toggleDistrict = (d) => {
-    setPage(1);
-    setFilters((f) => ({
-      ...f,
-      districts: toggleDistrictValue(f.districts, d),
-      khoroos: [], // жагсаалт өөр болов ⇒ хуучин хорооны сонголт хүчингүй ✓
-    }));
-  };
+  /* 🗺 ДҮҮРЭГ/СУМ ба ХОРООНЫ сонголт (2026-10-04 (28)).
+     ⏳ ЭНД ХАСАГДАВ: `toggleDistrict()` · `clearDistricts()` · `toggleKhoroo()` —
+        сайдбарын «Байршил» блок нь Хот/Аймаг → Дүүрэг → Хороог нэг дор
+        сонгодог `LocationPicker` (modal) болсон тул эдгээр нь хэрэглэгдэхгүй
+        болсон. Дүрэм нь ХЭВЭЭР:
+          • `toggleDistrictValue()` — `components/LocationPicker.jsx` (дүүрэг)
+          • `applyLocation()` — HomeClient (хот+дүүрэг+хороог НЭГ дор бичнэ)
+          • `setF`-ийн цэвэрлэх дүрэм (хот солиход дүүрэг/хороо, дүүрэг
+            солиход хороо) — доор `setF` дотор ХЭВЭЭР ✓
+     ↩️ Буцаах бол: `git show fdede74:components/HomeClient.jsx` */
 
-  /** 🗺 Сонгосон бүх дүүрэг/сумыг арилгах («✕ Цуцлах») */
-  const clearDistricts = () => setF('districts', []);
-
-  /** ОЛОН ХОРОО — нэг дарж нэмэх/хасах (checkbox мэт) */
-  const toggleKhoroo = (k) => {
-    setPage(1); // 📄 шүүлт өөрчлөгдсөн → 1-р хуудас
-    setFilters((f) => ({
-      ...f,
-      khoroos: f.khoroos.includes(k) ? f.khoroos.filter((x) => x !== k) : [...f.khoroos, k],
-    }));
-  };
 
   const resetAll = () => {
     setCategory('all'); setQuery(''); setSearch('');
@@ -1091,16 +1148,11 @@ export default function HomeClient() {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  /** Дүүрэг/сумын сонголтууд (сонгосон хот/аймагт) — ОЛОН сонголттой чип */
-  const districtOptions = useMemo(() => getDistricts(filters.city), [filters.city]);
-  /** Хороодын сонголтууд (сонгосон хот + БҮХ сонгосон дүүрэг/сумын НЭГДЭЛ)
-   *  ⚠️ 2026-10-03: дүүрэг олон сонголттой болов → `getKhoroos` (нэг) биш
-   *     `getKhoroosForDistricts` (массив) — 2 дүүрэг сонговол хоёулангийн
-   *     хороо (давхцалгүй) гарна ✓ (хэрэглэгчийн хүсэлтийн үргэлжлэл) */
-  const khoroos = useMemo(
-    () => getKhoroosForDistricts(filters.city, filters.districts),
-    [filters.city, filters.districts]
-  );
+  /* 🗺 `districtOptions` / `khoroos` memo (2026-10-04 (28)) ЭНД ХАСАГДАВ —
+     сайдбарын Байршил блок нь `LocationPicker` болсон тул дүүрэг/хорооны
+     жагсаалтыг ЗӨВХӨН тэр компонент (`lib/locationData.js`-оос) бүтээнэ
+     (нэг эх сурвалж ✓ давхардсан тооцоо БАЙХГҮЙ) */
+
   /** ХЭСГИЙН тодорхойлолт ба уламжлагдсан утгууд (0016)
    *  ⚠️ `noSection` нь ДЭЭР (бүх hook-ийн өмнө) зарлагдсан.
    *  ⚠️ `sec`/`isRealEstate` нь `showRooms`-ООС ӨМНӨ байх ЁСТОЙ (TDZ алдаа). */
@@ -1248,6 +1300,25 @@ export default function HomeClient() {
   );
   /** «Зарах / Түрээслэх» сонголт харагдах эсэх — ⚠️ ЗӨВХӨН үл хөдлөхөд */
   const showCategories = hasCategoryChoice(section);
+  /**
+   * 🏠📱 2026-10-04 (хэрэглэгчийн хүсэлт: «үл хөдлөх рүү ороход Үл хөдлөх зарна,
+   *   Үл хөдлөх түрээслүүлнэ гэж харагдуул, түүний дотрох Орон сууц, Газар гэх
+   *   мэтийг энэ үед бүү харуул»): ХЭСГИЙН ПАНЕЛЬ — 2 АЛХАМТ DRILL.
+   *   ⏳ Урьд нь 🏠 үл хөдлөх рүү ороход «Үл хөдлөх зарна / …түрээслүүлнэ / Бүгд»
+   *      (категори) БА «Орон сууц, Газар, …» (дэд төрөл) ХАМТ харагддаг байв ✗
+   *   ✅ Одоо: категори СОНГООГҮЙ (`category === 'all'` — хэсгийн ЕРӨНХИЙ
+   *      харагдац) үед дэд төрлүүд ХАРАГДАХГҮЙ; «Үл хөдлөх зарна» /
+   *      «Үл хөдлөх түрээслүүлнэ» сонгомогц Л дэд төрлүүд (… зарна /
+   *      … түрээслүүлнэ) багана болж гарна ✓
+   *   ⚠️ Дүрэм нь `lib/locationData.js → showsSectionSubtypes(section, category)`
+   *      ЭХ СУРВАЛЖ (тестээр түгжсэн) — энд хатуу бичсэн логик БАЙХГҮЙ ✓
+   *   ⚠️ Бусад 11 хэсэгт категори ОГТ байхгүй (`showCategories === false`) тул
+   *      дэд төрлүүд нь ШУУД харагдана (хөндөгдөөгүй ✓); бүлэгтэй 3 хэсэг
+   *      (🛠 services · 💻 computers · ⚡ electric) ч мөн адил ✓
+   *   ℹ️ «Бүгд» сонгоход ч `category === 'all'` тул дэд төрлүүд дахин ХААГДАЖ,
+   *      хэсгийн ЕРӨНХИЙ харагдац руу буцна (байгалийн буцах зам ✓)
+   */
+  const showSubtypes = showsSectionSubtypes(section, category);
   /** Хэсгийн НИЙТ зарын тоо (дэд төрлүүдийн нийлбэр) — панелийн толгойд */
   const sectionTotal = useMemo(
     () => Object.values(typeCounts).reduce((sum, n) => sum + (Number(n) || 0), 0),
@@ -1575,11 +1646,21 @@ export default function HomeClient() {
             ⚠️ Дэд төрөл сонгомогц ЭНЭ ПАНЕЛЬ БҮРЭН АЛГА БОЛНО (progressive
                disclosure — хэрэглэгчийн өмнөх хүсэлт). Буцах зам нь breadcrumb.
             ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөх хэсэгт.
+            🆕 2026-10-04 (хэрэглэгчийн хүсэлт): 🏠 үл хөдлөхөд ② ба ③-ын хооронд
+               НЭГ АЛХАМ нэмэгдэв — хэсэг рүү ороход ЗӨВХӨН категори («Үл хөдлөх
+               зарна / …түрээслүүлнэ / Бүгд») харагдана; категори сонгомогц л
+               дэд төрлүүд (Орон сууц зарна, Газар зарна …) гарна ✓
+               (`showSubtypes`) — ⚠️ бусад 11 хэсэгт категори байхгүй тул
+               дэд төрлүүд нь ШУУД харагдана (хөндөгдөөгүй ✓)
             ⚠️ `tile-grid` = багана хоорондын зай (app/globals.css → `.tile-grid`)
             ⚠️ EMOJI ICON: `leading-none` БИЧИХГҮЙ (мөрийн хайрцгаас ХАЛЬЖ
                гардаг) → `leading-[1.4]` хэрэглэнэ. */}
         {!filters.propertyType && (
         <section
+          /* 🐍 CDP ДЭГЭЭ (2026-10-04): хэсгийн панел — `npm run cdp:sections` нь
+             энэ доторх `[data-category-value]` ба `button[role="tab"]`
+             (дэд төрөл)-ийг тоолж, 2 алхамт drill-ыг шалгана ✓ */
+          data-section-panel
           className={`mb-5 ${
             sectionOpen
               /* unegui.mn-ийн «SubcategoryPanel» — саарал дугуй панел */
@@ -1712,7 +1793,7 @@ export default function HomeClient() {
             {/* ---------- ① / ③ ДЭД ТӨРӨЛ — unegui.mn шиг БАГАНА ----------
                 ⚠️ ЭНЭ БЛОК зөвхөн бүлэггүй хэсгүүдэд (`services`-ээс бусад)
                    харагдана — `services`-д ② блок бүх бүлгийг шууд нээнэ. */}
-            {!subtypeGroups.length && (
+            {!subtypeGroups.length && showSubtypes && (
             <div className="columns-1 gap-x-6 sm:columns-2 lg:columns-4" role="tablist" aria-label="Зарын дэд төрөл">
               {subtypes.map((t) => (
                 <SubtypeRow
@@ -2041,127 +2122,77 @@ export default function HomeClient() {
                     «Байршил» → [attr шүүлтүүд] → «🛏 Өрөөний тоо»
                     → «Үнэ, ₮» → «Талбай, м²» ✓ */}
 
-                {/* ===== БАЙРШИЛ — Хот/Аймаг · Дүүрэг · ХОРОО =====
-                    ⚠️ «Төрөл» энд БАЙХГҮЙ — төрлийг BREADCRUMB-ээс сольж буцаана
-                       (төрөл сонгосон үед дээрх табууд хаагддаг тул).
-                    ⚠️ 2026-10-03 (10): Дүүрэг/Сум нь ч ОЛОН сонголттой ЧИП болов
-                       (хэрэглэгчийн хүсэлт) — хороотой ИЖИЛ хэв маяг;
-                       утга нь `filters.districts` (МАССИВ) ✓ */}
+                {/* ===== 📍 БАЙРШИЛ — НЭГ ТОВЧ → `LocationPicker` (modal) =====
+                    ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-04 (28)): «Дэлгэрэнгүй хайлт-ийн
+                    Байршил сонголтыг толгойн «📍 Бүх байршил» шиг сонгодог
+                    болго» ⇒ сайдбарын 3 шатлалт (Хот/Аймаг `<select>` → Дүүрэг
+                    чип → Хороо чип) блок БҮХЭРЛЭЭ ХАСАГДАВ.
+                    🆕 ОРОНД нь толгойн мөртэй ЯГ ИЖИЛ НЭГ товч — дарахад
+                       `LocationPicker` нээгдэж, Хот → Дүүрэг → Хороог НЭГ
+                       цонхонд каскадаар сонгоно ✓ (component дахин
+                       хэрэглэгдэнэ — 2 газар 2 өөр UI БАЙХГҮЙ ✓)
+                    ⚠️ Урсгалын утга ХЭВЭЭР: `filters.city` / `.districts` /
+                       `.khoroos` → URL (`?city=…&district=…&khoroo=…`),
+                       DB (`district=in.(…)`), breadcrumb (`📍 …`), «Гүйцэтгэсэн
+                       шүүлт» чипүүд, `activeFilterCount` БҮГД өөрчлөгдөхгүй ✓
+                    ⚠️ 2026-10-03 (10)-ын «Дүүрэг/Сум олон сонголттой» хүсэлт
+                       ХАНГАГДСАН ХЭВЭЭР — пикер дотор ч олон сонголт (`✓`) ✓
+                    ⚠️ `data-sidebar-location` — CDP дэгээ (`cdp-districts.mjs`);
+                       толгойн `data-header-location`-той НЭГ `onOpenLocation` ✓ */}
                 <SideBlock label="Байршил">
-                  <select
-                    className="form-select"
-                    aria-label="Хот/Аймаг"
-                    value={filters.city}
-                    onChange={(e) => setF('city', e.target.value)}
+                  <button
+                    type="button"
+                    data-sidebar-location
+                    aria-haspopup="dialog"
+                    onClick={() => setLocOpen(true)}
+                    className={`flex h-11 w-full items-center gap-2 rounded-xl border px-3 text-left text-[14px] font-semibold transition ${
+                      filters.city
+                        ? 'border-primary bg-primary-light text-primary'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
                   >
-                    <option value="">Бүх байршил — Хот/Аймаг</option>
-                    {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                    <PinIcon className="h-[18px] w-[18px] shrink-0" />
+                    <span className="min-w-0 flex-1 truncate">{locationLabel}</span>
+                    <ChevronDownIcon className="h-4 w-4 shrink-0 opacity-60" />
+                  </button>
 
-                  {/* ===== 🗺 ДҮҮРЭГ / СУМ — ОЛОН СОНГОЛТ (2026-10-03) =====
-                      ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Дэлгэрэнгүй хайлтын Дүүрэг /
-                      Сум ийг Өрөөний тоо хайх тай адилхан олон сонгол хийх
-                      боломжтой болго» → `<select>` (нэг сонголт) нь
-                      ХОРООНЫ блоктой ИЖИЛ `chip-toggle` чипүүд болов ✓
-                      ⚠️ Утга нь МАССИВ (`['Баянгол','Сүхбаатар']`) →
-                         `?district=Баянгол,Сүхбаатар` ба DB дээр
-                         `district IN (…)` (нэг утгатай үед хуучин
-                         `district=eq.…` ХЭВЭЭР — `lib/districtFilter.mjs`) ✓
-                      ⚠️ `data-district-filter` / `data-district-value` нь CDP
-                         тестийн (`scripts/cdp-districts.mjs`) дэгээ — УСТГАХГҮЙ ✓
-                      ⚠️ 2026-10-03 (14): бүлгийн `aria-label` ба гарчиг нь ЯГ
-                         «Дүүрэг» (өмнө «Дүүрэг / Сум») — CDP тест нь
-                         `aria-label === 'Дүүрэг'` гэж ТЭНЦҮҮ шалгана ✓ */}
-                  {districtOptions.length > 0 && (
-                    <div className="flex flex-col gap-1.5">
-                      {/* 🏷️ 2026-10-03 (14): хэрэглэгчийн хүсэлт — блокийн шошго
-                          «Дүүрэг / Сум» БИШ, зөвхөн «Дүүрэг» ✓ (⚠️ утгууд нь
-                          аймаг дээр сум хэвээр байж болно — зөвхөн НЭР солигдов) */}
-                      <span className="text-[14px] font-semibold text-gray-700">
-                        Дүүрэг
-                        {filters.districts.length > 0 && (
-                          <span className="ml-1.5 rounded-full bg-primary-light px-1.5 py-px text-[12px] font-bold text-primary">
-                            {filters.districts.length} сонгосон
-                          </span>
-                        )}
+                  {/* Сонгосон байршлын жижиг шошгууд + «✕ Цэвэрлэх» — пикер
+                      нээлгүй ч юу сонгосон нь харагдана; цэвэрлэх нь БҮХ
+                      гурвыг (хот+дүүрэг+хороо) нэг дор арилгана ✓
+                      ⚠️ Хот сонгоогүй үед `districts`/`khoroos` хоосон байх
+                         ЁСТОЙ (`setF('city')` дүрэм) тул зөвхөн шалгана */}
+                  {filters.city && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] font-semibold text-gray-700">
+                        {filters.city}
                       </span>
-                      <div
-                        className="max-h-[150px] overflow-y-auto rounded-lg border border-gray-200 bg-gray-50/70 p-2"
-                        data-district-filter
-                        role="group"
-                        aria-label="Дүүрэг"
-                      >
-                        <div className="flex flex-wrap gap-1.5">
-                          {districtOptions.map((d) => {
-                            const on = filters.districts.includes(d);
-                            return (
-                              <button
-                                key={d}
-                                type="button"
-                                aria-pressed={on}
-                                data-district-value={d}
-                                onClick={() => toggleDistrict(d)}
-                                className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
-                              >
-                                {on && <span aria-hidden="true">✓</span>}
-                                {d}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      {filters.districts.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={clearDistricts}
-                          className="self-start text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                      {filters.districts.map((d) => (
+                        <span
+                          key={`d-${d}`}
+                          data-location-pill="district"
+                          className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] text-gray-600"
                         >
-                          ✕ Цуцлах
-                        </button>
-                      )}
+                          {d}
+                        </span>
+                      ))}
+                      {filters.khoroos.map((k) => (
+                        <span
+                          key={`k-${k}`}
+                          data-location-pill="khoroo"
+                          className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] text-gray-600"
+                        >
+                          {k}
+                        </span>
+                      ))}
+                      <button
+                        type="button"
+                        data-location-clear
+                        onClick={() => applyLocation({ city: '', districts: [], khoroos: [] })}
+                        className="text-[13px] font-semibold text-gray-500 underline-offset-2 hover:text-primary hover:underline"
+                      >
+                        ✕ Цэвэрлэх
+                      </button>
                     </div>
-                  )}
-
-                  {/* ХОРОО — ОЛОН СОНГОЛТ. Сонгосон дүүрэг/сум БҮРИЙН хорооны
-                      НЭГДЛИЙГ харуулна (2026-10-03 (10): дүүрэг ч олон
-                      сонголттой болов — `getKhoroosForDistricts`) —
-                      40+ хороо багтах ёстой тул жагсаалт скроллтой. */}
-                  {khoroos.length ? (
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[14px] font-semibold text-gray-700">
-                        Хороо
-                        {filters.khoroos.length > 0 && (
-                          <span className="ml-1.5 rounded-full bg-primary-light px-1.5 py-px text-[12px] font-bold text-primary">
-                            {filters.khoroos.length} сонгосон
-                          </span>
-                        )}
-                      </span>
-                      <div className="max-h-[150px] overflow-y-auto rounded-lg border border-gray-200 bg-gray-50/70 p-2">
-                        <div className="flex flex-wrap gap-1.5">
-                          {khoroos.map((k) => {
-                            const on = filters.khoroos.includes(k);
-                            return (
-                              <button
-                                key={k}
-                                type="button"
-                                aria-pressed={on}
-                                onClick={() => toggleKhoroo(k)}
-                                className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
-                              >
-                                {on && <span aria-hidden="true">✓</span>}
-                                {k}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-[13px] text-gray-500">
-                      {filters.city
-                        ? '💡 Дүүрэг сонгоход хорооны жагсаалт нээгдэнэ.'
-                        : '💡 Эхлээд хот/аймгаа сонгоно уу.'}
-                    </p>
                   )}
                 </SideBlock>
                 {/* 💰💼 2026-10-03 (9): «Үнэ, ₮» / «Цалин, ₮» блок — АЖЛЫН ЗАРТ

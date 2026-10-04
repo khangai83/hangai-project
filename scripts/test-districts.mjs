@@ -289,34 +289,105 @@ t('lib/queries.js: `applyDistrictFilter`-ийг хэрэглэнэ (дүрмий
   assert.ok(!/if \(filters\.district\)/.test(src), 'хуучин давхар дүрэм үлдсэн ✗');
 });
 
-t('🗺 HomeClient.jsx: дүүрэг нь ОЛОН СОНГОЛТТОЙ ЧИП болов (`<select>` БИШ) — хүсэлт ①', () => {
+t('🗺 HomeClient.jsx: дүүргийн шүүлт нь URL/DB/цэвэрлэгээг модулиас авна — хүсэлт ①', () => {
   const ui = codeOnly(readSrc('components/HomeClient.jsx'));
-  // ① Блок ба чипүүд DOM-д байгаа (CDP тестийн дэгээнүүд ✓)
-  assert.match(ui, /data-district-filter/, 'дүүргийн блокийн дэгээ алга ✗');
-  assert.match(ui, /data-district-value/, 'дүүргийн чипийн дэгээ алга ✗');
-  assert.match(ui, /aria-pressed=\{on\}/, 'чип сонгогдсон төлөв (`aria-pressed`) алга ✗');
-  // ② НЭГ ЭХ СУРВАЛЖ — модулийн импорт/функцууд (дүрмийг давхар бичихгүй ✓)
+  // ① НЭГ ЭХ СУРВАЛЖ — модулийн импорт/функцууд (дүрмийг давхар бичихгүй ✓)
   assert.match(ui, /parseDistrictList/, 'parseDistrictList (URL унших) алга ✗');
   assert.match(ui, /districtsUrlValue/, 'districtsUrlValue (URL бичих) алга ✗');
   assert.match(ui, /districtsFilterLabel/, 'districtsFilterLabel (шошго) алга ✗');
-  assert.match(ui, /toggleDistrictValue/, 'toggleDistrictValue импорт алга ✗');
-  assert.match(ui, /const toggleDistrict = /, 'toggleDistrict функц алга ✗');
-  assert.match(ui, /clearDistricts/, 'clearDistricts функц алга ✗');
-  // ③ ХОРООНЫ блоктой ИЖИЛ хэв маяг (`chip-toggle` + «N сонгосон»)
-  assert.match(ui, /chip-toggle-active/, 'чипийн идэвхтэй хэв маяг алга ✗');
-  assert.match(ui, /сонгосон/, '«N сонгосон» badge алга ✗');
-  // ④ ⚠️ ХУУЧИН `<select>` (нэг сонголттой) БҮРЭН арилсан байх ЁСТОЙ
-  //    → дүүргийн БЛОКИЙГ л хайчилж авч шалгана (хотын `<select>` хөндөхгүй ✓)
-  const blockStart = ui.indexOf('data-district-filter');
-  const block = ui.slice(blockStart, ui.indexOf('clearDistricts', blockStart));
-  assert.ok(blockStart > 0, 'дүүргийн блок олдсонгүй ✗');
-  assert.ok(!/<select/.test(block), 'дүүргийн блокт хуучин `<select>` үлдсэн ✗');
-  assert.ok(!/Дүүрэг \/ Сум — Бүгд/.test(block), 'хуучин «— Бүгд» option үлдсэн ✗');
-  assert.ok(!/value=\{filters\.district\}/.test(block), 'хуучин скаляр `filters.district` үлдсэн ✗');
-  // ⑤ Хот солиход дүүрэг/хороо цэвэрлэгдэнэ; дүүрэг солиход хороо цэвэрлэгдэнэ
+  // ② Хот солиход дүүрэг/хороо цэвэрлэгдэнэ; дүүрэг солиход хороо цэвэрлэгдэнэ
   assert.match(ui, /k === 'city'\) \{ next\.districts = \[\]; next\.khoroos = \[\]; \}/,
     'хот солиход цэвэрлэх логик алга ✗');
   assert.match(ui, /k === 'districts' \|\| k === 'district'\)/, 'дүүрэг солиход хороо цэвэрлэх логик алга ✗');
+  // ③ 🆕 2026-10-04 (28) — ХҮСЭЛТ: «Дэлгэрэнгүй хайлт-ийн Байршил сонголтыг
+  //    толгойн «📍 Бүх байршил» шиг сонгодог болго» ⇒ сайдбарын 3 шатлалт
+  //    (Хот/Аймаг `<select>` → дүүргийн чип → хорооны чип) блок БҮХЭРЛЭЭ
+  //    ХАСАГДАЖ, оронд нь НЭГ товч → `LocationPicker` (modal) ✓
+  //    ⚠️ Тиймээс дүүрэг/хорооны DOM дэгээнүүд ЭНД БАЙХ ЁСТОЙ БИШ
+  //       (доорх LocationPicker тест дээр шалгана) — эс бөгөөс 2 өөр UI ✗
+  assert.ok(!/data-district-filter/.test(ui), 'сайдбарт хуучин дүүргийн блок үлдсэн ✗');
+  assert.ok(!/data-district-value/.test(ui), 'сайдбарт хуучин дүүргийн чип үлдсэн ✗');
+  assert.ok(!/Дүүрэг \/ Сум — Бүгд/.test(ui), 'хуучин «Дүүрэг / Сум — Бүгд» option үлдсэн ✗');
+  assert.ok(!/value=\{filters\.district\}/.test(ui), 'хуучин скаляр `filters.district` үлдсэн ✗');
+  assert.ok(!/clearDistricts/.test(ui), 'хуучин `clearDistricts()` үлдсэн ✗');
+  // ④ Нэг товч + pill + «✕ Цэвэрлэх» нь `applyLocation`-той холбогдсон ✓
+  assert.match(ui, /data-sidebar-location/, 'сайдбарын «Байршил» товчны дэгээ алга ✗');
+  assert.match(ui, /data-location-clear/, '«✕ Цэвэрлэх» товчны дэгээ алга ✗');
+  assert.match(ui, /data-location-pill="district"/, 'дүүргийн pill-ийн дэгээ алга ✗');
+  assert.match(ui, /data-location-pill="khoroo"/, 'хорооны pill-ийн дэгээ алга ✗');
+  assert.match(ui, /const applyLocation = \(\{ city, districts, khoroos \}\) => \{/,
+    'applyLocation (пикерээс ирсэн утга) алга ✗');
+  assert.match(ui, /<LocationPicker/, 'LocationPicker-ийн хэрэглээ алга ✗');
+});
+
+t('📍 LocationPicker.jsx: дүүрэг/хороо нь ОЛОН СОНГОЛТТОЙ МӨР (`<select>` БИШ) — хүсэлт ①', () => {
+  const ui = codeOnly(readSrc('components/LocationPicker.jsx'));
+  // ① Блок ба мөрүүд DOM-д байгаа (CDP тестийн дэгээнүүд ✓)
+  assert.match(ui, /data-district-filter/, 'дүүргийн блокийн дэгээ алга ✗');
+  assert.match(ui, /data-district-value/, 'дүүргийн мөрийн дэгээ алга ✗');
+  assert.match(ui, /data-khoroo-value/, 'хорооны мөрийн дэгээ алга ✗');
+  assert.match(ui, /aria-pressed=\{checked\}/, 'мөр сонгогдсон төлөв (`aria-pressed`) алга ✗');
+  assert.match(ui, /aria-label="Дүүрэг"/, '`aria-label="Дүүрэг"` бүлэг алга ✗');
+  // ② НЭГ ЭХ СУРВАЛЖ — `toggleDistrictValue()` (HomeClient-ийн хуучин дүрэмтэй
+  //    ЯГ ижил; дүрмийг энд ДАХИН бичихгүй ✓)
+  assert.match(ui, /import \{ toggleDistrictValue \} from '\.\.\/lib\/districtFilter\.mjs'/,
+    'toggleDistrictValue импорт алга ✗');
+  assert.match(ui, /const toggleDistrict = /, 'toggleDistrict функц алга ✗');
+  // ③ ⚠️ НЭГ СОНГОЛТТОЙ `<select>` БАЙХ ЁСТОЙ БИШ — дүүргийн баганыг л
+  //    хайчилж авч шалгана (хотын багана ч одоо ЖАГСААЛТ — `<select>` БИШ ✓)
+  const from = ui.indexOf('data-district-filter');
+  assert.ok(from > 0, 'дүүргийн багана олдсонгүй ✗');
+  const block = ui.slice(from, ui.indexOf('data-location-col="khoroo"', from));
+  assert.ok(!/<select/.test(block), 'дүүргийн баганад хуучин `<select>` үлдсэн ✗');
+  assert.ok(!/Дүүрэг \/ Сум — Бүгд/.test(block), 'хуучин «— Бүгд» option үлдсэн ✗');
+  assert.ok(!/filters\.district\b/.test(block), 'хуучин скаляр `filters.district` үлдсэн ✗');
+  // ④ ноорог → «Байршлыг хэрэглэх» дарахад л `onApply` дуудагдаж, пикер хаагдана ✓
+  assert.match(ui, /onApply\(\{ city: draftCity, districts: draftDistricts, khoroos: draftKhoroos \}\)/,
+    'onApply (ноорог → хэрэглэх) алга ✗');
+  assert.match(ui, /data-apply-location/, '«Байршлыг хэрэглэх» товчны дэгээ алга ✗');
+  assert.match(ui, /aria-label="Хаах"/, '✕ хаах товч алга ✗');
+  // ⑤ Хорооны багана ЗӨВХӨН дүүрэг сонгосон үед гарна + 💡 зөвлөгөө
+  //    (`scripts/cdp-districts.mjs` нь hint-ийг шалгана ✓)
+  assert.match(ui, /draftDistricts\.length > 0/, 'хорооны баганын нөхцөл алга ✗');
+  assert.match(ui, /Дүүрэг сонгоход хорооны жагсаалт нээгдэнэ/,
+    '💡 «…хорооны жагсаалт нээгдэнэ» зөвлөгөө алга ✗');
+});
+
+t('📱 LocationPicker.jsx: мобайл (<640px) DRILL-DOWN — НЭГ ДЭЛГЭЦЭД НЭГ ШАТЛАЛ (2026-10-04 (29))', () => {
+  const ui = codeOnly(readSrc('components/LocationPicker.jsx'));
+  // ① Мобайл блок байгаа ба каскад багана нь мобайлд НУУГДАНА (`hidden … sm:flex`)
+  //    ⚠️ DOM-д ХЭВЭЭР (зөвхөн CSS) — CDP-ийн `[data-district-value]` (=9)
+  //       тоо мобайл дээр ч хадгалагдана ✓
+  assert.match(ui, /data-mobile-location/, 'мобайл drill-down блок алга ✗');
+  assert.match(ui, /className="mt-3 hidden gap-3[^"]*sm:flex/,
+    'каскад багана мобайлд нуугдах ёстой (`hidden … sm:flex`) ✗');
+  // ② Шатлал нь 3: Хот/Аймаг → Дүүрэг → Хороо (`mStep` state)
+  assert.match(ui, /useState\('city'\)/, "мобайл шатлалын `mStep` state алга ✗");
+  assert.match(ui, /mStep === 'district'/, 'дүүргийн дэлгэц алга ✗');
+  assert.match(ui, /mStep === 'khoroo'/, 'хорооны дэлгэц алга ✗');
+  // ③ Мобайл мөрүүд нь `data-mobile-*` дэгээтэй — CDP-ийн `[data-district-value]`
+  //    тоог (9) ХОЁР ДАХИН тоолохгүйн тулд (`AddListingClient.jsx`-ийн ИЖИЛ арга ✓)
+  assert.match(ui, /data-mobile-city/, 'мобайл хотын мөр алга ✗');
+  assert.match(ui, /data-mobile-district-value/, 'мобайл дүүргийн мөр алга ✗');
+  assert.match(ui, /data-mobile-khoroo-value/, 'мобайл хорооны мөр алга ✗');
+  // ④ Мобайл блок дотор ХУУЧИН дэгээ (`data-district-value` / `data-khoroo-value`)
+  //    ДАВХАР БАЙХГҮЙ — эс бөгөөс CDP 9-ийн оронд 18 мөр тоолж ХУУРАМЧ улаан ✗
+  const from = ui.indexOf('data-mobile-location');
+  const to = ui.indexOf('data-apply-location', from);
+  assert.ok(from > 0 && to > from, 'мобайл блок / доод товч олдсонгүй ✗');
+  const mob = ui.slice(from, to);
+  assert.ok(!/data-district-value/.test(mob), 'мобайлд хуучин `data-district-value` давхардсан ✗');
+  assert.ok(!/data-khoroo-value/.test(mob), 'мобайлд хуучин `data-khoroo-value` давхардсан ✗');
+  // ⑤ Мобайл ба desktop НЭГ эх сурвалж — ижил дүрэм (`toggleDistrictValue`) ✓
+  assert.match(ui, /onDrill=\{getKhoroos\(draftCity, d\)\.length > 0/,
+    'дүүргийн «нэр → хороо руу орох» нөхцөл алга ✗');
+  // ⑥ 2026-10-04 (30) — хэрэглэгчийн гомдол («гар утсаас хороо нь гарч
+  //    ирэхгүй байх юм»): ХОЁР хүрэх цэг ТУС ТУСДАА байх ЁСТОЙ —
+  //    НЭР = дотор орох (хороо), CHECKBOX = зөвхөн сонгох
+  assert.ok(ui.includes('— хороо руу орох'), '«нэр → хороо руу орох» товч алга ✗');
+  assert.ok(ui.includes('— сонгох'), 'checkbox-ийн «сонгох» aria-label алга ✗');
+  assert.match(ui, /if \(!onDrill\)/,
+    'хороо БАЙХГҮЙ үед бүтэн мөр нэг товч байх салбар алга ✗');
 });
 
 t('🛏 HomeClient.jsx: «Өрөөний тоо»-гийн доорх «Өрөө» ТЕКСТ арилав — хүсэлт ②', () => {
@@ -344,15 +415,51 @@ t('lib/breadcrumb.js: `districts` (массив) → URL ба шошго мод�
   assert.ok(!/district: ''/.test(src), "`district: ''` (текст) үлдсэн ✗");
 });
 
-t('🐍 CDP скрипт нь чип БАЙГААГ ба дарах замыг шалгана — `scripts/cdp-districts.mjs`', () => {
+t('🐍 CDP скрипт нь пикер БАЙГААГ ба дарах замыг шалгана — `scripts/cdp-districts.mjs`', () => {
   const cdp = readSrc('scripts/cdp-districts.mjs');
-  assert.match(cdp, /data-district-value/, 'чипийг DOM-оос олдоггүй ✗');
+  // ⓪ Сайдбарт НЭГ товч (`[data-sidebar-location]`) + пикер (modal) нээх зам
+  assert.match(cdp, /data-sidebar-location/, 'сайдбарын товчийг олдоггүй ✗');
+  assert.match(cdp, /data-location-picker/, 'пикерийг DOM-оос олдоггүй ✗');
+  assert.match(cdp, /data-apply-location/, '«Байршлыг хэрэглэх» товчийг олдоггүй ✗');
+  assert.match(cdp, /data-location-clear/, 'сайдбарын «✕ Цэвэрлэх» товчийг олдоггүй ✗');
+  assert.match(cdp, /data-location-pill/, 'pill-үүдийг тоолдоггүй ✗');
+  // ① Мөрүүд (дүүрэг/хороо) — НЭГ `[data-district-filter]` блок дотор ✓
+  assert.match(cdp, /data-district-value/, 'дүүргийн мөрийг DOM-оос олдоггүй ✗');
   assert.match(cdp, /data-district-filter/, 'блокийг олдоггүй ✗');
-  assert.match(cdp, /clickDistrict\(/, 'чип дарах код алга ✗');
+  assert.match(cdp, /data-khoroo-value/, 'хорооны мөрийг DOM-оос олдоггүй ✗');
+  // ② Дарах зам: нээх → ноорог сонгох → хэрэглэх (`openPicker`/`applyPicker`)
+  assert.match(cdp, /const openPicker = \(\) => evalJs\(/, '`openPicker()` алга ✗');
+  assert.match(cdp, /const applyPicker = \(\) => evalJs\(/, '`applyPicker()` алга ✗');
+  assert.match(cdp, /const closePicker = \(\) => evalJs\(/, '`closePicker()` алга ✗');
+  assert.match(cdp, /clickDistrict\(/, 'дүүрэг дарах код алга ✗');
+  assert.match(cdp, /clickKhoroo\(/, 'хороо дарах код алга ✗');
+  // ③ DB дээрх шалгалт — олон утга `in.(…)`, нэг утга `eq.`
   assert.match(cdp, /district=in\./, 'DB дээрх `in.(…)` шалгалт алга ✗');
   assert.match(cdp, /district=eq\./, 'хуучин `eq.` (нэг утга) шалгалт алга ✗');
   // ⚠️ «Өрөө» текст арилсныг ч шалгана (хүсэлт ② ✓)
   assert.match(cdp, /Өрөө гэсэн/, '«Өрөө» текст байхгүйг шалгах хэсэг алга ✗');
+  // ⚠️ «Хэрэглэх»-ээс ӨМНӨ URL/DB ХӨНДӨГДӨХГҮЙ (ноорог/draft) гэсэн шалгалт
+  //    ЗААВАЛ байх ёстой — эс бөгөөс пикерийн гол утга алдагдана ✗
+  assert.match(cdp, /«Хэрэглэх»-ээс ӨМНӨ URL ХӨНДӨГДӨХГҮЙ/,
+    'ноорог (draft) үед URL хөндөгдөхгүй гэсэн шалгалт алга ✗');
+  // 🐛 REGRESSION HARNESS: `evalJs(\`(() => { … })()\`)` — PROBE-ийн ДОТОР
+  //    (коммент дотор ч) BACKTICK бичвэл template literal ЭРТ хаагдаж, Node
+  //    талд «ReferenceError: select is not defined» гэж ГАРАГДАГ ✗
+  //    (`node --check` нь ХОЁР backtick-ийг хос гэж үзээд ӨНГӨРӨӨДӨГ ✗)
+  // ⚠️ Мөн BACKSLASH+SLASH (`\/`) бичих ХЯЗГААРТАЙ: template literal түүнийг
+  //    зүгээр slash болгож задлаад regex нь эвдэрч «Invalid regular expression
+  //    flags» алдаа өгнө ✗ (ж: /Хот\/Аймаг/ → /Хот/Аймаг/)
+  const probes = [...cdp.matchAll(/evalJs\(`([\s\S]*?)`\)/g)].map((m) => m[1]);
+  // ⚠️ probe дотор backtick гарвал тухайн дуудлага нь ХОСГҮЙ болж, тоо нь
+  //    evalJs(темплейт) дуудлагын тооноос ЦӨӨН гарна ⇒ алдааг барьж авна ✓
+  const calls = (cdp.match(/evalJs\(`/g) || []).length;
+  assert.ok(probes.length >= 5, `evalJs probe хэт цөөн (${probes.length}) ✗`);
+  assert.equal(probes.length, calls,
+    `evalJs(\`…\`) ${calls} дуудлагын ${probes.length} нь л зөв хаагдсан (нэг probe дотор BACKTICK байна ✗)`);
+  probes.forEach((p, i) => {
+    assert.ok(!/`/.test(p), `evalJs probe #${i + 1} дотор BACKTICK байна ✗`);
+    assert.ok(!/\\\//.test(p), `evalJs probe #${i + 1} дотор BACKSLASH+SLASH байна ✗`);
+  });
 });
 
 // ---------- ⑪ БОДИТ breadcrumb (модулийг ачаалж шалгана) ----------

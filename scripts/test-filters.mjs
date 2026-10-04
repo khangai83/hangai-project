@@ -32,6 +32,8 @@ import {
   JOB_LEVEL_OPTIONS, JOB_SALARY_TYPE_OPTIONS, priceWord, isJobsSection,
   // 🖥📱 2026-10-04: нүүр хуудсны хэсгийн панелийн «Зарах / Түрээслэх» сонголт
   getSectionCategoryChoices, getSectionCategories,
+  // 🏠 2026-10-04: хэсгийн панельд дэд төрөл харагдах эсэх (2 алхамт drill)
+  showsSectionSubtypes,
 } from '../lib/locationData.js';
 // 🚗🌈 2026-10-01: 🏷️ «Үйлдвэрлэгч» → 🚙 «Загвар» (cascading) — зөвхөн ЦЭВЭР
 //    функцууд + өгөгдөл (сүлжээ/DB-д хүрэхгүй тул шууд ачаалж болно ✓)
@@ -1702,6 +1704,44 @@ t('🖥 ГЭРЭЭ: HomeClient — категори нь `segmented` + `getSecti
   // ④ Хуучин БОГИНО шошго (`💰 Зарах` / `🔑 Түрээслэх`) нүүр хуудснаас БҮРЭН ХАСАГДАВ ✓
   assert.ok(!/💰 Зарах/.test(home) && !/🔑 Түрээслэх/.test(home),
     'хуучин категори шошго нүүр хуудсанд ҮЛДСЭН байна ✗');
+});
+
+t('🏠 showsSectionSubtypes — үл хөдлөхөд категори сонгомогц Л дэд төрөл; бусад 11 хэсэгт ДАНГААРУУ', () => {
+  // ⚠️ 2026-10-04 (хэрэглэгчийн хүсэлт): «үл хөдлөх рүү ороход Үл хөдлөх зарна,
+  //    Үл хөдлөх түрээслүүлнэ гэж харагдуул, түүний дотрох Орон сууц, Газар гэх
+  //    мэтийг энэ үед бүү харуул» → хэсгийн панель 2 АЛХАМТ DRILL болов.
+  //    🏠 үл хөдлөх нь анхдагч `category === 'all'` (ерөнхий харагдац) дээр
+  //    дэд төрөл ХАРУУЛАХГҮЙ, зөвхөн sell/rent сонгомогц харагдана ✓
+  // ① 🏠 үл хөдлөх (категори бий): 'all' → ХААЛТТАЙ; sell/rent → НЭЭЛТТЭЙ
+  assert.equal(showsSectionSubtypes('real-estate', 'all'), false,
+    'үл хөдлөх + категори сонгоогүй (`all`) → дэд төрөл ХАРАГДАХ ЁСТОЙ БИШ ✗');
+  assert.equal(showsSectionSubtypes('real-estate', 'sell'), true, 'sell → НЭЭЛТТЭЙ ✗');
+  assert.equal(showsSectionSubtypes('real-estate', 'rent'), true, 'rent → НЭЭЛТТЭЙ ✗');
+  // ② Бусад 11 хэсэгт категори ОГТ БАЙХГҮЙ → `category`-г үл хайхран НЭЭЛТТЭЙ ✓
+  SECTIONS.filter((s) => s.value !== 'real-estate').forEach((s) => {
+    assert.ok(showsSectionSubtypes(s.value, 'all'),
+      `${s.value}: категоригүй хэсэгт дэд төрөл ШУУД харагдах ЁСТОЙ ✗`);
+    assert.ok(showsSectionSubtypes(s.value, 'sell'), s.value);
+    assert.ok(showsSectionSubtypes(s.value, 'rent'), s.value);
+  });
+  // ③ ⚠️ Хоосон/буруу утга ч КРАШГҮЙ (`undefined !== 'all'` → НЭЭЛТТЭЙ ✓)
+  assert.equal(showsSectionSubtypes('real-estate', undefined), true);
+});
+
+t('🏠 ГЭРЭЭ: HomeClient — дэд төрлийн блок `showSubtypes`-ээр хаалттай (2 алхамт drill)', () => {
+  const home = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
+  // ① НЭГ ЭХ СУРВАЛЖ — `lib/locationData.js → showsSectionSubtypes` ✓
+  assert.ok(/const showSubtypes = showsSectionSubtypes\(section, category\);/.test(home),
+    'HomeClient нь `showsSectionSubtypes`-г дуудахгүй ✗');
+  assert.ok(!/const showSubtypes = !showCategories/.test(home),
+    'HomeClient дотор хатуу бичсэн `showSubtypes` логик ҮЛДСЭН байна ✗');
+  assert.ok(/showsSectionSubtypes,/.test(home),
+    '`showsSectionSubtypes` импорт арилсан байна ✗');
+  // ② Хавтгай дэд төрлийн багана (🏠 үл хөдлөх гэх мэт) `showSubtypes`-ээр хаалттай
+  assert.ok(/\{!subtypeGroups\.length && showSubtypes && \(/.test(home),
+    'дэд төрлийн багана `showSubtypes`-ээр хаагдаагүй ✗');
+  // ③ 🐍 CDP дэгээ — `npm run cdp:sections` үүгээр панелийг тоолно
+  assert.ok(/data-section-panel/.test(home), '`data-section-panel` CDP дэгээ алга ✗');
 });
 
 console.log(`\n✅ БҮГД ОК: ${passed} тест\n`);

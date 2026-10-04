@@ -295,7 +295,7 @@ export default function AppProviders({ children }) {
                  оронд нь доод навигац (`<nav>` доор) гарна ✓
                  → Ингэснээр мобайлд header нь ЗӨВХӨН лого (төвд) ✓ */} 
           <header className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-card">
-            <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-center px-4 sm:px-6 lg:justify-between">
+            <div className="mx-auto flex h-16 max-w-[1536px] items-center justify-center px-4 sm:px-6 lg:justify-between">
               <Link
                 href="/"
                 /* ⚠️ `gap-2` ХАСАГДСАН (2026-09-27, хэрэглэгчийн гомдол: «zarlaa.mn
@@ -320,9 +320,12 @@ export default function AppProviders({ children }) {
               {/* ===== 🖥 ХАЙЛТЫН МӨР — header-ийн ГОЛ хэсэг (2026-10-04 (27)) =====
                   Нүүр хуудас (`HomeClient`) нь `useHeaderSlot()`-оор энэ завсрыг
                   дүүргэнэ (лого ба баруун товчнуудын ДУНД — жишээ зурагтай ижил ✓).
-                  ⚠️ `xl` (≥1280px) — бидний толгойн `max-w-[1280px]` хүрээ баруун
+                  ⚠️ `xl` (≥1280px) — бидний толгойн `max-w-[1536px]` хүрээ баруун
                      товчнуудтай (➕/❤️/✉️/👤) хамт хайлтад ХАНГАЛТТАЙ зай үлдээдэг
                      цорын ганц хэмжээ (1024–1279px дээр хайлтын мөр багтахгүй ✗)
+                     ⚠️ 2026-10-04 (32): 1280 → **1536** болов (хажуугийн сул зайг
+                        багасгав) — 1280px дэлгэц дээр контейнер ХЭВЭЭР тул энэ
+                        breakpoint-ийн нөхцөл ХӨНДӨӨГДӨӨГҮЙ ✓
                   ⚠️ `xl`-ээс ДООШ дээр ХАРАГДАХГҮЙ — тэнд хайлтын мөр нь header-ийн
                      доорх наалдамхай мөрөөр гарна (`HomeClient`-д `xl:hidden` ✓) */}
               {headerSlot && (
@@ -418,7 +421,7 @@ export default function AppProviders({ children }) {
           <main className="min-h-[calc(100vh-130px)]">{children}</main>
 
           <footer className="mt-12 bg-gray-900 py-6 pb-20 text-center text-sm text-gray-300 lg:pb-6">
-            <div className="mx-auto w-full max-w-[1280px] px-4 sm:px-6">
+            <div className="mx-auto w-full max-w-[1536px] px-4 sm:px-6">
               <nav className="mb-3 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
                 <Link href="/" className="transition hover:text-white">🏠 Нүүр хуудас</Link>
                 <Link href="/mortgage" className="transition hover:text-white">🏦 Ипотекийн тооцоолуур</Link>

@@ -144,7 +144,7 @@ export default function AdminDashboardClient() {
 
   return (
     <div className="page-container">
-      <div className="mx-auto max-w-[1280px]">
+      <div className="mx-auto max-w-[1536px]">
         {/* ===== ТОЛГОЙ + ADMIN НАВИГАЦИ ===== */}
         <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
