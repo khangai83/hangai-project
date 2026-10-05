@@ -858,12 +858,16 @@ t('💻 Notebook-ийн талбар нь ЗӨВХӨН `PC_SPEC_SUBTYPES`-д х�
   }
 });
 
-t('⚠️ «Бусад»/дэд төрөл СОНГООГҮЙ үед Notebook-ийн талбар ХАРАГДАХГҮЙ', () => {
+t('⚠️ 💻 «Брэнд»/«Загвар» ба 📺/⚙️/🧠/💾 нь ХОЛДУУ дэд төрөлд ХАРАГДАХГҮЙ (2026-10-05 (56))', () => {
   // ⚠️ «Бусад» нь Notebook · PS,XBox,Nintendo · Дагалдах хэрэгсэл 3 бүлэгт
   //    давхарддаг ба DB-д зөвхөн НЭРЭЭР хадгалагддаг → форм нь алийг нь ч
   //    төлөөлж чадахгүй тул Notebook-ийн талбарыг ХАРУУЛАХГҮЙ ✓
-  // 🛡️ 2026-10-01 (18): `warranty` ХАСАГДСАН — үлдсэн 3 талбар ✓
-  const base = ['brand', 'model', 'condition'];
+  // 🛡️ 2026-10-01 (18): `warranty` ХАСАГДСАН ✓
+  // 🆕 2026-10-05 (56) (хэрэглэгчийн хүсэлт: «notebook ээс бусад хэсэгт Брэнд
+  //    Загвар гэсэн утга оруулахгүй»): 🏷️ «Брэнд» ба 🖥️ «Загвар» Ч
+  //    `onlySubtypes`-тай болов ⇒ үлдэх талбар нь ЗӨВХӨН ✅ «Төлөв» ✓
+  //    (⏳ (18)-аас хойш `brand · model · condition` — 3 байв ✗)
+  const base = ['condition'];
   for (const sub of [
     '', 'Бусад', 'Mouse', 'Keyboard', 'Xbox', 'Playstation',
     'Чихэвч', 'Принтер, Хувилагч, Сканнер, Ламинатор', 'Принтер, Хувилагчийн хор',
@@ -871,27 +875,37 @@ t('⚠️ «Бусад»/дэд төрөл СОНГООГҮЙ үед Notebook-и
   ]) {
     assert.deepEqual(getAttrFields('computers', sub).map((f) => f.key), base, `«${sub || '(хоосон)'}»`);
   }
+  // ⚠️ ЭСРЭГЭЭР: Notebook-ийн гэр бүл (21 брэнд + «Иж бүрэн компьютер» +
+  //    «Процессор, сервер») дээр 7 талбар БҮРЭН харагдана ✓
+  assert.equal(PC_SPEC_SUBTYPES.length, 23);
+  for (const sub of PC_SPEC_SUBTYPES) {
+    assert.deepEqual(getAttrFields('computers', sub).map((f) => f.key),
+      ['brand', 'model', 'screen', 'cpu', 'ram', 'storage', 'condition'], `«${sub}»`);
+  }
 });
 
 t('⚠️ `getAttrField` (картын мөр/шүүлт) нь `onlySubtypes`-аас ХАМААРАХГҮЙ + бусад 11 хэсэг хөндөгдөөгүй', () => {
   // ⚠️ Хуучин заруудын `attrs` нь DB-д хэвээр → карт/шүүлт нь ТАЛБАРЫГ
   //    үргэлжлүүлэн харна (картын мөр/шүүлт алга болохгүй ✓)
   assert.equal(getAttrField('computers', 'cpu').label, 'Процессор (CPU)');
-  // ⚠️ Зөвхөн 💻 хэсгийн 4 талбарт `onlySubtypes` байна — бусад 11 хэсэгт
-  //    ямар ч талбар ХАСАГДАХГҮЙ (форм нь хэвээр бүгдийг харуулна ✓)
+  // ⚠️ Зөвхөн 💻 хэсгийн 6 талбарт `onlySubtypes` байна — 🆕 (56): `brand`
+  //    ба `model` ч нэмэгдэв (brand · model · screen · cpu · ram · storage) —
+  //    бусад 11 хэсэгт ямар ч талбар ХАСАГДАХГҮЙ (форм нь хэвээр бүгдийг
+  //    харуулна ✓). ⚠️ `condition` нь `onlySubtypes`-ГҮЙ тул 💻-ийн БҮХ дэд
+  //    төрөлд харагдана ✓
   let flagged = 0;
   for (const s of SECTIONS) {
     const fields = s.attrFields || [];
     const shown = getAttrFields(s.value, getSubtypes(s.value)[0] || '');
     if (s.value === 'computers') {
       flagged = fields.filter((f) => Array.isArray(f.onlySubtypes)).length;
-      assert.equal(flagged, 4);
+      assert.equal(flagged, 6);
       continue;
     }
     assert.equal(shown.length, fields.length, `${s.value}: талбар хасагдаж байна ✗`);
     fields.forEach((f) => assert.equal(f.onlySubtypes, undefined, `${s.value}.${f.key}`));
   }
-  assert.equal(flagged, 4);
+  assert.equal(flagged, 6);
 });
 
 // ---------- 🖥 2026-10-03 (7): 💻 NOTEBOOK-ИЙН ШҮҮЛТ SIDEBAR-д ----------
@@ -1016,14 +1030,21 @@ t('🎛 HomeClient: pill нь ЗӨВХӨН `chips && multi && filterBar`; сай
 
 // ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Notebook ээс бусад хайлтын хэсэгт Брэнд гэж
 // баймааргүй байна даа» ⇒ 🏷️ «Брэнд» нь `filterSubtypes: PC_SPEC_SUBTYPES` тугтай
-// болж, SIDEBAR (хайлт)-д ЗӨВХӨН Notebook-ийн гэр бүлд гарна — ⚠️ ФОРМ
-// ХӨНДӨӨГДӨХГҮЙ (iPad/принтер/Mouse дээр Брэнд бичих боломж ХЭВЭЭР ✓)
-t('🏷️ 💻 «Брэнд» — ХАЙЛТАД Notebook-ийн гэр бүлд л; ФОРМ ХӨНДӨГДӨӨГҮЙ', () => {
+// болж, SIDEBAR (хайлт)-д ЗӨВХӨН Notebook-ийн гэр бүлд гарна ✓
+// 🆕 2026-10-05 (56) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «notebook ээс бусад хэсэгт Брэнд
+// Загвар гэсэн утга оруулахгүй» ⇒ ФОРМ Ч МӨН хязгаарлагдав (`onlySubtypes`
+// нэмэгдэв — iPad/принтер/Mouse/чихэвч дээр 🏷️ Брэнд + 🖥️ Загвар бичих
+// боломж ОДОО БАЙХГҮЙ ✓). ⚠️ Картын мөр ХӨНДӨГДӨӨГҮЙ (доорх ④ ✓)
+t('🏷️ 💻 «Брэнд» — ХАЙЛТ + ФОРМ ХОЁУЛАНД Notebook-ийн гэр бүлд л (2026-10-05 (56))', () => {
   const brand = getAttrField('computers', 'brand');
-  // ① Талбар нь `filterSubtypes`-тай (sidebar-only хязгаарлалт)
+  // ① Талбар нь ХОЁР тугтай (форм + sidebar — ИЖИЛ жагсаалт ✓)
   assert.deepEqual(brand.filterSubtypes, PC_SPEC_SUBTYPES);
-  assert.equal(brand.onlySubtypes, undefined, 'форм хөндөгдөх ёстой ✗');
+  assert.deepEqual(brand.onlySubtypes, PC_SPEC_SUBTYPES);
   assert.equal(brand.searchable, true, 'хайлттай combobox хэвээр байх ёстой ✗');
+  // ⚠️ «Загвар» нь шүүлт БИШ (текст) — зөвхөн `onlySubtypes` тугтай ✓
+  const model = getAttrField('computers', 'model');
+  assert.deepEqual(model.onlySubtypes, PC_SPEC_SUBTYPES);
+  assert.equal(model.type, 'text');
   // ② Хайлт (sidebar): зөвхөн Notebook-ийн гэр бүлд
   for (const sub of PC_SPEC_SUBTYPES) {
     assert.ok(getAttrFilters('computers', sub).some((f) => f.key === 'brand'), `«${sub}»: Брэнд алга ✗`);
@@ -1034,13 +1055,24 @@ t('🏷️ 💻 «Брэнд» — ХАЙЛТАД Notebook-ийн гэр бүл�
     assert.ok(!getAttrFilters('computers', sub).some((f) => f.key === 'brand'),
       `«${sub || '(хоосон)'}»: ХАЙЛТАД Брэнд гарч байна ✗`);
   }
-  // ③ Форм: БҮХ дэд төрөлд хэвээр (зөвхөн sidebar хязгаарлагдав)
-  for (const sub of ['', 'Mouse', 'iPad, Tablet, Kindle', 'Дэлгэц', 'Apple']) {
-    assert.ok(getAttrFields('computers', sub).some((f) => f.key === 'brand'),
-      `«${sub || '(хоосон)'}»: формоос Брэнд алга болсон ✗`);
+  // ③ Форм: МӨН зөвхөн Notebook-ийн гэр бүлд (🆕 (56) — ⏳ өмнө БҮХ дэд төрөлд)
+  for (const sub of ['', 'Mouse', 'iPad, Tablet, Kindle', 'Дэлгэц', 'Принтер, Хувилагчийн хор']) {
+    assert.ok(!getAttrFields('computers', sub).some((f) => f.key === 'brand'),
+      `«${sub || '(хоосон)'}»: формоос Брэнд ХАСАГДААГҮЙ ✗`);
+    assert.ok(!getAttrFields('computers', sub).some((f) => f.key === 'model'),
+      `«${sub || '(хоосон)'}»: формоос Загвар ХАСАГДААГҮЙ ✗`);
   }
-  // ④ `getAttrField` (картын мөр/«Зарын дэлгэрэнгүй») ХӨНДӨГДӨӨГҮЙ
+  for (const sub of ['Apple', 'Lenovo', 'Иж бүрэн компьютер', 'Процессор, сервер']) {
+    const keys = getAttrFields('computers', sub).map((f) => f.key);
+    assert.ok(keys.includes('brand') && keys.includes('model'),
+      `«${sub}»: формоос Брэнд/Загвар алга болсон ✗`);
+  }
+  // ④ `getAttrField` (картын мөр) ХӨНДӨГДӨӨГҮЙ — `onlySubtypes`-ыг ХАРДАГГҮЙ
+  //    тул хуучин заруудын «Apple MacBook Pro 14» картын мөр хэвээр ✓
   assert.equal(getAttrField('computers', 'brand').label, 'Брэнд');
+  assert.equal(
+    formatAttrsLine('computers', { brand: 'Apple', model: 'MacBook Pro 14', condition: 'Шинэ' }),
+    'Apple MacBook Pro 14 · ✅ Шинэ');
   // ⑤ Зөвхөн 💻-ийн `brand` нь `filterSubtypes`-тай — бусад 12 хэсэгт БАЙХГҮЙ
   const flagged = SECTIONS.flatMap((s) => (s.attrFields || [])
     .filter((f) => f.filterSubtypes).map((f) => `${s.value}.${f.key}`));
@@ -1837,7 +1869,7 @@ t('📋 getAttrRows — хоосон утга ба `negotiable`/`drive` ХАРА
   assert.deepEqual(getAttrRows('auto', 'Toyota'), []);
 });
 
-t('📋 getAttrRows — 💻 Notebook-ийн 📺/⚙️/🧠/💾 ГАРНА, Mouse дээр ГАРАХГҮЙ', () => {
+t('📋 getAttrRows — 💻 Notebook-ийн 🏷️/🖥️/📺/⚙️/🧠/💾 ГАРНА, Mouse дээр ГАРАХГҮЙ', () => {
   // ⚠️ `warranty` нь DB-д БАЙЖ болзошгүй ХУУЧИН утга (2026-10-01 (18)-д
   //    форм/шүүлтээс ХАСАГДСАН) — 2 баганат хүснэгтэд ГАРАХГҮЙ ЁСТОЙ ✓
   const attrs = { brand: 'Lenovo', model: 'ThinkPad T14', screen: '14 инч', cpu: 'Intel Core i5', ram: '16 GB', storage: '512 GB', condition: 'Шинэ', warranty: 'Байгаа' };
@@ -1845,9 +1877,11 @@ t('📋 getAttrRows — 💻 Notebook-ийн 📺/⚙️/🧠/💾 ГАРНА, M
   const nb = getAttrRows('computers', attrs, 'Lenovo');
   assert.deepEqual(nb.map((r) => r.key), ['brand', 'model', 'screen', 'cpu', 'ram', 'storage', 'condition']);
   assert.ok(!nb.some((r) => r.key === 'warranty'), '🛡️ `warranty` харагдаж байна ✗');
-  // ② Mouse (дэд төрөл) → 4 үзүүлэлт ХАРАГДАХГҮЙ (картын мөртэй ижил `onlySubtypes` ✓)
+  // ② Холдуу дэд төрөл (Mouse) → 6 үзүүлэлт ХАРАГДАХГҮЙ (формтой ижил
+  //    `onlySubtypes` ✓). 🆕 2026-10-05 (56): 🏷️ `brand`/🖥️ `model` Ч хасагдав
+  //    ⇒ зөвхөн ✅ «Төлөв» үлдэв (⏳ өмнө 3 мөр: brand · model · condition)
   const mouse = getAttrRows('computers', attrs, 'Хулгана, Mouse');
-  assert.deepEqual(mouse.map((r) => r.key), ['brand', 'model', 'condition']);
+  assert.deepEqual(mouse.map((r) => r.key), ['condition']);
 });
 
 // ---- ⑥-з 🛡️ 2026-10-01 (18): «Баталгаат хугацаа» (`warranty`) БҮРЭН ХАСАГДАВ ----

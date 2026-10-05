@@ -104,6 +104,37 @@ const STEPS = [
   { key: 'media',    label: 'Зураг' },
 ];
 
+/**
+ * 🖥 ≥640px (Tailwind-ийн `sm`) эсэхийг мэдэх жижиг hook (2026-10-05 (57)).
+ *
+ * ⚠️ ЯАГААД ХЭРЭГТЭЙ ВЭ: 🖥 дээр «3-р алхам (📋 Дэлгэрэнгүй)» · «4-р алхам
+ *    (💰 Үнэ + 📝 Тайлбар + ☎️ утас)» · «5-р алхам (🖼 Зураг)» нь НЭГ
+ *    хуудас болж НЭГТГЭГДДЭГ (хэрэглэгчийн хүсэлт: «step 3, 4, 5-ыг нэг
+ *    болго»), харин 📱 <640px дээр ХУУЧИН 5 дэлгэцээрээ (тусдаа) үлдэнэ.
+ *    Тиймээс 3-р алхам (сүүлийн хуудас) дээрх доод товч нь 🖥 дээр
+ *    «✅ Зар нийтлэх» (submit), 📱 дээр «Үргэлжлүүлэх →» (next) байх ёстой —
+ *    ⚠️ энэ нь ЗӨВХӨН CSS-ээр шийдэгдэхгүй ✗ (товчны `type` ба бичиг
+ *    ХОЁУЛАА өөр) ⇒ JS хэрэгтэй ✓
+ * ⚠️ SSR ба эхний client render нь ХОЁУЛАА `false` (📱 хувилбар) гарна ⇒
+ *    hydration зөрөхгүй ✓, дараа нь `useEffect` залруулна ✓
+ *    (⏳ `initial = window.matchMedia…` гэвэл hydration mismatch ✗)
+ * ⚠️ Эхний render-д (hydration-аас өмнө) 🖥 дээр 3-р алхамд товч
+ *    «Үргэлжлүүлэх →» байж, дараа нь «✅ Зар нийтлэх» болж солигдоно —
+ *    хормын ⏱ (хүлээн зөвшөөрөхүйц ✓)
+ * 🔍 Хайх үг: useIsDesktop, lastStepIndex, нэгтгэсэн 3-р хуудас
+ */
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 640px)');
+    const sync = () => setIsDesktop(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+  return isDesktop;
+}
+
 /** Зарын DB мөр → форм (засах горимд) */
 function listingToForm(l) {
   return {
@@ -437,7 +468,7 @@ function MobileAnswers({ rows = [], onEdit }) {
  *      • `step < 1` (🗂 Ангилал) → ГАРАХГҮЙ (сонгосон зам нь баганын цэнхэр
  *        мөр + `[data-picker-summary]` дээр бий — давхардал үүсгэхгүй ✓)
  *      • `step >= 1` → 🗂 Ангилал
- *      • `step >= 2` → 🗂 Ангилал + 📍 Зарын дэд байршил
+ *      • `step >= 2` → 🗂 Ангилал + 📍 Зарын байршил
  * ⚠️ Утга нь формойн state-ээс ШУУД (`pickedCategoryPath`/`pickedLocationPath`)
  *    — шинэ DB багана / хадгалалт БАЙХГҮЙ ✓
  * ⚠️ `data-desktop-summary` — CDP/тестийн ТОГТВОРТОЙ selector ✓
@@ -487,7 +518,7 @@ function DesktopSummary({ categoryPath, locationPath, step = 0, onEdit }) {
       {step >= 2 && (
         <span data-desktop-summary-location className="inline-flex items-center gap-1.5">
           <span>
-            📍 Зарын дэд байршил:{' '}
+            📍 Зарын байршил:{' '}
             {locationPath
               ? <b className="font-semibold text-gray-900">{locationPath}</b>
               : <span className="text-gray-400">сонгоогүй</span>}
@@ -875,6 +906,33 @@ export default function AddListingClient() {
    */
   const draftDoneRef = useRef(false);
 
+  /**
+   * 🖥🪜📄 3, 4 ба 5-Р АЛХАМ НЭГ БОЛОВ — ЗӨВХӨН 🖥 ДЭЭР (2026-10-05 (57),
+   *    хэрэглэгчийн хүсэлт: «step 1, 2 нь тусдаа хуудас — энэ зөв; step 3 нь
+   *    1, 2-ын араас орж ирдэг; харин step 3, 4, 5-ыг НЭГ болго»).
+   *
+   * ⚠️ ЮУ СОЛИГДОВ: 🖥 ≥640px дээр форм нь **3 хуудастай** болов —
+   *    ① Ангилал → ② Байршил →
+   *    **③ 📋 Дэлгэрэнгүй + 💰 Үнэ + 📝 Тайлбар + ☎️ утас + 🖼 Зураг**
+   *    (нэгтгэсэн) ⏳ өмнө нь 🖥 дээр ч 5 хуудас байв
+   *    (③ Дэлгэрэнгүй · ④ Үнэ+Тайлбар · ⑤ Зураг) ✗
+   * ⚠️ 📱 <640px дээр ХӨНДӨГДӨХГҮЙ — 3-р алхам «асуулт бүр нэг дэлгэц» +
+   *    4 дэх дэлгэц (💰 Үнэ ба 📝 Тайлбар) + 5 дахь дэлгэц (🖼 Зураг) ✓
+   * ⚠️ `STEPS` массив (5) ХЭВЭЭР — зөвхөн 🖥 дээрх СҮҮЛИЙН ХУУДАСНЫ индекс
+   *    (`lastStepIndex`) 2 болно ✓ (алхмын ШАЛГАЛТ (`validateStep`) нь
+   *    `STEPS[i].key`-ээр ажилладаг тул ХӨНДӨГДӨХГҮЙ ✓ — 📱 дээрх 5 дахь
+   *    алхам ч (`media` → утас) хэвээр ✓)
+   * ⚠️ Блокны харагдац нь ЗӨВХӨН CSS-ээр шийдэгдэнэ (`hidden sm:block`) ⇒
+   *    SSR дээр ч 🖥-ийн нэгтгэсэн хуудас ЗӨВ гарна ✓ (hydrate хүлээхгүй ✓)
+   * ⚠️ Бүх талбар НЭГ хуудсанд байгаа ч алхмын ШАЛГАЛТ ХЭВЭЭР: «Зар
+   *    нийтлэх» дархад `handleSubmit` → `firstInvalidStep()` нь 3, 4, 5-р
+   *    алхмыг ДАРААЛАН шалгаж, дутуу талбарыг ЗААЖ өгнө ✓
+   * 🔍 Хайх үг: lastStepIndex, нэгтгэсэн 3-р хуудас, hidden sm:block
+   */
+  const isDesktop = useIsDesktop();
+  /** 🖥 дээр 2 (нэгтгэсэн ③), 📱 дээр 4 (5 дахь дэлгэц) — сүүлийн хуудас */
+  const lastStepIndex = isDesktop ? STEPS.length - 3 : STEPS.length - 1;
+
 
   // 🪜 Хуудас ачаалахад: нэвтэрсэн бол шинэ/засах формыг бэлдэнэ.
   //    «Одоогийн алхам» нь URL-аас (`?step=`) уншигдана — энд `setStep` БАЙХГҮЙ ✓
@@ -1080,11 +1138,11 @@ export default function AddListingClient() {
   const khoroos = getKhoroos(form.city, form.district);
 
   /* ==========================================================================
-     📍 2-Р АЛХАМ («Байршил») — 2–3 БАГАНАТ СОНГОЛТ (2026-10-01, хэрэглэгчийн
+     📍 2-Р АЛХАМ («Байршил») — 3 БАГАНАТ СОНГОЛТ (2026-10-01, хэрэглэгчийн
      хүсэлт: «Байршлыг 3т биш 2т оруулдаг мэдээлэл болго, ингэхдээ 1т зар оруулж
      байгаатай адилхан форматтай болгоорой»).
      ⚠️ Формат нь 1-р алхмын `PickerColumn`-той ЯГ ИЖИЛ — `<select>` БИШ:
-        ① Хот / Аймаг  ② Дүүрэг / Сум  ③ Хороо (⚡ `simpleForm`-д ГАРАХГҮЙ)
+        ① Хот / Аймаг  ② Дүүрэг  ③ Хороо — 🆕 2026-10-05: БҮХ хэсэгт 3 багана
         Багана бүрийн мөр дээр дарахад сонгогдоно (1-р алхамтай ижил зан төлөв ✓)
      ⚠️ 2026-10-01 (4 дэх засвар): ДЭЭД ЦЭНХЭР ТОЛГОЙ ХАСАГДАВ (1-р алхамтай
         хамт) — сонгосон утга нь зөвхөн мөрийн цэнхэр дэвсгэр + доорх
@@ -1235,9 +1293,13 @@ export default function AddListingClient() {
    *    `construction` (Барилгын материал), 🏭 `equipment` (Тоног төхөөрөмж) ба
    *    🆕 🛋️ `furniture` (Тавилга) / 🧳 `travel` (Аяны бараа — 2026-09-30 (5)-д
    *    «Аяллын хэрэгсэл»-ээс тусдаа хэсэг болсон ✓).
-   * ⚠️ Ийм хэсэгт форм нь ЗӨВХӨН байршил (хот+дүүрэг) · шинэ/хуучин · үнэ ·
-   *    утас · тайлбар · зураг асууна — хороо ба YouTube видео линк
-   *    ХАРАГДАХГҮЙ (хэрэглэгчийн хүсэлт: «зөвхөн … асуудаг байя»).
+   * ⚠️ Ийм хэсэгт форм нь ЗӨВХӨН байршил (хот + дүүрэг + **хороо**) ·
+   *    шинэ/хуучин · үнэ · утас · тайлбар · зураг асууна — ЗӨВХӨН 🎥 YouTube
+   *    видео линк ХАРАГДАХГҮЙ (хэрэглэгчийн хүсэлт: «зөвхөн … асуудаг байя»).
+   * 🆕 2026-10-05: **ХОРОО нь `simpleForm`-оос ХАМААРАХГҮЙ болов** —
+   *    хэрэглэгчийн гомдол: «Барилгын материалын зар оруулхад Улаанбаатарын
+   *    дүүргийн хороо оруулах хэсэг гарч ирэхгүй байна» ⇒ байршил нь БҮХ
+   *    хэсэгт ЯГ ИЖИЛ 3 шат (Хот/Аймаг → Дүүрэг → Хороо) ✓
    * ⚠️ ХАДГАЛАХ үед далд талбарын ХУУЧИН утга УСТАХГҮЙ (payload-д
    *    `form`-оосоо хэвээр явна) — зөвхөн UI-д харагдахгүй ✓
    * ⚠️ 2026-10-01: «Дэлгэрэнгүй хаяг» (`addressDetail`) БҮРЭН ХАСАГДАВ —
@@ -1402,7 +1464,21 @@ export default function AddListingClient() {
   })();
   const mobileCatScreen = catScreens.find((s) => s.key === mobileCatStep) || catScreens[0];
 
-  /** 📱 2-р алхмын дэлгэцүүд — ⚡ `simpleForm` (хороо харагдахгүй) дээр 2 ширхэг */
+  /**
+   * 📱 2-р алхмын дэлгэцүүд — Хот/Аймаг → Дүүрэг → **Хороо** (🆕 2026-10-05: 3
+   *    дэлгэц, БҮХ хэсэгт).
+   *
+   * 🎯 ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «Барилгын материалын зар оруулхад Улаанбаатарын
+   *    дүүргийн хороо оруулах хэсэг гарч ирэхгүй байна» ⇒ өмнө нь ⚡ `simpleForm`
+   *    хэсэгт (🧱 construction, 🏭 equipment, ⚽ hobby, 🧺 home, 🛋️ furniture,
+   *    🧳 travel, ⚡ electric) хороо нь форм · мобайл · дэлгэц БҮГДЭЭС
+   *    хасагддаг байв ✗ → одоо **БҮХ хэсэгт ЯГ ИЖИЛ 3 дэлгэц** ✓
+   *    ⚠️ `simpleForm` нь ЗӨВХӨН `attrFields` (зөвхөн ✅ «Шинэ / Шинэвтэр /
+   *       Хуучин») ба 🎥 YouTube линкэд л үйлчилнэ — байршилд ОГТ үйлчлэхгүй ✓
+   *    ⚠️ «Үл хөдлөх»-ийн зан ХӨНДӨГДӨӨГҮЙ (тэнд ч 3 дэлгэц байсан ✓) —
+   *       `validateStep('location')` нь зөвхөн `city`-г шаарддаг тул хороо
+   *       сонгохгүй ч урагшлах боломж ХЭВЭЭР ✓
+   */
   const locScreens = [
     {
       key: 'city',
@@ -1416,23 +1492,16 @@ export default function AddListingClient() {
       title: form.city || 'Дүүрэг',
       items: districtItems,
       value: form.district,
-      onPick: (v) => {
-        changeDistrict(v);
-        // ⚡ `simpleForm` (хобби/гэр ахуй/…) дээр хороо асуухгүй → шууд үргэлжилнэ
-        if (simpleForm) finishMobileLocation();
-        else setMobileLocStep('khoroo');
-      },
+      onPick: (v) => { changeDistrict(v); setMobileLocStep('khoroo'); },
     },
-  ];
-  if (!simpleForm) {
-    locScreens.push({
+    {
       key: 'khoroo',
       title: form.district || 'Хороо',
       items: khorooItems,
       value: form.khoroo,
       onPick: (v) => { set('khoroo', v); finishMobileLocation(); },
-    });
-  }
+    },
+  ];
   const mobileLocScreen = locScreens.find((s) => s.key === mobileLocStep) || locScreens[0];
 
   /* ==========================================================================
@@ -1597,12 +1666,12 @@ export default function AddListingClient() {
       selectedLeafLabel,
     ].filter(Boolean).join(' ▸ ')
     : '';
-  const pickedLocationPath = [form.city, form.district, simpleForm ? '' : form.khoroo].filter(Boolean).join(' — ');
+  const pickedLocationPath = [form.city, form.district, form.khoroo].filter(Boolean).join(' — ');
 
   /**
    * 📱 3-р алхмын толгойн ДОРХ мөрүүд (unegui.mn-ийн хэв, 2026-10-03 (17)):
    *   ① 🗂 Ангилал (unegui-гийн «Автомашин ▸ Автомашин зарна ▸ Toyota ▸ 4Runner»)
-   *   ② 📍 Зарын дэд байршил («Улаанбаатар — Багануур — 1-р хороо»)
+   *   ② 📍 Зарын байршил («Улаанбаатар — Багануур — 1-р хороо»)
    *   ③ хариулсан асуулт БҮР (ОДООГИЙНХООС бусад) — утгатай нь л ✓
    * ⚠️ Түлхүүр нь `detailScreens[].key` (`'step-category'`/`'step-location'` нь
    *    тусдаа — `✏️` нь 1/2-р АЛХАМ руу буцаана ✓)
@@ -1612,7 +1681,7 @@ export default function AddListingClient() {
     // ⚠️ Зам нь 🖥 `DesktopSummary`-тай НЭГ ЭХ СУРВАЛЖ (`pickedCategoryPath` /
     //    `pickedLocationPath`, дээр) — энд дахин бодохгүй ✓
     if (pickedCategoryPath) rows.push({ key: 'step-category', label: 'Ангилал', value: pickedCategoryPath });
-    if (pickedLocationPath) rows.push({ key: 'step-location', label: 'Зарын дэд байршил', value: pickedLocationPath });
+    if (pickedLocationPath) rows.push({ key: 'step-location', label: 'Зарын байршил', value: pickedLocationPath });
     detailScreens.forEach((s) => {
       if (s.key === activeDetail.key) return;
       const value = detailAnswerText(s.key);
@@ -1854,12 +1923,20 @@ export default function AddListingClient() {
     router.replace(`/listings/new?${qs.toString()}`, { scroll: false });
   };
 
-  /** 🪜 Дараагийн алхам — эхлээд ОДООГИЙН алхмаа шалгана */
+  /**
+   * 🪜 Дараагийн алхам — эхлээд ОДООГИЙН алхмаа шалгана.
+   * ⚠️ 2026-10-05 (57): 🖥 дээр 3, 4, 5-р алхам НЭГ хуудас болсон тул
+   *    дээд хязгаар нь `STEPS.length - 1` (4) БИШ, `lastStepIndex`
+   *    (🖥 = 2, 📱 = 4) ✓ — эс бөгөөд 🖥 дээр «Үргэлжлүүлэх» дарж
+   *    «Дэлгэрэнгүй»-гээс хойшхи ХООСОН хуудас руу орно ✗
+   * ⚠️ 🖥 дээр 3-р алхам нь СҮҮЛИЙН хуудас тул тэнд «Үргэлжлүүлэх» ОГТ
+   *    гарахгүй (`step < lastStepIndex` ✗) — «✅ Зар нийтлэх» гарна ✓
+   */
   const goNext = () => {
     const msg = validateStep(step);
     if (msg) { setError(msg); return; }
     setError('');
-    gotoStep(Math.min(step + 1, STEPS.length - 1));
+    gotoStep(Math.min(step + 1, lastStepIndex));
   };
 
   /** 🪜 Буцах — эхний алхамд байвал хуудсаас гарна (цуцлах) */
@@ -2028,6 +2105,24 @@ export default function AddListingClient() {
   const currentStep = STEPS[step];
 
   /**
+   * 🧭 Breadcrumb-ийн бичиг (2026-10-05, 57).
+   * ⚠️ 🖥 дээр 3, 4, 5-р алхам НЭГ хуудас болсон тул 3 дахь хуудсанд зөвхөн
+   *    «Дэлгэрэнгүй» гэвэл төөрөгдөнө ✗ (тэр хуудсан дээр 📋 Дэлгэрэнгүй +
+   *    💰 Үнэ + 📝 Тайлбар + ☎️ утас + 🖼 Зураг бүгд байна) ⇒
+   *    «Дэлгэрэнгүй ба үнэ, зураг» ✓
+   * ⚠️ `step >= STEPS.length - 3` (2) — 🖥 дээрх нэгтгэсэн хуудас нь `?step=3`,
+   *    `?step=4`, `?step=5` АЛЬ Ч хаягаар (эсвэл 📱→🖥 resize-ээр) нээгдэж
+   *    болох тул 2, 3, 4 дэх индекс БҮГДЭД нэг л нэр гарна ✓ (нэг хуудас =
+   *    нэг нэр ✓). ⚠️ `===` биш `>=` гэдгийг сана: `?step=5` дээр «Зураг»
+   *    гэвэл 5 блок харагдаж байхад нэр нь төөрөгдүүлнэ ✗
+   * ⚠️ 📱 дээр ХӨНДӨГДӨХГҮЙ — 3 дахь «Дэлгэрэнгүй», 4 дэх «Үнэ»,
+   *    5 дахь «Зураг» ✓
+   */
+  const stepLabel = isDesktop && step >= STEPS.length - 3
+    ? 'Дэлгэрэнгүй ба үнэ, зураг'
+    : currentStep.label;
+
+  /**
    * 🖥 ≥640px — НЭГ ХУУДАСНЫ доод товчны бичиг (2026-10-05).
    * ⚠️ НЭГ ЭХ СУРВАЛЖ: 📱 wizard-ийн сүүлийн алхмын товч ба 🖥 нэг хуудасны
    *    доод товч ХОЁУЛАА энэ мөрийг л ашиглана ✓
@@ -2063,8 +2158,11 @@ export default function AddListingClient() {
                    `[data-step-current]` selector ХЭВЭЭР ✓) */}
             {/* ⚠️ 2026-10-05 (2 дахь засвар): 🖥 дээр ч алхмат болсон тул
                 алхмын нэр нь БҮХ дэлгэцэд харагдана (`sm:hidden` ХАСАГДАВ)
-                — өмнө нь 🖥 дээр «Зар нийтлэх» гэсэн тогтмол бичиг байв */}
-            <span data-step-current className="font-semibold text-gray-800">{currentStep.label}</span>
+                — өмнө нь 🖥 дээр «Зар нийтлэх» гэсэн тогтмол бичиг байв
+                ⚠️ 2026-10-05 (57): `{currentStep.label}` → `{stepLabel}`
+                   (🖥 дээр нэгтгэсэн 3 дахь хуудсанд «Дэлгэрэнгүй ба үнэ, зураг» —
+                   дээрх (`const stepLabel`) тайлбарыг үз ✓) */}
+            <span data-step-current className="font-semibold text-gray-800">{stepLabel}</span>
           </>
         )}
       </nav>
@@ -2248,14 +2346,16 @@ export default function AddListingClient() {
             </p>
             </div>
 
-            {/* ═══ 2-р алхам · БАЙРШИЛ — 2–3 БАГАНАТ СОНГОЛТ (2026-10-01) ═══
+            {/* ═══ 2-р алхам · БАЙРШИЛ — 3 БАГАНАТ СОНГОЛТ (2026-10-01) ═══
                 ⚠️ Хэрэглэгчийн хүсэлт: «Байршлыг 3т биш 2т оруулдаг мэдээлэл
                    болго, ингэхдээ 1т зар оруулж байгаатай адилхан форматтай
                    болгоорой» → ① алхмын БАЙРЛАЛ 3 → **2** ② харагдац нь 1-р
                    алхмын БАГАНАТ сонголттой ЯГ ИЖИЛ (`<select>` БИШ ✓)
-                ⚠️ Талбарууд ХЭВЭЭР: Хот/Аймаг · Дүүрэг/Сум · Хороо
-                ⚡ ХЯЛБАР ФОРМ (`simpleForm`): хороо ХАРАГДАХГҮЙ — байршил нь
-                   «Хот/Аймаг + Дүүрэг/Сум» хангалттай (хэрэглэгчийн хүсэлт) ✓
+                ⚠️ Талбарууд: Хот/Аймаг · Дүүрэг · Хороо — 🆕 2026-10-05: ХОРОО нь
+                   БҮХ ХЭСЭГТ харагдана (⚡ `simpleForm` ч мөн адил — хэрэглэгчийн
+                   гомдол: «Барилгын материалын зар … хороо гарч ирэхгүй»)
+                ⚠️ `simpleForm` нь ЗӨВХӨН `attrFields` (✅ Шинэ/Шинэвтэр/Хуучин)
+                   ба 🎥 YouTube линкэд л үйлчилнэ — байршилд үйлчлэхгүй ✓
                 ⚠️ Засах горимд хуучин утга (`city`/`district`/`khoroo`) нь
                    `form`-оос уншигдаж ТОХИРСОН баганад идэвхтэй харагдана ✓ */}
             <div data-step-block="location" className={step === 1 ? '' : 'hidden'}>
@@ -2270,11 +2370,12 @@ export default function AddListingClient() {
               onBack={mobileLocBack}
               emptyText="Сонголт байхгүй"
             />
-            {/* 🖥 ≥640px: 2–3 БАГАНАТ СОНГОЛТ (хэвээр — `hidden sm:grid`) */}
+            {/* 🖥 ≥640px: 3 БАГАНАТ СОНГОЛТ (`hidden sm:grid` — 🆕 2026-10-05:
+                баганын тоо нь ХЭСГЭЭС ХАМААРАХГҮЙ, үргэлж 3 ✓) */}
             <div
               role="group"
               aria-label="Байршлаа сонгоно уу"
-              className={`hidden gap-px overflow-hidden rounded-lg border border-gray-300 bg-gray-200 sm:grid ${simpleForm ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}
+              className="hidden gap-px overflow-hidden rounded-lg border border-gray-300 bg-gray-200 sm:grid sm:grid-cols-3"
             >
               {/* ① ХОТ / АЙМАГ — солисон үед дүүрэг ба хороо ЦЭВЭРЛЭГДЭНЭ ✓ */}
               <PickerColumn
@@ -2298,20 +2399,20 @@ export default function AddListingClient() {
                 emptyText="Дүүрэг байхгүй"
                 className="bg-white"
               />
-              {/* ③ ХОРОО — ⚡ `simpleForm` (hobby/home/…) дээр ГАРАХГҮЙ ✓
-                  ⚠️ Засах горимд хуучин `khoroo` утга нь `form` дотор хэвээр —
-                     устгагдахгүй, зөвхөн дээрх баганад идэвхтэй харагдана ✓ */}
-              {!simpleForm && (
-                <PickerColumn
-                  pickRole="loc-khoroo"
-                  mobileLabel="Хороо"
-                  items={khorooItems}
-                  value={form.khoroo}
-                  onPick={(v) => set('khoroo', v)}
-                  emptyText={form.district ? 'Хороо байхгүй' : 'Эхлээд дүүргээ сонгоно уу'}
-                  className="bg-white"
-                />
-              )}
+              {/* ③ ХОРОО — 🆕 2026-10-05: БҮХ ХЭСЭГТ харагдана (⚡ `simpleForm` ч
+                  мөн адил — хэрэглэгчийн гомдол: «Барилгын материалын зар
+                  оруулхад … хороо оруулах хэсэг гарч ирэхгүй байна» ✓)
+                  ⚠️ Засах горимд хуучин `khoroo` утга нь `form` дотроос
+                     уншигдаж, идэвхтэй мөр болж харагдана ✓ */}
+              <PickerColumn
+                pickRole="loc-khoroo"
+                mobileLabel="Хороо"
+                items={khorooItems}
+                value={form.khoroo}
+                onPick={(v) => set('khoroo', v)}
+                emptyText={form.district ? 'Хороо байхгүй' : 'Эхлээд дүүргээ сонгоно уу'}
+                className="bg-white"
+              />
             </div>
             {/* ---- Сонгосон байршил — 1-р алхмын `[data-picker-summary]`-тэй
                 ижил харагдац. ⚠️ ТУСДАА атрибут (`data-location-summary`) —
@@ -2323,7 +2424,7 @@ export default function AddListingClient() {
                   Сонгосон:{' '}
                   <b className="text-gray-900">📍 {form.city}</b>
                   {form.district ? <> › <b className="text-gray-900">{form.district}</b></> : null}
-                  {!simpleForm && form.khoroo ? <> › <b className="text-gray-900">{form.khoroo}</b></> : null}
+                  {form.khoroo ? <> › <b className="text-gray-900">{form.khoroo}</b></> : null}
                 </>
               ) : (
                 'Хот/Аймаг → дүүрэг → хороогоо дараалан сонгоно уу.'
@@ -2333,8 +2434,16 @@ export default function AddListingClient() {
 
             {/* ═══ 3-р алхам · ДЭЛГЭРЭНГҮЙ (үндсэн үзүүлэлт ба нэмэлт талбарууд) ═══
                 ⚠️ 2026-10-01: «Байршил» 2-р алхам болсон тул ЭНЭ блок 3-р
-                   алхам (`step === 2`) дээр render болно (STEPS дараалал солигдсон ✓) */}
-            <div data-step-block="details" className={step === 2 ? '' : 'hidden'}>
+                   алхам (`step === 2`) дээр render болно (STEPS дараалал солигдсон ✓)
+                ⚠️ 2026-10-05 (57): 🖥 дээр 3, 4, 5-р алхам НЭГ хуудас болсон тул
+                   энэ блок 🖥 дээр `?step=4`/`?step=5` хаягаар (эсвэл 📱→🖥
+                   resize-ээр) орсон ч `hidden sm:block`-ээр ХАРАГДАНА ✓ (хуудас
+                   хагас хоосон болохгүй ✓); 📱 дээр ЗӨВХӨН 3 дахь дэлгэцэд
+                   (`step === 2`) ✓
+                ⚠️ 4, 5-р алхмын блок (price · desc · media · media-images) нь
+                   ЯГ ИЖИЛ зарчмаар `hidden sm:block`-тай ✓
+                🔍 Хайх үг: data-step-block, details, hidden sm:block */}
+            <div data-step-block="details" className={step === 2 ? '' : step === 3 || step === 4 ? 'hidden sm:block' : 'hidden'}>
             {/* 📱 МОБАЙЛ (<640px): 3-Р АЛХМЫН «АСУУЛТ БҮР НЭГ ДЭЛГЭЦ» — толгой
                 (← товч + асуулт + «2/9» явц). ⚠️ `data-mobile-detail-key` нь
                 CDP-ийн ТОГТВОРТОЙ selector (аль дэлгэц дээр байгааг хэлнэ) ✓
@@ -2962,8 +3071,14 @@ export default function AddListingClient() {
 
             {/* ═══ 4-р алхам · ҮНЭ ба ТАЙЛБАР (үнэ · үнэ тохирно · тайлбар · видео) ═══
                 ⚠️ 2026-10-01: «Байршил» (хуучин 3-р алхам) 2-р алхам болов —
-                   энэ блокийн дугаар (`step === 3`, 4-р алхам) ХӨНДӨГДӨӨГҮЙ ✓ */}
-            <div data-step-block="price" className={step === 3 ? '' : 'hidden'}>
+                   энэ блокийн дугаар (`step === 3`, 4-р алхам) ХӨНДӨГДӨӨГҮЙ ✓
+                ⚠️ 2026-10-05 (57): 🖥 дээр 3, 4, 5-р алхам НЭГ хуудас болов ⇒
+                   🖥 дээр энэ блок 3 дахь хуудсан дээр (`step === 2`, 📋
+                   Дэлгэрэнгүйн ДАРАА) ч харагдана; `?step=5` хаягаар (эсвэл
+                   📱→🖥 resize-ээр) орсон ч `hidden sm:block`-ээр ХАРАГДАНА ✓
+                   (хуудас хагас хоосон болохгүй ✓); 📱 дээр ЗӨВХӨН 4 дэх
+                   дэлгэцэд ✓ */}
+            <div data-step-block="price" className={step === 3 ? '' : step === 2 || step === 4 ? 'hidden sm:block' : 'hidden'}>
             <div className="form-row">
               <div className="form-group">
                 <label>{priceFieldTitle} </label>
@@ -3050,8 +3165,10 @@ export default function AddListingClient() {
 
             {/* ═══ 4-р алхам (үргэлжлэл) · ТАЙЛБАР + видео ═══
                 ⚠️ 2026-10-05 — 🖥 НЭГ ХУУДАС тул блок нь 💰 Үнэ-гийн ЯГ ДАРАА
-                   байрлана (DOM дараалал = харагдах дараалал) ✓ */}
-            <div data-step-block="desc" className={step === 3 ? '' : 'hidden'}>
+                   байрлана (DOM дараалал = харагдах дараалал) ✓
+                ⚠️ 2026-10-05 (57): `price`-тай ЯГ ИЖИЛ хаалт (`hidden sm:block`) —
+                   🖥 дээр 3, 4, 5-р алхам НЭГ хуудас болсон тул хамт харагдана ✓ */}
+            <div data-step-block="desc" className={step === 3 ? '' : step === 2 || step === 4 ? 'hidden sm:block' : 'hidden'}>
             <div className="form-group">
               {/* 🏷️ 2026-10-03 (14) (хэрэглэгчийн хүсэлт: «байрны зар оруулахад
                   Нэмэлт тайлбар гэхийг зүгээр л Тайлбар гэчих»): шошго
@@ -3070,8 +3187,13 @@ export default function AddListingClient() {
             {!simpleForm && <YouTubeField value={form.videoUrl} onChange={(v) => set('videoUrl', v)} />}
             </div>
 
-            {/* ═══ 5-р алхам · ЗУРАГ ба ХОЛБОО (утас · зураг) ═══ */}
-            <div data-step-block="media" className={step === 4 ? '' : 'hidden'}>
+            {/* ═══ 5-р алхам · ЗУРАГ ба ХОЛБОО (утас · зураг)
+                ⚠️ 2026-10-05 (57): 🖥 дээр 3, 4, 5-р алхам НЭГ хуудас болов ⇒
+                   энэ блок 🖥 дээр 3 дахь хуудсан дээр (`step === 2`) ч
+                   харагдана (`hidden sm:block`, 💰 Үнэ + 📝 Тайлбарын ДАРАА) ✓;
+                   📱 дээр ЗӨВХӨН 5 дахь дэлгэцэд (step === 4) ✓
+                ⚠️ `?step=5` (🖥 дээр) хаягаар орвол ч ХАРАГДАХААР үлдэнэ ✓ */}
+            <div data-step-block="media" className={step === 4 ? '' : step === 2 || step === 3 ? 'hidden sm:block' : 'hidden'}>
             <div className="form-row">
               <div className="form-group">
                 <label>Холбоо барих утас *</label>
@@ -3084,8 +3206,10 @@ export default function AddListingClient() {
             </div>
             </div>
 
-            {/* ═══ 5-р алхам (үргэлжлэл) · ЗУРАГ — одоогийн ба шинэ зураг ═══ */}
-            <div data-step-block="media-images" className={step === 4 ? '' : 'hidden'}>
+            {/* ═══ 5-р алхам (үргэлжлэл) · ЗУРАГ — одоогийн ба шинэ зураг
+                ⚠️ 2026-10-05 (57): `media`-тай ЯГ ИЖИЛ хаалт — 🖥 дээр 3 дахь
+                   хуудсанд (💰 Үнэ + 📝 Тайлбар-ын дараа) хамт харагдана ✓ */}
+            <div data-step-block="media-images" className={step === 4 ? '' : step === 2 || step === 3 ? 'hidden sm:block' : 'hidden'}>
             {isEdit && existingImages.length > 0 && (
               <div className="form-group">
                 <label>Одоогийн зурагнууд ({existingImages.length})</label>
@@ -3185,7 +3309,16 @@ export default function AddListingClient() {
                    болсон тул энэ мөр нь `sm:hidden` БИШ — БҮХ дэлгэцэд
                    харагдана ✓ (⏳ өмнөх 🖥-ийн ЦУЦЛАХ + НИЙТЛЭХ блок
                    ХАСАГДАВ — энэ мөр түүнийг бүрэн орлоно ✓)
-                🔍 Хайх үг: data-step-next, data-step-back, data-step-submit */}
+                🔍 Хайх үг: data-step-next, data-step-back, data-step-submit
+                🆕 2026-10-05 (57): нөхцөл нь `step < STEPS.length - 1` БИШ,
+                   `step < lastStepIndex` — 🖥 дээр сүүлийн хуудас нь 3 дахь
+                   (нэгтгэсэн) тул тэнд «Үргэлжлүүлэх →» БАЙХГҮЙ ✗,
+                   `[data-step-submit]` («✅ Зар нийтлэх») гарна ✓;
+                   📱 дээр 4 дэх хуудсанд «Үргэлжлүүлэх →» хэвээр ✓
+                ⚠️ «← Буцах» нь 🖥 дээр 3 дахь хуудсанд 2 дахь (Байршил) руу,
+                   📱 дээр 4 дэх дэлгэцээс 3 дахь руу буцаана ✓
+                   (⚠️ `hide-below-sm` нь `step === 2` үед — 📱-ийн «асуулт бүр
+                   нэг дэлгэц»-ийн товчийг давхцуулахгүйн тулд ХЭВЭЭР ✓) */}
             <div className="mt-6 flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
               <button
                 type="button"
@@ -3196,7 +3329,7 @@ export default function AddListingClient() {
               >
                 {step === 0 ? 'Цуцлах' : '← Буцах'}
               </button>
-              {step < STEPS.length - 1 ? (
+              {step < lastStepIndex ? (
                 <button
                   type="button"
                   data-step-next

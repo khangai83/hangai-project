@@ -32,7 +32,7 @@
 //      оруулах хэсэг гарч байгаа хуудсан дээрээс дээрх 2-оо засах боломжтой
 //      байх товч тус тусд нь»): хүснэгтийн мөр БҮРД тусдаа товч —
 //      🗂 Ангилал → `[data-desktop-summary-edit="category"]` (1-р алхам) ·
-//      📍 Зарын дэд байршил → `[data-desktop-summary-edit="location"]`
+//      📍 Зарын байршил → `[data-desktop-summary-edit="location"]`
 //      (2-р алхам) · ⚠️ `type="button"` (`<form>` дотор — submit болохгүй ✓) ·
 //      ⚠️ Handler нь 📱 `mobileAnswerEdit`-тай НЭГ ЭХ СУРВАЛЖ ✓
 //      🔍 Хайх үг: DesktopSummary, data-desktop-summary, pickedCategoryPath,
@@ -53,6 +53,34 @@
 //      · `[data-step-current]` нь БҮХ дэлгэцэд (CDP selector ✓)
 //      🔍 Хайх үг: data-step-block, hidden, алхамт форм, submitLabel
 //
+//   ⑦′ 🖥 3 ХУУДАС — 3, 4 БА 5-Р АЛХАМ НЭГ БОЛОВ (2026-10-05, 57, хэрэглэгчийн
+//      хүсэлт: «step 1, 2 нь тусдаа хуудас — зөв; step 3 нь 1, 2-ын араас
+//      орж ирдэг; харин step 3, 4, 5-ыг НЭГ болго»):
+//      🖥 ≥640px дээр форм нь ① Ангилал → ② Байршил →
+//      **③ 📋 Дэлгэрэнгүй + 💰 Үнэ + 📝 Тайлбар + ☎️ утас + 🖼 Зураг**
+//      (нэгтгэсэн) = 3 хуудас ✓ (⏳ өмнө 🖥 дээр 5 хуудас: ③ Дэлгэрэнгүй ·
+//      ④ Үнэ+Тайлбар · ⑤ Зураг ✗) · 📱 <640px ХӨНДӨГДӨХГҮЙ (5 дэлгэц ✓)
+//      · 🧩 Блокны харагдац нь ЗӨВХӨН CSS (`hidden sm:block`) ⇒ SSR дээр ч
+//        🖥-ийн нэгтгэсэн хуудас ЗӨВ (hydrate хүлээхгүй ✓):
+//        `details` = `step === 2 ? '' : step === 3 || step === 4 ? 'hidden sm:block' : 'hidden'` ·
+//        `price`/`desc` = `step === 3 ? '' : step === 2 || step === 4 ? 'hidden sm:block' : 'hidden'` ·
+//        `media`/`media-images` = `step === 4 ? '' : step === 2 || step === 3 ? 'hidden sm:block' : 'hidden'`
+//        (мөн `?step=4`/`?step=5` хаягаар 🖥 дээр орсон ч хуудас ХАГАС
+//        ХООСОН болохгүй ✓)
+//      · 🖥/📱 ялгаатай цор ганц зүйл = ДООД ТОВЧ (`type` ба бичиг өөр) ⇒
+//        🆕 `useIsDesktop()` hook (matchMedia `(min-width: 640px)`) +
+//        `lastStepIndex` (🖥 = `STEPS.length - 3`, 📱 = `STEPS.length - 1`) ✓
+//        ⇒ 🖥 дээр 3 дахь (сүүлийн) хуудсанд «✅ Зар нийтлэх» гарна ✓
+//      · `stepLabel` — 🖥 3 дахь хуудсанд «Дэлгэрэнгүй ба үнэ, зураг»,
+//        📱 дээр 3 дахь «Дэлгэрэнгүй» / 4 дэх «Үнэ» / 5 дахь «Зураг» ✓
+//      · ⚠️ АЛХМЫН ШАЛГАЛТ ХӨНДӨГДӨӨГҮЙ: `STEPS` (5) · `validateStep` ·
+//        `firstInvalidStep` (→ `handleSubmit` нь 3, 4, 5-р алхмыг ДАРААЛАН
+//        шалгаж, дутуу талбарыг ЗААЖ өгнө ✓) ⇒ DB/API/payload/migration
+//        ХӨНДӨГДӨӨГҮЙ ✓
+//      🔍 Хайх үг: lastStepIndex, useIsDesktop, hidden sm:block,
+//         Дэлгэрэнгүй ба үнэ, зураг
+//
+
 //   ⑧ 📱 ОН · НИЙТ ДАВХАР · ДАВХАР — ГАРААС БИЧИЛТ (2026-10-05, 53,
 //      хэрэглэгчийн хүсэлт): эдгээр 3 ТООН талбар нь 📱 <640px дээр 2 БАГАНАТ
 //      ЖАГСААЛТ БИШ, шууд `input[type=number]` болов (`ChoiceField`-ийн
@@ -336,7 +364,7 @@ t('📱 «ӨМНӨХ ХАРИУЛТУУД» — ✏️-тэй мөрүүд (`Mob
   // ⚠️ Утга нь формойн state-ээс ШУУД — шинэ DB багана/хадгалалт БАЙХГҮЙ ✓
   assert.match(FORM, /const detailAnswerText = \(key\) => \{/);
   assert.match(FORM, /const mobileAnswerRows = \(\(\) => \{/);
-  // ✏️ нь 1/2-Р АЛХАМ руу ч буцаана (🗂 Ангилал / 📍 Зарын дэд байршил) ✓
+  // ✏️ нь 1/2-Р АЛХАМ руу ч буцаана (🗂 Ангилал / 📍 Зарын байршил) ✓
   assert.match(FORM, /if \(key === 'step-category'\) \{ gotoStep\(0\); return; \}/);
   assert.match(FORM, /if \(key === 'step-location'\) \{ gotoStep\(1\); return; \}/);
 });
@@ -447,7 +475,7 @@ t('🖥 НЭГ ЭХ СУРВАЛЖ: 📱 `mobileAnswerRows` ба 🖥 `DesktopSu
   assert.equal((FORM.match(/const pickedLocationPath = /g) || []).length, 1, 'pickedLocationPath ЯГ 1 удаа');
   /** ① 📱 мөрүүд нь тэдгээрийг л ашиглана (энд дахин бодохгүй ✓) */
   assert.match(FORM, /rows\.push\(\{ key: 'step-category', label: 'Ангилал', value: pickedCategoryPath \}\)/);
-  assert.match(FORM, /rows\.push\(\{ key: 'step-location', label: 'Зарын дэд байршил', value: pickedLocationPath \}\)/);
+  assert.match(FORM, /rows\.push\(\{ key: 'step-location', label: 'Зарын байршил', value: pickedLocationPath \}\)/);
   /** ② 🖥 хүснэгт нь ЯГ ижил утгуудыг prop-оор авна ✓ */
   assert.match(FORM, /<DesktopSummary\s+categoryPath=\{pickedCategoryPath\}\s+locationPath=\{pickedLocationPath\}\s+step=\{step\}\s+onEdit=\{mobileAnswerEdit\}\s*\/>/);
   /** ③ 📱-ийн тусгаарлагчид (` ▸ ` ба ` — `) ХЭВЭЭР ✓ */
@@ -456,16 +484,53 @@ t('🖥 НЭГ ЭХ СУРВАЛЖ: 📱 `mobileAnswerRows` ба 🖥 `DesktopSu
 
 t('🖥 Утга нь формойн state-ээс ШУУД — 🆕 `useState` / DB / API БАЙХГҮЙ (хадгалалт нэмэгдээгүй ✓)', () => {
   assert.match(FORM, /const pickedCategoryPath = form\.propertyType/);
-  assert.match(FORM, /const pickedLocationPath = \[form\.city, form\.district, simpleForm \? '' : form\.khoroo\]/);
+  assert.match(FORM, /const pickedLocationPath = \[form\.city, form\.district, form\.khoroo\]/);
   assert.ok(!FORM.includes('setPickedCategoryPath'), 'setPickedCategoryPath байж болохгүй');
   assert.ok(!FORM.includes('setPickedLocationPath'), 'setPickedLocationPath байж болохгүй');
+});
+
+/**
+ * 🆕 2026-10-05 — 📍 ХОРОО НЬ БҮХ ХЭСЭГТ ХАРАГДАНА (`simpleForm`-оос ХАМААРАХГҮЙ).
+ *
+ * 🎯 ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «Барилгын материалын зар оруулхад Улаанбаатарын
+ *    дүүргийн хороо оруулах хэсэг гарч ирэхгүй байна» ⇒ ӨМНӨ НЬ ⚡ `simpleForm`
+ *    хэсэгт (🧱 construction, 🏭 equipment, ⚽ hobby, 🧺 home, 🛋️ furniture,
+ *    🧳 travel, ⚡ electric) хороо нь 4 ГАЗАРТ хасагддаг байв ✗:
+ *      ① 🖥 баганын тоо `sm:grid-cols-2` ② 🖥 `<PickerColumn loc-khoroo>` хаалт
+ *      ③ 📱 `locScreens` (2 дэлгэц) ④ 📍 «Сонгосон» мөр + `pickedLocationPath`
+ *    ⇒ ОДОО БҮГД нь хэсгээс ХАМААРАХГҮЙ: 🖥 3 багана · 📱 3 дэлгэц ✓
+ * ⚠️ `simpleForm` нь ЗӨВХӨН ⚙️ attr талбарууд (зөвхөн ✅ «Шинэ/Шинэвтэр/Хуучин»)
+ *    ба 🎥 `YouTubeField`-д л үйлчилнэ — тэр нь `scripts/test-filters.mjs`-ийн
+ *    `hasSimpleForm` тестүүдээр түгжигдсэн ХЭВЭЭР (туг нь устгагдаагүй ✓)
+ */
+t('🆕📍 Хороо нь `simpleForm`-оос ХАМААРАХГҮЙ — 🖥 3 багана · 🖥 багана хаалтгүй · 📱 3 дэлгэц · мөр + зам (5 газар)', () => {
+  /** ① 🖥 хүснэгт нь ҮРГЭЛЖ 3 багана (хэсгээс хамаарч 2 болдог байсан ✗) */
+  assert.match(FORM, /sm:grid sm:grid-cols-3/, '🖥 3 багана биш ✗');
+  assert.ok(!FORM.includes("simpleForm ? 'sm:grid-cols-2'"), '🖥 баганын тоо хэсгээс хамаарч байна ✗');
+  /** ② 🖥 хорооны багана (`PickerColumn`) хаалтгүй render болно */
+  const colAt = FORM.indexOf('pickRole="loc-khoroo"');
+  assert.ok(colAt > -1, '`loc-khoroo` багана олдсонгүй ✗');
+  assert.ok(!FORM.slice(Math.max(0, colAt - 260), colAt).includes('!simpleForm'),
+    '🖥 хорооны багана `{!simpleForm && (…)}` хаалттай хэвээр ✗');
+  /** ③ 📱 `locScreens` — 3 дэлгэц (city · district · khoroo) ба `simpleForm` 0 */
+  const locFrom = FORM.indexOf('const locScreens = [');
+  const locTo = FORM.indexOf('const mobileLocScreen =');
+  assert.ok(locFrom > -1 && locTo > locFrom, '`locScreens` блок олдсонгүй ✗');
+  const locBlock = FORM.slice(locFrom, locTo);
+  assert.equal((locBlock.match(/key: 'city'|key: 'district'|key: 'khoroo'/g) || []).length, 3,
+    '📱 байршлын дэлгэц 3 биш ✗');
+  assert.ok(!locBlock.includes('simpleForm'), '📱 `locScreens` дотор `simpleForm` үлдсэн ✗');
+  assert.ok(!locBlock.includes('locScreens.push('), '📱 хорооны дэлгэц нөхцөлтэй нэмэгдэж байна ✗');
+  /** ④ 📍 «Сонгосон» мөр дэх хороо хаалтгүй */
+  assert.ok(!FORM.includes('!simpleForm && form.khoroo'), '📍 «Сонгосон» мөрөнд хаалт үлдсэн ✗');
+  assert.match(FORM, /\{form\.khoroo \? <> › <b className="text-gray-900">\{form\.khoroo\}<\/b><\/> : null\}/);
 });
 
 /**
  * 🆕 2026-10-05 (52) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «зар оруулахад … бусад мэдээлэл
  *    оруулах хэсэг гарч байгаа хуудсан дээрээс дээрх 2-оо засах боломжтой байх
  *    товч тус тусд нь» ⇒ 🖥 `DesktopSummary`-ийн мөр БҮРД ✏️ «Засах» товч:
- *    🗂 Ангилал → 1-р алхам (`gotoStep(0)`) · 📍 Зарын дэд байршил →
+ *    🗂 Ангилал → 1-р алхам (`gotoStep(0)`) · 📍 Зарын байршил →
  *    2-р алхам (`gotoStep(1)`)
  */
 t('🆕🖥 ✏️ ЗАСАХ товч: 🗂 Ангилал ба 📍 Байршил мөр ТУС БҮРД тусдаа товч (товч тус тусд нь ✓)', () => {
@@ -632,13 +697,45 @@ t('🧹 Хуучин `{step === N && (…)}` хаалтууд БҮРЭН ари�
   }
 });
 
+/**
+ * 🧩 (57) Блокийн хаалт — 🖥 дээр 3, 4, 5-р алхам НЭГ хуудас болсон тул
+ *    `hidden sm:block` хэрэглэнэ: 📱 <640px дээр нуугдана, 🖥 ≥640px дээр
+ *    харагдана ✓ (⚠️ CSS дэг журам: Tailwind нь `sm:*`-ийг `hidden`-ийн
+ *    ДАРАА бичдэг тул ижил specificity дээр `sm:block` ялна ✓)
+ * ⚠️ ① ② блок (`category` · `location`) ХӨНДӨГДӨӨГҮЙ — тэдгээр нь 🖥/📱
+ *    ХОЁУЛАНД ижил (нэг л алхамд) ✓; ③④⑤ (`details` · `price` · `desc` ·
+ *    `media` · `media-images`) нь 🖥 дээр ХАМТ харагдана ✓
+ */
+const BLOCK_GATE = {
+  category: "className={step === 0 ? '' : 'hidden'}",
+  location: "className={step === 1 ? '' : 'hidden'}",
+  details: "className={step === 2 ? '' : step === 3 || step === 4 ? 'hidden sm:block' : 'hidden'}",
+  price: "className={step === 3 ? '' : step === 2 || step === 4 ? 'hidden sm:block' : 'hidden'}",
+  desc: "className={step === 3 ? '' : step === 2 || step === 4 ? 'hidden sm:block' : 'hidden'}",
+  media: "className={step === 4 ? '' : step === 2 || step === 3 ? 'hidden sm:block' : 'hidden'}",
+  'media-images': "className={step === 4 ? '' : step === 2 || step === 3 ? 'hidden sm:block' : 'hidden'}",
+};
+
 t('🖥 БА 📱 — идэвхтэй БУС блок бүр `hidden`-ээр НУУГДАНА (алхамт форм ✓)', () => {
   for (const name of STEP_BLOCKS) {
     const at = FORM.indexOf(`data-step-block="${name}"`);
     assert.ok(at > -1, `${name} блок олдсонгүй`);
     const tag = FORM.slice(at, FORM.indexOf('>', at));
-    assert.match(tag, /className=\{step === \d+ \? '' : 'hidden'\}/,
-      `${name}: \`hidden\` хаалт байхгүй ✗`);
+    assert.ok(tag.includes(BLOCK_GATE[name]),
+      `${name}: хаалт нь хүлээгдсэнээс зөрүүтэй ✗ —\n      хүлээсэн: ${BLOCK_GATE[name]}\n      олдсон:  ${tag}`);
+    assert.match(tag, /'hidden'/, `${name}: \`hidden\` хаалт байхгүй ✗`);
+  }
+});
+
+t('🧩 (57) `sm:block` нь ЗӨВХӨН 3, 4, 5-Р АЛХАМЫН блокт (details · price · desc · media · media-images ✓)', () => {
+  /** ⚠️ Эдгээр 5 блок л 📱/🖥 ялгаатай (🖥 = нэгтгэсэн 3 дахь хуудас ✓) —
+   *  ① ② (`category` · `location`) нь 🖥/📱 ХОЁУЛАНД ижил (нэг алхам) ✓ */
+  const MERGED = ['details', 'price', 'desc', 'media', 'media-images'];
+  for (const name of STEP_BLOCKS) {
+    const at = FORM.indexOf(`data-step-block="${name}"`);
+    const tag = FORM.slice(at, FORM.indexOf('>', at));
+    assert.equal(tag.includes('sm:block'), MERGED.includes(name),
+      `${name}: \`sm:block\` ${MERGED.includes(name) ? 'дутуу' : 'байх ёсгүй'} ✗`);
   }
 });
 
@@ -690,4 +787,58 @@ t('🧭 Breadcrumb: `[data-step-current]` DOM-д ХЭВЭЭР (CDP-ийн select
   assert.ok(!FORM.includes('sm:inline">Зар нийтлэх'), '🖥-ийн тогтмол гарчиг үлдсэн ✗');
 });
 
-console.log(`\n✅ Нийт ${passed} шалгалт амжилттай — 📱 3-р алхам «асуулт бүр нэг дэлгэц» гэрээ түгжигдэв\n`);
+// ────────────────────────────────────────────────────────────
+// ⑦′ 🖥 3 ХУУДАС — 3, 4 БА 5-Р АЛХАМ НЭГ БОЛОВ (2026-10-05, 57)
+// ────────────────────────────────────────────────────────────
+console.log('\n── ⑦′ 🖥 3 хуудас — 3, 4 ба 5-р алхам нэг болов ──');
+
+/**
+ * 🧹 СЭТГЭГДЭЛГҮЙ код — тооллын тестүүдэд (⚠️ эх файлын `🔍 Хайх үг` мөрүүд
+ *    нь `data-step-next` гэх мэт нэрсийг агуулдаг тул `FORM`-оор тоолбол
+ *    буруу гарна ✗) ⇒ эх файлын СЭТГЭГДЛИЙГ хасна (тоололд саад болохгүй ✓)
+ */
+const CODE = FORM.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+t('🖥 `useIsDesktop()` hook — `matchMedia(\'(min-width: 640px)\')` ба SSR-д `false` (hydration зөрөхгүй ✓)', () => {
+  /** ⚠️ SSR ба эхний client render ХОЁУЛАА 📱 хувилбар ⇒ hydration mismatch 0 ✓ */
+  assert.match(FORM, /function useIsDesktop\(\) \{/);
+  assert.match(FORM, /window\.matchMedia\('\(min-width: 640px\)'\)/);
+  assert.match(FORM, /const \[isDesktop, setIsDesktop\] = useState\(false\)/);
+  assert.match(FORM, /mq\.addEventListener\('change', sync\)/);
+  assert.match(FORM, /return \(\) => mq\.removeEventListener\('change', sync\)/);
+});
+
+t('🪜 `lastStepIndex` = НЭГ ЭХ СУРВАЛЖ (🖥 `STEPS.length - 3` = 2 · 📱 `STEPS.length - 1` = 4 ✓)', () => {
+  assert.match(FORM, /const lastStepIndex = isDesktop \? STEPS\.length - 3 : STEPS\.length - 1/);
+  assert.equal((CODE.match(/lastStepIndex/g) || []).length, 3,
+    '`lastStepIndex` = тодорхойлолт + `goNext` + навигаци = ЯГ 3 байх ёстой ✗');
+});
+
+t('🪜 `goNext` нь `lastStepIndex` хүртэл (🖥 дээр ХООСОН 5 дахь хуудас руу ОРОХГҮЙ ✓)', () => {
+  assert.ok(CODE.includes('gotoStep(Math.min(step + 1, lastStepIndex))'), '`goNext`-ийн clamp дутуу ✗');
+  assert.ok(!CODE.includes('Math.min(step + 1, STEPS.length - 1)'), 'хуучин clamp үлдсэн ✗');
+});
+
+t('🪜 Доод товчны нөхцөл `step < lastStepIndex` (⏳ `step < STEPS.length - 1` БАЙХГҮЙ ✓)', () => {
+  assert.ok(CODE.includes('{step < lastStepIndex ? ('), '`step < lastStepIndex` дутуу ✗');
+  assert.ok(!CODE.includes('{step < STEPS.length - 1 ? ('), 'хуучин нөхцөл үлдсэн ✗');
+});
+
+t('🧭 `stepLabel` — 🖥 3 дахь хуудсанд «Дэлгэрэнгүй ба үнэ, зураг», 📱 дээр «Дэлгэрэнгүй» ✓', () => {
+  /** ⚠️ `===` биш `>=` — 🖥 дээр `?step=4`/`?step=5` хаягаар нээгдсэн ч
+   *  нэг л нэр гарна (нэг хуудас = нэг нэр ✓); 📱 дээр `isDesktop` false ⇒ хэвээр ✓ */
+  assert.match(FORM,
+    /const stepLabel = isDesktop && step >= STEPS\.length - 3\n\s+\? 'Дэлгэрэнгүй ба үнэ, зураг'\n\s+: currentStep\.label;/);
+  assert.ok(CODE.includes('{stepLabel}'), 'breadcrumb нь `{stepLabel}` БИШ ✗');
+  assert.ok(!CODE.includes('{currentStep.label}'), '`{currentStep.label}` үлдсэн ✗ (🖥 дээр «Дэлгэрэнгүй» гэнэ)');
+});
+
+t('🚫 Товч бүр DOM-д ЯГ 1 (`[data-step-next]` · `[data-step-submit]` · `[data-step-back]`) — давхар selector 0 ✓', () => {
+  /** ⚠️ Давхар товч гарвал CDP-ийн `querySelector` нь НУУГДСАН товчийг
+   *  сонгож, алхам ХӨДЛӨХГҮЙ болно ✗ (2026-10-05-ны алдаа) */
+  assert.equal((CODE.match(/data-step-next/g) || []).length, 1, '`[data-step-next]` олон ✗');
+  assert.equal((CODE.match(/data-step-submit/g) || []).length, 1, '`[data-step-submit]` олон ✗');
+  assert.equal((CODE.match(/data-step-back/g) || []).length, 1, '`[data-step-back]` олон ✗');
+});
+
+console.log(`\n✅ Нийт ${passed} шалгалт амжилттай — 📱 «асуулт бүр нэг дэлгэц» + 🖥 3 хуудас (3, 4 ба 5-р алхам нэг болов) гэрээ түгжигдэв\n`);

@@ -182,6 +182,16 @@
  */
 const BASE = process.argv[2] || 'http://localhost:3000';
 const CDP = `http://127.0.0.1:${process.env.CDP_PORT || 9222}`;
+
+/**
+ * 🧭 🖥 ≥640px ДЭЭРХ 3 ДАХЬ ХУУДАСНЫ breadcrumb (2026-10-05, 57)
+ * ⚠️ 🖥 дээр 3, 4, 5-р алхам НЭГ хуудас болсон тул «Дэлгэрэнгүй» гэвэл
+ *    төөрөгдөнө (тэр хуудсан дээр 📋 Дэлгэрэнгүй + 💰 Үнэ + 📝 Тайлбар +
+ *    ☎️ утас + 🖼 Зураг бүгд байна) ⇒ «Дэлгэрэнгүй ба үнэ, зураг» ✓
+ * ⚠️ 📱 <640px дээр ХӨНДӨГДӨӨГҮЙ — «Дэлгэрэнгүй» / «Үнэ» / «Зураг» ✓
+ *    (доорх 📱 шалгалтууд хуучин бичгээрээ үлдэнэ)
+ */
+const DESKTOP_DETAIL_LABEL = 'Дэлгэрэнгүй ба үнэ, зураг';
 /**
  * 🎨 2026-10-03 (19): sidebar-ийн «Өнгө»-ний чипүүд нь либын жагсаалттай
  *    ЯГ ижил эсэхийг DOM↔ЛИБ харьцуулалтаар шалгана (давхар бичихгүй ✓)
@@ -663,8 +673,8 @@ console.log('\n── ⑥″ 3-Р АЛХАМ = 📋 ДЭЛГЭРЭНГҮЙ (ба
 const next3 = await clickNext();
 const p13 = await probe();
 ok('«Үргэлжлүүлэх» байршлаас ажилласан', next3 === 'OK', next3);
-ok('3-Р АЛХАМ руу шилжив (breadcrumb = «Дэлгэрэнгүй»)',
-  String(p13.stepLabel).trim() === 'Дэлгэрэнгүй',
+ok('3-Р АЛХАМ руу шилжив (🖥 breadcrumb = «Дэлгэрэнгүй ба үнэ, зураг» — 57)',
+  String(p13.stepLabel).trim() === DESKTOP_DETAIL_LABEL,
   JSON.stringify(p13.stepLabel));
 const search3 = await evaluate('location.search');
 ok('URL нь `?step=3` болов', String(search3).includes('step=3'), search3);
@@ -674,7 +684,7 @@ ok('URL нь `?step=3` болов', String(search3).includes('step=3'), search3)
  *    КОМПЬЮТЕР дээр харагдахгүй байна» ⇒ 3-р алхам (📋 Дэлгэрэнгүй) ба
  *    түүнээс хойш 📱 `MobileAnswers` (`sm:hidden`) нь харагддаггүй байсан тул
  *    🖥 дээр юу сонгосон нь ХААНА Ч байгаагүй ✗ ⇒ одоо хүснэгтэд ХОЁУЛАА
- *    (🗂 Ангилал + 📍 Зарын дэд байршил) харагдана ✓
+ *    (🗂 Ангилал + 📍 Зарын байршил) харагдана ✓
  *    ℹ️ Энэ алхам дээр сонгосон нь: 🏠 Үл хөдлөх ▸ … ▸ Орон сууц +
  *       📍 Дархан-Уул (хот сольсон үед дүүрэг/хороо ЦЭВЭРЛЭГДСЭН ✓ —
  *       ℹ️ ⑤ хэсэгт 💻 Чихэвч сонгосон ч ⑥ хэсэгт хэсгийг `real-estate`
@@ -684,7 +694,7 @@ ok('🖥 3-р алхам (📋 Дэлгэрэнгүй): 🗂 АНГИЛАЛ ба
   p13.desktopSummary?.has === true && p13.desktopSummary?.visible === true && p13.desktopSummary?.location === true,
   JSON.stringify(p13.desktopSummary));
 ok('🖥 3-р алхам: хүснэгтэд сонгосон БОДИТ УТГУУД бий (📱 `MobileAnswers`-тай НЭГ ЭХ СУРВАЛЖ ✓)',
-  ['🗂 Ангилал', '📍 Зарын дэд байршил', 'Үл хөдлөх', '▸', 'Дархан-Уул']
+  ['🗂 Ангилал', '📍 Зарын байршил', 'Үл хөдлөх', '▸', 'Дархан-Уул']
     .every((x) => (p13.desktopSummary?.text || '').includes(x)),
   p13.desktopSummary?.text);
 
@@ -718,8 +728,8 @@ ok('🖱 ✏️ Ангилал дарвал 1-Р АЛХАМ руу буцлаа 
 ok('↩️ 1-р алхамнаас «Үргэлжлүүлэх» → 2-Р АЛХАМ (📍 Байршил) — сонголт ХАДГАЛАГДСАН ✓',
   (await clickNext()) === 'OK' && (await stepNow()) === 'Байршил',
   JSON.stringify(await stepNow()));
-ok('↩️ 2-р алхамнаас «Үргэлжлүүлэх» → 3-Р АЛХАМ БУЦАЖ ИРЛЭЭ (📋 Дэлгэрэнгүй ✓)',
-  (await clickNext()) === 'OK' && (await stepNow()) === 'Дэлгэрэнгүй',
+ok('↩️ 2-р алхамнаас «Үргэлжлүүлэх» → 3-Р АЛХАМ БУЦАЖ ИРЛЭЭ (📋 Дэлгэрэнгүй ба үнэ, зураг ✓)',
+  (await clickNext()) === 'OK' && (await stepNow()) === DESKTOP_DETAIL_LABEL,
   JSON.stringify(await stepNow()));
 
 /** ② 📍 Байршил — 2-р алхам руу буцаана */
@@ -727,8 +737,8 @@ const locClicked = await click('[data-desktop-summary-edit="location"]');
 const sLoc = await stepNow();
 ok('🖱 ✏️ Байршил дарвал 2-Р АЛХАМ руу буцлаа (breadcrumb = «Байршил» ✓)',
   locClicked === 'OK' && sLoc === 'Байршил', `${locClicked} → ${JSON.stringify(sLoc)}`);
-ok('↩️ Буцаж 3-Р АЛХАМ (📋 Дэлгэрэнгүй) — доорх хэсгүүд эндээс үргэлжилнэ ✓',
-  (await clickNext()) === 'OK' && (await stepNow()) === 'Дэлгэрэнгүй',
+ok('↩️ Буцаж 3-Р АЛХАМ (📋 Дэлгэрэнгүй ба үнэ, зураг) — доорх хэсгүүд эндээс үргэлжилнэ ✓',
+  (await clickNext()) === 'OK' && (await stepNow()) === DESKTOP_DETAIL_LABEL,
   JSON.stringify(await stepNow()));
 
 console.log('\n── ⑥‴ 3-Р АЛХАМ (📋 Дэлгэрэнгүй): ТАЛБАРУУД ЦУВАА = 1 БАГАНА ──');

@@ -40,6 +40,7 @@
     "cdp:specs": "node scripts/cdp-notebook-specs.mjs",
     "cdp:range": "node scripts/cdp-range.mjs",
     "cdp:picker": "node scripts/cdp-picker.mjs",
+    "cdp:steps": "node scripts/cdp-form-steps.mjs",
     "cdp:wheel": "node scripts/cdp-wheel.mjs",
     "cdp:chips": "node scripts/cdp-job-chips.mjs",
     "cdp:sections": "node scripts/cdp-sections.mjs",

@@ -47,6 +47,14 @@ const BASE = process.argv[2] || 'http://localhost:3000';
 const CDP = `http://127.0.0.1:${process.env.CDP_PORT || 9222}`;
 
 /**
+ * 🧭 🖥 ≥640px ДЭЭРХ 3 ДАХЬ ХУУДАСНЫ breadcrumb (2026-10-05, 57)
+ * ⚠️ 🖥 дээр 3, 4, 5-р алхам НЭГ хуудас болов ⇒ «Дэлгэрэнгүй» БИШ,
+ *    «Дэлгэрэнгүй ба үнэ, зураг» ✓ (📱 <640px дээр «Дэлгэрэнгүй» хэвээр —
+ *    доорх 📱 хэсгүүд `[data-mobile-detail-key]`-ээр ажилладаг тул хөндөгдөхгүй)
+ */
+const DESKTOP_DETAIL_LABEL = 'Дэлгэрэнгүй ба үнэ, зураг';
+
+/**
  * ⚠️ Мөрүүдийн тоо/сүүлийн утга нь `FLOOR_MAX`-оос ХАМААРНА (2026-10-03: 26 → 150)
  *    — хатуу «27»/«26» бичихгүй, модулиас авна ✓
  */
@@ -401,7 +409,7 @@ await click('[data-picker="loc-district"] button[data-picker-value="Баянго
 await click('[data-picker="loc-khoroo"] button[data-picker-value="3-р хороо"]');
 await clickNext();
 const step3 = await evaluate('(document.querySelector("[data-step-current]") || {}).innerText || ""');
-ok('3-Р АЛХАМ (📋 Дэлгэрэнгүй) руу шилжив', String(step3).trim() === 'Дэлгэрэнгүй', JSON.stringify(step3));
+ok('3-Р АЛХАМ (📋 Дэлгэрэнгүй ба үнэ, зураг) руу шилжив', String(step3).trim() === DESKTOP_DETAIL_LABEL, JSON.stringify(step3));
 
 // ────────────────────────────────────────────────────────────
 console.log('\n── ② 📱 390px: «НЭГ ДЭЛГЭЦЭД НЭГ ТАЛБАР» (он/давхар = гараас бичих, бусад нь сонголт) ──');
