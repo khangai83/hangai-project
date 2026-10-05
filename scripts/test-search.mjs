@@ -34,6 +34,12 @@ import {
 import {
   DEFAULT_SORT, SORT_OPTIONS, normalizeSort, sortLabel, sortOrders,
 } from '../lib/sortOptions.mjs';
+// 🔎 ХАЙЛТЫН ТЕКСТ (2026-10-05) — token/AND/OR логик ба autocomplete санал
+import {
+  SEARCH_DESC_MIN_CHARS, SEARCH_FIELDS, SEARCH_MAX_TOKENS, buildSearchOr, normalizeSearch,
+  sanitizeSearchTerm, searchTokens, searchableFields,
+} from '../lib/searchText.mjs';
+import { listingHint, mergeSuggestions, sectionLabel, suggestTypes } from '../lib/searchSuggest.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(here, '..');
@@ -466,4 +472,220 @@ t('ГЭРЭЭ: устгасан `rangeSlider.mjs`-ийг ХААНА Ч импо�
   });
 });
 
-console.log(`\n✅ Нийт ${passed} тест амжилттай — тооны хүрээ (цэгээр бүлэглэлт) + эрэмбэлэлт\n`);
+// ============================================================
+// 🔎 ⑨ ХАЙЛТЫН ТЕКСТ (lib/searchText.mjs) — 2026-10-05 (46)
+// ============================================================
+console.log('\n🔎 Хайлтын текст (lib/searchText.mjs)\n');
+
+t("normalizeSearch: зайг нэгтгэж, хоёр талыг таслана; null → ''", () => {
+  assert.equal(normalizeSearch('  a   b '), 'a b');
+  assert.equal(normalizeSearch('орон\nсууц'), 'орон сууц');
+  assert.equal(normalizeSearch(null), '');
+  assert.equal(normalizeSearch(undefined), '');
+});
+
+t('sanitizeSearchTerm: PostgREST-ийн логик мод эвдэх тэмдэгт → ЗАЙ (хамгаалалт ХЭВЭЭР ✓)', () => {
+  assert.equal(sanitizeSearchTerm('Баянгол, 5-р хороо'), 'Баянгол 5-р хороо');
+  assert.equal(sanitizeSearchTerm('a(b):"c"\\d'), 'a b c d');
+  assert.equal(sanitizeSearchTerm('   '), '');
+});
+
+t('searchTokens: үгээр задалж, том/жижиг үсгийн давхардлыг хасна', () => {
+  assert.deepEqual(searchTokens('орон сууц байр'), ['орон', 'сууц', 'байр']);
+  assert.deepEqual(searchTokens('Байр байр'), ['Байр']); // давхардал (case-insensitive)
+  assert.deepEqual(searchTokens(''), []);
+  assert.deepEqual(searchTokens('a,b'), ['a', 'b']);      // цэг таслал → зай
+});
+
+t(`searchTokens: хамгийн ихдээ ${SEARCH_MAX_TOKENS} үг (query мөр хэт урт болохгүй)`, () => {
+  assert.equal(searchTokens('а б в г д е').length, SEARCH_MAX_TOKENS);
+  assert.equal(SEARCH_MAX_TOKENS, 4);
+});
+
+t('buildSearchOr: хоосон → null (шүүлт ХИЙХГҮЙ ✓)', () => {
+  assert.equal(buildSearchOr(''), null);
+  assert.equal(buildSearchOr('   '), null);
+  assert.equal(buildSearchOr(null), null);
+});
+
+t('buildSearchOr: НЭГ үг → бүх талбар OR (title/description багтсан ✓)', () => {
+  const or = buildSearchOr('зарна');
+  assert.ok(or.startsWith('title.ilike.%зарна%'), 'title тэргүүнд');
+  assert.ok(or.includes('description.ilike.%зарна%'), 'description ХАЙЛТАД ОРОВ');
+  assert.ok(or.includes('property_type.ilike.%зарна%'));
+  assert.ok(or.includes('attrs->>model.ilike.%зарна%'));
+  assert.ok(!or.includes('and('), 'нэг үгэнд AND БАЙХГҮЙ');
+});
+
+t('buildSearchOr: ОЛОН үг → and(or(…),or(…)) — БҮХ үг тохирно', () => {
+  const or = buildSearchOr('гоё буйдан');
+  assert.ok(or.startsWith('and('), 'олон үг AND болно');
+  assert.equal((or.match(/or\(/g) || []).length, 2, 'үг тус бүр нэг OR бүлэг');
+  assert.ok(or.includes('title.ilike.%гоё%') && or.includes('title.ilike.%буйдан%'));
+});
+
+t('buildSearchOr: 📞 extra (утас) нь OR-оор ЗАЛГАГДАНА (AND БИШ ✓)', () => {
+  const or = buildSearchOr('зарна', { extra: ['phone.ilike.%9911%'] });
+  assert.ok(or.includes(',phone.ilike.%9911%'), 'текстийн дараа утас');
+  assert.ok(or.includes('title.ilike.%зарна%'));
+  assert.equal(buildSearchOr('', { extra: ['phone.ilike.%9911%'] }), 'phone.ilike.%9911%');
+  assert.equal(buildSearchOr('', { extra: [] }), null);
+});
+
+t('buildSearchOr: `fields` дарах боломжтой (autocomplete нь ЗӨВХӨН title ✓)', () => {
+  assert.equal(buildSearchOr('toyota', { fields: ['title'] }), 'title.ilike.%toyota%');
+  assert.ok(buildSearchOr('toyota', { fields: ['title', 'model'] }).includes('model.ilike.%toyota%'));
+});
+
+t('SEARCH_FIELDS: title + description БАГТСАН, phone БАЙХГҮЙ (тусдаа ✓)', () => {
+  assert.ok(SEARCH_FIELDS.includes('title'));
+  assert.ok(SEARCH_FIELDS.includes('description'));
+  assert.ok(SEARCH_FIELDS.includes('attrs->>brand') && SEARCH_FIELDS.includes('attrs->>model'));
+  assert.ok(!SEARCH_FIELDS.includes('phone'), 'phone нь `extra`-ээр л орно');
+});
+
+t('buildSearchOr: таслал/хаалттай хайлт PostgREST-ийг ЭВДЭХГҮЙ (400 ГАРАХГҮЙ ✓)', () => {
+  const or = buildSearchOr('Баянгол, 5-р хороо');
+  assert.ok(!or.includes('Баянгол,') && !or.includes(', 5'), 'хэрэглэгчийн таслал арилав');
+  assert.ok(or.startsWith('and('));
+});
+
+// ============================================================
+// 🩹 (2026-10-05 (48)) ЧӨЛӨӨТ ТЕКСТИЙН «БОХИРДОЛ» — «сай» ≠ «сайхан»
+// ============================================================
+console.log('\n🔇 Чөлөөт текст (description) — богино үгэнд ХАЙХГҮЙ\n');
+
+t('🔇 `searchableFields`: description-ыг ЗӨВХӨН 4+ тэмдэгттэй үгэнд үлдээнэ', () => {
+  // ⚠️ 3 тэмдэгт: «сай» → «сайхан»/«сайн»-ыг ТАТАХГҮЙ ✓
+  const short = searchableFields('сай');
+  assert.ok(!short.includes('description'), '3 тэмдэгт → description ХАСАГДАНА');
+  assert.ok(short.includes('title'), 'title ХЭВЭЭР (зарын нэр — хүчтэй дохио ✓)');
+  assert.ok(short.includes('property_type') && short.includes('attrs->>brand'));
+
+  // 4 тэмдэгт: «байр» → «байраа», «байрны»-г ОЛНО ✓ (монгол үг нэмэгдэлтэй)
+  assert.ok(searchableFields('байр').includes('description'));
+  assert.ok(searchableFields('сайн').includes('description'));
+  assert.equal(SEARCH_DESC_MIN_CHARS, 4, 'хил нь 4 (тестээр түгжив)');
+
+  // ⚠️ Кирилл үсэг нь UTF-8-д 2 байт ч, ЭНД КОД-ЦЭГЭЭР тоолно ✓
+  assert.equal([...'өрөө'].length, 4, 'кирилл 1 тэмдэгт = 1 код-цэг');
+  assert.ok(searchableFields('өрөө').includes('description'));
+  assert.equal([...'сай'].length, 3);
+
+  // ⚠️ Эх жагсаалт ХӨНДӨӨГДӨХГҮЙ (шинэ массив буцаана) — autocomplete нь
+  //    `fields:['title']` гэж дамжуулах ёстой хэвээр ✓
+  assert.ok(SEARCH_FIELDS.includes('description'), 'SEARCH_FIELDS ХЭВЭЭР');
+  assert.notEqual(short, SEARCH_FIELDS);
+});
+
+t('🔇 buildSearchOr: «сай» (3) → description ХАЙХГҮЙ, харин «сайн» (4) → ХАЙНА', () => {
+  const short = buildSearchOr('сай');
+  assert.ok(short.includes('title.ilike.%сай%'), 'title тэргүүнд ХЭВЭЭР');
+  assert.ok(short.includes('property_type.ilike.%сай%'), 'бүтэцтэй талбар ХЭВЭЭР');
+  assert.ok(!short.includes('description'), '«сай» → «сайхан» татахгүй ✓');
+
+  const long = buildSearchOr('сайн'); // 4 тэмдэгт — зөв үг
+  assert.ok(long.includes('description.ilike.%сайн%'), '4+ тэмдэгт → description ОРОВ');
+});
+
+t('🔇 buildSearchOr: ОЛОН үг — үг ТУС БҮРЭЭР талбар нь нарийсна', () => {
+  const or = buildSearchOr('сай байр');
+  assert.equal((or.match(/description\.ilike/g) || []).length, 1, 'зөвхөн нэг үгэнд');
+  assert.ok(or.includes('description.ilike.%байр%'), '«байр» (4) → description орно');
+  assert.ok(!or.includes('description.ilike.%сай%'), '«сай» (3) → ОРОХГҮЙ');
+  assert.ok(or.startsWith('and(') && (or.match(/or\(/g) || []).length === 2, '2 OR бүлэг');
+});
+
+t('🔇 ГЭРЭЭ: queries.js нь SEARCH_FIELDS-ээр л дуудна (талбарыг гараар хасахгүй ✓)', () => {
+  const code = codeOnly(readSrc('lib/queries.js'));
+  assert.match(code, /buildSearchOr\(search, \{ fields: SEARCH_FIELDS/);
+  assert.doesNotMatch(code, /'title', 'property_type'/, 'гараар угсарсан жагсаалт БАЙХГҮЙ');
+});
+
+// ============================================================
+// 🔎 ⑩ AUTOCOMPLETE САНАЛ (lib/searchSuggest.mjs)
+// ============================================================
+console.log('\n🔎 Хайлтын санал (lib/searchSuggest.mjs)\n');
+
+t("suggestTypes('цемент'): дэд төрөл + хэсгийн hint (🧱 Барилгын материал)", () => {
+  const out = suggestTypes('цемент');
+  const hit = out.find((s) => s.value.toLowerCase().includes('цемент'));
+  assert.ok(hit, '«цемент» агуулсан дэд төрөл олдсон');
+  assert.equal(hit.kind, 'type');
+  assert.ok(hit.hint.includes('Барилгын материал'), 'аль хэсгийнх вэ гэдэг hint');
+});
+
+t('suggestTypes: 1 тэмдэгтээс БОГИНО үгт санал ХИЙХГҮЙ (санал дүүрэхээс сэргийлнэ)', () => {
+  assert.deepEqual(suggestTypes('a'), []);
+  assert.deepEqual(suggestTypes(''), []);
+  assert.deepEqual(suggestTypes(null), []);
+});
+
+t("suggestTypes('орон сууц'): үл хөдлөхийн дэд төрөл олдоно", () => {
+  assert.ok(suggestTypes('орон сууц').some((s) => s.value === 'Орон сууц'));
+});
+
+t('mergeSuggestions: давхардлыг хасч, `limit`-ийг баримтална (type тэргүүнд ✓)', () => {
+  const types = [{ kind: 'type', value: 'Цемент', label: 'Цемент', hint: 'h' }];
+  const listings = [
+    { title: 'Цемент', property_type: 'X' },          // давхардал → хасагдана
+    { title: 'Цементэн хавтан', property_type: 'X', district: 'Баянгол' },
+  ];
+  const out = mergeSuggestions(types, listings, 8);
+  assert.equal(out.length, 2);
+  assert.equal(out[0].kind, 'type');
+  assert.equal(out[1].kind, 'listing');
+  assert.equal(out[1].hint, 'X · Баянгол');
+  assert.equal(mergeSuggestions(types, listings, 1).length, 1);
+});
+
+t('listingHint / sectionLabel: уншигдах hint (байгаа хэсгийг л залгана)', () => {
+  assert.equal(listingHint({ property_type: 'Орон сууц', district: 'Баянгол' }), 'Орон сууц · Баянгол');
+  assert.equal(listingHint({ property_type: 'X', city: 'Улаанбаатар' }), 'X · Улаанбаатар');
+  assert.equal(listingHint({}), '');
+  assert.equal(listingHint(null), '');
+  assert.ok(sectionLabel('real-estate').includes('Үл хөдлөх'));
+  assert.equal(sectionLabel('nonexistent'), '');
+});
+
+// ============================================================
+// ⑪ ГЭРЭЭ: searchText ↔ queries ↔ HomeClient ↔ API ↔ migration
+// ============================================================
+console.log('\n🔗 ГЭРЭЭ: хайлтын текст бүх давхаргад холбогдсон\n');
+
+t('ГЭРЭЭ: lib/queries.js нь searchText.mjs-ийг ашиглана (локал normalizeSearch БАЙХГҮЙ ✓)', () => {
+  const code = codeOnly(readSrc('lib/queries.js'));
+  assert.match(code, /from '\.\/searchText\.mjs'/, 'импорт');
+  assert.match(code, /buildSearchOr\(/, 'шүүлт угсарна');
+  assert.match(code, /SEARCH_FIELDS/, 'талбарын жагсаалт');
+  assert.doesNotMatch(code, /function normalizeSearch/, 'хуучин локал функц арилав');
+  assert.doesNotMatch(code, /kwBase/, 'хуучин inline угсралт арилав');
+});
+
+t('ГЭРЭЭ: migration 0028 нь pg_trgm GIN индекс нэмнэ (хурд; шинэ багана БАЙХГҮЙ ✓)', () => {
+  const sql = readSrc('supabase/migrations/0028_listing_search.sql');
+  assert.match(sql, /create extension if not exists pg_trgm/i);
+  assert.match(sql, /gin_trgm_ops/i);
+  assert.match(sql, /listings_title_trgm_idx/);
+  assert.match(sql, /listings_description_trgm_idx/);
+  assert.doesNotMatch(sql, /add column/i, 'зөвхөн индекс — search эвдрэхгүй ✓');
+});
+
+t('ГЭРЭЭ: /api/search/suggest нь searchSuggest + searchText-ийг ашиглана', () => {
+  const route = readSrc('app/api/search/suggest/route.js');
+  assert.match(route, /suggestTypes\(/);
+  assert.match(route, /mergeSuggestions\(/);
+  assert.match(route, /buildSearchOr\(/);
+  assert.match(route, /export async function GET\(/);
+});
+
+t('ГЭРЭЭ: HomeClient нь саналын dropdown-той (data-search-suggest + onPickSuggestion)', () => {
+  const home = readSrc('components/HomeClient.jsx');
+  assert.match(home, /data-search-suggest/, 'CDP дэгээ');
+  assert.match(home, /data-suggest-item/);
+  assert.match(home, /\/api\/search\/suggest\?q=/);
+  assert.match(home, /onPickSuggestion/, 'санал дарахад шууд хайна');
+  assert.match(home, /role="combobox"/, 'a11y');
+});
+
+console.log(`\n✅ Нийт ${passed} тест амжилттай — тооны хүрээ (цэгээр бүлэглэлт) + эрэмбэлэлт + 🔎 хайлтын текст ба санал\n`);

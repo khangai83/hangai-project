@@ -434,13 +434,114 @@ function FilterPill({ label, count, onClear, testKey, children }) {
 function HeaderSearchBar({
   variant = 'header',
   section, search, total, locationLabel, hasLocation,
-  onSectionChange, onSearchChange, onSubmit, onOpenLocation,
+  onSectionChange, onSearchChange, onSubmit, onOpenLocation, onPickSuggestion,
 }) {
   const placeholder = total != null ? `${formatCount(total)} зар байна` : 'Хайх...';
   const isHeader = variant === 'header';
   const idBase = isHeader ? 'home-search' : 'home-search-mobile';
+
+  /* 🔎 ХАЙЛТЫН САНАЛ (autocomplete) — 2026-10-05 (46).
+     ⚠️ Зөвхөн ФОКУСТАЙ үед л fetch хийнэ — толгой ба мобайл гэсэн 2 экземпляр
+        DOM-д зэрэг байдаг (`xl:hidden`) тул эс бөгөөс 1 бичилт = 2 query ✗
+     ⚠️ Хоцролт (debounce 220ms) + `reqIdRef` — хожуу ирсэн хариу хуучин
+        үгийн саналыг дарж бичихээс (race) сэргийлнэ ✓ */
+  const [sugg, setSugg] = useState([]);
+  const [suggOpen, setSuggOpen] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(-1);
+  // 🔁 Фокус бүрд саналыг ДАХИН татна (`focusTick` нь effect-ийн trigger).
+  //    ⚠️ Зөвхөн `[search]`-ээр ажиллавал: «байр» бичээд → гадна дарж хаагдаад
+  //    → хайрцаг руу ДАХИН дарахад үг ХӨДӨЛӨӨГҮЙ тул effect ажиллахгүй ⇒
+  //    санал ГАРАХГҮЙ байв ✗ (хэрэглэгчийн гомдлын гол шалтгаан)
+  const [focusTick, setFocusTick] = useState(0);
+  const inputRef = useRef(null);
+  const focusedRef = useRef(false);
+  const reqIdRef = useRef(0);
+  // ⚡ КЭШ — сүүлд татсан үг ба түүний санал. Дахин фокус хийхэд 0мс-д
+  //    ШУУД нээгээд, арын дэвсгэрт шинэчилнэ (unegui.mn-ий мэдрэмж ✓)
+  const suggTermRef = useRef('');
+  const suggRef = useRef([]);
+
+  useEffect(() => {
+    const term = String(search || '').trim();
+    if (!focusedRef.current || term.length < 2) {
+      setSugg([]); setSuggOpen(false); setActiveIdx(-1);
+      return undefined;
+    }
+
+    // ⚡ Тэр үгийн санал кэш дээр байвал ШУУД харуулна (хүлээлт 0мс)
+    if (suggTermRef.current === term && suggRef.current.length > 0) {
+      setSugg(suggRef.current); setSuggOpen(true); setActiveIdx(-1);
+    }
+
+    const id = ++reqIdRef.current;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/search/suggest?q=${encodeURIComponent(term)}`);
+        if (!res.ok || id !== reqIdRef.current) return;
+        const data = await res.json();
+        // ⚠️ Фокус алдсан бол ХООСОН хариу ч, ирсэн хариу ч панель НЭЭХГҮЙ
+        //    (эс бөгөөс blur хийсний дараа санал «үсэрч» гарна ✗)
+        if (id !== reqIdRef.current || !focusedRef.current) return;
+        const items = Array.isArray(data.suggestions) ? data.suggestions : [];
+        suggTermRef.current = term;
+        suggRef.current = items;
+        setSugg(items);
+        setSuggOpen(items.length > 0);
+        setActiveIdx(-1);
+      } catch (e) {
+        /* санал авах нь ЧИМЭЭГҮЙ — хайлтад саад болохгүй ✓ */
+      }
+    }, 220);
+    return () => clearTimeout(timer);
+  }, [search, focusTick]);
+
+  const closeSugg = () => { setSuggOpen(false); setActiveIdx(-1); };
+
+  const chooseSuggestion = (item) => {
+    if (!item) return;
+    const value = item.value || item.label || '';
+    focusedRef.current = false;
+    closeSugg();
+    if (inputRef.current) inputRef.current.blur();
+    onSearchChange(value);
+    if (onPickSuggestion) onPickSuggestion(value);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    focusedRef.current = false;
+    closeSugg();
+    if (inputRef.current) inputRef.current.blur();
+    onSubmit(e);
+  };
+
+  const handleKeyDown = (e) => {
+    // ⌨️ Панель хаалттай ч санал БАЙВАЛ ↓/↑ нь ШУУД нээнэ (гараас удирдах ✓)
+    if (!suggOpen) {
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && sugg.length > 0) {
+        e.preventDefault();
+        setSuggOpen(true);
+        setActiveIdx(e.key === 'ArrowDown' ? 0 : sugg.length - 1);
+      }
+      return;
+    }
+    if (!sugg.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIdx((i) => (i + 1) % sugg.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIdx((i) => (i - 1 + sugg.length) % sugg.length);
+    } else if (e.key === 'Enter' && activeIdx >= 0) {
+      e.preventDefault();
+      chooseSuggestion(sugg[activeIdx]);
+    } else if (e.key === 'Escape') {
+      closeSugg();
+    }
+  };
+
   return (
-    <form role="search" onSubmit={onSubmit} className="flex w-full min-w-0 items-center gap-2">
+    <form role="search" onSubmit={handleSubmit} className="flex w-full min-w-0 items-center gap-2">
       {/* ⚙️ ХЭСЭГ («Ангилал») — ДУГУЙ pill — ⚠️ ЗӨВХӨН ТОЛГОЙН хувилбарт (≥xl).
           🗑 2026-10-04 (34): МОБАЙЛ хувилбараас БҮРЭН ХАСАГДАВ (хэрэглэгчийн
              хүсэлт: «home-search-mobile-section ийг … байхгүй болгоё»).
@@ -502,12 +603,69 @@ function HeaderSearchBar({
         <label className="sr-only" htmlFor={idBase}>Зар хайх</label>
         <input
           id={idBase}
+          ref={inputRef}
           type="text"
+          role="combobox"
+          aria-expanded={suggOpen}
+          aria-controls={`${idBase}-suggest`}
+          aria-autocomplete="list"
+          aria-activedescendant={activeIdx >= 0 ? `${idBase}-suggest-${activeIdx}` : undefined}
+          autoComplete="off"
           placeholder={placeholder}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => {
+            focusedRef.current = true;
+            // ⚡ Кэш дээр байгаа бол ШУУД (0мс) нээгээд, effect нь арын
+            //    дэвсгэрт шинэчилнэ (`focusTick`) — «уншиж эхлэнгүүт гарна» ✓
+            const term = String(search || '').trim();
+            if (term.length >= 2 && suggTermRef.current === term && suggRef.current.length > 0) {
+              setSugg(suggRef.current); setSuggOpen(true); setActiveIdx(-1);
+            }
+            setFocusTick((t) => t + 1);
+          }}
+          onBlur={() => { focusedRef.current = false; closeSugg(); }}
           className="h-10 w-full rounded-full border border-gray-200 bg-white pl-10 pr-4 text-[14px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-primary"
         />
+        {/* 🔎 САНАЛЫН ПАНЕЛЬ — `role="listbox"` (a11y; сонголт нь input дээр
+            `aria-activedescendant`-аар заагдана) ✓ */}
+        {suggOpen && sugg.length > 0 && (
+          <ul
+            id={`${idBase}-suggest`}
+            role="listbox"
+            data-search-suggest
+            className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-[60vh] overflow-y-auto rounded-2xl border border-gray-200 bg-white py-1 shadow-card-hover"
+          >
+            {sugg.map((item, i) => (
+              <li
+                key={`${item.kind}-${item.value}-${i}`}
+                id={`${idBase}-suggest-${i}`}
+                role="option"
+                aria-selected={i === activeIdx}
+                data-suggest-item
+                data-suggest-kind={item.kind}
+                data-suggest-value={item.value}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => chooseSuggestion(item)}
+                onMouseEnter={() => setActiveIdx(i)}
+                className={`flex cursor-pointer items-center gap-2.5 px-4 py-2 ${
+                  i === activeIdx ? 'bg-gray-100' : 'hover:bg-gray-50'
+                }`}
+              >
+                <span aria-hidden="true" className="shrink-0 text-[13px] text-gray-400">
+                  {item.kind === 'type' ? '🏷' : '🔍'}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[14px] font-semibold text-gray-900">{item.label}</span>
+                  {item.hint ? (
+                    <span className="block truncate text-[12px] text-gray-500">{item.hint}</span>
+                  ) : null}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       <button
         type="submit"
@@ -1789,6 +1947,10 @@ export default function HomeClient() {
 
   /** 🖥🔍 Хайлтын мөрийг угсарна — толгойн мөр (`header`) БА мобайл (`mobile`)
    *  ХОЁУЛАА энэ НЭГ эх сурвалжийг ашиглана (давхардсан логик БАЙХГҮЙ ✓) */
+  // 🔎 Санал дарахад (`onPickSuggestion`) — утга нь `setSearch`-ээр хайрцагт
+  //    орж, ШУУД хайгдана. ⚠️ `onSubmit`-ийн closure нь ХУУЧИН `search`-ыг
+  //    уншдаг тул саналын утгыг ТУСДАА дамжуулна (setState async — stale
+  //    утгаас сэргийлнэ ✓)
   const renderSearchBar = (variant) => (
     <HeaderSearchBar
       variant={variant}
@@ -1800,6 +1962,7 @@ export default function HomeClient() {
       onSectionChange={(v) => changeHeroSection(v)}
       onSearchChange={setSearch}
       onSubmit={(e) => { e.preventDefault(); setPage(1); setQuery(search); }}
+      onPickSuggestion={(value) => { setSearch(value); setPage(1); setQuery(value); }}
       onOpenLocation={() => setLocOpen(true)}
     />
   );
@@ -2269,7 +2432,10 @@ export default function HomeClient() {
                 ⚠️ CDP-ээр ХЭМЖИЖ БАТЛАВ (`/tmp/zar_tiles_cdp.mjs`): 1280px+ дээр
                 10 багана → tile ердөө **86px** (icon 34px + gap 6px + padding 12px
                 → шошгонд 57-72px л үлдэнэ); flex мөрийн анхдагч `min-width: auto`
-                нь хамгийн урт үгнээс («Автомашин» 94px, «Үйлчилгээ» 85px) бага
+                нь хамгийн урт үгнээс («Автомашин» 94px, «Үйлчилгээ» 85px;
+                ✏️ 2026-10-05 (45): «Үйлчилгээ» → **«Ажил, Үйлчилгээ»** болсон ч
+                доорх ③ хамгаалалт (`min-w-0` + `line-clamp-2` + `break-words`)
+                нь хэвээр 2 мөрөнд багтаана ✓) бага
                 шахагдаж ЧАДАХГҮЙ тул **БҮХ 10 шошго хүрээнээсээ +7…+19px ГАРСАН**
                 байв ✗ (мөн шошго 3 мөр болж, картууд тэгш бус = «онцгүй»).
              ✅ ШИЙДЭЛ — 3 зүйл:

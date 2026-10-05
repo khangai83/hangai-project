@@ -22,6 +22,27 @@
  *   ⑥ 📱 390px: «Эмнэлэг» харагдана, 32 мөр, хэвтээ гүйлт 0 ✓
  *   ⑦ 🧯 JS exception 0
  *
+ * 🆕 2026-10-05 (45) (хэрэглэгчийн хүсэлт — 2 зүйл):
+ *   ① ✏️ Хэсгийн нэр «Үйлчилгээ» → **«Ажил, Үйлчилгээ»** (`lib/locationData.js`,
+ *      `value: 'services'` ХЭВЭЭР ⇒ DB/URL/query хөндөгдөөгүй ✓) ⇒ ⑧ нүүр
+ *      хуудсны tile (тоо ХЭВЭЭР 12, хуучин ганц «Үйлчилгээ» tile БАЙХГҮЙ) ба
+ *      breadcrumb-д ШИНЭ нэрээр харагдана (хатуу бичсэн газар БАЙХГҮЙ —
+ *      бүгд `getSection().label`-аас уншина ✓)
+ *   ② 🗑 «Үйлчилгээний хэлбэр» (`workMode`) ба «Үнийн хэлбэр» (`priceUnit`) нь
+ *      форм/шүүлт/карт/дэлгэрэнгүйгээс БҮРЭН ХАСАГДАВ ⇒ ⑨ `?section=services`
+ *      дээр sidebar-д attr шүүлт ЯГ **1** (🕒 «Ажиллах цаг» — хасагдаагүй ✓)
+ *      ба хасагдсан 2 шошго хуудсан дээр ОГТ БАЙХГҮЙ ✓ (⛔ «Дахин ашиглахгүй»)
+ *      ⇒ ⑧+⑨ = **7** шинэ шалгалт: **25 → 32 OK** ✓
+ *
+ * ⚠️ 2026-10-05 (45)-д CDP-ийн 2 RACE илэрч ЗАСАВ (доорх тайлбарыг үз):
+ *   ① панель нь SSR HTML дээр ч байдаг тул `waitFor(tabs > 0)` нь hydrate-аас
+ *      ӨМНӨ биелдэг ⇒ тэр үеийн `click()` нь React-д ХҮРЭХГҮЙ (алга болдог ✗)
+ *      → `waitHydrated()` (`__reactProps$…` түлхүүрээр hydrate хүлээнэ;
+ *      хэмжсэн: +24ms `SSR_ONLY [0]` → +162ms `HYDRATED [2]`)
+ *   ② `URLSearchParams` нь ЗАЙГ `+` болгоно ⇒ шалгалт `dec()` шиг
+ *      `.replace(/\+/g, ' ')`-той байх ЁСТОЙ (эс бөгөөс `.includes('… үйлчилгээ')`
+ *      ХЭЗЭЭ Ч биелэхгүй ✗)
+ *
  * ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
  *   1) `npm run build && npm run start` — сервер http://localhost:3000 дээр
  *   2) Chrome-ыг алсын дебагттайгаар нээнэ:
@@ -135,7 +156,7 @@ const go = async (url) => {
 /** 🏠 ХЭСГИЙН ПАНЕЛИЙН төлөв — `data-section-panel` доторхыг л тоолно ✓
  *  ⚠️ ЭНЭ PROBE нь TEMPLATE LITERAL — коммент дотор BACKTICK БИЧИХГҮЙ ✗ */
 
-console.log('\n🛠️🏥 CDP — Үйлчилгээ: «Гагнуурын үйлчилгээ» + 🆕 «Эмнэлэг» бүлэг (2026-10-05 (44))\n');
+console.log('\n🛠️🏥 CDP — Ажил, Үйлчилгээ: 3 түвшний мод + ✏️🗑 нэр/2 талбар (2026-10-05 (44)+(45))\n');
 
 /** 🛠 ПАНЕЛИЙН төлөв — `[data-section-panel]` дотроос л тоолно ✓
  *  ⚠️ Дэд төрөл сонгомогц панель БҮРЭН арилдаг тул энэ нь ЗӨВХӨН
@@ -172,6 +193,21 @@ const pageUi = () => evalJs(`(() => {
   };
 })()`);
 
+/** 🏠 НҮҮР ХУУДСНЫ tile + ASIDE төлөв — 🆕 2026-10-05 (45): хэсгийн нэр
+ *  (label) ба attr шүүлтийн CDP дэгээ ✓
+ *  ⚠️ ЭНЭ PROBE нь TEMPLATE LITERAL — коммент дотор BACKTICK БИЧИХГҮЙ ✗ */
+const navProbe = () => evalJs(`(() => {
+  const txt = (el) => (el ? String(el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim() : '');
+  const crumb = document.querySelector('nav[aria-label="Замчилсан цэс"]');
+  return {
+    tiles: [...document.querySelectorAll('.tile-grid button[role="tab"]')].map(txt),
+    asideAttrs: [...document.querySelectorAll('aside [data-attr-filter]')].map((el) => el.getAttribute('data-attr-filter')),
+    asideText: txt(document.querySelector('aside')),
+    crumb: txt(crumb),
+    bodyText: txt(document.body),
+  };
+})()`);
+
 /** 🖱 Панель доторх дэд төрлийн мөрийг ШОШГООР нь дарна */
 const clickTab = (label) => evalJs(`(() => {
   const panel = document.querySelector('[data-section-panel]');
@@ -182,6 +218,45 @@ const clickTab = (label) => evalJs(`(() => {
   b.click();
   return 'OK';
 })()`);
+
+/**
+ * 🖱 Дэд төрөл дарж, URL-д утга нь ОРОХЫГ хүлээнэ — 2 race-ийг ЗАСАВ.
+ *
+ * 🔴 RACE ① (2026-10-05 (45)-д CDP барив): панель нь **SSR HTML** дээр ч байдаг
+ *    тул `waitFor(tabs > 0)` нь **React hydrate болохоос ӨМНӨ** биелчихдэг ✗ →
+ *    тэр үед дарсан click нь React-ийн `onClick` руу ХҮРЭХГҮЙ (алга болно)
+ *    ⇒ URL/breadcrumb ХӨДӨЛӨХГҮЙ ✗ (шууд линкээр орох нь SSR тул
+ *    ХӨНДӨГДӨХГҮЙ ✓ — тиймээс зөвхөн ЭНЭ 2 «🖱 дарж шалгах» алхам өртдөг).
+ *    ✅ Шийдэл: `waitHydrated()` (доор) — дарахын ӨМНӨ hydrate-ыг хүлээнэ.
+ * 🔴 RACE ② `URLSearchParams` нь ЗАЙГ `+` болгоно (ж: `Гагнуурын+үйлчилгээ`) ⇒
+ *    `decodeURIComponent` дангаараа ЗАЙ болгохгүй тул `.includes('… үйлчилгээ')`
+ *    ХЭЗЭЭ Ч биелэхгүй ✗ (скрипт өөрөө `dec()`-ээр `+`→зай хийдэг ✓).
+ *    ✅ Шийдэл: ЭНД Ч `.replace(/\+/g, ' ')` ЗААВАЛ ✓
+ * ⚠️ Олон удаа дарах нь «дахин сонгох/солих» эрсдэлтэй тул `tries` ЦӨӨН (3) ба
+ *    бүр оролдлого 8с хүлээнэ (хэмжсэн: даралт ~53ms-д биелдэг ✓).
+ */
+const clickSubtypeUntilUrl = async (label, tries = 3) => {
+  const want = `decodeURIComponent(location.search).replace(/\\+/g, ' ').includes(${JSON.stringify(label)})`;
+  for (let i = 0; i < tries; i += 1) {
+    const r = await clickTab(label);
+    if (r === 'NO_PANEL' || r === 'NOT_FOUND') return r;
+    if (await waitFor(want, 8000)) return 'OK';
+    await sleep(300);
+  }
+  return 'TIMEOUT';
+};
+
+/**
+ * 🧪 React hydrate болсон эсэхийг хүлээнэ — React нь DOM зангилаа дээр
+ * `__reactProps$…` / `__reactFiber$…` туслах түлхүүр үлдээдэг ⇒ SSR HTML дээр
+ * 0 түлхүүр, hydrate болмогц 2 түлхүүр гарч ирнэ ✓
+ * (хэмжсэн: `+24ms SSR_ONLY [0]` → `+162ms HYDRATED [2]`)
+ * ⚠️ Үүнгүйгээр hydrate-аас ӨМНӨ дарсан click нь алга болно ✗ (RACE ①)
+ */
+const waitHydrated = async (ms = 15000) => waitFor(
+  `!!(() => { const b = document.querySelector('[data-section-panel] button[role="tab"]'); return b && Object.keys(b).some((k) => k.startsWith('__reactProps')); })()`,
+  ms,
+);
 
 let pass = 0; let fail = 0;
 const check = (label, ok, extra = '') => {
@@ -221,8 +296,12 @@ check('⚠️ «Эмнэлэг» (бүлгийн нэр) нь СОНГОГДОХ
 check('📐 Хэвтээ гүйлт БАЙХГҮЙ (1280px)', s.overflow <= 0, `overflow=${s.overflow}`);
 
 // ─────── 🖱 «Шүдний эмнэлэг» → URL + breadcrumb (3 дахь түвшин нэмэгдэнэ) ───────
-check('🖱 «Шүдний эмнэлэг» дэд төрөл дардагдав', (await clickTab('Шүдний эмнэлэг')) === 'OK');
-// ⚠️ URL нь breadcrumb-аас ХОЦРОХ хааяа тохиолддог (router.replace) → URL-ээ хүлээнэ ✓
+// ⚠️ 2 race: ① панель нь SSR-д ч байдаг (hydrate-аас өмнөх даралт алга болдог)
+//    ② URL нь breadcrumb-аас ХОЦРОХ (router.replace) ⇒ эхлээд hydrate, дараа нь
+//    «дарах + URL хүлээх» (`clickSubtypeUntilUrl`) ✓
+await waitHydrated();
+check('🖱 «Шүдний эмнэлэг» дэд төрөл дардагдаж, URL шинэчлэгдэв',
+  (await clickSubtypeUntilUrl('Шүдний эмнэлэг')) === 'OK');
 await waitFor(`/Шүдний эмнэлэг/.test(decodeURIComponent(location.search))`);
 const q2 = dec(await url());
 check('🔗 URL нь `?section=services&type=Шүдний эмнэлэг`',
@@ -230,16 +309,20 @@ check('🔗 URL нь `?section=services&type=Шүдний эмнэлэг`',
 await waitFor(`/Шүдний эмнэлэг/.test(String((document.querySelector('nav[aria-label="Замчилсан цэс"]') || {}).innerText || ''))`);
 const s2 = await pageUi();
 const c2 = String(s2.crumb || '');
-check('🧭 Breadcrumb 4 түвшин — «Үйлчилгээ › Эмнэлэг › Шүдний эмнэлэг» дараалалтай',
-  c2.includes('Үйлчилгээ') && c2.includes('Эмнэлэг') && c2.includes('Шүдний эмнэлэг')
-  && c2.indexOf('Үйлчилгээ') < c2.indexOf('Эмнэлэг') && c2.indexOf('Эмнэлэг') < c2.indexOf('Шүдний эмнэлэг'), c2);
+// ✏️ 2026-10-05 (45): хэсгийн нэр «Үйлчилгээ» → «Ажил, Үйлчилгээ» — breadcrumb
+//    дээр ШИНЭ нэрээр харагдана (шинэ нэр нь «Үйлчилгээ» гэдгийг агуулна ✓)
+check('🧭 Breadcrumb 4 түвшин — «Ажил, Үйлчилгээ › Эмнэлэг › Шүдний эмнэлэг» дараалалтай',
+  c2.includes('Ажил, Үйлчилгээ') && c2.includes('Эмнэлэг') && c2.includes('Шүдний эмнэлэг')
+  && c2.indexOf('Ажил, Үйлчилгээ') < c2.indexOf('Эмнэлэг') && c2.indexOf('Эмнэлэг') < c2.indexOf('Шүдний эмнэлэг'), c2);
 check('🏷 Үр дүнгийн гарчиг `Шүдний эмнэлэг …`', /Шүдний эмнэлэг/.test(String(s2.h1 || '')), String(s2.h1));
 check('📐 Дэд төрөл сонгосон үед мобайл/десктоп гүйлт 0', s2.overflow <= 0, `overflow=${s2.overflow}`);
 
 // ─────── 🖱 «Гагнуурын үйлчилгээ» → БАРИЛГА бүлгийн breadcrumb (шинэ leaf) ───────
 await go(`${BASE}/?section=services`);
 await waitFor(`document.querySelectorAll('[data-section-panel] button[role="tab"]').length > 0`);
-check('🖱 «Гагнуурын үйлчилгээ» дэд төрөл дардагдав', (await clickTab('Гагнуурын үйлчилгээ')) === 'OK');
+await waitHydrated();
+check('🖱 «Гагнуурын үйлчилгээ» дэд төрөл дардагдаж, URL шинэчлэгдэв',
+  (await clickSubtypeUntilUrl('Гагнуурын үйлчилгээ')) === 'OK');
 // ⚠️ URL нь breadcrumb-аас ХОЦРОХ хааяа тохиолддог (router.replace) → URL-ээ хүлээнэ ✓
 await waitFor(`/Гагнуурын үйлчилгээ/.test(decodeURIComponent(location.search))`);
 const q3 = dec(await url());
@@ -273,6 +356,36 @@ const m = await panelUi2();
 check('📱 390px — «Эмнэлэг» гарчиг ХАРАГДАНА', m.heads.includes('Эмнэлэг'), m.heads.join(' | '));
 check('📱 390px — дэд төрөл 32 ХЭВЭЭР (бүгд нээлттэй ✓)', m.tabs.length === 32, `tabs=${m.tabs.length}`);
 check('📱 390px — хэвтээ гүйлт (overflow) 0', m.overflow <= 0, `overflow=${m.overflow}`);
+
+// ═══ ✏️🗑 2026-10-05 (45): ХЭСГИЙН НЭР + ХАСАГДСАН 2 ТАЛБАР ═══
+// ① ✏️ «Үйлчилгээ» → «Ажил, Үйлчилгээ» — нүүр хуудсны tile дээр (`SECTIONS`)
+await rpc('Emulation.setDeviceMetricsOverride', { width: 1280, height: 1400, deviceScaleFactor: 1, mobile: false });
+await go(`${BASE}/`);
+await waitFor(`document.querySelectorAll('.tile-grid button[role="tab"]').length > 0`);
+const home = await navProbe();
+// ✏️ 2026-10-05 (45): хэсгийн нэр «Үйлчилгээ» → «Ажил, Үйлчилгээ» — tile-ийн
+//    текст нь `<icon> <нэр>` (ж: «🛠️ Ажил, Үйлчилгээ») тул `includes`-ээр ✓
+check('✏️ Нүүр tile: шинэ нэр «Ажил, Үйлчилгээ» (tile-ийн тоо ХЭВЭЭР 12)',
+  home.tiles.some((t) => t.includes('Ажил, Үйлчилгээ')) && home.tiles.length === 12,
+  `tiles=${home.tiles.length}`);
+check('🚫 Хуучин ганц «Үйлчилгээ» гэсэн tile БАЙХГҮЙ',
+  !home.tiles.some((t) => t.trim() === '🛠️ Үйлчилгээ' || t.trim() === 'Үйлчилгээ'),
+  home.tiles.join(' | '));
+
+// ② 🗑 «Үйлчилгээний хэлбэр» (`workMode`) + «Үнийн хэлбэр» (`priceUnit`)
+await go(`${BASE}/?section=services`);
+await waitFor(`document.querySelectorAll('[data-section-panel] button[role="tab"]').length > 0`);
+const nx = await navProbe();
+check('🗑 Sidebar-д attr шүүлт ЯГ 1 — `availability` (🕒 «Ажиллах цаг» л үлдэв)',
+  nx.asideAttrs.join('|') === 'availability', nx.asideAttrs.join(' | ') || '(0)');
+check('🕒 Sidebar-д «Ажиллах цаг» ХАРАГДАНА (хасагдаагүй ✓)',
+  String(nx.asideText || '').includes('Ажиллах цаг'));
+check('🗑 «Үйлчилгээний хэлбэр» (=`workMode`) хуудсан дээр ОГТ БАЙХГҮЙ',
+  !String(nx.bodyText || '').includes('Үйлчилгээний хэлбэр'));
+check('🗑 «Үнийн хэлбэр» (=`priceUnit`) хуудсан дээр ОГТ БАЙХГҮЙ',
+  !String(nx.bodyText || '').includes('Үнийн хэлбэр'));
+check('🧭 `?section=services` breadcrumb-д шинэ нэр «Ажил, Үйлчилгээ»',
+  String(nx.crumb || '').includes('Ажил, Үйлчилгээ'), String(nx.crumb));
 
 check('🧯 JS exception 0', exceptions.length === 0, exceptions.slice(0, 3).join(' | '));
 
