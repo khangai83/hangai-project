@@ -4759,6 +4759,13 @@ npm run report:usage                        # R2 ба Supabase-ийн хэмжэ
 > ⚠️ энэ нь дүрмүүдийг БҮХЭЛД НЬ дарж бичнэ; бодит тохиолдол ба жишээ код:
 > [`docs/R2_SETUP.md`](docs/R2_SETUP.md) §4 (төгсгөлийн `/` нь production-ыг
 > хэрхэн эвдсэн тухай).
+>
+> 📱 **Одоогийн `AllowedOrigins` (5):** `http://localhost:3000` · **`http://192.168.1.2:3000`**
+> (утаснаас LAN-аар нээх үед) · `https://hangai-project.vercel.app` · `https://zarlaa.mn` ·
+> `https://www.zarlaa.mn`. Шинэ хаяг (IP солигдсон, preview deploy, шинэ домэйн)
+> нэмэхгүй бол зураг оруулах нь «Зургийг R2 руу илгээж чадсангүй … **[Load failed]**»
+> гэж унана (⚠️ сервер талдаа лог үлдэхгүй, `presign` нь 200 буцаана) — шалгах:
+> `npm run check:r2 -- --origin <тэр хаяг>` → дэлгэрэнгүй: `docs/R2_SETUP.md` §4.
 
 → Алхам алхмын заавар: **[`docs/R2_SETUP.md`](docs/R2_SETUP.md)**
 

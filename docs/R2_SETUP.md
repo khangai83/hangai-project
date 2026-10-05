@@ -204,6 +204,7 @@ requests from a browser») ✗
   {
     "AllowedOrigins": [
       "http://localhost:3000",
+      "http://192.168.1.2:3000",
       "https://hangai-project.vercel.app",
       "https://zarlaa.mn",
       "https://www.zarlaa.mn"
@@ -221,6 +222,7 @@ requests from a browser») ✗
 | Origin | Энэ юу вэ |
 |---|---|
 | `http://localhost:3000` | локал хөгжүүлэлт (`npm run dev`) |
+| `http://192.168.1.2:3000` | ⚠️ **утаснаас LAN-аар** шалгах үед — Mac-ийн IP (dev server нь `Network: http://…:3000` гэж өөрөө хэвлэнэ). DHCP-ээр IP солигдвол **шинэ хаягаа нэмнэ** (`ifconfig` → `inet …`); порт дотор `*` болохгүй тул порт бүрийг тус тусад нь жагсаана |
 | `https://hangai-project.vercel.app` | **Vercel-ийн хаяг** — ⚠️ төгсгөлийн `/` БЕЗ (`…app/` ✗) |
 | `https://zarlaa.mn` | өөрийн домэйн (Vercel дээр холбосон үед) |
 | `https://www.zarlaa.mn` | `www`-тэй хувилбар — тусдаа БИЧНЭ (автомат биш!) |
@@ -231,6 +233,7 @@ requests from a browser») ✗
 # Шалгах (нэгийг эсвэл хэдийг ч зааж болно):
 npm run check:r2 -- --origin https://hangai-project.vercel.app
 npm run check:r2 -- --origin http://localhost:3000 --origin https://zarlaa.mn
+npm run check:r2 -- --origin http://192.168.1.2:3000                # 📱 утаснаас LAN-аар
 R2_CORS_ORIGIN=https://a.mn,https://b.mn npm run check:r2     # ⚠️ `*` байвал хашилтанд: 'https://x-*.vercel.app'
 ```
 → Скрипт домэйн **тус бүрээр** preflight (OPTIONS, PUT + content-type) хийж, дутуу
@@ -259,7 +262,7 @@ import { r2Client, r2Config } from './lib/r2.mjs';
 await r2Client().send(new PutBucketCorsCommand({
   Bucket: r2Config().bucket,
   CORSConfiguration: { CORSRules: [{
-    AllowedOrigins: ['http://localhost:3000', 'https://hangai-project.vercel.app', 'https://zarlaa.mn', 'https://www.zarlaa.mn'],
+    AllowedOrigins: ['http://localhost:3000', 'http://192.168.1.2:3000', 'https://hangai-project.vercel.app', 'https://zarlaa.mn', 'https://www.zarlaa.mn'],
     AllowedMethods: ['PUT', 'GET', 'HEAD'],
     AllowedHeaders: ['content-type'],
     ExposeHeaders: ['etag'],
@@ -283,6 +286,39 @@ R2 env 5/5 байсан тул `presign` **200 · `backend: r2`** болж, PUT-
 3 домэйн **БҮГД ✅** болов (`npm run check:r2 -- --origin …`).
 Бодит e2e баталгаа: presign **200** → PUT → R2 **200** (`ACAO` зөв) → `publicUrl` GET
 **200** (хэмжээ/`content-type` зөв) ✓
+
+### 🐛 БОДИТ тохиолдол (2026-10-05): 📱 утаснаас **LAN IP**-аар нээхэд CORS дутуу
+
+Хэрэглэгч утсаараа форм бөглөж зураг оруулах үед «**Зургийг R2 руу илгээж
+чадсангүй … CORS Policy тохируулаагүй … [Load failed]**» гэсэн мессеж гарчээ.
+Оношлогоо (`npm run check:r2 -- --origin …`, домэйн тус бүрээр):
+
+| Origin | Дүн |
+|---|---|
+| `http://localhost:3000` · `https://hangai-project.vercel.app` · `https://zarlaa.mn` · `https://www.zarlaa.mn` | ✅ (production хэвийн) |
+| **`http://192.168.1.2:3000`** (Mac-ийн LAN IP — утаснаас нээсэн хаяг) | ❌ **CORS ДУТУУ** ← ШАЛТГААН |
+
+⚠️ Хичээл: `localhost` нь **утасны хувьд ч, бусад төхөөрөмжийн хувьд ч**
+`localhost` БИШ — өөрөө өөрөө рүү заана. 📱 утаснаас dev server-т орохдоо
+`Network: http://192.168.1.2:3000` (эсвэл `.local` нэр) хаягийг ашигладаг тул
+**тэр origin нь ЗААВАЛ `AllowedOrigins`-д байх ёстой** ✗ Байхгүй бол preflight
+(`OPTIONS`) нь `403 · ACAO байхгүй` болж, browser fetch-ийг огт явуулахгүй →
+`putToR2()`-ийн `catch` салбар ажиллаж, хэрэглэгчид зөвхөн
+«**Load failed**» (Safari/iOS; Chrome: «Failed to fetch») харагдана ✓
+
+⚠️ Анхаар: `presign` нь **ӨӨР домэйн дээр** (манай Next.js API) явдаг тул
+тэр нь **200 · `backend: r2`** гэж амжилттай буцаана — өөрөөр хэлбэл алдаа нь
+**зөвхөн R2-руу чиглэсэн PUT** дээр гарна (сервер талдаа ямар ч лог үлдэхгүй!).
+Нөөц Supabase зам нь **зөвхөн 503 `R2_NOT_CONFIGURED`** үед ажилладаг тул энд
+туслахгүй ✗ — заавал CORS-ыг засна.
+
+Засвар + баталгаа (2026-10-05, `PutBucketCors`-оор; дээрх 5 origin бүгд ✅):
+
+```bash
+npm run check:r2 -- --origin http://localhost:3000 --origin http://192.168.1.2:3000 \
+  --origin https://hangai-project.vercel.app --origin https://zarlaa.mn --origin https://www.zarlaa.mn
+# → preflight 204 · ACAO = тухайн origin ✓  |  PUT 200 → publicUrl GET 200 → устгав 404 ✓
+```
 
 ---
 
