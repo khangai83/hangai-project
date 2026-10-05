@@ -123,6 +123,16 @@
  *      үлдэнэ (+ «← Буцах» мобайлд ХАРАГДАХГҮЙ — толгойн ← л буцаана)
  *      ⑧ толгойн ← өмнөх дэлгэц рүү, оруулсан утга ХАДГАЛАГДАНА
  *      ⇒ **14 шалгалт** (`scripts/test-detail-wizard.mjs` — статик ГЭРЭЭ)
+ *   ⑫ 🆕 **🖥 СОНГОСОН АНГИЛАЛ / БАЙРШИЛ (≥640px)** — 2026-10-05, хэрэглэгчийн
+ *      хүсэлт: «Зар нэмэх форм дээр сонгосон категори/байршил КОМПЬЮТЕР дээр
+ *      харагдахгүй байна» ⇒ 📱 `MobileAnswers` (`sm:hidden`) нь зөвхөн мобайлд
+ *      байсан тул 🖥 дээр 2-р алхмаас хойш юу сонгосон нь ХААНА Ч харагдахгүй
+ *      байв ✗ ⇒ 🆕 `[data-desktop-summary]` хүснэгт (`hidden sm:flex`):
+ *      ① 1-р алхамд ГАРАХГҮЙ (сонгосон зам нь баганын мөр + `[data-picker-summary]`
+ *      дээр бий — давхардал 0 ✓) ② 2-р алхамд ЗӨВХӨН 🗂 АНГИЛАЛ
+ *      (`[data-location-summary]`-тай давхардахгүй ✓) ③ 3-р алхамд 🗂 + 📍
+ *      ХОЁУЛАА ④ 📱 390px дээр `display:none` (өргөн 0 ✓)
+ *      ⇒ **5 шалгалт** (ⓐ `dupe`/`pickerTitles` инвариантууд ХӨНДӨГДӨӨГҮЙ ✓)
  *
  * ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
  *   1) сервер http://localhost:3000 (`npm run dev` эсвэл `npm run build && npm run start`)
@@ -253,12 +263,44 @@ const PROBE = `(() => {
     stepHeadings: document.querySelectorAll('[data-step-heading]').length,
     tabs: [...document.querySelectorAll('[role="tablist"] [role="tab"]')].map((b) => (b.innerText || '').trim()),
     summary: (document.querySelector('[data-picker-summary]') || {}).innerText || '',
+    /**
+     * 🆕 2026-10-05 (**🖥 СОНГОСОН АНГИЛАЛ / БАЙРШИЛ**, хэрэглэгчийн хүсэлт:
+     *    «Зар нэмэх форм дээр сонгосон категори/байршил компьютер дээр
+     *    харагдахгүй байна») → форм нь ≥640px дээр [data-desktop-summary]
+     *    хүснэгттэй (ⓐ 1-р алхмаас хойш АНГИЛАЛ, ⓑ 2-р алхмаас хойш БАЙРШИЛ).
+     *    ⚠️ [data-picker-summary] / [data-location-summary]-тэй ХОЛБООГҮЙ
+     *    ТУСДАА элемент (доорх тоонууд хөндөгдөхгүй ✓)
+     *    (⚠️ энэ template literal дотор backtick болон долларын буржгар хаалт
+     *    БИЧИХГҮЙ — эс бөгөөс template literal ХААЛТАА ТАСАРЧ script унана ✗)
+     */
+    desktopSummary: (() => {
+      const el = document.querySelector('[data-desktop-summary]');
+      if (!el) return { has: false, visible: false, location: false, text: '' };
+      return {
+        has: true,
+        visible: el.getBoundingClientRect().width > 0,
+        location: Boolean(el.querySelector('[data-desktop-summary-location]')),
+        text: (el.innerText || '').replace(/\\s+/g, ' ').trim(),
+      };
+    })(),
     // 📍 2-р алхам = Байршил — өөрийн гэсэн дүгнэлтийн мөр ([data-location-summary])
     //    ⚠️ ТУСДАА атрибут: [data-picker-summary] нь ЗӨВХӨН 1-р алхамд байх ёстой ✓
     locationSummary: (document.querySelector('[data-location-summary]') || {}).innerText || '',
     // ⚠️ 2026-10-01: Байршил нь select БИШ, баганат сонголт болов → 2-р алхамд
     //    форм дотор select ЯГ 0 байх ёстой (1-р алхамд ч 0 ✓)
     selects: document.querySelectorAll('form select').length,
+    /**
+     * 🆕 2026-10-05 (🖥 НЭГ УРТ ХУУДАС): 1440px дээр БҮХ алхам DOM-д байдаг
+     *    болсон тул «форма доторх БҮХ select» гэсэн тоолол нь 📋 Дэлгэрэнгүй
+     *    (аттр талбарууд) ба 💰 Үнэ-ийн select-үүдийг Ч багцалж эхлэв ✗ ⇒
+     *    БАГАНЫН групп дотор хийхээр ТУСДАА талбар нэмэв ✓
+     *    ⚠️ Групп олдохгүй бол -1 (тест унана — зөв ✓)
+     *    ⚠️ Энэ template literal дотор backtick / долларын буржгар хаалт БИЧИХГҮЙ
+     */
+    locSelects: (() => {
+      const g = document.querySelector('[role="group"][aria-label="Байршлаа сонгоно уу"]');
+      return g ? g.querySelectorAll('select').length : -1;
+    })(),
     colCount: document.querySelectorAll('[data-picker]').length,
     // ⚠️ 2026-10-01 (4 дэх засвар): баганын ДЭЭД ЦЭНХЭР ТОЛГОЙ БҮХЭЛДЭЭ
     //    ХАСАГДСАН (сонгосон утгатай давхардаж байв ✗) → DOM-д ЯГ 0 байх ёстой ✓
@@ -312,8 +354,16 @@ const click = async (sel) => {
  * ⚠️ 2026-10-01: «📍 Байршил» нь 3-р алхмаас **2-р алхам** болов → 3-р алхам
  *    (Дэлгэрэнгүй, «🏷️ Үйлдвэрлэгч» тэнд) руу хүрэхэд ХОЁР УДАА дарах хэрэгтэй ✓
  */
+/**
+ * 🪜 «Үргэлжлүүлэх →» — алхмын навигаци (🪜 wizard-ийн БАГАНЫН товч)
+ *    🆕 2026-10-05 (🖥 НЭГ УРТ ХУУДАС): ⚠️ ТЕКСТЭЭР хайж БОЛОХГҮЙ болов —
+ *    📱 `[data-mobile-detail-next]` («нэг дэлгэц» горимын товч) нь ≥640px
+ *    дээр `sm:hidden` ч DOM-д БАЙНГА байдаг ба `<form>` дотор ХАМГИЙН ЭХЭНД
+ *    таардаг тул `.click()` нь МОБАЙЛЫН товчийг дарж, алхам ХӨДЛӨХГҮЙ байв ✗
+ *    ⇒ одоо ЗӨВХӨН `[data-step-next]` (codes-ийн стабил селектор) ✓
+ */
 const clickNext = async () => {
-  const res = await evaluate(`(() => { const b = [...document.querySelectorAll('form button')].find((x) => (x.innerText||'').includes('Үргэлжлүүлэх')); if (!b) return 'NOT_FOUND'; b.click(); return 'OK'; })()`);
+  const res = await evaluate(`(() => { const b = document.querySelector('form [data-step-next]'); if (!b) return 'NOT_FOUND'; b.click(); return 'OK'; })()`);
   await wait(800);
   return res;
 };
@@ -339,7 +389,11 @@ ok('форм дотор АЛХМЫН ГАРЧИГ ГАРАХГҮЙ (`[data-step-
   p0.stepHeadings === 0, `stepHeadings=${p0.stepHeadings}`);
 ok('1-р алхам: breadcrumb «Ангилал» — ⚠️ 2026-10-02: ДУГААРГҮЙ болов',
   String(p0.stepLabel).trim() === 'Ангилал', JSON.stringify(p0.stepLabel));
-ok('3 багана харагдаж байна (Үл хөдлөх)', p0.colCount === 3, `colCount=${p0.colCount}`);
+/** 🆕 2026-10-05 (🖥 НЭГ УРТ ХУУДАС): 1440px дээр 📍 Байршил ч DOM-д байдаг
+ *  тул баганын НИЙТ тоо 3 → **6** (🗂 Ангилал 3 + 📍 Байршил 3) ✓ */
+ok('🖥 DOM-д 6 БАГАНА (🗂 Ангилал 3 + 📍 Байршил 3 — 🖥 алхамт тул 3 нь л ХАРАГДАНА)', p0.colCount === 6, `colCount=${p0.colCount}`);
+ok('🗂 1-р алхмын 3 багана ХЭВЭЭР (section · level2 · level3)',
+  ['section', 'level2', 'level3'].every((k) => p0.cols[k]), JSON.stringify(Object.keys(p0.cols)));
 ok('багана 1: 12 ХЭСЭГ', p0.cols.section?.items.length === 12, String(p0.cols.section?.items.length));
 /**
  * 🗑 2026-10-01 (**4 дэх засвар**, хэрэглэгчийн хүсэлт): «сонгосон хэсгийг дээд
@@ -362,6 +416,16 @@ ok('багана 3 дэд төрөл = «Орон сууц»', (p0.cols.level3?.
 ok('багана 3: сонголт хийгээгүй → сонгосон мөр 0 (dupe 0)',
   p0.cols.level3?.dupe === 0 && JSON.stringify(p0.cols.level3?.selected) === '[]',
   `dupe=${p0.cols.level3?.dupe} selected=${JSON.stringify(p0.cols.level3?.selected)}`);
+/**
+ * 🆕 2026-10-05 (🖥 АЛХАМТ, 2 дахь засвар): 🖥 дээр Ч алхамт болсон тул
+ *    `[data-desktop-summary]` нь 1-Р АЛХАМД (🗂 Ангилал) ОГТ ГАРАХГҮЙ
+ *    (`step < 1` → `null`) — сонгосон зам нь баганын цэнхэр мөр +
+ *    `[data-picker-summary]` дээр бий (давхардал 0 ✓)
+ *    ⏳ өмнө «🖥 нэг урт хуудас» үед 1-р алхмаас л харагддаг байв
+ */
+ok('🖥 1-р алхам (🔥 ХООСОН ФОРМ): сонгосон хүснэгт ГАРАХГҮЙ (`step < 1` хаалт ✓)',
+  p0.desktopSummary?.has === false || p0.desktopSummary?.visible === false,
+  JSON.stringify(p0.desktopSummary));
 ok('дүгнэлт: «…сонгоно уу»', (p0.summary || '').includes('сонгоно уу'), p0.summary);
 
 console.log('\n── ② ТҮРЭЭСЛҮҮЛЭХ + ДЭД ТӨРӨЛ СОНГОХ ──');
@@ -382,7 +446,7 @@ ok('багана 3: «🏢 Орон сууц зарна» ГАНЦ (толгой
 console.log('\n── ③ ХАВТГАЙ ХЭСЭГ (🚗 Автомашин) → 2 БАГАНА ──');
 await click('[data-picker="section"] button[data-picker-value="auto"]');
 const p3 = await probe();
-ok('багана 3 АРИЛАВ (2 багана)', p3.colCount === 2, `colCount=${p3.colCount}`);
+ok('🗂 багана 3 АРИЛАВ → 🗂 2 + 📍 3 = 5 багана (DOM-д ✓)', p3.colCount === 5, `colCount=${p3.colCount}`);
 ok('багана 1: «🚗 Автомашин» сонгосон утга ГАНЦ (толгойд давхардахгүй ✓)',
   p3.cols.section?.dupe === 1, `dupe=${p3.cols.section?.dupe} selected=${JSON.stringify(p3.cols.section?.selected)}`);
 ok('багана 2 = 10 дэд төрөл (хавтгай)', p3.cols.level2?.items.length === 10, String(p3.cols.level2?.items.length));
@@ -400,7 +464,7 @@ ok('хавтгай: багана 2-т «Жийп, SUV» ГАНЦ (цэнхэр �
 console.log('\n── ④ БҮЛЭГТЭЙ ХЭСЭГ (💻 Компьютер) → 3 БАГАНА ──');
 await click('[data-picker="section"] button[data-picker-value="computers"]');
 const p5 = await probe();
-ok('3 багана буцаж ирэв', p5.colCount === 3, `colCount=${p5.colCount}`);
+ok('3 багана буцаж ирэв (DOM-д нийт 6 = 🗂 3 + 📍 3 ✓)', p5.colCount === 6, `colCount=${p5.colCount}`);
 ok('багана 2 = 9 БҮЛЭГ', p5.cols.level2?.items.length === 9, JSON.stringify(p5.cols.level2?.items));
 ok('багана 3 хоосон (бүлэг сонгоогүй)', p5.cols.level3?.items.length === 0, String(p5.cols.level3?.items.length));
 await click('[data-picker="level2"] button[data-picker-value="Notebook"]');
@@ -442,10 +506,11 @@ ok('URL нь `?step=2` болов', String(search).includes('step=2'), search);
  *    → ① алхмын байрлал 3 → **2** ② харагдац нь 1-р алхмын БАГАНАТ сонголттой ЯГ
  *    ИЖИЛ болж, `<select>` ХАСАГДАВ (`[data-picker="loc-city|loc-district|loc-khoroo"]`) ✓
  */
-ok('байршил нь 3 БАГАНАТ сонголт (loc-city · loc-district · loc-khoroo)',
-  p9.colCount === 3 && ['loc-city', 'loc-district', 'loc-khoroo'].every((k) => p9.cols[k]),
+ok('байршил нь 3 БАГАНАТ сонголт (loc-city · loc-district · loc-khoroo) — нийт 6 багана',
+  p9.colCount === 6 && ['loc-city', 'loc-district', 'loc-khoroo'].every((k) => p9.cols[k]),
   `colCount=${p9.colCount} keys=${JSON.stringify(Object.keys(p9.cols))}`);
-ok('байршилд `<select>` БАЙХГҮЙ (1-р алхмын форматтай ижил ✓)', p9.selects === 0, `selects=${p9.selects}`);
+ok('байршилд `<select>` БАЙХГҮЙ (1-р алхмын форматтай ижил ✓)',
+  p9.locSelects === 0, `locSelects=${p9.locSelects} (форм нийт ${p9.selects})`);
 ok('📍 байршилд Ч БАГАНЫН ТОЛГОЙ БАЙХГҮЙ (`[data-picker-title]` = 0 ✓)',
   p9.pickerTitles === 0, `pickerTitles=${p9.pickerTitles}`);
 ok('багана 1: «Улаанбаатар» сонгосон утга ГАНЦ (толгойд давхардахгүй) + 22 хот/аймаг',
@@ -457,6 +522,25 @@ ok('багана 2 (дүүрэг) = 9 дүүрэг, сонголт хийгээ�
 ok('багана 3 (хороо) хоосон — дүүрэг сонгоогүй тул ✓',
   p9.cols['loc-khoroo']?.items.length === 0,
   String(p9.cols['loc-khoroo']?.items.length));
+/**
+ * 🆕 2026-10-05 — 🖥 «СОНГОСОН АНГИЛАЛ / БАЙРШИЛ» хүснэгт (≥640px):
+ *    ① 🗂 АНГИЛАЛ — 2-р алхам (📍 Байршил) дээр ХАРАГДАНА ✓
+ *    ② ⚠️ 2026-10-05 (2 дахь засвар — 🖥 АЛХАМТ): 📍 мөр нь ЗӨВХӨН
+ *       `step >= 2` (📋 Дэлгэрэнгүй) үед гарна ⇒ энэ алхамд ХАРАГДАХГҮЙ ✓
+ *       — байршил нь доорх `[data-location-summary]` дээр бий (давхардал 0 ✓)
+ *    ③ 📱 <640px дээр энэ хүснэгт ХАРАГДАХГҮЙ (`hidden sm:flex`) ✓
+ *    ℹ️ Энэ алхам дээр сонгосон ангилал = 🏠 Үл хөдлөх ▸ … ▸ Орон сууц
+ *       (⑥ хэсэгт хэсгийг `real-estate` руу буцаасан ✓)
+ */
+ok('🖥 2-р алхам (📍 Байршил): 🗂 СОНГОСОН АНГИЛАЛ хүснэгт ХАРАГДАНА (өргөн > 0 ✓)',
+  p9.desktopSummary?.has === true && p9.desktopSummary?.visible === true
+  && (p9.desktopSummary?.text || '').includes('Үл хөдлөх'),
+  JSON.stringify(p9.desktopSummary));
+ok('🖥 2-р алхам: 📍 мөр ХҮСНЭГТЭД ГАРАХГҮЙ (`step >= 2` хаалт ✓ — давхардал 0)',
+  p9.desktopSummary?.location === false
+  && !(p9.desktopSummary?.text || '').includes('📍')
+  && (p9.locationSummary || '').includes('Улаанбаатар'),
+  JSON.stringify({ loc: p9.desktopSummary?.location, text: p9.desktopSummary?.text, lsum: p9.locationSummary }));
 
 console.log('\n── ⑥′ БАЙРШЛЫН БАГАНУУД: Хот → Дүүрэг → Хороо ──');
 await click('[data-picker="loc-district"] button[data-picker-value="Баянгол"]');
@@ -499,6 +583,25 @@ ok('3-Р АЛХАМ руу шилжив (breadcrumb = «Дэлгэрэнгүй»
   JSON.stringify(p13.stepLabel));
 const search3 = await evaluate('location.search');
 ok('URL нь `?step=3` болов', String(search3).includes('step=3'), search3);
+/**
+ * 🆕 2026-10-05 — 🖥 «СОНГОСОН АНГИЛАЛ / БАЙРШИЛ» хүснэгт (ГОЛ ЗАСВАР):
+ *    Хэрэглэгчийн гомдол: «Зар нэмэх форм дээр сонгосон категори/байршил
+ *    КОМПЬЮТЕР дээр харагдахгүй байна» ⇒ 3-р алхам (📋 Дэлгэрэнгүй) ба
+ *    түүнээс хойш 📱 `MobileAnswers` (`sm:hidden`) нь харагддаггүй байсан тул
+ *    🖥 дээр юу сонгосон нь ХААНА Ч байгаагүй ✗ ⇒ одоо хүснэгтэд ХОЁУЛАА
+ *    (🗂 Ангилал + 📍 Зарын дэд байршил) харагдана ✓
+ *    ℹ️ Энэ алхам дээр сонгосон нь: 🏠 Үл хөдлөх ▸ … ▸ Орон сууц +
+ *       📍 Дархан-Уул (хот сольсон үед дүүрэг/хороо ЦЭВЭРЛЭГДСЭН ✓ —
+ *       ℹ️ ⑤ хэсэгт 💻 Чихэвч сонгосон ч ⑥ хэсэгт хэсгийг `real-estate`
+ *       руу буцаасан тул ангилал нь 🏠 Үл хөдлөх ✓)
+ */
+ok('🖥 3-р алхам (📋 Дэлгэрэнгүй): 🗂 АНГИЛАЛ ба 📍 БАЙРШИЛ ХОЁУЛАА харагдана (өргөн > 0 ✓)',
+  p13.desktopSummary?.has === true && p13.desktopSummary?.visible === true && p13.desktopSummary?.location === true,
+  JSON.stringify(p13.desktopSummary));
+ok('🖥 3-р алхам: хүснэгтэд сонгосон БОДИТ УТГУУД бий (📱 `MobileAnswers`-тай НЭГ ЭХ СУРВАЛЖ ✓)',
+  ['🗂 Ангилал', '📍 Зарын дэд байршил', 'Үл хөдлөх', '▸', 'Дархан-Уул']
+    .every((x) => (p13.desktopSummary?.text || '').includes(x)),
+  p13.desktopSummary?.text);
 
 console.log('\n── ⑥‴ 3-Р АЛХАМ (📋 Дэлгэрэнгүй): ТАЛБАРУУД ЦУВАА = 1 БАГАНА ──');
 /**
@@ -641,11 +744,22 @@ console.log('\n── ⑪ 📱 МОБАЙЛ (390px): АСУУЛТ БҮР НЭГ 
  *    Байршил (хот → дүүрэг → хороо) гэж ДАРААЛАН; сүүлийн сонголт дээр
  *    ДАРААГИЙН АЛХАМ руу ШУУД шилжинэ ✓
  * ⚠️ `[data-mobile-*]` нь `[data-picker*]`-аас ТУСДАА нэршил — дээрх
- *    `colCount` (=3) шалгалтууд хөндөгдөхгүй ✓
+ *    `colCount` (=6) шалгалтууд хөндөгдөхгүй ✓
  * ⚠️ Энэ template literal дотор backtick / долларын буржгар хаалт БИЧИХГҮЙ
  */
 const MOBILE_PROBE = `(() => {
-  const q = document.querySelector('[data-mobile-question]');
+  /**
+   * ⚠️ 2026-10-05 (🖥 НЭГ УРТ ХУУДАС): 🖥 дээр БҮХ алхам DOM-д БАЙНГА болов
+   *    ⇒ 📱 [data-mobile-question] нь 390px дээр Ч ХОЁР байна (1-р алхам
+   *    «Хэсэг» + 2-р алхам «Хот / Аймаг») ⇒ querySelector нь ИДЭВХТЭЙ
+   *    БУСЫГ (эхнийх) барьж, толгой/жагсаалт нь ХУУЧИН дэлгэцээсээ үлдэнэ ✗
+   *    ⇒ ХАРАГДАЖ БАЙГААГ (өргөн > 0) л сонгоно ✓
+   *    (⚠️ 1440px дээр хоёулаа sm:hidden тул qs[0] руу унана — visible нь
+   *     false хэвээр ✓)
+   * ⚠️ Энэ template literal дотор backtick / долларын буржгар хаалт БИЧИХГҮЙ
+   */
+  const qs = [...document.querySelectorAll('[data-mobile-question]')];
+  const q = qs.find((el) => el.getBoundingClientRect().width > 0) || qs[0] || null;
   const desky = document.querySelector('[role="group"][aria-label="Категорио сонгоно уу"]');
   const rows = [...document.querySelectorAll('[data-form-row="details"] > .form-group')];
   return {
@@ -685,8 +799,8 @@ ok('📱 1 дэх дэлгэц: толгой «Зар нийтлэх» + ← т�
   JSON.stringify({ title: mb0.title, back: mb0.back, search: mb0.search }));
 ok('📱 1 дэх дэлгэц: 12 ХЭСЭГ (багана БИШ — жагсаалт)',
   mb0.items.length === 12, String(mb0.items.length));
-ok('📱 баганат сонголт ХАРАГДАХГҮЙ (DOM-д 3 хэвээр ч өргөн 0 ✓)',
-  mb0.cols === 3 && mb0.colsVisible === false && mb0.desktopVisible === false,
+ok('📱 баганат сонголт ХАРАГДАХГҮЙ (DOM-д 6 хэвээр ч өргөн 0 ✓)',
+  mb0.cols === 6 && mb0.colsVisible === false && mb0.desktopVisible === false,
   JSON.stringify({ cols: mb0.cols, colsVisible: mb0.colsVisible, desktop: mb0.desktopVisible }));
 
 ok('📱 ХЭСЭГ («Үл хөдлөх») дарж сонгов', (await mclick('real-estate')) === 'OK');
@@ -713,6 +827,18 @@ const mb4 = await mprobe();
 ok('📱 2-Р АЛХАМ (📍 Байршил): «Хот / Аймаг» жагсаалт (20+) гарч ирэв',
   mb4.stepLabel.trim() === 'Байршил' && mb4.items.length >= 20 && mb4.title === 'Зар нийтлэх',
   JSON.stringify({ step: mb4.stepLabel, n: mb4.items.length, title: mb4.title }));
+/**
+ * 🆕 2026-10-05 — 🖥 «СОНГОСОН АНГИЛАЛ / БАЙРШИЛ» хүснэгт нь ≥640px-ийн
+ *    ТУСГАЙ харагдац (`hidden sm:flex`) ⇒ 📱 390px дээр `display:none`
+ *    (DOM-д бий ч өргөн 0 ✓) — мобайлд 📱 `MobileAnswers` л харагдана ✓
+ */
+const dsMobile = await evaluate(`(() => {
+  const el = document.querySelector('[data-desktop-summary]');
+  if (!el) return { has: false, w: -1 };
+  return { has: true, w: +el.getBoundingClientRect().width.toFixed(1) };
+})()`);
+ok('📱 390px: 🖥 СОНГОСОН ХҮСНЭГТ ХАРАГДАХГҮЙ (өргөн 0 — мобайл нь 📱 MobileAnswers-тай ✓)',
+  dsMobile.has === true && dsMobile.w === 0, JSON.stringify(dsMobile));
 
 ok('📱 Хот («Улаанбаатар») сонгов', (await mclick('Улаанбаатар')) === 'OK');
 const mb5 = await mprobe();

@@ -18,6 +18,32 @@
 //      навигацитай ДАВХАРДАХГҮЙ байдал (`hide-below-sm`) ✓
 //   ⑤ CSS (`app/globals.css`) — дүрэм нь ЗӨВХӨН `max-width: 639.98px` дотор
 //      (🖥 ≥640px дээр бүх талбар ХЭВЭЭР ✓)
+//   ⑥ 🖥 ≥640px — СОНГОСОН АНГИЛАЛ / БАЙРШИЛ (`DesktopSummary`, 2026-10-05):
+//      хэрэглэгчийн хүсэлт «Зар нэмэх форм дээр сонгосон категори/байршил
+//      КОМПЬЮТЕР дээр харагдахгүй байна» ⇒ сонгосон зам нь ЗӨВХӨН 📱
+//      `MobileAnswers` (`sm:hidden`) дотор байсан тул 🖥 дээр 2-р алхмаас хойш
+//      юу сонгосон нь ХААНА Ч байгаагүй ✗ ⇒ 🆕 `data-desktop-summary` хүснэгт:
+//      🗂 АНГИЛАЛ (`step >= 1`) + 📍 БАЙРШИЛ (`step >= 2`) — 1-р алхамд
+//      ГАРАХГҮЙ (сонголт нь picker дээрээ бий — давхардал 0 ✓)
+//      (1-р алхмын `[data-picker-summary]` ба 2-р алхмын `[data-location-summary]`
+//      -тай ДАВХАРДАХГҮЙ ✓) · утга нь формойн state-ээс ШУУД
+//      (`pickedCategoryPath`/`pickedLocationPath` — 📱-тай НЭГ ЭХ СУРВАЛЖ ✓)
+//      🔍 Хайх үг: DesktopSummary, data-desktop-summary, pickedCategoryPath
+//   ⑦ 🖥 БА 📱 — АЛХАМТ ФОРМ (2026-10-05, 2 дахь засвар): «🖥 нэг урт хуудас»
+//      (бүх 5 алхам ЗЭРЭГ) нь АЛДАА байв ✗ (сонгосон ангилал/байршлын хэсэг
+//      дараагийн алхамд МӨН харагдаж байв) ⇒ форм нь 🖥 дээр ч 📱 шиг
+//      ЗӨВХӨН ОДООГИЙН алхмыг харуулна. Механизм нь КЛАСС: блок бүр DOM-д
+//      БАЙНГА, идэвхтэй бус нь `hidden` (`display:none`) ✓
+//      · `data-step-block` = 7 блок: category · location · details · price ·
+//        desc · media · media-images (price+desc нь өмнө НЭГ `step === 3`
+//        блок байсныг ХОЁР болгож салгав — тайлбар нь үнийн ДАРАА ✓)
+//      · алхмын навигаци нь БҮХ дэлгэцэд (🖥-ийн тусдаа доод блок ХАСАГДАВ ✓)
+//      · 🪜 СТАБИЛ СЕЛЕКТОРУУД: `[data-step-back]` · `[data-step-next]` ·
+//        `[data-step-submit]` (өмнөх 🖥 `[data-desktop-cancel]` /
+//        `[data-desktop-submit]` ХАСАГДАВ)
+//      · `submitLabel` = 📱/🖥 НЭГ ЭХ СУРВАЛЖ (нэг л доод товч)
+//      · `[data-step-current]` нь БҮХ дэлгэцэд (CDP selector ✓)
+//      🔍 Хайх үг: data-step-block, hidden, алхамт форм, submitLabel
 //
 // АЖИЛЛУУЛАХ:  npm run test:wizard
 //    📱 CDP-ээр жинхэнэ дэлгэцүүдийг шалгах: `npm run cdp:picker`
@@ -201,7 +227,7 @@ console.log('\n── ③ DOM маркууд ──');
 
 /** 📄 3-р алхмын JSX-ийг гаргаж авах (дараагийн алхмаас өмнөх хэсэг) */
 const step3 = (() => {
-  const from = FORM.indexOf('{step === 2 && (');
+  const from = FORM.indexOf('data-step-block="details"');
   assert.ok(from > -1, '3-р алхмын блок олдсонгүй');
   const to = FORM.indexOf('═══ 4-р алхам', from);
   assert.ok(to > from, '4-р алхмын эхлэл олдсонгүй');
@@ -304,16 +330,22 @@ t('📱 Сонголттой талбар — дармагц ДАРААГИЙН 
   assert.match(FORM, /pick: isAttrPick\(f\),/);
 });
 
-t('📱 Wizard нь ЗӨВХӨН 3-р алхамд (`step === 2`) — бусад алхамд DOM-д БАЙХГҮЙ ✓', () => {
+t('📱 Wizard нь ЗӨВХӨН 3-р алхамд (`data-step-block="details"`) — 📱 дээр бусад алхамд ХАРАГДАХГҮЙ ✓', () => {
   /** ⚠️ «data-mobile-detail-head» гэсэн үг сэтгэгдэл (🔍 хайх үг) дотор ч
    *  байдаг тул ЗӨВХӨН бодит JSX маркийг тоолно ✓ */
   const MARK = 'data-mobile-detail-head data-mobile-detail-key={activeDetail.key}';
   assert.equal(FORM.split(MARK).length - 1, 1, 'JSX марк ЯГ 1 байх ёстой');
-  /** ⚠️ Толгой нь 3-р алхмын бүсэд (`step3` = `{step === 2 && (` … 4-р алхам)
-   *  байх ба түүний хамгийн ойрын `{step ===` нөхцөл нь 3-р алхам БАЙХ ЁСТОЙ ✓ */
+  /** ⚠️ Толгой нь 3-р алхмын бүсэд (`step3` = `data-step-block="details"` …
+   *  4-р алхам) байх ёстой ✓
+   *  🆕 2026-10-05 (🖥 НЭГ ХУУДАС): алхмын блокууд `{step === N && (…)}` биш,
+   *  `data-step-block="…"` + `hide-below-sm` болсон ⇒ хамгийн ойрын блок нь
+   *  `details` БАЙХ ЁСТОЙ (📱 дээр зөвхөн идэвхтэй алхам харагдана ✓) */
   assert.ok(step3.includes(MARK), 'толгой нь 3-р алхмын бүсэд байх ёстой');
-  const anyStep = FORM.lastIndexOf('{step ===', FORM.indexOf(MARK));
-  assert.ok(anyStep === FORM.indexOf('{step === 2 && ('), 'хамгийн ойрын нөхцөл нь 3-р алхам биш');
+  const nearest = FORM.lastIndexOf('data-step-block="', FORM.indexOf(MARK));
+  assert.ok(
+    nearest > -1 && FORM.startsWith('data-step-block="details"', nearest),
+    'хамгийн ойрын алхмын блок нь 3-р алхам (`details`) биш',
+  );
 });
 
 t('📱 Wizard навигаци: «Үргэлжлүүлэх» (`mobileDetailNext`) + «Алгасах» (`hidden` — заавал үед ✓)', () => {
@@ -339,6 +371,73 @@ t('🪜 Алхмын «Үргэлжлүүлэх» — 3-р алхамд ЗӨВХ
 t('🖥 ≥640px дээр мобайл UI БҮРЭН ХААГДАХГҮЙ (`sm:hidden` — толгой БА навигаци ✓)', () => {
   assert.equal((step3.match(/className="sm:hidden"/g) || []).length, 1, 'толгойн sm:hidden');
   assert.equal((step3.match(/gap-2 sm:hidden/g) || []).length, 1, 'навигацийн sm:hidden');
+});
+
+
+// ────────────────────────────────────────────────────────────
+// ④′ 🖥 ≥640px — СОНГОСОН АНГИЛАЛ / БАЙРШИЛ (`DesktopSummary`)
+// ────────────────────────────────────────────────────────────
+console.log('\n── ④′ 🖥 ≥640px — сонгосон ангилал ба байршил ──');
+
+/** 🧩 `function DesktopSummary(…) { … }` — БҮТЭН компонент (⚠️ `fnBody` нь
+ *  параметр нь destructuring тул ЗӨВХӨН параметрийн блокийг буцаана ✗) */
+const desktopSummaryComp = (() => {
+  const from = FORM.indexOf('function DesktopSummary(');
+  assert.ok(from > -1, '🖥 `DesktopSummary` олдсонгүй');
+  const end = FORM.indexOf('\n}\n', from);
+  assert.ok(end > from, '🖥 `DesktopSummary`-ийн төгсгөл олдсонгүй');
+  return FORM.slice(from, end + 2);
+})();
+
+t('🖥 `DesktopSummary` нь ТОГТВОРТОЙ selector (`data-desktop-summary`) + 📱 <640px дээр ХААГДАХ (`hidden` … `sm:flex`) ✓', () => {
+  assert.ok(desktopSummaryComp.includes('data-desktop-summary'), 'selector байх ёстой');
+  /** ⚠️ `hidden` нь 📱 дээр нуух, `sm:flex` нь ≥640px дээр харуулах ✓ */
+  assert.match(desktopSummaryComp, /className="[^"]*\bhidden\b[^"]*\bsm:flex\b[^"]*"/);
+});
+
+t('🖥 🗂 АНГИЛАЛ ба 📍 БАЙРШИЛ нь `step`-ЭЭР АЛХАМ АЛХМААР НЭЭГДЭНЭ (🖥 алхамт ✓)', () => {
+  assert.ok(desktopSummaryComp.includes('🗂 Ангилал:'), '① 🗂 мөр байх ёстой');
+  assert.ok(desktopSummaryComp.includes('data-desktop-summary-location'), '② 📍 мөрийн selector');
+  /** ⚠️ 2026-10-05 (2 дахь засвар): 🖥 дээр ч алхамт болсон тул 📍 мөр нь
+   *  `step >= 2` үед л гарна (Байршил алхмаас хойш) ✓ */
+  assert.ok(desktopSummaryComp.includes('{step >= 2 && ('), '`step >= 2` хаалт байх ёстой ✗');
+  assert.ok(desktopSummaryComp.includes('if (step < 1) return null;'),
+    '`step < 1` (Ангилал) дээр ОГТ гарахгүй байх ёстой ✗');
+  assert.ok(desktopSummaryComp.includes('сонгоогүй</span>'), 'сонголт хоосон үед «сонгоогүй» ✓');
+});
+
+t('🖥 Формд `step={step}`-тэй — 🖥 алхамт тул алхам алхмаар нээгдэнэ ✓', () => {
+  assert.match(FORM, /<DesktopSummary categoryPath=\{pickedCategoryPath\} locationPath=\{pickedLocationPath\} step=\{step\} \/>/);
+  /** ⚠️ 1-р алхмын блок дотор `DesktopSummary` БАЙХГҮЙ ✓ */
+  const step0 = (() => {
+    const from = FORM.indexOf('data-step-block="category"');
+    assert.ok(from > -1, '1-р алхмын блок олдсонгүй');
+    const to = FORM.indexOf('═══ 2-р алхам', from);
+    assert.ok(to > from, '2-р алхмын эхлэл олдсонгүй');
+    return FORM.slice(from, to);
+  })();
+  assert.ok(step0.indexOf('<DesktopSummary') === -1, '1-р алхамд DesktopSummary байж болохгүй');
+  /** ⚠️ Хүснэгт нь `<form>` дотор байна (товчны `type`-д нөлөөлөхгүй `div`) ✓ */
+  assert.ok(FORM.indexOf('<DesktopSummary') > FORM.indexOf('<form onSubmit={handleSubmit}>'), '`<form>` дотор байх ёстой');
+});
+
+t('🖥 НЭГ ЭХ СУРВАЛЖ: 📱 `mobileAnswerRows` ба 🖥 `DesktopSummary` ХОЁУЛАА `pickedCategoryPath`/`pickedLocationPath`-ыг л уншина (📱 түлхүүрүүд ХӨНДӨГДӨӨГҮЙ ✓)', () => {
+  assert.equal((FORM.match(/const pickedCategoryPath = /g) || []).length, 1, 'pickedCategoryPath ЯГ 1 удаа');
+  assert.equal((FORM.match(/const pickedLocationPath = /g) || []).length, 1, 'pickedLocationPath ЯГ 1 удаа');
+  /** ① 📱 мөрүүд нь тэдгээрийг л ашиглана (энд дахин бодохгүй ✓) */
+  assert.match(FORM, /rows\.push\(\{ key: 'step-category', label: 'Ангилал', value: pickedCategoryPath \}\)/);
+  assert.match(FORM, /rows\.push\(\{ key: 'step-location', label: 'Зарын дэд байршил', value: pickedLocationPath \}\)/);
+  /** ② 🖥 хүснэгт нь ЯГ ижил утгуудыг prop-оор авна ✓ */
+  assert.match(FORM, /<DesktopSummary categoryPath=\{pickedCategoryPath\} locationPath=\{pickedLocationPath\} step=\{step\} \/>/);
+  /** ③ 📱-ийн тусгаарлагчид (` ▸ ` ба ` — `) ХЭВЭЭР ✓ */
+  assert.ok(FORM.includes(".join(' ▸ ')") && FORM.includes(".join(' — ')"), 'тусгаарлагчид хэвээр байх ёстой');
+});
+
+t('🖥 Утга нь формойн state-ээс ШУУД — 🆕 `useState` / DB / API БАЙХГҮЙ (хадгалалт нэмэгдээгүй ✓)', () => {
+  assert.match(FORM, /const pickedCategoryPath = form\.propertyType/);
+  assert.match(FORM, /const pickedLocationPath = \[form\.city, form\.district, simpleForm \? '' : form\.khoroo\]/);
+  assert.ok(!FORM.includes('setPickedCategoryPath'), 'setPickedCategoryPath байж болохгүй');
+  assert.ok(!FORM.includes('setPickedLocationPath'), 'setPickedLocationPath байж болохгүй');
 });
 
 
@@ -383,6 +482,92 @@ t('📱 Мобайлд нэр нь оролтын ДЭЭР (1 баганат) �
     assert.ok(!b.includes('[data-form-row="details"] > .form-group') || b.includes('data-mobile-active'),
       'мобайлд хэвтээ дүрэм байж болохгүй');
   });
+});
+
+// ────────────────────────────────────────────────────────────
+// ⑦ 🖥 БА 📱 — АЛХАМТ ФОРМ (зөвхөн ОДООГИЙН алхам харагдана)
+// ────────────────────────────────────────────────────────────
+console.log('\n── ⑦ 🖥 ба 📱 — алхамт форм ──');
+
+/**
+ * 🧩 7 БЛОК = 5 алхам (2026-10-05).
+ * ⚠️ Дараалал нь ХАРАГДАХ дараалал ЯГ ИЖИЛ байх ёстой —
+ *    `price` ба `desc` нь өмнө НЭГ `step === 3` блок байсныг ХОЁР болгож
+ *    салгасан (тайлбар нь үнийн ДАРАА гарна ✓)
+ * ⚠️ 2026-10-05 (2 дахь засвар): «🖥 нэг урт хуудас» ХҮЧИНГҮЙ — идэвхтэй бус
+ *    блок бүр `hidden`-ээр нуугдаж, 🖥 БА 📱 ХОЁУЛАНД зөвхөн ОДООГИЙН
+ *    `step`-ийн блок харагдана ✓ (⏳ өмнө `hide-below-sm` байв — тэр нь
+ *    ЗӨВХӨН <640px-д нуудаг тул 🖥 дээр бүгд харагддаг байлаа ✗)
+ */
+const STEP_BLOCKS = ['category', 'location', 'details', 'price', 'desc', 'media', 'media-images'];
+
+t('🖥 Бүх блок DOM-д БАЙНГА (`data-step-block="…"`) — дараалал нь харагдах дараалал ИЖИЛ ✓', () => {
+  const found = [...FORM.matchAll(/data-step-block="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(found, STEP_BLOCKS, 'блокийн тоо/дараалал зөрүүтэй');
+});
+
+t('🧹 Хуучин `{step === N && (…)}` хаалтууд БҮРЭН арилсан (нэг хуудас ✓)', () => {
+  for (let i = 0; i <= 4; i++) {
+    assert.ok(!FORM.includes(`{step === ${i} && (`), `${i}-р алхмын хуучин нөхцөлт хаалт үлдсэн ✗`);
+  }
+});
+
+t('🖥 БА 📱 — идэвхтэй БУС блок бүр `hidden`-ээр НУУГДАНА (алхамт форм ✓)', () => {
+  for (const name of STEP_BLOCKS) {
+    const at = FORM.indexOf(`data-step-block="${name}"`);
+    assert.ok(at > -1, `${name} блок олдсонгүй`);
+    const tag = FORM.slice(at, FORM.indexOf('>', at));
+    assert.match(tag, /className=\{step === \d+ \? '' : 'hidden'\}/,
+      `${name}: \`hidden\` хаалт байхгүй ✗`);
+  }
+});
+
+t('🖥 Алхмын навигаци («← Буцах» / «Үргэлжлүүлэх») 🖥 дээр Ч харагдана (`sm:hidden` ХАСАГДАВ ✓)', () => {
+  /** ⚠️ 2 дахь засвар: 🖥 дээр ч алхамт болсон тул навигацийн мөр нь 📱-д
+   *  ТОГТСОНГҮЙ — БҮХ дэлгэцэд харагдана ✓ (товчнууд нь `data-step-*`
+   *  стабил селектортой хэвээр — CDP тестүүд дээр тулгуурлана ✓) */
+  assert.match(FORM, /className="mt-6 flex items-center justify-between gap-3 border-t border-gray-100 pt-4"/);
+  assert.ok(!FORM.includes('border-gray-100 pt-4 sm:hidden'), 'навигаци 🖥 дээр нуугдах ёсгүй ✗');
+});
+
+t('🧹 🖥-ийн ТУСДАА доод блок (ЦУЦЛАХ + НИЙТЛЭХ) ХАСАГДАВ — навигаци түүнийг орлов ✓', () => {
+  /** ⚠️ 2 дахь засвар: 🖥 дээр ч алхамт болсон тул зөвхөн НЭГ доод товчны
+   *  мөр байна (📱/🖥 ижил) — ХОЁР дахь submit товч гарахгүй ✓ */
+  assert.ok(!FORM.includes('pt-4 sm:flex"'), '🖥-ийн тусдаа доод блок үлдсэн ✗');
+  assert.ok(!FORM.includes('data-desktop-cancel'), '`[data-desktop-cancel]` үлдсэн ✗');
+  assert.ok(!FORM.includes('data-desktop-submit'), '`[data-desktop-submit]` үлдсэн ✗');
+});
+
+t('🏷️ `submitLabel` нь НЭГ ЭХ СУРВАЛЖ (нэг л доод товч — ЯГ 1 хэрэглээ ✓)', () => {
+  assert.equal((FORM.match(/const submitLabel = /g) || []).length, 1, 'тодорхойлолт ЯГ 1 байх ёстой');
+  assert.equal((FORM.match(/\{submitLabel\}/g) || []).length, 1, 'хэрэглээ ЯГ 1 (нэг доод товч) байх ёстой');
+  assert.match(FORM, /isEdit \? 'Хадгалж байна\.\.\.' : 'Нийтэлж байна\.\.\.'/);
+  assert.match(FORM, /isEdit \? '💾 Өөрчлөлтийг хадгалах' : '✅ Зар нийтлэх'/);
+  assert.match(FORM, /'🗜 Зургуудыг шахаж байна\.\.\.'/);
+});
+
+t('🪜 Алхмын навиг: СТАБИЛ селекторууд (`data-step-back` · `data-step-next` · `data-step-submit` ✓)', () => {
+  /** ⚠️ 2026-10-05 (🖥 НЭГ УРТ ХУУДАС): 📱 `[data-mobile-detail-next]` нь
+   *  ≥640px дээр `sm:hidden` ч DOM-д БАЙНГА болсон ⇒ CDP тест «Үргэлжлүүлэх»-ийг
+   *  ТЕКСТЭЭР хайвал ХАМГИЙН ЭХНИЙ таарц болох МОБАЙЛЫН товчийг дарж, алхам
+   *  ХӨДЛӨХГҮЙ байв ✗ ⇒ wizard-ийн товчнууд стабил `data-*`-тай болов ✓ */
+  assert.match(FORM, /data-step-back\s+onClick=\{goBack\}/, '`[data-step-back]` дутуу');
+  assert.match(FORM, /data-step-next\s+onClick=\{goNext\}/, '`[data-step-next]` дутуу');
+  assert.match(FORM, /data-step-submit\s+className/, '`[data-step-submit]` дутуу');
+});
+
+t('🖥 Доод товчны селекторууд (`data-desktop-cancel` · `data-desktop-submit`) — 2 ДАХЬ ЗАСВАРААР ХАСАГДАВ (эдгээр селектор DOM-д БАЙХГҮЙ) ✓', () => {
+  /** ⚠️ `[data-step-next]` нь 📱 wizard-ийнх ТУЛ 🖥 доод блокт БАЙХ ЁСГҮЙ —
+   *  эс бөгөөс CDP-ийн `form [data-step-next]` нь 🖥 дээр ХОЁР товч олж,
+   *  `querySelector` нь 📱-ийг (эхнийх) сонгоно ✗ */
+  assert.ok(!FORM.includes('data-desktop-cancel'), '`[data-desktop-cancel]` үлдсэн ✗');
+  assert.ok(!FORM.includes('data-desktop-submit'), '`[data-desktop-submit]` үлдсэн ✗');
+  assert.ok(!FORM.includes('pt-4 sm:flex"'), '🖥-ийн тусдаа доод блок үлдсэн ✗');
+});
+
+t('🧭 Breadcrumb: `[data-step-current]` DOM-д ХЭВЭЭР (CDP-ийн selector ✓) — 🖥 дээр НЭГДСЭН гарчиг ✓', () => {
+  assert.match(FORM, /data-step-current className="font-semibold text-gray-800"/);
+  assert.ok(!FORM.includes('sm:inline">Зар нийтлэх'), '🖥-ийн тогтмол гарчиг үлдсэн ✗');
 });
 
 console.log(`\n✅ Нийт ${passed} шалгалт амжилттай — 📱 3-р алхам «асуулт бүр нэг дэлгэц» гэрээ түгжигдэв\n`);

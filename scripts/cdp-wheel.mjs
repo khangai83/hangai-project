@@ -134,9 +134,12 @@ const clickVisible = async (sel) => {
   await wait(500);
   return res;
 };
-/** 🪜 «Үргэлжлүүлэх →» — алхмын навигаци (cdp-picker.mjs-тэй ижил) */
+/** 🪜 «Үргэлжлүүлэх →» — алхмын навигаци (cdp-picker.mjs-тэй ижил)
+ *  ⚠️ 2026-10-05 (🖥 НЭГ УРТ ХУУДАС): ТЕКСТЭЭР хайж БОЛОХГҮЙ — 📱
+ *     `[data-mobile-detail-next]` нь ≥640px дээр `sm:hidden` ч DOM-д БАЙНГА
+ *     байдаг тул эхэнд таарч, алхам ХӨДЛӨХГҮЙ байв ✗ ⇒ `[data-step-next]` ✓ */
 const clickNext = async () => {
-  const res = await evaluate(`(() => { const b = [...document.querySelectorAll('form button')].find((x) => (x.innerText||'').includes('Үргэлжлүүлэх')); if (!b) return 'NOT_FOUND'; b.click(); return 'OK'; })()`);
+  const res = await evaluate(`(() => { const b = document.querySelector('form [data-step-next]'); if (!b) return 'NOT_FOUND'; b.click(); return 'OK'; })()`);
   await wait(900);
   return res;
 };

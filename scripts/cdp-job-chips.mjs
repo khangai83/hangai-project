@@ -211,7 +211,13 @@ for (let i = 0; i < 4; i += 1) {
   const step = await evaluate(`(() => { const e = document.querySelector('[data-step-current]'); return e ? e.innerText.trim() : ''; })()`);
   console.log(`   алхам: ${step}`);
   if (/Дэлгэрэнгүй/.test(step)) break;
-  const clicked = await evaluate(`(() => { const b = [...document.querySelectorAll('button')].find((x) => /Үргэлжлүүлэх/.test(x.innerText) && x.offsetParent !== null); if (!b) return false; b.click(); return true; })()`);
+  /**
+   * 🆕 2026-10-05 (🖥 НЭГ УРТ ХУУДАС): 🖥 ≥640px дээр 🪜 wizard-ийн товч
+   *    `sm:hidden` болов ⇒ хуучин `x.offsetParent !== null` шалгалт ХЭЗЭЭ Ч
+   *    таарахгүй ✗ мөн ТЕКСТЭЭР хайвал 📱 `[data-mobile-detail-next]` руу
+   *    андуурна ✗ ⇒ стабил селектор `[data-step-next]` ✓
+   */
+  const clicked = await evaluate(`(() => { const b = document.querySelector('[data-step-next]'); if (!b) return false; b.click(); return true; })()`);
   console.log(`   «Үргэлжлүүлэх» → ${clicked}`);
   await wait(2500);
 }
