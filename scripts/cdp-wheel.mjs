@@ -8,6 +8,12 @@
 //    дээр дарахад утга формоо ШИНЭЧЛЭХ ④ ГҮЙЛГЭЭ зогсоход төвд байгаа
 //    мөр сонгогдох ⑤ `Escape`/ард тал/«Болсон» хаах ⑥ 🖥 дээр гар бичилт
 //    ХЭВЭЭР + утга нь ХОЁР харагдацад ХАМТ хадгалагдах
+//    ⚠️ 🆕 2026-10-05 (53) — 📅 ОН · 🏢 НИЙТ ДАВХАР · 🏠 ДАВХАР нь 📱 дээр
+//       ГАРААС БИЧИГДДЭГ болов (2 БАГАНАТ ЖАГСААЛТ ГАРСАН, хэрэглэгчийн
+//       хүсэлт) ⇒ 🎡 дугуй нь ЗӨВХӨН НЭМЭЛТ боломж («🎡 Гүйлгээд сонгох»
+//       холбоос). Тиймээс шалгалт нь дугуйнаас ГАДНА гараас бичих урсгалыг ч
+//       хамарна: дугуйнаас сонгоход утга нь доод `input`-д БИЧИГДЭНЭ
+//       (`inputValue`) ба эдгээр 3 дэлгэцэд `[data-mobile-option]` = **0** ✓
 //
 // ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
 //   1) сервер http://localhost:3000 (`npm run dev`)
@@ -340,6 +346,26 @@ const fillTitle = async (v) => {
   await wait(400);
   return res;
 };
+/**
+ * ⌨️ 🆕 2026-10-05 (53) — ДУРЫН controlled input-д БОДИТ гараас бичилт.
+ * 🎯 Хэрэглэгчийн хүсэлт: «гар утаснаас ашиглалтанд орсон он, барилгын нийт
+ *    давхар, байрны давхарыг гараас оруулдаг болго» ⇒ 📅 он · 🏢 нийт давхар ·
+ *    🏠 давхар нь 📱 дээр ЖИНХЭНЭ тоон оролт болов (`ChoiceField`-ийн
+ *    `mobileInput`) — энэ туслах нь түүн дээр хүн шиг бичнэ ✓
+ * ⚠️ `el.value = …` шууд тавибал React ХАРАХГҮЙ (native setter + `input` ✓)
+ */
+const fillInput = async (sel, v) => {
+  const res = await evaluate(`(() => {
+    const el = document.querySelector(${JSON.stringify(sel)});
+    if (!el) return 'NOT_FOUND';
+    const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    set.call(el, ${JSON.stringify(v)});
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    return 'OK';
+  })()`);
+  await wait(400);
+  return res;
+};
 
 
 console.log('\n── ① НЭВТРЭЛТ + 3-Р АЛХАМ (📋 Дэлгэрэнгүй) ХҮРЭХ ──');
@@ -363,7 +389,7 @@ const step3 = await evaluate('(document.querySelector("[data-step-current]") || 
 ok('3-Р АЛХАМ (📋 Дэлгэрэнгүй) руу шилжив', String(step3).trim() === 'Дэлгэрэнгүй', JSON.stringify(step3));
 
 // ────────────────────────────────────────────────────────────
-console.log('\n── ② 📱 390px: «НЭГ ДЭЛГЭЦЭД НЭГ ТАЛБАР» + ТОВЧ харагдаж, ГАР БИЧИЛТ нуугдав ──');
+console.log('\n── ② 📱 390px: «НЭГ ДЭЛГЭЦЭД НЭГ ТАЛБАР» (он/давхар = гараас бичих, бусад нь сонголт) ──');
 await viewport(390);
 ok('дугуй хаалттай үед DOM-д БАЙХГҮЙ (`[data-wheel]` = 0)', (await wheel()).open === false);
 /** 📱 2026-10-02 — 3-р алхам «асуулт бүр НЭГ ДЭЛГЭЦ» болов ⇒ ① хэсэгт
@@ -392,29 +418,48 @@ ok('📱 дэлгэцүүд ДАРААЛААР ба «Өрөө» БАЙХГҮЙ 
   JSON.stringify(allKeys));
 ok('📱 «Барилгын нийт давхар» дэлгэц рүү гүйлгэв', await detailTo('totalFloors'));
 const f0 = await field('totalFloors');
-ok('📱 «Барилгын нийт давхар» — 2 БАГАНАТ ЖАГСААЛТ гарч ирэв (1…' + FLOOR_MAX + ' ✓)',
-  f0.options > 20 && f0.trigVisible, JSON.stringify({ options: f0.options, trig: f0.trigVisible }));
-ok('📱 хоосон үед «🎡 Гүйлгээд сонгох» холбоос + `data-empty="true"` (урт жагсаалт ✓)',
-  f0.trigText === '🎡 Гүйлгээд сонгох' && f0.trigEmpty === 'true', `${f0.trigText} / ${f0.trigEmpty}`);
-ok('📱 гар бичилт (`input[type=number]`) ХАРАГДАХГҮЙ (`.hide-below-sm` ✓)',
-  f0.hasInput && f0.inputVisible === false, `hasInput=${f0.hasInput} visible=${f0.inputVisible}`);
+/**
+ * 🆕 2026-10-05 (53) — хэрэглэгчийн хүсэлт: «гар утаснаас ашиглалтанд орсон он,
+ *    барилгын нийт давхар, байрны давхарыг гараас оруулдаг болго» ⇒ 📅 он ·
+ *    🏢 нийт давхар · 🏠 давхар нь 📱 <640px дээр ГАР БИЧИЛТТЭЙ болов
+ *    (2 баганат жагсаалт ОГТ рендэрлэгдэхгүй); 🎡 дугуй нь НЭМЭЛТ боломж ✓
+ */
+ok('📱 «Барилгын нийт давхар» — ЖИНХЭНЭ ГАР БИЧИЛТ харагдана (`input[type=number]` + `data-mobile-input` ✓)',
+  f0.hasInput && f0.inputVisible === true && f0.inputTag === 'input',
+  JSON.stringify({ hasInput: f0.hasInput, visible: f0.inputVisible, tag: f0.inputTag }));
+ok('📱 2 БАГАНАТ ЖАГСААЛТ БАЙХГҮЙ (`[data-mobile-option]` = 0, «Алгасах» линк ч байхгүй ✓)',
+  f0.options === 0 && f0.skipVisible === false, JSON.stringify({ options: f0.options, skip: f0.skipVisible }));
+ok('📱 хоосон үед «🎡 Гүйлгээд сонгох» холбоос + `data-empty="true"` (дугуй нь НЭМЭЛТ боломж хэвээр ✓)',
+  f0.trigVisible && f0.trigText === '🎡 Гүйлгээд сонгох' && f0.trigEmpty === 'true',
+  `${f0.trigVisible} / ${f0.trigText} / ${f0.trigEmpty}`);
 /** ⚠️ Дараалал нь 3-р алхмын дараалалтай ИЖИЛ (угаалгын өрөө нь 2 өрөөт
  *  орон сууцад БАЙХГҮЙ тул ХАМГИЙН СҮҮЛД — эс бөгөөс урагш гүйлгээд
  *  буцаж чадахгүй ✗) ✓ */
 const MKEYS = ['buildYear', 'totalFloors', 'floor', 'balconies', 'bathrooms'];
+/** 🆕 2026-10-05 (53) — 📱 дээр ГАРААС БИЧИГДДЭГ 3 талбар (жагсаалтгүй ✓) */
+const INPUT_KEYS = ['buildYear', 'totalFloors', 'floor'];
 const mState = [];
 for (const k of MKEYS) {
   const reached = await detailTo(k);
   mState.push({ k, reached, s: await field(k), vis: (await detailState()).visible });
 }
+/** ⚠️ Талбар бүр ӨӨРИЙН дэлгэц дээрээ (`vis` = ЯГ тэр талбар) ✓ */
 const mPresent = mState.filter((x) => x.reached && x.vis.length === 1 && x.vis[0] === x.k);
+const mIn = mPresent.filter((x) => INPUT_KEYS.includes(x.k));
+const mSel = mPresent.filter((x) => !INPUT_KEYS.includes(x.k));
 /** ⚠️ Яг аль талбар харагдах нь зарын төрлөөс хамаарна (ж: он/тагт зөвхөн
  *  «Орон сууц» дээр, угаалгын өрөө 3+ өрөөтэй үед) — тиймээс ЗААВАЛ 5
  *  БИШ, ХАМГИЙН БАГАДАА 4 ✓ */
-ok('📱 тоон талбар бүр ӨӨРИЙН дэлгэц дээр: жагсаалт/товч ХАРАГДАЖ, гар бичилт НУУГДСАН',
-  mPresent.length >= 4 && mPresent.every((x) => x.s.hasInput && !x.s.inputVisible
-    && (x.s.trigVisible || x.s.options > 0)),
-  `${mPresent.length}/${MKEYS.length} ${mState.map((x) => `${x.k}:${x.reached ? `vis=${x.vis.join('|')} opt=${x.s.options} trig=${x.s.trigVisible}` : 'дэлгэц байхгүй'}`).join(' · ')}`);
+const mInfo = mState.map((x) => `${x.k}:${x.reached
+  ? `vis=${x.vis.join('|')} opt=${x.s.options} trig=${x.s.trigVisible} inp=${x.s.inputVisible}`
+  : 'дэлгэц байхгүй'}`).join(' · ');
+ok('📱 ГАРААС БИЧИГДДЭГ 3 талбар (📅 он · 🏢 нийт давхар · 🏠 давхар) — гар бичилт НЭЭЛТТЭЙ, жагсаалт 0 ✓',
+  mPresent.length >= 4 && mIn.length === 3
+    && mIn.every((x) => x.s.hasInput && x.s.inputVisible === true && x.s.options === 0),
+  `${mIn.length}/3 · ${mInfo}`);
+ok('📱 СОНГОЛТТОЙ талбар (🚿 угаалгын өрөө · 🌇 тагт) — 2 баганат жагсаалт, гар бичилт НУУГДСАН (регресс 0 ✓)',
+  mSel.length >= 1 && mSel.every((x) => x.s.hasInput && x.s.inputVisible === false && x.s.options > 0),
+  `${mSel.length} · ${mInfo}`);
 await detailTo('totalFloors');
 
 // ────────────────────────────────────────────────────────────
@@ -441,8 +486,8 @@ await click('[data-wheel-value="9"]');
 const w2 = await wheel();
 const f2 = await field('totalFloors');
 ok('«9» мөр сонгогдов (төвд, `aria-selected="true"`)', w2.active === 9 && w2.values[9] === '9', `active=${w2.active}`);
-ok('📱 жагсаалтын «9» СОНГОГДСОН болов + `data-empty="false"` (өнгө солигдов ✓)',
-  f2.selectedOption === '9' && f2.trigEmpty === 'false', `selected=${f2.selectedOption} / ${f2.trigEmpty}`);
+ok('📱 ГАРААС БИЧИХ оролтод «9» бичигдэв + `data-empty="false"` (өнгө солигдов ✓)',
+  f2.inputValue === '9' && f2.trigEmpty === 'false', `value=${f2.inputValue} / ${f2.trigEmpty}`);
 ok('🖥 далд гар бичилтэд утга бичигдэв (форм/DB нэг эх сурвалж ✓)',
   f2.inputValue === '9', String(f2.inputValue));
 ok('дугуй НЭЭТЭЙ хэвээр (iOS-ийн зан — «Болсон» дарах шаардлагагүй ✓)', w2.open === true);
@@ -452,7 +497,7 @@ console.log('\n── ⑤ ГҮЙЛГЭЭ ЗОГСОХОД ТӨВД БАЙГАА 
 await scrollTo(240);
 const f3 = await field('totalFloors');
 const w3 = await wheel();
-ok('scrollTop 240px (=индекс 6) → «6» СОНГОГДСОН болов', f3.selectedOption === '6', f3.selectedOption);
+ok('scrollTop 240px (=индекс 6) → «6» оролтод бичигдэв', f3.inputValue === '6', f3.inputValue);
 ok('төвд байгаа мөр = индекс 6 (`aria-selected` бодитоор шилжив ✓)',
   w3.active === 6 && w3.values[6] === '6', `active=${w3.active}`);
 /** ⚠️ Сүүлийн мөр = индекс `FLOOR_MAX` ⇒ `FLOOR_MAX * 40px` (2026-10-03: 6000px).
@@ -460,15 +505,15 @@ ok('төвд байгаа мөр = индекс 6 (`aria-selected` бодито�
 await scrollTo(FLOOR_MAX * 40 + 4000);
 const f4 = await field('totalFloors');
 ok(`хэт доош гүйлгэхэд СҮҮЛИЙН мөр («${FLOOR_MAX} давхар») — хязгаар ажиллана ✓`,
-  f4.selectedOption === String(FLOOR_MAX), f4.selectedOption);
+  f4.inputValue === String(FLOOR_MAX), f4.inputValue);
 
 // ────────────────────────────────────────────────────────────
 console.log('\n── ⑥ ХААХ: `Escape` · ард тал · «Болсон» (3 зам) ──');
 await pressEscape();
 ok('`Escape` → дугуй ХААГДАВ', (await wheel()).open === false);
 await click('[data-choice-trigger="totalFloors"]');
-ok(`дахин нээхэд өмнө сонгосон утга ХЭВЭЭР («${FLOOR_MAX} давхар»)`,
-  (await field('totalFloors')).selectedOption === String(FLOOR_MAX) && (await wheel()).open === true);
+ok(`дахин нээхэд өмнө сонгосон утга ХЭВЭЭР («${FLOOR_MAX} давхар» — оролтод ✓)`,
+  (await field('totalFloors')).inputValue === String(FLOOR_MAX) && (await wheel()).open === true);
 await click('[data-wheel-backdrop]');
 ok('ард тал (бараан хэсэг) дарахад ХААГДАВ', (await wheel()).open === false);
 await click('[data-choice-trigger="totalFloors"]');
@@ -488,12 +533,19 @@ const ff = await field('floor');
  *    1…9 = 9 мөр) ⇒ 🎡 дугуйн товч ГАРАХГҮЙ (`WHEEL_LINK_MIN` = 40-аас доош),
  *    2 БАГАНАТ ШУУД ЖАГСААЛТ л байна (unegui.mn-ийн хэв ✓)
  */
-ok('нийт давхар 9 болоход давхрын сонголт = 1…9 (9 мөр, дугуйн товчгүй ✓)',
-  ff.options === 9 && ff.hasTrigger === false, `options=${ff.options} trig=${ff.hasTrigger}`);
-ok('📱 сонголт дээр дарахад утга бичигдээд ДАРААГИЙН асуулт руу шилжинэ ✓',
-  (await clickVisible('[data-mobile-option="5"]')) === 'OK');
-ok('🖥 далд гар бичилтэд утга бичигдэв («Байрны давхар» = 5 ✓)',
+ok('📱 «Байрны давхар» — 📱 дээр ч ГАРААС БИЧИЛТ (жагсаалт 0; 1…9 нь WHEEL_LINK_MIN-ээс богино тул 🎡 товчгүй ✓)',
+  ff.options === 0 && ff.inputVisible === true && ff.hasTrigger === false,
+  `options=${ff.options} input=${ff.inputVisible} trig=${ff.hasTrigger}`);
+ok('⌨️ «Байрны давхар»-т ГАРААС «5» бичив (native setter + `input` үйл явдал ✓)',
+  (await fillInput('[data-detail-field="floor"] input', '5')) === 'OK');
+ok('📱 бичсэн утга нь контролдсон оролт + форм-ийн state-д хадгалагдав («Байрны давхар» = 5 ✓)',
   (await field('floor')).inputValue === '5', String((await field('floor')).inputValue));
+ok('📱 гараас бичсэн талбар дээр ДООД «Үргэлжлүүлэх» товч ХАРАГДАНА (дармагц шилжих БИШ ✓)',
+  (await detailState()).nextVisible === true);
+await click('[data-mobile-detail-next]');
+const ffNext = await detailState();
+ok('📱 «Үргэлжлүүлэх» дарж дараагийн дэлгэц рүү шилжив (гараас бичилт ⇒ товчоор урагшилна ✓)',
+  ffNext.key !== '' && ffNext.key !== 'floor', ffNext.key);
 
 // ────────────────────────────────────────────────────────────
 console.log('\n── ⑧ ОН (1980…2026): «—» + БУУРАХ эрэмбэ ──');
@@ -507,8 +559,20 @@ ok('эхний мөр «—» (хоосон үлдээх) · 2 дахь = 2026 (
   `${JSON.stringify(wy.values[0])} / ${wy.values[1]} … ${wy.values[47]}`);
 ok('утга хоосон тул төвд «—» (эхний мөр ✓)', wy.active === 0 && wy.activeText === '—', `active=${wy.active}`);
 await click('[data-wheel-value="2015"]');
-ok('«Ашиглалтанд орсон он» = «2015 он» болов', (await field('buildYear')).selectedOption === '2015',
-  (await field('buildYear')).selectedOption);
+/** ⚠️ 🎡 дугуй нь `onChange`-оор бичдэг (📱 ч мөн) — 2 баганат сонголт
+ *  байхгүй болсон тул утгыг ГАР БИЧИЛТИЙН оролтоос уншина ✓ */
+ok('🎡 дугуйнаас «2015» сонгоход гар бичилтийн оролтод «2015» бичигдэв',
+  (await field('buildYear')).inputValue === '2015', String((await field('buildYear')).inputValue));
+/** 🆕 2026-10-05 (53) — 📅 ОН нь ч 📱 дээр ГАРААС БИЧИГДЭНЭ (2 баганат
+ *  жагсаалт БАЙХГҮЙ) ⇒ 🎡 дугуйгүйгээр шууд засаж болно ✓
+ * ⚠️ Дараагийн §⑨ 🖥 хэсэг «2015» хүлээдэг тул буцааж бичнэ ✓ */
+ok('📱 гараас бичилт нь 2 баганат жагсаалтыг БҮРЭН орлов (options = 0, input харагдана ✓)',
+  (await field('buildYear')).options === 0 && (await field('buildYear')).inputVisible === true);
+ok('⌨️ «Ашиглалтанд орсон он»-ыг ГАРААС засаж болно («2005» — контролдсон оролт ✓)',
+  (await fillInput('[data-detail-field="buildYear"] input', '2005')) === 'OK'
+    && (await field('buildYear')).inputValue === '2005',
+  String((await field('buildYear')).inputValue));
+await fillInput('[data-detail-field="buildYear"] input', '2015');
 await click('[data-wheel-done]');
 
 // ────────────────────────────────────────────────────────────

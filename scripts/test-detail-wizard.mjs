@@ -53,6 +53,17 @@
 //      · `[data-step-current]` нь БҮХ дэлгэцэд (CDP selector ✓)
 //      🔍 Хайх үг: data-step-block, hidden, алхамт форм, submitLabel
 //
+//   ⑧ 📱 ОН · НИЙТ ДАВХАР · ДАВХАР — ГАРААС БИЧИЛТ (2026-10-05, 53,
+//      хэрэглэгчийн хүсэлт): эдгээр 3 ТООН талбар нь 📱 <640px дээр 2 БАГАНАТ
+//      ЖАГСААЛТ БИШ, шууд `input[type=number]` болов (`ChoiceField`-ийн
+//      `mobileInput` туг: `data-mobile-input="true"` + `.hide-below-sm`
+//      ХАСАГДАВ + `MobileOptions` РЕНДЭРЛЭГДЭХГҮЙ) ⇒ дэлгэцэд доод
+//      «Алгасах / Үргэлжлүүлэх →» товч гарна (дармагц шилжих БИШ ✓) ·
+//      `detailScreens`-ээс `pick: true` ХАСАГДАВ · 🎡 «Гүйлгээд сонгох»
+//      холбоос нь НЭМЭЛТ боломж хэвээр (богино жагсаалт ⚙️/🎨/🌿/🚿 ХЭВЭЭР) ·
+//      🖥 ≥640px ба DB/API/payload ХӨНДӨГДӨӨГҮЙ ✗ (migration ШААРДЛАГАГҮЙ)
+//      🔍 Хайх үг: mobileInput, data-mobile-input, pick: true, MobileOptions
+//
 // АЖИЛЛУУЛАХ:  npm run test:wizard
 //    📱 CDP-ээр жинхэнэ дэлгэцүүдийг шалгах: `npm run cdp:picker`
 // ============================================================
@@ -503,6 +514,52 @@ t('🆕 НЭГ ЭХ СУРВАЛЖ: 🖥 ✏️ товч ба 📱 `MobileAnswer
   assert.match(FORM, /<MobileAnswers rows=\{mobileAnswerRows\} onEdit=\{mobileAnswerEdit\} \/>/);
 });
 
+
+
+// ────────────────────────────────────────────────────────────
+// ④″ 🆕 2026-10-05 (53) — 📱 ОН · НИЙТ ДАВХАР · ДАВХАР: ГАРААС БИЧИЛТ
+// ────────────────────────────────────────────────────────────
+console.log('\n── ④″ 📱 гар утаснаас гараар бичих (он · нийт давхар · давхар) ──');
+
+t('📱 `buildYear` · `totalFloors` · `floor` дэлгэцэд `pick: true` БАЙХГҮЙ (гараас бичилт ⇒ доод «Алгасах / Үргэлжлүүлэх» товч гарна ✓)', () => {
+  ['buildYear', 'totalFloors', 'floor'].forEach((k) => {
+    const line = screensBody.match(new RegExp(`key: '${k}'[^\\n]*`));
+    assert.ok(line, `«${k}» дэлгэц олдсонгүй ✗`);
+    assert.ok(!line[0].includes('pick: true'), `«${k}» дээр pick: true байж болохгүй ✗`);
+  });
+  /** ⚠️ Бусад сонголттой талбарт `pick: true` ХЭВЭЭР (дармагц дараагийн асуулт ✓) */
+  ['bathrooms', 'balconies', 'garage'].forEach((k) => {
+    assert.match(screensBody, new RegExp(`key: '${k}'[^\\n]*pick: true`), `«${k}» pick: true хэвээр`);
+  });
+});
+
+t('📱 3 талбарт `mobileInput` дамжуулна — 📱 <640px дээр 2 баганат жагсаалтын оронд ГАР БИЧИЛТ ✓', () => {
+  assert.equal((step3.match(/^\s+mobileInput$/gm) || []).length, 3, 'ЯГ 3 талбарт ✓');
+  ['buildYear', 'totalFloors', 'floor'].forEach((k) => {
+    const at = step3.indexOf(`testId="${k}"`);
+    assert.ok(at > -1, `«${k}» талбар олдсонгүй ✗`);
+    const block = step3.slice(at, step3.indexOf('/>', at));
+    assert.ok(block.includes('mobileInput'), `«${k}» дээр mobileInput байх ёстой ✗`);
+    /** ⚠️ «дармагц дараагийн асуулт» (`pickDetail`) ба жагсаалтын «Алгасах»
+     *  (`skipDetail`) нь `MobileOptions`-той хамт БАЙХГҮЙ — товч нь доод мөрөнд ✓ */
+    assert.ok(!block.includes('pickDetail('), `«${k}» дээр pickDetail байж болохгүй ✗`);
+    assert.ok(!block.includes('skipDetail('), `«${k}» дээр skipDetail байж болохгүй ✗`);
+    /** ⚠️ 🎡 дугуйн холбоос ХЭВЭЭР — урт жагсаалтын НЭМЭЛТ боломж (устгаагүй ✓) */
+    assert.ok(block.includes('openWheel={setWheel}'), `«${k}» дугуйн холбоос хэвээр ✓`);
+  });
+});
+
+t('📱 `ChoiceField` — `mobileInput` үед `.hide-below-sm` ХАСАГДАЖ, `MobileOptions` РЕНДЭРЛЭГДЭХГҮЙ ✓', () => {
+  const cf = fnBody(FORM, 'function ChoiceField(');
+  /** ⚠️ `mobileInput = false` нь ПАРАМЕТРИЙН блокт (destructuring default) ✓ */
+  assert.ok(FORM.includes('mobileInput = false,'), 'пропын default ✓');
+  assert.ok(cf.includes("? 'min-w-0 flex-1' : 'hide-below-sm min-w-0 flex-1'"),
+    '📱 дээр `.hide-below-sm` ХАСАГДАНА (гараас бичилт харагдана ✓)');
+  assert.ok(cf.includes('data-mobile-input={mobileInput ?'), 'CDP-ийн тогтвортой selector ✓');
+  assert.match(cf, /\{mobileInput \? null : \(\s*<MobileOptions/, '2 баганат жагсаалт рендэрлэгдэхгүй ✓');
+  /** ⚠️ 🎡 дугуй нь `WHEEL_LINK_MIN`-ээс урт жагсаалтад ХАМААРАЛГҮЙ гарна ✓ */
+  assert.match(cf, /items\.length > WHEEL_LINK_MIN \? \(/);
+});
 
 // ────────────────────────────────────────────────────────────
 // ⑤ CSS — дүрэм нь ЗӨВХӨН `<640px` (🖥 дээр бүх талбар ХЭВЭЭР)

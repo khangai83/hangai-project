@@ -557,11 +557,15 @@ const attrWheelUnit = (f) => f.choiceUnit || (f.type === 'number' ? 'он' : '')
  * 🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «…жагсаалтаас сонгоод оруулдаг байя, жишээ нь
  *    барилгийн давхар 1 2 3 4 … 26-аас сонгуулах … эсвэл iPhone timer-ийн тоо
  *    сонгодог шиг хийж чадах уу» ⇒
- *      • 📱 `<640px`: талбар нь ТОВЧ (`.choice-trigger`) — дархад iOS Timer
- *        маягийн ДУГУЙ (`WheelPicker`) нээгдэж, утгаа гүйлгэн сонгоно ✓
- *      • 🖥 `≥640px`: `hide-below-sm`-ээр товч дарагдаж, ГАР БИЧИЛТ
- *        (`<input type="number">`, эсвэл `desktopControl="select"` бол
- *        `<select>`) ХЭВЭЭР ажиллана — desktop-ийн зан төлөв ХӨНДӨГДӨХГҮЙ ✓
+ *      • 📱 `<640px`: сонголттой талбар нь 2 БАГАНАТ ШУУД ЖАГСААЛТ
+ *        (`MobileOptions`, 2026-10-03 (17)); жагсаалт нь `WHEEL_LINK_MIN`-ээс
+ *        урт үед нэмж «🎡 Гүйлгээд сонгох» холбоос гарна
+ *        ⚠️ `mobileInput` үед энэ хоёрын оронд ГАР БИЧИЛТ (тоон оролт) шууд
+ *        харагдана — 🆕 2026-10-05 (53) (ж: 📅 он · 🏢 нийт давхар · 🏠 давхар) ✓
+ *      • 🖥 `≥640px`: ГАР БИЧИЛТ (`.hide-below-sm`-тэй; `mobileInput` үед тэр
+ *        дүрэм ч хүчингүй) (`<input type="number">`, эсвэл
+ *        `desktopControl="select"` бол `<select>`) ХЭВЭЭР ажиллана —
+ *        desktop-ийн зан төлөв ХӨНДӨГДӨХГҮЙ ✓
  *
  * ⚠️ ХОЁР ХҮҮХЭД нь нэг `div` (флекс) дотор — `[data-form-row="details"]`
  *    мөрийн CDP геометрийн шалгалтууд (`scripts/cdp-picker.mjs`) нь мөр
@@ -593,11 +597,21 @@ const attrWheelUnit = (f) => f.choiceUnit || (f.type === 'number' ? 'он' : '')
  * @param {boolean}  [mobileActive] талбар нь ОДООНЫ мобайл дэлгэц мөн эсэх —
  *   `false` үед 📱 <640px дээр `globals.css`-ийн дүрмээр `display:none`
  *   (🖥 ≥640px дээр ДҮРЭМ ҮЙЛЧЛЭХГҮЙ тул бүх талбар хэвээр ✓)
+ * @param {boolean}  [mobileInput] 🆕 2026-10-05 (53) — `true` бол 📱 <640px
+ *   дээр 2 баганат жагсаалт (`MobileOptions`) РЕНДЭРЛЭГДЭХГҮЙ, оронд нь
+ *   `.hide-below-sm`-ГҮЙ ТООН ОРУУЛГА (гараас бичих) ШУУД харагдана;
+ *   🎡 дугуйн холбоос ХЭВЭЭР (нэмэлт боломж). Зорилго: 📅 он · 🏢 нийт
+ *   давхар · 🏠 давхар зэрэг УРТ жагсаалтыг мобайлд гараас бичих
+ *   (хэрэглэгчийн хүсэлт 2026-10-05) ✓
+ *   ⚠️ `pick: true`-той ХАМТ хэрэглэж БОЛОХГҮЙ: бичилт дээр `MobileOptions`
+ *      байхгүй тул «дармагц дараагийн асуулт» боломжгүй ⇒ доод
+ *      «Алгасах / Үргэлжлүүлэх» товч ГАРАХ ЁСТОЙ (`pick: false` ✓)
  */
 function ChoiceField({
   label, icon = '', hint = '', wheelHint = '', value = '', items = [], unit = '',
   testId, placeholder = '', min, max, desktopControl = 'input', onChange,
   onPick, onSkip, openWheel, fieldKey = '', mobileActive, plusValue = '',
+  mobileInput = false,
 }) {
   /** 🎛 Товч/дугуй дээрх бичиг: `'5 давхар'` · `'2015 он'` · `'+5 тагт'` */
   const shown = choiceText(value, unit, plusValue);
@@ -632,26 +646,34 @@ function ChoiceField({
           <input
             type="number"
             inputMode="numeric"
-            className="hide-below-sm min-w-0 flex-1"
+            /* ⚠️ `mobileInput` үед `.hide-below-sm` ХАСАГДАНА ⇒ 📱 <640px дээр
+               ч ГАР БИЧИЛТ харагдана (🆕 2026-10-05 (53) ✓) */
+            className={mobileInput ? 'min-w-0 flex-1' : 'hide-below-sm min-w-0 flex-1'}
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
             min={min}
             max={max}
             data-choice-input={testId}
+            data-mobile-input={mobileInput ? 'true' : undefined}
           />
         )}
         {/* ═ 📱 <640px: «Сонгох» ТОВЧ БАЙХГҮЙ — 2 баганат ШУУД жагсаалт
             (unegui.mn-ийн хэв, 2026-10-03 (17)). Сонголт дээр дарахад утга
             бичигдээд ШУУД дараагийн асуулт руу шилжинэ ✓ ═ */}
       </div>
-      <MobileOptions
-        items={items}
-        value={value}
-        onPick={onPick || onChange}
-        skip
-        onSkip={onSkip}
-      />
+      {/* 📱 <640px: 2 БАГАНАТ ШУУД ЖАГСААЛТ (`MobileOptions`) — ⚠️ `mobileInput`
+          (🆕 2026-10-05 (53)) үед ОГТ рендэрлэгдэхгүй: оронд нь дээрх
+          ГАР БИЧИЛТ (тоон оролт) л харагдана ✓ */}
+      {mobileInput ? null : (
+        <MobileOptions
+          items={items}
+          value={value}
+          onPick={onPick || onChange}
+          skip
+          onSkip={onSkip}
+        />
+      )}
       {/* 🎡 УРТ жагсаалт (📅 1980–2026 он · 🏢 1–150 давхар) — 2 баганат
           жагсаалт нь үндсэн сонголт; гүйлгэхээс хурдан сонгох БОЛОМЖ
           ХЭВЭЭР үлдэнэ (`WheelPicker`, 2026-10-02-ны хүсэлт ✓) */}
@@ -1316,9 +1338,19 @@ export default function AddListingClient() {
       required: !isEdit,
     });
     if (isRealEstate) out.push({ key: 'area', title: 'Талбай (м²)', group: 'area' });
-    if (showFloors && showApartment) out.push({ key: 'buildYear', title: 'Ашиглалтанд орсон он', group: 'floors-1', pick: true });
-    if (showFloors) out.push({ key: 'totalFloors', title: 'Барилгын нийт давхар', group: 'floors-1', pick: true });
-    if (showFloors) out.push({ key: 'floor', title: 'Байрны давхар', group: 'floors-2', pick: true });
+    /**
+     * 🆕 2026-10-05 (53) — 📅 АШИГЛАЛТАНД ОРСОН ОН · 🏢 НИЙТ ДАВХАР ·
+     *    🏠 БАЙРНЫ ДАВХАР нь 📱 мобайлд ГАРААС БИЧИГДЭНЭ
+     *    (`ChoiceField`-ийн `mobileInput` ✓) тул эдгээр дэлгэцэд `pick: true`
+     *    БАЙХГҮЙ: `MobileOptions` рендэрлэгдэхгүй тул «дармагц дараагийн
+     *    асуулт» боломжгүй ⇒ доод «Алгасах / Үргэлжлүүлэх →» товч ГАРАХААР
+     *    байна (`activePick` — «Талбай» (`area`) дэлгэцийн ЯГ ИЖИЛ зан ✓)
+     * ⚠️ ЗӨВХӨН 📱 <640px: 🖥 ≥640px дээр эдгээр талбар аль хэдийн ГАР
+     *    БИЧИЛТТЭЙ байсан тул desktop-ийн зан төлөв ХӨНДӨГДӨХГҮЙ ✓
+     */
+    if (showFloors && showApartment) out.push({ key: 'buildYear', title: 'Ашиглалтанд орсон он', group: 'floors-1' });
+    if (showFloors) out.push({ key: 'totalFloors', title: 'Барилгын нийт давхар', group: 'floors-1' });
+    if (showFloors) out.push({ key: 'floor', title: 'Байрны давхар', group: 'floors-2' });
     /**
      * 🚿 «Угаалгын өрөөний тоо» — 🆕 2026-10-03 (хэрэглэгчийн хүсэлт:
      *    «тагтны өмнө угаалгын өрөөний тоо оруулах хэсгийг оруул») ⇒
@@ -2556,9 +2588,11 @@ export default function AddListingClient() {
                     min={YEAR_FROM}
                     max={YEAR_TO}
                     wheelHint={`Сонголт: ${YEAR_FROM}–${YEAR_TO} он`}
+                    /* 🆕 2026-10-05 (53): 📱 <640px дээр ГАРААС БИЧИЛТ (`MobileOptions`
+                       рендэрлэгдэхгүй) — `onPick`/`onSkip` ШААРДЛАГАГҮЙ, учир нь
+                       «Алгасах / Үргэлжлүүлэх →» товч доод мөрөнд гардаг ✓ */
+                    mobileInput
                     onChange={(v) => set('buildYear', v)}
-                    onPick={pickDetail((v) => set('buildYear', v))}
-                    onSkip={skipDetail((v) => set('buildYear', v))}
                     openWheel={setWheel}
                   />
                 )}
@@ -2574,9 +2608,8 @@ export default function AddListingClient() {
                   min={1}
                   max={FLOOR_MAX}
                   wheelHint={`Сонголт: 1–${FLOOR_MAX} давхар`}
+                  mobileInput
                   onChange={(v) => set('totalFloors', v)}
-                  onPick={pickDetail((v) => set('totalFloors', v))}
-                  onSkip={skipDetail((v) => set('totalFloors', v))}
                   openWheel={setWheel}
                 />
               </div>
@@ -2606,9 +2639,8 @@ export default function AddListingClient() {
                     wheelHint={form.totalFloors
                       ? `Сонголт: 1–${Math.min(FLOOR_MAX, Number(form.totalFloors) || FLOOR_MAX)} давхар (нийт давхраас)`
                       : `Сонголт: 1–${FLOOR_MAX} давхар`}
+                    mobileInput
                     onChange={(v) => set('floor', v)}
-                    onPick={pickDetail((v) => set('floor', v))}
-                    onSkip={skipDetail((v) => set('floor', v))}
                     openWheel={setWheel}
                   />
                 )}

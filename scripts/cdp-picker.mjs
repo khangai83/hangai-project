@@ -34,7 +34,9 @@
  *       (⚠️ өмнө нь дээд хэсэгт «Ангилал · Дэлгэрэнгүй · Байршил · Үнэ · Зураг»
  *          табууд байсан — 2026-10-01-нд ХАСАГДАВ ✓)
  *
- * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (121 шалгалт):
+ * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (172 шалгалт):
+ *    ℹ️ 2026-10-05 (53)-д БОДИТ хэмжилтээр батлав — доорх «121 шалгалт» нь
+ *       2026-10-02-ны тоо байв (⑫-ээс хойш ⑪‴, ⑥″′ гэх мэт хэсгүүд нэмэгдэв)
  *   ① Үл хөдлөх: 3 багана (12 хэсэг · sell/rent · 8 төрөл)
  *      ⚠️ 2026-10-01 (**4 дэх засвар**): баганын ДЭЭД ТОЛГОЙ (`[data-picker-title]`)
  *      БҮХЭЛДЭЭ ХАСАГДАВ (сонгосон утга нь доорх мөртэй давхардаж байв ✗) →
@@ -123,6 +125,17 @@
  *      үлдэнэ (+ «← Буцах» мобайлд ХАРАГДАХГҮЙ — толгойн ← л буцаана)
  *      ⑧ толгойн ← өмнөх дэлгэц рүү, оруулсан утга ХАДГАЛАГДАНА
  *      ⇒ **14 шалгалт** (`scripts/test-detail-wizard.mjs` — статик ГЭРЭЭ)
+ *   ⑪‴ 🆕 **📱 ОН · НИЙТ ДАВХАР · ДАВХАР — ГАРААС БИЧИЛТ** — 2026-10-05 (53),
+ *      хэрэглэгчийн хүсэлт: «гар утаснаас ашиглалтанд орсон он, барилгын нийт
+ *      давхар, байрны давхарыг ГАРААС оруулдаг болго» ⇒ эдгээр 3 ТООН талбарт
+ *      2026-10-03 (17)-ийн «2 БАГАНАТ ЖАГСААЛТ + дармагц дараагийн асуулт» нь
+ *      ХҮЧИНГҮЙ болов: `ChoiceField`-ийн `mobileInput` туг нь
+ *      `data-mobile-input="true"` тавьж, `.hide-below-sm` ХАСАЖ,
+ *      `MobileOptions`-ийг ОГТ рендэрлэхгүй (`[data-mobile-option]` = 0) ⇒
+ *      дэлгэцэд доод «Алгасах / Үргэлжлүүлэх →» товч гарна (дармагц шилжих
+ *      БИШ ✓) · 🎡 «Гүйлгээд сонгох» холбоос НЭМЭЛТ боломж хэвээр ·
+ *      `detailScreens`-ээс `pick: true` ХАСАГДАВ · 🖥 ≥640px ХӨНДӨГДӨӨГҮЙ ✓
+ *      ⇒ **13 шалгалт**
  *   ⑫ 🆕 **🖥 СОНГОСОН АНГИЛАЛ / БАЙРШИЛ (≥640px)** — 2026-10-05, хэрэглэгчийн
  *      хүсэлт: «Зар нэмэх форм дээр сонгосон категори/байршил КОМПЬЮТЕР дээр
  *      харагдахгүй байна» ⇒ 📱 `MobileAnswers` (`sm:hidden`) нь зөвхөн мобайлд
@@ -998,6 +1011,21 @@ const DETAIL_WIZ_PROBE = `(() => {
       if (!l) return false; const b = l.getBoundingClientRect(); return b.width > 0 && b.height > 0;
     })) || {}).innerText || '',
     titleValue: ((document.querySelector('[data-detail-field="title"] input') || {}).value || ''),
+    /** 🆕 2026-10-05 (53) — 📱 ГАРААС БИЧИЛТ (📅 он · 🏢 нийт давхар · 🏠 давхар):
+     *  ChoiceField-ийн mobileInput тул 2 баганат жагсаалт БАЙХГҮЙ, харин
+     *  тоон оролт (data-mobile-input="true") ХАРАГДАНА ✓
+     *  • inputVisible — харагдаж байгаа гар бичилтийн оролтын тоо (0 | 1)
+     *  • inputValue   — тэр оролтын утга (гараас бичсэн / 🎡 дугуйнаас сонгосон)
+     *  • wheelLink    — «🎡 Гүйлгээд сонгох» холбоос (НЭМЭЛТ боломж ХЭВЭЭР ✓)
+     * ⚠️ ЭНЭ template literal дотор backtick / долларын буржгар хаалт БИЧИХГҮЙ ✗ */
+    inputVisible: [...document.querySelectorAll('[data-choice-input]')]
+      .filter((el) => el.dataset.mobileInput === 'true').filter(vis).length,
+    inputValue: (() => {
+      const el = [...document.querySelectorAll('[data-choice-input]')]
+        .filter((e) => e.dataset.mobileInput === 'true').filter(vis)[0];
+      return el ? (el.value || '') : '';
+    })(),
+    wheelLink: [...document.querySelectorAll('[data-choice-trigger]')].some(vis),
     error: ((document.querySelector('form .bg-red-50') || {}).innerText || '').trim(),
   };
 })()`;
@@ -1144,23 +1172,37 @@ ok('📱 буцаж явахад оруулсан утга ХАДГАЛАГДА�
   w2b.titleValue === '2 өрөө байр, Баянгол', JSON.stringify(w2b.titleValue));
 
 // ────────────────────────────────────────────────────────────
-// ⑪‴ 🆕 2026-10-03 (17) — unegui.mn-ийн МОБАЙЛ ХЭВ: 2 БАГАНАТ ЖАГСААЛТ + ✏️ МӨР
+// ⑪‴ 🆕 2026-10-05 (53) — 📱 ОН · НИЙТ ДАВХАР · ДАВХАР: ГАРААС БИЧИЛТ
+//      ⚠️ 2026-10-03 (17)-ийн «2 БАГАНАТ ЖАГСААЛТ + дармагц дараагийн асуулт»
+//         нь эдгээр 3 талбарт ХҮЧИНГҮЙ болов — хэрэглэгчийн хүсэлт:
+//         «гар утаснаас ашиглалтанд орсон он, барилгын нийт давхар, байрны
+//          давхарыг ГАРААС оруулдаг болго» ⇒ `ChoiceField`-ийн `mobileInput`
+//      ⚠️ 🎡 «Гүйлгээд сонгох» нь НЭМЭЛТ боломж хэвээр ✓
 // ────────────────────────────────────────────────────────────
-console.log('\n── ⑪‴ 📱 2 баганат сонголт + «Өмнөх хариултууд» (✏️) ──');
+console.log('\n── ⑪‴ 📱 гар утаснаас ГАРААС бичих (он · нийт давхар · давхар) ──');
 /** 🎯 «Барилгын нийт давхар» дэлгэц рүү буцна (толгойн ← дараалан ✓) */
 for (let i = 0; i < 8 && (await wprobe()).key !== 'totalFloors'; i += 1) await wback();
 const wp0 = await wprobe();
 ok('📱 «Барилгын нийт давхар» дэлгэц рүү буцлаа (толгойн ← ✓)', wp0.key === 'totalFloors', wp0.key);
-ok('📱 Сонголт нь ЖИНХЭНЭ 2 БАГАНАТ жагсаалт + «Алгасах» линк (unegui.mn-ийн хэв ✓)',
-  wp0.twoCol === true && wp0.options > 3 && wp0.skipOption === true,
-  JSON.stringify({ twoCol: wp0.twoCol, options: wp0.options, skip: wp0.skipOption }));
-ok('📱 Сонголттой дэлгэцэд доод «Үргэлжлүүлэх» БАЙХГҮЙ (дармагц шилжинэ ✓)',
-  wp0.nextBtns === 0 && wp0.navVisible === false, `btns=${wp0.nextBtns} nav=${wp0.navVisible}`);
-ok('🖱 «9» сонголт дээр дарахад ШУУД дараагийн асуулт («Байрны давхар») руу шилжив',
-  (await clickVisible('[data-mobile-option="9"]')) === 'OK' && (await wprobe()).key === 'floor');
+ok('📱 ЖИНХЭНЭ ГАР БИЧИЛТ нээлттэй (`input[type=number]` + `data-mobile-input` ✓)',
+  wp0.inputVisible === 1, `inputs=${wp0.inputVisible}`);
+ok('📱 2 БАГАНАТ ЖАГСААЛТ БАЙХГҮЙ (`[data-mobile-option]` = 0, «Алгасах» линк ч байхгүй ✓)',
+  wp0.options === 0 && wp0.twoCol === false && wp0.skipOption === false,
+  JSON.stringify({ options: wp0.options, twoCol: wp0.twoCol, skip: wp0.skipOption }));
+ok('📱 🎡 «Гүйлгээд сонгох» холбоос ХЭВЭЭР (урт жагсаалтын НЭМЭЛТ боломж ✓)',
+  wp0.wheelLink === true);
+ok('📱 гараас бичилттэй дэлгэцэд ДООД «Үргэлжлүүлэх» ХАРАГДАНА (дармагц шилжих БИШ ✓)',
+  wp0.nextBtns === 1 && wp0.navVisible === true, `btns=${wp0.nextBtns} nav=${wp0.navVisible}`);
+ok('⌨️ «Барилгын нийт давхар»-т ГАРААС «12» бичив (native setter + `input` ✓)',
+  (await wtype('[data-detail-field="totalFloors"] input', '12')) === 'OK');
+const wpTyped = await wprobe();
+ok('📱 бичсэн утга нь контролдсон оролтод хэвээр («Барилгын нийт давхар» = 12 ✓)',
+  wpTyped.inputValue === '12', JSON.stringify(wpTyped.inputValue));
+ok('🖱 «Үргэлжлүүлэх» дарж ДАРААГИЙН асуулт («Байрны давхар») руу шилжив',
+  (await wnext()) === 'OK' && (await wprobe()).key === 'floor');
 const wp1 = await wprobe();
-ok('📱 Хариулсан асуулт нь ✏️ МӨР болж үлдэв («Барилгын нийт давхар / 9 давхар»)',
-  wp1.answerKeys.includes('totalFloors') && wp1.answerText.includes('9 давхар'),
+ok('📱 Хариулсан асуулт нь ✏️ МӨР болж үлдэв («Барилгын нийт давхар / 12 давхар»)',
+  wp1.answerKeys.includes('totalFloors') && wp1.answerText.includes('12 давхар'),
   JSON.stringify({ keys: wp1.answerKeys, text: wp1.answerText.slice(0, 120) }));
 ok('📱 Мөрийн дээгүүр 🗂 АНГИЛАЛ ба 📍 БАЙРШИЛ ч харагдана (unegui.mn-ийн хэв ✓)',
   wp1.answerKeys.includes('step-category') && wp1.answerKeys.includes('step-location'),
@@ -1169,8 +1211,9 @@ ok('🖱 ✏️ (`data-mobile-answer-edit="totalFloors"`) дарж тэр дэл
   (await clickVisible('[data-mobile-answer-edit="totalFloors"]')) === 'OK'
     && (await wprobe()).key === 'totalFloors');
 const wp2 = await wprobe();
-ok('📱 Утга нь хадгалагдсан (`aria-pressed=\"true\"` — сонгосон «9» тэмдэглэгдсэн ✓)',
-  wp2.selectedOption === '9', `selected=${JSON.stringify(wp2.selectedOption)}`);
+ok('📱 Утга нь хадгалагдсан (гараас бичсэн «12» оролтод хэвээр ✓)',
+  wp2.inputVisible === 1 && wp2.inputValue === '12',
+  JSON.stringify({ inputs: wp2.inputVisible, value: wp2.inputValue }));
 
 // ── 🖥 1440px: мобайл блок БҮРЭН ХААГДАЖ, ХУУЧИН байдал ХЭВЭЭР (regression үгүй) ──
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1400, deviceScaleFactor: 1, mobile: false });
