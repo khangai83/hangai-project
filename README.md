@@ -634,7 +634,12 @@ Node дээр `chrome --headless=new --remote-debugging-port=9335` + `WebSocket`
   уу» гэсэн `<h3>` ч хасагдав (хэрэглэгчийн хүсэлт: «энэ бүгдийг нь зайлуул, харахыг
   хүсэхгүй байна»). Асуулт нь `role="group"` + `aria-label` (screen reader, a11y)
   хэлбэрээр ХЭВЭЭР — CDP нь DOM текстээс хайгаад **0** гарсан эсэхийг шалгана ✓
-- 🧪 **CDP (бодит Chrome):** `npm run cdp:picker` → **172/172 ✓** (`scripts/cdp-picker.mjs` —
+- 🧪 **CDP (бодит Chrome):** `npm run cdp:picker` → **183/183 ✓** (`scripts/cdp-picker.mjs` —
+  🆕 2026-10-05 (54): 📝 **НООРОГ** — гарчиг + «12» бичээд `location.reload()` →
+  утга ХЭВЭЭР (`localStorage`), «📝 Хадгалагдсан ноорог сэргээгдлээ» + 🗑 «Устгах»,
+  🗑 дарсны дараа ноорог УСТАЖ форм ХООСОН ба дараагийн refresh ч хоосон ✓
+  — ⑪⁗ хэсэгт **11 шалгалт** ⇒ 172 → **183 ✓**; ⚠️ `gotoStepUrl` нь «форм шинэ»
+  шалгалтуудын төлөө нооргийг ЦЭВЭРЛЭДЭГ (`clearDrafts()`);
   🆕 2026-10-05 (53): 📱 **он · нийт давхар · давхар** нь ГАРААС БИЧИГДЭХ болов
   (`data-mobile-input`, `[data-mobile-option]` = **0**, «🎡 Гүйлгээд сонгох» ХЭВЭЭР,
   доод «Үргэлжлүүлэх» гарна, гараас «12» бичиж ✏️-ээр буцаж засав, 🖥 regression 0)
@@ -972,7 +977,9 @@ Node дээр `chrome --headless=new --remote-debugging-port=9335` + `WebSocket`
   🖥 ≥640px сонгосон ангилал/байршил — ④′ хэсэгт +5 тест) · 🆕 **48** (2026-10-05 (51,
   2 дахь засвар): 🖥 дээр ч алхамт форм — ⑦ хэсэгт +9 тест) · 🆕 **51** (2026-10-05 (52):
   🖥 ✏️ «Засах» товч — ④′ хэсэгт +3 тест) · 🆕 **54** (2026-10-05 (53): 📱📅🏢🏠
-  он/нийт давхар/байрны давхар ГАРААС БИЧИГДЭНЭ — ④″ хэсэгт +3 тест)) ·
+  он/нийт давхар/байрны давхар ГАРААС БИЧИГДЭНЭ — ④″ хэсэгт +3 тест) ·
+  🆕 `test:draft` **26** (2026-10-05 (54): 📝 НООРОГ — `lib/listingDraft.mjs`-ийн
+  түлхүүр/TTL/whitelist/`editId` + формоны сэргээх/бичих эффект + 🗑 товч)) ·
   `npm run build` ✓ EXIT=0.
   🐍 CDP БОДИТ Chrome дээр (2026-10-05): `cdp:chips` **54 OK** (`#filter-bar` pill +
   ⌄ панель + олон сонголт) · `cdp:rooms` **47 OK** · `cdp:payments` **59 OK** ·
@@ -1112,6 +1119,34 @@ Node дээр `chrome --headless=new --remote-debugging-port=9335` + `WebSocket`
   нь 2 баганат жагсаалттай ХЭВЭЭР (регресс 0 ✓) · 🖥 ≥640px, DB/API/payload,
   migration ХӨНДӨГДӨӨГҮЙ ✓ · 🧪 `test:wizard` **54/54 ✓** (④″ хэсэгт +3) ·
   🐍 `cdp:wheel` **51/51 ✓** (гараас «2005» бичиж засав) · `cdp:picker` **172/172 ✓**
+- 📝💾 **НООРОГ — САНАМСАРГҮЙ REFRESH-ЭЭС ХАМГААЛАЛТ (2026-10-05 (54),
+  хэрэглэгчийн гомдол: «зар нэмж байх үедээ гар утасны browser санамсаргүй
+  refresh хийхэд оруулж байсан мэдээлэл байхгүй болж байна»):** форм нь зөвхөн
+  React-ийн санах ойд (`useState`) байсан тул хуудас дахин ачаалагдмагц (эсвэл
+  📱 дээр апп сольж, browser память чөлөөлөхөд) **БҮХ оруулсан талбар алга
+  болдог** байв ✗ ⇒ оруулсан утга нь **`localStorage`-д АВТОМАТААР** бичигдэнэ
+  (400ms debounce `DRAFT_SAVE_DELAY`; зөвхөн анхдагч/DB-ийн утгаас ЯЛГААТАЙ үед)
+  ба дараагийн ачаалалт дээр СЭРГЭЭГДЭНЭ ✓ · мэдэгдэл «**📝 Хадгалагдсан ноорог
+  сэргээгдлээ**» + 🗑 «Устгах» (`[data-draft-restored]` / `[data-draft-discard]` —
+  ⚠️ `type="button"`, форм дотроос submit болж КЕТЭХГҮЙ ✓) — 🗑 нь ноорог +
+  формоо анхдагч (эсвэл зарын DB) утга руу буцаана · түлхүүр нь **хэрэглэгч
+  БҮРД** тусдаа (`zar:listing-draft:<uid>`; засах горимд `…:edit:<id>` — нэг
+  утсан дээр хэдэн хүн нэвтэрдэг тул холилдохгүй ✓) · TTL **3 хоног** ·
+  **whitelist** (зөвхөн форм-ийн мэдэгдэж буй түлхүүрүүд — «бохир»
+  localStorage-оос `user_id`/`images`/`id` payload руу ОРОХГҮЙ ✓) · 📱 3-р алхмын
+  «аль асуулт дээр байсан» (`mobileDetailStep`) ч хадгалагдана · «Цуцлах» мессеж
+  нь «УСТАНА» биш «**НООРОГ болж хадгалагдана**» болов · зар АМЖИЛТТАЙ
+  хадгалагдмагц ноорог УСТАНА ✓ · ⚠️ **`beforeunload`-д НАЙДАХГҮЙ** (📱 iOS
+  Safari/Firefox дээр ХҮЧИНГҮЙ, санамсаргүй refresh нь «гарах» үйлдэл БИШ ✗) ·
+  ⚠️ **ЗУРАГ хадгалагдахгүй** (`File` нь `localStorage`-д багтахгүй) — мэдэгдэл
+  нь «зургуудаа дахин нэмнэ үү» гэж сануулна · 🖥/📱 ХОЁУЛАНД (DB/API/payload/
+  `validateStep`/migration ХӨНДӨӨГДӨӨГҮЙ ✓) · 🧪 `test:draft` **26/26 ✓**
+  (🆕 `lib/listingDraft.mjs` — түлхүүр/TTL/whitelist/`editId`/хог) · 🐍 `cdp:picker`
+  **172 → 183/183 ✓** (🆕 ⑪⁗ хэсэг — БОДИТ Chrome: гарчиг + «12» бичээд
+  `location.reload()` → утга ХЭВЭЭР, мэдэгдэл + 🗑 гарч ирэв, 🗑 дарсны дараа
+  ноорог УСТАЖ форм ХООСОН ✓)
+  🔍 Хайх үг: ноорог, `listingDraft.mjs`, `draftKey`, `data-draft-restored`,
+  `data-draft-discard`, `beforeunload`
 - 🖥 **≥640px ДЭЭР СОНГОСОН АНГИЛАЛ / БАЙРШИЛ (2026-10-05 (51), хэрэглэгчийн
   хүсэлт: «Зар нэмэх форм дээр сонгосон категори/байршил КОМПЬЮТЕР дээр
   харагдахгүй байна»):** 📱 `MobileAnswers` нь `sm:hidden` байсан тул 🖥 дээр
@@ -4538,6 +4573,8 @@ npm run test:jobs        # 💼 АЖЛЫН ЗАР — шинэ 5 талбар (�
 npm run test:search      # 🔢 тооны хүрээ (цэгээр бүлэглэлт) + 🔀 эрэмбэлэлт (53 тест, 0₮)
 npm run test:choices     # 🎡 МОБАЙЛ СОНГОЛТ — тоон жагсаалт/дараалал/2 БАГАНАТ ЖАГСААЛТын гэрээ (36 тест, 0₮)
 npm run test:wheel       # 🎡 дугуйны SSR рендэр — 27/48 мөр, `aria-selected`, 📱390/🖥1440 (10 тест, 0₮)
+npm run test:draft       # 📝 НООРОГ — `localStorage` (refresh-ээс хамгаалалт): түлхүүр/TTL/whitelist + формоны гэрээ (26 тест, 0₮)
+npm run cdp:picker       # 🐍 БОДИТ Chrome (:9222) — пикер/форм/📱wizard/📝 ноорог refresh (183/183 ✓)
 npm run cdp:wheel        # 🐍 БОДИТ Chrome (:9222) дээр 📱 ГАРААС БИЧИЛТ (он/давхар) + дугуй (НЭМЭЛТ боломж) — 51/51 шалгалт
                          #   ⚠️ Форм нь НЭВТЭРСЭН хэрэглэгчид харагддаг тул профайл нь
                          #   нэвтэрсэн байх ёстой; CDP/сесс байхгүй бол SKIP (exit 0) ✓
@@ -4873,6 +4910,9 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 | `components/WheelPicker.jsx` | 📱 **iOS Timer маягийн дугуй** (`[data-wheel]`): төвийн заагч + мөр бүр **40px** + `scroll-snap-type: y mandatory` + хоёр үзүүрийн зай · мөр дээр дарахад ШУУД бичнэ (дугуй НЭЭТЭЙ хэвээр — iOS-ийн зан) · гүйлгээ зогсоход төвд байгаа мөр автоматаар бичигдэнэ (`scroll` debounce + `nearestIndex`) · хаах 3 зам (`Escape` · ард тал · «Болсон») · `role="dialog"` + `aria-selected` + `role="option"` · тогтвортой selector-ууд: `[data-wheel-title]` · `[data-wheel-scroll]` · `[data-wheel-value]` · `[data-wheel-marker]` · `[data-wheel-done]` · `[data-wheel-backdrop]` |
 | `scripts/test-number-choices.mjs` | **36 тест** — `npm run test:choices` (🎡 `numberChoices`-ийн гэрээ: ① `countChoices` 1…150/хязгаар/хоосон ② `yearChoices` буурах ба **47 → 48** (`includeValue` хүрээнээс гадуур «1965»-ыг хамгаална) ③ `floorChoices` нийт давхраас хэтрэхгүй, `total` хоосон → 150, **«150» нь жагсаалтад БАЙНА** ④ `toChoiceItems` утга ТЕКСТ + «—» эхний мөр + нэгж + 🆕 **«+5» хүрээ** (`plusValue`, угаалгын өрөө = `1,2,3,4,+5` ба тагт = `1…4,+5`) ба `choiceText`-ийн «+5 тагт» ✓ ⑤ `nearestIndex` дугуйлалт/хязгаар ⑥ CSS гэрээ — 🆕 2026-10-03 (17): `.mob-options` (2 БАГАНАТ grid) · `.mob-option`/`.mob-option-on`/`.mob-skip`/`.mob-wheel-link` ба форм нь `MobileOptions`-ийг ХЭРЭГЛЭНЭ («Сонгох» товч БАЙХГҮЙ, `WHEEL_LINK_MIN` босго), `.hide-below-sm` (📱 <640px-д гар бичилт/`<select>` нуугдана), дугуйн scrollbar НУУГДСАН) |
 | `scripts/test-wheel-render.mjs` | **10 тест** — `npm run test:wheel`: 🎡 `WheelPicker`-ийг `react-dom/server`-ээр БОДИТООР рендэрлэж түгжинэ (151 мөр = «—»+1…150, `aria-selected` төвд, `scroll-snap-type`, товч `aria-haspopup`, 📱390px ба 🖥1440px дээрх харагдац) — ⚠️ тест нь эхлээд `sucrase` (JSX)+`react-dom/server`-ийг `require.resolve`-оор шалгаж, байхгүй бол SKIP ✓ |
+| `scripts/test-draft.mjs` | 🆕 **26 тест** — `npm run test:draft` (2026-10-05 (54): 📝 **НООРОГ** — хэрэглэгчийн гомдол «зар нэмж байх үедээ гар утасны browser санамсаргүй refresh хийхэд оруулж байсан мэдээлэл байхгүй болж байна» ⇒ форм нь оруулсан утгаа `localStorage`-д бичдэг болов. ① `lib/listingDraft.mjs` (ЦЭВЭР): `draftKey` (хэрэглэгч/зар тусдаа · нэвтрээгүй → `''` = огт бичихгүй) · `pickDraftForm` **whitelist** (гараар нэмсэн `user_id`/`images`/`id` нь payload руу ОРОХГҮЙ ✓) · `serializeDraft`/`parseDraft` (тойрог, `v` хувилбар, **TTL 3 хоног**, `editId` тохирол, эвдэрсэн хог → `null`) · `isDirtyForm` (JSON мөр ч хүлээнэ) · `isMeaningfulDraft` (хоосон форм → сэргээхгүй; зурагтай бол ҮНЭ ЦЭНЭТЭЙ) · `draftNoticeText` ② `components/AddListingClient.jsx`-ийн гэрээ: сэргээх эффект нь `authLoading`/`loadingEdit`-ийг хүлээж **формоо бэлдэх эффектийн ДАРАА** (ноорог ЛАВЛАГДАНА) + `draftCheckedRef` (нэг л удаа) · авто-хадгалалт нь `draftReady` дуустал БИЧИХГҮЙ/УСТГАХГҮЙ + `DRAFT_SAVE_DELAY = 400` debounce + deps (`form`/`pending`/`existingImages`/`mobileDetailStep`) · 🛡️ «Хамгаалалт» (`?step=`) нь `draftReady`-г ХҮЛЭЭНЭ (refresh бүрд 1-р алхам руу шидэхгүй ✓) · хадгалсны дараа ноорог УСТАНА (`router.push`-ийн өмнө) · «Цуцлах» нь «УСТАНА» биш «НООРОГ болж хадгалагдана» · 🗑 `[data-draft-discard]` нь `type="button"` ба формоо анхдагч/DB руу буцаана · `beforeunload` КОДОД БАЙХГҮЙ (📱 iOS дээр ХҮЧИНГҮЙ) ③ README-ийн бичигдэл) |
+| `scripts/cdp-picker.mjs` | 🐍 **CDP (бодит Chrome)** — 🆕 2026-10-05 (54): ⑪⁗ хэсэгт **183/183** — 📝 ноорог: гарчиг + «12» бичиэд `location.reload()` → утга ХЭВЭЭР (`localStorage`-д `zar:listing-draft:…`), «📝 Хадгалагдсан ноорог сэргээгдлээ» + 🗑 «Устгах» гарч ирэв · 🗑 дарсны дараа ноорог УСТАЖ форм ХООСОН · дараагийн refresh ч хоосон ✓ · ⚠️ `clearDrafts()` нь script-ийн эхэлд ба `gotoStepUrl`/🛡️ хэсэгт нооргийг цэвэрлэдэг (форм шинэ байх ёстой шалгалтуудын төлөө) |
+
 | `scripts/cdp-wheel.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:wheel` (**51/51 шалгалт**): 📱 390px — 🆕 2026-10-05 (53): 📅 он · 🏢 нийт давхар · 🏠 давхар нь ГАРААС БИЧИГДЭНЭ (`input[type=number]` + `data-mobile-input`) бөгөөд түүний дор «🎡 Гүйлгээд сонгох» холбоос (2 БАГАНАТ ЖАГСААЛТ **0**, доод «Алгасах/Үргэлжлүүлэх» товч ✓) · дугуй нээгдэж 151 мөр («—»+1…150) · төвд «—» · мөр дээр дарах → гар бичилтийн оролтод «9» · `data-empty="false"` · `scrollTop=240` → «6» АВТОМАТААР бичигдэв · хэт гүйлгэхэд «150» · `Escape`/ард тал/«Болсон» 3 зам хаана · ОН-ыг гараас «2005» болгож засав · он 48 мөр («—»+2026…1980, буурах) · 🖥 1440px — дугуйн товч 0, гар бичилт xарагдаж утга ХЭВЭЭР · JS алдаа 0 (⚠️ сервер :3000 + Chrome :9222 нэвтэрсэн профайл шаардна; байхгүй бол SKIP → exit 0 ✓) |
 | `scripts/check-r2.mjs` | ☁️ **R2 тохиргооны шалгалт** — `npm run check:r2`: env (5) · `HeadBucket` · объектын тоо/хэмжээ (bucket тус бүрээр) · нийтийн домэйн (404 = зөв; 403 = bucket public БИШ) · **CORS preflight** (`PUT` зөвшөөрөгдсөн эсэх — эс бөгөөс browser-ээс upload хийгдэхгүй ✗; 🆕 **ДОМЭЙН ТУС БҮРЭЭР** — `npm run check:r2 -- --origin https://hangai-project.vercel.app` эсвэл `R2_CORS_ORIGIN=a,b` — дутуу домэйны хувьд Cloudflare-д **буулгах JSON-ыг шууд хэвлэнэ** ✓) · r2.dev-ийг production-д сануулна (⚠️ туршилтын хязгаартай) |
 | `scripts/rebase-storage-urls.mjs` | 🔁 **R2 нийтийн домэйн rebase** — `npm run storage:rebase`: `R2_PUBLIC_BASE`-ыг сольсны дараа DB-д бичигдсэн хуучин домэйны URL-уудыг шинэ рүү шилжүүлнэ (`--apply` бичих үед л бичнэ; `--from`/`--to`). ⚠️ R2/Supabase дээрх **файл, түлхүүр хөндөхгүй** (буцаах боломжтой ✓), Supabase-ийн хуучин URL ба демо/youtube утгыг ХӨНДӨХГҮЙ (hybrid ✓), дахин ажиллуулбал idempotent ✓ — `listings.images[]` + `profiles.avatar_url`-ыг `range()`-ээр хуудаслан уншина |

@@ -119,6 +119,21 @@ const evaluate = async (expression) => {
   if (r.exceptionDetails) throw new Error(JSON.stringify(r.exceptionDetails.exception?.description || r.exceptionDetails));
   return r.result.value;
 };
+/**
+ * 📝 НООРОГ ЦЭВЭРЛЭХ (2026-10-05, 54) — форм нь оруулсан утгаа `localStorage`-д
+ *    ноорог болгож хадгалдаг болов (`lib/listingDraft.mjs`) ⇒ өмнөх run-ийн
+ *    ноорог үлдсэн бол форм ХООСОН биш болж, «эхний дэлгэц / хоосон талбар»
+ *    гэсэн шалгалтууд унана ✗ ⇒ эхлэлд нооргийг ЦЭВЭРЛЭЭД дахин ачаална ✓
+ * ⚠️ Зөвхөн `zar:listing-draft…` угтвартай түлхүүрүүд (`sb-…-auth-token`
+ *    нэвтрэлт ХӨНДӨГДӨХГҮЙ ✓)
+ */
+await evaluate(`(() => {
+  const keys = Object.keys(window.localStorage).filter((k) => k.indexOf('zar:listing-draft') === 0);
+  keys.forEach((k) => window.localStorage.removeItem(k));
+  return keys.length;
+})()`);
+await rpc('Page.navigate', { url: `${BASE}/listings/new` });
+await wait(4000);
 const click = async (sel) => {
   const res = await evaluate(`(() => { const el = document.querySelector(${JSON.stringify(sel)}); if (!el) return 'NOT_FOUND'; el.click(); return 'OK'; })()`);
   await wait(350);

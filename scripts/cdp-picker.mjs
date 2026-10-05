@@ -34,9 +34,9 @@
  *       (⚠️ өмнө нь дээд хэсэгт «Ангилал · Дэлгэрэнгүй · Байршил · Үнэ · Зураг»
  *          табууд байсан — 2026-10-01-нд ХАСАГДАВ ✓)
  *
- * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (172 шалгалт):
+ * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ (183 шалгалт):
  *    ℹ️ 2026-10-05 (53)-д БОДИТ хэмжилтээр батлав — доорх «121 шалгалт» нь
- *       2026-10-02-ны тоо байв (⑫-ээс хойш ⑪‴, ⑥″′ гэх мэт хэсгүүд нэмэгдэв)
+ *       2026-10-02-ны тоо байв (⑫-ээс хойш ⑪‴, ⑪⁗, ⑥″′ гэх мэт хэсгүүд нэмэгдэв)
  *   ① Үл хөдлөх: 3 багана (12 хэсэг · sell/rent · 8 төрөл)
  *      ⚠️ 2026-10-01 (**4 дэх засвар**): баганын ДЭЭД ТОЛГОЙ (`[data-picker-title]`)
  *      БҮХЭЛДЭЭ ХАСАГДАВ (сонгосон утга нь доорх мөртэй давхардаж байв ✗) →
@@ -146,6 +146,21 @@
  *      (`[data-location-summary]`-тай давхардахгүй ✓) ③ 3-р алхамд 🗂 + 📍
  *      ХОЁУЛАА ④ 📱 390px дээр `display:none` (өргөн 0 ✓)
  *      ⇒ **5 шалгалт** (ⓐ `dupe`/`pickerTitles` инвариантууд ХӨНДӨГДӨӨГҮЙ ✓)
+ *   ⑪⁗ 🆕 **📝 НООРОГ — САНАМСАРГҮЙ REFRESH-ЭЭС ХАМГААЛАЛТ** — 2026-10-05 (54),
+ *      хэрэглэгчийн гомдол: «зар нэмж байх үедээ гар утасны browser санамсаргүй
+ *      refresh хийхэд оруулж байсан мэдээлэл байхгүй болж байна» ⇒ форм нь
+ *      оруулсан утгаа `localStorage`-д (`zar:listing-draft:<uid>`) бичиж,
+ *      дараагийн ачаалалт дээр сэргээнэ (`lib/listingDraft.mjs`) ✓
+ *      ① ноорог БИЧИГДСЭН (`raw` дотор гарчиг ба `totalFloors`) ② `location.reload()`
+ *      → гарчиг/ангилал/байршил/гараас бичсэн «12»/3-р алхмын дэлгэц БҮГД ХЭВЭЭР
+ *      ③ «📝 Хадгалагдсан ноорог сэргээгдлээ» мэдэгдэл + 🗑 «Устгах»
+ *      (`[data-draft-restored]`/`[data-draft-discard]`, `type="button"`) ④ 🗑 дарсны
+ *      дараа ноорог УСТАЖ форм ХООСОН + 1-р алхам ⑤ дахин refresh → хоосон хэвээр
+ *      ⇒ **11 шалгалт**
+ *      ⚠️ Энэ хэсэг нь `gotoStepUrl()`-ийг ХЭРЭГЛЭХГҮЙ — тэр нь нооргийг
+ *      цэвэрлэдэг (`clearDrafts()`) тул `location.reload()`-ыг ШУУД дуудна ✓
+ *      ⚠️ Ноорог нь «форм ХООСОН» гэсэн шалгалтуудыг унагана ✗ ⇒ `clearDrafts()`
+ *      нь script-ийн эхэлд, `gotoStepUrl()`-д ба 🛡️ хамгаалалтын хэсэгт дуудагдана ✓
  *
  * ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
  *   1) сервер http://localhost:3000 (`npm run dev` эсвэл `npm run build && npm run start`)
@@ -237,6 +252,35 @@ const evaluate = async (expression) => {
   if (r.exceptionDetails) throw new Error(JSON.stringify(r.exceptionDetails.exception?.description || r.exceptionDetails));
   return r.result.value;
 };
+
+/**
+ * 📝 НООРОГ ЦЭВЭРЛЭХ (2026-10-05, 54) — форм нь оруулсан утгаа `localStorage`-д
+ *    ноорог болгож хадгалдаг болов (`lib/listingDraft.mjs`) ⇒ script дахин
+ *    ажиллах үед өмнөх run-ийн ноорог ҮЛДСЭН байж болно. Тэр нь «форм ХООСОН»
+ *    гэсэн бүх шалгалтыг унагана ✗ (ж: 🛡️ `?step=3` → 1-р алхам руу буцах
+ *    нөхцөл нь форм хоосон байхыг шаарддаг) ⇒ эхлэлд болон форм «шинэ» байх
+ *    ёстой газар бүрд энэ туслахыг дуудна ✓
+ * ⚠️ Зөвхөн `zar:listing-draft…` угтвартай түлхүүрүүд — `sb-…-auth-token`
+ *    (нэвтрэлт) ХӨНДӨГДӨХГҮЙ ✓
+ */
+const clearDrafts = () => evaluate(`(() => {
+  try {
+    const keys = Object.keys(window.localStorage).filter((k) => k.indexOf('zar:listing-draft') === 0);
+    keys.forEach((k) => window.localStorage.removeItem(k));
+    return keys.length;
+  } catch (e) {
+    // ⚠️ Хуудас ачаалагдаагүй / about:blank үед localStorage ХОРИГЛОНО
+    //    (SecurityError) ⇒ script-ийг УНАГАХГҮЙ — «цэвэрлэх юм байхгүй» гэж үзнэ ✓
+    return -1;
+  }
+})()`);
+
+// ⚠️ Дээрх `Page.navigate` нь хуучин нооргийг сэргээсэн байж болзошгүй ⇒
+//    цэвэрлээд, форм ШИНЭ байхаар дахин ачаална ✓
+const draftKeysAtStart = await clearDrafts();
+if (draftKeysAtStart) console.log(`  ℹ️ хуучин ноорог ${draftKeysAtStart} ширхэг ЦЭВЭРЛЭГДЭВ (форм шинэ байх ёстой ✓)`);
+await rpc('Page.navigate', { url: `${BASE}/listings/new?step=1` });
+await wait(4000);
 
 const PROBE = `(() => {
   const cols = {};
@@ -406,8 +450,14 @@ const clickNext = async () => {
  * 🪜 Алхмыг URL-аар солих — ⚠️ 2026-10-01-нд толгойн АЛХМЫН ТАБУУД хасагдсан
  *    тул `[data-step-tab="…"]` дарах боломжгүй болсон → `?step=N` руу шууд
  *    шилжинэ (бүтэн ачаалал тул форм цэвэрлэгдэнэ — дараа нь дахин сонгоно ✓)
+ * ⚠️ 2026-10-05 (54): зөвхөн бүтэн ачаалал ХАНГАЛТГҮЙ болов — форм нь оруулсан
+ *    утгаа `localStorage`-ийн НООРОГ болгож хадгалдаг тул дахин ачаалахад утга
+ *    БУЦАЖ ирнэ ✗ ⇒ энд ЗОРИУДААР нооргийг цэвэрлэнэ («форм шинэ» гэсэн
+ *    шалгалтууд хүчинтэй үлдэнэ ✓). Нооргийг ШАЛГАХ хэсэг (⑪⁗) нь
+ *    `location.reload()`-ыг шууд дууддаг тул тэр нь хөндөгдөхгүй ✓
  */
 const gotoStepUrl = async (n) => {
+  await clearDrafts();
   await evaluate(`location.href = ${JSON.stringify(`${BASE}/listings/new?step=${n}`)}`);
   await wait(3000);
 };
@@ -1215,7 +1265,88 @@ ok('📱 Утга нь хадгалагдсан (гараас бичсэн «12�
   wp2.inputVisible === 1 && wp2.inputValue === '12',
   JSON.stringify({ inputs: wp2.inputVisible, value: wp2.inputValue }));
 
-// ── 🖥 1440px: мобайл блок БҮРЭН ХААГДАЖ, ХУУЧИН байдал ХЭВЭЭР (regression үгүй) ──
+// ────────────────────────────────────────────────────────────
+// ⑪⁗ 🆕 2026-10-05 (54) — 📝 НООРОГ: 📱 САНАМСАРГҮЙ REFRESH ХИЙХЭД ОРУУЛСАН
+//      МЭДЭЭЛЭЛ ХАДГАЛАГДАНА (`localStorage`)
+//      ⚠️ Хэрэглэгчийн гомдол: «зар нэмж байх үедээ гар утасны browser
+//         санамсаргүй refresh хийхэд оруулж байсан мэдээлэл байхгүй болж байна»
+//      ⚠️ ЭНД `location.reload()`-ыг ШУУД дуудна — `gotoStepUrl` нь нооргийг
+//         цэвэрлэдэг тул (форм шинэ байх ёстой шалгалтуудын төлөө) тэр нь
+//         нооргийг БАЙХГҮЙ болгоно ✗
+//      ⚠️ Урсгал: гарчиг + «12» бичсэн → REFRESH → утга ХЭВЭЭР ба мэдэгдэл
+//         гарсан эсэх → 🗑 Устгах → форм ЦЭВЭР + ноорог УСТСАН эсэх ✓
+// ────────────────────────────────────────────────────────────
+console.log('\n── ⑪⁗ 📝 ноорог: REFRESH хийсэн ч мэдээлэл ХАДГАЛАГДАНА ──');
+/**
+ * 📝 Нооргийн probe — мэдэгдэл (`[data-draft-restored]`), 🗑 товч
+ *    (`[data-draft-discard]`) ба localStorage-ийн түлхүүрүүд ✓
+ * ⚠️ ЭНЭ template literal дотор backtick / долларын буржгар хаалт БИЧИХГҮЙ ✗
+ */
+const DRAFT_PROBE = `(() => {
+  const vis = (el) => { if (!el) return false; const b = el.getBoundingClientRect(); return b.width > 0 && b.height > 0; };
+  const notice = document.querySelector('[data-draft-restored]');
+  const btn = document.querySelector('[data-draft-discard]');
+  const keys = Object.keys(window.localStorage).filter((k) => k.indexOf('zar:listing-draft') === 0);
+  return {
+    notice: vis(notice),
+    text: notice ? notice.innerText.replace(/\\s+/g, ' ').trim() : '',
+    btn: !!btn && vis(btn),
+    btnType: btn ? String(btn.getAttribute('type') || '') : '',
+    keys: keys.length,
+    raw: keys.length ? String(window.localStorage.getItem(keys[0]) || '').slice(0, 500) : '',
+    titleInInput: ((document.querySelector('[data-detail-field="title"] input') || {}).value || ''),
+  };
+})()`;
+const dprobe = () => evaluate(DRAFT_PROBE);
+
+const d0 = await wprobe();
+const draftSaved = await dprobe();
+ok('📝 төлөв: гарчиг «2 өрөө байр, Баянгол» + гар бичилт «Барилгын нийт давхар» = 12 (ноорог үлдэх ёстой)',
+  d0.titleValue === '2 өрөө байр, Баянгол' && d0.key === 'totalFloors' && d0.inputValue === '12',
+  JSON.stringify({ title: d0.titleValue, key: d0.key, value: d0.inputValue }));
+ok('💾 ноорог `localStorage`-д ХАДГАЛАГДСАН (`zar:listing-draft:…` — гарчиг ба «12» дотор нь ✓)',
+  draftSaved.keys === 1 && draftSaved.raw.includes('2 өрөө байр, Баянгол') && draftSaved.raw.includes('"totalFloors":"12"'),
+  JSON.stringify({ keys: draftSaved.keys, raw: draftSaved.raw.slice(0, 140) }));
+
+// 🔄 САНАМСАРГҮЙ REFRESH — энэ бол хэрэглэгчийн ГОЛ АСУУДАЛ байв
+await evaluate('location.reload()');
+await wait(6500);
+const d1 = await wprobe();
+const draftAfter = await dprobe();
+ok('📝 REFRESH-ийн дараа ГАРЧИГ ХЭВЭЭР («2 өрөө байр, Баянгол» — алга болохгүй ✓)',
+  d1.titleValue === '2 өрөө байр, Баянгол', JSON.stringify(d1.titleValue));
+ok('📝 REFRESH-ийн дараа сонгосон 🗂 АНГИЛАЛ ба 📍 БАЙРШИЛ ч хэвээр (мөрүүд харагдана ✓)',
+  d1.answerKeys.includes('step-category') && d1.answerKeys.includes('step-location'),
+  JSON.stringify(d1.answerKeys));
+ok('📝 REFRESH-ийн дараа ГАРААС бичсэн «12» ДАВХАР ба 3-р алхмын дэлгэц хэвээр (утга бүр БИЧИГДСЭН ✓)',
+  d1.key === 'totalFloors' && d1.inputValue === '12',
+  JSON.stringify({ key: d1.key, value: d1.inputValue }));
+ok('📝 REFRESH-ийн дараа «📝 Хадгалагдсан ноорог сэргээгдлээ» мэдэгдэл + 🗑 «Устгах» товч гарч ирэв',
+  draftAfter.notice === true && draftAfter.btn === true && draftAfter.text.includes('ноорог сэргээгдлээ'),
+  JSON.stringify({ notice: draftAfter.notice, btn: draftAfter.btn, text: draftAfter.text }));
+ok('📝 🗑 товч нь `type="button"` (форм дотроос submit болж КЕТЭХГҮЙ ✓)',
+  draftAfter.btnType === 'button', `type=${draftAfter.btnType}`);
+
+// 🗑 УСТГАХ — ноорог ба форм хоёулаа цэвэрлэгдэнэ
+ok('🗑 «Устгах» товч дарагдав', (await clickVisible('[data-draft-discard]')) === 'OK');
+await wait(800);
+const d2 = await wprobe();
+const dCleared = await dprobe();
+ok('🗑 дарсны дараа мэдэгдэл ГАРАХГҮЙ + ноорог localStorage-оос УСТСАН + форм ХООСОН',
+  dCleared.notice === false && dCleared.keys === 0 && dCleared.titleInInput === '',
+  JSON.stringify({ notice: dCleared.notice, keys: dCleared.keys, title: dCleared.titleInInput }));
+ok('🗑 дарсны дараа 1-р алхам руу буцсан (анхдагч төлөв ✓)',
+  String((await evaluate('location.search')) || '').includes('step=1') || d2.key === 'title',
+  JSON.stringify({ url: await evaluate('location.search'), key: d2.key }));
+
+// 🔄 Дахин REFRESH — сэргээх юм байхгүй (ноорог устсан ✓)
+await evaluate('location.reload()');
+await wait(6500);
+const dAgain = await dprobe();
+ok('🗑 устгасны дараа REFRESH хийвэл форм ХООСОН хэвээр (ноорог БАЙХГҮЙ ✓)',
+  dAgain.notice === false && dAgain.keys === 0 && dAgain.titleInInput === '',
+  JSON.stringify({ notice: dAgain.notice, keys: dAgain.keys, title: dAgain.titleInInput }));
+
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1400, deviceScaleFactor: 1, mobile: false });
 await gotoStepUrl(1);
 await wait(1200);
@@ -1239,6 +1370,7 @@ const GUARD_PROBE = `(() => ({
   text: document.querySelector('form') ? document.querySelector('form').innerText : '',
 }))()`;
 for (const n of [3, 5]) {
+  await clearDrafts(); // 📝 ноорог байвал форм «хоосон» БИШ болно ✗ (2026-10-05 (54))
   await evaluate('location.href = ' + JSON.stringify(`${BASE}/listings/new?step=${n}`));
   await wait(4000);
   const g = await evaluate(GUARD_PROBE);

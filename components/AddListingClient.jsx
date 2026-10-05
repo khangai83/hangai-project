@@ -12,6 +12,19 @@ import YouTubeField from './YouTubeField';
 import SearchableSelect from './SearchableSelect';
 import { parseYouTube } from '../lib/youtube.mjs';
 import { compressImages, formatBytes } from '../lib/imageUtils';
+/**
+ * 📝 НООРОГ (2026-10-05, 54) — хэрэглэгчийн гомдол: «зар нэмж байх үедээ гар
+ *    утасны browser санамсаргүй refresh хийхэд оруулж байсан мэдээлэл байхгүй
+ *    болж байна» ⇒ форм нь зөвхөн React-ийн санах ойд байсан тул хуудас дахин
+ *    ачаалагдмагц бүх талбар алга болдог байв ✗
+ * ✅ Одоо оруулсан утга нь `localStorage`-д ноорог болж хадгалагдана
+ *    (анхдагч/TTL/whitelist/`editId` дүрэм БҮГД `lib/listingDraft.mjs` — цэвэр
+ *    модуль, `npm run test:draft` шалгана ✓)
+ */
+import {
+  draftKey, serializeDraft, parseDraft, isMeaningfulDraft, draftNoticeText,
+} from '../lib/listingDraft.mjs';
+
 // 🚗🌈 БРЭНДЭЭС ХАМААРАХ ЗАГВАР (2026-10-01) — зөвхөн ЭНЭ модулийн туслахууд:
 //    `lookupMap` (талбарын `optionsMap`-аас сонголт), `cascadeAttrs`
 //    (брэнд солигдоход хуучирсан загварыг цэвэрлэх НЭГ дүрэм — sidebar-тай ижил) ✓
@@ -287,6 +300,17 @@ function MobileQuestion({ title, items, value, onPick, onBack, emptyText = 'Со
 
 /** 📱 Мобайл drill-down-ийн «Алгасах» мөр (`rooms` нь заавал биш) — утга нь `''` */
 const MOBILE_SKIP = '__skip__';
+
+/**
+ * 📝 Нооргийн авто-хадгалалтын ХҮЛЭЭЛТ (ms) — 2026-10-05 (54).
+ * ⚠️ Хэт БАГА (0-100ms) бол гар бичилтийн ҮСЭГ БҮРД бичих болно (`localStorage`
+ *    нь синхрон ⇒ том текст дээр гацах ✗); хэт ИХ (2с+) бол хэрэглэгч refresh
+ *    хийх тэр мөчид сүүлийн үсгүүд бичигдээгүй үлдэж болно ✗
+ * ⇒ 400ms нь «бичиж дуусаад» бичих баланс (мөн CDP тестийн 500ms хүлээлтэд
+ *    багтана ✓)
+ */
+const DRAFT_SAVE_DELAY = 400;
+
 
 /**
  * 🎡 УРТ жагсаалтад (ж: 📅 1980–2026 он = 48 мөр, 🏢 1–150 давхар = 151 мөр)
@@ -816,6 +840,41 @@ export default function AddListingClient() {
    */
   const [wheel, setWheel] = useState(null);
   const baselineRef = useRef(''); // анхны төлөв (өөрчлөгдсөн эсэхийг шалгах)
+  // ══════════════════════════════════════════════════════════════════════
+  // 📝 НООРОГ (2026-10-05, 54) — санамсаргүй REFRESH / апп солихоос хамгаалалт
+  //    ⚠️ `localStorage` (session биш): 📱 дээр хэрэглэгч апп сольж, browser
+  //       память чөлөөлөхөд session-ийг ХААЖ болно — тэгэхэд ноорог алга болно ✗
+  //    ⚠️ Түлхүүр нь ХЭРЭГЛЭГЧ БҮРД (мөн засах горимд ЗАР БҮРД) тусдаа —
+  //       нэг утсан дээр хэдэн хүн нэвтэрдэг тул холилдох ёсгүй ✓
+  //    ℹ️ Ноорог нь зөвхөн ТЕКСТ талбаруудыг хадгална: зураг (`File`) нь
+  //       `localStorage`-д багтахгүй — зөвхөн ТОО нь сануулга болж үлдэнэ ✓
+  /** localStorage-ийн түлхүүр (`''` = нэвтрээгүй ⇒ огт бичихгүй ✓) */
+  const draftStorageKey = draftKey(userId, editId);
+  /** 📝 «Ноорог сэргээгдлээ» мэдэгдэл (`null` = байхгүй ⇒ DOM-д ГАРАХГҮЙ ✓) */
+  const [draftNotice, setDraftNotice] = useState(null);
+  /**
+   * ⚠️ СЭРГЭЭЛТ ДУУССАН эсэх — яагаад STATE ВЭ (ref биш):
+   *    «Хамгаалалт» (`?step=` → эхний дутуу алхам) нь эффект дотор
+   *    `firstInvalidStep()`-ийг ДУУДДАГ ба тэр нь форм ХООСОН үед 1-р алхам
+   *    руу буцаадаг. Ноорог сэргээлт нь `setForm`-оор хожуу ирдэг тул
+   *    сэргээлт дуусахаас өмнө хамгаалалт ажиллавал хэрэглэгч refresh бүрд
+   *    1-р алхмаас ЭХЭЛНЭ ✗ (ноорог байсан ч). Тиймээс хамгаалалт нь энэ
+   *    флагыг хүлээнэ ✓ (ref байвал дахин render үүсэхгүй ⇒ эффект дахин
+   *    ажиллахгүй ✗ — state нь ЗААВАЛ)
+   */
+  const [draftReady, setDraftReady] = useState(false);
+  /** Нэг л удаа сэргээх (`editId`/хэрэглэгч солигдоход дахин ажиллана ✓) */
+  const draftCheckedRef = useRef('');
+  /**
+   * ⚠️ Зар АМЖИЛТТАЙ хадгалагдсаны дараа авто-хадгалалтыг ЗОГСООНО.
+   *    `handleSubmit` нь нооргийг `removeItem`-ээр устгадаг ч, хэрэглэгч
+   *    сүүлийн талбараа бичээд 400ms (`DRAFT_SAVE_DELAY`)-ийн дотор
+   *    «Нийтлэх» дарсан бол ТЭР timer хожуу ажиллаж, нийтлэгдсэн зарын
+   *    мэдээллийг ноорог болгож ДАХИН бичих байсан ✗ ⇒ дараагийн удаа
+   *    «📝 ноорог сэргээгдлээ» гэж дэмий гарч ирнэ
+   */
+  const draftDoneRef = useRef(false);
+
 
   // 🪜 Хуудас ачаалахад: нэвтэрсэн бол шинэ/засах формыг бэлдэнэ.
   //    «Одоогийн алхам» нь URL-аас (`?step=`) уншигдана — энд `setStep` БАЙХГҮЙ ✓
@@ -860,6 +919,89 @@ export default function AddListingClient() {
   }, [authLoading, userId, editId]);
 
   /**
+   * 📝 НООРОГ СЭРГЭЭХ (2026-10-05, 54) — хуудас дахин ачаалагдмагц (refresh,
+   *    📱 апп солих, browser-ийн «память чөлөөлөх» …) localStorage-д үлдсэн
+   *    утгыг формоо буцааж тавина ✓
+   *
+   * ⚠️ ДАРААЛАЛ ЧУХАЛ: энэ нь ДЭЭРХ «формыг бэлдэх» эффектийн ДАРАА
+   *    бичигдсэн (React нь эффектүүдийг дарааллаар нь ажиллуулна) — тиймээс
+   *    `emptyForm()` / `listingToForm(l)` утгыг дарж, нооргийн утга ЛАВЛАГДАНА ✓
+   * ⚠️ `authLoading`/`loadingEdit` дуустал ХҮЛЭЭНЭ: засах горимд зарын утга
+   *    татагдаж дуусахаас өмнө сэргээвэл DB-ийн утга нооргийг дарна ✗
+   * ⚠️ `draft.form` нь whitelist-ээр шүүгдсэн (зөвхөн форм-ийн мэдэгдэж буй
+   *    түлхүүрүүд) — `{...f, ...draft.form}` нь танихгүй түлхүүр оруулахгүй ✓
+   */
+  useEffect(() => {
+    if (authLoading || !userId || !draftStorageKey) return;
+    if (loadingEdit) return; // 🛠 засах горим: зарын утга ирэхийг хүлээнэ
+    if (draftCheckedRef.current === draftStorageKey) return; // ⚠️ нэг л удаа
+    draftCheckedRef.current = draftStorageKey;
+
+    let raw = null;
+    try { raw = window.localStorage.getItem(draftStorageKey); } catch { raw = null; }
+    /** 🧹 Нооргийг устгана (Safari private / квот дүүрсэн ч алдаа шидэхгүй ✓) */
+    const drop = () => { try { window.localStorage.removeItem(draftStorageKey); } catch { /* ignore */ } };
+
+    const draft = parseDraft(raw, { keys: Object.keys(emptyForm()), editId });
+    if (!draft) {
+      // ⚠️ Эвдэрсэн / хуучирсан / өөр хэрэглэгч-зарын ноорог → ХОГ үлдээхгүй ✓
+      if (raw) drop();
+      setDraftReady(true);
+      return;
+    }
+    // ⚠️ Анхдагч (шинэ) эсвэл DB-ийн (засах) утгатай ЯГ ИЖИЛ бол сэргээх
+    //    юмгүй — тэр үед бас устгана ✓ (`baselineRef` нь дээрх эффектэд тавигдсан)
+    if (!isMeaningfulDraft(draft, baselineRef.current)) {
+      drop();
+      setDraftReady(true);
+      return;
+    }
+
+    setForm((f) => ({ ...f, ...draft.form }));
+    // 📱 3-р алхмын «аль асуулт дээр байсан» — асуултын түлхүүр нь хадгалагдана
+    //    (⚠️ буруу/хуучирсан түлхүүр нь эхний дэлгэц рүү унана — код нь
+    //    `findIndex < 0 → 0` хамгаалалттай ✓)
+    if (draft.mobileDetailStep) setMobileDetailStep(draft.mobileDetailStep);
+    setDraftNotice({ pendingCount: draft.pendingCount, savedAt: draft.savedAt });
+    setDraftReady(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, userId, loadingEdit, editId, editing, draftStorageKey]);
+
+  /**
+   * 💾 НООРОГ БИЧИХ (авто-хадгалалт) — форм ХӨДЛӨХ бүрд (debounce) localStorage
+   *    руу бичнэ. Хэрэглэгч «Хадгалах» товч ДАРАХ ШААРДЛАГАГҮЙ — 📱 дээр товч
+   *    дарах боломжгүй мөч (refresh/апп солих) байдаг тул АВТОМАТ ✓
+   *
+   * ⚠️ `draftReady` дуустал ЮУ Ч ХИЙХГҮЙ (бичих ч, УСТГАХ ч БИШ):
+   *    эс бөгөөс сэргээлт эхлэхээс өмнө «форм анхдагчтай тэнцүү» гэж үзээд
+   *    нооргийг устгачихна ✗ (форм эхний commit-д хоосон байдаг)
+   * ⚠️ `!isDirty()` (анхдагч/DB-ийн утгатай ижил) → ноорог УСТГАНА: бүх талбараа
+   *    цэвэрлэсэн хэрэглэгчид дараагийн удаа «сэргээгдлээ» гэж гарахгүй ✓
+   * ⚠️ Зураг (`pending`) нь зөвхөн ТООГООР хадгалагдана — `File` объект
+   *    `localStorage`-д орохгүй (мэдэгдэл нь хэрэглэгчид сануулна ✓)
+   */
+  useEffect(() => {
+    if (authLoading || loadingEdit || !userId || !draftStorageKey || !draftReady) return undefined;
+    const t = setTimeout(() => {
+      try {
+        if (draftDoneRef.current) return; // ⚠️ зар НИЙТЛЭГДСЭН — ноорог хэрэггүй ✓
+        if (!isDirty()) { window.localStorage.removeItem(draftStorageKey); return; }
+        const raw = serializeDraft({
+          form,
+          keys: Object.keys(emptyForm()),
+          pendingCount: pending.length,
+          mobileDetailStep,
+          editId,
+        });
+        if (raw) window.localStorage.setItem(draftStorageKey, raw);
+      } catch { /* ⚠️ Safari private горим / квот — чимээгүй өнгөрөөнө ✓ */ }
+    }, DRAFT_SAVE_DELAY);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftReady, authLoading, loadingEdit, userId, editId, draftStorageKey, form, pending, existingImages, mobileDetailStep]);
+
+
+  /**
    * 🗂 3 БАГАНАТ сонголт — сонгосон ДЭД ТӨРЛИЙН БҮЛГИЙГ автоматаар нээнэ.
    * ⚠️ Засах горимд (`?edit=<id>`) `form.propertyType` нь ХОЖИМ (fetch дууссаны
    *    дараа) бөглөгддөг тул `useState`-ийн анхны утгаар шийдэж болохгүй ✗ —
@@ -887,15 +1029,39 @@ export default function AddListingClient() {
    * Хуудсаас гарах. ⚠️ Оруулсан мэдээлэл алдагдахаас сэргийлж: өөрчлөлт байвал
    * баталгаажуулна. ⚠️ Модал байсан тул `onClose()` байсныг ОДОО NAVIGATION
    * болгосон (`/my-listings` эсвэл нүүр хуудас) ✓
+   * 📝 2026-10-05 (54): гарахад оруулсан мэдээлэл нь НООРОГ болж `localStorage`-д
+   *    ҮЛДЭНЭ (алга болохгүй ✓) — тиймээс мессеж нь «УСТАНА» биш, «ноорог
+   *    болж хадгалагдана» гэж хэлнэ (хэрэглэгчийг төөрөгдүүлэхгүй ✓)
    */
   const goHome = () => router.push(isEdit ? '/my-listings' : '/');
   const requestCancel = () => {
     if (submitting) return;
-    if (isDirty() && !window.confirm('Оруулсан мэдээлэл хадгалагдахгүй УСТАНА. Гарахдаа итгэлтэй байна уу?')) {
+    if (isDirty() && !window.confirm('Оруулсан мэдээлэл НООРОГ болж ХАДГАЛАГДАНА — дараа нь энэ хуудсанд орход «📝 Хадгалагдсан ноорог сэргээгдлээ» гэж буцаж ирнэ. Гарахдаа итгэлтэй байна уу?')) {
       return;
     }
     goHome();
   };
+
+  /**
+   * 🗑 «Ноорог устгах» (2026-10-05, 54) — мэдэгдэл дээрх товч. localStorage-ийн
+   *    нооргийг устгаад, формоо АНХДАГЧ (шинэ зар) эсвэл DB-ийн (засах) утга
+   *    руу буцаана ✓
+   * ⚠️ Зөвхөн ТЕКСТ талбарууд устна — сонгосон зургууд (`pending`) нь сэргээлтэд
+   *    ороогүй байсан тул энд ч хөндөхгүй үлдээнэ (`baselineRef`-ийг шинэчилснээр
+   *    «өөрчлөгдсөн» төлөв зөв тооцоологдоно ✓)
+   */
+  const discardDraft = () => {
+    try { window.localStorage.removeItem(draftStorageKey); } catch { /* ignore */ }
+    const initial = isEdit ? listingToForm(editing) : emptyForm();
+    setForm(initial);
+    baselineRef.current = JSON.stringify(initial);
+    setDraftNotice(null);
+    setMobileDetailStep('title');
+    setWheel(null);
+    setError('');
+    if (!isEdit) gotoStep(0);
+  };
+
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -1723,6 +1889,7 @@ export default function AddListingClient() {
    */
   useEffect(() => {
     if (authLoading || loadingEdit || isEdit || editId) return;
+    if (!draftReady) return; // 📝 ноорог сэргээгдэхийг ХҮЛЭЭНЭ (2026-10-05, 54)
     if (step === 0) return;
     const invalid = firstInvalidStep();
     if (invalid && invalid.index < step) {
@@ -1730,7 +1897,8 @@ export default function AddListingClient() {
       gotoStep(invalid.index);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, authLoading, loadingEdit, isEdit, form.propertyType, form.city]);
+  }, [step, authLoading, loadingEdit, isEdit, form.propertyType, form.city, draftReady]);
+
 
 
   const handleSubmit = async (e) => {
@@ -1791,6 +1959,18 @@ export default function AddListingClient() {
       } else {
         await createListing(userId, payload);
       }
+
+      /**
+       * 📝 Ноорог ХЭРЭГГҮЙ болов (2026-10-05, 54) — зар DB-д орсон тул
+       *    дараагийн удаа «сэргээгдлээ» гэж гарч ирэх ёсгүй ✗
+       * ⚠️ Устгах нь `router.push`-ийн ӨМНӨ (navigation-ийн дараа эффект
+       *    ажиллахгүй байж болзошгүй ✓)
+       * ⚠️ `draftDoneRef` нь ХҮЛЭЭГДЭЖ байгаа debounce timer-ыг зогсооно —
+       *    эс бөгөөс тэр timer устгасны ДАРАА нооргийг дахин бичиж,
+       *    нийтлэгдсэн зарын утга «ноорог» болж үлдэнэ ✗ (дээрх тайлбар ✓)
+       */
+      draftDoneRef.current = true;
+      try { window.localStorage.removeItem(draftStorageKey); } catch { /* ignore */ }
 
       notifyListingsChanged();
       showToast(isEdit ? 'Зар амжилттай засагдлаа ✅' : 'Зар амжилттай нийтлэгдлээ ✅');
@@ -1917,6 +2097,33 @@ export default function AddListingClient() {
         <div className="p-6">
           <form onSubmit={handleSubmit}>
             {error && <div className="mb-3 rounded-lg bg-red-50 p-2.5 text-red-800">{error}</div>}
+
+            {/* ═══ 📝 НООРОГ СЭРГЭЭГДЭВ (2026-10-05, 54) ═══
+                Хэрэглэгчийн гомдол: «…гар утасны browser санамсаргүй refresh
+                хийхэд оруулж байсан мэдээлэл байхгүй болж байна» ⇒ `localStorage`-д
+                хадгалагдсан ноорог сэргээгдсэн үед ЭНЭ мэдэгдэл гарна.
+                ⚠️ Зөвхөн сэргээлт БОЛСОН үед (`draftNotice`) — хоосон форм дээр
+                   хэзээ ч гарахгүй ✓
+                ⚠️ Товч нь `type="button"` — форм ДОТОР байгаа тул заавал
+                   (эс бөгөөс дарахад форм submit болж, «Зарын гарчиг оруулна уу»
+                   гэсэн алдаа гарна ✗ — (52)-ийн «✏️ Засах»-тай ижил урхи)
+                🔍 Хайх үг: data-draft-restored, data-draft-discard, ноорог */}
+            {draftNotice && (
+              <div
+                data-draft-restored="true"
+                className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[13px] leading-snug text-amber-900"
+              >
+                <span className="min-w-[12rem] flex-1">{draftNoticeText(draftNotice)}</span>
+                <button
+                  type="button"
+                  data-draft-discard="true"
+                  onClick={discardDraft}
+                  className="shrink-0 rounded-md border border-amber-400 bg-white px-2.5 py-1 font-medium text-amber-900 hover:bg-amber-100"
+                >
+                  🗑 Устгах
+                </button>
+              </div>
+            )}
 
             {/* ═══ 🖥 ≥640px · СОНГОСОН АНГИЛАЛ / БАЙРШИЛ (2026-10-05) ═══
                 Хэрэглэгчийн хүсэлт: «сонгосон категори/байршил компьютер дээр
