@@ -28,7 +28,15 @@
 //      (1-р алхмын `[data-picker-summary]` ба 2-р алхмын `[data-location-summary]`
 //      -тай ДАВХАРДАХГҮЙ ✓) · утга нь формойн state-ээс ШУУД
 //      (`pickedCategoryPath`/`pickedLocationPath` — 📱-тай НЭГ ЭХ СУРВАЛЖ ✓)
-//      🔍 Хайх үг: DesktopSummary, data-desktop-summary, pickedCategoryPath
+//   ⑥′ 🖥 ✏️ «ЗАСАХ» ТОВЧ (2026-10-05, 52 — хэрэглэгчийн хүсэлт: «бусад мэдээлэл
+//      оруулах хэсэг гарч байгаа хуудсан дээрээс дээрх 2-оо засах боломжтой
+//      байх товч тус тусд нь»): хүснэгтийн мөр БҮРД тусдаа товч —
+//      🗂 Ангилал → `[data-desktop-summary-edit="category"]` (1-р алхам) ·
+//      📍 Зарын дэд байршил → `[data-desktop-summary-edit="location"]`
+//      (2-р алхам) · ⚠️ `type="button"` (`<form>` дотор — submit болохгүй ✓) ·
+//      ⚠️ Handler нь 📱 `mobileAnswerEdit`-тай НЭГ ЭХ СУРВАЛЖ ✓
+//      🔍 Хайх үг: DesktopSummary, data-desktop-summary, pickedCategoryPath,
+//         data-desktop-summary-edit, ✏️ Засах
 //   ⑦ 🖥 БА 📱 — АЛХАМТ ФОРМ (2026-10-05, 2 дахь засвар): «🖥 нэг урт хуудас»
 //      (бүх 5 алхам ЗЭРЭГ) нь АЛДАА байв ✗ (сонгосон ангилал/байршлын хэсэг
 //      дараагийн алхамд МӨН харагдаж байв) ⇒ форм нь 🖥 дээр ч 📱 шиг
@@ -407,7 +415,9 @@ t('🖥 🗂 АНГИЛАЛ ба 📍 БАЙРШИЛ нь `step`-ЭЭР АЛХА
 });
 
 t('🖥 Формд `step={step}`-тэй — 🖥 алхамт тул алхам алхмаар нээгдэнэ ✓', () => {
-  assert.match(FORM, /<DesktopSummary categoryPath=\{pickedCategoryPath\} locationPath=\{pickedLocationPath\} step=\{step\} \/>/);
+  /** 🆕 2026-10-05 (52): `onEdit` нь 📱 `mobileAnswerEdit` (НЭГ ЭХ СУРВАЛЖ ✓)
+   *  ⇒ `/s`-ийн оронд `\s+` — JSX нь олон МӨРТ болсон ч таарна ✓ */
+  assert.match(FORM, /<DesktopSummary\s+categoryPath=\{pickedCategoryPath\}\s+locationPath=\{pickedLocationPath\}\s+step=\{step\}\s+onEdit=\{mobileAnswerEdit\}\s*\/>/);
   /** ⚠️ 1-р алхмын блок дотор `DesktopSummary` БАЙХГҮЙ ✓ */
   const step0 = (() => {
     const from = FORM.indexOf('data-step-block="category"');
@@ -428,7 +438,7 @@ t('🖥 НЭГ ЭХ СУРВАЛЖ: 📱 `mobileAnswerRows` ба 🖥 `DesktopSu
   assert.match(FORM, /rows\.push\(\{ key: 'step-category', label: 'Ангилал', value: pickedCategoryPath \}\)/);
   assert.match(FORM, /rows\.push\(\{ key: 'step-location', label: 'Зарын дэд байршил', value: pickedLocationPath \}\)/);
   /** ② 🖥 хүснэгт нь ЯГ ижил утгуудыг prop-оор авна ✓ */
-  assert.match(FORM, /<DesktopSummary categoryPath=\{pickedCategoryPath\} locationPath=\{pickedLocationPath\} step=\{step\} \/>/);
+  assert.match(FORM, /<DesktopSummary\s+categoryPath=\{pickedCategoryPath\}\s+locationPath=\{pickedLocationPath\}\s+step=\{step\}\s+onEdit=\{mobileAnswerEdit\}\s*\/>/);
   /** ③ 📱-ийн тусгаарлагчид (` ▸ ` ба ` — `) ХЭВЭЭР ✓ */
   assert.ok(FORM.includes(".join(' ▸ ')") && FORM.includes(".join(' — ')"), 'тусгаарлагчид хэвээр байх ёстой');
 });
@@ -438,6 +448,59 @@ t('🖥 Утга нь формойн state-ээс ШУУД — 🆕 `useState` /
   assert.match(FORM, /const pickedLocationPath = \[form\.city, form\.district, simpleForm \? '' : form\.khoroo\]/);
   assert.ok(!FORM.includes('setPickedCategoryPath'), 'setPickedCategoryPath байж болохгүй');
   assert.ok(!FORM.includes('setPickedLocationPath'), 'setPickedLocationPath байж болохгүй');
+});
+
+/**
+ * 🆕 2026-10-05 (52) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «зар оруулахад … бусад мэдээлэл
+ *    оруулах хэсэг гарч байгаа хуудсан дээрээс дээрх 2-оо засах боломжтой байх
+ *    товч тус тусд нь» ⇒ 🖥 `DesktopSummary`-ийн мөр БҮРД ✏️ «Засах» товч:
+ *    🗂 Ангилал → 1-р алхам (`gotoStep(0)`) · 📍 Зарын дэд байршил →
+ *    2-р алхам (`gotoStep(1)`)
+ */
+t('🆕🖥 ✏️ ЗАСАХ товч: 🗂 Ангилал ба 📍 Байршил мөр ТУС БҮРД тусдаа товч (товч тус тусд нь ✓)', () => {
+  /** ⚠️ Товч нь ЗӨВХӨН `[data-desktop-summary]` дотор — CDP-ийн стабил
+   *  selector + мөр бүрийн түлхүүр (`category` / `location`) ✓ */
+  assert.ok(desktopSummaryComp.includes('data-desktop-summary-edit={key}'),
+    'товчны стабил selector (`data-desktop-summary-edit={key}`) дутуу ✗');
+  assert.ok(desktopSummaryComp.includes("editBtn('category', 'Ангиллыг')"),
+    '① 🗂 Ангиллын «Засах» товч дутуу ✗');
+  assert.ok(desktopSummaryComp.includes("editBtn('location', 'Байршлыг')"),
+    '② 📍 Байршлын «Засах» товч дутуу ✗');
+  /** ⚠️ Мөр тус бүрд ТУСДАА товч — НЭГ товч хоёуланг нь засдаг БОЛОХГҮЙ
+   *  ⚠️ Тодорхойлолт нь `const editBtn = (` (тиймээс `editBtn(`-д ОРОХГҮЙ) ⇒
+   *  `editBtn(` нь ЯГ 2 ДУУДАЛТ (② dropdown биш, 2 мөр ✓) */
+  assert.ok(desktopSummaryComp.includes('const editBtn = (key, label) => ('),
+    '`editBtn` тодорхойлолт дутуу ✗');
+  assert.equal((desktopSummaryComp.match(/editBtn\(/g) || []).length, 2,
+    '`editBtn(` = 2 дуудалт (мөр тус бүрд ТУСДАА товч ✓)');
+  assert.ok(desktopSummaryComp.includes('✏️ Засах'), 'товчны бичиг «✏️ Засах» ✓');
+});
+
+t('🆕🖥 ✏️ товч нь `type="button"` — `<form onSubmit>` ДОТОР `submit` болж кетэхгүй ✓', () => {
+  /** ⚠️ ЯАГААД ЧУХАЛ ВЭ: хүснэгт нь `<form onSubmit={handleSubmit}>` дотор байдаг
+   *  тул `type` БИЧИХГҮЙ `<button>` нь default `submit` болж, ✏️ дарах НЬ
+   *  формыг ШУУД илгээнэ ✗ (зарыг дутуу байхад нийтлэх гэж оролдоно) */
+  const btn = desktopSummaryComp.slice(desktopSummaryComp.indexOf('<button'));
+  assert.ok(btn.includes('type="button"'), '`type="button"` дутуу ✗ — submit болно');
+  assert.ok(!btn.includes('type="submit"'), '`type="submit"` байж болохгүй ✗');
+  /** ℹ️ Хүснэгт өөрөө `div` тул форм дотор байх нь асуудалгүй ✓ (шалгасан дээр ✓) */
+  assert.ok(FORM.indexOf('<DesktopSummary') > FORM.indexOf('<form onSubmit={handleSubmit}>'));
+});
+
+t('🆕 НЭГ ЭХ СУРВАЛЖ: 🖥 ✏️ товч ба 📱 `MobileAnswers` ХОЁУЛАА `mobileAnswerEdit`-ыг дуудна (давхардсан логик 0 ✓)', () => {
+  /** ① 🖥 хүснэгт нь handler-ыг prop-оор авна ✓ */
+  assert.match(FORM, /onEdit=\{mobileAnswerEdit\}/);
+  /** ② товч нь 📱-ийн ТУЛХҮҮРҮҮДИЙГ л бүрдүүлнэ (`step-category` / `step-location`) */
+  assert.match(desktopSummaryComp,
+    /onEdit && onEdit\(key === 'category' \? 'step-category' : 'step-location'\)/);
+  /** ③ handler нь ЯГ 1 удаа тодорхойлогдоно (🖥-д зориулж ДАХИН бичихгүй ✓) */
+  assert.equal((FORM.match(/const mobileAnswerEdit = /g) || []).length, 1,
+    '`mobileAnswerEdit` ЯГ 1 удаа байх ёстой ✗');
+  /** ④ маршрут нь хэвээр: 1-р алхам (Ангилал) ба 2-р алхам (Байршил) ✓ */
+  assert.match(FORM, /if \(key === 'step-category'\) \{ gotoStep\(0\); return; \}/);
+  assert.match(FORM, /if \(key === 'step-location'\) \{ gotoStep\(1\); return; \}/);
+  /** ⑤ 📱 `MobileAnswers` нь ХӨНДӨГДӨӨГҮЙ (мөн `mobileAnswerEdit`-ыг дуудна ✓) */
+  assert.match(FORM, /<MobileAnswers rows=\{mobileAnswerRows\} onEdit=\{mobileAnswerEdit\} \/>/);
 });
 
 

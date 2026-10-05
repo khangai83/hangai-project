@@ -417,31 +417,58 @@ function MobileAnswers({ rows = [], onEdit }) {
  * ⚠️ Утга нь формойн state-ээс ШУУД (`pickedCategoryPath`/`pickedLocationPath`)
  *    — шинэ DB багана / хадгалалт БАЙХГҮЙ ✓
  * ⚠️ `data-desktop-summary` — CDP/тестийн ТОГТВОРТОЙ selector ✓
- * 🔍 Хайх үг: DesktopSummary, data-desktop-summary, pickedCategoryPath
+ * 🆕 2026-10-05 (52, хэрэглэгчийн хүсэлт: «бусад мэдээлэл оруулах хэсэг гарч
+ *    байгаа хуудсан дээрээс дээрх 2-оо засах боломжтой байх товч тус тусд
+ *    нь»): мөр БҮРД ✏️ **Засах** товч нэмэгдэв — 🗂 Ангилал →
+ *    `[data-desktop-summary-edit="category"]` (1-р алхам) · 📍 Зарын дэд
+ *    байршил → `[data-desktop-summary-edit="location"]` (2-р алхам) ✓
+ *    ⚠️ `type="button"` — хүснэгт нь `<form onSubmit>` ДОТОР тул `submit`
+ *    болж кетэхээс сэргийлнэ ✓ · `onEdit` нь 📱 `MobileAnswers`-ийн
+ *    `mobileAnswerEdit`-тай **НЭГ ЭХ СУРВАЛЖ** (`step-category` /
+ *    `step-location` түлхүүрүүд — `gotoStep(0)`/`gotoStep(1)`) ✓
+ * 🔍 Хайх үг: DesktopSummary, data-desktop-summary, data-desktop-summary-edit
  */
-function DesktopSummary({ categoryPath, locationPath, step = 0 }) {
+function DesktopSummary({ categoryPath, locationPath, step = 0, onEdit }) {
   // ⚠️ 1-р алхамд ОГТ ГАРАХГҮЙ — сонгосон зам нь 1-р алхмын picker-ийн
   //    цэнхэр мөр ба `[data-picker-summary]` дээр харагдана ✓
   if (step < 1) return null;
+  /** ✏️ Засах товчны хэв — БҮХ мөрөнд ИЖИЛ (`mb-3` дор биш, жижиг pill) ✓ */
+  const editBtn = (key, label) => (
+    <button
+      type="button"
+      data-desktop-summary-edit={key}
+      onClick={() => onEdit && onEdit(key === 'category' ? 'step-category' : 'step-location')}
+      aria-label={`${label} засах`}
+      className="shrink-0 rounded-md border border-gray-300 bg-white px-1.5 py-0.5 text-[11px] font-semibold leading-none text-gray-600 transition hover:border-primary hover:text-primary"
+    >
+      ✏️ Засах
+    </button>
+  );
   return (
     <div
       data-desktop-summary
-      className="mb-3 hidden flex-wrap gap-x-5 gap-y-1 rounded-lg bg-gray-50 px-3 py-2.5 text-[13px] text-gray-600 sm:flex"
+      className="mb-3 hidden flex-wrap items-center gap-x-5 gap-y-1.5 rounded-lg bg-gray-50 px-3 py-2.5 text-[13px] text-gray-600 sm:flex"
     >
-      {/* ① 🗂 АНГИЛАЛ — `step >= 1` (Ангилал алхмаас хойш) ✓ */}
-      <span>
-        🗂 Ангилал:{' '}
-        {categoryPath
-          ? <b className="font-semibold text-gray-900">{categoryPath}</b>
-          : <span className="text-gray-400">сонгоогүй</span>}
-      </span>
-      {/* ② 📍 БАЙРШИЛ — `step >= 2` (Байршил алхмаас хойш) ✓ */}
-      {step >= 2 && (
-        <span data-desktop-summary-location>
-          📍 Зарын дэд байршил:{' '}
-          {locationPath
-            ? <b className="font-semibold text-gray-900">{locationPath}</b>
+      {/* ① 🗂 АНГИЛАЛ — `step >= 1` (Ангилал алхмаас хойш) + ✏️ Засах ✓ */}
+      <span className="inline-flex items-center gap-1.5">
+        <span>
+          🗂 Ангилал:{' '}
+          {categoryPath
+            ? <b className="font-semibold text-gray-900">{categoryPath}</b>
             : <span className="text-gray-400">сонгоогүй</span>}
+        </span>
+        {editBtn('category', 'Ангиллыг')}
+      </span>
+      {/* ② 📍 БАЙРШИЛ — `step >= 2` (Байршил алхмаас хойш) + ✏️ Засах ✓ */}
+      {step >= 2 && (
+        <span data-desktop-summary-location className="inline-flex items-center gap-1.5">
+          <span>
+            📍 Зарын дэд байршил:{' '}
+            {locationPath
+              ? <b className="font-semibold text-gray-900">{locationPath}</b>
+              : <span className="text-gray-400">сонгоогүй</span>}
+          </span>
+          {editBtn('location', 'Байршлыг')}
         </span>
       )}
     </div>
@@ -1481,9 +1508,12 @@ export default function AddListingClient() {
   const skipDetail = (apply) => () => { apply(''); mobileDetailNext(); };
 
   /**
-   * 📱 ✏️ — «Өмнөх хариулт» мөрийн засах товч (unegui.mn-ийн харандаа).
+   * 📱🖥 ✏️ — «Алдсан хариултаа засах» товч (unegui.mn-ийн харандаа).
    *   ① `step-category` → 1-р алхам (Ангилал) ② `step-location` → 2-р алхам
    *   ③ бусад нь 3-р алхмын ТУХАЙН дэлгэц (`setMobileDetailStep`) ✓
+   * ⚠️ 📱 `MobileAnswers` БА 🖥 `DesktopSummary` ХОЁУЛАА энэ НЭГ handler-ыг
+   *    дуудна (🆕 2026-10-05 (52) — 🖥 хураангуйн «✏️ Засах») ⇒ давхардсан
+   *    логик байхгүй ✓
    * ⚠️ Утга нь ХАДГАЛАГДАНА (form хэвээр) — буцаж засаад дахин сонгоход л
    *    солигдоно (өмнөх зан төлөв ХЭВЭЭР ✓)
    */
@@ -1865,8 +1895,16 @@ export default function AddListingClient() {
                    (давхардал үүсгэхгүй ✓) — `DesktopSummary`-ийн тайлбарыг үз ✓
                 ⚠️ 📱 <640px дээр `hidden` (мобайл нь `MobileAnswers`-тай ✓)
                 ⚠️ 2026-10-05 (2 дахь засвар): `step` нь ОДОО дахин хэрэгтэй
-                   болов (🖥 дээр алхамт болсон) ⇒ `step={step}` проп ✓ */}
-            <DesktopSummary categoryPath={pickedCategoryPath} locationPath={pickedLocationPath} step={step} />
+                   болов (🖥 дээр алхамт болсон) ⇒ `step={step}` проп ✓
+                🆕 2026-10-05 (52): `onEdit` нь 📱 `mobileAnswerEdit`-ийг дамжуулна
+                   — мөр БҮРД «✏️ Засах» товч (`gotoStep(0)` / `gotoStep(1)`) ✓
+                   ⚠️ ⚠️ Handler нь 📱-тай НЭГ ЭХ СУРВАЛЖ (дахин бичихгүй ✓) */}
+            <DesktopSummary
+              categoryPath={pickedCategoryPath}
+              locationPath={pickedLocationPath}
+              step={step}
+              onEdit={mobileAnswerEdit}
+            />
 
             {/* ═══ 1-р алхам · АНГИЛАЛ — 3 БАГАНАТ СОНГОЛТ (unegui.mn загвар) ═══
                 ⚠️ Хэрэглэгч эндээс ① ХЭСЭГ → ② «Зарах/Түрээслэх»/Дэд бүлэг → ③ ТӨРӨЛ

@@ -283,6 +283,28 @@ const PROBE = `(() => {
         text: (el.innerText || '').replace(/\\s+/g, ' ').trim(),
       };
     })(),
+    /**
+     * 🆕 2026-10-05 (52 — хэрэглэгчийн хүсэлт: «бусад мэдээлэл оруулах хэсэг
+     *    гарч байгаа хуудсан дээрээс дээрх 2-оо засах боломжтой байх товч
+     *    тус тусд нь») → [data-desktop-summary] мөр БҮРД ✏️ «Засах» товч:
+     *    ⓐ category → 1-р алхам (Ангилал) ⓑ location → 2-р алхам (Байршил)
+     *    ⚠️ Товч нь <form onSubmit> ДОТОР тул type=button БАЙХ ЁСТОЙ —
+     *    эс бөгөөс ✏️ дарах нь формыг ШУУД илгээнэ ✗ (submit болно)
+     *    (⚠️ энэ template literal дотор backtick / долларын буржгар хаалт
+     *    БИЧИХГҮЙ — эс бөгөөс template literal ХААЛТАА ТАСАРЧ script унана ✗)
+     */
+    summaryEdit: (() => {
+      const el = document.querySelector('[data-desktop-summary]');
+      const btns = el ? [...el.querySelectorAll('[data-desktop-summary-edit]')] : [];
+      const pick = (k) => btns.find((b) => b.dataset.desktopSummaryEdit === k);
+      return {
+        category: Boolean(pick('category')),
+        location: Boolean(pick('location')),
+        count: btns.length,
+        typeButton: btns.length > 0 && btns.every((b) => b.getAttribute('type') === 'button'),
+        text: btns.map((b) => (b.innerText || '').trim()).join(' | '),
+      };
+    })(),
     // 📍 2-р алхам = Байршил — өөрийн гэсэн дүгнэлтийн мөр ([data-location-summary])
     //    ⚠️ ТУСДАА атрибут: [data-picker-summary] нь ЗӨВХӨН 1-р алхамд байх ёстой ✓
     locationSummary: (document.querySelector('[data-location-summary]') || {}).innerText || '',
@@ -602,6 +624,49 @@ ok('🖥 3-р алхам: хүснэгтэд сонгосон БОДИТ УТГ�
   ['🗂 Ангилал', '📍 Зарын дэд байршил', 'Үл хөдлөх', '▸', 'Дархан-Уул']
     .every((x) => (p13.desktopSummary?.text || '').includes(x)),
   p13.desktopSummary?.text);
+
+/**
+ * 🆕 2026-10-05 (52 — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ): «зар оруулахад … бусад мэдээлэл
+ *    оруулах хэсэг гарч байгаа хуудсан дээрээс дээрх 2-оо засах боломжтой байх
+ *    товч тус тусд нь» ⇒ хүснэгтийн мөр БҮРД ✏️ «Засах» товч:
+ *    ⓐ 🗂 Ангилал → 1-р алхам ⓑ 📍 Байршил → 2-р алхам.
+ *    ⚠️ Товч нь `<form>` дотор тул `type="button"` байх ЁСТОЙ (submit болно ✗)
+ *    ℹ️ Тестийн ТӨГСГӨЛД 3-р алхам руу буцна — доорх ⑥‴ хэсэг хөндөгдөхгүй ✓
+ *    ℹ️ Сонголт нь БУЦАЖ ИРЭХЭД ХАДГАЛАГДАНА (form state хэвээр ✓)
+ */
+console.log('\n── ⑥″′ 🖥 ХУРААНГУЙН ✏️ ЗАСАХ товч (Ангилал / Байршил ТУС ТУСДАА) ──');
+
+/** 🪜 Одоогийн алхмын нэр (`[data-step-current]`) */
+const stepNow = async () => String((await probe()).stepLabel).trim();
+
+ok('🖥 ✏️ «Засах» товч ХОЁУЛАА бий (category + location, нийт 2) ба `type="button"` (submit БИШ ✓)',
+  p13.summaryEdit?.category === true && p13.summaryEdit?.location === true
+  && p13.summaryEdit?.count === 2 && p13.summaryEdit?.typeButton === true,
+  JSON.stringify(p13.summaryEdit));
+ok('🖥 ✏️ товчны бичиг нь мөр тус бүрд ИЖИЛ («✏️ Засах | ✏️ Засах ✓)',
+  (p13.summaryEdit?.text || '') === '✏️ Засах | ✏️ Засах',
+  JSON.stringify(p13.summaryEdit?.text));
+
+/** ① 🗂 Ангилал — 1-р алхам руу буцаана */
+const catClicked = await click('[data-desktop-summary-edit="category"]');
+const sCat = await stepNow();
+ok('🖱 ✏️ Ангилал дарвал 1-Р АЛХАМ руу буцлаа (breadcrumb = «Ангилал» ✓)',
+  catClicked === 'OK' && sCat === 'Ангилал', `${catClicked} → ${JSON.stringify(sCat)}`);
+ok('↩️ 1-р алхамнаас «Үргэлжлүүлэх» → 2-Р АЛХАМ (📍 Байршил) — сонголт ХАДГАЛАГДСАН ✓',
+  (await clickNext()) === 'OK' && (await stepNow()) === 'Байршил',
+  JSON.stringify(await stepNow()));
+ok('↩️ 2-р алхамнаас «Үргэлжлүүлэх» → 3-Р АЛХАМ БУЦАЖ ИРЛЭЭ (📋 Дэлгэрэнгүй ✓)',
+  (await clickNext()) === 'OK' && (await stepNow()) === 'Дэлгэрэнгүй',
+  JSON.stringify(await stepNow()));
+
+/** ② 📍 Байршил — 2-р алхам руу буцаана */
+const locClicked = await click('[data-desktop-summary-edit="location"]');
+const sLoc = await stepNow();
+ok('🖱 ✏️ Байршил дарвал 2-Р АЛХАМ руу буцлаа (breadcrumb = «Байршил» ✓)',
+  locClicked === 'OK' && sLoc === 'Байршил', `${locClicked} → ${JSON.stringify(sLoc)}`);
+ok('↩️ Буцаж 3-Р АЛХАМ (📋 Дэлгэрэнгүй) — доорх хэсгүүд эндээс үргэлжилнэ ✓',
+  (await clickNext()) === 'OK' && (await stepNow()) === 'Дэлгэрэнгүй',
+  JSON.stringify(await stepNow()));
 
 console.log('\n── ⑥‴ 3-Р АЛХАМ (📋 Дэлгэрэнгүй): ТАЛБАРУУД ЦУВАА = 1 БАГАНА ──');
 /**
