@@ -1,0 +1,21 @@
+# Git: Push After Every Change
+
+After completing **any** change (code edit, bug fix, UI tweak, docs, test), always
+**commit and push** it to `origin/main` within the same task. Never leave commits
+unpushed.
+
+## Workflow
+
+1. Validate first — run the relevant tests and `npm run build` and confirm they pass.
+2. `git add -A`
+3. `git commit -m "<emoji> (<n>) <summary> …"` — follow the repo's existing
+   commit-message style (leading emoji, `(nn)` counter, Mongolian summary).
+4. `git push origin main`
+
+## Rules
+
+- Do **not** stop at `commit` — always follow with `git push origin main`.
+- Never `--force` push; never rewrite published history.
+- If tests or the build fail, fix the failure **before** committing.
+- One logical change = one commit = one push.
+- Report the pushed commit hash (short) in the final summary.
