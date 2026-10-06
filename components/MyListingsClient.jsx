@@ -8,7 +8,7 @@ import { normalizeError } from '../lib/errors';
 import { priceLabel, negotiableNote, getPropertyIcon, timeAgo, getFloorLabel, getGarageLabel } from '../lib/format';
 import MyListingsStatsPanel from './MyListingsStatsPanel';
 /**
- * 📍 Байршилгүй зар («Байршил оруулахгүй» чекбокс) дээр «📍 » хоосон үлдэхгүйн
+ * 📍 Байршилгүй зар («Байршил сонгохгүй» чекбокс) дээр «📍 » хоосон үлдэхгүйн
  *    тулд `NO_LOCATION_LABEL` («Байршил заагаагүй») хэрэглэнэ — нэг эх сурвалж
  *    (`lib/listingLocation.mjs`) ✓
  */

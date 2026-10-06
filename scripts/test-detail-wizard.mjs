@@ -485,7 +485,7 @@ t('🖥 НЭГ ЭХ СУРВАЛЖ: 📱 `mobileAnswerRows` ба 🖥 `DesktopSu
   assert.match(FORM, /<DesktopSummary\s+categoryPath=\{pickedCategoryPath\}\s+locationPath=\{pickedLocationPath\}\s+step=\{step\}\s+onEdit=\{mobileAnswerEdit\}\s*\/>/);
   /** ③ 📱-ийн тусгаарлагчид (` ▸ ` ба ` — `) ХЭВЭЭР ✓
       ⚠️ 2026-10-06: 📍-ийн тусгаарлагч (` — `) нь ЦЭВР модуль руу шилжив
-      (`lib/listingLocation.mjs → PATH_SEP`, «Байршил оруулахгүй» чекбокстой
+      (`lib/listingLocation.mjs → PATH_SEP`, «Байршил сонгохгүй» чекбокстой
       хамт) — ⚠️ утга нь ХӨНДӨГДӨӨГҮЙ эсэхийг хоёр файлаас шалгана ✓ */
   assert.ok(FORM.includes(".join(' ▸ ')"), 'ангиллын тусгаарлагч хэвээр байх ёстой');
   assert.ok(FORM.includes('locationPathText(form)'), '📍 мөр нь модулиар бичигдэнэ');

@@ -254,10 +254,16 @@ t('📇 Картын мөр: «Ажилд авна» толгой + 5 талба
     'Ажилд авна · 🕒 Бүтэн цагийн · 📊 Шаардлагатай · 🏷️ Байгууллага · 📈 Мэргэжилтэн · 💰 Тогтмол',
   );
   // ⚠️ ХУУЧИН заруудын `attrs.company`/`attrs.position` (DB-д хэвээр) нь картын
-  //    толгой/мөр болж ГАРАХГҮЙ ✓ (`section === 'jobs'` үед `company` хоосон)
+  //    толгой/мөр болж ГАРАХГҮЙ ✓ (`section === 'jobs'` үед «Ажилд авна» толгой)
   assert.equal(formatAttrsLine('jobs', { company: 'Мобиком', position: 'Программист' }), 'Ажилд авна');
-  // ℹ️ 🛠️ Үйлчилгээ дээр 🏢 `company` ХЭВЭЭР толгой болно (хөндөгдөөгүй ✓)
-  assert.equal(formatAttrsLine('services', { company: 'Гэр засвар' }), 'Гэр засвар');
+  // 🗑 2026-10-06 (5): 🛠️ Ажил, Үйлчилгээний 🏢 `company` ч ХАСАГДАВ тул
+  //    ХУУЧИН заруудын `attrs.company` нь тэнд ч толгой болохгүй —
+  //    `CARD_ATTR_ORDER.services` БҮРЭН хасагдсан ⇒ мөр ХООСОН ✓
+  assert.equal(formatAttrsLine('services', { company: 'Гэр засвар' }), '');
+  assert.equal(
+    formatAttrsLine('services', { company: 'Гэр засвар', coverage: 'Орон даяар', availability: '24/7' }),
+    '',
+  );
 });
 
 t('📋 `getAttrRows(jobs)` — `salary`/`company`/`position` МӨР БАЙХГҮЙ (цалин нь зарын ҮНЭ)', () => {
@@ -284,10 +290,23 @@ t('🌱 seed-sections: ДЕМО өгөгдөл нь ШИНЭ утгуудтай 
   //    хамт ХАСАГДСАН тул демо `attrs`-д ч ҮҮСЭХГҮЙ, `JOB_SUBTYPE_PAIRS` УСТСАН ✓
   assert.ok(!/const JOB_SUBTYPE_PAIRS\s*=/.test(SEED), 'seed-д `JOB_SUBTYPE_PAIRS` хүснэгт үлдсэн ✗');
   assert.ok(!/JOB_SUBTYPE_PAIRS\[/.test(SEED), '`JOB_SUBTYPE_PAIRS` АШИГЛАГДСАар байна ✗');
-  assert.ok(!/^\s+company,$/m.test(SEED), 'jobs attrs-д `company` үлдсэн ✗');
-  assert.ok(!/^\s+position,$/m.test(SEED), 'jobs attrs-д `position` үлдсэн ✗');
-  // ℹ️ 🛠️ Үйлчилгээний `company: pick(SERVICE_NAMES)` ХЭВЭЭР (тусдаа хэсэг ✓)
-  assert.match(SEED, /company: pick\(SERVICE_NAMES\)/);
+  const seedLines = SEED.split(String.fromCharCode(10)).map((l) => l.trim());
+  assert.ok(!seedLines.includes('company,'), 'jobs attrs-д `company` үлдсэн ✗');
+  assert.ok(!seedLines.includes('position,'), 'jobs attrs-д `position` үлдсэн ✗');
+  // 🗑 2026-10-06 (5): 🛠️ Ажил, Үйлчилгээний `company`/`coverage`/`experience`/
+  //    `availability` ч демо зарт ҮҮСЭХГҮЙ + `SERVICE_NAMES` УСТСАН ✓
+  //    (⚠️ `jobs`-ийн `jobType`/`advertiser`/`jobLevel`/`salaryType` ХӨНДӨӨГДӨӨГҮЙ ✓)
+  assert.ok(seedLines.some((l) => l.startsWith('jobType:')), 'jobs-ийн jobType ХАСАГДСАН ✗');
+  assert.ok(seedLines.some((l) => l.startsWith('advertiser: pick(')), 'jobs-ийн advertiser ХАСАГДСАН ✗');
+  assert.ok(!SEED.includes('const SERVICE_NAMES'), 'seed-д `SERVICE_NAMES` хүснэгт үлдсэн ✗');
+  assert.ok(!SEED.includes('pick(SERVICE_NAMES)'), 'seed нь `SERVICE_NAMES` ашиглаж байна ✗');
+  assert.ok(!SEED.includes('company: pick('), 'services-ийн `company` seed-д үлдсэн ✗');
+  ['coverage', 'experience', 'availability'].forEach((k) => {
+    assert.ok(
+      !seedLines.some((l) => l.startsWith(k + ': pick(')),
+      'seed-ийн services аттрт ' + k + ' үлдсэн ✗',
+    );
+  });
 });
 
 console.log(`\n✅ БҮГД ТЭНЦСЭН — ${passed} тест\n`);

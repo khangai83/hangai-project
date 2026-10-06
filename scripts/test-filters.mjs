@@ -373,9 +373,12 @@ t("Бусад хэсгийн шүүлт (jobs: 3, computers: 1, furniture/home/t
   assert.equal(count('travel'), 1);
   // 🛠 2026-10-05 (45): `services` — 🧭 `workMode` («Үйлчилгээний хэлбэр») ба
   //    💵 `priceUnit` («Үнийн хэлбэр») ХАСАГДСАН (хэрэглэгчийн хүсэлт:
-  //    «…талбаруудыг Үйлчилгээ хэсгээс хасна уу, Дахин ашиглахгүй») тул
-  //    шүүлт 3 → **1** (зөвхөн 🕒 «Ажиллах цаг») ✓
-  assert.equal(count('services'), 1);
+  //    «…талбаруудыг Үйлчилгээ хэсгээс хасна уу, Дахин ашиглахгүй») ⇒ шүүлт 3 → **1** ✓
+  // 🆕 2026-10-06 (5): үлдсэн 🕒 «Ажиллах цаг» ч ХАСАГДАВ (хэрэглэгчийн хүсэлт:
+  //    «Нэр / компани, Хамрах хүрээ, Туршлага, Ажиллах цаг -ийг Ажил,
+  //    Үйлчилгээ цэснээс байхгүй болго. Цаашид хэрэглэхгүй») ⇒ шүүлт 1 → **0**
+  //    (sidebar-д attr шүүлт ОГТ БАЙХГҮЙ — зөвхөн Үнэ,₮ блок үлдэнэ ✓)
+  assert.equal(count('services'), 0);
 });
 
 t('Шүүлтэд ороогүй талбар (mileage, engine) ГООЛДОХГҮЙ', () => {
@@ -1221,37 +1224,54 @@ t('🛠 services: 8 бүлэг, бүгд ШУУД нээлттэй (`collapsed` 
   assert.ok(!subtypes.includes('Эмнэлэг'));
 });
 
-t('🛠 services: 🧭 «Үйлчилгээний хэлбэр» (workMode) ба 💵 «Үнийн хэлбэр» (priceUnit) БҮРЭН ХАСАГДАВ', () => {
-  // 🗑 2026-10-05 (45) (хэрэглэгчийн хүсэлт: «Үйлчилгээний хэлбэр, Үнийн хэлбэр
-  //    гэдэг талбаруудыг Үйлчилгээ хэсгээс хасна уу, Дахин ашиглахгүй»)
-  // ① ФОРМ · SIDEBAR: 2 талбар `attrFields`/`attrFilters`-д БАЙХГҮЙ
-  ['workMode', 'priceUnit'].forEach((k) => {
+t('🛠 services: 🧭 workMode/💵 priceUnit + 🆕 2026-10-06 (5)-ийн 4 талбар (Нэр/компани · Хамрах хүрээ · Туршлага · Ажиллах цаг) БҮГД ХАСАГДАВ', () => {
+  // 🗑 ① 2026-10-05 (45) (хэрэглэгчийн хүсэлт: «Үйлчилгээний хэлбэр, Үнийн
+  //    хэлбэр гэдэг талбаруудыг Үйлчилгээ хэсгээс хасна уу, Дахин ашиглахгүй»)
+  // 🗑 ② 2026-10-06 (5) (хэрэглэгчийн хүсэлт: «Нэр / компани, Хамрах хүрээ,
+  //    Туршлага, Ажиллах цаг -ийг Ажил, Үйлчилгээ цэснээс байхгүй болго.
+  //    Цаашид хэрэглэхгүй»)
+  const GONE = ['workMode', 'priceUnit', 'company', 'coverage', 'experience', 'availability'];
+  // ① ФОРМ · SIDEBAR: 6 талбар БҮГД `attrFields`/`attrFilters`-д БАЙХГҮЙ
+  GONE.forEach((k) => {
     assert.equal(getAttrField('services', k), null, `${k} форм дээр БАЙСААР байна ✗`);
     assert.equal(getAttrFilters('services').some((f) => f.key === k), false, `${k} шүүлтэд БАЙСААР ✗`);
   });
-  // ② ФОРМ: 6 → 4 талбар (хуучин дараалал ХЭВЭЭР ✓)
-  assert.deepEqual(getAttrFields('services').map((f) => f.key),
-    ['company', 'coverage', 'experience', 'availability']);
-  // ③ SIDEBAR: 3 → 1 шүүлт (🕒 «Ажиллах цаг» л үлдэнэ)
-  assert.deepEqual(getAttrFilters('services').map((f) => f.key), ['availability']);
-  assert.equal(getAttrFilters('services')[0].label, 'Ажиллах цаг');
-  // ④ КАРТЫН МӨР: ХУУЧИН/demo зарын `attrs`-д утга байсан ч ГАРАХГҮЙ ✓
+  // ② ФОРМ: 6 → 4 (45) → **0** (2026-10-06 (5), 4 → 0) талбар
+  assert.deepEqual(getAttrFields('services').map((f) => f.key), []);
+  assert.equal(getAttrFields('services').length, 0, 'Ажил, Үйлчилгээний формд талбар БАЙСААР ✗');
+  // ③ SIDEBAR: 3 → 1 (45) → **0** (2026-10-06 (5)) шүүлт — `real-estate`-ийн ЯГ ИЖИЛ
+  assert.deepEqual(getAttrFilters('services'), []);
+  assert.equal(getAttrFilters('services').length, 0, 'Ажил, Үйлчилгээний шүүлт БАЙСААР ✗');
+  // ④ КАРТЫН МӨР: ХУУЧИН/demo зарын `attrs`-д бүх утга байсан ч мөр **ХООСОН** ✓
+  //    (⚠️ `company` нь картын мөрийн ТОЛГОЙ байсан — ⚽ `hobby`-той ижил
+  //     «тодорхойлолтгүй хэсэг» болсон тул `formatAttrsLine` `''` буцаана ✓)
   assert.equal(
     formatAttrsLine('services', {
       company: 'Гэр засвар', workMode: 'Онлайн', priceUnit: 'Цагийн',
-      coverage: 'Улаанбаатар, бүх дүүрэг', availability: 'Ажлын өдөр',
+      coverage: 'Улаанбаатар, бүх дүүрэг', experience: '5 жил', availability: 'Ажлын өдөр',
     }),
-    'Гэр засвар · 📍 Улаанбаатар, бүх дүүрэг · 🕒 Ажлын өдөр',
+    '',
   );
-  // ⑤ «Зарын дэлгэрэнгүй» ХҮСНЭГТ (`getAttrRows`): зөвхөн `company` мөр үлдэнэ
+  assert.equal(formatAttrsLine('services', { company: 'Гэр засвар' }), '');
+  // ⑤ «Зарын дэлгэрэнгүй» ХҮСНЭГТ (`getAttrRows`): мөр БҮРЭН ХООСОН ✓
   assert.deepEqual(
-    getAttrRows('services', { company: 'Гэр засвар', workMode: 'Онлайн', priceUnit: 'Сард' }).map((r) => r.key),
-    ['company'],
+    getAttrRows('services', { company: 'Гэр засвар', workMode: 'Онлайн', priceUnit: 'Сард' }),
+    [],
   );
-  // ⑥ DEMO SEED ч үүсгэхгүй (дахин ашиглахгүй ✓)
+  // ⑥ 💼 Ажлын зарын ТУСДАА талбарууд ХӨНДӨГДӨӨГҮЙ (нэр нь ижил ч ТУСДАА хэсэг ✓)
+  ['jobType', 'experience', 'advertiser', 'jobLevel', 'salaryType'].forEach((k) => {
+    assert.ok(getAttrField('jobs', k), `jobs.${k} ХАСАГДСАН ✗ (зөвхөн services-ийг хөндөх ёстой)`);
+  });
+  assert.deepEqual(getAttrFilters('jobs').map((f) => f.key), ['jobType', 'experience', 'jobLevel']);
+  // ⑦ DEMO SEED ч үүсгэхгүй (дахин ашиглахгүй ✓)
   const seed = readFileSync(new URL('./seed-sections.mjs', import.meta.url), 'utf8');
   assert.ok(!/workMode: pick\(/.test(seed), 'seed нь `workMode` үүсгэсээр байна ✗');
   assert.ok(!/priceUnit: pick\(/.test(seed), 'seed нь `priceUnit` үүсгэсээр байна ✗');
+  ['company', 'coverage', 'experience', 'availability'].forEach((k) => {
+    assert.ok(!new RegExp(`^\\s+${k}: pick\\(`, 'm').test(seed), `seed нь \`${k}\` үүсгэсээр байна ✗`);
+  });
+  assert.ok(!seed.includes('const SERVICE_NAMES'), 'seed-д `SERVICE_NAMES` хүснэгт үлдсэн ✗');
+  assert.ok(!seed.includes('pick(SERVICE_NAMES)'), 'seed нь `SERVICE_NAMES` ашиглаж байна ✗');
 });
 
 t('🛠/💻/⚡ Ерөнхий гэрээ: бүх бүлгийн leaf нь `getSubtypes`-д ЗААВАЛ байна', () => {
