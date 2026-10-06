@@ -303,6 +303,29 @@ t('④ 2/3-р алхам — чекбокс асаалттай үед ХООСО
   assert.ok(FORM.includes('{NO_LOCATION_HINT}'));
 });
 
+t('④ БАЙРЛАЛ (2 дахь засвар): 🚫 чекбокс нь байршлын хэсгийн ХАМГИЙН ДООД талд', () => {
+  // ⚠️ Хэрэглэгчийн хүсэлт: «Байршил оруулахгүй гэсэн чекбоксыг байршил
+  //    оруулах хэсгийнхээ ДООД талд нь оруулаад байрыг нь солиод өгөөч»
+  // ⚠️ `codeOnly` (JSX тайлбарыг ХАССАН) — тайлбар доторх `data-no-location`
+  //    гэсэн үг байрлалыг хуурамчаар «дээш» татахгүйн тулд ✓
+  const CLEAN = codeOnly('components/AddListingClient.jsx');
+  const box = CLEAN.indexOf('data-no-location');
+  const mob = CLEAN.indexOf('{!noLoc && (');
+  const grid = CLEAN.indexOf('data-location-disabled');
+  const summary = CLEAN.indexOf('data-location-summary');
+  assert.ok(box > 0 && mob > 0 && grid > 0 && summary > 0, 'элемент олдсонгүй');
+  // ⚠️ ХУУЧИН (дээд) байрлал БУЦАЖ ОРОХГҮЙ: чекбокс нь 3-ЫН ДАРАА байх ёстой
+  assert.ok(box > mob, '📱 сонголтын дэлгэцүүдээс ӨМНӨ байна ✗');
+  assert.ok(box > grid, '🖥 3 баганат сонголтоос ӨМНӨ байна ✗');
+  assert.ok(box > summary, '⚠️ «Сонгосон: …» мөрөөс ДООр байх ёстой ✗');
+  // ⚠️ `mt-3` (дээд зай) — `mb-3` (доод зай) нь хуучин ДЭЭД байрлалын ул мөр ✗
+  assert.ok(CLEAN.includes('mt-3 flex cursor-pointer items-start gap-2.5'), '`mt-3` биш');
+  assert.equal(CLEAN.includes('mb-3 flex cursor-pointer'), false, 'хуучин `mb-3` үлдсэн ✗');
+  // ⚠️ Хураангуйн заавар нь ШИНЭ байрлалтай нийцэв (чекбокс нь ТҮҮНИЙ ДООР ✓)
+  assert.ok(NO_LOCATION_SUMMARY.includes('доорх чекбоксыг'), 'заавар «доорх» биш ✗');
+  assert.equal(NO_LOCATION_SUMMARY.includes('дээрх'), false, 'хуучин «дээрх» үлдсэн ✗');
+});
+
 
 // ────────────────────────────────────────────────────────────
 // ⑤ DB — 0 ӨӨРЧЛӨЛТ (`noLocation` нь DB рүү ЯВАХГҮЙ)

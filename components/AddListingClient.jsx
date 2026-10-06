@@ -2486,46 +2486,18 @@ export default function AddListingClient() {
                 ⚠️ Засах горимд хуучин утга (`city`/`district`/`khoroo`) нь
                    `form`-оос уншигдаж ТОХИРСОН баганад идэвхтэй харагдана ✓ */}
             <div data-step-block="location" className={step === 1 ? '' : 'hidden'}>
-            {/* ═══════════ 🚫 «БАЙРШИЛ ОРУУЛАХГҮЙ» ЧЕКБОКС (2026-10-06) ═══════════
-                ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Зарим хэрэглэгч зарын Байршилаа оруулахыг
-                   хүсэхгүй хүн байж магадгүй. Тэдгээр хүмүүст зориулж Байршил
-                   хэрэглэхгүй гэсэн сонголтыг (Check box ч юм уу) Байршил
-                   хэсэгт оруулж өгье»
-                ⚠️ АСААВАЛ: ① 3 баганат сонголт ИДЭВХГҮЙ (📱 дээр дэлгэцүүд
-                   бүхэлдээ гарахгүй) ② хот/дүүрэг/хороо ЦЭВЭРЛЭГДЭнэ ⇒ зар нь
-                   БАЙРШИЛГҮЙ хадгалагдана (`city = ''`, DB/migration өөрчлөлт 0 ✓)
-                ⚠️ УНТРААВАЛ: өмнө сонгосон байршил нь БУЦАЖ ирнэ (алдагдахгүй ✓)
-                ⚠️ Байршил нь 🖥/📱 ХОЁУЛАНД харагдана — алхмын хамгийн ДЭЭДЭД
-                   (📱 дээр «асуулт бүр нэг дэлгэц»-ийн 3 дэлгэцийг бүхэлд нь
-                   алгасах боломж; `MobileQuestion` нь `!noLoc` үед л гарна ✓)
-                ⚠️ `data-no-location` — CDP/тестийн тогтвортой selector; текстийн
-                   эх сурвалж нь `lib/listingLocation.mjs` (`NO_LOCATION_*`) ✓
-                🔍 Хайх үг: data-no-location, toggleNoLocation, isNoLocation,
-                   noLocationPatch, locationMissing, bankedLocationRef */}
-            <label
-              data-no-location
-              className={`mb-3 flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 transition ${
-                noLoc ? 'border-primary bg-primary-light' : 'border-gray-300 bg-white hover:bg-gray-50'
-              }`}
-            >
-              <input
-                type="checkbox"
-                data-no-location-input
-                checked={noLoc}
-                onChange={(e) => toggleNoLocation(e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
-              />
-              <span className="min-w-0">
-                <span className={`block text-[13.5px] font-semibold ${noLoc ? 'text-primary' : 'text-gray-900'}`}>
-                  {NO_LOCATION_TITLE}
-                </span>
-                <span className="block text-[12.5px] leading-snug text-gray-500">{NO_LOCATION_HINT}</span>
-              </span>
-            </label>
+            {/* 🚫 «БАЙРШИЛ ОРУУЛАХГҮЙ» ЧЕКБОКС (2026-10-06) — энэ блокийн
+                ХАМГИЙН ДООД талд (`[data-location-summary]`-гийн ДАРАА) байна ⬇
+                ⚠️ Хэрэглэгчийн 2 дахь засвар: «Байршил оруулахгүй гэсэн
+                   чекбоксыг байршил оруулах хэсгийнхээ ДООД талд нь оруулаад
+                   байрыг нь солиод өгөөч» ⇒ сонголтын дэлгэцүүдийн ДАРАА ✓
+                🔍 Хайх үг: data-no-location (ДООД талд) */}
             {/* 📱 МОБАЙЛ (<640px): Хот/Аймаг → Дүүрэг → Хороо — нэг нэгээр нь
                 (1-р алхмын `MobileQuestion`-тэй ЯГ ИЖИЛ харагдац)
                 ⚠️ Чекбокс асаалттай бол дэлгэцүүд ОГТ ГАРАХГҮЙ (`!noLoc`) —
                    📱 дээр «Байршил оруулахгүй» гэсэн 1 дарт хангалттай ✓
+                ⚠️ ⬇ Дэлгэц бүрийн ДОР нь «Сонгосон: …» мөр ба 🚫 чекбокс
+                   (хоёулаа энэ нөхцөлийн ГАДНА — блокийн доод эгнээ ✓)
                 ⚠️ Алхмын доод «← Буцах / Үргэлжлүүлэх →» товчнууд нь ЭНЭ блокийн
                    ГАДНА (`<form>`-ийн ёроолд) тул 📱 дээр навигаци хаагдахгүй ✓ */}
             {!noLoc && (
@@ -2615,6 +2587,49 @@ export default function AddListingClient() {
                 'Хот/Аймаг → дүүрэг → хороогоо дараалан сонгоно уу.'
               )}
             </p>
+            {/* ═══════════ 🚫 «БАЙРШИЛ ОРУУЛАХГҮЙ» ЧЕКБОКС — ДООД ТАЛД ═══════════
+                ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (1): «Зарим хэрэглэгч зарын Байршилаа
+                   оруулахыг хүсэхгүй хүн байж магадгүй. Тэдгээр хүмүүст зориулж
+                   Байршил хэрэглэхгүй гэсэн сонголтыг (Check box ч юм уу)
+                   Байршил хэсэгт оруулж өгье»
+                ⚠️ Хэрэглэгчийн ХҮСЭЛТ (2, байрлал): «Байршил оруулахгүй гэсэн
+                   чекбоксыг байршил оруулах хэсгийнхээ ДООД талд нь оруулаад
+                   байрыг нь солиод өгөөч» ⇒ ⬆ ДЭЭД талаас ⬇ ДООД талд шилжив:
+                   📱 сонголтын дэлгэцүүд → 🖥 3 баганат сонголт → «Сонгосон: …»
+                   мөр → ЭНЭ ЧЕКБОКС (блокийн ХАМГИЙН ДООД эгнээ ✓)
+                ⚠️ АСААВАЛ: ① 3 баганат сонголт ИДЭВХГҮЙ (📱 дээр дэлгэцүүд
+                   бүхэлдээ гарахгүй) ② хот/дүүрэг/хороо ЦЭВЭРЛЭГДЭнэ ⇒ зар нь
+                   БАЙРШИЛГҮЙ хадгалагдана (`city = ''`, DB/migration өөрчлөлт 0 ✓)
+                ⚠️ УНТРААВАЛ: өмнө сонгосон байршил нь БУЦАЖ ирнэ (алдагдахгүй ✓)
+                ⚠️ `NO_LOCATION_SUMMARY` нь «ДООРХ чекбоксыг УНТРААНА уу» гэж
+                   заана (чекбокс нь түүний ДООР байгаатай нийцэв ✓)
+                ⚠️ `mt-3` (`mb-3` БИШ) — сонголтын дээд хэсгээс зай авна ✓
+                ⚠️ 📱 дээр ч ЭНЭ мөр нь сонголтын дэлгэц бүрийн доор ХАРАГДАНА
+                   (дэлгэцүүд `!noLoc`-оор хаагддаг ч чекбокс нь тэдний ГАДНА ✓)
+                ⚠️ `data-no-location` — CDP/тестийн тогтвортой selector; текстийн
+                   эх сурвалж нь `lib/listingLocation.mjs` (`NO_LOCATION_*`) ✓
+                🔍 Хайх үг: data-no-location, toggleNoLocation, isNoLocation,
+                   noLocationPatch, locationMissing, bankedLocationRef */}
+            <label
+              data-no-location
+              className={`mt-3 flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 transition ${
+                noLoc ? 'border-primary bg-primary-light' : 'border-gray-300 bg-white hover:bg-gray-50'
+              }`}
+            >
+              <input
+                type="checkbox"
+                data-no-location-input
+                checked={noLoc}
+                onChange={(e) => toggleNoLocation(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+              />
+              <span className="min-w-0">
+                <span className={`block text-[13.5px] font-semibold ${noLoc ? 'text-primary' : 'text-gray-900'}`}>
+                  {NO_LOCATION_TITLE}
+                </span>
+                <span className="block text-[12.5px] leading-snug text-gray-500">{NO_LOCATION_HINT}</span>
+              </span>
+            </label>
             </div>
 
             {/* ═══ 3-р алхам · ДЭЛГЭРЭНГҮЙ (үндсэн үзүүлэлт ба нэмэлт талбарууд) ═══
