@@ -912,6 +912,96 @@ check('📱 Мобайл: хэвтээ гүйлт (overflow) ГАРАХГҮЙ',
   await evalJs('document.documentElement.scrollWidth + " / " + window.innerWidth'));
 await rpc('Emulation.clearDeviceMetricsOverride');
 
+// ═══════ ⑧b 🎛 PILL HOVER — «БАРААН» БОЛНО (2026-10-06 (16)) ═══════
+/**
+ * 🆕 2026-10-06 (16) (хэрэглэгчийн хүсэлт: «Ажлын зарын БОЛОН БУСАД ХЭСЭГ
+ *    байгаа … button дээр mouse дээр cursor аваачхад одоогийхоосоо илүү
+ *    бараан өнгөтэй болдог болго»): 💻 `computers` нь «бусад хэсэг»-ийн
+ *    төлөөлөл — `FilterPill` нь НЭГ компонент тул 📺/⚙️/🧠/💾/✅ pill ч
+ *    ХАМТ бараан болно ✓ (⏳ `hover:bg-gray-50` #FAF8F5 нь цагаан/крем
+ *    дэвсгэр дээр БАРАГ мэдэгддэггүй байв ✗)
+ * ⚠️ БОДИТ хулгана: `Input.dispatchMouseEvent(mouseMoved)` ⇒ `:hover` ⇒
+ *    `getComputedStyle().backgroundColor` — rgba/hex-ийг ТООГООР батлана ✓
+ */
+const lum = (css) => {
+  const m = /rgba?\(([^)]+)\)/.exec(css || '');
+  if (!m) return null;
+  const p = m[1].split(/[,/]/).map((x) => Number(x.trim()));
+  const a = p.length > 3 ? p[3] : 1;
+  const mix = (c) => c * a + 255 * (1 - a);
+  const f = (v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; };
+  return 0.2126 * f(mix(p[0])) + 0.7152 * f(mix(p[1])) + 0.0722 * f(mix(p[2]));
+};
+/** Pill-ийн ТОВЧНЫ хэв + ДЭЛГЭЦ дээрх төв цэг (⚠️ координат нь viewport-той) */
+const pillProbe = (key) => evalJs(`(() => {
+  const p = document.querySelector('[data-filter-pill="' + ${JSON.stringify(key)} + '"]');
+  const b = p && p.querySelector('button');
+  if (!b) return null;
+  b.scrollIntoView({ block: 'center' });
+  const s = getComputedStyle(b);
+  const r = b.getBoundingClientRect();
+  const x = Math.round(r.left + r.width / 2);
+  const y = Math.round(r.top + r.height / 2);
+  const at = document.elementFromPoint(x, y);
+  return { bg: s.backgroundColor, border: s.borderTopColor, x, y,
+    onButton: !!at && (at === b || b.contains(at)),
+    hover: b.matches(':hover'),
+    expanded: b.getAttribute('aria-expanded') };
+})()`);
+/** Хулганыг тухайн цэг рүү зөөнө (`mousedown` БИШ — зөвхөн hover ✓) */
+const mouseTo = async (x, y) => {
+  await rpc('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 });
+  await sleep(450);
+};
+/**
+ * ⚠️ 2026-10-06 (16) CDP ДЭЭР БАРИГДСАН FLAKY УРХИ: зайлуулах үед ҮРГЭЛЖ ижил
+ *    цэг рүү дараалан `mouseMoved` явуулбал Chrome нь заримдаа hit-test-ийг
+ *    ДАХИН ХИЙХГҮЙ ба hover ХЭВЭЭР үлддэг ✗ ⇒ зайлуулах цэгийг ЭЭЛЖЛҮҮЛНЭ ✓
+ *    (⏳ `cdp-job-chips` §⑥c дээр 1 удаа унасан — `:hover` = true хэвээр байв)
+ */
+const AWAY = [[2, 2], [5, 1180], [11, 4], [3, 900]];
+let awayAt = 0;
+const mouseAway = async () => {
+  awayAt = (awayAt + 1) % AWAY.length;
+  await mouseTo(AWAY[awayAt][0], AWAY[awayAt][1]);
+};
+/** ⏳ TRANSITION (150ms) + дараагийн frame хүртэл хүлээж ДАХИН уншина ✓ */
+const probeUntil = async (key, okFn, tries = 6) => {
+  let p = null;
+  for (let i = 0; i < tries; i += 1) {
+    p = await pillProbe(key);
+    if (p && okFn(p)) return p;
+    await sleep(250);
+  }
+  return p;
+};
+
+console.log('\n⑧b PILL HOVER — 💻 (computers): «бараан» болно (2026-10-06 (16))');
+await go(`${BASE}/?section=computers&type=Apple`);
+/** ⚠️ Нээлттэй ⌄ панель нь pill-ийн HOVER ЦЭГИЙГ халхална ✗ → ESC */
+await rpc('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27, nativeVirtualKeyCode: 27 });
+await rpc('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27, nativeVirtualKeyCode: 27 });
+await sleep(400);
+await mouseAway();
+const basePill = await probeUntil('screen', (p) => p.bg === 'rgb(255, 255, 255)');
+check('🎛 💻 Сонгоогүй pill (📺 `screen`): фон ЦАГААН · hover цэг нь товч дээр ✓',
+  !!basePill && basePill.bg === 'rgb(255, 255, 255)' && basePill.hover === false && basePill.onButton === true,
+  basePill ? `${basePill.bg} @${basePill.x},${basePill.y} hover=${basePill.hover}` : 'NO_PILL');
+await mouseTo(basePill.x, basePill.y);
+const hovPill = await probeUntil('screen', (p) => p.bg === 'rgb(233, 228, 217)');
+check('🆕 (16) 💻 HOVER: фон БАРААН болов (`bg-gray-200` = rgb(233, 228, 217)) · хүрээ `border-gray-400` · `:hover` ✓',
+  !!hovPill && hovPill.bg === 'rgb(233, 228, 217)' && hovPill.border === 'rgb(176, 167, 148)'
+    && hovPill.hover === true,
+  hovPill ? `${hovPill.bg} / ${hovPill.border} hover=${hovPill.hover}` : 'NO_PILL');
+check('🆕 (16) 💻 HOVER: гэрэлтэлт БАГА (⏳ `gray-50` ≈0.95 биш) — 💼/🚗-той ЯГ ижил дүрэм ✓',
+  !!hovPill && lum(hovPill.bg) < lum(basePill.bg) && lum(hovPill.bg) < 0.9,
+  `${(lum(basePill.bg) || 0).toFixed(3)} → ${(lum(hovPill.bg) || 0).toFixed(3)}`);
+await mouseAway();
+const backPill = await probeUntil('screen', (p) => p.bg === 'rgb(255, 255, 255)');
+check('🆕 (16) 💻 HOVER: хулганыг зайлуулахад фон БУЦАЖ цагаан болов (`:hover` false)',
+  !!backPill && backPill.bg === 'rgb(255, 255, 255)' && backPill.hover === false,
+  backPill ? `${backPill.bg} hover=${backPill.hover}` : 'NO_PILL');
+
 // ═══════ ⑨ ДҮГНЭЛТ ═══════
 check('🧯 Консол дээр exception ГАРАГҮЙ', exceptions.length === 0, exceptions.slice(0, 2).join(' | ') || '—');
 console.log(`\n${fail === 0 ? '✅' : '❌'} CDP — ${pass} OK, ${fail} FAIL\n`);

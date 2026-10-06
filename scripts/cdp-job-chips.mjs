@@ -451,8 +451,26 @@ if (!job) {
 }
 {
   // ⚠️ ⑤ 📱 мобайл тест ЦЭВЭР ШИНЭ формоор явна (засах горимд «гарчиг» ЗААВАЛ БИШ)
+  /**
+   * 🆕 2026-10-06 (16) FLAKY ЗАСВАР: форм нь өмнөх ажиллагаанаас үлдсэн НООРОГ
+   *    (`zar:listing-draft:<uid>` — `mobileDetailStep`-ийг ч хадгална) байвал
+   *    МОБАЙЛ алхмыг ТЭНДЭЭС эхлүүлнэ ⇒ зөвхөн `jobLevel` дэлгэц харагдаж
+   *    «4 талбар БҮГД» шалгалт УНАВ ✗ (лог: `дэлгэц=14`, `seen={jobLevel}`).
+   *    ⏳ Эхний ажиллагаанд `seen={jobType}` байсан — өөрөөр хэлбэл шинэ форм
+   *    ШИНЭ байх ЁСТОЙ ⇒ эхлэхээсээ ӨМНӨ нооргийг ЦЭВЭРЛЭНЭ ✓
+   *    ⚠️ Хоёр удаа цэвэрлэнэ: ① navigation-ы өмнө ② форм mount хийсний ДАРАА
+   *    (⏳ debounce-тай бичилт navigation-ы завсарт үлдэж болзошгүй ✓)
+   */
+  const clearDraft = () => evaluate(`(() => {
+    const keys = Object.keys(window.localStorage).filter((k) => k.startsWith('zar:listing-draft'));
+    keys.forEach((k) => window.localStorage.removeItem(k));
+    return keys.length;
+  })()`);
+  const droppedBefore = await clearDraft();
   await rpc('Page.navigate', { url: `${BASE}/listings/new` });
   await wait(6000);
+  const droppedAfter = await clearDraft();
+  console.log('   🧹 ноорог цэвэрлэв: ' + droppedBefore + ' → ' + droppedAfter + ' (шинэ форм ⇒ мобайл алхам №1)');
   await evaluate(`(() => { const b = document.querySelector('[data-picker="section"] [data-picker-value="jobs"]'); if (b) b.click(); return !!b; })()`);
   await wait(1200);
   await evaluate(`(() => { const b = document.querySelector('[data-picker="level2"] [data-picker-value]'); if (b) b.click(); return !!b; })()`);
@@ -721,6 +739,135 @@ ok('📊 2 сонголт + badge «2» + URL `attr_experience=Шаардлаг�
   sw.experience.active.length === 2 && sw.experience.count === 2 && sw.experience.badge === 2
     && /attr_experience=Шаардлагагүй,Шаардлагатай(&|$)/.test(sw.url)
     && sw.jobLevel.active.length === 0 && sw.jobType.active.length === 0, JSON.stringify(sw));
+
+// ═══════ ⑥c HOVER — PILL «БАРААН» БОЛНО (2026-10-06 (16)) ═══════
+/**
+ * 🆕 2026-10-06 (16) (хэрэглэгчийн хүсэлт: «Ажлын зарын болон бусад хэсэг
+ *    байгаа Ажлын цаг, Туршлага, Мэргэжлийн түвшин гэх Мэт button дээр mouse
+ *    дээр cursor аваачхад одоогийхоосоо илүү бараан өнгөтэй болдог болго»):
+ *    ① Сонгоогүй pill нь ⏳ `hover:bg-gray-50` (#FAF8F5 — цагаан/крем дэвсгэр
+ *       дээр БАРАГ мэдэгддэггүй байв ✗) ⇒ 🆕 `bg-gray-200` (#E9E4D9) +
+ *       `border-gray-400` (#B0A794) + `text-gray-900` (#1B1815) ✓
+ *    ② ИДЭВХТЭЙ pill нь ⏳ hover-д ОГТ өөрчлөгддөггүй байв ⇒ 🆕 `bg-primary/25`
+ *       (rgba(37, 99, 235, 0.25)) + `border-primary-dark` + `text-primary-dark` ✓
+ * ⚠️ ХЭМЖИЛТ нь БОДИТ хулганаар: `Input.dispatchMouseEvent(mouseMoved)` ⇒
+ *    `:hover` pseudo-class ⇒ `getComputedStyle().backgroundColor` ✓
+ *    (§⑥-ийн төгсгөлд 📊 experience сонгогдсон ⇒ 📈 jobLevel нь СОНГООГҮЙ pill,
+ *     📊 experience нь ИДЭВХТЭЙ pill — хоёуланг нь шалгана ✓)
+ * ⚠️ `lum()` нь харьцуулалтын баталгаа: hover нь ҮРГЭЛЖ БАРААН (гэрэлтэлт БАГА)
+ *    байх ЁСТОЙ — ⏳ хуучин `gray-50` ч гэрэлтэлт нь ~0.95 байв тул зөвхөн
+ *    лог биш, rgba/hex-ийг ТООГООР нь батлана ✓
+ */
+const lum = (css) => {
+  const m = /rgba?\(([^)]+)\)/.exec(css || '');
+  if (!m) return null;
+  const p = m[1].split(/[,/]/).map((x) => Number(x.trim()));
+  const a = p.length > 3 ? p[3] : 1;
+  /** ⚠️ `bg-primary/25` нь rgba (0.25 alpha) тул ЦАГААН дээр буулгаж тооцно */
+  const mix = (c) => c * a + 255 * (1 - a);
+  const f = (v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; };
+  return 0.2126 * f(mix(p[0])) + 0.7152 * f(mix(p[1])) + 0.0722 * f(mix(p[2]));
+};
+/** Pill-ийн ТОВЧНЫ хэв + ДЭЛГЭЦ дээрх төв цэг (⚠️ координат нь viewport-той) */
+const pillProbe = (key) => evaluate(`(() => {
+  const p = document.querySelector('[data-filter-pill="' + ${JSON.stringify(key)} + '"]');
+  const b = p && p.querySelector('button');
+  if (!b) return null;
+  b.scrollIntoView({ block: 'center' });
+  const s = getComputedStyle(b);
+  const r = b.getBoundingClientRect();
+  const x = Math.round(r.left + r.width / 2);
+  const y = Math.round(r.top + r.height / 2);
+  const at = document.elementFromPoint(x, y);
+  return {
+    bg: s.backgroundColor, border: s.borderTopColor, color: s.color,
+    x, y, onButton: !!at && (at === b || b.contains(at)),
+    hover: b.matches(':hover'),
+    expanded: b.getAttribute('aria-expanded'),
+  };
+})()`);
+/** Хулганыг тухайн цэг рүү зөөнө (`mousedown` БИШ — зөвхөн hover ✓) */
+const mouseTo = async (x, y) => {
+  await rpc('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 });
+  await wait(450);
+};
+/**
+ * ⚠️ 2026-10-06 (16) CDP ДЭЭР БАРИГДСАН FLAKY УРХИ: хулганыг ЗАЙЛУУЛАХ үед
+ *    ҮРГЭЛЖ ижил цэг (2,2) руу дараалан `mouseMoved` явуулбал Chrome нь
+ *    заримдаа hit-test-ийг ДАХИН ХИЙХГҮЙ ба hover нь ХЭВЭЭР үлддэг ✗
+ *    («хулганыг зайлуулахад буцав уу» шалгалт 1 удаа унасан; тусдаа дебаг
+ *    скрипт дээр `b.matches(':hover')` = true хэвээр байв).
+ *    ⇒ зайлуулах цэгийг ЭЭЛЖЛҮҮЛНЭ (4 өөр цэг) ✓
+ */
+const AWAY = [[2, 2], [5, 1180], [11, 4], [3, 900]];
+let awayAt = 0;
+const mouseAway = async () => {
+  awayAt = (awayAt + 1) % AWAY.length;
+  await mouseTo(AWAY[awayAt][0], AWAY[awayAt][1]);
+};
+/** ⏳ TRANSITION (150ms) + React-ийн дараагийн frame хүртэл дахин ДАХИН уншина */
+const probeUntil = async (key, okFn, tries = 6) => {
+  let p = null;
+  for (let i = 0; i < tries; i += 1) {
+    p = await pillProbe(key);
+    if (p && okFn(p)) return p;
+    await wait(250);
+  }
+  return p;
+};
+
+console.log('\n⑥c HOVER — pill «бараан» болно (2026-10-06 (16))');
+/** ⚠️ Нээлттэй ⌄ панель нь доорх pill-ийн HOVER ЦЭГИЙГ халхална ✗ → ESC */
+await rpc('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27, nativeVirtualKeyCode: 27 });
+await rpc('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27, nativeVirtualKeyCode: 27 });
+await wait(500);
+/**
+ * ⚠️ Селектор нь ЗӨВХӨН pill-ийн ТОВЧ (`>` — шууд хүү) байх ЁСТОЙ:
+ *    ⌄ панель нь DOM-д ҮРГЭЛЖ байдаг (зөвхөн `invisible` болдог) ба дотор нь
+ *    `✕ Цуцлах`/чип товчнууд байна — тэдэнд `aria-expanded` ОГТ БАЙХГҮЙ ✗
+ *    (`[data-filter-pill] button` гэж авбал 15 товч багтаж, `every(...)`
+ *     нь ҮРГЭЛЖ false — ESC ажилласан ч шалгалт УНАВ ✗ 2026-10-06 (16))
+ */
+const escOk = await evaluate(`(() => {
+  const toggles = [...document.querySelectorAll('#filter-bar [data-filter-pill] > button')];
+  return toggles.length > 0 && toggles.every((b) => b.getAttribute('aria-expanded') === 'false');
+})()`);
+ok('ESC → ⌄ панель БҮГД хаагдсан (`aria-expanded=false` — hover цэвэр pill дээр бууна ✓)',
+  escOk === true, String(escOk));
+
+await mouseAway();                                     // хулганыг зайлуулна
+const base = await probeUntil('jobLevel', (p) => p.bg === 'rgb(255, 255, 255)');  // ⚠️ §⑥-д СОНГООГҮЙ pill ✓
+ok('📈 Сонгоогүй pill (`jobLevel`): хэвийн фон ЦАГААН (`bg-white`) · hover цэг нь товч дээр ✓',
+  !!base && base.bg === 'rgb(255, 255, 255)' && base.hover === false && base.onButton === true,
+  JSON.stringify(base));
+await mouseTo(base.x, base.y);
+const hov = await probeUntil('jobLevel', (p) => p.bg === 'rgb(233, 228, 217)');
+ok('🆕 (16) HOVER: фон БАРААН болов (`bg-white` → `bg-gray-200` = rgb(233, 228, 217)) · `:hover` ✓',
+  !!hov && hov.bg === 'rgb(233, 228, 217)' && hov.hover === true, JSON.stringify(hov));
+ok('🆕 (16) HOVER: хүрээ ч бараан (`border-gray-400` = rgb(176, 167, 148)) · текст `text-gray-900` = rgb(27, 24, 21)',
+  !!hov && hov.border === 'rgb(176, 167, 148)' && hov.color === 'rgb(27, 24, 21)',
+  hov && `${hov.border} / ${hov.color}`);
+ok('🆕 (16) HOVER: гэрэлтэлт БАГА (⏳ `gray-50` ~0.95 БИШ — «бараан» ✓)',
+  !!hov && lum(hov.bg) < lum(base.bg) && lum(hov.bg) < 0.9,
+  `${(lum(base.bg) || 0).toFixed(3)} → ${(lum(hov.bg) || 0).toFixed(3)}`);
+await mouseAway();
+const back = await probeUntil('jobLevel', (p) => p.bg === 'rgb(255, 255, 255)');
+ok('HOVER: хулганыг зайлуулахад фон БУЦАЖ цагаан болов (`bg-white` + `:hover` false)',
+  !!back && back.bg === 'rgb(255, 255, 255)' && back.hover === false, JSON.stringify(back));
+
+// ИДЭВХТЭЙ pill (📊 experience — §⑥-д 2 утга сонгосон ✓)
+await mouseAway();
+const actBase = await probeUntil('experience', (p) => p.bg === 'rgb(219, 234, 254)');
+ok('📊 Идэвхтэй pill (`experience`): хэвийн фон ЦАЙВАР ЦЭНХЭР (`bg-primary-light` = rgb(219, 234, 254))',
+  !!actBase && actBase.bg === 'rgb(219, 234, 254)' && actBase.onButton === true, JSON.stringify(actBase));
+await mouseTo(actBase.x, actBase.y);
+const actHov = await probeUntil('experience', (p) => /rgba?\(37[, ]+99[, ]+235/.test(p.bg));
+ok('🆕 (16) Идэвхтэй pill HOVER: фон БАРААН (`bg-primary/25` — rgba(37, 99, 235, 0.25)) · ⏳ өмнө hover-д ОГТ өөрчлөгддөггүй байв',
+  !!actHov && /rgba?\(37[, ]+99[, ]+235/.test(actHov.bg) && /0\.25/.test(actHov.bg)
+    && actHov.hover === true && lum(actHov.bg) < lum(actBase.bg), JSON.stringify(actHov));
+ok('🆕 (16) Идэвхтэй pill HOVER: текст нь `primary-dark` (rgb(29, 78, 216) — AA 4.5:1 ✓)',
+  !!actHov && actHov.color === 'rgb(29, 78, 216)', actHov && actHov.color);
+await mouseAway();
 
 // ═══════ ⑦ ДҮГНЭЛТ ═══════
 const real = problems.filter((p) => !/Failed to load resource/.test(p));

@@ -336,6 +336,28 @@ function SideBlock({ label, children }) {
  * 🗑 2026-10-04 (39): pill-ийн өмнөх EMOJI (`icon` проп) ХАСАГДАВ —
  *    хэрэглэгчийн хүсэлт: «…түлш, үйлдвэрлэсэн он гэх мэт бүх үгний өмнө
  *    байгаа emoji-г байхгүй болго» ⇒ зөвхөн ШОШГО (текст) харагдана ✓
+ * 🆕 2026-10-06 (16): HOVER — «одоогийхоосоо ИЛҮҮ БАРААН» болов
+ *    (хэрэглэгчийн хүсэлт: «Ажлын зарын болон бусад хэсэг байгаа Ажлын цаг,
+ *    Туршлага, Мэргэжлийн түвшин гэх Мэт button дээр mouse дээр cursor
+ *    аваачхад одоогийхоосоо илүү бараан өнгөтэй болдог болго»):
+ *    ① Сонгоогүй pill: ⏳ `hover:bg-gray-50` (#FAF8F5) нь ЦАГААН/крем
+ *       дэвсгэр дээр БАРАГ мэдэгддэггүй байв ✗ ⇒ 🆕 `hover:bg-gray-200`
+ *       (#E9E4D9) + `hover:border-gray-400` + `hover:text-gray-900`
+ *       (нэг бүтэн алхам бараан — «дарж болно» гэдэг нь тод ✓)
+ *    ② Идэвхтэй pill (цайвар цэнхэр `bg-primary-light`): ⏳ hover-д ОГТ
+ *       өөрчлөгддөггүй байв ⇒ 🆕 `hover:bg-primary/25` (#dbeafe → ~#c8d8fa)
+ *       + `hover:border-primary-dark` + `hover:text-primary-dark`
+ *       (⚠️ текст нь AA 4.5:1-ээс доош орохгүйн тулд `primary-dark`:
+ *       `primary-light` дээр `primary` 4.2:1 байснаа бараан дэвсгэр дээр
+ *       3.6:1 болох байв; `text-primary-dark` (#1d4ed8) нь 4.7:1 ✓)
+ *    ⚠️ `FilterPill` нь НЭГ компонент ⇒ 🚗 🎨/⚙️/⛽ · 💼 🕒 Ажлын цаг/📊 Туршлага/
+ *       📈 Мэргэжлийн түвшин · 💻 📺/⚙️/🧠/💾 ба ✅ «Төлөв» — БҮХ 18 pill
+ *       (БҮХ хэсэг) хамт өөрчлөгдөнө ✓ (2 өөр UI үүсэхгүй)
+ *    ⚠️ Зөвхөн ХАРАГДАЦ: утга/URL/DB/`data-filter-pill`/`data-filter-panel`
+ *       дэгээ БҮГД ХӨНДӨГДӨӨГҮЙ ✓ — `cdp-job-chips` (💼) ба
+ *       `cdp-notebook-specs` (💻) нь бодит Chrome дээр `Input.dispatchMouseEvent`
+ *       -ээр hover хийж `getComputedStyle().backgroundColor`-ыг ХЭМЖИНЭ ✓
+ *    🔍 Хайх үг: FilterPill, hover:bg-gray-200, hover:bg-primary/25, pill hover
  */
 function FilterPill({ label, count, onClear, testKey, children }) {
   const [open, setOpen] = useState(false);
@@ -363,8 +385,8 @@ function FilterPill({ label, count, onClear, testKey, children }) {
         aria-expanded={open}
         className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[14px] font-semibold transition ${
           active
-            ? 'border-primary bg-primary-light text-primary'
-            : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+            ? 'border-primary bg-primary-light text-primary hover:border-primary-dark hover:bg-primary/25 hover:text-primary-dark'
+            : 'border-gray-200 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-200 hover:text-gray-900'
         }`}
       >
         {label}

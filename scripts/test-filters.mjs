@@ -1030,6 +1030,54 @@ t('🎛 HomeClient: pill нь ЗӨВХӨН `chips && multi && filterBar`; сай
   assert.match(src, /onClick=\{\(\) => toggleAttrMulti\(f\.key, o\)\}/);
 });
 
+/**
+ * 🆕 2026-10-06 (16): PILL-ИЙН HOVER — «ОДООГИЙХООСОО ИЛҮҮ БАРААН» болов
+ *
+ * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Ажлын зарын болон бусад хэсэг байгаа Ажлын цаг,
+ *   Туршлага, Мэргэжлийн түвшин гэх Мэт button дээр mouse дээр cursor
+ *   аваачхад одоогийхоосоо илүү бараан өнгөтэй болдог болго».
+ *
+ *  ① Сонгоогүй pill (`bg-white`): ⏳ `hover:bg-gray-50` (#FAF8F5) нь цагаан/
+ *     крем дэвсгэр дээр БАРАГ мэдэгддэггүй байв ✗ ⇒ 🆕 `hover:bg-gray-200`
+ *     (#E9E4D9) + `hover:border-gray-400` + `hover:text-gray-900` ✓
+ *  ② Идэвхтэй pill (`bg-primary-light`): ⏳ hover-д ОГТ өөрчлөгддөггүй байв ✗
+ *     ⇒ 🆕 `hover:bg-primary/25` + `hover:border-primary-dark` +
+ *     `hover:text-primary-dark` (⚠️ текст нь AA-д хүрэхийн тулд `primary-dark`)
+ *  ⚠️ `FilterPill` нь НЭГ компонент ⇒ 🚗/💼/💻/✅ БҮХ pill (18 талбар) ХАМТ
+ *     өөрчлөгдөнө — 2 өөр UI үүсэхгүй ✓
+ *  ⚠️ ЗӨВХӨН ХАРАГДАЦ: утга/URL/DB/`data-filter-pill`/`data-filter-panel`,
+ *     `.chip-toggle` (панель доторх чип) БҮГД ХӨНДӨГДӨӨГҮЙ ✓
+ *  ℹ️ БОДИТ Chrome дээрх хэмжилт: `scripts/cdp-job-chips.mjs` (§⑥c — 💼:
+ *     📈 `jobLevel` сонгоогүй ба 📊 `experience` идэвхтэй pill) ба
+ *     `scripts/cdp-notebook-specs.mjs` (§⑧b — 💻, «бусад хэсэг») ✓
+ */
+t('🎛 FilterPill hover: сонгоогүй → `bg-gray-200`, идэвхтэй → `bg-primary/25` (бараан ✓)', () => {
+  const src = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
+  const at = src.indexOf('function FilterPill(');
+  assert.ok(at > 0, '`FilterPill` функц олдсонгүй ✗');
+  /** ⚠️ Зөвхөн `FilterPill`-ийн БИЕ (дараагийн top-level функц хүртэл) */
+  const rest = src.slice(at);
+  const end = rest.indexOf('\nfunction ');
+  const pill = end > 0 ? rest.slice(0, end) : rest;
+  // ① Сонгоогүй pill — БАРААН фон + хүрээ + текст
+  assert.match(pill, /hover:border-gray-400 hover:bg-gray-200 hover:text-gray-900/,
+    'сонгоогүй pill-ийн hover нь бараан биш ✗');
+  // ② Идэвхтэй pill — бараан цэнхэр дэвсгэр (⏳ огт өөрчлөгддөггүй байв)
+  assert.match(pill, /hover:border-primary-dark hover:bg-primary\/25 hover:text-primary-dark/,
+    'идэвхтэй pill-ийн hover нь бараан биш ✗');
+  // ⏳ ХУУЧИН бүдэг hover (цагаан дээр бараг үл харагдах) БУЦАЖ ОРОХГҮЙ
+  assert.ok(!/hover:bg-gray-50/.test(pill), 'pill-ийн hover буцаж БҮДЭГ болов ✗');
+  assert.ok(!/hover:border-gray-300/.test(pill), 'pill-ийн hover хүрээ буцаж БҮДЭГ болов ✗');
+  // ③ Дэгээ/панель ХЭВЭЭР — утга/URL/DB/CDP хөндөгдөхгүй ✓
+  assert.match(pill, /data-filter-pill=\{testKey\}/);
+  assert.match(pill, /data-filter-panel=\{testKey\}/);
+  // ④ ⌄ панель нь `children`-ээ рендэрлэнэ (дотор нь `.chip-toggle` чипүүд —
+  //    тэдгээрийн HOVER (primary текст) энэ өөрчлөлтөд ХӨНДӨГДӨӨГҮЙ ✓)
+  assert.match(pill, /\{children\}/);
+  assert.match(src, /chip-toggle \$\{on \? 'chip-toggle-active' : ''\}/,
+    'панель доторх чипүүдийн класс өөрчлөгдсөн (хөндөгдөх ЁСТОЙ БАЙГАА ✗)');
+});
+
 
 // ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Notebook ээс бусад хайлтын хэсэгт Брэнд гэж
 // баймааргүй байна даа» ⇒ 🏷️ «Брэнд» нь `filterSubtypes: PC_SPEC_SUBTYPES` тугтай
