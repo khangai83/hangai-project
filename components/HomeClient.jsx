@@ -2880,10 +2880,55 @@ export default function HomeClient() {
                  доод 1rem); 🔍 Хайх нь доор `sticky bottom-0` тул ҮРГЭЛЖ
                  харагдана ✓ (мобайл `<lg` ХӨНДӨӨГДӨӨГҮЙ — sticky нь `lg:` ✓) */}
           {showAdvancedFilters && (
-          <aside
-            id="advanced-filters"
-            className="w-full shrink-0 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:w-[280px] lg:overflow-y-auto"
-          >
+          <div className="flex w-full shrink-0 flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:w-[280px] lg:overflow-y-auto">
+            {/* 🔀 ЭРЭМБЭЛЭХ — 🆕 2026-10-06: unegui.mn шиг сайдбарын ДЭЭД
+                хэсэгт (бүтэн өргөнтэй хайрцаг + ⇅ icon + ▾).
+                ⚠️ Сонголт солиход `?page=1` руу буцна (`changeSort`) — эс
+                   бөгөөс 3-р хуудсан дээр дараалал солиход «дунд» байрлалд
+                   орж, хэрэглэгч төөрнө ✗
+                ⚠️ Утга нь `normalizeSort()`-оор шүүгдэнэ (`?sort=xxx` →
+                   анхдагч) — PostgREST руу танихгүй багана явахгүй ✓
+                ⚠️ Энэ нь ШҮҮЛТ БИШ (үр дүнгийн тоо өөрчлөгдөхгүй) тул
+                   чипүүдийн тоонд ОРОХГҮЙ — зөвхөн дараалал солино ✓
+                ⚠️ `[data-listing-sort]` — CDP дэгээ (`scripts/cdp-range.mjs`);
+                   `<select>` нь `data-listing-sort` тул `data-attr-filter`-ГҮЙ
+                   (CDP «сайдбарт select 0» шалгалт эвдрэхгүй ✓) */}
+            <label
+              htmlFor="listing-sort"
+              className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 shadow-btn transition-colors hover:border-primary/40"
+            >
+              <span aria-hidden="true" className="text-[15px] text-gray-400">⇅</span>
+              <select
+                id="listing-sort"
+                data-listing-sort
+                className="w-full appearance-none bg-transparent text-[14px] font-semibold text-gray-800 focus:outline-none"
+                value={sort}
+                onChange={(e) => changeSort(e.target.value)}
+              >
+                {SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+              <span aria-hidden="true" className="text-[12px] text-gray-400">▾</span>
+            </label>
+
+            {/* 🗺 ГАЗРЫН ЗУРАГ ДЭЭР ХАРАХ — 🆕 2026-10-06: unegui.mn шиг
+                сайдбарын хайрцаг (⏳ урьд нь толгойд `.segmented`
+                «☰ Жагсаалт | 🗺 Газрын зураг» байв — «Жагсаалт» нь илүүц
+                байсан тул НЭГ товч болов ✓).
+                ⚠️ `view` state / `?view=map` URL / `MapView` / DB БҮГД
+                   ХӨНДӨӨГДӨӨГҮЙ — зөвхөн контролын байрлал/хэлбэр солигдов */}
+            <button
+              type="button"
+              data-view-toggle
+              aria-pressed={view === 'map'}
+              onClick={() => setView(view === 'map' ? 'list' : 'map')}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-[14px] font-semibold text-gray-700 shadow-btn transition-all duration-150 ease-out hover:border-primary/40 hover:text-primary"
+            >
+              {view === 'map' ? '☰ Жагсаалт руу буцах' : '🗺 Газрын зураг дээр харах'}
+            </button>
+
+            <aside id="advanced-filters" className="w-full">
             <div className="rounded-xl border border-gray-200 bg-white shadow-card">
               {/* Толгой — unegui.mn-д тусдаа гарчиг байхгүй ч «N шүүлт» badge нь
                   хэрэглэгчид ямар нэг зүйл сонгосноо мэдэгдэхэд тустай.
@@ -3624,6 +3669,7 @@ export default function HomeClient() {
               </div>
             </div>
           </aside>
+          </div>
           )}
 
           {/* ================= ҮР ДҮН (баруун багана) =================
@@ -3631,8 +3677,12 @@ export default function HomeClient() {
                  энэ рүү SMOOTH гүйлгэнэ ✓ (мобайлд шүүлт тавьсны дараа
                  үр дүнгээ шууд харах боломж ✓) */}
           <div id="listing-results" className="min-w-0 flex-1">
-            {/* ГАРЧИГ + НИЙТ ТОО — unegui.mn: «Өрөө байр зарна 16,345» */}
-            <div className="mb-3 flex flex-wrap items-start justify-between gap-x-1 gap-y-1">
+            {/* ГАРЧИГ + НИЙТ ТОО — unegui.mn: «Өрөө байр зарна 16,345»
+                🆕 2026-10-06: баруун талын контролууд (🔀 Эрэмбэлэх · 🗺 Харах
+                горим · 🔖 Хадгалах) ЭНД БАЙСАН — unegui.mn шиг сайдбар
+                (эрэмбэлэх + газрын зураг) ба доорх бүтэн өргөнтэй
+                «Хайлтыг хадгалах» бар руу шилжсэн ✓ (гарчиг ганцаараа үлдэв) */}
+            <div className="mb-3">
               <div className="min-w-0">
                 <h1 className="text-2xl font-bold text-gray-900 sm:text-[26px]">
                   {pageTitle}
@@ -3653,85 +3703,36 @@ export default function HomeClient() {
                 {loadError && <p className="mt-0.5 text-[14px] text-red-600">Өгөгдлийн сантай холбогдож чадсангүй</p>}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                {/* 🔖 ХАДГАЛСАН ХАЙЛТ (2026-10-06, unegui.mn шиг) — одоогийн
-                    шүүлтээ хадгалаад «Таалагдсан хайлтууд»-аас эргэн харна ✓
-                    ⚠️ Энэ нь ШҮҮЛТ БИШ (үр дүн өөрчлөгдөхгүй) тул чипүүдийн
-                       тоонд ОРОХГҮЙ; CDP/тестийн тогтвортой дэгээ:
-                       `[data-save-search]` (товчны бичиг: «Хайлтыг хадгалах» ↔
-                       «✓ Хадгалагдсан», `aria-pressed`) ✓
-                    ⚠️ Хадгалах утга байхгүй (зөвхөн «Бүх зар») бол товч
-                       ОГТ ГАРАХГҮЙ — `canSaveCurrentSearch` ✓ */}
-                {canSaveCurrentSearch && (
-                  <button
-                    type="button"
-                    data-save-search
-                    aria-pressed={currentSearchSaved}
-                    onClick={onSaveSearch}
-                    disabled={currentSearchSaved}
-                    title={currentSearchSaved ? 'Энэ хайлт хадгалагдсан байна' : 'Одоогийн хайлтыг хадгалах'}
-                    className={currentSearchSaved ? 'btn btn-outline btn-sm' : 'btn btn-secondary btn-sm'}
-                  >
-                    {currentSearchSaved ? '✓ Хадгалагдсан' : 'Хайлтыг хадгалах'}
-                  </button>
-                )}
-
-                {/* 🗑 2026-10-03 (13): «💡 Төрөл сонгоход дэлгэрэнгүй хайлт
-                    харагдана» зөвлөмж ХАСАГДАВ — хэрэглэгчийн хүсэлтээр
-                    панель нь «Бүх зар» (1-р түвшин) ба хэсэг (2-р түвшин) дээр
-                    ч харагддаг болсон тул «төрөл сонгох» шаардлага БАЙХГҮЙ ✓ */ }
-
-                {/* ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): МОБАЙЛ дээрх
-                    «Дэлгэрэнгүй хайлт» (хуучнаар «⚙️ Шүүлт») товч ЭНД
-                    БАЙСАН — өрөөний тоотой мөрийн ДООР зөөгдсөн ✓
-                    (мобайл: [гарчиг] → [өрөөний мөр] → [товч] боллов) */}
-
-                {/* 🔀 ЭРЭМБЭЛЭХ (2026-09-30) — eBay-ийн «Sort: Best Match ▾» шиг
-                    ⚠️ ЗААВАЛ «Харах горим»-ООС ӨМНӨ: eBay дээр ч дараалал нь
-                       зүүн талд, харах горим нь баруун захад байдаг ✓
-                    ⚠️ Утга нь `normalizeSort()`-оор шүүгдэнэ (`?sort=xxx` →
-                       анхдагч) — PostgREST руу танихгүй багана явахгүй ✓
-                    ⚠️ Энэ нь ШҮҮЛТ БИШ (үр дүнгийн тоо өөрчлөгдөхгүй) тул
-                       чипүүдийн тоонд ОРОХГҮЙ — зөвхөн дараалал солино ✓
-                    ⚠️ Сонголт солиход `?page=1` руу буцна (`changeSort`) —
-                       эс бөгөөс 3-р хуудсан дээр дараалал солиход «дунд»
-                       байрлалд орж, хэрэглэгч төөрнө ✗ */}
-                <label className="flex items-center gap-1.5" htmlFor="listing-sort">
-                  <span className="text-[13.5px] font-semibold text-gray-500">Эрэмбэлэх</span>
-                  <select
-                    id="listing-sort"
-                    data-listing-sort
-                    className="form-select w-auto py-1.5 text-[14px] font-semibold"
-                    value={sort}
-                    onChange={(e) => changeSort(e.target.value)}
-                  >
-                    {SORT_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.icon} {o.label}</option>
-                    ))}
-                  </select>
-                </label>
-
-                {/* Харах горим — `.segmented` */}
-                <div className="segmented" role="group" aria-label="Харах горим">
-            <button
-              type="button"
-              aria-pressed={view === 'list'}
-              className={`segmented-item ${view === 'list' ? 'segmented-item-active' : ''}`}
-              onClick={() => setView('list')}
-            >
-              ☰ Жагсаалт
-            </button>
-            <button
-              type="button"
-              aria-pressed={view === 'map'}
-              className={`segmented-item ${view === 'map' ? 'segmented-item-active' : ''}`}
-              onClick={() => setView('map')}
-            >
-              🗺 Газрын зураг
-            </button>
-                </div>
-              </div>
             </div>
+
+            {/* 🔖 ХАДГАЛСАН ХАЙЛТ (2026-10-06, unegui.mn шиг) — одоогийн
+                шүүлтээ хадгалаад «Таалагдсан хайлтууд»-аас эргэн харна ✓
+                ⚠️ Энэ нь ШҮҮЛТ БИШ (үр дүн өөрчлөгдөхгүй) тул чипүүдийн
+                   тоонд ОРОХГҮЙ; CDP/тестийн тогтвортой дэгээ:
+                   `[data-save-search]` (товчны бичиг: «Хайлтыг хадгалах» ↔
+                   «✓ Хадгалагдсан», `aria-pressed`) ✓
+                ⚠️ unegui.mn шиг БҮТЭН ӨРГӨНТЭЙ БАР (хайлтын үр дүнгийн дээд
+                   талд) — hover-т зөөлөн бараан болно ✓
+                ⚠️ Хадгалах утга байхгүй (зөвхөн «Бүх зар») бол товч
+                   ОГТ ГАРАХГҮЙ — `canSaveCurrentSearch` ✓ */}
+            {canSaveCurrentSearch && (
+              <button
+                type="button"
+                data-save-search
+                aria-pressed={currentSearchSaved}
+                onClick={onSaveSearch}
+                disabled={currentSearchSaved}
+                title={currentSearchSaved ? 'Энэ хайлт хадгалагдсан байна' : 'Одоогийн хайлтыг хадгалах'}
+                className={`mb-3 flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-[14px] font-semibold transition-all duration-150 ease-out ${
+                  currentSearchSaved
+                    ? 'cursor-default border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : 'border-gray-200 bg-gray-100 text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900'
+                }`}
+              >
+                <span aria-hidden="true">{currentSearchSaved ? '♥' : '♡'}</span>
+                {currentSearchSaved ? '✓ Хадгалагдсан' : 'Хайлтыг хадгалах'}
+              </button>
+            )}
 
             {/* ===== 🎛🍽 ҮР ДҮҮНГИЙН ДЭЭРХ ХЭВТЭЭ ШҮҮЛТИЙН МӨР (eBay-ийн «Color ⌄») =====
                 🆕 2026-10-04 (37): хэрэглэгчийн хүсэлт: «Түлш, Хурдны хайрцаг,
