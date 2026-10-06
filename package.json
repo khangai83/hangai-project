@@ -35,6 +35,7 @@
     "test:draft": "node scripts/test-draft.mjs",
     "test:prefill": "node scripts/test-prefill.mjs",
     "test:location": "node scripts/test-location-optional.mjs",
+    "test:location-map": "node scripts/test-location-map.mjs",
     "test:breadcrumb": "node scripts/test-breadcrumb.mjs",
     "cdp:rooms": "node scripts/cdp-rooms.mjs",
     "cdp:districts": "node scripts/cdp-districts.mjs",

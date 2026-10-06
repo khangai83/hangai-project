@@ -77,6 +77,9 @@ console.log('\n🧪 📍 «Байршил сонгохгүй» чекбокс (l
 const form = (over = {}) => ({
   section: 'real-estate', propertyType: 'Орон сууц', rooms: '3', area: '75',
   city: DEFAULT_CITY, district: 'Баянгол', khoroo: '1-р хороо', noLocation: false,
+  // 🗺 Солбицол (2026-10-06) — бодит `emptyForm()` нь ч `latitude`/`longitude`-той
+  //    тул гэрээний round-trip нь ЯГ формойн хэлбэрийг тусгана ✓
+  latitude: null, longitude: null,
   price: '250', title: '3 өрөө байр', ...over,
 });
 
@@ -165,7 +168,10 @@ t('② АСААХАД: 3 талбар ЦЭВЭРЛЭГДЭж, бусад тал�
   assert.equal(on.price, '250');
   assert.equal(on.title, '3 өрөө байр');
   assert.equal(on.propertyType, 'Орон сууц');
-  assert.deepEqual(bank.ref, { city: 'Улаанбаатар', district: 'Баянгол', khoroo: '1-р хороо' });
+  assert.deepEqual(bank.ref, {
+    city: 'Улаанбаатар', district: 'Баянгол', khoroo: '1-р хороо',
+    latitude: null, longitude: null,
+  });
 });
 
 t('② УНТРААХАД: өмнөх сонголт БУЦАЖ ирнэ (алдагдахгүй)', () => {

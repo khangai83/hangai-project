@@ -10,6 +10,8 @@ import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shor
 import phoneEmail from '../lib/phoneEmail';
 import YouTubeField from './YouTubeField';
 import SearchableSelect from './SearchableSelect';
+// 🗺 ГАЗРЫН ЗУРАГ ДЭЭРХ ПИН-ПИКЕР (2026-10-06) — `unegui.mn` мэт modal
+import LocationMapPicker from './LocationMapPicker';
 import { parseYouTube } from '../lib/youtube.mjs';
 import { compressImages, formatBytes } from '../lib/imageUtils';
 /**
@@ -36,6 +38,19 @@ import {
   isNoLocation, locationMissing, noLocationPatch, bankedLocation,
   restoreLocationPatch, locationPathText,
 } from '../lib/listingLocation.mjs';
+/**
+ * 🗺 ЗАРЫН ГАЗРЫН ЗУРГИЙН КООРДИНАТ (2026-10-06) — хэрэглэгчийн гомдол:
+ *    «Газрын зураг дээр 📍 23-р хороо, Хан-Уул, Улаанбаатар … энэ зар чинь
+ *    харагдахгүй байна даа».
+ *    ⚠️ ШАЛТГААН: `components/MapView.jsx` нь зөвхөн `latitude`/`longitude`
+ *    ТАЙ зарыг зурдаг байсан ч форм солбицол ОГТ цуглуулдаггүй байв ✗
+ *    ✅ Одоо 2-р алхамд `unegui.mn` мэт пин-пикер (`LocationMapPicker`) ба
+ *    дүүрэг сонгомогц газрын зураг тэр дүүргийн төв рүү автоматаар
+ *    төвлөрнө. Солбицол нь `listings.latitude`/`longitude` (0001 — аль
+ *    хэдийн байгаа багана) руу хадгалагдана ✓ (migration 0)
+ *    ⚠️ Цэвэр дүрэм нь `lib/locationGeo.mjs` (`npm run test:location-map`)
+ */
+import { coordOf, hasCoords, districtCenter, sameCoord, mapCenterFor, PICK_ZOOM, DEFAULT_MAP_ZOOM } from '../lib/locationGeo.mjs';
 /**
  * 🎯 АНГИЛАЛ УРЬДЧИЛАН БӨГЛӨХ (2026-10-06) — «Зар нэмэх» товч (`AppProviders`)
  *    нь хэрэглэгч аль ангилалд явж байсныг URL-д (`?section=…&category=…&type=…`)
@@ -180,6 +195,10 @@ function listingToForm(l) {
     // 📍 «Байршил сонгохгүй» — DB-д ийм багана БАЙХГҮЙ (0 migration) тул
     //    зөвхөн хоосон хотоос сэргээнэ ✓ (`city === ''` ⇒ чекбокс асаалттай)
     noLocation: !l.city,
+    // 🗺 Солбицол (2026-10-06) — газрын зураг дээрх пингийн утга.
+    //    ⚠️ DB багана (0001) ХЭВЭЭР — зөвхөн форм руу уншина ✓
+    latitude: typeof l.latitude === 'number' ? l.latitude : null,
+    longitude: typeof l.longitude === 'number' ? l.longitude : null,
     price: l.price ? String(l.price) : '',
     // 🤝 «Үнэ тохирно» — үнэ 0/хоосон бол чекбокс асаалттай нээгдэнэ (lib/format.js)
     negotiable: isNegotiablePrice(l),
@@ -201,6 +220,24 @@ function listingToForm(l) {
     // Угаалгын өрөөний тоо (0012) — зөвхөн 3+ өрөөтэй орон сууц / АОС/хаус дээр
     bathrooms: l.bathrooms ? String(l.bathrooms) : '',
   };
+}
+
+/**
+ * 🗺 Дүүрэг/хот солиход формын СОЛБИЦЛЫГ шинэ ТӨВ рүү шилжүүлэх нэмэлт.
+ *
+ * ⚠️ АВТОМАТ дүүргэлт (үндсэн гомдлын шууд шийдэл): хэрэглэгч газрын зураг
+ *    дээр пин тавихгүй ч зар нь СОНГОСОН ДҮҮРГИЙН ТӨВ дээр газрын зураг дээр
+ *    ГАРАХ болно ✓ (⏳ урьд нь форм солбицол цуглуулдаггүй тул форм-оос
+ *    үүссэн БҮХ зар `latitude = null` болж, газрын зураг дээр ОГТ
+ *    гарахгүй байв ✗)
+ * ⚠️ Хэрэглэгч дараа нь `LocationMapPicker`-ээр пин тавибал ТҮҮНИЙ утга
+ *    давамгайлна (энэ нь зөвхөн анхдагч/дүүрэг солих үеийн утга ✓)
+ * @param {string} city @param {string} district
+ * @returns {{latitude: number|null, longitude: number|null}}
+ */
+function centerPatch(city, district) {
+  const c = districtCenter(city, district);
+  return c ? { latitude: c.lat, longitude: c.lng } : { latitude: null, longitude: null };
 }
 
 /**
@@ -845,6 +882,16 @@ export default function AddListingClient() {
     district: '',
     khoroo: '',
     noLocation: false,
+    /**
+     * 🗺 ГАЗРЫН ЗУРАГ ДЭЭРХ ПИН (2026-10-06) — `LocationMapPicker`-ийн утга.
+     *    ⚠️ `null` = пин тавиагүй. `changeDistrict` нь дүүрэг сонгомогц энийг
+     *       тухайн дүүргийн ТӨВөөр дүүргэнэ (зар газрын зураг дээр гарна ✓);
+     *       хэрэглэгч пин тавибал тэр нь давамгайлна ✓
+     *    ⚠️ DB талбар нь `latitude`/`longitude` (0001_schema — nullable) тул
+     *       migration ХЭРЭГГҮЙ ✓
+     */
+    latitude: null,
+    longitude: null,
     price: '',
     // 🤝 «Үнэ тохирно» — үнэ нь ЗААВАЛ БИШ (2026-09-29). Шинэ зар дээр
     //    анхдагчаар УНТРААЛТТАЙ (хэрэглэгч үнэ бичих нь элбэг ✓).
@@ -1227,8 +1274,19 @@ export default function AddListingClient() {
     bankedLocationRef.current = null;
   };
 
-  const changeCity = (city) => setForm((f) => ({ ...f, city, district: '', khoroo: '' }));
-  const changeDistrict = (district) => setForm((f) => ({ ...f, district, khoroo: '' }));
+  /**
+   * 🗺 Хот/дүүрэг солиход хуучин пин ХҮЧИНГҮЙ — шинэ дүүргийн ТӨВ рүү
+   *    шилжинэ (`centerPatch` — 2026-10-06). Ингэснээр пин тавиагүй ч зар
+   *    газрын зураг дээр сонгосон дүүрэг дээрээ гарна ✓
+   */
+  const changeCity = (city) => setForm((f) => ({
+    ...f, city, district: '', khoroo: '', ...centerPatch(city, ''),
+  }));
+  const changeDistrict = (district) => setForm((f) => ({
+    ...f, district, khoroo: '', ...centerPatch(f.city, district),
+  }));
+  /** 📍 Хороо солиход пин ХЭВЭЭР (дүүрэг дотор байгаа тул хүчингүй болохгүй ✓) */
+  const changeKhoroo = (khoroo) => setForm((f) => ({ ...f, khoroo }));
 
   const districts = getDistricts(form.city);
   const khoroos = getKhoroos(form.city, form.district);
@@ -1241,6 +1299,36 @@ export default function AddListingClient() {
    *    ба нооргийн сэргээлттэй ЯГ ижил эх сурвалж ✓
    */
   const noLoc = isNoLocation(form);
+
+  /* ==========================================================================
+     🗺 ГАЗРЫН ЗУРАГ ДЭЭРХ ПИН (2026-10-06) — `LocationMapPicker`
+     --------------------------------------------------------------
+     ⚠️ ЯАГААД ЭНД (2-р алхам): хэрэглэгч байршлаа сонгосон даруйд газрын
+        зургийг нээж, зөв цэг дээр пин тавих боломжтой (unegui.mn-ийн адил) ✓
+     ⚠️ Солбицол нь ЗААВАЛ БИШ — `null` бол зар газрын зураг дээр гарахгүй;
+        гэхдээ `changeDistrict` нь дүүргийн төвөөр автоматаар дүүргэдэг тул
+        пин тавиагүй ч зар дүүрэг дээрээ ойролцоогоор харагдана ✓
+     ========================================================================== */
+  const [mapPickerOpen, setMapPickerOpen] = useState(false);
+  const mapPickCenter = mapCenterFor(form);
+  const mapPickSubtitle = locationPathText(form) || 'Байршлаа газрын зураг дээр заана уу';
+  const mapPickZoom = (hasCoords(form) || form.district) ? PICK_ZOOM : DEFAULT_MAP_ZOOM;
+  /** ✅ Пин-пикерээс сонгосон солбицлыг форм руу бичих */
+  const applyMapPick = (coords) => {
+    setForm((f) => ({ ...f, latitude: coords.lat, longitude: coords.lng }));
+    setMapPickerOpen(false);
+  };
+  /** 🗑 Пингүй болгох (солбицлыг цэвэрлэнэ) */
+  const clearMapPick = () => setForm((f) => ({ ...f, latitude: null, longitude: null }));
+  /**
+   * 🗺 Одоогийн солбицол нь ЗӨВХӨН дүүргийн төв (хэрэглэгч пин тавиагүй)
+   *    эсэх — UI дээр «ойролцоо» гэж ялгаж харуулахад хэрэглэнэ ✓
+   */
+  const mapPickIsApprox = (() => {
+    const c = coordOf(form);
+    if (!c) return false;
+    return sameCoord(c, districtCenter(form.city, form.district));
+  })();
 
   /* ==========================================================================
      📍 2-Р АЛХАМ («Байршил») — 3 БАГАНАТ СОНГОЛТ (2026-10-01, хэрэглэгчийн
@@ -1604,7 +1692,7 @@ export default function AddListingClient() {
       title: form.district || 'Хороо',
       items: khorooItems,
       value: form.khoroo,
-      onPick: (v) => { set('khoroo', v); finishMobileLocation(); },
+      onPick: (v) => { changeKhoroo(v); finishMobileLocation(); },
     },
   ];
   const mobileLocScreen = locScreens.find((s) => s.key === mobileLocStep) || locScreens[0];
@@ -2561,7 +2649,7 @@ export default function AddListingClient() {
                 mobileLabel="Хороо"
                 items={khorooItems}
                 value={form.khoroo}
-                onPick={(v) => set('khoroo', v)}
+                onPick={changeKhoroo}
                 emptyText={form.district ? 'Хороо байхгүй' : 'Эхлээд дүүргээ сонгоно уу'}
                 className="bg-white"
               />
@@ -2591,6 +2679,53 @@ export default function AddListingClient() {
                 'Хот/Аймаг → дүүрэг → хороогоо дараалан сонгоно уу.'
               )}
             </p>
+            {/* ═══════════ 🗺 ГАЗРЫН ЗУРАГ ДЭЭРХ БАЙРШИЛ — ПИН (2026-10-06) ═══════════
+                ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Хэрэглэгч хаягаа оруулсны дараа шууд
+                   газрын зураг дээр зааж өгөх боломжтой хэсэг тухайн цонхон
+                   дээр нь гараад ирдэг юм байна (unegui.mn)» ⇒ 2-р алхамд
+                   «🗺 Газрын зураг дээр байршлаа заах» товч + пингийн утга ✓
+                ⚠️ Пин-пикер нь ТУСДАА модаль (`components/LocationMapPicker.jsx`)
+                   — доорх 3 баганат сонголтыг ХӨНДӨХГҮЙ ✓
+                ⚠️ Чекбокс асаалттай (`noLoc`) үед ЭНЭ блок ГАРАХГҮЙ (байршил
+                   заахгүй гэсэн шийдвэртэй зөрчилдөхгүй ✓)
+                🔍 Хайх үг: data-map-picker-open, data-map-picker-value,
+                   data-map-picker-clear, LocationMapPicker */}
+            {!noLoc && (
+              <div data-map-picker-block className="mt-3 rounded-lg border border-gray-200 bg-gray-50/70 px-3 py-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    data-map-picker-open
+                    onClick={() => setMapPickerOpen(true)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-[14px] font-semibold text-gray-800 transition hover:border-primary hover:text-primary"
+                  >
+                    🗺 {hasCoords(form) ? 'Газрын зураг дээр дахин заах' : 'Газрын зураг дээр байршлаа заах'}
+                  </button>
+                  {hasCoords(form) && (
+                    <>
+                      <span data-map-picker-value className="text-[13px] font-medium text-gray-600">
+                        📍 {Number(form.latitude).toFixed(5)}, {Number(form.longitude).toFixed(5)}
+                        {mapPickIsApprox ? ' (ойролцоо)' : ''}
+                      </span>
+                      <button
+                        type="button"
+                        data-map-picker-clear
+                        onClick={clearMapPick}
+                        className="text-[13px] font-semibold text-gray-400 transition hover:text-red-500"
+                      >
+                        ✕ Арилгах
+                      </button>
+                    </>
+                  )}
+                </div>
+                <p className="mt-1.5 text-[12.5px] leading-snug text-gray-500">
+                  Газрын зураг дээр пин тавибал зар ЗӨВ байрлалд харагдана.
+                  {mapPickIsApprox
+                    ? ' Одоогоор дүүргийн төвд ойролцоогоор байна — нарийвчлах бол газрын зураг дээр дарна уу.'
+                    : ''}
+                </p>
+              </div>
+            )}
             {/* ═══════════ 🚫 «Байршил сонгохгүй» ЧЕКБОКС — ДООД ТАЛД ═══════════
                 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (1): «Зарим хэрэглэгч зарын Байршилаа
                    оруулахыг хүсэхгүй хүн байж магадгүй. Тэдгээр хүмүүст зориулж
@@ -3553,6 +3688,20 @@ export default function AddListingClient() {
                 </button>
               )}
             </div>
+
+            {/* 🗺 ГАЗРЫН ЗУРАГ ДЭЭРХ БАЙРШИЛ — ПИН-ПИКЕР (`unegui.mn` загвар).
+                ⚠️ `<form>`-ийн ДОТОР ч `hidden` алхмын блокийн ГАДНА байрлана —
+                   ингэснээр `display:none` эцэг дотор «алга болохгүй» ✓ */}
+            {mapPickerOpen && (
+              <LocationMapPicker
+                center={mapPickCenter}
+                value={coordOf(form)}
+                zoom={mapPickZoom}
+                subtitle={mapPickSubtitle}
+                onConfirm={applyMapPick}
+                onClose={() => setMapPickerOpen(false)}
+              />
+            )}
           </form>
           </div>
         </div>
