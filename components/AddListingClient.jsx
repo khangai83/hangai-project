@@ -3727,6 +3727,8 @@ export default function AddListingClient() {
                 value={coordOf(form)}
                 zoom={mapPickZoom}
                 subtitle={mapPickSubtitle}
+                city={form.city}
+                district={form.district}
                 onConfirm={applyMapPick}
                 onClose={() => setMapPickerOpen(false)}
               />

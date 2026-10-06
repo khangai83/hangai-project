@@ -19,6 +19,7 @@
 //   ⑦ 📄 README + `package.json` (тест бүртгэгдсэн эсэх)
 //   ⑧ 🆕 🔍 ХОРООНЫ НАРИЙВЧЛАЛ — `geocodeUrl`/`parseGeocodeResults` (Nominatim)
 //   ⑨ 🆕 🗺 ПИНГИЙН ХАЯГ — `reverseGeocodeUrl`/`parseReverseResult` (Nominatim reverse)
+//   ⑩ 🆕 📐 ДҮҮРГИЙН БОДИТ ХИЛ — `districtPolygonUrl`/`extractPolygon`/`pointInGeoJson`
 //
 // АЖИЛЛУУЛАХ:  npm run test:location-map
 // ⚠️ DB/React/CDP ХОЛБОГДОХГҮЙ — зөвхөн Node (цэвэр модуль + эх файлын гэрээ).
@@ -35,6 +36,7 @@ import {
   DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, PICK_ZOOM, PICK_ZOOM_FOUND,
   KHOROO_SPREAD, GEOCODE_ENDPOINT, geocodeUrl, parseGeocodeResults,
   REVERSE_ENDPOINT, reverseGeocodeUrl, parseReverseResult,
+  districtPolygonUrl, extractPolygon, pointInRing, pointInGeoJson,
   isValidCoord, coordOf, hasCoords, districtCenter, cityCenter,
   khorooNumber, khorooCenter, autoCenterFor, mapCenterFor, sameCoord,
 } from '../lib/locationGeo.mjs';
@@ -579,6 +581,88 @@ t('⑨ ГЭРЭЭ `LocationMapPicker` — reverse-geocode ашиглана (ха
   assert.ok(pick.includes('reverseGeocodeUrl'), 'reverseGeocodeUrl импорт/дуудлага алга');
   assert.ok(pick.includes('parseReverseResult'), 'parseReverseResult ашиглаагүй');
   assert.ok(pick.includes('data-map-picker-place'), 'хаягийн дэгээ (`data-map-picker-place`) алга');
+});
+
+// ────────────────────────────────────────────────────────────
+// ⑩ 🆕 📐 ДҮҮРГИЙН БОДИТ ХИЛ — полигон + пин дотор эсэх
+// ────────────────────────────────────────────────────────────
+console.log('\n── ⑩ 📐 Дүүргийн бодит хил: polygon (Nominatim) ──');
+
+t('⑩ `districtPolygonUrl` — дүүрэг хоосон үед `null` (fetch хийхгүй)', () => {
+  assert.equal(districtPolygonUrl('Улаанбаатар', ''), null, 'хоосон дүүрэг → null');
+  assert.equal(districtPolygonUrl('Улаанбаатар', '   '), null, 'зөвхөн зай → null');
+  assert.equal(districtPolygonUrl('Улаанбаатар', null), null, 'null → null');
+  assert.equal(districtPolygonUrl('Улаанбаатар', undefined), null, 'undefined → null');
+});
+
+t('⑩ `districtPolygonUrl` — Nominatim `polygon_geojson` гэрээ', () => {
+  const url = districtPolygonUrl('Улаанбаатар', 'Хан-Уул');
+  assert.ok(url.startsWith(`${GEOCODE_ENDPOINT}?`), 'Nominatim search endpoint биш');
+  const u = new URL(url);
+  assert.equal(u.searchParams.get('polygon_geojson'), '1', 'polygon_geojson биш');
+  assert.equal(u.searchParams.get('format'), 'jsonv2', 'jsonv2 биш');
+  assert.equal(u.searchParams.get('limit'), '1', 'limit 1 биш');
+  assert.equal(u.searchParams.get('countrycodes'), 'mn', 'зөвхөн Монгол биш');
+  assert.equal(u.searchParams.get('accept-language'), 'mn', 'монгол хариу биш');
+  assert.ok(u.searchParams.get('q').includes('Хан-Уул'), 'дүүрэг байхгүй');
+  assert.ok(u.searchParams.get('q').includes('Улаанбаатар'), 'хот байхгүй');
+  assert.equal(districtPolygonUrl(undefined, '  Хан-Уул '), districtPolygonUrl('', 'Хан-Уул'), 'trim буруу');
+});
+
+t('⑩ `extractPolygon` — зөвхөн `Polygon`/`MultiPolygon`', () => {
+  const poly = { type: 'Polygon', coordinates: [[[106.8, 47.8], [107, 47.8], [107, 47.9], [106.8, 47.9]]] };
+  assert.deepEqual(extractPolygon([{ geojson: poly }]), poly, 'массив дотроос Polygon');
+  assert.deepEqual(extractPolygon({ geojson: poly }), poly, 'объект ч хүлээнэ');
+  const mp = { type: 'MultiPolygon', coordinates: [] };
+  assert.deepEqual(extractPolygon([{ geojson: mp }]), mp, 'MultiPolygon');
+  assert.equal(extractPolygon([{ geojson: { type: 'Point', coordinates: [1, 2] } }]), null, 'Point → null');
+  assert.equal(extractPolygon([{ geojson: { type: 'Polygon' } }]), null, 'coordinates байхгүй → null');
+  assert.equal(extractPolygon([]), null, '[] → null');
+  assert.equal(extractPolygon(null), null, 'null → null');
+  assert.equal(extractPolygon('x'), null, 'мөр → null');
+});
+
+t('⑩ `pointInRing` — квадрат дотор/гадна (ray casting)', () => {
+  const ring = [[106.8, 47.8], [107.0, 47.8], [107.0, 47.9], [106.8, 47.9], [106.8, 47.8]];
+  assert.equal(pointInRing(47.85, 106.9, ring), true, 'төв дотор');
+  assert.equal(pointInRing(47.7, 106.9, ring), false, 'өмнө (гадна)');
+  assert.equal(pointInRing(47.85, 106.7, ring), false, 'баруун (гадна)');
+  assert.equal(pointInRing(47.85, 106.9, [[1, 1], [2, 2]]), false, 'богино цагираг → false');
+  assert.equal(pointInRing(47.85, 106.9, null), false, 'null → false');
+});
+
+t('⑩ `pointInGeoJson` — Polygon · нүх (hole) · MultiPolygon', () => {
+  const outer = [[106.8, 47.8], [107.0, 47.8], [107.0, 47.9], [106.8, 47.9], [106.8, 47.8]];
+  const hole = [[106.87, 47.84], [106.93, 47.84], [106.93, 47.88], [106.87, 47.88], [106.87, 47.84]];
+  const withHole = { type: 'Polygon', coordinates: [outer, hole] };
+  assert.equal(pointInGeoJson(47.85, 106.9, { type: 'Polygon', coordinates: [outer] }), true, 'полигон дотор');
+  assert.equal(pointInGeoJson(47.85, 106.82, withHole), true, 'нүхний ГАДНА, полигон дотор');
+  assert.equal(pointInGeoJson(47.86, 106.9, withHole), false, 'нүхэн ДОТОР → гадна');
+  const mp = {
+    type: 'MultiPolygon',
+    coordinates: [
+      [[[106.8, 47.8], [106.82, 47.8], [106.82, 47.82], [106.8, 47.82], [106.8, 47.8]]],
+      [outer],
+    ],
+  };
+  assert.equal(pointInGeoJson(47.85, 106.9, mp), true, 'MultiPolygon 2 дахь полигон дотор');
+  assert.equal(pointInGeoJson(47.85, 106.9, null), false, 'null → false');
+  assert.equal(pointInGeoJson(0, 0, withHole), false, '(0,0) хүчингүй → false');
+});
+
+t('⑩ ГЭРЭЭ `LocationMapPicker` — дүүргийн хил шалгаж, сануулга гаргана', () => {
+  const pick = codeHard('components/LocationMapPicker.jsx');
+  assert.ok(pick.includes('districtPolygonUrl'), 'districtPolygonUrl алга');
+  assert.ok(pick.includes('extractPolygon'), 'extractPolygon алга');
+  assert.ok(pick.includes('pointInGeoJson'), 'pointInGeoJson алга');
+  assert.ok(pick.includes('geoJSON('), 'L.geoJSON-оор хил зурахгүй');
+  assert.ok(pick.includes('data-map-picker-outside'), 'сануулгын дэгээ алга');
+});
+
+t('⑩ ГЭРЭЭ `AddListingClient` — picker руу `city`/`district` дамжуулна', () => {
+  const src = codeOnly('components/AddListingClient.jsx');
+  assert.ok(src.includes('city={form.city}'), '`city` prop алга');
+  assert.ok(src.includes('district={form.district}'), '`district` prop алга');
 });
 
 console.log(`\n✅ БҮГД ТЭНЦСЭН — ${passed} тест\n`);

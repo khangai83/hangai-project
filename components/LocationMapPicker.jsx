@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import {
   DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, PICK_ZOOM, PICK_ZOOM_FOUND, isValidCoord,
   geocodeUrl, parseGeocodeResults, reverseGeocodeUrl, parseReverseResult,
+  districtPolygonUrl, extractPolygon, pointInGeoJson,
 } from '../lib/locationGeo.mjs';
 
 /* ============================================================
@@ -61,6 +62,14 @@ export const MAP_PICKER_GEO_ERR = 'Байршил тодорхойлогдсон
 export const MAP_PICKER_PLACE_LOADING = 'Хаяг тодорхойлж байна…';
 export const MAP_PICKER_PLACE_ERR = 'Хаяг тодорхойлогдсонгүй';
 
+/** 🆕 📐 Дүүргийн хилээс ГАДНА пин тавив — accuracy сануулга (7 дахь засвар) */
+export const MAP_PICKER_OUTSIDE_WARN =
+  '⚠️ Пин нь сонгосон дүүргийн хилээс ГАДНА байна — байршлаа тааруулна уу';
+
+/** 📐 Дүүргийн хил — пин ДОТОР (хөх) / ГАДНА (улаан) */
+const BOUNDARY_STYLE_OK = { color: '#2563eb', weight: 2, opacity: 0.7, fill: true, fillColor: '#2563eb', fillOpacity: 0.05 };
+const BOUNDARY_STYLE_BAD = { color: '#dc2626', weight: 2.5, opacity: 0.9, fill: true, fillColor: '#dc2626', fillOpacity: 0.08 };
+
 /**
  * 🗺 ПИНГИЙН ДҮРС (SVG) — газрын зургийн ТӨВД **ТОГТМОЛ** байрлана.
  *    ⚠️ `-translate-y-full` тул пингийн ЗҮҮН үзүүр нь ЯГ төвд бууна ✓
@@ -94,10 +103,12 @@ function PinIcon() {
  * @param {{lat:number,lng:number}|null} [props.value] аль хэдийн тавьсан пин
  * @param {number} [props.zoom] анхдагч зум (байхгүй бол `PICK_ZOOM`)
  * @param {string} [props.subtitle] толгойн доорх байршлын мөр
+ * @param {string} [props.city] хот/аймаг (дүүргийн хил ачаалахад)
+ * @param {string} [props.district] дүүрэг/сум (БОДИТ хилээр пин шалгана)
  * @param {(coords:{lat:number,lng:number}) => void} props.onConfirm «Үргэлжлүүлэх»
  * @param {() => void} props.onClose «Буцах» / ✕
  */
-export default function LocationMapPicker({ center, value, zoom, subtitle, onConfirm, onClose }) {
+export default function LocationMapPicker({ center, value, zoom, subtitle, city, district, onConfirm, onClose }) {
   const elRef = useRef(null);
   const mapRef = useRef(null);
   /** 🆕 🔍 ХАЙЛТ/ГЕОЛОКАЦИ — хороо/гудамж хайж, пинээ тэр цэг рүү гулсуулна */
@@ -114,6 +125,8 @@ export default function LocationMapPicker({ center, value, zoom, subtitle, onCon
   }
   const initialZoom = Number.isFinite(zoom) ? zoom : (value ? PICK_ZOOM : DEFAULT_MAP_ZOOM);
   const [coords, setCoords] = useState(() => ({ ...startRef.current }));
+  /** 🗺 Газрын зураг бэлэн болсон эсэх (хилийн `L.geoJSON` нэмэхэд хэрэгтэй) */
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     let map = null;
@@ -132,6 +145,7 @@ export default function LocationMapPicker({ center, value, zoom, subtitle, onCon
       map = L.map(elRef.current, { zoomControl: true, attributionControl: true })
         .setView([start.lat, start.lng], initialZoom);
       mapRef.current = map;
+      setMapReady(true);
       L.tileLayer(TILE_URL, { attribution: TILE_ATTR, maxZoom: 19 }).addTo(map);
 
       // 🆕 🗺 ПИН НЬ ТӨВД **ТОГТМОЛ** (`PinIcon` — DOM overlay) ⇒ маркер
@@ -174,6 +188,7 @@ export default function LocationMapPicker({ center, value, zoom, subtitle, onCon
         map = null;
       }
       mapRef.current = null;
+      setMapReady(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -217,6 +232,81 @@ export default function LocationMapPicker({ center, value, zoom, subtitle, onCon
       clearTimeout(timer);
     };
   }, [coords.lat, coords.lng]);
+
+  /**
+   * 🆕 📐 ДҮҮРГИЙН БОДИТ ХИЛ (polygon) — Nominatim `polygon_geojson=1` (7 дахь засвар).
+   *    Пин нь сонгосон дүүргийн БОДИТ хил дотор эсэхийг шалгаж, хилээс ГАДНА бол
+   *    сануулга гаргана ✓ (accuracy — буруу дүүрэг рүү пин тавихаас сэргийлнэ).
+   *    ⚠️ УБ-ын дүүргүүд OSM-д БОДИТ полигонтой; байхгүй бол чимээгүй өнгөрнө ✓
+   */
+  const [districtGeo, setDistrictGeo] = useState(null);
+  useEffect(() => {
+    const url = districtPolygonUrl(city, district);
+    if (!url) {
+      setDistrictGeo(null);
+      return undefined;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(url, { headers: { Accept: 'application/json' } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const geo = extractPolygon(await res.json());
+        if (!cancelled) setDistrictGeo(geo);
+      } catch (e) {
+        if (!cancelled) setDistrictGeo(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [city, district]);
+
+  /** Пин нь дүүргийн хил ДОТОР эсэх (`null` = хил ачаалагдаагүй/мэдэгдэхгүй) */
+  const districtInside =
+    districtGeo && isValidCoord(coords.lat, coords.lng)
+      ? pointInGeoJson(coords.lat, coords.lng, districtGeo)
+      : null;
+  /** Хил ачаалагдсан + пин ГАДНА ⇒ сануулга харуулна */
+  const outsideDistrict = districtInside === false;
+
+  /** 🗺 ХИЛИЙН ЗУРАГ (Leaflet `L.geoJSON`) — `mapReady` болсны дараа нэмнэ; өнгө нь
+   *  пин дотор/гадна байдлаас хамаарна (`boundaryStyleRef`) */
+  const boundaryRef = useRef(null);
+  const boundaryStyleRef = useRef(BOUNDARY_STYLE_OK);
+  boundaryStyleRef.current = outsideDistrict ? BOUNDARY_STYLE_BAD : BOUNDARY_STYLE_OK;
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!mapReady || !map) return undefined;
+    let layer = null;
+    let cancelled = false;
+    import('leaflet')
+      .then((module) => {
+        if (cancelled || !mapRef.current) return;
+        if (boundaryRef.current) {
+          try { mapRef.current.removeLayer(boundaryRef.current); } catch (e) { /* noop */ }
+          boundaryRef.current = null;
+        }
+        if (!districtGeo) return;
+        layer = module.geoJSON(districtGeo, { style: () => boundaryStyleRef.current });
+        layer.addTo(mapRef.current);
+        boundaryRef.current = layer;
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      if (layer && mapRef.current) {
+        try { mapRef.current.removeLayer(layer); } catch (e) { /* noop */ }
+      }
+      if (boundaryRef.current === layer) boundaryRef.current = null;
+    };
+  }, [districtGeo, mapReady]);
+
+  /** Хил дотор/гадна солигдоход өнгийг шууд сольж будана */
+  useEffect(() => {
+    const layer = boundaryRef.current;
+    if (layer && layer.setStyle) layer.setStyle(boundaryStyleRef.current);
+  }, [outsideDistrict]);
 
   /** ✅ Үргэлжлүүлэх — ТӨВД байгаа пингийн солбицлыг буцаана (хүчингүй бол эхлэлийг) */
   const confirm = () => {
@@ -411,6 +501,14 @@ export default function LocationMapPicker({ center, value, zoom, subtitle, onCon
                   ? MAP_PICKER_PLACE_LOADING
                   : MAP_PICKER_PLACE_ERR}
             </span>
+            {outsideDistrict && (
+              <span
+                data-map-picker-outside
+                className="min-w-0 text-[12.5px] font-semibold text-red-600"
+              >
+                {MAP_PICKER_OUTSIDE_WARN}
+              </span>
+            )}
           </span>
           <span className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <button
