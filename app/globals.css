@@ -162,6 +162,22 @@
            enabled:active:translate-y-0 enabled:active:shadow-btn-secondary-active;
   }
 
+ /* ✅ НОГООН товч — «✏️ Засах» (2026-10-06 (6), хэрэглэгчийн хүсэлт:
+    «Засах гэсэн товчийг ногоон дэвсгэр өнгөтэй болгочих»).
+    ⚠️ `.btn-secondary` (2026-09-25-д ногоон → «бэх» болсон) БУЦААГААГҮЙ —
+       оронд нь ТУСДАА семантик класс ⇒ цэсэн товч (Таалагдсан/Нэвтрэх)
+       хөндөгдөхгүй ✓.
+    ℹ️ Градиентийн бүтэц нь `.btn-primary`-ийн ЯГ ИЖИЛ: дээд нь цайвар
+       (#10B981) → гол нь `success.DEFAULT` #059669 → доод нь
+       `success.dark` #047857. Сүүдрийн 3 төлөв нь `tailwind.config.js`
+       → `btn-success*` (rgba нь #059669 = 5,150,105). */
+  .btn-success {
+    @apply bg-gradient-to-b from-[#10B981] via-[#059669] to-[#047857] text-white shadow-btn-success
+           enabled:hover:from-[#059669] enabled:hover:to-[#036B4F]
+           enabled:hover:shadow-btn-success-hover enabled:hover:-translate-y-0.5
+           enabled:active:translate-y-0 enabled:active:shadow-btn-success-active;
+  }
+
   .btn-danger {
     @apply bg-gradient-to-b from-[#ef4444] to-[#b91c1c] text-white shadow-btn-danger
            enabled:hover:from-[#dc2626] enabled:hover:to-[#991b1b]

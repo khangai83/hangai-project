@@ -515,14 +515,18 @@ function DesktopSummary({ categoryPath, locationPath, step = 0, onEdit }) {
   // ⚠️ 1-р алхамд ОГТ ГАРАХГҮЙ — сонгосон зам нь 1-р алхмын picker-ийн
   //    цэнхэр мөр ба `[data-picker-summary]` дээр харагдана ✓
   if (step < 1) return null;
-  /** ✏️ Засах товчны хэв — БҮХ мөрөнд ИЖИЛ (`mb-3` дор биш, жижиг pill) ✓ */
+  /** ✏️ Засах товчны хэв — БҮХ мөрөнд ИЖИЛ (`mb-3` дор биш, жижиг pill) ✓
+   *  🆕 2026-10-06 (6): НОГООН дэвсгэртэй болов (хэрэглэгчийн хүсэлт:
+   *  «Засах гэсэн товчийг ногоон дэвсгэр өнгөтэй болгочих») — `btn-success`-тэй
+   *  НЭГ ижил токен (`success` / `success-dark`) ⇒ апп даяар нэг ногоон ✓
+   *  ⚠️ Хэмжээ/байрлал/`type="button"`/`data-desktop-summary-edit` ХӨНДӨӨГДӨӨГҮЙ ✓ */
   const editBtn = (key, label) => (
     <button
       type="button"
       data-desktop-summary-edit={key}
       onClick={() => onEdit && onEdit(key === 'category' ? 'step-category' : 'step-location')}
       aria-label={`${label} засах`}
-      className="shrink-0 rounded-md border border-gray-300 bg-white px-1.5 py-0.5 text-[11px] font-semibold leading-none text-gray-600 transition hover:border-primary hover:text-primary"
+      className="shrink-0 rounded-md border border-success-dark bg-success px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white transition hover:bg-success-dark"
     >
       ✏️ Засах
     </button>

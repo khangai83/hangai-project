@@ -5191,6 +5191,8 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 
 
 | `scripts/test-rooms.mjs` | **44 тест** — `npm run test:rooms` (🆕 2026-10-03 (4): өрөөний **UI ЭРГЭЖ ИРСНИЙ** гэрээг хамгаална — `codeOnly()`-оор `data-room-filter`/`data-room-value`/`ROOM_OPTIONS`/`toggleRoomValue`/`toggleRooms`/`clearRooms`/`showRooms`/«Өрөөний тоо» **КОДОД БАЙНА** ✓ ба ⚠️ `data-room-filter` нь «Үнэ, ₮»-ний **ӨМНӨ** байрлана (`indexOf`) ✓; ⚠️ ХАДГАЛАГДСАН: `rooms: []`, `parseRoomList(sp.get('rooms'))`, `roomsUrlValue(filters.rooms)`, `roomsFilterLabel(filters.rooms)`; 📌 CDP скрипт нь `dom.chips === 5` (Орон сууц дээр чип 5 байна) ба `clickRoom(` (чип дарж URL/DB шалгах) замыг шаардана ✓. Мөн: `ROOM_VALUES`/`normalizeRoomValue` (`'5+'`/`+5`/`5` → `'5'`)/`parseRoomList` (эвдэрсэн `abc` хасаж, өсөх эрэмбээр)/`toggleRoomValue`/`isRoomsEmpty`/`countRooms`/`roomsUrlValue`/`roomsFilterLabel`/`roomsFilterDescriptor` ба `applyRoomFilter` fake builder-ээр — **`['5']`→`gte 5`, `['3']`→`in ['3']` (хуучин үр дүнтэй ЯГ ижил)**, `['4','5']`→`gte 4`, `['1','5']`→`or(…)`; ⚠️ 2026-09-30 (4)-д тестэд гарсан алдаа: `ROOM_OPTIONS`-ийн хүлээлт нь `'2 өрөө','2 өрөө'` гэж бичигдсэн байсныг `'1 өрөө'` болгож зассан ✓) |
+| `scripts/test-edit-btn.mjs` | 🆕 **13 тест** — `npm run test:edit-btn` (🆕 **2026-10-06 (6): ✅ «✏️ Засах» товчны НОГООН гэрээ** — ① `tailwind.config.js` → `success` токен (`#059669`/`#047857`/`#D1FAE5`) + `btn-success*` 3 сүүдэр (гэрэлтэлт `rgba(5,150,105,…)` ЯГ 2 газар) ② `app/globals.css` → `.btn-success` (`#10B981` → `#059669` → `#047857`) + hover/active ③ `MyListingsClient` карт ба `MyListingsStatsPanel` ЯГ 2 товч `btn-success`, 🖥 pill `bg-success` ④ ⚠️ `primary`/`secondary`/`danger` ХӨНДӨӨГДӨӨГҮЙ ба «Засах»-ийн ОЙР цэнхэр/бэх товч 0) |
+
 | `scripts/test-card.mjs` | 🆕 **16 тест** — `npm run test:card` (🆕 2026-10-03 (8): 📇 зарын картын ДИЗАЙНЫ гэрээ (**unegui.mn** хэв) — `codeOnly()`-оор ① `sm:h-[300px]` + `sm:flex-row` + `data-listing-card` ② зураг `sm:w-[42%]` + `sm:h-full` (мобайл `h-52`) ③ үнэ `text-[22px] font-extrabold` + ТОВЧ формат `shortPriceLabel` (🆕 2026-10-06: «760 сая ₮» · «44.8 сая ₮»; урт `priceLabel` карт дээр БАЙХГҮЙ) ④ гарчиг `line-clamp-2` ⑤ 🗑 тайлбар (`listing.description`) карт дээр БАЙХГҮЙ (🆕 2026-10-06 — хэрэглэгчийн хүсэлтээр ХАСАГДАВ) ⑥ нийтлэгчийн band (28px Avatar + ✅ 13) ⑦ 🖼 `1/N` (`imageCount > 1`) ⑧ 🎥 (`video_url`) ⑨ badge зөвхөн `isRealEstate` ⑩ мета: `timeAgo`/`formatAddress`/👁 ⑪ ❤️ toggle (`preventDefault`+`stopPropagation`) ⑫ `pr-20`/`sm:pr-0` нөөц ⑬ «Үнэ тохирно» ГАРАХГҮЙ (`hasRealPrice` хаалт, `negotiableNote` БАЙХГҮЙ) ⑭ НЭГ `<Link>` ⑮ `getPropertyIcon` placeholder ⑯ HomeClient `attrsLine`+`author` — БҮГД эх кодоор ✓) |
 | `scripts/cdp-job-chips.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:chips` (**54 шалгалт · ✅ 54 OK / 0 FAIL**, 2026-10-05 — 🆕 2026-10-03 (11): 💼 АЖЛЫН ЗАРЫН 4 ЧИП ТАЛБАР: ① демо хэрэглэгчээр нэвтэрч `/listings/new` → 💼 → 3-р алхам ② 4 блок `[data-attr-field]` (jobType 5 · experience 2 · advertiser 3 · jobLevel 5 чип) ЧИП ба 💰 `salaryType` `<select>` ХЭВЭЭР ③ чип дарах → `aria-pressed=true` + `chip-toggle-active` + блок бүрд ЯГ 1 (mutual exclusive) ④ идэвхтэй чип дээр дахин дарах → **ЦУЦЛАГДАНА** (бусад 3 чип + 💰 `<select>` хөндөгдөхгүй) ④b `?edit=<id>` (засах горим — чипүүд DB-ээс УРЬДЧИЛАН сонгогдсон эсэх; демо хэрэглэгчид ажлын зар байхгүй бол SKIP) ⑤ 📱 390px — 4 талбар БҮГД хүрэх (нэг дэлгэцэд НЭГ), `flex-wrap`, гүйлт 0 (`docW === vw`) ⑥ хайлтын хуудас `?section=jobs&type=…` — 🆕 **2026-10-05 (42): 🕒/📊/📈 нь САЙДБАРТ БИШ, `#filter-bar`-т 3 PILL** (`[data-filter-pill]` jobType · experience · jobLevel; ⌄ панель `[data-filter-panel]`; дотор нь `[data-attr-filter]` + `data-attr-multi="true"`; чип 12 = 5+2+5; `role="group"`; ⛔ панель дотор `<select>` БАЙХГҮЙ) ба **сайдбарт attr шүүлт 0** (`aside [data-attr-filter]` 0 — зөвхөн «Байршил» + «Цалин, ₮»), форм блок 0, байрлал нь `#listing-results` доторх «Эрэмбэлэх»-ийн ДООР (🆕 2026-10-03 (13): aside нь ХЭСГИЙН түвшинд ч гардаг болов — энэ шалгалт нь формтой жиших тул `&type=` ХЭВЭЭР ✓) ⑥b 🆕 (42): pill НЭЭЖ (⌄ панель `invisible` үед текст уншигдахгүй тул) чип дарж `?attr_jobType=Бүтэн цагийн,Цагийн` (**2 чип ЗЭРЭГ идэвхтэй** — ⛔ хуучин нэг сонголттой зан төлөв БАЙХГҮЙ), badge «2» + «2 сонгосон» + «✕ Цуцлах» → URL-ээс түлхүүр АРИЛНА; 📊 ч 2 утга ЗЭРЭГ (`?attr_experience=Шаардлагагүй,Шаардлагатай`), 📈 ХӨНДӨГДӨХГҮЙ ⑦ JS exception/console.error **0**) |
 | `scripts/test-jobs.mjs` | **20 тест** — `npm run test:jobs` (🆕 2026-10-03 (9), 🆕 **2026-10-05 (42)**: 💼 АЖЛЫН ЗАРЫН ГЭРЭЭ — `lib/locationData.js` ШУУД + `codeOnly()` эх кодоор ① форм талбарууд ЯГ 5 — `['jobType','experience','advertiser','jobLevel','salaryType']` (🆕 (10): 🏢 `company` / 💼 `position` ХАСАГДАВ) ② 🕒 «Ажлын цаг» 5 сонголт + **`chips` + `multi` + `filterBar`** (🆕 (42)) ③ 📊 Туршлага/🏷️ Зарлагч/📈 Мэргэжлийн түвшин/💰 Цалингийн төрөл (📊/📈 ч **`chips` + `multi` + `filterBar`** — 🆕 (42)) ④ 🗑 salary/education/workMode/expiry ХАСАГДАВ ⑤ **хайлтын 3 шүүлт — ГУРВУУЛАА `chips` + `multi` + `filterBar`** (`jobType` · `experience` · `jobLevel`; 🆕 (42)) ба 🆕 `HomeClient`-ийн `attrFilters.filter((f) => f.chips && f.multi && f.filterBar)` / `.filter((f) => !f.filterBar)` хоёр мөр + `data-filter-pill`/`data-filter-panel` дэгээ (хатуу жагсаалт `FILTER_BAR_ATTR_KEYS` БАЙХГҮЙ ✓) ⑥ `priceWord`/`isJobsSection` ⑦ `format.js` `NEGOTIABLE_SALARY_LABEL`+`negotiableLabel` ⑧ форм «Цалингийн хэмжээ»+«Цалин тохиролцоно» ⑨ `f.chips` салбар (`chip-toggle`/`data-attr-value`) ⑩ `priceSideBlock` + ажилд attr шүүлтүүдийн ӨМНӨ дараалал (regex + `indexOf`) ⑪ картын мөр ⑫ `getAttrRows` `salary`/`company`/`position` МӨР БАЙХГҮЙ ⑬ seed шинэ утгууд ✓) |
@@ -6332,6 +6334,9 @@ scripts/seed-supabase.js, check-supabase.js, check-verify-mn.js
 | `primary.light` | `#dbeafe` | Зөөлөн дэвсгэр (сонгосон чип, тооны badge) |
 | `secondary.DEFAULT` | `#2B2622` | Хоёрдогч «бэх» товч (Таалагдсан / Нэвтрэх / хэрэглэгчийн нэр) |
 | `secondary.dark` | `#12100E` | Хоёрдогч текст / accent |
+| `success.DEFAULT` 🆕 | `#059669` | **«✏️ Засах» товч** (`.btn-success`) — 2026-10-06 (6) |
+| `success.dark` 🆕 | `#047857` | Засах товчны hover / градиентийн доод ирмэг |
+| `success.light` 🆕 | `#D1FAE5` | Зөөлөн ногоон дэвсгэр (badge/чип — зориулалт нь `primary.light`-ийн адил) |
 
 > 📝 **ТҮҮХ (админд):** 2026-09-25-нд брэнд өнгийг түр зуур iPhone 17-ийн
 > «Cosmic Orange» `#F77E2D` болгож туршсан. **Гэвч хэрэглэгчийн үнэлгээгээр
@@ -6348,6 +6353,14 @@ scripts/seed-supabase.js, check-supabase.js, check-verify-mn.js
 > `secondary`-г `{ DEFAULT: '#059669', dark: '#047857' }` болгож,
 > `.btn-secondary` градиент + `btn-secondary*` сүүдрийн rgba-г ногоон болгоход
 > хангалттай (README-гийн өмнөх хувилбарт утгууд бий).
+>
+> 🆕 **2026-10-06 (6) — НОГООН НЭМЭГДЭВ (зөвхөн «✏️ Засах» товчид):**
+> хэрэглэгчийн хүсэлт «Засах гэсэн товчийг ногоон дэвсгэр өнгөтэй болгочих» ⇒
+> `secondary`-г ХӨНДӨХГҮЙГЭЭР **тусдаа семантик токен** нэмэгдэв —
+> `tailwind.config.js` → `success: { DEFAULT: '#059669', dark: '#047857',
+> light: '#D1FAE5' }` + `btn-success` / `btn-success-hover` / `btn-success-active`
+> (rgba нь `#059669` = 5,150,105), `app/globals.css` → **`.btn-success`**.
+> Утга нь дээрх жорынхтой ЯГ ИЖИЛ (зөвхөн нэр нь `secondary` БИШ `success`).
 
 #### 🧩 Хэмжээ/фонтын нэгдэл — Header
 
@@ -6406,6 +6419,8 @@ scripts/seed-supabase.js, check-supabase.js, check-verify-mn.js
 /* .btn (суурь)  → rounded-full, font-semibold, transition-all, disabled-д 55% */
 .btn-primary   /* from #4B8EF8 via #3B82F6 → to #1D4ED8  (брэнд цэнхэр) */
 .btn-secondary /* from #3D3730 via #2B2622 → to #1C1815  (дулаан бэх) */
+.btn-success   /* from #10B981 via #059669 → to #047857  (НОГООН — «✏️ Засах»,
+                  2026-10-06 (6); hover → to #036B4F) */
 .btn-danger    /* from #ef4444 → to #b91c1c  (улаан) */
 .btn-outline   /* white → gray-50, саарлаас цагаан ирмэгтэй */
 .btn-ghost     /* white/70, маш зөөлөн */
@@ -6427,6 +6442,7 @@ boxShadow: {
   btn: '…', 'btn-hover': '…', 'btn-active': '…',
   'btn-primary':   '…', 'btn-primary-hover':   '…', 'btn-primary-active':   '…',
   'btn-secondary': '…', 'btn-secondary-hover': '…', 'btn-secondary-active': '…',
+  'btn-success':   '…', 'btn-success-hover':   '…', 'btn-success-active':   '…',   // 🆕 (6)
   'btn-danger':    '…', 'btn-danger-hover':    '…', 'btn-danger-active':    '…',
   chip: '…',   // идэвхтэй сегмент-чип
 }
@@ -6440,6 +6456,31 @@ boxShadow: {
 | `enabled:hover` | `-translate-y-0.5` (дээш өргөгдөнө) + сүүдэр томорно |
 | `enabled:active` | `translate-y-0` (дарагдна) + **дотогшоо** сүүдэр (inset) |
 | `disabled` | 55% тунгалаг, сүүдэргүй, хөдөлгөөнгүй |
+
+#### ✅ «✏️ Засах» товч — НОГООН (2026-10-06 (6))
+
+Хэрэглэгчийн хүсэлт: **«Засах гэсэн товчийг ногоон дэвсгэр өнгөтэй болгочих».**
+
+| # | Газар | Урьд нь | Одоо |
+|---|---|---|---|
+| ① | `/my-listings` — зарын КАРТ (`MyListingsClient.jsx`) | `btn btn-secondary btn-sm` (хар/бэх) | **`btn btn-success btn-sm`** |
+| ② | `/my-listings` → 📈 Статистик — 🏆 Онцлох (`MyListingsStatsPanel.jsx`) | `btn btn-primary btn-sm` (цэнхэр) | **`btn btn-success btn-sm`** |
+| ③ | `/my-listings` → 📈 Статистик — зар тус БҮРИЙН мөр | `btn btn-primary btn-sm` (цэнхэр) | **`btn btn-success btn-sm`** |
+| ④ | 🖥 Зар нэмэх формысн хураангуйн жижиг pill (`AddListingClient.jsx`) | цагаан/саарал (хүрээтэй) | **`bg-success` + `border-success-dark` + цагаан текст** (hover → `bg-success-dark`) |
+
+**Механизм:** 🆕 семантик токен + класс — `tailwind.config.js` →
+`success` (`#059669`/`#047857`/`#D1FAE5`) ба `btn-success*` сүүдэр;
+`app/globals.css` → `.btn-success` (`from-[#10B981] via-[#059669] to-[#047857]`,
+hover `to-[#036B4F]`, `enabled:hover:-translate-y-0.5`, `enabled:active:*`).
+
+⚠️ **Хамрах хүрээ — зөвхөн ӨНГӨ:** `type="button"`, `data-desktop-summary-edit`,
+`aria-label`, хэмжээ (`btn-sm`), байрлал, `onClick` (`?edit=<id>`) **ХӨНДӨӨГДӨӨГҮЙ** ✓
+🚫 **DB/API/payload/URL/query/MIGRATION ХӨНДӨӨГДӨӨГҮЙ** ✓
+⚠️ `secondary` (❤️ Таалагдсан / 🔑 Нэвтрэх — `btn-outline`) · `btn-primary`
+(➕ Зар нэмэх / 🔄 Дахин оролдох) · `btn-danger` (🗑 **Устгах — улаан хэвээр**)
+**хөндөгдөөгүй** ⇒ «Засах ногоон · Устгах улаан» гэсэн нэг ойлгомжтой ялгаа үүсэв.
+🧪 `npm run test:edit-btn` — **13 шалгалт** (энэ гэрээг түгжинэ).
+🔍 Хайх үг: `btn-success`, `success`, `data-desktop-summary-edit`, `test:edit-btn`.
 
 ### Сегмент-контрол (`/my-listings` табууд + статистикийн хугацаа)
 

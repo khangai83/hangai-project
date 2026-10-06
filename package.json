@@ -24,6 +24,7 @@
     "test:rooms": "node scripts/test-rooms.mjs",
     "test:districts": "node scripts/test-districts.mjs",
     "test:card": "node scripts/test-card.mjs",
+    "test:edit-btn": "node scripts/test-edit-btn.mjs",
     "test:jobs": "node scripts/test-jobs.mjs",
     "test:payments": "node scripts/test-payments.mjs",
     "test:attrMulti": "node scripts/test-attr-multi.mjs",

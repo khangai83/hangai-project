@@ -207,7 +207,10 @@ export default function MyListingsClient() {
                       </div>
                     </Link>
                     <div className="flex w-full flex-row gap-2 sm:w-auto sm:flex-col">
-                      <button className="btn btn-secondary btn-sm" onClick={() => openEdit(l)}>✏️ Засах</button>
+                      {/* 🆕 2026-10-06 (6): «✏️ Засах» НОГООН болов — `btn-success`
+                          (хэрэглэгчийн хүсэлт ✓). 🗑 Устгах нь улаан ХЭВЭЭР тул
+                          нэг харцаар ялгагдана. */}
+                      <button className="btn btn-success btn-sm" onClick={() => openEdit(l)}>✏️ Засах</button>
                       <button className="btn btn-danger btn-sm" onClick={() => handleDelete(l)}>🗑 Устгах</button>
                     </div>
                   </div>

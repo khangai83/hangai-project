@@ -482,9 +482,11 @@ export default function MyListingsStatsPanel() {
                 <p className="text-2xl font-bold text-red-500">{formatCount(topLikes)}</p>
                 <p className="text-[11px] text-gray-500">❤️</p>
               </div>
+              {/* 🆕 2026-10-06 (6): НОГООН (`btn-success`) — «✏️ Засах» нь улаан
+                  «🗑 Устгах»-тай хосоор харагддаг тул апп даяар нэг өнгөтэй ✓ */}
               <button
                 type="button"
-                className="btn btn-primary btn-sm"
+                className="btn btn-success btn-sm"
                 onClick={() => handleEdit(top)}
                 disabled={busyId === top.id}
                 title="Энэ зарыг засах"
@@ -569,9 +571,10 @@ export default function MyListingsStatsPanel() {
                     <MiniBars values={l.spark.slice(-7)} />
                     <p className="mt-0.5 text-center text-[10px] text-gray-400">сүүлийн 7 хоног</p>
                   </div>
+                  {/* 🆕 2026-10-06 (6): НОГООН (`btn-success`) — «🏆 Онцлох»-той ИЖИЛ ✓ */}
                   <button
                     type="button"
-                    className="btn btn-primary btn-sm"
+                    className="btn btn-success btn-sm"
                     onClick={() => handleEdit(l)}
                     disabled={busyId === l.id}
                     title="Энэ зарыг засах"
