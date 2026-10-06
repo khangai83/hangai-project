@@ -15,7 +15,7 @@ import CarPicker from './CarPicker';
 //    `currentColor` SVG: өнгө нь идэвхтэй/идэвхгүй төлвөөр солигдоно,
 //    OS бүр дээр ЯГ ижил харагдана ✓ (`components/HeaderIcons.jsx`)
 import { ChevronDownIcon, ListIcon, PinIcon, SearchIcon } from './HeaderIcons';
-import { useToast, useUI, useHeaderSlot } from './AppProviders';
+import { useToast, useUI, useAuth, useHeaderSlot } from './AppProviders';
 import {
   fetchListings, fetchPropertyTypeCounts, fetchProfilesByIds,
   LISTINGS_PAGE_SIZE,
@@ -63,6 +63,15 @@ import { AREA_BOUNDS, FLOOR_BOUNDS, buildYearBounds, formatGroupedInput, priceBo
 // 🔀 Эрэмбэлэх сонголт (eBay-ийн «Sort: Best Match ▾» шиг) — цэвэр логик нь
 //    `lib/sortOptions.mjs`, DB тал нь `lib/queries.js → sortOrders()`
 import { DEFAULT_SORT, SORT_OPTIONS, normalizeSort } from '../lib/sortOptions.mjs';
+// 🔖 ХАДГАЛСАН ХАЙЛТ (2026-10-06, хэрэглэгчийн хүсэлт: «unegui.mn шиг хайлтаа
+//    гоё хадгалдаг болъё») — үр дүнгийн дээд мөрөнд «🔖 Хадгалах» товч.
+//    ⚠️ Хадгалалт нь нэвтэрсэн бол DB (`saved_searches` — 0031), зочин бол
+//       localStorage (`lib/savedSearches.js → useSavedSearches`, hybrid ✓)
+//    ⚠️ «хадгалагдсан эсэх» ба «хадгалах утгатай эсэх» шалгалт нь
+//       `lib/savedSearch.mjs` (цэвэр логик, нэг эх сурвалж) — энэ файлд
+//       дүрэм ДАХИН БИЧИХГҮЙ ✓
+import { useSavedSearches } from '../lib/savedSearches';
+import { isSaveableSearch } from '../lib/savedSearch.mjs';
 // 🛏 ӨРӨӨНИЙ ТОО — ОЛОН СОНГОЛТ — цэвэр логик нь `lib/roomFilter.mjs`
 //    (URL, DB, breadcrumb бүгд тэр модулийг хэрэглэнэ) ✓
 // 🆕 2026-10-03 (4): ХЭРЭГЛЭГЧИЙН ХҮСЭЛТЭЭР UI ЭРГЭЖ ИРЭВ —
@@ -818,6 +827,18 @@ export default function HomeClient() {
   //    `homeSearchBar`-аар дүүргэнэ (AppProviders нь зөвхөн байр өгнө ✓)
   const { setHeaderSlot } = useHeaderSlot();
   const router = useRouter();
+  // 🔖 ХАДГАЛСАН ХАЙЛТ (2026-10-06) — нэвтэрсэн бол DB, зочин бол localStorage.
+  //    ⚠️ `user` нь `useSavedSearches`-д хэрэгтэй (аль хадгалалт вэ гэдгийг
+  //       шийднэ) — `useAuth()` нь root provider-оос ирнэ ✓
+  const { user } = useAuth();
+  const savedSearches = useSavedSearches(user);
+  /**
+   * 🔗 Одоогийн хайлтын URL — «🔖 Хадгалах» товч ЯГ ҮҮНИЙГ хадгална.
+   * ⚠️ Доорх URL-шинэчлэх эффект нь адресны мөрийг бичдэг тул тэр `next`
+   *    утгыг энд толь болгож хадгална (товч ба адрес ЗААВАЛ ижил ✓; SSR
+   *    дээр `window` байхгүй тул анхдагч нь `''`).
+   */
+  const [currentUrl, setCurrentUrl] = useState('');
   // 📍 Байршлын пикер (modal) нээлттэй эсэх (2026-10-04 (27))
   const [locOpen, setLocOpen] = useState(false);
   // 🏷️🚙 Машины пикерийн нээлттэй төлөв (2026-10-04 (35)) — 📍 `locOpen`-ийн
@@ -1173,6 +1194,9 @@ export default function HomeClient() {
     const qs = params.toString();
     const next = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
     const current = `${window.location.pathname}${window.location.search}`;
+    // 🔖 Товчны хадгалах утга (адресны мөртэй ЯГ ИЖИЛ) — доорх `router.replace`
+    //    бол зөвхөн харагдацын синк; энэ нь React-ийн төлөв ✓
+    setCurrentUrl(next);
     if (next !== current) router.replace(next, { scroll: false });
   }, [urlReady, category, section, query, filters, view, page, sort, router]);
 
@@ -1751,6 +1775,21 @@ export default function HomeClient() {
               : 'Бүх зар')
         // ⚠️ Бусад хэсэг (0016): «Автомашин», «Ажлын зар», «Компьютер» …
         : (category === 'rent' ? `${sec.label} түрээслүүлнэ` : sec.label);
+
+  // 🔖 «Хадгалах» товчны төлөв (2026-10-06, unegui.mn шиг):
+  //    • `currentSearchSaved` — одоогийн хайлт аль хэдийн хадгалагдсан эсэх
+  //    • `canSaveCurrentSearch` — хадгалах УТГА байгаа эсэх (зөвхөн `page`/
+  //      `view`/`sort` бол «Бүх зар» тул хадгалах утгагүй ✗ → товч идэвхгүй)
+  const currentSearchSaved = !!currentUrl && savedSearches.isSaved(currentUrl);
+  const canSaveCurrentSearch = !!currentUrl && isSaveableSearch(currentUrl);
+
+  /** 🔖 Одоогийн хайлтыг хадгалах — давхардвал сануулна (алдаа БИШ → 'info') */
+  const onSaveSearch = async () => {
+    const res = await savedSearches.save(currentUrl);
+    if (res.ok) showToast('🔖 Хайлт хадгалагдлаа — «Таалагдсан хайлтууд»-аас харна уу');
+    else if (res.reason === 'duplicate') showToast('Энэ хайлт аль хэдийн хадгалагдсан байна', 'info');
+    else showToast('Хадгалах хайлт алга — эхлээд шүүлт эсвэл хайлтын үг тавина уу', 'error');
+  };
 
   const hasFilters =
     Object.entries(filters).some(([, v]) => !isFilterValueEmpty(v)) ||
@@ -3291,6 +3330,28 @@ export default function HomeClient() {
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
+                {/* 🔖 ХАДГАЛСАН ХАЙЛТ (2026-10-06, unegui.mn шиг) — одоогийн
+                    шүүлтээ хадгалаад «Таалагдсан хайлтууд»-аас эргэн харна ✓
+                    ⚠️ Энэ нь ШҮҮЛТ БИШ (үр дүн өөрчлөгдөхгүй) тул чипүүдийн
+                       тоонд ОРОХГҮЙ; CDP/тестийн тогтвортой дэгээ:
+                       `[data-save-search]` (товчны бичиг: «🔖 Хадгалах» ↔
+                       «✓ Хадгалагдсан», `aria-pressed`) ✓
+                    ⚠️ Хадгалах утга байхгүй (зөвхөн «Бүх зар») бол товч
+                       ОГТ ГАРАХГҮЙ — `canSaveCurrentSearch` ✓ */}
+                {canSaveCurrentSearch && (
+                  <button
+                    type="button"
+                    data-save-search
+                    aria-pressed={currentSearchSaved}
+                    onClick={onSaveSearch}
+                    disabled={currentSearchSaved}
+                    title={currentSearchSaved ? 'Энэ хайлт хадгалагдсан байна' : 'Одоогийн хайлтыг хадгалах'}
+                    className={currentSearchSaved ? 'btn btn-outline btn-sm' : 'btn btn-secondary btn-sm'}
+                  >
+                    {currentSearchSaved ? '✓ Хадгалагдсан' : '🔖 Хадгалах'}
+                  </button>
+                )}
+
                 {/* 🗑 2026-10-03 (13): «💡 Төрөл сонгоход дэлгэрэнгүй хайлт
                     харагдана» зөвлөмж ХАСАГДАВ — хэрэглэгчийн хүсэлтээр
                     панель нь «Бүх зар» (1-р түвшин) ба хэсэг (2-р түвшин) дээр

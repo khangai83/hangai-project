@@ -9,6 +9,7 @@ import { normalizeError } from '../lib/errors';
 import { useFavorites, removeFavorite, clearFavorites } from '../lib/favorites';
 import { downloadCsv, printTablePdf } from '../lib/exporters';
 import { formatPrice, priceLabel, getCategoryLabel, getFloorLabel } from '../lib/format';
+import SavedSearchesClient from './SavedSearchesClient';
 
 /** Экспортод (Excel/PDF) гарах баганын тодорхойлолт */
 function exportColumns(origin) {
@@ -45,7 +46,7 @@ function countLabel(savedCount, foundCount) {
   return `${savedCount} зар хадгалагдсан (${foundCount} нь олдсон)`;
 }
 
-export default function FavoritesClient() {
+function FavoritesAdsPanel() {
   const { showToast } = useToast();
   const { user } = useAuth();
   const { openAuth } = useUI();
@@ -118,10 +119,9 @@ export default function FavoritesClient() {
   };
 
   return (
-    <div className="page-container">
+    <div>
       <div className="mt-2 mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">❤️ Таалагдсан зарууд</h1>
           <p className="text-sm text-gray-500">
             {countLabel(ids.length, listings.length)}
             {total > 0 && listings.length > 0 && <> · Нийт үнэ ₮{formatPrice(total)}</>}
@@ -211,6 +211,57 @@ export default function FavoritesClient() {
           </>
         )}
       </p>
+    </div>
+  );
+}
+
+
+/**
+ * 🗂 `/favorites` ХУУДСНЫ ХҮРЭЭ — 2 таб (unegui.mn-ийн «Таалагдсан зарууд /
+ * Таалагдсан хайлтууд»-ийн ЯГ ИЖИЛ бүтэц, 2026-10-06):
+ *   ① ❤️ Таалагдсан зарууд   — `FavoritesAdsPanel` (хуучин агуулга ХЭВЭЭР ✓)
+ *   ② 🔖 Таалагдсан хайлтууд — `SavedSearchesClient` (хадгалсан хайлтууд)
+ * ⚠️ Аль ч таб сонгогдоогүй байх боломжгүй — анхдагч нь `ads` (хуучин зан ✓)
+ */
+export default function FavoritesClient() {
+  const [tab, setTab] = useState('ads'); // 'ads' | 'searches'
+
+  // 🎨 Таб тус бүрийн товчны класс (идэвхтэй = брэнд өнгө + 2px доод шугам)
+  const tabClass = (active) =>
+    `-mb-px border-b-2 px-4 py-3 text-[15px] font-semibold transition ${
+      active
+        ? 'border-primary text-primary'
+        : 'border-transparent text-gray-500 hover:text-gray-700'
+    }`;
+
+  return (
+    <div className="page-container">
+      <div className="mt-2 flex border-b border-gray-200" role="tablist" aria-label="Таалагдсан">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'ads'}
+          data-fav-tab="ads"
+          className={tabClass(tab === 'ads')}
+          onClick={() => setTab('ads')}
+        >
+          ❤️ Таалагдсан зарууд
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'searches'}
+          data-fav-tab="searches"
+          className={tabClass(tab === 'searches')}
+          onClick={() => setTab('searches')}
+        >
+          🔖 Таалагдсан хайлтууд
+        </button>
+      </div>
+
+      <div className="pt-4">
+        {tab === 'ads' ? <FavoritesAdsPanel /> : <SavedSearchesClient />}
+      </div>
     </div>
   );
 }
