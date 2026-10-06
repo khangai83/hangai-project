@@ -50,7 +50,7 @@ import {
  *    хэдийн байгаа багана) руу хадгалагдана ✓ (migration 0)
  *    ⚠️ Цэвэр дүрэм нь `lib/locationGeo.mjs` (`npm run test:location-map`)
  */
-import { coordOf, hasCoords, districtCenter, sameCoord, mapCenterFor, PICK_ZOOM, DEFAULT_MAP_ZOOM } from '../lib/locationGeo.mjs';
+import { coordOf, hasCoords, districtCenter, khorooCenter, autoCenterFor, sameCoord, mapCenterFor, PICK_ZOOM, DEFAULT_MAP_ZOOM } from '../lib/locationGeo.mjs';
 /**
  * 🎯 АНГИЛАЛ УРЬДЧИЛАН БӨГЛӨХ (2026-10-06) — «Зар нэмэх» товч (`AppProviders`)
  *    нь хэрэглэгч аль ангилалд явж байсныг URL-д (`?section=…&category=…&type=…`)
@@ -238,6 +238,22 @@ function listingToForm(l) {
 function centerPatch(city, district) {
   const c = districtCenter(city, district);
   return c ? { latitude: c.lat, longitude: c.lng } : { latitude: null, longitude: null };
+}
+
+/**
+ * 🗺 Хороо сонгомогц СОЛБИЦЛЫГ тухайн хорооны ОЙРОЛЦОО төв рүү шилжүүлэх
+ *    нэмэлт (2026-10-06 — 4 дэх засвар, хэрэглэгчийн хүсэлт: «хороо
+ *    dropdown-той холбож, ойролцоо төвд ойртуулах»).
+ *    ⇒ Хэрэглэгч дүүрэг + хороогоо сонгомогц зар нь зөвхөн ДҮҮРГИЙН төвд БИШ,
+ *      тухайн ХОРООНЫ ойролцоо цэг дээр гарна ✓ (хороо тус бүр ялгаатай цэг)
+ * ⚠️ Хороо тодорхойгүй бол дүүргийн төв хэвээр (`centerPatch`) — солбицол
+ *    алдагдахгүй ✓
+ * @param {string} city @param {string} district @param {string} khoroo
+ * @returns {{latitude: number|null, longitude: number|null}}
+ */
+function khorooPatch(city, district, khoroo) {
+  const c = khorooCenter(city, district, khoroo);
+  return c ? { latitude: c.lat, longitude: c.lng } : centerPatch(city, district);
 }
 
 /**
@@ -1285,8 +1301,20 @@ export default function AddListingClient() {
   const changeDistrict = (district) => setForm((f) => ({
     ...f, district, khoroo: '', ...centerPatch(f.city, district),
   }));
-  /** 📍 Хороо солиход пин ХЭВЭЭР (дүүрэг дотор байгаа тул хүчингүй болохгүй ✓) */
-  const changeKhoroo = (khoroo) => setForm((f) => ({ ...f, khoroo }));
+  /**
+   * 🗺 Хороо солиход солбицлыг ТУХАЙН ХОРООНЫ ойролцоо төв рүү шилжүүлнэ
+   *    (2026-10-06 — 4 дэх засвар, хэрэглэгчийн хүсэлт «хороо dropdown-той
+   *    холбож, ойролцоо төвд ойртуулах»).
+   * ⚠️ Хэрэглэгч өөрөө пин ТАВЬСАН бол (солбицол нь авто төвөөс ЯЛГААТАЙ)
+   *    түүнийг ХӨНДӨХГҮЙ — зөвхөн хороог солино ✓ (пин давамгайлна)
+   */
+  const changeKhoroo = (khoroo) => setForm((f) => {
+    const cur = coordOf(f);
+    const isAuto = !cur || sameCoord(cur, autoCenterFor(f));
+    return isAuto
+      ? { ...f, khoroo, ...khorooPatch(f.city, f.district, khoroo) }
+      : { ...f, khoroo };
+  });
 
   const districts = getDistricts(form.city);
   const khoroos = getKhoroos(form.city, form.district);
@@ -1321,13 +1349,14 @@ export default function AddListingClient() {
   /** 🗑 Пингүй болгох (солбицлыг цэвэрлэнэ) */
   const clearMapPick = () => setForm((f) => ({ ...f, latitude: null, longitude: null }));
   /**
-   * 🗺 Одоогийн солбицол нь ЗӨВХӨН дүүргийн төв (хэрэглэгч пин тавиагүй)
-   *    эсэх — UI дээр «ойролцоо» гэж ялгаж харуулахад хэрэглэнэ ✓
+   * 🗺 Одоогийн солбицол нь АВТОМАТ (ойролцоо) төв — хороо/дүүрэг/хот —
+   *    эсэх (хэрэглэгч пин тавиагүй). UI дээр «(ойролцоо)» гэж ялгаж
+   *    харуулахад хэрэглэнэ ✓ (2026-10-06: хороо сонгомогц ч ойролцоо)
    */
   const mapPickIsApprox = (() => {
     const c = coordOf(form);
     if (!c) return false;
-    return sameCoord(c, districtCenter(form.city, form.district));
+    return sameCoord(c, autoCenterFor(form));
   })();
 
   /* ==========================================================================
@@ -2721,7 +2750,7 @@ export default function AddListingClient() {
                 <p className="mt-1.5 text-[12.5px] leading-snug text-gray-500">
                   Газрын зураг дээр пин тавибал зар ЗӨВ байрлалд харагдана.
                   {mapPickIsApprox
-                    ? ' Одоогоор дүүргийн төвд ойролцоогоор байна — нарийвчлах бол газрын зураг дээр дарна уу.'
+                    ? ` Одоогоор ${form.khoroo ? 'сонгосон хорооны' : form.district ? 'сонгосон дүүргийн' : 'хотын'} төвд ойролцоогоор байна — нарийвчлах бол газрын зураг дээр дарна уу.`
                     : ''}
                 </p>
               </div>

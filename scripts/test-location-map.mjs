@@ -32,9 +32,9 @@ import assert from 'node:assert/strict';
 import {
   UB_DISTRICT_CENTERS, CITY_CENTERS, DISTRICT_CENTERS,
   DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, PICK_ZOOM, PICK_ZOOM_FOUND,
-  GEOCODE_ENDPOINT, geocodeUrl, parseGeocodeResults,
+  KHOROO_SPREAD, GEOCODE_ENDPOINT, geocodeUrl, parseGeocodeResults,
   isValidCoord, coordOf, hasCoords, districtCenter, cityCenter,
-  mapCenterFor, sameCoord,
+  khorooNumber, khorooCenter, autoCenterFor, mapCenterFor, sameCoord,
 } from '../lib/locationGeo.mjs';
 import {
   DEFAULT_CITY, noLocationPatch, bankedLocation, restoreLocationPatch,
@@ -149,6 +149,59 @@ t('② `mapCenterFor` — ⓵ пин → ⓶ дүүрэг → ⓷ хот → ⓸
   assert.deepEqual({ lat: none.lat, lng: none.lng }, DEFAULT_MAP_CENTER);
 });
 
+t('② `mapCenterFor` — хороо сонгосон бол ХОРООНЫ ойролцоо төв (дүүрэг БИШ)', () => {
+  const k = mapCenterFor({ city: 'Улаанбаатар', district: 'Хан-Уул', khoroo: '23-р хороо' });
+  assert.equal(k.exact, false, 'пингүй тул ойролцоо');
+  const base = UB_DISTRICT_CENTERS['Хан-Уул'];
+  assert.ok(!sameCoord({ lat: k.lat, lng: k.lng }, base), 'хороо сонгосон ч дүүргийн төв дээрээ байна ✗');
+  const dLat = Math.abs(k.lat - base.lat);
+  const dLng = Math.abs(k.lng - base.lng);
+  assert.ok(dLat <= KHOROO_SPREAD && dLng <= KHOROO_SPREAD * 1.6, 'ойролцоо биш (хэт хол)');
+});
+
+t('②′ `khorooNumber` — нэрнээс дугаар унших («23-р хороо» → 23)', () => {
+  assert.equal(khorooNumber('23-р хороо'), 23);
+  assert.equal(khorooNumber('1-р хороо'), 1);
+  assert.equal(khorooNumber(' 7-р хороо '), 7);
+  assert.equal(khorooNumber(''), null);
+  assert.equal(khorooNumber('хороо'), null);
+  assert.equal(khorooNumber(null), null);
+  assert.equal(khorooNumber(undefined), null);
+  assert.equal(khorooNumber(5), null, 'зөвхөн мөр л уншина');
+});
+
+t('②′ `khorooCenter` — дүүрэг/хороо тодорхойгүй бол `null`', () => {
+  assert.equal(khorooCenter('Улаанбаатар', 'Хан-Уул', ''), null);
+  assert.equal(khorooCenter('Улаанбаатар', '', '23-р хороо'), null);
+  assert.equal(khorooCenter('', 'Хан-Уул', '5-р хороо'), null);
+  assert.equal(khorooCenter('Улаанбаатар', 'Байхгүй-дүүрэг', '3-р хороо'), null);
+});
+
+t('②′ `khorooCenter` — хороо бүр ЯЛГААТАЙ · ойролцоо · Монгол дотор · тогтвортой', () => {
+  const seen = new Set();
+  ['1-р хороо', '5-р хороо', '12-р хороо', '23-р хороо', '43-р хороо'].forEach((k) => {
+    const c = khorooCenter('Улаанбаатар', 'Хан-Уул', k);
+    assert.ok(insideMN(c), `${k} Монголын гадна: ${JSON.stringify(c)}`);
+    seen.add(`${c.lat.toFixed(6)},${c.lng.toFixed(6)}`);
+  });
+  assert.equal(seen.size, 5, 'хороонууд нэг цэг дээр бөөгнөрсөн ✗');
+  // Тогтвортой (deterministic) — дахин дуудвал ЯГ ижил ✓
+  const a = khorooCenter('Улаанбаатар', 'Хан-Уул', '23-р хороо');
+  const b = khorooCenter('Улаанбаатар', 'Хан-Уул', '23-р хороо');
+  assert.deepEqual(a, b, 'нэг хороо өөр өөр цэг өгч байна ✗');
+});
+
+t('②′ `autoCenterFor` — хороо → дүүрэг → хот → анхдагч (дараалал)', () => {
+  assert.deepEqual(
+    autoCenterFor({ city: 'Улаанбаатар', district: 'Хан-Уул', khoroo: '9-р хороо' }),
+    khorooCenter('Улаанбаатар', 'Хан-Уул', '9-р хороо'),
+    'хороо сонгосон бол хорооны төв байх ёстой',
+  );
+  assert.deepEqual(autoCenterFor({ city: 'Улаанбаатар', district: 'Хан-Уул' }), UB_DISTRICT_CENTERS['Хан-Уул']);
+  assert.deepEqual(autoCenterFor({ city: 'Архангай' }), CITY_CENTERS['Архангай']);
+  assert.deepEqual(autoCenterFor({}), DEFAULT_MAP_CENTER);
+});
+
 t('② `sameCoord` — ойролцоо солбицлыг илрүүлнэ', () => {
   assert.equal(sameCoord({ lat: 47.876, lng: 106.91 }, { lat: 47.876, lng: 106.91 }), true);
   assert.equal(sameCoord({ lat: 47.876, lng: 106.91 }, { lat: 47.9, lng: 106.9 }), false);
@@ -235,6 +288,16 @@ t('④ `changeDistrict` — `centerPatch`-аар дүүргийн ТӨВ рүү 
   assert.ok(src.includes('function centerPatch(city, district)'), 'centerPatch тодорхойлолт алга');
   assert.ok(src.includes('districtCenter(city, district)'), 'centerPatch нь districtCenter дуудах ёстой');
   assert.ok(src.includes('...centerPatch(f.city, district)'), 'changeDistrict centerPatch-гүй');
+});
+
+t('④ `changeKhoroo` — хорооны ойролцоо төв рүү шилжүүлнэ (пин ХӨНДӨӨГДӨХГҮЙ)', () => {
+  const src = codeOnly('components/AddListingClient.jsx');
+  assert.ok(src.includes('function khorooPatch(city, district, khoroo)'), 'khorooPatch тодорхойлолт алга');
+  assert.ok(src.includes('khorooCenter(city, district, khoroo)'), 'khorooPatch нь khorooCenter дуудах ёстой');
+  assert.ok(src.includes('autoCenterFor(f)'), 'changeKhoroo авто-төвөөр хэрэглэгчийн пингийг ялгахгүй');
+  assert.ok(src.includes('...khorooPatch(f.city, f.district, khoroo)'), 'changeKhoroo khorooPatch-гүй');
+  // `mapPickIsApprox` нь хороог харгалзана (дүүрэг БИШ) — autoCenterFor ашиглана
+  assert.ok(src.includes('sameCoord(c, autoCenterFor(form))'), 'mapPickIsApprox нь авто төвөөр шалгахгүй');
 });
 
 t('④ 2-р алхам — «🗺 байршлаа заах» товч ба пингийн утга (дэгээнүүдтэй)', () => {
