@@ -331,7 +331,10 @@ t('🛏 HomeClient.jsx: өрөө сонгох UI — САЙДБАРТ (📍 Ба
    * ③ БАЙРЛАЛ (🆕 2026-10-06, хэрэглэгчийн хүсэлт: «Үл хөдлөхийн хайлт дээр
    *    байгаа Өрөөний тоо, Төлбөрийн нөхцөлийг Дэлгэрэнгүй хайлтын Байршил-ийн
    *    доор оруул»): өрөөний чип нь САЙДБАРТ (`<aside id="advanced-filters">`)
-   *    — «📍 Байршил» блокийн ДАРАА, 💳 «Төлбөрийн нөхцөл»-ийн ӨМНӨ байрлана ✓
+   *    — «📍 Байршил» блокийн ДАРАА байрлана ✓
+   *    🆕 (15): 💳 «Төлбөрийн нөхцөл» нь «💰 Үнэ, ₮»-ний ДАРАА болов
+   *       (хэрэглэгчийн хүсэлт: «Автомашин дээр Үнийн дараа оруулах») ⇒
+   *       дараалал: Байршил → Өрөөний тоо → Үнэ, ₮ → Төлбөрийн нөхцөл ✓
    *    (⏳ 2026-10-03 (4): «Үнэ, ₮»-ний өмнө сайдбарт; 2026-10-04 (38):
    *       `#filter-bar` pill байв — ОДОО тийм БИШ ✓)
    */
@@ -339,19 +342,26 @@ t('🛏 HomeClient.jsx: өрөө сонгох UI — САЙДБАРТ (📍 Ба
   const barAt = ui.indexOf('id="filter-bar"');
   const locAt = ui.indexOf('SideBlock label="Байршил"');
   const roomsAt = ui.indexOf('data-room-filter');
+  const priceAt = ui.indexOf('{!isJobs && priceSideBlock}');
   const payAt = ui.indexOf('data-payment-filter');
+  const areaAt = ui.indexOf('SideBlock label="Талбай, м²"');
   assert.ok(asideAt > 0, '`<aside id="advanced-filters">` алга ✗');
   assert.ok(barAt > 0, '#filter-bar (үр дүнгийн дээрх мөр) алга ✗');
   assert.ok(locAt > 0, '«Байршил» блок алга ✗');
   assert.ok(roomsAt > 0, 'өрөөний блок олдсонгүй ✗');
+  assert.ok(priceAt > 0, '«Үнэ, ₮» блок (`!isJobs && priceSideBlock`) олдсонгүй ✗');
   assert.ok(payAt > 0, 'төлбөрийн блок олдсонгүй ✗');
+  assert.ok(areaAt > 0, '«Талбай, м²» блок алга ✗');
   // ⚠️ 2 ӨӨР UI БАЙХГҮЙ — rooms/payment нь `#filter-bar`-т ОГТ БАЙХГҮЙ ✓
   assert.ok(roomsAt < barAt, 'өрөөний блок `#filter-bar`-т байна ✗ (сайдбарт байх ёстой)');
   assert.ok(payAt < barAt, 'төлбөрийн блок `#filter-bar`-т байна ✗ (сайдбарт байх ёстой)');
-  // ⚠️ Сайдбар дотор: «Байршил» → «Өрөөний тоо» → «Төлбөрийн нөхцөл» ✓
+  // ⚠️ Сайдбар дотор: «Байршил» → «Өрөөний тоо» → «Үнэ, ₮» → «Төлбөрийн нөхцөл» ✓
   assert.ok(asideAt < locAt && locAt < roomsAt,
     'өрөөний блок «Байршил»-ийн ДАРАА биш ✗');
-  assert.ok(roomsAt < payAt, 'өрөөний блок төлбөрийн ДАРАА байна ✗ (урд байх ёстой)');
+  assert.ok(roomsAt < priceAt, 'өрөөний блок «Үнэ, ₮»-ний ДАРАА байна ✗ (урд байх ёстой)');
+  assert.ok(priceAt < payAt,
+    'төлбөрийн блок «Үнэ, ₮»-ний ДАРАА биш ✗ (2026-10-06 (15)-ийн хүсэлт)');
+  assert.ok(payAt < areaAt, 'төлбөрийн блок «Талбай, м²»-ний ДАРАА байна ✗ (урд байх ёстой)');
   // ④ ХОРООНЫ блоктой ИЖИЛ хэв маяг (`chip-toggle` + «N сонгосон» + «✕ Цуцлах»)
   assert.match(ui, /chip-toggle-active/, 'чипийн идэвхтэй хэв маяг алга ✗');
   assert.match(src, /сонгосон/, '«N сонгосон» badge алга ✗');

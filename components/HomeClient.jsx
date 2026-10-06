@@ -2718,9 +2718,11 @@ export default function HomeClient() {
                     ИРЭВ (хэрэглэгчийн хүсэлт: «Үл хөдлөхийн хайлт дээр байгаа
                     Өрөөний тоо, Төлбөрийн нөхцөлийг Дэлгэрэнгүй хайлтын
                     Байршил-ийн доор оруул») ⇒ 2 ӨӨР UI БАЙХГҮЙ ✓
+                    🆕 (15): 💳 нь «💰 Үнэ, ₮»-ний ДАРАА болов (хэрэглэгчийн
+                    хүсэлт: «Автомашин дээр Үнийн дараа оруулах») ⇒
                     Sidebar-ийн дараалал:
-                    «Байршил» → «🛏 Өрөөний тоо» → «💳 Төлбөрийн нөхцөл»
-                    → [attr шүүлтүүд] → «Үнэ, ₮» → «Талбай, м²» ✓
+                    «Байршил» → «🛏 Өрөөний тоо» → [attr шүүлтүүд] →
+                    «💰 Үнэ, ₮» → «💳 Төлбөрийн нөхцөл» → «📐 Талбай, м²» ✓
                     (⏳ 2026-10-03 (4): «Үнэ, ₮»-ний өмнө сайдбарт; 2026-10-04 (38):
                        өрөө нь `#filter-bar` pill; (37): төлбөр ч мөн pill — ОДОО
                        хоёулаа сайдбарт буцав ✓) */}
@@ -2844,62 +2846,6 @@ export default function HomeClient() {
                         <button
                           type="button"
                           onClick={clearRooms}
-                          className="text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
-                        >
-                          ✕ Цуцлах
-                        </button>
-                      </div>
-                    )}
-                  </SideBlock>
-                )}
-
-                {/* ===== 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — НЭГ ДАРЖ ОЛОН СОНГОЛТ (2026-10-03) =====
-                    🆕 2026-10-06: `#filter-bar` pill байсныг ЭРГЭЖ «📍 Байршил»-ийн
-                    доор (🛏 «Өрөөний тоо»-ны ДАРАА) сайдбарт оруулав ⇒ 2 ӨӨР UI
-                    БАЙХГҮЙ ✓ (хэрэглэгчийн хүсэлт: «…Төлбөрийн нөхцөлийг
-                    Дэлгэрэнгүй хайлтын Байршил-ийн доор оруул»)
-                    ⚠️ ЗӨВХӨН `real-estate` ба `auto` хэсэгт (`showPayments`) —
-                       ажил/компьютер/бараа/үйлчилгээнд лизинг гэж байхгүй ✓
-                    ⚠️ Шүүлт нь `?payment=lease,cash` → `lib/queries.js` →
-                       `applyPaymentFilter()` (jsonb `cs` + OR) — UI-ийн өөрчлөлт
-                       нь URL/DB-д ОГТ хүрэхгүй ✓
-                    ⚠️ `data-payment-filter` / `data-payment-value` нь
-                       `scripts/cdp-payments.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓ */}
-                {showPayments && (
-                  <SideBlock label="Төлбөрийн нөхцөл">
-                    <div
-                      className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
-                      data-payment-filter
-                      role="group"
-                      aria-label="Төлбөрийн нөхцөл"
-                    >
-                      <div className="flex flex-wrap gap-1.5">
-                        {PAYMENT_OPTIONS.map((o) => {
-                          const on = filters.payments.includes(o.value);
-                          return (
-                            <button
-                              key={o.value}
-                              type="button"
-                              aria-pressed={on}
-                              data-payment-value={o.value}
-                              onClick={() => togglePayments(o.value)}
-                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
-                            >
-                              {on && <span aria-hidden="true">✓</span>}
-                              {o.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    {countPayments(filters.payments) > 0 && (
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[13px] font-semibold text-gray-600">
-                          {countPayments(filters.payments)} сонгосон
-                        </span>
-                        <button
-                          type="button"
-                          onClick={clearPayments}
                           className="text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
                         >
                           ✕ Цуцлах
@@ -3250,6 +3196,65 @@ export default function HomeClient() {
                     өмнө) гарсан тул энд `!isJobs` үед л дүрслэгдэнэ ✓ */}
                 {!isJobs && priceSideBlock}
 
+                {/* ===== 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — НЭГ ДАРЖ ОЛОН СОНГОЛТ (2026-10-03) =====
+                    🆕 (15): «💰 Үнэ, ₮»-ний ЯГ ДАРАА (хэрэглэгчийн хүсэлт:
+                    «Автомашин дээр Үнийн дараа оруулах») ⇒ сайдбарын дараалал:
+                    «📍 Байршил» → «🛏 Өрөөний тоо» → [attr шүүлтүүд] →
+                    «💰 Үнэ, ₮» → «💳 Төлбөрийн нөхцөл» → «📐 Талбай, м²» ✓
+                    (⏳ (16): «Өрөөний тоо»-ны дараа сайдбарт; (37): `#filter-bar`
+                       pill; 2026-10-06 (14): «📍 Байршил»-ийн доор байв — ОДОО
+                       «💰 Үнэ, ₮»-ний дараа ✓)
+                    ⚠️ ЗӨВХӨН `real-estate` ба `auto` хэсэгт (`showPayments`) —
+                       ажил/компьютер/бараа/үйлчилгээнд лизинг гэж байхгүй ✓
+                    ⚠️ Шүүлт нь `?payment=lease,cash` → `lib/queries.js` →
+                       `applyPaymentFilter()` (jsonb `cs` + OR) — UI-ийн өөрчлөлт
+                       нь URL/DB-д ОГТ хүрэхгүй ✓
+                    ⚠️ `data-payment-filter` / `data-payment-value` нь
+                       `scripts/cdp-payments.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓ */}
+                {showPayments && (
+                  <SideBlock label="Төлбөрийн нөхцөл">
+                    <div
+                      className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
+                      data-payment-filter
+                      role="group"
+                      aria-label="Төлбөрийн нөхцөл"
+                    >
+                      <div className="flex flex-wrap gap-1.5">
+                        {PAYMENT_OPTIONS.map((o) => {
+                          const on = filters.payments.includes(o.value);
+                          return (
+                            <button
+                              key={o.value}
+                              type="button"
+                              aria-pressed={on}
+                              data-payment-value={o.value}
+                              onClick={() => togglePayments(o.value)}
+                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                            >
+                              {on && <span aria-hidden="true">✓</span>}
+                              {o.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {countPayments(filters.payments) > 0 && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[13px] font-semibold text-gray-600">
+                          {countPayments(filters.payments)} сонгосон
+                        </span>
+                        <button
+                          type="button"
+                          onClick={clearPayments}
+                          className="text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                        >
+                          ✕ Цуцлах
+                        </button>
+                      </div>
+                    )}
+                  </SideBlock>
+                )}
+
                 {/* ===== ТАЛБАЙ, м² — 2026-09-30: ЧИРДЭГ ХҮРЭЭ ХАСАГДАВ =====
                     ⚠️ «Талбай» нь ЗӨВХӨН үл хөдлөх хэсэгт (0016) — автомашин/
                        ажил/компьютер/бараа/үйлчилгээнд талбай гэдэг ойлголт байхгүй.
@@ -3549,8 +3554,9 @@ export default function HomeClient() {
                 ))}
                 {/* ⏳ ИСТОРИ: 🛏 «Өрөөний тоо» (2026-10-04 (38)) ба 💳 «Төлбөрийн
                     нөхцөл» (2026-10-04 (37)) нь ЭНД `#filter-bar` pill байв —
-                    🆕 2026-10-06-д хоёулаа САЙДБАРТ («Дэлгэрэнгүй хайлт» →
-                       «📍 Байршил»-ийн доор) ЭРГЭЖ ОРОВ (хэрэглэгчийн хүсэлт:
+                    🆕 2026-10-06-д хоёулаа САЙДБАРТ ЭРГЭЖ ОРОВ: 🛏 нь «📍 Байршил»-ийн
+                       доор, 💳 нь 🆕 (15)-д «💰 Үнэ, ₮»-ний дараа болов
+                       (хэрэглэгчийн хүсэлт:
                        «Үл хөдлөхийн хайлт дээр байгаа Өрөөний тоо, Төлбөрийн
                        нөхцөлийг Дэлгэрэнгүй хайлтын Байршил-ийн доор оруул»)
                     ⇒ `#filter-bar`-т ЗӨВХӨН `filterBar: true` тугтай attr

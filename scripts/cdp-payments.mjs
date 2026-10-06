@@ -17,7 +17,9 @@
  *      ХАРАГДАХ хэмжээтэй (≥60×24px — CSS ачаалагдсан ✓)
  *      ⏳ (6)-д ☑ checkbox (2 баганат `.pay-grid`) байсан — одоо ЗӨВХӨН
  *         ЗАР ОРУУЛАХ ФОРМ дээр (`AddListingClient.jsx`) ✓
- *   ①c БАЙРЛАЛ: блок нь «Өрөөний тоо»-ны ДАРАА, «Үнэ, ₮»-ний ӨМНӨ
+ *   ①c БАЙРЛАЛ: блок нь «💰 Үнэ, ₮»-ний ЯГ ДАРАА (🛏 «Өрөөний тоо»-ны дараа)
+ *      — 🆕 2026-10-06 (15): хэрэглэгчийн хүсэлт «Автомашин дээр Үнийн дараа
+ *      оруулах» ✓ (⏳ (16)/(14): «Өрөөний тоо»-ны дараа байв)
  *   ② 🚗 «Автомашин зарна» дээр БАЙНА; ⛔ «Ажил»/«Компьютер»/«Бүх зар»
  *      дээр БАЙХГҮЙ (`hasPaymentTerms` ✓ — лизинг гэдэг ойлголт байхгүй)
  *   ③ 🖱 ЧИП ДАРАХ (ОЛОН СОНГОЛТ — ХАМГИЙН ЧУХАЛ): «Хувь лизингээр» +
@@ -278,18 +280,22 @@ check('💳 `aria-label="Төлбөрийн нөхцөл"` бүлэг ТААРЛ
 const labels1 = await sideLabels();
 const roomsIdx = labels1.findIndex((l) => /Өрөөний тоо/.test(l));
 const priceIdx = labels1.findIndex((l) => /Үнэ/.test(l));
+const payIdx = labels1.indexOf('Төлбөрийн нөхцөл');
 /**
  * 🆕 2026-10-06: 💳 «Төлбөрийн нөхцөл» нь `#filter-bar` pill БАЙХАА БОЛЬЖ,
- *    сайдбарт («📍 Байршил»-ийн доор, 🛏 «Өрөөний тоо»-ны ДАРАА) ЭРГЭЖ ОРОВ
- *    (хэрэглэгчийн хүсэлт) ⇒ сайдбарт БИЙ, `#filter-bar`-т БАЙХГҮЙ ✓
+ *    сайдбарт ЭРГЭЖ ОРОВ (хэрэглэгчийн хүсэлт) ⇒ сайдбарт БИЙ, `#filter-bar`-т
+ *    БАЙХГҮЙ ✓
+ * 🆕 (15): сайдбарын дараалал «📍 Байршил» → «🛏 Өрөөний тоо» → «💰 Үнэ, ₮» →
+ *    «💳 Төлбөрийн нөхцөл» болов (хэрэглэгчийн хүсэлт: «Автомашин дээр Үнийн
+ *    дараа оруулах») ⇒ 💳 нь «Үнэ, ₮»-ний ДАРАА ✓
  */
 const payBar = await evalJs(`document.querySelectorAll('#filter-bar [data-payment-filter]').length`);
 check('🧭 💳 сайдбарт БИЙ, `#filter-bar`-т БАЙХГҮЙ (pill БИШ — `SideBlock` ✓)',
-  labels1.includes('Төлбөрийн нөхцөл') && payBar === 0,
+  payIdx > -1 && payBar === 0,
   `payBar=${payBar} — ${labels1.join(' → ')}`);
-check('🧭 Сайдбар дараалал: «Байршил» → «Өрөөний тоо» → «Төлбөрийн нөхцөл» → «Үнэ, ₮»',
-  roomsIdx === 1 && labels1.indexOf('Төлбөрийн нөхцөл') === 2 && priceIdx > 2,
-  `өрөө=#${roomsIdx} төлбөр=#${labels1.indexOf('Төлбөрийн нөхцөл')} үнэ=#${priceIdx} — ${labels1.join(' → ')}`);
+check('🧭 Сайдбар дараалал: «Байршил» → «Өрөөний тоо» → «Үнэ, ₮» → «Төлбөрийн нөхцөл»',
+  roomsIdx === 1 && priceIdx === 2 && payIdx === 3,
+  `өрөө=#${roomsIdx} үнэ=#${priceIdx} төлбөр=#${payIdx} — ${labels1.join(' → ')}`);
 
 // ═══════ ② 🚗 АВТО: БАЙНА · ⛔ АЖИЛ/КОМПЬЮТЕР/«БҮХ ЗАР»: БАЙХГҮЙ ═══════
 // 🆕 2026-10-03 (13): progressive disclosure ХАСАГДАВ — `<aside>` нь хэсэг
@@ -309,6 +315,13 @@ check('🚗 «Автомашин зарна» дээр ЧИПҮҮД БАЙНА',
   `blocks=${autoUi.blocks} chips=${autoUi.chips}`);
 check('🚗 Авто дээрх шошгууд нь ч ЯГ ИЖИЛ (нэг эх сурвалж `PAYMENT_OPTIONS` ✓)',
   autoUi.values.join(',') === 'lease,cash,loan,barter', autoUi.values.join(','));
+/** 🆕 (15): сайдбарын дараалал АВТО дээр ч — 💳 нь «💰 Үнэ, ₮»-ний ЯГ ДАРАА ✓ */
+const autoLabels = await sideLabels();
+const autoPriceIdx = autoLabels.indexOf('Үнэ, ₮');
+const autoPayIdx = autoLabels.indexOf('Төлбөрийн нөхцөл');
+check('🧭 🚗 Авто дээр 💳 нь «💰 Үнэ, ₮»-ний ЯГ ДАРАА (🆕 (15) — хэрэглэгчийн хүсэлт ✓)',
+  autoPriceIdx > -1 && autoPayIdx === autoPriceIdx + 1,
+  `үнэ=#${autoPriceIdx} төлбөр=#${autoPayIdx} — ${autoLabels.join(' → ')}`);
 await go(`${BASE}/?section=jobs`);
 const jobsUi = await paymentUi();
 check('⛔ «Ажил» дээр төлбөрийн блок БАЙХГҮЙ (`hasPaymentTerms` === false)',
