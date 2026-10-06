@@ -2326,7 +2326,8 @@ export default function HomeClient() {
                    Буцах зам (2026-09-29-ээс чипгүй): бүлгийн ГАРЧИГ дээр дарах
                    (`GroupHeading`) эсвэл breadcrumb ✓.
                    ⚠️ `services`-д `collapsed` туг байхгүй → тэнд FOCUS
-                   ажиллахгүй, 8 бүлэг/32 мөр ШУУД хэвээр ✓ */}
+                   ажиллахгүй, 8 бүлэг/52 мөр ШУУД хэвээр ✓
+                   (✏️ 2026-10-06 (11): 1 дэх групп «Сургалт, курс» — 32 → 52 мөр) */}
             {subtypeGroups.length > 0 && (
             <div className="grid grid-cols-1 items-start gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
               {subtypeGroups.map((g) => {
