@@ -18,6 +18,7 @@
 //   ⑥ DB — `latitude`/`longitude` нь аль хэдийн байгаа (migration 0 ✓)
 //   ⑦ 📄 README + `package.json` (тест бүртгэгдсэн эсэх)
 //   ⑧ 🆕 🔍 ХОРООНЫ НАРИЙВЧЛАЛ — `geocodeUrl`/`parseGeocodeResults` (Nominatim)
+//   ⑨ 🆕 🗺 ПИНГИЙН ХАЯГ — `reverseGeocodeUrl`/`parseReverseResult` (Nominatim reverse)
 //
 // АЖИЛЛУУЛАХ:  npm run test:location-map
 // ⚠️ DB/React/CDP ХОЛБОГДОХГҮЙ — зөвхөн Node (цэвэр модуль + эх файлын гэрээ).
@@ -33,6 +34,7 @@ import {
   UB_DISTRICT_CENTERS, CITY_CENTERS, DISTRICT_CENTERS,
   DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, PICK_ZOOM, PICK_ZOOM_FOUND,
   KHOROO_SPREAD, GEOCODE_ENDPOINT, geocodeUrl, parseGeocodeResults,
+  REVERSE_ENDPOINT, reverseGeocodeUrl, parseReverseResult,
   isValidCoord, coordOf, hasCoords, districtCenter, cityCenter,
   khorooNumber, khorooCenter, autoCenterFor, mapCenterFor, sameCoord,
 } from '../lib/locationGeo.mjs';
@@ -504,6 +506,79 @@ t('⑧ Олдсон цэг нь ГАЗРЫН ЗУРАГТ ашиглаж бол�
   assert.ok(isValidCoord(hit.lat, hit.lng), 'олдсон цэг хүчингүй');
   assert.ok(insideMN(hit), 'Монголын дотор биш');
   assert.equal(PICK_ZOOM_FOUND, 17, 'олдсон цэгийн зум нь 17 (барилгын түвшин)');
+});
+
+// ────────────────────────────────────────────────────────────
+// ⑨ 🆕 🗺 ПИНГИЙН ХАЯГ — reverse-geocode (Nominatim reverse)
+// ────────────────────────────────────────────────────────────
+console.log('\n── ⑨ 🗺 Пингийн хаяг: reverse-geocode (Nominatim) ──');
+
+t('⑨ `reverseGeocodeUrl` — хүчингүй солбицол үед `null` (fetch хийхгүй)', () => {
+  assert.equal(reverseGeocodeUrl(0, 0), null, '(0,0) → null');
+  assert.equal(reverseGeocodeUrl(NaN, 106.9), null, 'NaN → null');
+  assert.equal(reverseGeocodeUrl(99, 106.9), null, 'lat муж → null');
+  assert.equal(reverseGeocodeUrl(47.9, null), null, 'null → null');
+});
+
+t('⑨ `reverseGeocodeUrl` — Nominatim гэрээ (lat/lon/zoom/addressdetails)', () => {
+  const url = reverseGeocodeUrl(47.9189, 106.9179);
+  assert.ok(url.startsWith(`${REVERSE_ENDPOINT}?`), 'reverse endpoint биш');
+  const u = new URL(url);
+  assert.equal(u.searchParams.get('lat'), '47.9189', 'lat');
+  assert.equal(u.searchParams.get('lon'), '106.9179', 'lon');
+  assert.equal(u.searchParams.get('format'), 'jsonv2', 'jsonv2 биш');
+  assert.equal(u.searchParams.get('addressdetails'), '1', 'addressdetails биш');
+  assert.equal(u.searchParams.get('accept-language'), 'mn', 'монгол хариу биш');
+  assert.equal(u.searchParams.get('zoom'), '18', 'анхдагч зум 18 биш');
+});
+
+t('⑨ `reverseGeocodeUrl` — `zoom` нь 3..18 дотор (хаягийн түвшин)', () => {
+  const z = (v) => new URL(reverseGeocodeUrl(47.9, 106.9, { zoom: v })).searchParams.get('zoom');
+  assert.equal(z(0), '3', 'доод хязгаар 3');
+  assert.equal(z(99), '18', 'дээд хязгаар 18');
+  assert.equal(z(16.7), '16', 'бутархай → бүхэл');
+});
+
+t('⑨ `parseReverseResult` — хаягийн хэсгүүдээс `label` угсарна', () => {
+  const r = parseReverseResult({
+    address: {
+      road: 'Их сургуулийн гудамж',
+      suburb: 'Бага Тойрог',
+      city_district: 'Сүхбаатар дүүрэг',
+      city: 'Улаанбаатар',
+      country: 'Монгол улс',
+    },
+  });
+  assert.deepEqual(r, {
+    label: 'Их сургуулийн гудамж, Бага Тойрог, Сүхбаатар дүүрэг, Улаанбаатар',
+    road: 'Их сургуулийн гудамж',
+    suburb: 'Бага Тойрог',
+    district: 'Сүхбаатар дүүрэг',
+    city: 'Улаанбаатар',
+  }, 'label угсралт буруу');
+});
+
+t('⑨ `parseReverseResult` — давхардсан утгыг НЭГ удаа оруулна', () => {
+  const r = parseReverseResult({
+    address: { suburb: 'Хан-Уул', city_district: 'Хан-Уул', city: 'Улаанбаатар' },
+  });
+  assert.equal(r.label, 'Хан-Уул, Улаанбаатар', 'давхардсан утга 1 удаа орох ёстой');
+});
+
+t('⑨ `parseReverseResult` — хог/хоосон үед аюулгүй (`null`)', () => {
+  assert.equal(parseReverseResult(null), null, 'null → null');
+  assert.equal(parseReverseResult(undefined), null, 'undefined → null');
+  assert.equal(parseReverseResult('x'), null, 'мөр → null');
+  assert.equal(parseReverseResult([]), null, 'массив → null');
+  assert.equal(parseReverseResult({}), null, 'хаяггүй → null');
+  assert.equal(parseReverseResult({ address: {} }), null, 'хоосон хаяг → null');
+});
+
+t('⑨ ГЭРЭЭ `LocationMapPicker` — reverse-geocode ашиглана (хаягийн дэгээ)', () => {
+  const pick = codeHard('components/LocationMapPicker.jsx');
+  assert.ok(pick.includes('reverseGeocodeUrl'), 'reverseGeocodeUrl импорт/дуудлага алга');
+  assert.ok(pick.includes('parseReverseResult'), 'parseReverseResult ашиглаагүй');
+  assert.ok(pick.includes('data-map-picker-place'), 'хаягийн дэгээ (`data-map-picker-place`) алга');
 });
 
 console.log(`\n✅ БҮГД ТЭНЦСЭН — ${passed} тест\n`);

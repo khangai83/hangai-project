@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import {
   DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, PICK_ZOOM, PICK_ZOOM_FOUND, isValidCoord,
-  geocodeUrl, parseGeocodeResults,
+  geocodeUrl, parseGeocodeResults, reverseGeocodeUrl, parseReverseResult,
 } from '../lib/locationGeo.mjs';
 
 /* ============================================================
@@ -56,6 +56,10 @@ export const MAP_PICKER_SEARCH_ERR = 'Хайлт амжилтгүй — инте
 export const MAP_PICKER_NOT_FOUND =
   'Юу ч олдсонгүй — «Хан-Уул, Улаанбаатар» гэх мэт бичиж үзнэ үү (OSM-д хороо бүр байхгүй), эсвэл 📍 Миний байршил / газрын зургийг гараар тааруулна уу';
 export const MAP_PICKER_GEO_ERR = 'Байршил тодорхойлогдсонгүй (зөвшөөрөл?)';
+/** 🆕 🗺 ОДООГИЙН пингийн ХАЯГ (reverse-geocode) — 6 дахь засвар (2026-10-06).
+ *  ⚠️ OSM-д хороо байхгүй тул хаяг (гудамж · хороолол · дүүрэг) л гарна ✓ */
+export const MAP_PICKER_PLACE_LOADING = 'Хаяг тодорхойлж байна…';
+export const MAP_PICKER_PLACE_ERR = 'Хаяг тодорхойлогдсонгүй';
 
 /**
  * 🗺 ПИНГИЙН ДҮРС (SVG) — газрын зургийн ТӨВД **ТОГТМОЛ** байрлана.
@@ -173,6 +177,46 @@ export default function LocationMapPicker({ center, value, zoom, subtitle, onCon
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /**
+   * 🆕 🗺 ОДООГИЙН пингийн ХАЯГ (reverse-geocode) — «зөв цэг мөн үү?» баталгаажуулалт
+   *    (2026-10-06 — 6 дахь засвар). ⚠️ Debounce (500мс) + цэвэрлэлт ⇒ газрыг
+   *    чирэх БҮРД fetch ХИЙХГҮЙ, зөвхөн тогтсоны дараа НЭГ удаа ✓ (Nominatim-ийг
+   *    хэт ачаалахгүй). ⚠️ OSM-д хороо (`khoroo`) БАЙХГҮЙ тул хаяг нь гудамж ·
+   *    хороолол (`suburb`) · дүүрэг л хүртэл — гэхдээ хэрэглэгчид пинээ зөв
+   *    эсэхийг ШУУД батлах боломж өгнө ✓
+   */
+  const [place, setPlace] = useState(null);
+  const [placeState, setPlaceState] = useState('loading'); // 'loading' | 'ok' | 'err'
+  useEffect(() => {
+    const url = reverseGeocodeUrl(coords.lat, coords.lng);
+    if (!url) {
+      setPlace(null);
+      setPlaceState('err');
+      return undefined;
+    }
+    let cancelled = false;
+    setPlaceState('loading');
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(url, { headers: { Accept: 'application/json' } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const r = parseReverseResult(await res.json());
+        if (cancelled) return;
+        setPlace(r);
+        setPlaceState(r ? 'ok' : 'err');
+      } catch (e) {
+        if (cancelled) return;
+        console.error('reverse geocode error', e);
+        setPlace(null);
+        setPlaceState('err');
+      }
+    }, 500);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [coords.lat, coords.lng]);
 
   /** ✅ Үргэлжлүүлэх — ТӨВД байгаа пингийн солбицлыг буцаана (хүчингүй бол эхлэлийг) */
   const confirm = () => {
@@ -349,8 +393,24 @@ export default function LocationMapPicker({ center, value, zoom, subtitle, onCon
 
         {/* Доод үйлдэл */}
         <div className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <span data-map-picker-center className="text-[12.5px] text-gray-500">
-            📍 {coords.lat}, {coords.lng}
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span data-map-picker-center className="text-[12.5px] text-gray-500">
+              📍 {coords.lat}, {coords.lng}
+            </span>
+            {/* 🆕 🗺 ОДООГИЙН пингийн ХАЯГ (reverse-geocode) — 6 дахь засвар (2026-10-06).
+                ⚠️ `placeState` нь CDP/тестэд (loading/ok/err) — хаяг заавал
+                гарна гэсэн баталгаа ХЭРЭГГҮЙ (сүлжээгүй ч UI зөв ✓) */}
+            <span
+              data-map-picker-place
+              data-map-picker-place-state={placeState}
+              className={`min-w-0 truncate text-[12.5px] ${placeState === 'ok' ? 'font-medium text-gray-700' : 'text-gray-400'}`}
+            >
+              {placeState === 'ok' && place
+                ? `🗺 ${place.label}`
+                : placeState === 'loading'
+                  ? MAP_PICKER_PLACE_LOADING
+                  : MAP_PICKER_PLACE_ERR}
+            </span>
           </span>
           <span className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <button
