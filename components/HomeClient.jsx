@@ -872,6 +872,19 @@ export default function HomeClient() {
   //    ⚠️ `sectionOpen`-ээс ЯЛГААТАЙ — хэсэг НЭЭЛТТЭЙ хэвээр байна, зөвхөн
   //       тухайн бүлгийн дотрох дэд төрлүүд харагдана ✓
   const [groupOpen, setGroupOpen] = useState(null);
+  // 🆕 2026-10-06 (12) — ХУРААНГУЙ БҮЛГИЙН «Илүү» төлөв (хэрэглэгчийн хүсэлт:
+  //    «Сургалт, курс -ийг хураангуй харуулдаг болгоё, эхний 5-ыг
+  //    харуулаад цааш харахыг хүсвэл Илүү гэж дар»):
+  //    `showFirst` тугтай бүлэг (🛠 «Сургалт, курс» — 23 мөр) нь анхдагчаар
+  //    ЭХНИЙ 5 мөрийг л харуулж, үлдсэнийг «Илүү» товчоор нээнэ ✓
+  //    • Утга нь НЭЭЛТТЭЙ бүлгүүдийн НЭР-ийн массив (нэг хэсэгт хэд хэдэн ийм
+  //      бүлэг байж болно) — `groupOpen` нь нэг утга (`null`/нэр), энэ нь массив
+  //    • ⚠️ Хэсэг солиход ЦЭВЭРЛЭНЭ (`changeSection`) — эс бөгөөс хуучин нэр
+  //      үлдэж, шинэ хэсгийн бүлэг санамсаргүй нээлттэй харагдах байсан ✗
+  const [moreGroups, setMoreGroups] = useState([]);
+  /** 🖱 «Илүү» ↔ «Хураах» — бүлгийн нэрийг массивт нэмэх/хасах ✓ */
+  const toggleMore = (label) =>
+    setMoreGroups((list) => (list.includes(label) ? list.filter((x) => x !== label) : [...list, label]));
   // ⚠️ ЭНД, бүх `useEffect`-ийн ӨМНӨ: эффектүүдийн deps массив РЕНДЕРИЙН ҮЕД
   //    үнэлэгддэг тул хойш зарлавал TDZ алдаа гарна.
   const noSection = section === 'all';
@@ -1328,6 +1341,10 @@ export default function HomeClient() {
       //    ⚠️ `rooms` массив хоослохтой ЯГ ИЖИЛ хэв маяг (`[]`, `''` БИШ)
       // 🗂 өөр хэсэг = өөр бүлгүүд → accordion анхдагчдаа (хаалттай) ✓
       setGroupOpen(null);
+      // 🆕 2026-10-06 (12): хураангуй бүлгүүд («Сургалт, курс») ч анхдагчдаа
+      //    буцана — эс бөгөөс шинэ хэсэгт ижил нэртэй бүлэг санамсаргүй
+      //    бүтнээрээ нээлттэй харагдах байсан ✗ (`setGroupOpen(null)`-тай ижил)
+      setMoreGroups([]);
       // ⚠️ 2026-09-27: `setFiltersOpen(false)` ХАСАГДСАН — панель үргэлж
       //    нээлттэй тул хаах ойлголт байхгүй ✓ (хэсэг солиход панель ХЭВЭЭР ✓)
     }
@@ -2326,8 +2343,12 @@ export default function HomeClient() {
                    Буцах зам (2026-09-29-ээс чипгүй): бүлгийн ГАРЧИГ дээр дарах
                    (`GroupHeading`) эсвэл breadcrumb ✓.
                    ⚠️ `services`-д `collapsed` туг байхгүй → тэнд FOCUS
-                   ажиллахгүй, 8 бүлэг/52 мөр ШУУД хэвээр ✓
-                   (✏️ 2026-10-06 (11): 1 дэх групп «Сургалт, курс» — 32 → 52 мөр) */}
+                   ажиллахгүй, 8 бүлэг ХЭВЭЭР харагдана ✓
+                   (✏️ 2026-10-06 (11): 1 дэх групп «Сургалт, курс» — 32 → 52 мөр)
+                   🆕 2026-10-06 (12): тэр бүлэг нь `showFirst: 5` тугтай болсон
+                   тул панель дээр 52 мөр БИШ, ЭХНИЙ 5 мөр + «Илүү» товч
+                   харагдана (дарвал 23 мөр бүтнээрээ) ✓ — FOCUS (accordion)
+                   горим ХӨНДӨӨГДӨӨГҮЙ ✓ */}
             {subtypeGroups.length > 0 && (
             <div className="grid grid-cols-1 items-start gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
               {subtypeGroups.map((g) => {
@@ -2337,6 +2358,25 @@ export default function HomeClient() {
                 //    нээгддэг ✓ (доод түвшингүй бүлэгт туг байхгүй → шууд мөр)
                 const collapsible = !!g.collapsed;
                 const open = collapsible && focusedGroup === g.label;
+                /**
+                 * 🆕 2026-10-06 (12) — ХУРААНГУЙ БҮЛЭГ (`showFirst` тугтай —
+                 * 🛠 «Сургалт, курс» 23 мөр): панель дээр ЗӨВХӨН ЭХНИЙ
+                 * `showFirst` мөр шууд харагдаж, үлдсэн 18 нь доорх «Илүү»
+                 * товчоор нээгдэнэ ✓ (хэрэглэгчийн хүсэлт).
+                 * ⚠️ Энэ нь ACCORDION (`collapsed` — 💻 компьютерийн бүлэг) БИШ:
+                 *    бүх бүлэг ХАРАГДСААР байна, зөвхөн нэг бүлгийн МӨРИЙН ТОО
+                 *    хязгаарлагдана (бүлгийн гарчиг нь хэвээр `‹p›` — шүүлт БИШ ✓)
+                 * ⚠️ `collapsible` ба `leaf` бүлэгт ХҮРЭХГҮЙ — тэдгээр нь өөр
+                 *    механизмтай (accordion товч / өөрөө сонгогдох мөр) ✓
+                 * ⚠️ Туг нь `lib/locationData.js` дээрх бүлгийн тохиргоо
+                 *    (`showFirst: 5`) — компонентод хатуу бичсэн бүлгийн нэр/тоо
+                 *    БАЙХГҮЙ ✓ (өөр бүлэгт хэрэгтэй бол зөвхөн тэнд нэмнэ)
+                 */
+                const many = !collapsible && !leaf && g.showFirst > 0 && g.items.length > g.showFirst;
+                const more = many && moreGroups.includes(g.label);
+                // ⚠️ Харагдах мөрүүд: хураангуй үед `slice`, «Илүү» дарсны дараа
+                //    БҮТЭН жагсаалт — эх массив (`g.items`) ХӨНДӨӨГДӨХГҮЙ ✓
+                const visible = many && !more ? g.items.slice(0, g.showFirst) : g.items;
                 // 🎯 FOCUS (2026-09-29, хэрэглэгчийн хүсэлт): нэг бүлэг нээлттэй
                 //    үед БУСАД 2-р түвшин БҮРЭН АЛГА → зөвхөн нээлттэй бүлэг ба
                 //    түүний дэд төрлүүд (4 БАГАНА) үлдэнэ ✓
@@ -2403,7 +2443,7 @@ export default function HomeClient() {
                             : undefined
                         }
                       >
-                        {g.items.map((t) => (
+                        {visible.map((t) => (
                           <SubtypeRow
                             key={t}
                             label={getPropertyTypeLabel(t, category)}
@@ -2411,6 +2451,46 @@ export default function HomeClient() {
                           />
                         ))}
                       </div>
+                    )}
+                    {/* 🆕 2026-10-06 (12) — ХУРААНГУЙ: «Илүү» / «Хураах» товч
+                        (зөвхөн `showFirst` тугтай, түүнээс олон мөртэй бүлэгт)
+                        ⚠️ `role="tablist"`-ийн ГАДНА (доор нь) байрлана — ARIA
+                           ёсоор tablist дотор ЗӨВХӨН `role="tab"` байх ЁСТОЙ ✓
+                        ⚠️ ШҮҮЛТ БИШ — зөвхөн харагдацыг удирдана (`propertyType`
+                           болж ХАДГАЛАГДАХГҮЙ; уг товч дээр `role="tab"` БАЙХГҮЙ
+                           тул CDP-ийн 52 тоололд ОРОХГҮЙ ✓)
+                        🔤 Өнгө нь бүлгийн гарчигтай ижил (`primary-dark`,
+                           контраст 5.94:1 ✅ AA) — 13px (sm 14px) bold
+                        ⚠️ CDP дэгээ: `data-group-more="<бүлгийн нэр>"` ✓ */}
+                    {many && (
+                      <button
+                        type="button"
+                        onClick={() => toggleMore(g.label)}
+                        aria-expanded={more}
+                        data-group-more={g.label}
+                        title={more ? 'Дэд төрлүүдийг хураах' : `Үлдсэн ${g.items.length - g.showFirst} дэд төрлийг харах`}
+                        className="flex w-full items-start gap-1.5 rounded-md px-2 py-1.5 text-left text-[13px] font-bold text-primary-dark transition hover:bg-white sm:text-[14px]"
+                      >
+                        {/* chevron — хаалттай үед ▼ (доош), нээлттэй үед ▲ (эргэлдэнэ) */}
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          className={`mt-1 shrink-0 opacity-60 transition-transform duration-150 ${more ? '-rotate-90' : 'rotate-90'}`}
+                          aria-hidden="true"
+                        >
+                          <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <span className="flex items-center gap-1.5">
+                          {more ? 'Хураах' : 'Илүү'}
+                          {!more && (
+                            <span className="rounded-full bg-gray-100 px-1.5 py-px text-[11px] font-bold text-gray-700">
+                              +{g.items.length - g.showFirst}
+                            </span>
+                          )}
+                        </span>
+                      </button>
                     )}
                   </div>
                 );

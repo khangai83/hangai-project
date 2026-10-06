@@ -1219,6 +1219,22 @@ t('🛠 services: 8 бүлэг, бүгд ШУУД нээлттэй (`collapsed` 
   ]);
   assert.equal(groups[0].items.length, 23);
   assert.equal(groups[0].items[groups[0].items.length - 1], 'Бусад');
+  // 🆕 2026-10-06 (12) — ХУРААНГУЙ (хэрэглэгчийн хүсэлт: «…хураангуй харуулдаг
+  //    болгоё, эхний 5-ыг харуулаад цааш харахыг хүсвэл Илүү гэж дар»):
+  //    `showFirst: 5` туг нь ЗӨВХӨН 1 дэх бүлэгт — бусад бүлэг (23-аас
+  //    цөөнтэй) урьдны адил БҮТНЭЭРЭЭ харагдана ✓
+  assert.equal(groups[0].showFirst, 5,
+    '«Сургалт, курс»-д `showFirst: 5` туг алга (эсвэл өөр утгатай) ✗');
+  assert.ok(groups[0].items.length > groups[0].showFirst,
+    '`showFirst` нь items-ээс бага байх ЁСТОЙ (эс бөгөөс хураах шаардлагагүй) ✗');
+  assert.deepEqual(
+    groups.filter((g) => g.showFirst > 0).map((g) => g.label),
+    ['Сургалт, курс'],
+    '`showFirst` тугтай бүлэг ЯГ 1 байх ЁСТОЙ (бусад нь бүтэн харагдана) ✗');
+  // ⚠️ Туггүй бүлэгт `0` (хязгааргүй) — `getSubtypeGroups` үүнийг ЗААВАЛ
+  //    дамжуулах ЁСТОЙ (эс бөгөөс UI нь `undefined > 0` → false, туг алга болно)
+  groups.slice(1).forEach((g) => assert.equal(g.showFirst, 0,
+    `${g.label}: туггүй бүлэгт \`showFirst\` 0 байх ЁСТОЙ ✗`));
   // ⚠️ Байрлал: шинэ «Эмнэлэг» бүлэг нь ХАМГИЙН СҮҮЛД — хуучин 7 бүлгийн
   //    дараалал ХӨНДӨГДӨӨГҮЙ (индексээр ажилладаг код эвдрэхээс сэргийлэв ✓)
   assert.equal(groups[groups.length - 1].label, 'Эмнэлэг');
@@ -2079,6 +2095,54 @@ t('🏠 ГЭРЭЭ: HomeClient — дэд төрлийн блок `showSubtypes`
     'дэд төрлийн багана `showSubtypes`-ээр хаагдаагүй ✗');
   // ③ 🐍 CDP дэгээ — `npm run cdp:sections` үүгээр панелийг тоолно
   assert.ok(/data-section-panel/.test(home), '`data-section-panel` CDP дэгээ алга ✗');
+});
+
+t('🎓 ГЭРЭЭ: «Сургалт, курс» ХУРААНГУЙ — `showFirst` + «Илүү / Хураах» (2026-10-06 (12))', () => {
+  // Хэрэглэгчийн хүсэлт: «Сургалт, курс -ийг хураангуй харуулдаг болгоё, эхний
+  // 5-ыг харуулаад цааш харахыг хүсвэл Илүү гэж дар» ⇒ панель дээр 23 мөр БИШ,
+  // эхний 5 мөр + «Илүү» товч; товчийг дарвал 23 мөр бүтнээрээ, дахин дарвал
+  // «Хураах» болж буцаана ✓ (⚠️ зөвхөн ХАРАГДАЦ — DB/форм/breadcrumb хөндөгдөхгүй)
+  const home = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
+  // ① Нөхцөл ба харагдах мөрүүд — `showFirst` тугтай, түүнээс олон мөртэй бүлэг
+  assert.ok(
+    /const many = !collapsible && !leaf && g\.showFirst > 0 && g\.items\.length > g\.showFirst;/.test(home),
+    'хураангуйн нөхцөл (`many`) алга эсвэл өөрчлөгдсөн ✗');
+  assert.ok(
+    /const visible = many && !more \? g\.items\.slice\(0, g\.showFirst\) : g\.items;/.test(home),
+    'харагдах мөрүүд `showFirst`-ээр таслагдахгүй байна ✗');
+  // ② `role="tablist"` нь `visible`-ыг render хийнэ (БҮТЭН `g.items` БИШ)
+  assert.ok(/\{visible\.map\(\(t\) => \(/.test(home),
+    'дэд төрлийн мөрүүд `visible`-ээр render хийгдэхгүй байна ✗');
+  assert.ok(!/\{g\.items\.map\(\(t\) => \(/.test(home),
+    'tablist дотор БҮТЭН `g.items` render хийгдсээр байна (хураангуй эвдэрнэ) ✗');
+  // ③ «Илүү ↔ Хураах» товч: төлөв + CDP дэгээ + `aria-expanded`
+  assert.ok(/const \[moreGroups, setMoreGroups\] = useState\(\[\]\);/.test(home),
+    '`moreGroups` төлөв алга ✗');
+  assert.ok(/data-group-more=\{g\.label\}/.test(home),
+    '`data-group-more` CDP дэгээ алга ✗');
+  assert.ok(/aria-expanded=\{more\}/.test(home), '`aria-expanded` алга ✗');
+  assert.ok(/\{more \? 'Хураах' : 'Илүү'\}/.test(home),
+    'товчны бичиг «Илүү / Хураах» алга ✗ (хэрэглэгчийн хүсэлт)');
+  // ④ Товч нь ШҮҮЛТ БИШ — `role="tab"` БАЙХГҮЙ тул CDP-ийн `tabs` тоололд
+  //    ОРОХГҮЙ ✓ (эс бөгөөс панельд 34 БИШ 35 мөр болж гэрээ эвдэрнэ ✗)
+  const mi = home.indexOf('{many && (');
+  const bi = home.indexOf('data-group-more={g.label}');
+  assert.ok(mi > 0 && bi > mi, '«Илүү» товчны markup олдсонгүй ✗');
+  // ⚠️ Зүслэг нь `{many && (`-ээс эхэлнэ — түүнээс өмнөх ТАЙЛБАР дотор
+  //    `role="tab"` гэсэн ҮГ байгаа тул түүнийг тооцохгүй ✓
+  const btn = home.slice(mi, mi + 1000);
+  assert.ok(/type="button"/.test(btn), 'товч `type="button"` биш ✗');
+  assert.ok(!/role="tab"/.test(btn), 'товч `role="tab"`-тай (CDP тоололд орох ✗)');
+  // ⑤ Товч нь `role="tablist"`-ийн ГАДНА — ARIA ёсоор tablist дотор ЗӨВХӨН
+  //    `role="tab"` байх ЁСТОЙ тул «Илүү» нь tablist хаагдсаны дараа байрлана ✓
+  const vi = home.indexOf('{visible.map((t) => (');
+  assert.ok(vi > 0 && vi < mi, '`visible.map` блок олдсонгүй ✗');
+  assert.ok(home.slice(vi, mi).includes('</div>'),
+    '«Илүү» товч tablist-ийн ДОТОР байна (гадна байх ЁСТОЙ) ✗');
+  assert.ok(bi > vi && bi < mi + 1000, 'CDP дэгээ нь «Илүү» товчны markup дотор биш ✗');
+  // ⑥ Хэсэг солиход цэвэрлэнэ (`setGroupOpen(null)`-тай ижил зарчим) ✓
+  assert.ok(/setMoreGroups\(\[\]\);/.test(home),
+    'хэсэг солиход `moreGroups` цэвэрлэгдэхгүй байна (хуучин нэр үлдэнэ ✗)');
 });
 
 console.log(`\n✅ БҮГД ОК: ${passed} тест\n`);

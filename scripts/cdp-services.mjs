@@ -10,7 +10,9 @@
  *   ① 🏷 Бүлгийн ГАРЧИГ 7 мөр (`<p>`) — хуучин ДАРААЛАЛ ХӨНДӨӨГДӨӨГҮЙ,
  *      ХАМГИЙН СҮҮЛД 🆕 «Эмнэлэг»; leaf бүлэг («Хэвлэл, реклам, медиа») нь
  *      ГАРЧИГ БИШ, өөрөө СОНГОГДОХ мөр хэвээр ✓
- *   ② 🔢 Нийт дэд төрөл **52** (28 → 52; ✏️ 2026-10-06 (11): 32 → 52): «Гагнуурын үйлчилгээ» нь
+ *   ② 🔢 Нийт дэд төрөл **52** (28 → 52; ✏️ 2026-10-06 (11): 32 → 52), гэхдээ
+ *      панель дээр ХАРАГДАХ нь **34** (✏️ 2026-10-06 (12): «Сургалт, курс»
+ *      бүлэг хураангуй — 23 мөрөөс эхний 5 нь): «Гагнуурын үйлчилгээ» нь
  *      «Барилга & Засвар үйлчилгээ» бүлгийн 6 дахь (сүүлийн) мөр, 🆕 «Эмнэлэг»
  *      бүлэг нь ЯГ 3 дэд төрөлтэй ✓
  *   ③ ⚠️ Бүлгийн НЭР («Эмнэлэг») нь `property_type` БИШ — сонгогдох мөр
@@ -20,7 +22,8 @@
  *      нэр ШИНЭЭРЭЭ ✓) ✓
  *   ⑤ 🔗 Шууд линкээр ороход хэсгийн панель ХААЛТТАЙ (дэд төрөл сонгосон
  *      төлөв) — breadcrumb ба гарчиг зөв ✓
- *   ⑥ 📱 390px: «Эмнэлэг» харагдана, 52 мөр (✏️ 2026-10-06 (11): 32 → 52), хэвтээ гүйлт 0 ✓
+ *   ⑥ 📱 390px: «Эмнэлэг» харагдана, 34 мөр (✏️ 2026-10-06 (12): 52 → 34),
+ *      «Илүү» товч харагдана, хэвтээ гүйлт 0 ✓
  *   ⑦ 🧯 JS exception 0
  *
  * 🆕 2026-10-05 (45) (хэрэглэгчийн хүсэлт — 2 зүйл):
@@ -55,6 +58,22 @@
  *    (эхний «Гадаад хэл» / сүүлийн «Бусад») ② бүлгийн нэр нь сонгогдох мөр
  *    БИШ ③ хуучин «Сургалт ба курс» дэд төрөл БАЙХГҮЙ) — ✅ 2026-10-06 (11)-д
  *    БОДИТ Chrome-д (headless, :9222) ажиллуулав: **38 OK / 0 FAIL** ✓
+ *
+ * 🆕 2026-10-06 (12) (хэрэглэгчийн хүсэлт: «Сургалт, курс -ийг хураангуй
+ *    харуулдаг болгоё, эхний 5-ыг харуулаад цааш харахыг хүсвэл Илүү гэж дар»):
+ *    🛠 «Сургалт, курс» бүлэг нь `showFirst: 5` тугтай болов
+ *    (`lib/locationData.js` → `getSubtypeGroups` тугийг дамжуулна; `HomeClient`
+ *    → `many`/`visible` + «Илүү / Хураах» товч, дэгээ нь `data-group-more`) ⇒
+ *    ① панель дээр харагдах мөр **52 → 34** (52 − 23 + 5), бүлгийн мөр 23 → 5;
+ *    ⑬ 4 шалгалт (эхний 5 мөр · үлдсэн 18 нь НУУГДСАН · бүлгийн нэр сонгогдохгүй ·
+ *    хуучин нэр байхгүй); 🆕 ⑭ **6** шинэ шалгалт («Илүү» товч байна · дарж
+ *    23 мөр/52 болно · «Хураах» + `aria-expanded="true"` · хуучин 2 нэр
+ *    («Тайлан ба төсөл» · «Орчуулга») харагдана · «Хураах» дарж буцаж 34 болно);
+ *    ⑥ 📱 34 + «Илүү» (1) ⇒ **38 → 47 OK**
+ *    (✅ 2026-10-06 (12)-д БОДИТ headless Chrome-д ажиллуулав: **47 OK / 0 FAIL**)
+ *    ⚠️ Товч нь `role="tab"` БИШ тул `tabs` тоололд ОРОХГҮЙ ✓; форм
+ *    (`<optgroup>` — 23 мөр БҮГД), DB, `property_type`, breadcrumb, шүүлт
+ *    ХӨНДӨӨГДӨХГҮЙ ✓ (`showFirst` нь зөвхөн ХАРАГДАЦЫН туг)
  *
  * ⚠️ 2026-10-05 (45)-д CDP-ийн 2 RACE илэрч ЗАСАВ (доорх тайлбарыг үз):
  *   ① панель нь SSR HTML дээр ч байдаг тул `waitFor(tabs > 0)` нь hydrate-аас
@@ -203,6 +222,32 @@ const panelUi2 = () => evalJs(`(() => {
   };
 })()`);
 
+/** 🆕 2026-10-06 (12) — ХУРААНГУЙ бүлгийн «Илүү / Хураах» товчны төлөв
+ *  ⚠️ `data-group-more` ДЭГЭЭГЭЭР л хайна — товч нь `role="tab"` БИШ тул
+ *     `panelUi2().tabs` тоололд ОРОХГҮЙ ✓ (`aria-expanded` нь нээлттэй эсэх) */
+const moreUi = () => evalJs(`(() => {
+  const panel = document.querySelector('[data-section-panel]');
+  if (!panel) return { count: 0 };
+  const btn = panel.querySelector('[data-group-more]');
+  if (!btn) return { count: 0 };
+  const txt = (el) => String(el.innerText || el.textContent || '').replace(/\\s+/g, ' ').trim();
+  return {
+    count: panel.querySelectorAll('[data-group-more]').length,
+    group: btn.getAttribute('data-group-more'),
+    text: txt(btn),
+    expanded: btn.getAttribute('aria-expanded'),
+    tabs: panel.querySelectorAll('button[role="tab"]').length,
+  };
+})()`);
+
+/** 🖱 «Илүү» / «Хураах» товчийг дарна (`data-group-more` дэгээгээр) */
+const clickMore = () => evalJs(`(() => {
+  const btn = document.querySelector('[data-section-panel] [data-group-more]');
+  if (!btn) return 'NOT_FOUND';
+  btn.click();
+  return 'OK';
+})()`);
+
 /** 🧭 ХУУДСНЫ төлөв (панель БАЙХГҮЙ үед ч) — breadcrumb / h1 / overflow */
 const pageUi = () => evalJs(`(() => {
   const crumb = document.querySelector('nav[aria-label="Замчилсан цэс"]');
@@ -302,18 +347,62 @@ check('🏷 Бүлгийн ГАРЧИГ 7 (`<p>`) — 8 дахь (leaf «Хэв�
 check('🏷 Гарчгуудын дараалал ХЭВЭЭР + ХАМГИЙН СҮҮЛД «Эмнэлэг» (хуучин 7 ХӨНДӨӨГДӨӨГҮЙ)',
   s.heads.join('|') === ORDER_7, s.heads.join(' | '));
 check('🗂 Блок (tablist) 8 — бүлэг 7 + leaf 1', s.lists.length === 8, `lists=${s.lists.length}`);
-check('🔢 Нийт дэд төрөл 32 → 52', s.tabs.length === 52, `tabs=${s.tabs.length}`);
+// ✏️ 2026-10-06 (12): панель дээр ХАРАГДАХ мөр 52 БИШ — «Сургалт, курс» бүлэг
+//    нь ХУРААНГУЙ (`showFirst: 5`) тул 52 − 23 + 5 = **34** мөр ✓
+//    (52 нь «Илүү» дарсны дараа — доорх ⑭-д шалгана)
+check('🔢 Панель дээр харагдах мөр 34 (52 − 23 + 5) — 18 нь «Илүү» дор',
+  s.tabs.length === 34, `tabs=${s.tabs.length}`);
+const morePre = await moreUi();
+check('🆕 «Илүү» товч «Сургалт, курс» бүлэгт байна («Илүү +18», `aria-expanded="false"`)',
+  morePre.count === 1 && morePre.group === 'Сургалт, курс'
+    && morePre.text === 'Илүү +18' && morePre.expanded === 'false',
+  JSON.stringify(morePre));
 
 // 🆕 ⑬ 2026-10-06 (11) — 1 дэх групп «Боловсрол & Сургалт» → «Сургалт, курс»
 const kurs = s.lists.find((g) => g.label === 'Сургалт, курс') || { items: [] };
-check('🆕 «Сургалт, курс» бүлэг ЯГ 23 дэд төрөлтэй (ЭХНИЙ «Гадаад хэл», СҮҮЛИЙН «Бусад»)',
-  kurs.items.length === 23 && kurs.items[0] === 'Гадаад хэл'
-    && kurs.items[kurs.items.length - 1] === 'Бусад',
-  `${kurs.items.length}: ${kurs.items.slice(0, 3).join(' | ')} … ${kurs.items.slice(-3).join(' | ')}`);
+// ✏️ 2026-10-06 (12): 23 мөр БҮГД биш — ЭХНИЙ 5 л харагдана (хэрэглэгчийн
+//    хүсэлт: «хураангуй харуулдаг болгоё, эхний 5-ыг харуулаад … Илүү гэж дар»)
+check('🆕 «Сургалт, курс» — ХУРААНГУЙ: зөвхөн ЭХНИЙ 5 мөр (23-аас) харагдана',
+  kurs.items.join('|') === 'Гадаад хэл|Үсчин, гоо сайхан|Хүнд машин механизм|Сантехник, цахилгаанчин|Гар утас, электроник засвар',
+  `${kurs.items.length}: ${kurs.items.join(' | ')}`);
+// ✏️ 2026-10-06 (12): сүүлийн мөрүүд («Тайлан ба төсөл» · «Орчуулга» · «Бусад»)
+//    ч ЭХЛЭЭД НУУГДСАН байх ЁСТОЙ — тэдгээр нь хураангуйгаас ГАДУУР (18 дэх)
+check('🆕 «Сургалт, курс» — үлдсэн 18 мөр ЭХЛЭЭД НУУГДСАН («Тайлан ба төсөл» · «Орчуулга» · «Бусад» орохгүй)',
+  !kurs.items.includes('Тайлан ба төсөл') && !kurs.items.includes('Орчуулга')
+    && !kurs.items.includes('Бусад'),
+  kurs.items.join(' | '));
 check('🏷 «Сургалт, курс» (бүлгийн нэр) нь СОНГОГДОХ мөр БИШ (`property_type` болохгүй ✓)',
   !s.tabs.includes('Сургалт, курс'));
 check('🚫 ХУУЧИН «Сургалт ба курс» дэд төрөл БАЙХГҮЙ (тэр нэрээр DB-д зар байвал `0030` → «Бусад»)',
   !s.tabs.includes('Сургалт ба курс'));
+
+// ═══ ⑭ 🆕 2026-10-06 (12): «ИЛҮҮ» ТОВЧ — БҮХ 23 МӨР НЭЭГДЭНЭ ═══
+// ⚠️ Hydrate-ыг ЗААВАЛ хүлээнэ: панель нь SSR HTML дээр ч байдаг тул
+//    hydrate-аас өмнөх `click()` нь React-ийн `onClick` руу ХҮРЭХГҮЙ ✗
+//    (2026-10-05 (45)-д CDP-ээр баригдсан RACE ①)
+await waitHydrated();
+check('🖱 «Илүү» товч дардагдав',
+  (await clickMore()) === 'OK');
+await sleep(150);
+const moreOpen = await moreUi();
+const kursOpen = (await panelUi2()).lists.find((g) => g.label === 'Сургалт, курс') || { items: [] };
+check('🆕 «Илүү» дарсны дараа БҮХ 23 мөр (СҮҮЛИЙН «Бусад») + панельд 52 мөр',
+  kursOpen.items.length === 23 && kursOpen.items[kursOpen.items.length - 1] === 'Бусад'
+    && moreOpen.tabs === 52,
+  `${kursOpen.items.length} мөр / tabs=${moreOpen.tabs}`);
+check('🏷 Товч нь «Хураах» болж, `aria-expanded="true"`',
+  moreOpen.text === 'Хураах' && moreOpen.expanded === 'true', JSON.stringify(moreOpen));
+// ⚠️ Нуугдсан 18-ын ДОТОР байсан хуучин 2 нэр («Тайлан ба төсөл» · «Орчуулга»)
+//    ч нээгдсэний дараа ХЭВЭЭР байх ЁСТОЙ — тэр нэрээр DB-д зар байгаа тул
+//    тэдгээрт хүрэх зам БҮРЭН ХААГДАХГҮЙ ✓ (`0030` migration-ы `NOT IN` жагсаалт)
+check('🆕 Нээгдсэний дараа хуучин 2 нэр («Тайлан ба төсөл» · «Орчуулга») ч харагдана',
+  kursOpen.items.includes('Тайлан ба төсөл') && kursOpen.items.includes('Орчуулга'),
+  kursOpen.items.slice(-4).join(' | '));
+check('🖱 «Хураах» товч дардагдав', (await clickMore()) === 'OK');
+await sleep(150);
+const moreBack = await moreUi();
+check('🖱 Буцаж ХУРААГДАВ — панельд 34 мөр, товч «Илүү +18»',
+  moreBack.tabs === 34 && moreBack.text === 'Илүү +18', JSON.stringify(moreBack));
 
 const build = s.lists.find((g) => g.label === 'Барилга & Засвар үйлчилгээ') || { items: [] };
 check('🆕 «Гагнуурын үйлчилгээ» — «Барилга & Засвар үйлчилгээ» бүлгийн 6 дахь (СҮҮЛИЙН) мөр',
@@ -387,7 +476,13 @@ await go(`${BASE}/?section=services`);
 await waitFor(`document.querySelectorAll('[data-section-panel] button[role="tab"]').length > 0`);
 const m = await panelUi2();
 check('📱 390px — «Эмнэлэг» гарчиг ХАРАГДАНА', m.heads.includes('Эмнэлэг'), m.heads.join(' | '));
-check('📱 390px — дэд төрөл 52 ХЭВЭЭР (бүгд нээлттэй ✓)', m.tabs.length === 52, `tabs=${m.tabs.length}`);
+// ✏️ 2026-10-06 (12): 390px дээр ч хураангуй ХҮЧИНТЭЙ — харагдах мөр 34 ✓
+check('📱 390px — харагдах мөр 34 («Сургалт, курс» хураангуй — 52 биш ✓)',
+  m.tabs.length === 34, `tabs=${m.tabs.length}`);
+const mMore = await moreUi();
+check('📱 390px — «Илүү» товч харагдана («Илүү +18», `aria-expanded="false"`)',
+  mMore.count === 1 && mMore.text === 'Илүү +18' && mMore.expanded === 'false',
+  JSON.stringify(mMore));
 check('📱 390px — хэвтээ гүйлт (overflow) 0', m.overflow <= 0, `overflow=${m.overflow}`);
 
 // ═══ ✏️🗑 2026-10-05 (45): ХЭСГИЙН НЭР + ХАСАГДСАН 2 ТАЛБАР ═══
