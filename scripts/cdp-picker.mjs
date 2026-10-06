@@ -1719,11 +1719,11 @@ ok('sidebar: 🔀 «Хөтлөгч» шүүлт БАЙХГҮЙ (0 талбар)'
 
 // ⚠️ 2026-10-04 (35): 🏷️ «Үйлдвэрлэгч»/🚙 «Загвар» нь сайдбараас ГАРЧ,
 //    `CarPicker` (modal) руу шилжсэн
-// 🆕 2026-10-04 (37): 🎨 «Өнгө» (ба ⚙️/⛽) ч сайдбараас ГАРЧ, үр дүнгийн ДЭЭРХ
-//    ХЭВТЭЭ шүүлтийн мөр (`#filter-bar`) руу «eBay-ийн Color ⌄» шиг pill болов
-//    (хэрэглэгчийн хүсэлт: «Түлш, Хурдны хайрцаг, Төлбөрийн нөхцөл, Өнгө
-//    эдгээрийг ebay-ийн дээр байгаа Color шиг болгоод өг») ⇒ sidebar-д attr
-//    шүүлт ОГТ ҮЛДЭХГҮЙ, бүгд `#filter-bar` дотор ✓
+// 🆕 2026-10-04 (37) → 🆕 2026-10-06 (17): 🎨 «Өнгө» (ба ⛽/⚙️) нь ⏳ (37)-д
+//    үр дүнгийн ДЭЭРХ ХЭВТЭЭ мөр (`#filter-bar`) руу «eBay-ийн Color ⌄» шиг
+//    pill болж байв ✗ — 🆕 (17)-д хэрэглэгчийн хүсэлтээр САЙДБАРТ БУЦАВ
+//    («Өнгө, Түлш, Хурдны хайрцаг … Төлбөрийн нөхцөлийн ардаас оруул») ⇒
+//    `#filter-bar` нь АВТО дээр ОГТ БАЙХГҮЙ ✓ (sidebar-д 3 attr шүүлт ✓)
 const SIDE_ORDER = `(() => [...document.querySelectorAll('aside [aria-label]')]
   .map((el) => (el.getAttribute('aria-label') || '').trim()).filter(Boolean))()`;
 const sideOrder = await evaluate(SIDE_ORDER);
@@ -1732,13 +1732,13 @@ ok('🚗 sidebar: 🏷️ «Үйлдвэрлэгч» / 🚙 «Загвар» с�
   JSON.stringify(sideOrder));
 const sideAttrCount = await evaluate(
   `document.querySelectorAll('aside [data-attr-filter]').length`);
-ok('🎛 sidebar: attr шүүлт БАЙХГҮЙ (0 — бүгд `#filter-bar` руу шилжсэн ✓)',
-  sideAttrCount === 0, `sideAttr=${sideAttrCount}`);
+ok('🎛 🆕 (17): sidebar-д 🎨/⛽/🔀 БУЦАВ (3 attr шүүлт ✓)',
+  sideAttrCount === 3, `sideAttr=${sideAttrCount}`);
 const BAR_ORDER = `(() => [...document.querySelectorAll('#filter-bar [aria-label]')]
   .map((el) => (el.getAttribute('aria-label') || '').trim()).filter(Boolean))()`;
 const barOrder = await evaluate(BAR_ORDER);
-ok('🎛 #filter-bar: attr шүүлтийн эхнийх нь 🎨 «Өнгө» (eBay-ийн «Color ⌄» ✓)',
-  barOrder[0] === 'Өнгө', JSON.stringify(barOrder));
+ok('🎛 🆕 (17): авто дээр `#filter-bar` БАЙХГҮЙ (0 pill — бүгд сайдбарт ✓)',
+  barOrder.length === 0, JSON.stringify(barOrder));
 
 // ── ⑦‴ 🏷️🚙 SIDEBAR → `CarPicker` (modal): Үйлдвэрлэгч → Загвар КАСКАД ──
 /**

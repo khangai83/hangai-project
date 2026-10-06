@@ -216,14 +216,16 @@ t('🚗 HomeClient.jsx: сайдбарт НЭГ товч (`data-sidebar-car`) �
 t('🗑 HomeClient.jsx: 🏷️ `brand` / 🚙 `model` нь сайдбарын attr ЖАГСААЛТААС шүүгдэнэ', () => {
   const ui = codeOnly(readSrc('components/HomeClient.jsx'));
   /**
-   * 🆕 2026-10-04 (37) · 2026-10-05 (42): `filterBar: true` талбар (🎨/⚙️/⛽ +
-   *    💼 🕒/📊/📈) нь үр дүнгийн дээрх ХЭВТЭЭ мөр рүү шилжсэн — тэр мөрийн
-   *    хасалт (`!f.filterBar`) нь brand/model-ыг шүүх мөрийнхөө ӨМНӨ байна
-   *    (2 дараалсан `.filter` ✓). ⚠️ Хатуу жагсаалт (`FILTER_BAR_ATTR_KEYS`)
-   *    БАЙХГҮЙ — туг нь `lib/locationData.js`-д (нэг эх сурвалж ✓)
+   * 🆕 2026-10-04 (37) · 2026-10-05 (42) · 🆕 2026-10-06 (17): `filterBar: true`
+   *    талбар (ОДОО зөвхөн 💻 📺/⚙️/🧠/💾) нь үр дүнгийн дээрх ХЭВТЭЭ мөр рүү
+   *    шилжсэн — тэр мөрийн хасалт (`!f.filterBar`) ба 🆕 (17)-ийн
+   *    «💳 Төлбөрийн нөхцөл-ийн дараах» хасалт (`!f.afterPayment`) хоёулаа
+   *    brand/model-ыг шүүх мөрийнхөө ӨМНӨ байна (3 дараалсан `.filter` ✓).
+   *    ⚠️ Хатуу жагсаалт (`FILTER_BAR_ATTR_KEYS`) БАЙХГҮЙ — туг нь
+   *    `lib/locationData.js`-д (нэг эх сурвалж ✓)
    */
   assert.match(ui,
-    /attrFilters\s*\.filter\(\(f\) => !f\.filterBar\)\s*\.filter\(\(f\) => !\(isAuto && \(f\.key === 'brand' \|\| f\.key === 'model'\)\)\)/,
+    /attrFilters\s*\.filter\(\(f\) => !f\.filterBar\)\s*\.filter\(\(f\) => !f\.afterPayment\)\s*\.filter\(\(f\) => !\(isAuto && \(f\.key === 'brand' \|\| f\.key === 'model'\)\)\)/,
     'attr жагсаалтаас brand/model-ыг шүүх мөр алга ✗');
   assert.ok(!/FILTER_BAR_ATTR_KEYS/.test(ui), 'хатуу жагсаалт (FILTER_BAR_ATTR_KEYS) буцаж орсон ✗');
 });

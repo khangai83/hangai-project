@@ -1740,11 +1740,18 @@ export default function HomeClient() {
 
   /**
    * 🧩🎛 2026-10-04 (37) · 🆕 2026-10-05 (42): ҮР ДҮҮНГИЙН ДЭЭРХ ХЭВТЭЭ
-   *    ШҮҮЛТИЙН МӨР (eBay-ийн «Color ⌄» шиг) — 🎨 Өнгө · ⚙️ Хурдны хайрцаг ·
-   *    ⛽ Түлш (🚗 авто) ба 🆕 💼 🕒 Ажлын цаг · 📊 Туршлага · 📈 Мэргэжлийн
-   *    түвшин (+ 💻 📺/⚙️/🧠/💾 ба ✅ «Төлөв»).
-   * 🆕 2026-10-06: 🛏 «Өрөөний тоо» ба 💳 «Төлбөрийн нөхцөл» нь ЭНД БАЙХГҮЙ —
-   *    хоёулаа САЙДБАРТ («📍 Байршил»-ийн доор) буцав (хэрэглэгчийн хүсэлт) ⇒
+   *    ШҮҮЛТИЙН МӨР (eBay-ийн «Color ⌄» шиг) — ⏳ (42)/(43)-д 🎨 Өнгө ·
+   *    ⚙️ Хурдны хайрцаг · ⛽ Түлш (🚗) · 💼 🕒/📊/📈 ба ✅ «Төлөв» ч ЭНД байв.
+   * 🆕 2026-10-06 (17): 🎨/⚙️/⛽ · 💼 🕒/📊/📈 ба ✅ «Төлөв» нь САЙДБАРТ
+   *    БУЦАВ (хэрэглэгчийн хүсэлт: «Өнгө, Түлш, Хурдны хайрцаг Дэлгэрэнгүй
+   *    хайлтын хэсэгт Төлбөрийн нөхцөлийн ардаас оруул» + «Ажлын цаг,
+   *    Туршлага, Мэргэжлийн түвшиныг бас Дэлгэрэнгүй хайлт д оруул» +
+   *    «Компьютер, Дагалдах хэрэгсэл болон бусад хэсгийн Төлөв сонголтыг ч»)
+   *    ⇒ мөр нь ОДОО зөвхөн 💻 📺 Дэлгэц · ⚙️ CPU · 🧠 RAM · 💾 Хард pill-тэй
+   *    (⚠️ хэрэглэгчийн хүсэлтэд зөвхөн «Төлөв» нэрлэгдсэн тул 4 үзүүлэлт
+   *    хэвээр pill ✓ — шаардвал `filterBar` тугийг хасахад л сайдбарт орно ✓)
+   * 🆕 2026-10-06: 🛏 «Өрөөний тоо» ба 💳 «Төлбөрийн нөхцөл» ч ЭНД БАЙХГҮЙ —
+   *    хоёулаа САЙДБАРТ (хэрэглэгчийн хүсэлт) ⇒
    *    мөр нь ЗӨВХӨН `filterBar: true` тугтай attr pill-үүдээс бүрдэнэ ✓
    * ⚠️ Аль талбар ЭНД ирэх нь `lib/locationData.js`-ийн **`filterBar: true`**
    *    тугаар шийдэгдэнэ — хатуу жагсаалт (`FILTER_BAR_ATTR_KEYS`) БАЙХГҮЙ
@@ -1759,6 +1766,87 @@ export default function HomeClient() {
   /** ⚠️ 2026-10-06: `showRooms`/`showPayments` нь ЭНД ОРОХГҮЙ — тэр хоёр блок
    *  сайдбарт тул `#filter-bar` нь зөвхөн attr pill-тэй үед л render болно ✓ */
   const hasFilterBar = filterBarAttrs.length > 0;
+  /**
+   * 🆕 2026-10-06 (17): «💳 Төлбөрийн нөхцөл»-ийн ЯГ АРАА гардаг attr шүүлтүүд
+   *    (🚗 🎨 Өнгө · ⛽ Түлш · ⚙️ Хурдны хайрцаг) — `lib/locationData.js`-ийн
+   *    `afterPayment: <эрэмбэ>` туг л шийднэ (хатуу жагсаалт БАЙХГҮЙ ✓;
+   *    1 = хамгийн эхний ⇒ Өнгө → Түлш → Хурдны хайрцаг).
+   *    ⚠️ Эдгээр нь САЙДБАРТ (үр дүнгийн дээрх `#filter-bar` pill БИШ ✓) —
+   *       хэрэглэгчийн хүсэлт: «Өнгө, Түлш, Хурдны хайрцаг Дэлгэрэнгүй хайлтын
+   *       хэсэгт Төлбөрийн нөхцөлийн ардаас оруул».
+   *    ⚠️ 2 ӨӨР UI БАЙХГҮЙ — үндсэн attr жагсаалт нь эдгээрийг ХАСНА
+   *       (`.filter((f) => !f.afterPayment)`) ✓
+   *    ⚠️ Утга/URL/DB ХӨНДӨГДӨӨГҮЙ: `?attr_color=Хар,Цагаан` →
+   *       `attrs->>color=in.(…)` (`lib/attrMultiFilter.mjs` ✓)
+   */
+  const afterPaymentAttrs = useMemo(
+    () => attrFilters
+      .filter((f) => f.chips && f.multi && f.afterPayment)
+      .sort((a, b) => a.afterPayment - b.afterPayment),
+    [attrFilters]
+  );
+  /**
+   * 🆕 2026-10-06 (17): ОЛОН СОНГОЛТТОЙ ЧИП-ИЙН ХАЙРЦАГ — НЭГ ГАЗАР бичигдэнэ
+   *    (⏳ урьд нь ③ газар хуулагдаж байв ✗): ① сайдбарын үндсэн attr шүүлт
+   *    ② 🆕 `afterPaymentAttrs` (💳-ийн дараах блок) ③ `#filter-bar` pill
+   *    (тэр нь `FilterPill` ⇢ ⌄ панель дотор энэ хайрцгийг `children`-ээр
+   *    авна ✓).
+   *    ⚠️ CDP-ийн дэгээнүүд ХЭВЭЭР (УСТГАХГҮЙ): `data-attr-filter` (талбар =
+   *       1 дэгээ) · `data-attr-multi="true"` (олон сонголт) · `data-attr-value`
+   *       (чип) · `chip-toggle` (+`-active`) · «N сонгосон» + «✕ Цуцлах» ✓
+   *    ⚠️ Дүрслэл нь «🛏 Өрөөний тоо»/«💳 Төлбөрийн нөхцөл»-тэй ЯГ ИЖИЛ ✓
+   */
+  const attrChipBox = (f) => (
+    <div
+        className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
+        data-attr-filter={f.key}
+        data-attr-multi="true"
+        role="group"
+        aria-label={f.label}
+      >
+        <div className="flex flex-wrap gap-1.5">
+          {(f.options || []).map((o) => {
+            const on = attrArray(f.key).includes(o);
+            return (
+              <button
+                key={o}
+                type="button"
+                aria-pressed={on}
+                data-attr-value={o}
+                onClick={() => toggleAttrMulti(f.key, o)}
+                className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+              >
+                {on && <span aria-hidden="true">✓</span>}
+                {o}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+  );
+  /**
+   * ⚠️ БҮТЭН БЛОК = «N сонгосон» badge + хайрцаг (`attrChipBox`) + «✕ Цуцлах»
+   *    — сайдбарын 2 газарт (үндсэн attr шүүлт · 🆕 `afterPaymentAttrs`) ✓
+   */
+  const attrChipsBlock = (f) => (
+    <>
+      {attrArray(f.key).length > 0 && (
+        <span className="self-start rounded-full bg-primary-light px-1.5 py-px text-[12px] font-bold text-primary">
+          {countAttrValues(attrArray(f.key))} сонгосон
+        </span>
+      )}
+      {attrChipBox(f)}
+      {attrArray(f.key).length > 0 && (
+        <button
+          type="button"
+          onClick={() => clearAttrMulti(f.key)}
+          className="self-start text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
+        >
+          ✕ Цуцлах
+        </button>
+      )}
+    </>
+  );
   /** «Зарах / Түрээслэх» сонголт харагдах эсэх — ⚠️ ЗӨВХӨН үл хөдлөхөд */
   const showCategories = hasCategoryChoice(section);
   /**
@@ -2742,9 +2830,13 @@ export default function HomeClient() {
                     Байршил-ийн доор оруул») ⇒ 2 ӨӨР UI БАЙХГҮЙ ✓
                     🆕 (15): 💳 нь «💰 Үнэ, ₮»-ний ДАРАА болов (хэрэглэгчийн
                     хүсэлт: «Автомашин дээр Үнийн дараа оруулах») ⇒
-                    Sidebar-ийн дараалал:
-                    «Байршил» → «🛏 Өрөөний тоо» → [attr шүүлтүүд] →
-                    «💰 Үнэ, ₮» → «💳 Төлбөрийн нөхцөл» → «📐 Талбай, м²» ✓
+                    Sidebar-ийн дараалал (🆕 2026-10-06 (17)-ийн дараа):
+                    «📍 Байршил» → «🛏 Өрөөний тоо» → [attr шүүлтүүд] →
+                    «💰 Үнэ, ₮» → «💳 Төлбөрийн нөхцөл» →
+                    🔀 🆕 «🎨 Өнгө» → «⛽ Түлш» → «⚙️ Хурдны хайрцаг»
+                    (`afterPaymentAttrs` — хэрэглэгчийн хүсэлт:
+                    «Өнгө, Түлш, Хурдны хайрцаг … Төлбөрийн нөхцөлийн ардаас
+                    оруул») → «📐 Талбай, м²» ✓
                     (⏳ 2026-10-03 (4): «Үнэ, ₮»-ний өмнө сайдбарт; 2026-10-04 (38):
                        өрөө нь `#filter-bar` pill; (37): төлбөр ч мөн pill — ОДОО
                        хоёулаа сайдбарт буцав ✓) */}
@@ -2976,14 +3068,14 @@ export default function HomeClient() {
                        нь формойн `getAttrFields`-тэй ЯГ ИЖИЛ `onlySubtypes` дүрмийг
                        хэрэглэнэ ✓ (Mouse/Keyboard/тонер дээр ГАРАХГҮЙ)
                     🕒 ⑥ ОЛОН СОНГОЛТТОЙ ЧИП ШҮҮЛТ (`f.chips` + `f.multi`,
-                       2026-10-03 (9) · 🆕 2026-10-05 (42), хэрэглэгчийн хүсэлт:
-                       «ажлын зар хайх хэсгийн Design ийг … хийгээрэй» ба
-                       «Ажлын цаг, Туршлага, Мэргэжлийн түвшиныг Өрөөний тоо шиг
-                       болго»): ⚠️ 2026-10-05 (42)-д 💼-ийн 🕒/📊/📈 нь
-                       `filterBar: true` тул ЭНД ИРЭХГҮЙ — үр дүнгийн дээрх
-                       `#filter-bar` pill болсон (🛏 «Өрөөний тоо»-той ЯГ ИЖИЛ
-                       хэв ✓). Энэ салбар нь туггүй `chips`+`multi` талбарт
-                       (ирээдүйд нэмэгдвэл) generically ажиллана ✓
+                       2026-10-03 (9) · 🆕 2026-10-05 (42) · 🆕 2026-10-06 (17),
+                       хэрэглэгчийн хүсэлт: «ажлын зар хайх хэсгийн Design ийг …
+                       хийгээрэй», «Ажлын цаг, Туршлага, Мэргэжлийн түвшиныг
+                       Өрөөний тоо шиг болго»): 🆕 (17)-д 💼-ийн 🕒/📊/📈 нь
+                       САЙДБАРТ БУЦАВ (⏳ (42) `filterBar` pill байв ✗) — ЭНЭ
+                       салбараар генерацлагдана ✓ (💼-д 💰 Цалин нь attr-ийн
+                       ӨМНӨ гардаг тул 3 чип цалингийн ДАРАА ✓); 🚗-ийн
+                       🎨/⛽/⚙️ нь `afterPayment` тул ТУСДАА (доор) ✓
                        ⚠️ Утга нь МАССИВ
                        (`?attr_jobType=Бүтэн цагийн,Цагийн`),
                     ⚠️ 🚗 АВТО-гийн 🏷️ `brand` / 🚙 `model` нь ЭНД ИРЭХГҮЙ — тэдгээр
@@ -2993,11 +3085,15 @@ export default function HomeClient() {
                        `model`-ыг ХЭВЭЭР буцаана (форм, URL, DB нэг эх сурвалж ✓) —
                        зөвхөн сайдбарын ДҮРСЛЭЛ энд шүүгдэнэ */}
                 {attrFilters
-                  // 🎛 2026-10-04 (37) · 🆕 2026-10-05 (42): `filterBar: true`
-                  //    талбар (🎨/⚙️/⛽ + 💼 🕒/📊/📈) нь үр дүнгийн дээрх
-                  //    ХЭВТЭЭ мөр (pill dropdown) руу шилжсэн — сайдбарт
+                  // 🎛 2026-10-04 (37) · 🆕 2026-10-05 (42) · 🆕 2026-10-06 (17):
+                  //    `filterBar: true` талбар (💻 📺/⚙️/🧠/💾) нь үр дүнгийн
+                  //    дээрх ХЭВТЭЭ мөр (pill dropdown) руу явдаг тул сайдбарт
+                  //    ДАВХАРДАХГҮЙ ✓; 🔀 `afterPayment` талбар (🚗 🎨/⛽/⚙️) нь
+                  //    💳 «Төлбөрийн нөхцөл»-ийн ЯГ АРАА ТУСДАА render болдог
+                  //    (`afterPaymentAttrs` — доор) ⇒ энэ үндсэн жагсаалтад ч
                   //    ДАВХАРДАХГҮЙ ✓ (`lib/locationData.js` — нэг эх сурвалж)
                   .filter((f) => !f.filterBar)
+                  .filter((f) => !f.afterPayment)
                   .filter((f) => !(isAuto && (f.key === 'brand' || f.key === 'model')))
                   .map((f) => {
                   /**
@@ -3029,48 +3125,7 @@ export default function HomeClient() {
                            — `scripts/cdp-notebook-specs.mjs`-ийн `[data-attr-filter]`
                            тоо ХЭВЭЭР (1 талбар = 1 дэгээ ✓); нэмэлт
                            `data-attr-multi="true"` нь олон сонголтыг илтгэнэ ✓ */
-                        <>
-                          {attrArray(f.key).length > 0 && (
-                            <span className="self-start rounded-full bg-primary-light px-1.5 py-px text-[12px] font-bold text-primary">
-                              {countAttrValues(attrArray(f.key))} сонгосон
-                            </span>
-                          )}
-                          <div
-                            className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
-                            data-attr-filter={f.key}
-                            data-attr-multi="true"
-                            role="group"
-                            aria-label={f.label}
-                          >
-                            <div className="flex flex-wrap gap-1.5">
-                              {(f.options || []).map((o) => {
-                                const on = attrArray(f.key).includes(o);
-                                return (
-                                  <button
-                                    key={o}
-                                    type="button"
-                                    aria-pressed={on}
-                                    data-attr-value={o}
-                                    onClick={() => toggleAttrMulti(f.key, o)}
-                                    className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
-                                  >
-                                    {on && <span aria-hidden="true">✓</span>}
-                                    {o}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                          {attrArray(f.key).length > 0 && (
-                            <button
-                              type="button"
-                              onClick={() => clearAttrMulti(f.key)}
-                              className="self-start text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
-                            >
-                              ✕ Цуцлах
-                            </button>
-                          )}
-                        </>
+                        attrChipsBlock(f)
                       ) : (
                       /* 🕒 НЭГ СОНГОЛТТОЙ ЧИП шүүлт (`f.chips` бий, `f.multi` БАЙХГҮЙ)
                          — утга нь НЭГ (`?attr_jobType=Бүтэн цагийн`), идэвхтэй чип дээр
@@ -3182,10 +3237,10 @@ export default function HomeClient() {
                     🗑 2026-10-03 (10): «Өрөөний тоо»-гийн ДООРХ «Өрөө» гэсэн
                        ИЛҮҮЦЭЛ шошго ХАСАГДАВ (хэрэглэгчийн хүсэлт) ✓ */}
 
-                {/* ===== 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — UI нь ДЭЭР (📍 Байршлын доор) =====
+                {/* ===== 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — UI нь ДООР (💰 Үнэ, ₮-ний дараа) =====
                     ⏳ ИСТОРИ: 2026-10-03 (16)-д ЭНД сайдбарт ЧИП байв →
                     2026-10-04 (37)-д `#filter-bar` pill болов → 🆕 2026-10-06-д
-                    ЭРГЭЖ сайдбарт («📍 Байршил»-ийн доор, 🛏 өрөөний тооныхоо
+                    ЭРГЭЖ сайдбарт (14: «📍 Байршил»-ийн доор; 15: «💰 Үнэ, ₮»-ний
                        ДАРАА) орлоо (хэрэглэгчийн хүсэлт: «…Төлбөрийн нөхцөлийг
                        Дэлгэрэнгүй хайлтын Байршил-ийн доор оруул») ⇒ 1 Л ГАЗАР ✓
                     🔍 Хайх үг: data-payment-filter, togglePayments, PAYMENT_OPTIONS
@@ -3232,7 +3287,9 @@ export default function HomeClient() {
                        `applyPaymentFilter()` (jsonb `cs` + OR) — UI-ийн өөрчлөлт
                        нь URL/DB-д ОГТ хүрэхгүй ✓
                     ⚠️ `data-payment-filter` / `data-payment-value` нь
-                       `scripts/cdp-payments.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓ */}
+                       `scripts/cdp-payments.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓
+                    🆕 2026-10-06 (17): ЭНЭ блокийн ЯГ АРАА 🚗 🎨 Өнгө · ⛽ Түлш ·
+                       ⚙️ Хурдны хайрцаг гарна (`afterPaymentAttrs`) — доор ✓ */}
                 {showPayments && (
                   <SideBlock label="Төлбөрийн нөхцөл">
                     <div
@@ -3276,6 +3333,28 @@ export default function HomeClient() {
                     )}
                   </SideBlock>
                 )}
+
+                {/* ===== 🔀 2026-10-06 (17): «💳 ТӨЛБӨРИЙН НӨХЦӨЛ»-ИЙН ДАРААХ ШҮҮЛТҮҮД =====
+                    🆕 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Өнгө, Түлш, Хурдны хайрцаг
+                    Дэлгэрэнгүй хайлтын хэсэгт Төлбөрийн нөхцөлийн ардаас оруул».
+                    ⚠️ Аль талбар энд гарахыг `lib/locationData.js`-ийн
+                       `afterPayment: <эрэмбэ>` туг л шийднэ (хатуу жагсаалт
+                       БАЙХГҮЙ ✓) — ОДОО 🚗 🎨 Өнгө (1) → ⛽ Түлш (2) →
+                       ⚙️ Хурдны хайрцаг (3) ✓
+                    ⚠️ ХЭВ нь сайдбарын бусад чип блоктой ЯГ ИЖИЛ
+                       (`attrChipsBlock` — нэг газар бичигдэнэ ✓): хүрээтэй
+                       хайрцаг + `chip-toggle` чипүүд + «N сонгосон» badge +
+                       «✕ Цуцлах»; дэгээ (`data-attr-filter` / `data-attr-multi` /
+                       `data-attr-value`) ХЭВЭЭР (CDP ✓)
+                    ⚠️ Утга/URL/DB ХӨНДӨГДӨӨГҮЙ: `?attr_color=Хар,Цагаан` →
+                       `attrs->>color=in.(…)` (`lib/attrMultiFilter.mjs` ✓);
+                       🏠 үл хөдлөх · 💼 ажил · 💻 компьютер зэрэгт `afterPayment`
+                       талбар БАЙХГҮЙ тул энэ блок тэнд ОГТ ГАРАХГҮЙ ✓ */}
+                {afterPaymentAttrs.map((f) => (
+                  <SideBlock key={f.key} label={f.label}>
+                    {attrChipsBlock(f)}
+                  </SideBlock>
+                ))}
 
                 {/* ===== ТАЛБАЙ, м² — 2026-09-30: ЧИРДЭГ ХҮРЭЭ ХАСАГДАВ =====
                     ⚠️ «Талбай» нь ЗӨВХӨН үл хөдлөх хэсэгт (0016) — автомашин/
@@ -3533,8 +3612,12 @@ export default function HomeClient() {
                    `lib/queries.js` (`in.(…)` / `cs.{…}`) ✓
                 🆕 2026-10-05 (43): 💻-ийн 📺 Дэлгэц · ⚙️ CPU · 🧠 RAM · 💾 Хард ба
                 ✅ «Төлөв» (⏳ хуучин нэр «Шинэ / Шинэвтэр / Хуучин») ч мөн
-                ЭНЭ МӨРӨНД pill болж нэгдэв ⇒ сайдбарт attr шүүлт ОГТ
-                ҮЛДЭХГҮЙ (📺/⚙️/🧠/💾/✅ нь зөвхөн pill ✓).
+                ЭНЭ МӨРӨНД pill болж нэгдсэн байв.
+                🆕 2026-10-06 (17): ⚠️ ОДОО ЭНЭ МӨРӨНД ЗӨВХӨН 💻-ийн 📺/⚙️/🧠/💾
+                4 pill ҮЛДЭВ — хэрэглэгчийн хүсэлтээр 🚗 🎨/⛽/⚙️ (💳 Төлбөрийн
+                нөхцөлийн АРАА), 💼 🕒/📊/📈 ба ✅ «Төлөв» нь САЙДБАРТ буцсан ✓
+                (мөр нь ⏳ (42)/(43)-д «сайдбарт attr 0» байснаа ОДОО урвуу:
+                4 pill л үлдэж, бусад нь сайдбарт ✓ — `filterBar` туг л шийднэ ✓)
                 ⚠️ Pill-ийн шошго нь `f.label` — «Төлөв» гэж ЛИБЭЭС ирнэ ✓ */}
             {hasFilterBar && (
               <div id="filter-bar" data-filter-bar className="mb-3 flex flex-wrap items-center gap-2">
@@ -3546,32 +3629,9 @@ export default function HomeClient() {
                     count={countAttrValues(attrArray(f.key))}
                     onClear={() => clearAttrMulti(f.key)}
                   >
-                    <div
-                      className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
-                      data-attr-filter={f.key}
-                      data-attr-multi="true"
-                      role="group"
-                      aria-label={f.label}
-                    >
-                      <div className="flex flex-wrap gap-1.5">
-                        {(f.options || []).map((o) => {
-                          const on = attrArray(f.key).includes(o);
-                          return (
-                            <button
-                              key={o}
-                              type="button"
-                              aria-pressed={on}
-                              data-attr-value={o}
-                              onClick={() => toggleAttrMulti(f.key, o)}
-                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
-                            >
-                              {on && <span aria-hidden="true">✓</span>}
-                              {o}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    {/* 🆕 2026-10-06 (17): хайрцаг нь НЭГ газар бичигддэг
+                        (`attrChipBox` — сайдбарын чип блоктой ЯГ ИЖИЛ ✓) */}
+                    {attrChipBox(f)}
                   </FilterPill>
                 ))}
                 {/* ⏳ ИСТОРИ: 🛏 «Өрөөний тоо» (2026-10-04 (38)) ба 💳 «Төлбөрийн

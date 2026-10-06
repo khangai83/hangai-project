@@ -20,6 +20,13 @@
 //    `chip-toggle` чипүүд, `?attr_jobType=Бүтэн цагийн,Цагийн` ба DB
 //    `attrs->>jobType=in.(…)` ✓ (⚠️ ФОРМ ХӨНДӨГДӨӨГҮЙ — `formChips` хэвээр ✓)
 //
+// 🆕 2026-10-06 (17) (хэрэглэгчийн хүсэлт: «Ажлын зарын Ажлын цаг, Туршлага,
+//    Мэргэжлийн түвшин -ийг бас Дэлгэрэнгүй хайлт д оруул»): ⏳ (42)-ийн
+//    `#filter-bar` PILL ХАСАГДАВ ⇒ 3 нь «Дэлгэрэнгүй хайлт»-ийн САЙДБАРТ
+//    буцав — 💼-ийн дээд «💰 Цалин, ₮» блокийн ДАРАА, 🛏/💳-тэй ЯГ ИЖИЛ
+//    хүрээтэй хайрцаг + `chip-toggle` чипүүд + «N сонгосон» + «✕ Цуцлах»
+//    (⚠️ утга/URL/DB/форм БҮГД ХӨНДӨГДӨӨГҮЙ — зөвхөн ГАЗАР нь солигдов ✓)
+//
 // ЯАГААД ХЭРЭГТЭЙ ВЭ:
 //   Ажлын зарын талбарууд/form/шүүлт/карт/дэлгэрэнгүй нь НЭГ эх сурвалжаас
 //   (`lib/locationData.js`) удирдагдана — нэг газар буруу болвол форм, хайлт,
@@ -75,25 +82,25 @@ t('💼 jobs: форм нь ЯГ 5 талбар — 🏢 company / 💼 position
   ['company', 'position'].forEach((k) => assert.equal(getAttrField('jobs', k), null, `${k} байсаар байна ✗`));
 });
 
-t('🕒 Ажлын цаг — 5 сонголт, `chips` + `multi` + `filterBar` (#filter-bar pill)', () => {
+t('🕒 Ажлын цаг — 5 сонголт, `chips` + `multi` (сайдбарын чип блок)', () => {
   const f = getAttrField('jobs', 'jobType');
   assert.equal(f.label, 'Ажлын цаг');
   assert.equal(f.icon, '🕒');
   assert.equal(f.chips, true);
   // 🆕 2026-10-05 (42): «Өрөөний тоо»/«Төлбөрийн нөхцөл» шиг олон сонголт
-  //    (`in.(…)` query ✓) ба `#filter-bar` pill (`filterBar` туг ✓)
+  //    (`in.(…)` query ✓); 🆕 2026-10-06 (17): pill туг ХАСАГДАВ (сайдбарт ✓)
   assert.equal(f.multi, true);
-  assert.equal(f.filterBar, true);
+  assert.equal(f.filterBar, undefined, 'pill туг хэвээр байна ✗ (сайдбарт орох ёстой)');
   assert.deepEqual(f.options, JOB_TIME_OPTIONS);
   assert.deepEqual(JOB_TIME_OPTIONS, ['Бүтэн цагийн', 'Хагас цагийн', 'Цагийн', 'Гэрээт', 'Түр хугацааны']);
 });
 
-t('📊 Туршлага — Шаардлагатай / Шаардлагагүй (`chips` + `multi` + `filterBar`)', () => {
+t('📊 Туршлага — Шаардлагатай / Шаардлагагүй (`chips` + `multi`)', () => {
   const f = getAttrField('jobs', 'experience');
   assert.deepEqual(f.options, ['Шаардлагатай', 'Шаардлагагүй']);
   assert.equal(f.chips, true);
   assert.equal(f.multi, true);
-  assert.equal(f.filterBar, true);
+  assert.equal(f.filterBar, undefined);
 });
 
 t('🏷️ Зарлагч — Байгууллага / Хувь хүн / Зуучлагч', () => {
@@ -102,13 +109,13 @@ t('🏷️ Зарлагч — Байгууллага / Хувь хүн / Зуу�
   assert.deepEqual(f.options, ['Байгууллага', 'Хувь хүн', 'Зуучлагч']);
 });
 
-t('📈 Мэргэжлийн түвшин — 5 шат (`chips` + `multi` + `filterBar`)', () => {
+t('📈 Мэргэжлийн түвшин — 5 шат (`chips` + `multi`)', () => {
   const f = getAttrField('jobs', 'jobLevel');
   assert.equal(f.label, 'Мэргэжлийн түвшин');
   assert.deepEqual(f.options, ['Дадлагын', 'Анхан шатны', 'Мэргэжилтэн', 'Дунд шатны удирдлага', 'Дээд шатны удирдлага']);
   assert.equal(f.chips, true);
   assert.equal(f.multi, true);
-  assert.equal(f.filterBar, true);
+  assert.equal(f.filterBar, undefined);
 });
 
 t('💰 Цалингийн төрөл — Тогтмол / Хэлбэлзэх', () => {
@@ -140,28 +147,37 @@ t('🚫 Хуучин талбарууд (salary/education/workMode/expiry) фо�
   assert.ok(!getAttrFilters('jobs').some((f) => ['salary', 'education', 'workMode', 'expiry'].includes(f.key)));
 });
 
-// ---------- ② #FILTER-BAR PILL (2026-10-05 (42)) ----------
-t('🎛 Шүүлт нь ЯГ 3 — гурвуулаа `#filter-bar` pill (`chips` + `multi` + `filterBar`)', () => {
+// ---------- ② ДЭЛГЭРЭНГҮЙ ХАЙЛТ (сайдбар) — (42)-д pill байснаа (17)-д буцав ----------
+t('🎛 Шүүлт нь ЯГ 3 — гурвуулаа САЙДБАРТ (`chips` + `multi`, pill туггүй)', () => {
   assert.deepEqual(getAttrFilters('jobs').map((f) => f.key), ['jobType', 'experience', 'jobLevel']);
   // 🆕 (42): «🛏 Өрөөний тоо» / «💳 Төлбөрийн нөхцөл»-ийн ЯГ ИЖИЛ —
   //    `chips` + `multi` (олон сонголт: `?attr_x=A,B` ⇒ `attrs->>x=in.(…)`)
-  //    + `filterBar` (сайдбар БИШ, үр дүнгийн дээрх хэвтээ мөрөнд pill ✓)
+  // 🆕 (17): `filterBar` туг ХАСАГДАВ ⇒ pill БИШ, сайдбарын чип блок ✓
   getAttrFilters('jobs').forEach((f) => {
     assert.equal(f.chips, true, `${f.key}.chips ✗`);
     assert.equal(f.multi, true, `${f.key}.multi ✗`);
-    assert.equal(f.filterBar, true, `${f.key}.filterBar ✗ (pill болохгүй)`);
+    assert.equal(f.filterBar, undefined, `${f.key}.filterBar: pill хэвээр ✗`);
+    assert.equal(f.afterPayment, undefined, `${f.key}.afterPayment: 💳-ийн араа биш ✗`);
   });
 });
 
-t('🎛 HomeClient: `filterBar` туг → `#filter-bar` pill · сайдбарт ШҮҮГДЭНЭ', () => {
+t('🎛 HomeClient: pill → `#filter-bar` · сайдбарт `!f.filterBar` ба `!f.afterPayment`', () => {
   /**
-   * 🆕 2026-10-05 (42): аль талбар `#filter-bar`-т гарахыг `lib/locationData.js`
-   *    -ийн `filterBar: true` туг л шийднэ (хатуу жагсаалт `FILTER_BAR_ATTR_KEYS`
-   *    БАЙХГҮЙ ✓) — 2 ӨӨР UI БАЙХГҮЙ (сайдбарт `!f.filterBar`-ээр хасагдана ✓)
+   * 🆕 2026-10-05 (42) · 🆕 2026-10-06 (17): аль талбар `#filter-bar`-т гарахыг
+   *    `lib/locationData.js`-ийн `filterBar: true` туг л шийднэ (хатуу жагсаалт
+   *    `FILTER_BAR_ATTR_KEYS` БАЙХГҮЙ ✓) — 2 ӨӨР UI БАЙХГҮЙ (сайдбарт
+   *    `!f.filterBar`-ээр хасагдана ✓). 🆕 (17): 🔀 `afterPayment` талбар нь
+   *    үндсэн attr жагсаалтад ОРОХГҮЙ — «💳 Төлбөрийн нөхцөл»-ийн дараа ТУСДАА ✓
    */
   assert.match(HOME_CODE, /attrFilters\.filter\(\(f\) => f\.chips && f\.multi && f\.filterBar\)/);
   assert.match(HOME_CODE, /\.filter\(\(f\) => !f\.filterBar\)/);
+  assert.match(HOME_CODE, /\.filter\(\(f\) => !f\.afterPayment\)/);
   assert.ok(!/FILTER_BAR_ATTR_KEYS/.test(HOME_CODE), 'хатуу жагсаалт буцаж орсон ✗');
+  // 🆕 (17): 💼-ийн 3 чип нь сайдбарт — «💰 Цалин, ₮» блокийн ДАРАА ✓
+  const priceAt = HOME.indexOf('{isJobs && priceSideBlock}');
+  const attrAt = HOME.indexOf('{attrFilters');
+  assert.ok(priceAt > 0 && attrAt > 0 && priceAt < attrAt,
+    '💼 «Цалин, ₮» нь attr шүүлтүүдийн дараа байна ✗ (3 чип цалингийн дараа байх ёстой)');
   // pill нь `data-filter-pill`/`data-filter-panel` дэгээтэй (`FilterPill`)
   assert.match(HOME_CODE, /data-filter-pill=\{testKey\}/);
   assert.match(HOME_CODE, /data-filter-panel=\{testKey\}/);

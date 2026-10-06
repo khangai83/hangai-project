@@ -15,6 +15,14 @@
  *   ⚠️ Утга/`options`/URL параметрийн нэр ХӨНДӨГДӨӨГҮЙ — зөвхөн DB дээр
  *      `attrs->>cpu=eq.X` → `attrs->>cpu=in.(X)` (олон сонголт, OR) болов ✓
  *
+ * 🆕 2026-10-06 (17) (хэрэглэгчийн хүсэлт: «…Компьютер, Дагалдах хэрэгсэл болон
+ *   бусад хэсгийн Төлөв сонголтыг ч Дэлгэрэнгүй хайлт хэсэгт оруул»): ✅ «Төлөв»
+ *   нь ХЭСЭГ БҮРД сайдбарт («Дэлгэрэнгүй хайлт») БУЦАВ ⇒ 💻 Notebook дээр
+ *   `#filter-bar`-т ЗӨВХӨН 📺/⚙️/🧠/💾 4 pill үлдэв; 🚗 авто дээр 🎨/⛽/⚙️
+ *   (`afterPayment: 1|2|3`) ч сайдбарт буцаж, «💳 Төлбөрийн нөхцөл»-ийн ЯГ
+ *   АРАА гарав (хүсэлт: «Өнгө, Түлш, Хурдны хайрцаг … Төлбөрийн нөхцөлийн
+ *   ардаас оруул») ⇒ 🚗/🏠-аас бусад хэсэгт `#filter-bar` ОГТ БАЙХГҮЙ ✓
+ *
  * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ:
  *   ① `?section=computers&type=Apple` (Notebook брэнд) дээр `[data-attr-filter]`
  *      === 5 (📺 → ⚙️ → 🧠 → 💾 → ✅), дараалал/шошго нь ЛИБЭЭС ижил ✓
@@ -261,6 +269,17 @@ const specUi = () => evalJs(`(() => {
      *    гэдгийг (sidebar + pill) батлана ✓
      */
     asideTotal: document.querySelectorAll('#advanced-filters [data-attr-filter]').length,
+    /**
+     * 🆕 2026-10-06 (17): САЙДБАРТ («Дэлгэрэнгүй хайлт») буцсан шүүлтүүд —
+     *    ✅ «Төлөв» (8 хэсэг) ба 🚗 🎨/⛽/⚙️ (afterPayment). ⚠️ pill-ийн ба
+     *    сайдбарын жагсаалтыг ХОЁУЛАНГ нь либээс шалгана ⇒ нэг талбар
+     *    ЗӨВХӨН нэг газарт («2 ӨӨР UI БАЙХГҮЙ» ✓)
+     *    ⚠️ ЭНЭ КОММЕНТ НЬ ТЕМПЛЭЙТ ЛИТЕРАЛ ДОТОР ТУЛ BACKTICK БИЧИХГҮЙ ✗
+     */
+    asideKeys: [...document.querySelectorAll('#advanced-filters [data-attr-filter]')]
+      .map((el) => el.getAttribute('data-attr-filter')),
+    asideLabels: [...document.querySelectorAll('#advanced-filters [data-attr-filter]')]
+      .map((el) => (el.getAttribute('aria-label') || '').trim()),
     /** «#filter-bar» дахь PILL-ийн түлхүүрүүд («data-filter-pill» — ⚠️ 2026-10-06:
      *  💳/🛏 нь pill БИШ, сайдбарт (SideBlock) ⇒ зөвхөн attr pill-үүд ✓) */
     barKeys: [...document.querySelectorAll('#filter-bar [data-filter-pill]')]
@@ -343,8 +362,14 @@ const EXPECT = getAttrFilters('computers', 'Apple').filter((f) => !f.searchable)
  *    (`chips: true`) — тэр нь `.options`/`.value` БАЙХГҮЙ (`<select>` БИШ) тул
  *    `<select>`-ийн харьцуулалтаас (тоо/утга/«Бүгд») ХАСНА ✓
  */
-const EXPECT_SELECTS = EXPECT.filter((f) => !f.chips);
+const EXPECT_PILL = EXPECT.filter((f) => !f.chips);   // (17): 0 — бүгд чип ✓
 const EXPECT_CHIPS = EXPECT.filter((f) => f.chips);
+/**
+ * 🆕 2026-10-06 (17): 💻 Notebook дээр ✅ «Төлөв» нь САЙДБАРТ, 📺/⚙️/🧠/💾 нь
+ *    `#filter-bar` pill хэвээр ⇒ харьцуулалтуудыг ХОЁР бүлэгт хуваана ✓
+ */
+const EXPECT_PILLBAR = EXPECT.filter((f) => f.filterBar);   // screen · cpu · ram · storage
+const EXPECT_ASIDE = EXPECT.filter((f) => !f.filterBar);    // condition ✓
 
 console.log('\n🖥 CDP — 💻 Notebook-ийн шүүлт (📺 Дэлгэц · ⚙️ CPU · 🧠 RAM · 💾 Хард)\n');
 
@@ -370,41 +395,45 @@ const countReady = await waitFor(`(() => {
 })()`, 25000);
 const apple = await specUi();
 check('🖥 Sidebar БАЙНА (`#advanced-filters` — хэсэг/дэд төрөл сонгосон үед ✓)', apple.sidebar);
-check('📺⚙️🧠💾✅ `[data-attr-filter]` === 5 (4 үзүүлэлт + ✅ «Төлөв»)',
+check('📺⚙️🧠💾✅ `[data-attr-filter]` === 5 (📺/⚙️/🧠/💾 pill + 🆕 ✅ сайдбарт)',
   apple.total === 5, `keys=[${apple.keys.join(', ')}]`);
-check('🖥 Дараалал нь ЛИБЭЭС ижил (screen → cpu → ram → storage → condition)',
-  apple.keys.join(',') === EXPECT.map((f) => f.key).join(','),
-  `${apple.keys.join(',')} ↔ ${EXPECT.map((f) => f.key).join(',')}`);
-check('🏷 Шошгууд нь ЛИБЭЭС ижил (`aria-label` — ✅ нь «Төлөв» ✓)',
-  apple.labels.join(' | ') === EXPECT.map((f) => f.label).join(' | '), apple.labels.join(' | '));
-/**
- * 🆕 2026-10-05 (43): 5-уулаа САЙДБАРААС ГАРЧ, үр дүнгийн дээрх `#filter-bar`
- *    руу шилжсэн ⇒ ① pill-ийн жагсаалт/дараалал ② сайдбарт attr шүүлт 0
- *    гэдгийг ХОЁУЛАНГ нь шалгана (2 өөр UI БАЙХГҮЙ ✓)
- */
-check('🎛 🆕 (43): 5-уулаа `#filter-bar` PILL ба дараалал нь либээс ижил ✓',
-  apple.barKeys.join(',') === EXPECT.map((f) => f.key).join(','),
+check('🎛 🆕 (17): 📺/⚙️/🧠/💾 4 нь `#filter-bar` PILL ба дараалал нь либээс ижил ✓',
+  apple.barKeys.join(',') === EXPECT_PILLBAR.map((f) => f.key).join(','),
   `pills=[${apple.barKeys.join(', ')}]`);
-check('🎛 🆕 (43): сайдбарт attr шүүлт 0 (`asideTotal` — давхар UI БАЙХГҮЙ ✓)',
-  apple.asideTotal === 0, `asideTotal=${apple.asideTotal}`);
-check('🎛 🆕 (43): Сонголтын ТОО нь ЛИБЭЭС ижил (📺7 · ⚙️19 · 🧠13 · 💾6 · ✅3 — бүгд ЧИП)',
-  apple.chipBlocks.map((b) => b.total).join(',') === EXPECT_CHIPS.map((f) => f.options.length).join(','),
-  `${apple.chipBlocks.map((b) => b.total).join(',')} ↔ ${EXPECT_CHIPS.map((f) => f.options.length).join(',')}`);
+check('🏷 🆕 (17): pill-ийн ШОШГУУД нь ЛИБЭЭС ижил (`aria-label` ✓)',
+  apple.labels.filter((_, i) => apple.keys[i] !== 'condition').join(' | ')
+    === EXPECT_PILLBAR.map((f) => f.label).join(' | '),
+  apple.labels.join(' | '));
+check('🎛 🆕 (17): ✅ «Төлөв» нь САЙДБАРТ (⏳ (43)-д pill байв · pill БИШ ✓)',
+  apple.asideKeys.join(',') === EXPECT_ASIDE.map((f) => f.key).join(',')
+    && apple.asideLabels.join(' | ') === EXPECT_ASIDE.map((f) => f.label).join(' | '),
+  `aside=[${apple.asideKeys.join(', ')}] · ${apple.asideLabels.join(' | ')}`);
+check('🎛 Сонголтын ТОО нь ЛИБЭЭС ижил (📺7 · ⚙️19 · 🧠13 · 💾6 · ✅3 — бүгд ЧИП)',
+  EXPECT_CHIPS.map((f) => {
+    const b = apple.chipBlocks.find((x) => x.key === f.key);
+    return b ? b.total : -1;
+  }).join(',') === EXPECT_CHIPS.map((f) => f.options.length).join(','),
+  JSON.stringify(apple.chipBlocks.map((b) => b.key + ':' + b.total)));
 check('🎛 Сонголтын УТГА нь ч ЛИБЭЭС ижил (давхар хуулбар БАЙХГҮЙ ✓)',
-  apple.chipBlocks.map((b) => b.values.join('·')).join('|')
-    === EXPECT_CHIPS.map((f) => f.options.join('·')).join('|'),
-  `⚙️: ${apple.chipBlocks[1] ? apple.chipBlocks[1].values.slice(0, 4).join(' · ') : ''} …`);
+  EXPECT_CHIPS.every((f) => {
+    const b = apple.chipBlocks.find((x) => x.key === f.key);
+    return !!b && b.values.join('·') === f.options.join('·');
+  }),
+  `⚙️: ${(apple.chipBlocks.find((b) => b.key === 'cpu') || { values: [] }).values.slice(0, 4).join(' · ')} …`);
 check('🎛 5 блок БҮГД ОЛОН СОНГОЛТТОЙ (`data-attr-multi` · `<button>` · сонголт 0)',
   apple.chipBlocks.length === EXPECT_CHIPS.length
-    && apple.chipBlocks.every((b, i) => b.key === EXPECT_CHIPS[i].key
-      && b.multi === true && b.total === EXPECT_CHIPS[i].options.length
-      && b.kinds.every((k) => k === 'button') && b.pressed.length === 0),
+    && EXPECT_CHIPS.every((f) => {
+      const b = apple.chipBlocks.find((x) => x.key === f.key);
+      return !!b && b.multi === true && b.total === f.options.length
+        && b.kinds.every((k) => k === 'button') && b.pressed.length === 0;
+    }),
   JSON.stringify(apple.chipBlocks.map((b) => b.key + ':' + b.total + (b.multi ? '' : ':NO_MULTI'))));
-check('⛔ 🆕 (43): 💻 Notebook дээр НЭГ Ч `<select>` БАЙХГҮЙ (⏳ (7)-д 📺/⚙️/🧠/💾 байв ✗)',
-  apple.selectKeys.length === 0 && EXPECT_SELECTS.length === 0,
-  `selects=[${apple.selectKeys.join(', ')}] · EXPECT_SELECTS=${EXPECT_SELECTS.length}`);
-check('🖥 Сайдбарын БЛОКУУД: 🏷 Брэнд + «Үнэ, ₮» л ҮЛДЭВ (📺/⚙️/🧠/💾 блок ГАРСАН ✓)',
+check('⛔ 🆕 (43)/(17): 💻 Notebook дээр НЭГ Ч `<select>` БАЙХГҮЙ (📺/⚙️/🧠/💾 ч чип ✓)',
+  apple.selectKeys.length === 0 && EXPECT_PILL.length === 0,
+  `selects=[${apple.selectKeys.join(', ')}] · EXPECT_PILL=${EXPECT_PILL.length}`);
+check('🖥 Сайдбарын БЛОКУУД: 🏷 Брэнд + «Үнэ, ₮» + 🆕 ✅ «Төлөв» (📺/⚙️/🧠/💾 блок ГАРСАН ✓)',
   /Брэнд/.test(apple.blocks.join(' ')) && /Үнэ/.test(apple.blocks.join(' '))
+    && /Төлөв/.test(apple.blocks.join(' '))
     && !/Дэлгэц|CPU|RAM|Хард/.test(apple.blocks.join(' ')),
   apple.blocks.join(' → '));
 check('🔎 Шүүлт хоосон үед DB query-д `attrs->>cpu/screen/ram/storage` ОРООГҮЙ',
@@ -440,8 +469,9 @@ check('🏷 Идэвхтэй шүүлтийн чип «Intel Core i5» гарл�
 check('📉 Үр дүнгийн тоо БУУРСАН (шүүлт бодит DB дээр ажиллаж байна ✓)',
   typeof cpuUi.count === 'number' && cpuUi.count <= allCount,
   `${cpuUi.count} ≤ ${allCount} (шүүлттэй тоо ХЭЗЭЭ Ч илүү гарахгүй ✓)`);
-check('🖥 5 pill ХЭВЭЭР байна (утга тавихад нуугдахгүй ✓)',
-  cpuUi.total === 5 && cpuUi.barKeys.length === 5, `total=${cpuUi.total}`);
+check('🖥 5 шүүлт ХЭВЭЭР байна (утга тавихад нуугдахгүй ✓ · pill 4 + сайдбар ✅ 1)',
+  cpuUi.total === 5 && cpuUi.barKeys.length === 4 && cpuUi.asideKeys.join(',') === 'condition',
+  `total=${cpuUi.total} · pills=${cpuUi.barKeys.length} · aside=[${cpuUi.asideKeys.join(', ')}]`);
 
 // ---- ②b 🆕 (43) ОЛОН СОНГОЛТ: 2 дахь утга НЭМЭГДЭНЭ (OR · `in.(A,B)`) ----
 listingReqs.length = 0;
@@ -465,12 +495,12 @@ check('🎛 Pill Тоо badge «2» + «2 сонгосон» + 2 чип идэв
   `barCounts=[${cpu2.barCounts.join(' ')}] · pressed=[${cpu2Block ? cpu2Block.pressed.join(', ') : ''}]`);
 check('🏷 Идэвхтэй шүүлтийн чип ТОВЧЛОГДОВ («2 процессор» — `multiNoun` ✓)',
   cpu2.chips.some((c) => c === '2 процессор'), `chips=[${cpu2.chips.join(' | ')}]`);
-check('✅ 🆕 (43): 5 дахь pill-ийн шошго «Төлөв» (⏳ «Шинэ / Шинэвтэр / Хуучин» байв ✗)',
-  cpu2.labels[4] === 'Төлөв', `labels=[${cpu2.labels.join(' | ')}]`);
+check('✅ 🆕 (43)/(17): ✅ «Төлөв» шүүлтийн шошго (⏳ «Шинэ / Шинэвтэр / Хуучин» байв ✗ · сайдбарт ✓)',
+  cpu2.asideLabels.join(' | ') === 'Төлөв', `asideLabels=[${cpu2.asideLabels.join(' | ')}]`);
 const condPill = cpu2.chipBlocks.find((b) => b.key === 'condition');
-check('✅ «Төлөв» pill нь 3 чип (Шинэ · Шинэвтэр · Хуучин — сонголт ХӨНДӨГДӨӨГҮЙ ✓)',
+check('✅ «Төлөв» блок нь 3 чип (Шинэ · Шинэвтэр · Хуучин — сонголт ХӨНДӨГДӨӨГҮЙ ✓)',
   !!condPill && condPill.total === 3 && condPill.values.join(',') === 'Шинэ,Шинэвтэр,Хуучин',
-  condPill ? condPill.values.join(' · ') : 'NO_PILL');
+  condPill ? condPill.values.join(' · ') : 'NO_BLOCK');
 
 // ═══════ ③ ЛИНКЭЭР ОРОХ (`?attr_cpu=…`) — PILL дотор тэмдэглэгдэнэ ═══════
 listingReqs.length = 0;
@@ -506,8 +536,8 @@ const mouse = await specUi();
 check('🖱 Sidebar БАЙНА (хэсэг нь хэвээр ✓)', mouse.sidebar);
 check('🖱 Зөвхөн ✅ «Төлөв» шүүлт (`[data-attr-filter]` === 1)',
   mouse.total === 1 && mouse.keys[0] === 'condition', `keys=[${mouse.keys.join(', ')}]`);
-check('🎛 🆕 (43): ✅ «Төлөв» нь Mouse дээр ч `#filter-bar` PILL (сайдбарт 0 ✓)',
-  mouse.barKeys.join(',') === 'condition' && mouse.asideTotal === 0,
+check('🎛 🆕 (17): ✅ «Төлөв» нь Mouse дээр ч САЙДБАРТ (pill БАЙХГҮЙ ✓)',
+  mouse.barKeys.length === 0 && mouse.asideTotal === 1 && mouse.asideKeys.join(',') === 'condition',
   `pills=[${mouse.barKeys.join(', ')}] · aside=${mouse.asideTotal}`);
 check('🖱 ✅ «Төлөв» pill нь 3 чип (Шинэ · Шинэвтэр · Хуучин · олон сонголт ✓)',
   mouse.chipBlocks.length === 1 && mouse.chipBlocks[0].key === 'condition'
@@ -539,9 +569,9 @@ check('🕳 URL-аас `attr_cpu` АРИЛАВ (`pruneGatedAttrs` — шууд �
   !/attr_cpu/.test(decodeURIComponent(await url())), (await url()) || '(хоосон)');
 check('🔎 DB: `attrs->>cpu` ОГТ ЯВАХГҮЙ (үл үзэгдэх шүүлт үлдэхгүй ✓)',
   !dbQ('attrs->>cpu'), lastQ());
-check('🖱 Шүүлт 1 хэвээр (Mouse — зөвхөн ✅ «Төлөв» pill ✓)',
-  pruned.total === 1 && pruned.barKeys.join(',') === 'condition',
-  `total=${pruned.total} · pills=[${pruned.barKeys.join(', ')}]`);
+check('🖱 Шүүлт 1 хэвээр (Mouse — зөвхөн ✅ «Төлөв» сайдбарт ✓)',
+  pruned.total === 1 && pruned.asideKeys.join(',') === 'condition' && pruned.barKeys.length === 0,
+  `total=${pruned.total} · aside=[${pruned.asideKeys.join(', ')}]`);
 
 /**
  * 🏷️ 2026-10-03 (20): 🏷️ «Брэнд» Ч МӨН — Notebook-ийн гэр бүлээс өөр дэд
@@ -581,11 +611,11 @@ check('🆕 Хэсгийн түвшинд `[data-attr-filter]` нь ЛИБЭЭС
 check('🆕 📺/⚙️/🧠/💾 нь хэсгийн түвшинд ОГТ БАЙХГҮЙ (дэд төрөл хэрэгтэй ✓)',
   noType.total > 0 && !/Дэлгэц|CPU|RAM|Хард/.test(noType.labels.join(' ')),
   noType.labels.join(' | '));
-check('🆕 2026-10-05 (43): хэсгийн түвшинд ч ✅ «Төлөв» нь PILL (📺/⚙️/🧠/💾-тэй ХОЛДУУ БИШ ✓)',
+check('🆕 2026-10-05 (43)/(17): хэсгийн түвшинд ч ✅ «Төлөв» нь ЧИП БЛОК (сайдбарт ✓)',
   noType.chipBlocks.length === 1 && noType.chipBlocks[0].key === 'condition'
     && noType.chipBlocks[0].multi === true && noType.chipBlocks[0].total === 3
-    && noType.barKeys.join(',') === 'condition' && noType.asideTotal === 0
-    && noType.labels[0] === 'Төлөв',
+    && noType.barKeys.length === 0 && noType.asideTotal === 1
+    && noType.asideLabels.join(' | ') === 'Төлөв',
   JSON.stringify(noType.chipBlocks));
 // 🏷️ 2026-10-03 (20): хэсгийн түвшин (дэд төрөл ГҮЙ) бол «Notebook» БИШ ⇒
 //    «Брэнд» ч байхгүй (хэрэглэгчийн хүсэлт: «Notebook ээс бусад …»)
@@ -602,28 +632,34 @@ check('🏷 ЛИБ ч ижил — дэд төрөлгүй дуудлагад �
 listingReqs.length = 0;
 await go(`${BASE}/?section=auto&type=${encodeURIComponent('Суудлын машин')}`);
 const auto = await specUi();
-check('🚗 Авто дээр `[data-attr-filter]` === 3 (🎨 өнгө · 🔀 хайрцаг · ⛽ түлш)',
+check('🚗 Авто дээр `[data-attr-filter]` === 3 (🎨 өнгө · ⛽ түлш · 🔀 хайрцаг)',
   auto.total === 3, `keys=[${auto.keys.join(', ')}]`);
-check('🚗 Дараалал нь `attrFilters`-ийн дараалал (color → transmission → fuel)',
-  auto.keys.join(',') === 'color,transmission,fuel', auto.keys.join(','));
+check('🚗 🆕 (17): Дараалал = «💳 Төлбөрийн нөхцөл»-ийн дараах ЭРЭМБЭ (Өнгө → Түлш → Хайрцаг)',
+  auto.keys.join(',') === 'color,fuel,transmission', auto.keys.join(','));
 /**
- * 🆕 2026-10-05 (43) → 🆕 2026-10-06: 🎨/🔀/⛽ нь `filterBar: true` тул
- *    `#filter-bar` PILL хэвээр ✓, харин 💳 «Төлбөрийн нөхцөл» нь pill БАЙХАА
- *    БОЛЬЖ сайдбарт ЭРГЭЖ ОРОВ (хэрэглэгчийн хүсэлт) — 🆕 (15): «💰 Үнэ, ₮»-ний
- *    ДАРАА ✓
- *    ⇒ `barKeys` нь ГУРАВ (`color,transmission,fuel`) болж, `#filter-bar`-т
- *    `[data-payment-filter]` БАЙХГҮЙ ✓
- *    ⚠️ «Юу ч үлдээгүй» гэдгийг `asideTotal === 0` батлана (attr шүүлт) ✓
+ * 🆕 2026-10-06 (17) (хэрэглэгчийн хүсэлт: «Өнгө, Түлш, Хурдны хайрцаг Дэлгэрэнгүй
+ *    хайлтын хэсэгт Төлбөрийн нөхцөлийн ардаас оруул»): ⏳ (42)-ийн `#filter-bar`
+ *    PILL ХАСАГДАВ ⇒ 🎨/⛽/⚙️ нь `afterPayment: 1|2|3` тугаар САЙДБАРТ, «💳
+ *    Төлбөрийн нөхцөл»-ийн ЯГ АРАА ✓ (авто дээр `#filter-bar` ОГТ БАЙХГҮЙ ✓)
  */
-const autoPayInAside = await evalJs(`(() => {
-  const a = document.getElementById('advanced-filters');
-  return a ? document.querySelectorAll('#advanced-filters [data-payment-filter]').length : -1;
+const autoSide = await evalJs(`(() => {
+  const aside = document.getElementById('advanced-filters');
+  if (!aside) return null;
+  const pay = aside.querySelector('[data-payment-filter]');
+  const color = aside.querySelector('[data-attr-filter="color"]');
+  return {
+    payments: aside.querySelectorAll('[data-payment-filter]').length,
+    beforeColor: !!(pay && color
+      && (pay.compareDocumentPosition(color) & Node.DOCUMENT_POSITION_FOLLOWING)),
+  };
 })()`);
-check('🎛 🆕 (43): авто дээр 3 нь `#filter-bar` PILL (💳 нь сайдбарт — 2026-10-06 ✓)',
-  auto.barKeys.join(',') === 'color,transmission,fuel' && auto.asideTotal === 0,
-  `pills=[${auto.barKeys.join(', ')}] · aside=${auto.asideTotal}`);
+check('🎛 🆕 (17): авто дээр 3 нь САЙДБАРТ (`beforeColor` — pill 0 ✓)',
+  auto.barKeys.length === 0 && auto.asideKeys.join(',') === 'color,fuel,transmission',
+  `pills=[${auto.barKeys.join(', ')}] · aside=[${auto.asideKeys.join(', ')}]`);
 check('💳 🆕 2026-10-06: 💳 блок нь САЙДБАРТ 1 (`#advanced-filters [data-payment-filter]`)',
-  autoPayInAside === 1, `aside=${autoPayInAside}`);
+  !!autoSide && autoSide.payments === 1, `aside=${autoSide && autoSide.payments}`);
+check('🧭 🆕 (17): 💳 «Төлбөрийн нөхцөл» нь 🎨 Өнгө-ний ЯГ ӨМНӨ (DOM дараалал ✓)',
+  !!autoSide && autoSide.beforeColor === true, `beforeColor=${autoSide && autoSide.beforeColor}`);
 check('🎨 «Өнгө» нь ЧИП блок (12 товч · `data-attr-multi` · `<button>` · сонголт 0)',
   auto.chipBlocks[0] && auto.chipBlocks[0].key === 'color'
     && auto.chipBlocks[0].multi === true && auto.chipBlocks[0].total === 12
@@ -631,25 +667,26 @@ check('🎨 «Өнгө» нь ЧИП блок (12 товч · `data-attr-multi` 
     && auto.chipBlocks[0].pressed.length === 0,
   JSON.stringify(auto.chipBlocks[0]));
 /**
- * 🆕 2026-10-03 (22): 🔀 «Хурдны хайрцаг» ба ⛽ «Түлш» ХОЁУЛАА ч
- *    ОЛОН СОНГОЛТТОЙ ЧИП болов (хэрэглэгчийн хүсэлт: «мөн автомашин хайлт дээр
- *    бас ⚙️ Хурдны хайрцаг -ийг 💳 Төлбөрийн нөхцөл шиг болго. бас ⛽ Түлш ийг»)
- *    ⇒ 🎨 өнгөтэй ЯГ ИЖИЛ: `data-attr-multi="true"` · `.chip-toggle` `<button>`
- *    · сонголт 0 ✓ (⚠️ ФОРМ ХӨНДӨӨГДӨӨГҮЙ — `formChips` туг БАЙХГҮЙ)
+ * 🆕 2026-10-03 (22) · 🆕 2026-10-06 (17): 🔀 «Хурдны хайрцаг» ба ⛽ «Түлш»
+ *    ХОЁУЛАА ч ОЛОН СОНГОЛТТОЙ ЧИП (хэрэглэгчийн хүсэлт: «мөн автомашин хайлт
+ *    дээр бас ⚙️ Хурдны хайрцаг -ийг 💳 Төлбөрийн нөхцөл шиг болго. бас ⛽ Түлш
+ *    ийг») ⇒ 🎨 өнгөтэй ЯГ ИЖИЛ: `data-attr-multi="true"` · `.chip-toggle`
+ *    `<button>` · сонголт 0 ✓ (⚠️ ФОРМ ХӨНДӨӨГДӨӨГҮЙ — `formChips` БАЙХГҮЙ)
+ *    ⚠️ (17): ДОМ дараалал нь `afterPayment` ЭРЭМБЭ (⛽ түлш нь 🔀-ийн ӨМНӨ ✓)
  */
-check('🔀 (22): «Хурдны хайрцаг» ч ЧИП блок (2 товч · `data-attr-multi` · `<button>` · сонголт 0)',
-  auto.chipBlocks[1] && auto.chipBlocks[1].key === 'transmission'
-    && auto.chipBlocks[1].multi === true && auto.chipBlocks[1].total === 2
+check('⛽ (22)/(17): «Түлш» ч ЧИП блок (6 товч · `data-attr-multi` · `<button>` · сонголт 0)',
+  auto.chipBlocks[1] && auto.chipBlocks[1].key === 'fuel'
+    && auto.chipBlocks[1].multi === true && auto.chipBlocks[1].total === 6
     && auto.chipBlocks[1].kinds.every((k) => k === 'button')
     && auto.chipBlocks[1].pressed.length === 0,
   JSON.stringify(auto.chipBlocks[1]));
-check('⛽ (22): «Түлш» ч ЧИП блок (6 товч · `data-attr-multi` · `<button>` · сонголт 0)',
-  auto.chipBlocks[2] && auto.chipBlocks[2].key === 'fuel'
-    && auto.chipBlocks[2].multi === true && auto.chipBlocks[2].total === 6
+check('🔀 (22)/(17): «Хурдны хайрцаг» ч ЧИП блок (2 товч · `data-attr-multi` · `<button>` · сонголт 0)',
+  auto.chipBlocks[2] && auto.chipBlocks[2].key === 'transmission'
+    && auto.chipBlocks[2].multi === true && auto.chipBlocks[2].total === 2
     && auto.chipBlocks[2].kinds.every((k) => k === 'button')
     && auto.chipBlocks[2].pressed.length === 0,
   JSON.stringify(auto.chipBlocks[2]));
-check('⛔ 🎨/🔀/⛽ БҮГД ЧИП — авто дээр НЭГ Ч `<select>` БАЙХГҮЙ ✓',
+check('⛔ 🎨/⛽/🔀 БҮГД ЧИП — авто дээр НЭГ Ч `<select>` БАЙХГҮЙ ✓',
   auto.chipBlocks.length === 3 && auto.selectKeys.length === 0,
   `chipBlocks=${auto.chipBlocks.length} · selects=[${auto.selectKeys.join(', ')}]`);
 
@@ -702,15 +739,16 @@ check('🎨 «1 сонгосон» badge хэвээр (нэг утга үлдс�
   toggled.multiBadges.includes('1 сонгосон'), `badges=[${toggled.multiBadges.join(' | ')}]`);
 listingReqs.length = 0;
 const cleared = await evalJs(`(() => {
-  // ⚠️ 2026-10-04 (37): «Өнгө» pill нь #filter-bar руу шилжсэн ⇒ «✕ Цуцлах»
-  //    товч нь pill-ийн панель дотор ([data-filter-panel="color"]) ✓
-  // ⚠️ 2026-10-04 (39): comma-селектор нь документын дарааллаар буцаадаг тул
-  //    сайдбарын (aside нь #filter-bar-аас ӨМНӨ) «✕ Цуцлах» давамгайлж болно ✗
-  //    ⇒ pill-ийн товчийг ЭХЭНД хайж, сайдбарыг зөвхөн нөөцөөр (regression) хайна
-  const pick = (sel) => [...document.querySelectorAll(sel)]
+  /**
+   * 🆕 2026-10-06 (17): «Өнгө» нь САЙДБАРТ буцсан ⇒ «✕ Цуцлах» товч нь
+   *    сайдбарын SideBlock дотор (pill-ийн ⌄ панель БАЙХГҮЙ ✗); ⚠️ товчийг
+   *    координатаар биш, БЛОК-оор нь хайна (color-ийн data-attr-filter)
+   *    ⚠️ ЭНЭ КОММЕНТ НЬ ТЕМПЛЭЙТ ЛИТЕРАЛ ДОТОР ТУЛ BACKTICK БИЧИХГҮЙ ✗
+   */
+  const box = document.querySelector('#advanced-filters [data-attr-filter="color"]');
+  const blk = box && box.closest('div[class*="py-4"]');
+  const b = blk && [...blk.querySelectorAll('button')]
     .find((x) => (x.textContent || '').trim() === '✕ Цуцлах');
-  const b = pick('#filter-bar [data-filter-panel="color"] button')
-    || pick('#advanced-filters button');
   if (!b) return 'NO_BTN';
   b.click();
   return 'OK';
@@ -783,15 +821,16 @@ check('🔎 DB: `attrs->>fuel=in.(Хайбрид,Бензин)` — OR (аль �
 listingReqs.length = 0;
 await go(`${BASE}/?section=home`);
 const home = await specUi();
-check('✅ 🧺 home: «Төлөв» нь PILL (3 товч · `data-attr-multi` · сонголт 0)',
+check('✅ 🧺 home: «Төлөв» нь САЙДБАРЫН ЧИП БЛОК (3 товч · `data-attr-multi` · сонголт 0)',
   home.chipBlocks.length === 1 && home.chipBlocks[0].key === 'condition'
     && home.chipBlocks[0].multi === true && home.chipBlocks[0].total === 3
     && home.chipBlocks[0].kinds.every((k) => k === 'button')
     && home.chipBlocks[0].pressed.length === 0,
   JSON.stringify(home.chipBlocks));
-check('✅ 🆕 (43): pill нь `#filter-bar` дээр · шошго «Төлөв» · сайдбарт attr 0 ✓',
-  home.barKeys.join(',') === 'condition' && home.asideTotal === 0 && home.labels[0] === 'Төлөв',
-  `pills=[${home.barKeys.join(', ')}] · aside=${home.asideTotal} · label=${home.labels[0]}`);
+check('✅ 🆕 (17): блок нь САЙДБАРТ (`asideKeys` = condition) · шошго «Төлөв» · pill 0 ✓',
+  home.barKeys.length === 0 && home.asideTotal === 1
+    && home.asideLabels.join(' | ') === 'Төлөв',
+  `pills=[${home.barKeys.join(', ')}] · aside=${home.asideTotal} · label=${home.asideLabels.join(' | ')}`);
 check('⛔ «Төлөв» нь `<select>` БИШ (чип блок тул `selectKeys`-д ОРООГҮЙ ✓)',
   !home.selectKeys.includes('condition'), `selects=[${home.selectKeys.join(', ')}]`);
 check('🔎 Шүүлт хоосон үед DB query-д `attrs->>condition` ОРООГҮЙ',
@@ -844,17 +883,21 @@ check('🔎 DB: `attrs->>condition=in.(Хуучин)` болов (Шинэ ха�
   dbQ('attrs->>condition=in.(Хуучин)') && !dbQ('attrs->>condition=in.(Шинэ,Хуучин)'), lastQ());
 listingReqs.length = 0;
 const condCleared = await evalJs(`(() => {
-  // ⚠️ 2026-10-05 (43): «Төлөв» pill нь #filter-bar руу шилжсэн ⇒ «✕ Цуцлах»
-  //    товч нь pill-ийн панель дотор ([data-filter-panel="condition"]) ✓
-  const pick = (sel) => [...document.querySelectorAll(sel)]
+  /**
+   * 🆕 2026-10-06 (17): «Төлөв» нь САЙДБАРТ буцсан ⇒ «✕ Цуцлах» товч нь
+   *    сайдбарын SideBlock дотор (condition-ийг closest-оор олно —
+   *    pill-ийн ⌄ панель БАЙХГҮЙ ✗)
+   *    ⚠️ ЭНЭ КОММЕНТ НЬ ТЕМПЛЭЙТ ЛИТЕРАЛ ДОТОР ТУЛ BACKTICK БИЧИХГҮЙ ✗
+   */
+  const box = document.querySelector('#advanced-filters [data-attr-filter="condition"]');
+  const blk = box && box.closest('div[class*="py-4"]');
+  const b = blk && [...blk.querySelectorAll('button')]
     .find((x) => (x.textContent || '').trim() === '✕ Цуцлах');
-  const b = pick('#filter-bar [data-filter-panel="condition"] button')
-    || pick('#advanced-filters button');
   if (!b) return 'NO_BTN';
   b.click();
   return 'OK';
 })()`);
-check('✅ «Төлөв» pill-ийн «✕ Цуцлах» товч дарлаа (панель дотор ✓)', condCleared === 'OK', condCleared);
+check('✅ «Төлөв» блокийн «✕ Цуцлах» товч дарлаа (сайдбарт ✓)', condCleared === 'OK', condCleared);
 await waitFor(`!/attr_condition/.test(location.search)`);
 await sleep(1200);
 check('🔗 URL-аас `attr_condition` БҮРЭН АРИЛАВ (цэвэр линк ✓)',
@@ -891,11 +934,12 @@ await go(`${BASE}/?section=computers&type=Apple`);
 const mobile = await specUi();
 check('📱 Мобайл: 5 шүүлт ХАРАГДАНА (`data-attr-filter` === 5 ✓)',
   mobile.total === 5, `total=${mobile.total}`);
-check('📱 Мобайл: 📺/⚙️/🧠/💾/✅ бүгд DOM-д байна',
-  mobile.keys.join(',') === 'screen,cpu,ram,storage,condition', mobile.keys.join(','));
-check('📱 Мобайл: 5-уулаа `#filter-bar` PILL (сайдбарт attr 0 ✓)',
-  mobile.barKeys.join(',') === 'screen,cpu,ram,storage,condition' && mobile.asideTotal === 0,
-  `pills=[${mobile.barKeys.join(', ')}] · aside=${mobile.asideTotal}`);
+check('📱 Мобайл: 📺/⚙️/🧠/💾 (pill) + ✅ (сайдбар) бүгд DOM-д байна',
+  mobile.keys.join(',') === 'condition,screen,cpu,ram,storage', mobile.keys.join(','));
+check('📱 Мобайл: 📺/⚙️/🧠/💾 pill (`#filter-bar`) · ✅ нь САЙДБАРТ (2026-10-06 (17) ✓)',
+  mobile.barKeys.join(',') === 'screen,cpu,ram,storage'
+    && mobile.asideKeys.join(',') === 'condition' && mobile.asideTotal === 1,
+  `pills=[${mobile.barKeys.join(', ')}] · aside=[${mobile.asideKeys.join(', ')}]`);
 /**
  * 🆕 2026-10-05 (43): pill нь мобайлд Ч ҮНЭХЭЭР ХАРАГДАХ ЁСТОЙ —
  *    `getBoundingClientRect()` нь `display:none` үед 0 буцаана;

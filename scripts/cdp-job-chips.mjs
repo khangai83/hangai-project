@@ -9,11 +9,18 @@
 //    ① чип блок БАЙНА + сонголтын тоо (5/2/3/5) ② дарж СОНГОХ
 //    (mutual exclusive) ③ дахин дарж ЦУЦЛАХ (toggle — бүх чип идэвхгүй,
 //    бусдыг ХӨНДӨХГҮЙ) ④ 💰 `salaryType` нь `<select>` ХЭВЭЭР
-//    ⑤ 📱 390px — 4 талбар БҮГД хүрэх + overflow 0 ⑥ ХАЙЛТЫН ХУУДАС: 🕒/📊/📈
-//    нь сайдбарт БИШ — үр дүнгийн дээрх `#filter-bar`-т «pill + ⌄ панель»
-//    (`data-filter-pill`; чип 12 = 5+2+5; ⚠️ `aside [data-attr-filter]` 0)
-//    ⑥b pill нээж чип дарж `?attr_jobType=Бүтэн цагийн,Цагийн` (⛔ цуцлагдахгүй,
-//    badge «2» + «2 сонгосон» + «✕ Цуцлах») ⑦ JS exception / console.error 0
+//    ⑤ 📱 390px — 4 талбар БҮГД хүрэх + overflow 0
+//    🆕 (17) ⑥ ХАЙЛТЫН ХУУДАС: 🕒/📊/📈 нь «Дэлгэрэнгүй хайлт»-ийн САЙДБАРТ
+//    (`aside [data-attr-filter="jobType|experience|jobLevel"]`; чип 12 = 5+2+5;
+//    ⚠️ jobs дээр `#filter-bar` ОГТ БАЙХГҮЙ — pill тугтай attr байхгүй ✓)
+//    ⑥b сайдбарын чип дарж `?attr_jobType=Бүтэн цагийн,Цагийн` (⛔ цуцлагдахгүй,
+//    «2 сонгосон» + «✕ Цуцлах») ⑥c сайдбарын чип HOVER (⑥c) ⑦ JS exception 0
+//
+// 🆕 2026-10-06 (17) (хэрэглэгчийн хүсэлт: «Ажлын зарын Ажлын цаг, Туршлага,
+//    Мэргэжлийн түвшин -ийг бас Дэлгэрэнгүй хайлт д оруул»): ⏳ (42)-ийн
+//    `#filter-bar` PILL ХАСАГДАВ ⇒ 3 нь сайдбарт буцав (💼-ийн «💰 Цалин, ₮»-ний
+//    дараа ✓); ⑥c hover шалгалт нь PILL-ээс САЙДБАРЫН ЧИП рүү шилжив
+//    (⚠️ 💻 pill-ийн hover нь `cdp-notebook-specs` §⑧b-д ХЭВЭЭР ✓)
 //
 // 🆕 2026-10-05 (42): ⏳ (9)-д форм дээр 4 чип нэмэгдсэн ч ХАЙЛТЫН sidebar-д
 //    зөвхөн 🕒 нь чип, 📊/📈 нь `<select>` байв — хэрэглэгчийн хүсэлт («Ажлын
@@ -39,12 +46,14 @@
 //    select` · `[data-detail-field="title"]` · `[data-picker="section"]` /
 //    `[data-picker="level2"]` (`button[data-picker-value]`) ·
 //    `[data-step-current]` · `[data-mobile-detail-next]`
-//    ℹ️ ХАЙЛТЫН pill нь `[data-filter-pill="…"]` (товч + `[data-filter-panel]`)
-//       бөгөөд чип нь дотор нь `[data-attr-filter]`/`data-attr-multi` — форм нь
-//       `data-attr-field` (`formChips`) тул ХОЛИГДОХГҮЙ ✓
+//    ℹ️ ХАЙЛТЫН чип нь `[data-attr-filter="…"]` (+ `data-attr-multi="true"`)
+//       хайрцаг дотор — 🆕 (17)-д сайдбарт (`aside`), форм нь `data-attr-field`
+//       (`formChips`) тул ХОЛИГДОХГҮЙ ✓
 //       ⚠️ Форм дээрх чип нь НЭГ сонголттой хэвээр тул ③④ ХӨНДӨГДӨӨГҮЙ ✓
-//       ⚠️ `#filter-bar` нь `#listing-results`-ийн ДЭЭР; ⌄ панель нь хаалттай
-//          үед `visibility:hidden` ⇒ текст уншихын тулд эхлээд НЭЭНЭ ✓
+//       ⚠️ 🆕 (17): хайлтын талд pill/⌄ панель БАЙХГҮЙ (💼 дээр `#filter-bar`
+//          ОГТ рендэрлэгдэхгүй) ⇒ pill НЭЭХ шаардлагагүй, чип нь ШУУД
+//          харагдана ✓ (⏳ (42)-(16)-д `[data-filter-pill]` + `visibility:hidden`
+//          панель байв ✗)
 //
 // ⚠️ МЭДЭГДЭХҮЙ АРГУУД (энэ скриптээр батлагдсан):
 //    ⓐ React-ийн `state.attrs`-ыг fiber-ээс уншихад COMMIT-ийн 1 АЛХАМ
@@ -62,8 +71,8 @@
 //    ⓔ засах горим (④b) нь 💼 АЖЛЫН ЗАР шаардна — демо хэрэглэгчид
 //       ажлын зар БАЙХГҮЙ бол ④b-г АЛГАСНА (бусад шалгалт хэвээр ✓)
 // 🔍 Хайх үг: cdp-job-chips, formChips, chip-toggle, data-attr-field,
-//    data-attr-value, attr-salaryType, jobs, filterBar, data-filter-pill,
-//    #filter-bar, Өрөөний тоо шиг
+//    data-attr-value, attr-salaryType, jobs, filterBar, afterPayment,
+//    Дэлгэрэнгүй хайлт, Өрөөний тоо шиг
 // ============================================================
 const BASE = process.argv[2] || 'http://localhost:3000';
 const CDP = `http://127.0.0.1:${process.env.CDP_PORT || 9222}`;
@@ -538,14 +547,16 @@ ok('📱 хэвтээ гүйлт (overflow) ГАРАХГҮЙ', !!mobInfo && mobI
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1200, deviceScaleFactor: 1, mobile: false });
 await wait(800);
 
-// ═══════ ⑥ #FILTER-BAR PILL (2026-10-05 (42)) ═══════
-// 🆕 2026-10-05 (42) (хэрэглэгчийн хүсэлт: «Ажлын цаг, Туршлага, Мэргэжлийн
-//    түвшиныг Өрөөний тоо шиг болго … хайлтыг хэлж байгаа биз дээ»): 3 шүүлт
-//    нь САЙДБАРТ БИШ — үр дүнгийн ДЭЭРХ ХЭВТЭЭ `#filter-bar`-т «pill + ⌄
-//    хөвөг панель» (🛏 «Өрөөний тоо» · 💳 «Төлбөрийн нөхцөл»-ийн ЯГ ИЖИЛ хэв).
-//    ⚠️ `aside`-д нь «Цалин, ₮» л үлдэнэ (`data-attr-filter` 0 — 2 өөр UI
-//       БАЙХГҮЙ ✓); `#filter-bar` нь `#listing-results`-ийн ДЭЭР байрлана ✓
-console.log('\n⑥ #FILTER-BAR — /?section=jobs&type=… (pill + ⌄ панель, формтой холилдоогүй)');
+// ═══════ ⑥ ДЭЛГЭРЭНГҮЙ ХАЙЛТ (сайдбар) — pill БИШ (2026-10-06 (17)) ═══════
+// 🆕 2026-10-06 (17) (хэрэглэгчийн хүсэлт: «Ажлын зарын Ажлын цаг, Туршлага,
+//    Мэргэжлийн түвшин -ийг бас Дэлгэрэнгүй хайлт д оруул»): ⏳ 2026-10-05 (42)-д
+//    3 шүүлт нь үр дүнгийн дээрх `#filter-bar` pill байв ✗ ⇒ ОДОО сайдбарт
+//    БУЦАВ («🛏 Өрөөний тоо»/«💳 Төлбөрийн нөхцөл»-тэй ЯГ ИЖИЛ чип блок):
+//    `aside [data-attr-filter="jobType"]` (+ experience, jobLevel), дотор нь
+//    `chip-toggle` чипүүд (`data-attr-multi="true"`), «N сонгосон» + «✕ Цуцлах».
+//    ⚠️ jobs дээр `#filter-bar` ОГТ БАЙХГҮЙ (pill тугтай attr байхгүй ✓)
+//    ⚠️ Утга/URL/DB ХӨНДӨӨГДӨӨГҮЙ: `?attr_jobType=A,B` → `attrs->>jobType=in.(…)` ✓
+console.log('\n⑥ ДЭЛГЭРЭНГҮЙ ХАЙЛТ — /?section=jobs&type=… (3 чип блок, pill БАЙХГҮЙ)');
 const SIDE_URL = BASE + '/?section=jobs&type=' + encodeURIComponent('Борлуулалт, худалдаа');
 await rpc('Page.navigate', { url: SIDE_URL });
 let side = '';
@@ -554,122 +565,95 @@ for (let i = 0; i < 12; i += 1) {
   side = await evaluate(`(() => { const a = document.querySelector('aside'); return a ? a.innerText : ''; })()`);
   if (/Цалин, ₮/.test(side)) break;
 }
-console.log('   aside=' + JSON.stringify(side.replace(/\n/g, ' | ').slice(0, 240)));
+console.log('   aside=' + JSON.stringify(side.replace(/\n/g, ' | ').slice(0, 300)));
 ok('sidebar: «Цалин, ₮» байна', /Цалин, ₮/.test(side));
-ok('🆕 (42) sidebar: attr шүүлт (🕒/📊/📈) ГАРСАН — aside-д «Ажлын цаг»/«Туршлага» БАЙХГҮЙ',
-  !/Ажлын цаг|Туршлага|Мэргэжлийн түвшин/.test(side) && !/Бүтэн цагийн/.test(side));
-/** 🆕 (42): `#filter-bar` + `aside` + форм блок бүгдийг НЭГ удаа уншина */
-const barInfo = await evaluate(`(() => {
+ok('🆕 (17) sidebar: 🕒/📊/📈 шүүлт БУЦАЖ ИРЭВ (шошго + «Бүтэн цагийн» чип харагдана)',
+  /Ажлын цаг/.test(side) && /Туршлага/.test(side) && /Мэргэжлийн түвшин/.test(side)
+    && /Бүтэн цагийн/.test(side));
+/** 🆕 (17): `#filter-bar` + `aside` + форм блок бүгдийг НЭГ удаа уншина */
+const sideInfo = await evaluate(`(() => {
   const all = (sel) => [...document.querySelectorAll(sel)];
-  const pill = (k) => {
-    const p = document.querySelector('[data-filter-pill="' + k + '"]');
-    if (!p) return { found: false };
-    const panel = p.querySelector('[data-filter-panel="' + k + '"]');
-    const block = p.querySelector('[data-attr-filter="' + k + '"]');
-    const trg = p.querySelector('button');
+  const block = (k) => {
+    const b = document.querySelector('aside [data-attr-filter="' + k + '"]');
+    if (!b) return { found: false };
+    const box = b.closest('div[class*="py-4"]');
+    const s = box ? box.querySelector('span') : null;
     return {
       found: true,
-      label: trg ? trg.textContent.replace(/\\d+/g, '').trim() : '',
-      panel: !!panel,
-      open: trg ? trg.getAttribute('aria-expanded') : null,
-      multi: block ? block.dataset.attrMulti === 'true' : false,
-      role: block ? block.getAttribute('role') : null,
-      chips: block ? block.querySelectorAll('[data-attr-value]').length : 0,
-      selects: block ? block.querySelectorAll('select').length : 0,
+      multi: b.dataset.attrMulti === 'true',
+      role: b.getAttribute('role'),
+      chips: b.querySelectorAll('[data-attr-value]').length,
+      selects: b.querySelectorAll('select').length,
+      label: s ? s.textContent.trim() : '',
     };
   };
   const top = (sel) => { const el = document.querySelector(sel); if (!el) return -1; return Math.round(el.getBoundingClientRect().top + window.scrollY); };
   const bar = document.querySelector('#filter-bar');
-  const sort = document.querySelector('[data-listing-sort]');
   const results = document.querySelector('#listing-results');
+  const price = [...document.querySelectorAll('aside span')].find((s) => s.textContent.trim() === 'Цалин, ₮');
+  const jt = document.querySelector('aside [data-attr-filter="jobType"]');
   return {
     bar: !!document.querySelector('#filter-bar[data-filter-bar]'),
-    pills: all('#filter-bar [data-filter-pill]').map((p) => p.dataset.filterPill),
-    jobType: pill('jobType'), experience: pill('experience'), jobLevel: pill('jobLevel'),
-    chips: all('#filter-bar [data-attr-filter] .chip-toggle').length,
-    chipKeys: all('#filter-bar [data-attr-filter] .chip-toggle').map((c) => c.closest('[data-attr-filter]').dataset.attrFilter),
-    asideFilters: all('aside [data-attr-filter]').length,
+    barInResults: !!(bar && results && results.contains(bar)),
+    jobType: block('jobType'), experience: block('experience'), jobLevel: block('jobLevel'),
+    asideKeys: all('aside [data-attr-filter]').map((x) => x.dataset.attrFilter),
+    chips: all('aside [data-attr-filter] .chip-toggle').length,
     asideSelects: all('aside select').length,
     formBlocks: all('[data-attr-field]').length,
-    barTop: top('#filter-bar'),
-    barInResults: !!(bar && results && results.contains(bar)),
-    barAfterSort: !!(bar && sort
-      && (sort.compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING)),
+    priceTop: price ? Math.round(price.getBoundingClientRect().top + window.scrollY) : -1,
+    jobTypeTop: top('aside [data-attr-filter="jobType"]'),
+    afterPrice: !!(price && jt
+      && (price.compareDocumentPosition(jt) & Node.DOCUMENT_POSITION_FOLLOWING)),
   };
 })()`);
-console.log('   ' + JSON.stringify(barInfo));
-ok('🆕 (42) `#filter-bar` БАЙНА · pill = ЯГ 3 (`jobType` → `experience` → `jobLevel`)',
-  barInfo.bar && JSON.stringify(barInfo.pills) === JSON.stringify(['jobType', 'experience', 'jobLevel']),
-  JSON.stringify(barInfo.pills));
-ok('🆕 (42) pill-үүд нь jobs attr шүүлтийн ШОШГО-той (`Ажлын цаг` · `Туршлага` · `Мэргэжлийн түвшин`)',
-  barInfo.jobType.label === 'Ажлын цаг' && barInfo.experience.label === 'Туршлага'
-    && barInfo.jobLevel.label === 'Мэргэжлийн түвшин',
-  JSON.stringify([barInfo.jobType.label, barInfo.experience.label, barInfo.jobLevel.label]));
-ok('🆕 (42) 🕒 jobType pill: ⌄ панель + `<div role="group">` + 5 чип + `data-attr-multi` (⛔ `<select>` БАЙХГҮЙ)',
-  barInfo.jobType.panel && barInfo.jobType.role === 'group' && barInfo.jobType.chips === 5
-    && barInfo.jobType.multi && barInfo.jobType.selects === 0,
-  JSON.stringify(barInfo.jobType));
-ok('🆕 (42) 📊 experience pill: ⌄ панель + 2 чип + `data-attr-multi` (⛔ `<select>` БАЙХГҮЙ)',
-  barInfo.experience.panel && barInfo.experience.role === 'group' && barInfo.experience.chips === 2
-    && barInfo.experience.multi && barInfo.experience.selects === 0,
-  JSON.stringify(barInfo.experience));
-ok('🆕 (42) 📈 jobLevel pill: ⌄ панель + 5 чип + `data-attr-multi` (⛔ `<select>` БАЙХГҮЙ)',
-  barInfo.jobLevel.panel && barInfo.jobLevel.role === 'group' && barInfo.jobLevel.chips === 5
-    && barInfo.jobLevel.multi && barInfo.jobLevel.selects === 0,
-  JSON.stringify(barInfo.jobLevel));
-ok('🆕 (42) чипүүд нь ЯГ 3 pill-д (12 = 5+2+5) · ⌄ панель нь эхэндээ ХААЛТТАЙ',
-  barInfo.chips === 12
-    && barInfo.chipKeys.every((k) => ['jobType', 'experience', 'jobLevel'].includes(k))
-    && [barInfo.jobType, barInfo.experience, barInfo.jobLevel].every((p) => p.open === 'false'),
-  `${barInfo.chips} ${JSON.stringify(barInfo.chipKeys)}`);
-ok('⛔ sidebar-д attr шүүлт БАЙХГҮЙ (`aside [data-attr-filter]` 0 — «Цалин, ₮» л үлдэв ✓)',
-  barInfo.asideFilters === 0, `${barInfo.asideFilters} (aside select=${barInfo.asideSelects})`);
+console.log('   ' + JSON.stringify(sideInfo));
+ok('⛔ (17) jobs дээр `#filter-bar` БАЙХГҮЙ (pill тугтай attr 0 — 💻-ийн 4 pill л үлдэв ✓)',
+  sideInfo.bar === false && sideInfo.barInResults === false, String(sideInfo.bar));
+ok('🆕 (17) сайдбарт ЯГ 3 чип блок (`jobType` → `experience` → `jobLevel`) — ⛔ сайдбарт `<select>` 0',
+  JSON.stringify(sideInfo.asideKeys) === JSON.stringify(['jobType', 'experience', 'jobLevel'])
+    && sideInfo.asideSelects === 0,
+  JSON.stringify(sideInfo.asideKeys) + ' select=' + sideInfo.asideSelects);
+ok('🆕 (17) блок бүр `<div role="group">` + `data-attr-multi="true"` + шошго нь ЛИБЭЭС',
+  [sideInfo.jobType, sideInfo.experience, sideInfo.jobLevel].every((b) => b.found && b.multi && b.role === 'group')
+    && sideInfo.jobType.label === 'Ажлын цаг' && sideInfo.experience.label === 'Туршлага'
+    && sideInfo.jobLevel.label === 'Мэргэжлийн түвшин',
+  JSON.stringify([sideInfo.jobType, sideInfo.experience, sideInfo.jobLevel]));
+ok('🆕 (17) чипүүд нь ЯГ 3 блокт (12 = 5+2+5) · 🕒/📊/📈 дотор `<select>` 0',
+  sideInfo.chips === 12 && sideInfo.jobType.chips === 5
+    && sideInfo.experience.chips === 2 && sideInfo.jobLevel.chips === 5
+    && [sideInfo.jobType, sideInfo.experience, sideInfo.jobLevel].every((b) => b.selects === 0),
+  `${sideInfo.chips}`);
+ok('🧭 (17) Байрлал: «💰 Цалин, ₮» блокийн ЯГ ДАРАА (💼-ийн ҮНЭ нь attr шүүлтийн ӨМНӨ ✓)',
+  sideInfo.afterPrice === true && sideInfo.priceTop >= 0 && sideInfo.jobTypeTop > sideInfo.priceTop,
+  `price=${sideInfo.priceTop} jobType=${sideInfo.jobTypeTop} after=${sideInfo.afterPrice}`);
 ok('⛔ форм блок (`data-attr-field`) хайлтын хуудсан дээр 0 (формтой холилдоогүй ✓)',
-  barInfo.formBlocks === 0, String(barInfo.formBlocks));
-ok('🧭 Байрлал: `#filter-bar` нь үр дүнгийн баганад (`#listing-results`) — «Эрэмбэлэх»-ийн ДООР ✓',
-  barInfo.barInResults === true && barInfo.barAfterSort === true,
-  `inResults=${barInfo.barInResults} afterSort=${barInfo.barAfterSort} top=${barInfo.barTop}`);
+  sideInfo.formBlocks === 0, String(sideInfo.formBlocks));
 
-// ═══════ ⑥b #FILTER-BAR PILL НЭЭХ + ЧИП ДАРАХ — ОЛОН СОНГОЛТ ═══════
+// ═══════ ⑥b САЙДБАРЫН ЧИП — ОЛОН СОНГОЛТ (`?attr_jobType=A,B`) ═══════
 // 🎯 Гол шаардлага: «Ажлын цаг, Туршлага, Мэргэжлийн түвшиныг Өрөөний тоо шиг
-//    болго» ⇒ pill дарж ⌄ панель нээгээд ХОЁР чип ЗЭРЭГ идэвхжинэ
-//    (`?attr_jobType=A,B`) — ⛔ хуучин нэг сонголттой зан төлөв (шинэ чип
-//    дарвал хуучин нь УНТРАХ) БАЙХГҮЙ ✓
-// ⚠️ Панель нь `open` биш үед `invisible` (visibility:hidden) тул `innerText`
-//    ХООСОН болно ⇒ эхлээд pill-ийг НЭЭЖ байж badge/«N сонгосон»/«✕ Цуцлах»
-//    текстийг уншина ✓ (React-ийн `onClick` нь programmatic `.click()`-д ч
-//    ажиллана ✓)
-console.log('\n⑥b #FILTER-BAR — pill нээх + чип дарах ⇒ ОЛОН утга (`?attr_jobType=A,B`)');
-/** ⌄ pill-ийг нээнэ (`aria-expanded` → true) */
-const pillOpen = (key) => evaluate(
-  '(() => { const p = document.querySelector(\'[data-filter-pill="' + key + '"]\'); if (!p) return "NO_PILL"; const b = p.querySelector(\'button\'); if (!b) return "NO_TRIGGER"; if (b.getAttribute("aria-expanded") !== "true") b.click(); return "OK"; })()',
+//    болго» ⇒ 2 чип ЗЭРЭГ идэвхжинэ (`?attr_jobType=A,B`) — ⛔ хуучин нэг
+//    сонголттой зан төлөв (шинэ чип дарвал хуучин нь УНТРАХ) БАЙХГҮЙ ✓
+// 🆕 (17): pill НЭЭХ шаардлагагүй — чипүүд сайдбарт ШУУД харагдана ✓
+// ⚠️ React-ийн `onClick` нь programmatic `.click()`-д ч ажиллана ✓
+console.log('\n⑥b САЙДБАРЫН ЧИП — дарах ⇒ ОЛОН утга (`?attr_jobType=A,B`)');
+/** Сайдбарын чип (`aside [data-attr-filter] [data-attr-value]`) дарна */
+const sideChip = (key, value) => evaluate(
+  '(() => { const b = document.querySelector(\'aside [data-attr-filter="' + key + '"] [data-attr-value="' + value + '"]\'); if (!b) return "NO_CHIP"; b.click(); return "OK"; })()',
 );
-/** Pill-ийн ⌄ панель доторх чип (`[data-attr-filter] [data-attr-value]`) дарна */
-const pillChip = (key, value) => evaluate(
-  '(() => { const b = document.querySelector(\'[data-filter-pill="' + key + '"] [data-attr-value="' + value + '"]\'); if (!b) return "NO_CHIP"; b.click(); return "OK"; })()',
-);
-/**
- * 3 pill + URL-ыг уншина (`+` → зай: URLSearchParams нь зайг `+` болгодог тул
- * `?attr_jobType=Бүтэн+цагийн` — ⚠️ түүнгүй бол regex ХУУРАМЧ ✗)
- * ℹ️ badge нь pill-ийн ТОВЧ дотор (`{count}` span), «N сонгосон»/«✕ Цуцлах» нь
- *    ⌄ панель дотор — `visibility:hidden` үед `innerText` хоосон тул панель
- *    НЭЭЛТТЭЙ үед л уншигдана ✓
- */
-const pillRead = () => evaluate(`(() => {
+/** 3 блок + URL-ыг уншина (`+` → зай: URLSearchParams нь зайг `+` болгодог тул
+ *  `?attr_jobType=Бүтэн+цагийн` — ⚠️ түүнгүй бол regex ХУУРАМЧ ✗) */
+const sideRead = () => evaluate(`(() => {
   const read = (k) => {
-    const p = document.querySelector('[data-filter-pill="' + k + '"]');
-    if (!p) return null;
-    const block = p.querySelector('[data-attr-filter="' + k + '"]');
-    const trg = p.querySelector('button');
-    const txt = p.innerText;
+    const box = document.querySelector('aside [data-attr-filter="' + k + '"]');
+    if (!box) return null;
+    const block = box.closest('div[class*="py-4"]');
+    const txt = block ? block.innerText : '';
     const m = txt.match(/(\\d+)\\s+сонгосон/);
     return {
-      active: block ? [...block.querySelectorAll('[data-attr-value]')]
-        .filter((c) => c.getAttribute('aria-pressed') === 'true').map((c) => c.dataset.attrValue) : [],
+      active: [...box.querySelectorAll('[data-attr-value]')]
+        .filter((c) => c.getAttribute('aria-pressed') === 'true').map((c) => c.dataset.attrValue),
       count: m ? Number(m[1]) : 0,
-      badge: trg ? Number((trg.textContent.match(/\\d+/) || [0])[0]) : 0,
       clear: /Цуцлах/.test(txt),
-      open: trg ? trg.getAttribute('aria-expanded') : null,
     };
   };
   return {
@@ -678,100 +662,92 @@ const pillRead = () => evaluate(`(() => {
   };
 })()`);
 
-ok('🕒 jobType pill нээв (`aria-expanded=true`)', (await pillOpen('jobType')) === 'OK');
-await wait(700);
-let sw = await pillRead();
-ok('🆕 (42) pill нээхэд ⌄ панель нээгдэнэ · badge 0 (⛔ «0 сонгосон» гарахгүй ✓)',
-  sw.jobType.open === 'true' && sw.jobType.count === 0 && sw.jobType.badge === 0,
-  JSON.stringify(sw.jobType));
-
-ok('🕒 «Бүтэн цагийн» дарав (pill)', (await pillChip('jobType', 'Бүтэн цагийн')) === 'OK');
+ok('🕒 «Бүтэн цагийн» дарав (сайдбарын чип)', (await sideChip('jobType', 'Бүтэн цагийн')) === 'OK');
 await wait(1200);
-sw = await pillRead();
-ok('🕒 1 идэвхтэй чип + pill badge «1» + «1 сонгосон» + «✕ Цуцлах» + URL `attr_jobType=Бүтэн цагийн`',
+let sw = await sideRead();
+ok('🕒 1 идэвхтэй чип + «1 сонгосон» + «✕ Цуцлах» + URL `attr_jobType=Бүтэн цагийн`',
   sw.jobType.active.length === 1 && sw.jobType.active[0] === 'Бүтэн цагийн'
-    && sw.jobType.count === 1 && sw.jobType.badge === 1 && sw.jobType.clear
+    && sw.jobType.count === 1 && sw.jobType.clear
     && /attr_jobType=Бүтэн цагийн(&|$)/.test(sw.url), JSON.stringify(sw));
 
-ok('🕒 «Цагийн» дарав (2 дахь — ОЛОН СОНГОЛТ)', (await pillChip('jobType', 'Цагийн')) === 'OK');
+ok('🕒 «Цагийн» дарав (2 дахь — ОЛОН СОНГОЛТ)', (await sideChip('jobType', 'Цагийн')) === 'OK');
 await wait(1200);
-sw = await pillRead();
-ok('🆕 🕒 2 чип ЗЭРЭГ идэвхтэй (⛔ хуучин нь УНТРАХГҮЙ) + badge «2» + URL `attr_jobType=Бүтэн цагийн,Цагийн`',
+sw = await sideRead();
+ok('🆕 🕒 2 чип ЗЭРЭГ идэвхтэй (⛔ хуучин нь УНТРАХГҮЙ) + «2 сонгосон» + URL `attr_jobType=Бүтэн цагийн,Цагийн`',
   sw.jobType.active.length === 2
     && ['Бүтэн цагийн', 'Цагийн'].every((v) => sw.jobType.active.includes(v))
-    && sw.jobType.count === 2 && sw.jobType.badge === 2
+    && sw.jobType.count === 2
     && /attr_jobType=Бүтэн цагийн,Цагийн(&|$)/.test(sw.url), JSON.stringify(sw));
 
-ok('🕒 идэвхтэй чип дээр дахин дарав (toggle-off)', (await pillChip('jobType', 'Бүтэн цагийн')) === 'OK');
+ok('🕒 идэвхтэй чип дээр дахин дарав (toggle-off)', (await sideChip('jobType', 'Бүтэн цагийн')) === 'OK');
 await wait(1200);
-sw = await pillRead();
-ok('🕒 ЗӨВХӨН тэр чип унав (2→1, бусдыг ХӨНДӨӨГҮЙ) + badge «1 сонгосон»',
+sw = await sideRead();
+ok('🕒 ЗӨВХӨН тэр чип унав (2→1, бусдыг ХӨНДӨӨГҮЙ) + «1 сонгосон»',
   JSON.stringify(sw.jobType.active) === JSON.stringify(['Цагийн']) && sw.jobType.count === 1
     && /attr_jobType=Цагийн(&|$)/.test(sw.url), JSON.stringify(sw));
 
-/** 🆕 (42): ⌄ панель доторх «✕ Цуцлах» товчийг дарна (pill-ийн хүрээ дотор) */
+/** 🆕 (17): сайдбарын блокын «✕ Цуцлах» товчийг дарна */
 const clearClicked = await evaluate(`(() => {
-  const p = document.querySelector('[data-filter-pill="jobType"]');
-  const b = p && [...p.querySelectorAll('button')].find((x) => /Цуцлах/.test(x.innerText));
+  const box = document.querySelector('aside [data-attr-filter="jobType"]');
+  const block = box && box.closest('div[class*="py-4"]');
+  const b = block && [...block.querySelectorAll('button')].find((x) => /Цуцлах/.test(x.innerText));
   if (!b) return 'NO_CLEAR';
   b.click(); return 'OK';
 })()`);
 await wait(1200);
-sw = await pillRead();
-ok('🕒 «✕ Цуцлах» → БҮХ чип идэвхгүй + badge/товч ГАРСАН + URL-ээс `attr_jobType` АРИЛСАН',
+sw = await sideRead();
+ok('🕒 «✕ Цуцлах» → БҮХ чип идэвхгүй + «N сонгосон»/товч ГАРСАН + URL-ээс `attr_jobType` АРИЛСАН',
   clearClicked === 'OK' && sw.jobType.active.length === 0 && sw.jobType.count === 0
-    && sw.jobType.badge === 0 && !sw.jobType.clear
+    && !sw.jobType.clear
     && !/attr_jobType/.test(sw.url), `${clearClicked} ${JSON.stringify(sw)}`);
 ok('⛔ 📊/📈 ХӨНДӨГДӨӨГҮЙ (0 идэвхтэй, URL-д тэдгээрийн түлхүүр БАЙХГҮЙ)',
   sw.experience.active.length === 0 && sw.jobLevel.active.length === 0
     && !/attr_experience|attr_jobLevel/.test(sw.url), JSON.stringify(sw));
 
-// 📊 Туршлага ч мөн ИЖИЛ (1 pill = 2 утга) — тусдаа механизм биш, НЭГ ✓
-ok('📊 experience pill нээв', (await pillOpen('experience')) === 'OK');
-await wait(600);
-ok('📊 «Шаардлагагүй» + «Шаардлагатай» — 2 утга ЗЭРЭГ (📈 ч хөндөгдөхгүй)',
-  (await pillChip('experience', 'Шаардлагагүй')) === 'OK');
+// 📊 Туршлага ч мөн ИЖИЛ (1 блок = 2 утга) — тусдаа механизм биш, НЭГ ✓
+ok('📊 «Шаардлагагүй» дарав', (await sideChip('experience', 'Шаардлагагүй')) === 'OK');
 await wait(1000);
-await pillChip('experience', 'Шаардлагатай');
+ok('📊 «Шаардлагатай» дарав (2 утга ЗЭРЭГ — 📈 ч хөндөгдөхгүй)',
+  (await sideChip('experience', 'Шаардлагатай')) === 'OK');
 await wait(1200);
-sw = await pillRead();
-ok('📊 2 сонголт + badge «2» + URL `attr_experience=Шаардлагагүй,Шаардлагатай` (📈 хэвээр 0)',
-  sw.experience.active.length === 2 && sw.experience.count === 2 && sw.experience.badge === 2
+sw = await sideRead();
+ok('📊 2 сонголт + «2 сонгосон» + URL `attr_experience=Шаардлагагүй,Шаардлагатай` (📈 хэвээр 0)',
+  sw.experience.active.length === 2 && sw.experience.count === 2
     && /attr_experience=Шаардлагагүй,Шаардлагатай(&|$)/.test(sw.url)
     && sw.jobLevel.active.length === 0 && sw.jobType.active.length === 0, JSON.stringify(sw));
 
-// ═══════ ⑥c HOVER — PILL «БАРААН» БОЛНО (2026-10-06 (16)) ═══════
+
+// ═══════ ⑥c HOVER — САЙДБАРЫН ЧИП (2026-10-06 (16)-ийн залгамж) ═══════
 /**
- * 🆕 2026-10-06 (16) (хэрэглэгчийн хүсэлт: «Ажлын зарын болон бусад хэсэг
- *    байгаа Ажлын цаг, Туршлага, Мэргэжлийн түвшин гэх Мэт button дээр mouse
- *    дээр cursor аваачхад одоогийхоосоо илүү бараан өнгөтэй болдог болго»):
- *    ① Сонгоогүй pill нь ⏳ `hover:bg-gray-50` (#FAF8F5 — цагаан/крем дэвсгэр
- *       дээр БАРАГ мэдэгддэггүй байв ✗) ⇒ 🆕 `bg-gray-200` (#E9E4D9) +
- *       `border-gray-400` (#B0A794) + `text-gray-900` (#1B1815) ✓
- *    ② ИДЭВХТЭЙ pill нь ⏳ hover-д ОГТ өөрчлөгддөггүй байв ⇒ 🆕 `bg-primary/25`
- *       (rgba(37, 99, 235, 0.25)) + `border-primary-dark` + `text-primary-dark` ✓
+ * ⏳ 2026-10-06 (16)-д энэ шалгалт `#filter-bar` pill-ийн hover байв ✗ —
+ *    🆕 2026-10-06 (17)-д 💼-ийн 3 шүүлт САЙДБАРТ буцсан тул pill БАЙХГҮЙ ⇒
+ *    шалгалт нь САЙДБАРЫН `chip-toggle` чип рүү шилжив ✓ (⚠️ 💻 pill-ийн hover
+ *    нь `scripts/cdp-notebook-specs.mjs` §⑧b-д ХЭВЭЭР түгжигдсэн ✓).
+ * ① Хэвийн чип: хүрээ `border-gray-200` (#E9E4D9 = rgb(233, 228, 217)) + текст
+ *    `text-gray-600` (#5D5747 = rgb(93, 87, 71)) — `app/globals.css → .chip-toggle`
+ *    (⚠️ `tailwind.config.js` нь `gray-*`-г ДУЛААН палитр руу сольсон ✓)
+ * ② HOVER: 🆕 `hover:border-primary/60` (rgba(37, 99, 235, 0.6)) +
+ *    `hover:text-primary` (rgb(37, 99, 235)) ✓
+ * ③ ИДЭВХТЭЙ чип (`.chip-toggle-active`): `bg-primary` (rgb(37, 99, 235)) +
+ *    `text-white` — hover-д текст ЦАГААН хэвээр (`hover:text-white` ✓)
  * ⚠️ ХЭМЖИЛТ нь БОДИТ хулганаар: `Input.dispatchMouseEvent(mouseMoved)` ⇒
- *    `:hover` pseudo-class ⇒ `getComputedStyle().backgroundColor` ✓
- *    (§⑥-ийн төгсгөлд 📊 experience сонгогдсон ⇒ 📈 jobLevel нь СОНГООГҮЙ pill,
- *     📊 experience нь ИДЭВХТЭЙ pill — хоёуланг нь шалгана ✓)
- * ⚠️ `lum()` нь харьцуулалтын баталгаа: hover нь ҮРГЭЛЖ БАРААН (гэрэлтэлт БАГА)
- *    байх ЁСТОЙ — ⏳ хуучин `gray-50` ч гэрэлтэлт нь ~0.95 байв тул зөвхөн
- *    лог биш, rgba/hex-ийг ТООГООР нь батлана ✓
+ *    `:hover` pseudo-class ⇒ `getComputedStyle()` ✓
+ * ⚠️ Зайлуулах цэг нь ЭЭЛЖЛЭН эргэлддэг (`AWAY`) — Chrome ижил цэг рүү дахин
+ *    `mouseMoved` илгээхэд hit-test-ийг ДАХИН ХИЙХГҮЙ (2026-10-06 (16) flake ✓)
  */
 const lum = (css) => {
   const m = /rgba?\(([^)]+)\)/.exec(css || '');
   if (!m) return null;
   const p = m[1].split(/[,/]/).map((x) => Number(x.trim()));
   const a = p.length > 3 ? p[3] : 1;
-  /** ⚠️ `bg-primary/25` нь rgba (0.25 alpha) тул ЦАГААН дээр буулгаж тооцно */
+  /** ⚠️ rgba (alpha < 1) үед ЦАГААН дэвсгэр дээр буулгаж тооцно */
   const mix = (c) => c * a + 255 * (1 - a);
   const f = (v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; };
   return 0.2126 * f(mix(p[0])) + 0.7152 * f(mix(p[1])) + 0.0722 * f(mix(p[2]));
 };
-/** Pill-ийн ТОВЧНЫ хэв + ДЭЛГЭЦ дээрх төв цэг (⚠️ координат нь viewport-той) */
-const pillProbe = (key) => evaluate(`(() => {
-  const p = document.querySelector('[data-filter-pill="' + ${JSON.stringify(key)} + '"]');
-  const b = p && p.querySelector('button');
+/** Сайдбарын чипийн хэв + ДЭЛГЭЦ дээрх төв цэг (⚠️ координат нь viewport-той) */
+const chipProbe = (value) => evaluate(`(() => {
+  const b = document.querySelector('aside [data-attr-value="' + ${JSON.stringify(value)} + '"]');
   if (!b) return null;
   b.scrollIntoView({ block: 'center' });
   const s = getComputedStyle(b);
@@ -783,7 +759,7 @@ const pillProbe = (key) => evaluate(`(() => {
     bg: s.backgroundColor, border: s.borderTopColor, color: s.color,
     x, y, onButton: !!at && (at === b || b.contains(at)),
     hover: b.matches(':hover'),
-    expanded: b.getAttribute('aria-expanded'),
+    active: b.classList.contains('chip-toggle-active'),
   };
 })()`);
 /** Хулганыг тухайн цэг рүү зөөнө (`mousedown` БИШ — зөвхөн hover ✓) */
@@ -795,8 +771,6 @@ const mouseTo = async (x, y) => {
  * ⚠️ 2026-10-06 (16) CDP ДЭЭР БАРИГДСАН FLAKY УРХИ: хулганыг ЗАЙЛУУЛАХ үед
  *    ҮРГЭЛЖ ижил цэг (2,2) руу дараалан `mouseMoved` явуулбал Chrome нь
  *    заримдаа hit-test-ийг ДАХИН ХИЙХГҮЙ ба hover нь ХЭВЭЭР үлддэг ✗
- *    («хулганыг зайлуулахад буцав уу» шалгалт 1 удаа унасан; тусдаа дебаг
- *    скрипт дээр `b.matches(':hover')` = true хэвээр байв).
  *    ⇒ зайлуулах цэгийг ЭЭЛЖЛҮҮЛНЭ (4 өөр цэг) ✓
  */
 const AWAY = [[2, 2], [5, 1180], [11, 4], [3, 900]];
@@ -806,67 +780,48 @@ const mouseAway = async () => {
   await mouseTo(AWAY[awayAt][0], AWAY[awayAt][1]);
 };
 /** ⏳ TRANSITION (150ms) + React-ийн дараагийн frame хүртэл дахин ДАХИН уншина */
-const probeUntil = async (key, okFn, tries = 6) => {
+const probeUntil = async (value, okFn, tries = 6) => {
   let p = null;
   for (let i = 0; i < tries; i += 1) {
-    p = await pillProbe(key);
+    p = await chipProbe(value);
     if (p && okFn(p)) return p;
     await wait(250);
   }
   return p;
 };
 
-console.log('\n⑥c HOVER — pill «бараан» болно (2026-10-06 (16))');
-/** ⚠️ Нээлттэй ⌄ панель нь доорх pill-ийн HOVER ЦЭГИЙГ халхална ✗ → ESC */
-await rpc('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27, nativeVirtualKeyCode: 27 });
-await rpc('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27, nativeVirtualKeyCode: 27 });
-await wait(500);
-/**
- * ⚠️ Селектор нь ЗӨВХӨН pill-ийн ТОВЧ (`>` — шууд хүү) байх ЁСТОЙ:
- *    ⌄ панель нь DOM-д ҮРГЭЛЖ байдаг (зөвхөн `invisible` болдог) ба дотор нь
- *    `✕ Цуцлах`/чип товчнууд байна — тэдэнд `aria-expanded` ОГТ БАЙХГҮЙ ✗
- *    (`[data-filter-pill] button` гэж авбал 15 товч багтаж, `every(...)`
- *     нь ҮРГЭЛЖ false — ESC ажилласан ч шалгалт УНАВ ✗ 2026-10-06 (16))
- */
-const escOk = await evaluate(`(() => {
-  const toggles = [...document.querySelectorAll('#filter-bar [data-filter-pill] > button')];
-  return toggles.length > 0 && toggles.every((b) => b.getAttribute('aria-expanded') === 'false');
-})()`);
-ok('ESC → ⌄ панель БҮГД хаагдсан (`aria-expanded=false` — hover цэвэр pill дээр бууна ✓)',
-  escOk === true, String(escOk));
-
-await mouseAway();                                     // хулганыг зайлуулна
-const base = await probeUntil('jobLevel', (p) => p.bg === 'rgb(255, 255, 255)');  // ⚠️ §⑥-д СОНГООГҮЙ pill ✓
-ok('📈 Сонгоогүй pill (`jobLevel`): хэвийн фон ЦАГААН (`bg-white`) · hover цэг нь товч дээр ✓',
-  !!base && base.bg === 'rgb(255, 255, 255)' && base.hover === false && base.onButton === true,
-  JSON.stringify(base));
-await mouseTo(base.x, base.y);
-const hov = await probeUntil('jobLevel', (p) => p.bg === 'rgb(233, 228, 217)');
-ok('🆕 (16) HOVER: фон БАРААН болов (`bg-white` → `bg-gray-200` = rgb(233, 228, 217)) · `:hover` ✓',
-  !!hov && hov.bg === 'rgb(233, 228, 217)' && hov.hover === true, JSON.stringify(hov));
-ok('🆕 (16) HOVER: хүрээ ч бараан (`border-gray-400` = rgb(176, 167, 148)) · текст `text-gray-900` = rgb(27, 24, 21)',
-  !!hov && hov.border === 'rgb(176, 167, 148)' && hov.color === 'rgb(27, 24, 21)',
-  hov && `${hov.border} / ${hov.color}`);
-ok('🆕 (16) HOVER: гэрэлтэлт БАГА (⏳ `gray-50` ~0.95 БИШ — «бараан» ✓)',
-  !!hov && lum(hov.bg) < lum(base.bg) && lum(hov.bg) < 0.9,
-  `${(lum(base.bg) || 0).toFixed(3)} → ${(lum(hov.bg) || 0).toFixed(3)}`);
+console.log('\n⑥c HOVER — сайдбарын чип (`chip-toggle`) «өөрчлөгдөнө»');
 await mouseAway();
-const back = await probeUntil('jobLevel', (p) => p.bg === 'rgb(255, 255, 255)');
-ok('HOVER: хулганыг зайлуулахад фон БУЦАЖ цагаан болов (`bg-white` + `:hover` false)',
-  !!back && back.bg === 'rgb(255, 255, 255)' && back.hover === false, JSON.stringify(back));
-
-// ИДЭВХТЭЙ pill (📊 experience — §⑥-д 2 утга сонгосон ✓)
+const chipBase = await probeUntil('Бүтэн цагийн', (p) => p.border === 'rgb(233, 228, 217)');
+ok('Чип (🕒 «Бүтэн цагийн»): хэвийн хүрээ `border-gray-200` (rgb(233, 228, 217)) · текст `text-gray-600` · hover цэг нь товч дээр ✓',
+  !!chipBase && chipBase.border === 'rgb(233, 228, 217)' && chipBase.color === 'rgb(93, 87, 71)'
+    && chipBase.hover === false && chipBase.onButton === true && chipBase.active === false,
+  JSON.stringify(chipBase));
+await mouseTo(chipBase.x, chipBase.y);
+const chipHov = await probeUntil('Бүтэн цагийн', (p) => /37[, ]+99[, ]+235/.test(p.border));
+ok('HOVER: хүрээ/текст ЦЭНХЭР болов (`hover:border-primary/60` + `hover:text-primary`) · `:hover` ✓',
+  !!chipHov && /37[, ]+99[, ]+235/.test(chipHov.border) && /0\.6/.test(chipHov.border)
+    && /37[, ]+99[, ]+235/.test(chipHov.color) && chipHov.hover === true,
+  chipHov && `${chipHov.border} / ${chipHov.color}`);
 await mouseAway();
-const actBase = await probeUntil('experience', (p) => p.bg === 'rgb(219, 234, 254)');
-ok('📊 Идэвхтэй pill (`experience`): хэвийн фон ЦАЙВАР ЦЭНХЭР (`bg-primary-light` = rgb(219, 234, 254))',
-  !!actBase && actBase.bg === 'rgb(219, 234, 254)' && actBase.onButton === true, JSON.stringify(actBase));
+const chipBack = await probeUntil('Бүтэн цагийн', (p) => p.border === 'rgb(233, 228, 217)');
+ok('HOVER: хулганыг зайлуулахад хүрээ БУЦАВ (`border-gray-200` (rgb(233, 228, 217)) · `:hover` false)',
+  !!chipBack && chipBack.border === 'rgb(233, 228, 217)' && chipBack.hover === false,
+  JSON.stringify(chipBack));
+
+// ИДЭВХТЭЙ чип (📊 «Шаардлагатай» — §⑥b-д 2 утга сонгосон ✓)
+await mouseAway();
+const actBase = await probeUntil('Шаардлагатай', (p) => p.active === true);
+ok('Идэвхтэй чип (`.chip-toggle-active`): фон `bg-primary` (rgb(37, 99, 235)) · текст ЦАГААН',
+  !!actBase && actBase.active === true && actBase.bg === 'rgb(37, 99, 235)'
+    && actBase.color === 'rgb(255, 255, 255)' && actBase.onButton === true,
+  JSON.stringify(actBase));
 await mouseTo(actBase.x, actBase.y);
-const actHov = await probeUntil('experience', (p) => /rgba?\(37[, ]+99[, ]+235/.test(p.bg));
-ok('🆕 (16) Идэвхтэй pill HOVER: фон БАРААН (`bg-primary/25` — rgba(37, 99, 235, 0.25)) · ⏳ өмнө hover-д ОГТ өөрчлөгддөггүй байв',
-  !!actHov && /rgba?\(37[, ]+99[, ]+235/.test(actHov.bg) && /0\.25/.test(actHov.bg)
-    && actHov.hover === true && lum(actHov.bg) < lum(actBase.bg), JSON.stringify(actHov));
-ok('🆕 (16) Идэвхтэй pill HOVER: текст нь `primary-dark` (rgb(29, 78, 216) — AA 4.5:1 ✓)',
-  !!actHov && actHov.color === 'rgb(29, 78, 216)', actHov && actHov.color);
+const actHov = await probeUntil('Шаардлагатай', (p) => p.hover === true);
+ok('Идэвхтэй чип HOVER: фон/текст ХЭВЭЭР (`hover:text-white` — `bg-primary` · ⛔ «цайвар» болохгүй ✓)',
+  !!actHov && actHov.hover === true && actHov.bg === 'rgb(37, 99, 235)'
+    && actHov.color === 'rgb(255, 255, 255)' && lum(actHov.bg) === lum(actBase.bg),
+  actHov && `${actHov.bg} / ${actHov.color}`);
 await mouseAway();
 
 // ═══════ ⑦ ДҮГНЭЛТ ═══════

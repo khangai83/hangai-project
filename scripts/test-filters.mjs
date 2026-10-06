@@ -15,6 +15,10 @@
 //    ⚠️ `getAttrFilters` нь эдгээрийг ХЭВЭЭР буцаана (утга/URL/DB хөндөгдөхгүй ✓)
 //    — зөвхөн `components/HomeClient.jsx` нь `.filter((f) => !f.filterBar)`-ээр
 //    САЙДБАРААС хасна (2 өөр UI БАЙХГҮЙ ✓); шалгалтыг доорх «🎛» тест хийнэ ✓
+// 🆕 2026-10-06 (17): 🚗 🎨 Өнгө · ⛽ Түлш · ⚙️ Хурдны хайрцаг (`afterPayment: 1|2|3`
+//    ⇒ «💳 Төлбөрийн нөхцөл»-ийн ЯГ АРАА), 💼 🕒/📊/📈 ба ✅ «Төлөв» (8 хэсэг) нь
+//    `#filter-bar` pill-ээс ГАРЧ сайдбарт («Дэлгэрэнгүй хайлт») БУЦАВ ⇒ туг
+//    ЗӨВХӨН 💻 📺/⚙️/🧠/💾 дээр ҮЛДЭВ (доорх «🔀 (17)» тестүүд ✓)
 //
 // АЖИЛЛУУЛАХ:  npm run test:filters
 //
@@ -42,6 +46,8 @@ import {
   getSectionCategoryChoices, getSectionCategories,
   // 🏠 2026-10-04: хэсгийн панельд дэд төрөл харагдах эсэх (2 алхамт drill)
   showsSectionSubtypes,
+  // 🎨 2026-10-06 (17): «afterPayment» тест нь Өнгө-ний либын экспорттой харьцуулна
+  AUTO_COLOR_OPTIONS,
 } from '../lib/locationData.js';
 // 🚗🌈 2026-10-01: 🏷️ «Үйлдвэрлэгч» → 🚙 «Загвар» (cascading) — зөвхөн ЦЭВЭР
 //    функцууд + өгөгдөл (сүлжээ/DB-д хүрэхгүй тул шууд ачаалж болно ✓)
@@ -469,10 +475,15 @@ t('⚽ hobby: ЗӨВХӨН «Төлөв» (condition) шүүлттэй', () => {
   assert.equal(f.icon, '✅');
   // ✅ 2026-10-02 (хэрэглэгчийн шаардлага): ЯГ 3 сонголт — 2026-09-29-д 2 байв
   assert.deepEqual(f.options, ['Шинэ', 'Шинэвтэр', 'Хуучин']);
-  // 🆕 2026-10-05 (43): үр дүнгийн дээрх `#filter-bar` PILL (`filterBar: true`)
-  assert.equal(f.filterBar, true, '✅ нь pill болоогүй ✗');
+  // 🆕 2026-10-06 (17): ⏳ (43)-ийн `#filter-bar` pill ХАСАГДАВ — ✅ нь
+  //    «Дэлгэрэнгүй хайлт»-ийн САЙДБАРТ буцсан (хэрэглэгчийн хүсэлт:
+  //    «Компьютер, Дагалдах хэрэгсэл болон бусад хэсгийн Төлөв сонголтыг ч
+  //    Дэлгэрэнгүй хайлт хэсэгт оруул») ⇒ `filterBar` туг БАЙХГҮЙ ✓
+  assert.equal(f.filterBar, undefined, '✅ pill хэвээр байна ✗ (сайдбарт байх ёстой)');
+  assert.equal(f.afterPayment, undefined, '✅ нь «Төлбөрийн нөхцөл»-ийн дараах ✗');
   assert.equal(f.chips, true);
   assert.equal(f.multi, true);
+  assert.equal(f.multiNoun, 'төлөв');
 });
 
 // ---- ⑤б ✅ «ШИНЭ / ШИНЭВТЭР / ХУУЧИН» — БҮХ хэсэгт НЭГ ижил (2026-10-02) ----
@@ -493,14 +504,14 @@ t('✅ Форм (attrFields) ба шүүлт (attrFilters) — condition нь 3 
      * 🆕 2026-10-03 (21): хайлтын шүүлт нь ОЛОН СОНГОЛТТОЙ ЧИП (`chips`+`multi`,
      * «✅ 2 төлөв» шошго) — ⚠️ ФОРМ ХӨНДӨӨГДӨӨГҮЙ (`formChips` туг БАЙХГҮЙ тул
      * 3-р алхамд хэвээр `<select>` — `components/AddListingClient.jsx` ✓).
-     * 🆕 2026-10-05 (43): мөн `filterBar: true` — хайлтын талд САЙДБАР БИШ,
-     * үр дүнгийн дээрх хэвтээ `#filter-bar` pill («Төлөв ⌄» ✓).
+     * 🆕 2026-10-06 (17): ⏳ (43)-ийн `filterBar` pill ХАСАГДАВ — хайлтын талд
+     * САЙДБАРТ («Дэлгэрэнгүй хайлт») буцсан ✓ (`filterBar` туг БАЙХГҮЙ)
      * Дэлгэрэнгыг `scripts/test-attr-multi.mjs` түгждэг
      */
     assert.equal(field.chips, true, `${s.value}: чип болоогүй ✗`);
     assert.equal(field.multi, true, `${s.value}: олон сонголт болоогүй ✗`);
     assert.equal(field.multiNoun, 'төлөв', `${s.value}: «N төлөв» шошго ✗`);
-    assert.equal(field.filterBar, true, `${s.value}: pill болоогүй ✗`);
+    assert.equal(field.filterBar, undefined, `${s.value}: pill хэвээр байна ✗`);
     assert.ok(!field.formChips, `${s.value}: форм дээр чип болжээ ✗`);
     // Шүүлтэд харагдах хувилбар нь МӨН ижил байх ёстой (нэг эх сурвалж ✓)
     const filter = getAttrFilters(s.value).find((f) => f.key === 'condition');
@@ -511,8 +522,8 @@ t('✅ Форм (attrFields) ба шүүлт (attrFilters) — condition нь 3 
       assert.equal(filter.chips, true, `${s.value}: шүүлт чип биш ✗`);
       assert.equal(filter.multi, true, `${s.value}: шүүлт нэг утгатай ✗`);
       assert.equal(filter.multiNoun, 'төлөв');
-      // 🆕 2026-10-05 (43): pill туг ч ИЖИЛ (нэг эх сурвалж ✓)
-      assert.equal(filter.filterBar, true, `${s.value}: шүүлт pill биш ✗`);
+      // 🆕 2026-10-06 (17): pill туг ХАСАГДАВ (нэг эх сурвалж — форм ба шүүлт ✓)
+      assert.equal(filter.filterBar, undefined, `${s.value}: шүүлт pill хэвээр ✗`);
       assert.equal(filter, field, `${s.value}: форм ба шүүлт ӨӨР объект ✗`);
     }
   });
@@ -674,7 +685,10 @@ t('🛋️ home: ЗӨВХӨН «Төлөв» шүүлттэй — 🚚 Хүрг�
   const f = getAttrFilters('home')[0];
   assert.equal(f.label, 'Төлөв');   // 🆕 2026-10-05 (43)
   assert.deepEqual(f.options, ['Шинэ', 'Шинэвтэр', 'Хуучин']);
-  assert.equal(f.filterBar, true);  // 🆕 (43): үр дүнгийн дээрх pill ✓
+  // 🆕 2026-10-06 (17): ⏳ (43)-ийн pill ХАСАГДАВ — сайдбарт чип блок ✓
+  assert.equal(f.filterBar, undefined, 'pill хэвээр байна ✗');
+  assert.equal(f.chips, true);
+  assert.equal(f.multi, true);
 });
 
 t('🛋️ home: форм дээр зөвхөн condition (brand/material/size/color/delivery ХАСАГДСАН)', () => {
@@ -975,10 +989,14 @@ t('🖥 21 Notebook брэнд + 2 PC дэд төрөлд 4 шүүлт; ХОЛД
   }
 });
 
-// ---------- 🎛 2026-10-05 (43): `filterBar` — PILL-ийн ГЭРЭЭ (18 талбар) ----------
+// ---------- 🎛 2026-10-05 (43) · 🆕 2026-10-06 (17): `filterBar` — PILL-ийн ГЭРЭЭ ----------
 /**
- * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Шинэ, Шинэвтэр, Хуучин ийг Төлөв гэж нэрлэ» +
+ * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (43): «Шинэ, Шинэвтэр, Хуучин ийг Төлөв гэж нэрлэ» +
  * «Дэлгэцийн хэмжээ, CPU, RAM, SSD Hard, Төлөв эдгээрийг мөн хайдаг болгоод өг».
+ * 🆕 (17): «Өнгө, Түлш, Хурдны хайрцаг Дэлгэрэнгүй хайлтын хэсэгт Төлбөрийн
+ * нөхцөлийн ардаас оруул» + «Ажлын зарын Ажлын цаг, Туршлага, Мэргэжлийн
+ * түвшиныг бас Дэлгэрэнгүй хайлт д оруул» + «Компьютер, Дагалдах хэрэгсэл
+ * болон бусад хэсгийн Төлөв сонголтыг ч Дэлгэрэнгүй хайлт хэсэгт оруул».
  *
  * ⚠️ `filterBar: true` гэдэг нь «энэ шүүлт нь САЙДБАРТ (SideBlock) БИШ, үр
  *    дүнгийн дээрх ХЭВТЭЭ `#filter-bar`-т ОЛОН СОНГОЛТТОЙ PILL (⌄ панель)»
@@ -987,8 +1005,10 @@ t('🖥 21 Notebook брэнд + 2 PC дэд төрөлд 4 шүүлт; ХОЛД
  *    ② утга/URL/DB ХӨНДӨӨГДӨХГҮЙ — `getAttrFilters` нь талбарыг ХЭВЭЭР
  *       буцаана (URL-аас уншигдах ёстой ✓); ЗӨВХӨН `HomeClient` нь
  *       `.filter((f) => !f.filterBar)`-ээр сайдбараас хасна (2 ӨӨР UI БАЙХГҮЙ ✓)
+ *    ⚠️ (17)-ийн дараа туг нь ЗӨВХӨН 💻 📺/⚙️/🧠/💾 дээр ҮЛДЭВ (🚗 🎨/⛽/⚙️ ·
+ *       💼 🕒/📊/📈 · ✅ «Төлөв» нь сайдбарт буцсан — доорх 🆕 (17) тестүүд ✓)
  */
-t('🎛 `filterBar` туг: ЗААВАЛ `chips`+`multi` ба ЯГ 18 талбар (2 өөр UI БАЙХГҮЙ)', () => {
+t('🎛 `filterBar` туг: ЗААВАЛ `chips`+`multi` ба ЯГ 4 талбар (💻 Notebook)', () => {
   const bar = [];
   SECTIONS.forEach((s) => (s.attrFields || []).forEach((f) => {
     if (!f.filterBar) return;
@@ -1002,17 +1022,14 @@ t('🎛 `filterBar` туг: ЗААВАЛ `chips`+`multi` ба ЯГ 18 талба
     const sub = s.value === 'computers' ? 'Apple' : '';
     assert.ok(getAttrFilters(s.value, sub).some((x) => x.key === f.key),
       `${s.value}.${f.key}: getAttrFilters-д БАЙХГҮЙ ✗`);
+    // ⚠️ pill ба afterPayment нь ХАМТ БАЙХ ЁСТОЙГҮЙ (2 өөр UI ✗)
+    assert.equal(f.afterPayment, undefined,
+      `${s.value}.${f.key}: filterBar ба afterPayment ХАМТ байна ✗`);
   }));
   assert.deepEqual(bar, [
-    // 🚗 авто (37): 🎨 өнгө · ⚙️ хайрцаг · ⛽ түлш
-    'auto.color', 'auto.transmission', 'auto.fuel',
-    // 💼 (42): 🕒 ажлын цаг · 📊 туршлага · 📈 мэргэжлийн түвшин
-    'jobs.jobType', 'jobs.experience', 'jobs.jobLevel',
-    // 🖥 (43): 📺 дэлгэц · ⚙️ CPU · 🧠 RAM · 💾 хард
+    // 🖥 (43) · 🆕 (17): ЗӨВХӨН 💻-ийн 4 үзүүлэлт pill хэвээр —
+    //    🚗 🎨/⛽/⚙️ · 💼 🕒/📊/📈 ба ✅ «Төлөв» (8 хэсэг) нь сайдбарт ✓
     'computers.screen', 'computers.cpu', 'computers.ram', 'computers.storage',
-    // ✅ (43): «Төлөв» — 8 хэсэгт НЭГ туг (`CONDITION_FILTER_EXTRA` ✓)
-    'computers.condition', 'furniture.condition', 'home.condition', 'electric.condition',
-    'construction.condition', 'equipment.condition', 'travel.condition', 'hobby.condition',
   ], `pill талбарууд: ${bar.join(', ')}`);
 });
 
@@ -1028,6 +1045,94 @@ t('🎛 HomeClient: pill нь ЗӨВХӨН `chips && multi && filterBar`; сай
   // ⚠️ Идэвхтэй тоо нь `countAttrValues` (хоосон = 0 ✓), цэвэрлэгээ `[]`
   assert.match(src, /count=\{countAttrValues\(attrArray\(f\.key\)\)\}/);
   assert.match(src, /onClick=\{\(\) => toggleAttrMulti\(f\.key, o\)\}/);
+});
+
+// ---------- 🔀 🆕 2026-10-06 (17): PILL → САЙДБАР («Дэлгэрэнгүй хайлт») ----------
+/**
+ * 🆕 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Автомашины Дэлгэрэнгүй хайлт дээр Төлбөрийн нөхцөл
+ * ийн хайлтыг Өнгө сонгож байгаа шиг болгож өөрчил, Өнгө, Түлш, Хурдны хайрцаг
+ * Дэлгэрэнгүй хайлтын хэсэгт Төлбөрийн нөхцөлийн ардаас оруул. Ажлын зарын
+ * Ажлын цаг, Туршлага, Мэргэжлийн түвшин -ийг бас Дэлгэрэнгүй хайлт д оруул.
+ * Мөн Компьютер, Дагалдах хэрэгсэл болон бусад хэсгийн Төлөв сонголтыг ч
+ * Дэлгэрэнгүй хайлт хэсэгт оруул»
+ *
+ * ⚠️ ДҮРЭМ: ① утга/URL/DB ХӨНДӨӨГДӨХГҮЙ (зөвхөн ГАЗАР нь солигдоно ✓)
+ *    ② 🚗 3 нь `afterPayment` (1 өнгө → 2 түлш → 3 хайрцаг) ⇒ 💳-ийн АРАА
+ *    ③ 💼 3 ба ✅ (8 хэсэг) нь үндсэн attr жагсаалтад (сайдбарт) ✓
+ *    ④ 💻 📺/⚙️/🧠/💾 нь pill ХЭВЭЭР (хүсэлтэд зөвхөн «Төлөв» нэрлэгдсэн ✓)
+ */
+t('🔀 (17) 🚗 🎨/⛽/⚙️ — `afterPayment` эрэмбэ 1/2/3 (pill туг БАЙХГҮЙ)', () => {
+  const auto = getAttrFilters('auto');
+  const ap = auto
+    .filter((f) => f.afterPayment)
+    .sort((a, b) => a.afterPayment - b.afterPayment);
+  assert.deepEqual(ap.map((f) => f.key), ['color', 'fuel', 'transmission'],
+    'авто: «💳 Төлбөрийн нөхцөл»-ийн дараах дараалал ✗ (Өнгө → Түлш → Хайрцаг)');
+  assert.deepEqual(ap.map((f) => f.afterPayment), [1, 2, 3]);
+  ap.forEach((f) => {
+    assert.equal(f.chips, true, `auto.${f.key}: чип биш ✗`);
+    assert.equal(f.multi, true, `auto.${f.key}: олон сонголт биш ✗`);
+    assert.equal(f.filterBar, undefined, `auto.${f.key}: pill туг хэвээр ✗`);
+    assert.ok(f.multiNoun, `auto.${f.key}: multiNoun БАЙХГҮЙ ✗`);
+  });
+  // ⚠️ Утга/URL/DB ХӨНДӨӨГДӨӨГҮЙ — зөвхөн ГАЗАР нь солигдов ✓
+  assert.deepEqual(getAttrField('auto', 'color').options, AUTO_COLOR_OPTIONS);
+  assert.deepEqual(getAttrField('auto', 'fuel').options,
+    ['Бензин', 'Дизель', 'Хайбрид', 'Цахилгаан', 'Хий', 'Бусад']);
+  assert.deepEqual(getAttrField('auto', 'transmission').options, ['Автомат', 'Механик']);
+  // ⚠️ Сарын үндсэн attr жагсаалтад ХЭВЭЭР (URL-аас уншигдана ✓)
+  ['color', 'transmission', 'fuel'].forEach((k) => {
+    assert.ok((getSection('auto').attrFilters || []).includes(k),
+      `auto.${k}: attrFilters-д БАЙХГҮЙ ⇒ URL-аас уншигдахгүй ✗`);
+  });
+});
+
+t('🔀 (17) 💼 🕒/📊/📈 ба ✅ «Төлөв» (8 хэсэг) — pill туг БАЙХГҮЙ, чип блок ХЭВЭЭР', () => {
+  // 💼 — 3 шүүлт (форм дээр чип хэвээр: `formChips` ХӨНДӨӨГДӨӨГҮЙ ✓)
+  const jobs = getAttrFilters('jobs');
+  assert.deepEqual(jobs.map((f) => f.key), ['jobType', 'experience', 'jobLevel']);
+  jobs.forEach((f) => {
+    assert.equal(f.filterBar, undefined, `jobs.${f.key}: pill туг хэвээр ✗`);
+    assert.equal(f.afterPayment, undefined, `jobs.${f.key}: afterPayment ✗`);
+    assert.equal(f.chips, true, `jobs.${f.key}: чип биш ✗`);
+    assert.equal(f.multi, true, `jobs.${f.key}: олон сонголт биш ✗`);
+    assert.equal(f.formChips, true, `jobs.${f.key}: форм чип хөндөгдсөн ✗`);
+  });
+  // ✅ — 8 хэсэгт нэг туг (`CONDITION_FILTER_EXTRA`)
+  const cond = SECTIONS.filter((s) => s.attrFields.some((f) => f.key === 'condition'));
+  assert.equal(cond.length, 8, `condition талбартай хэсэг: ${cond.map((s) => s.value).join(', ')}`);
+  cond.forEach((s) => {
+    const f = getAttrField(s.value, 'condition');
+    assert.equal(f.filterBar, undefined, `${s.value}.condition: pill туг хэвээр ✗`);
+    assert.equal(f.chips, true, `${s.value}.condition: чип биш ✗`);
+    assert.equal(f.multi, true, `${s.value}.condition: олон сонголт биш ✗`);
+  });
+  // 💻 📺/⚙️/🧠/💾 — хүсэлтэд «Төлөв» л нэрлэгдсэн тул pill ХЭВЭЭР ✓
+  ['screen', 'cpu', 'ram', 'storage'].forEach((k) => {
+    assert.equal(getAttrField('computers', k).filterBar, true,
+      `computers.${k}: pill хасагдсан ✗ (хүсэлтэд ороогүй)`);
+  });
+});
+
+t('🔀 (17) HomeClient: `afterPaymentAttrs` нь 💳-ийн ЯГ ДАРАА, үндсэн жагсаалтаас ХАСАГДАНА', () => {
+  const src = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
+  // ① Жагсаалт нь ЛИБ-ийн тугуудаас (`chips && multi && afterPayment`) — хатуу массив БАЙХГҮЙ ✓
+  assert.match(src, /attrFilters\s*\.filter\(\(f\) => f\.chips && f\.multi && f\.afterPayment\)/);
+  assert.match(src, /\.sort\(\(a, b\) => a\.afterPayment - b\.afterPayment\)/);
+  // ② Үндсэн attr жагсаалтаас ХАСНА (2 ӨӨР UI БАЙХГҮЙ ✓)
+  assert.match(src, /\.filter\(\(f\) => !f\.afterPayment\)/);
+  // ③ БАЙРЛАЛ: 💳 (`showPayments`) → afterPaymentAttrs → «📐 Талбай, м²»
+  const payAt = src.indexOf('{showPayments && (');
+  const afterAt = src.indexOf('{afterPaymentAttrs.map((f) => (');
+  const areaAt = src.indexOf('SideBlock label="Талбай, м²"');
+  assert.ok(payAt > 0 && afterAt > 0 && areaAt > 0, '💳/дараах/талбай блок олдсонгүй ✗');
+  assert.ok(payAt < afterAt, 'afterPayment блок 💳-ийн ӨМНӨ байна ✗');
+  assert.ok(afterAt < areaAt, 'afterPayment блок «Талбай, м²»-ийн дараа байна ✗');
+  // ④ Хайрцаг нь НЭГ газар (`attrChipBox`) — pill ⇢ ⌄ панель ч мөн адил ✓
+  assert.match(src, /const attrChipBox = \(f\) => \(/);
+  assert.match(src, /const attrChipsBlock = \(f\) => \(/);
+  assert.match(src, /\{attrChipBox\(f\)\}/);
+  assert.match(src, /\{attrChipsBlock\(f\)\}/);
 });
 
 /**
@@ -1662,7 +1767,7 @@ t('🧱/🏭 Хялбар форм (🛋️/⚡/⚽-той ижил): зөвхө
     const f = getAttrFilters(s)[0];
     assert.equal(f.label, 'Төлөв');   // 🆕 2026-10-05 (43)
     assert.deepEqual(f.options, ['Шинэ', 'Шинэвтэр', 'Хуучин']);
-    assert.equal(f.filterBar, true);  // 🆕 (43): pill ✓
+    assert.equal(f.filterBar, undefined, 'pill хэвээр байна ✗');  // 🆕 (17)
   }
 });
 
