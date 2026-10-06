@@ -323,8 +323,17 @@ export default function LocationMapPicker({ center, value, zoom, subtitle, onCon
         <div className="relative z-0">
           <div ref={elRef} className="h-[380px] w-full sm:h-[440px]" />
           {/* 🗺 ПИН нь газрын зургийн ЯГ ТӨВД — газрыг ЧИРЭХЭД пин хөдлөхгүй,
-              ЗУРАГ л хөдөлнө ✓ (⏳ урьд нь `Leaflet marker`-ийг чирдэг байв) */}
-          <div data-map-picker-overlay className="pointer-events-none absolute inset-0">
+              ЗУРАГ л хөдөлнө ✓ (⏳ урьд нь `Leaflet marker`-ийг чирдэг байв)
+
+              ⚠️⚠️ `z-[1000]` ЗААВАЛ БАЙХ ЁСТОЙ (2026-10-06 — 5 дахь засвар):
+              Leaflet-ийн ДАВХАРГУУД нь `z-index: 200…800`-тай
+              (`.leaflet-tile-pane: 200` · `overlay-pane: 400` · `marker-pane: 600` ·
+               `popup-pane: 700` · удирдлага `control: 800`). `z-index` БАЙХГҮЙ
+              (`auto` = 0) overlay нь ТЭДГЭЭС ДООР буудаг тул **ГАЗРЫН
+              ЗУРГИЙН ПЛИТА ПИНГИЙГ БҮРЭН ДАРЖ, ПИН ХАРАГДАХГҮЙ** байв ✗
+              («Газрын зураг дээр пин байхгүй байна» гэсэн гомдол).
+              `pointer-events-none` тул зургийг чирэхэд ХААЛТ болохгүй ✓ */}
+          <div data-map-picker-overlay className="pointer-events-none absolute inset-0 z-[1000]">
             {/* Яг төвийн цэг — пингийн ЗҮҮН үзүүр энд бууна ✓ */}
             <span className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gray-900/50" />
             <span className="map-pin absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-full">
