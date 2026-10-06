@@ -74,7 +74,7 @@ export default function SavedSearchesClient() {
           <div className="mb-4 text-6xl">🔖</div>
           <h3 className="mb-2 text-xl font-semibold">Одоогоор хадгалсан хайлт байхгүй байна</h3>
           <p className="text-gray-500">
-            Зар хайхдаа хайлтын үр дүнгийн дээрх <b>«🔖 Хадгалах»</b> товчийг дарж
+            Зар хайхдаа хайлтын үр дүнгийн дээрх <b>«Хайлтыг хадгалах»</b> товчийг дарж
             шүүлтээ хадгалаарай — дараа нь эндээс нэг дарахад тэр үр дүн буцаж гарна.
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">

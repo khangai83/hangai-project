@@ -3,17 +3,17 @@
 //
 // ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-06, unegui.mn-ийн жишээ зурагтай):
 //   «unegui.mn шиг хайлтаа гоё хадгалдаг болъё» → хайлтын үр дүнгийн дээд
-//   мөрөнд «🔖 Хадгалах» товч; дарахад `/favorites` хуудасны
+//   мөрөнд «Хайлтыг хадгалах» товч; дарахад `/favorites` хуудасны
 //   «🔖 Таалагдсан хайлтууд» таб дээр «Категори / Байршил + Илэрц харуулах»
 //   мөр болж гарна ✓
 //
 // ЮУ ШАЛГАНА (зочин = localStorage горим):
-//   ① Хадгалах утгатай хайлт дээр `[data-save-search]` товч гарна («🔖 Хадгалах»)
+//   ① Хадгалах утгатай хайлт дээр `[data-save-search]` товч гарна («Хайлтыг хадгалах»)
 //   ② Дарахад «✓ Хадгалагдсан» + `aria-pressed=true` + localStorage-д бичигдэнэ
 //   ③ `/favorites` дээр 2 ТАБ (❤️ зарууд · 🔖 хайлтууд) ба «🗂 таб» гарна
 //   ④ Мөр нь unegui.mn шиг: «Категори: …» + «Байршил: …» + «Илэрц харуулах»/«устгах»
 //   ⑤ «устгах» → мөр арилж, хоосон төлөв гарна
-//   ⑥ Буцаж тэр хайлт дээр ороход товч дахин «🔖 Хадгалах» болно
+//   ⑥ Буцаж тэр хайлт дээр ороход товч дахин «Хайлтыг хадгалах» болно
 //   ⑦ «Бүх зар» (хадгалах утгагүй) дээр товч ОГТ ГАРАХГҮЙ
 //   ⑧ JS exception 0
 //
@@ -140,7 +140,7 @@ const check = (label, ok, extra = '') => {
   else { fail += 1; console.log(`  ✗ ${label}${extra ? ' — ' + extra : ''}`); }
 };
 
-console.log('\n🔖 CDP — Хадгалсан хайлт: «🔖 Хадгалах» → /favorites «Таалагдсан хайлтууд»\n');
+console.log('\n🔖 CDP — Хадгалсан хайлт: «Хайлтыг хадгалах» → /favorites «Таалагдсан хайлтууд»\n');
 
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1280, height: 1400, deviceScaleFactor: 1, mobile: false });
 
@@ -159,8 +159,8 @@ const btn0 = await evalJs(`(() => {
   const b = document.querySelector('[data-save-search]');
   return b ? { text: b.innerText.replace(/\\s+/g, ' ').trim(), pressed: b.getAttribute('aria-pressed') } : null;
 })()`);
-check('① Хадгалах утгатай хайлт дээр «🔖 Хадгалах» товч гарна',
-  !!btn0 && /Хадгалах/.test(btn0.text) && !/Хадгалагдсан/.test(btn0.text),
+check('① Хадгалах утгатай хайлт дээр «Хайлтыг хадгалах» товч гарна',
+  !!btn0 && /Хайлтыг хадгалах/.test(btn0.text) && !/Хадгалагдсан/.test(btn0.text),
   btn0 ? btn0.text : 'товч олдсонгүй');
 check('①b Товч анх `aria-pressed=false`', !!btn0 && btn0.pressed === 'false',
   btn0 ? `pressed=${btn0.pressed}` : '');
@@ -213,12 +213,12 @@ check('⑤ «устгах» дарахад мөр арилж, хоосон тө�
   await evalJs(`document.querySelectorAll('[data-saved-search-row]').length === 0
     && /хадгалсан хайлт байхгүй/.test(document.body.innerText)`));
 
-// ---- ⑥ Буцаж тэр хайлт дээр → товч дахин «Хадгалах» ----
+// ---- ⑥ Буцаж тэр хайлт дээр → товч дахин «Хайлтыг хадгалах» ----
 await go(SEARCH);
 await waitFor(`document.querySelector('[data-save-search]')`);
 const btn2 = await evalJs(`document.querySelector('[data-save-search]').innerText.replace(/\\s+/g, ' ').trim()`);
-check('⑥ Устгасны дараа товч дахин «🔖 Хадгалах» (эс бөгөөс төлөв хуучирсан ✗)',
-  /Хадгалах/.test(btn2) && !/Хадгалагдсан/.test(btn2), btn2);
+check('⑥ Устгасны дараа товч дахин «Хайлтыг хадгалах» (эс бөгөөс төлөв хуучирсан ✗)',
+  /Хайлтыг хадгалах/.test(btn2) && !/Хадгалагдсан/.test(btn2), btn2);
 
 // ---- ⑦ «Бүх зар» (хадгалах утгагүй) → товч БАЙХГҮЙ ----
 await go(`${BASE}/`);

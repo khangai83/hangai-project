@@ -187,12 +187,12 @@ t('⑰ newSavedSearchId: давтагдашгүй `s…` id (2 удаа дууд
 });
 
 // ---------- ⑤ ГЭРЭЭ: UI компонентууд ----------
-t('⑱ ГЭРЭЭ: HomeClient нь «🔖 Хадгалах» товчтой (data-save-search)', () => {
+t('⑱ ГЭРЭЭ: HomeClient нь «Хайлтыг хадгалах» товчтой (data-save-search)', () => {
   const home = codeOnly(readSrc('components/HomeClient.jsx'));
   assert.match(home, /useSavedSearches\(user\)/, 'hook дуудагдахгүй ✗');
   assert.match(home, /data-save-search/, 'CDP/тестийн дэгээ алга ✗');
   assert.match(home, /aria-pressed=\{currentSearchSaved\}/, 'aria-pressed алга ✗');
-  assert.match(home, /'✓ Хадгалагдсан' : '🔖 Хадгалах'/, 'товчны бичиг алга ✗');
+  assert.match(home, /'✓ Хадгалагдсан' : 'Хайлтыг хадгалах'/, 'товчны бичиг алга ✗');
   assert.match(home, /savedSearches\.save\(currentUrl\)/, 'хадгалах үйлдэл алга ✗');
   assert.match(home, /isSaveableSearch\(currentUrl\)/, 'хадгалах утга шалгахгүй ✗');
 });

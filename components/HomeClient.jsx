@@ -64,7 +64,7 @@ import { AREA_BOUNDS, FLOOR_BOUNDS, buildYearBounds, formatGroupedInput, priceBo
 //    `lib/sortOptions.mjs`, DB тал нь `lib/queries.js → sortOrders()`
 import { DEFAULT_SORT, SORT_OPTIONS, normalizeSort } from '../lib/sortOptions.mjs';
 // 🔖 ХАДГАЛСАН ХАЙЛТ (2026-10-06, хэрэглэгчийн хүсэлт: «unegui.mn шиг хайлтаа
-//    гоё хадгалдаг болъё») — үр дүнгийн дээд мөрөнд «🔖 Хадгалах» товч.
+//    гоё хадгалдаг болъё») — үр дүнгийн дээд мөрөнд «Хайлтыг хадгалах» товч.
 //    ⚠️ Хадгалалт нь нэвтэрсэн бол DB (`saved_searches` — 0031), зочин бол
 //       localStorage (`lib/savedSearches.js → useSavedSearches`, hybrid ✓)
 //    ⚠️ «хадгалагдсан эсэх» ба «хадгалах утгатай эсэх» шалгалт нь
@@ -833,7 +833,7 @@ export default function HomeClient() {
   const { user } = useAuth();
   const savedSearches = useSavedSearches(user);
   /**
-   * 🔗 Одоогийн хайлтын URL — «🔖 Хадгалах» товч ЯГ ҮҮНИЙГ хадгална.
+   * 🔗 Одоогийн хайлтын URL — «Хайлтыг хадгалах» товч ЯГ ҮҮНИЙГ хадгална.
    * ⚠️ Доорх URL-шинэчлэх эффект нь адресны мөрийг бичдэг тул тэр `next`
    *    утгыг энд толь болгож хадгална (товч ба адрес ЗААВАЛ ижил ✓; SSR
    *    дээр `window` байхгүй тул анхдагч нь `''`).
@@ -1776,7 +1776,7 @@ export default function HomeClient() {
         // ⚠️ Бусад хэсэг (0016): «Автомашин», «Ажлын зар», «Компьютер» …
         : (category === 'rent' ? `${sec.label} түрээслүүлнэ` : sec.label);
 
-  // 🔖 «Хадгалах» товчны төлөв (2026-10-06, unegui.mn шиг):
+  // 🔖 «Хайлтыг хадгалах» товчны төлөв (2026-10-06, unegui.mn шиг):
   //    • `currentSearchSaved` — одоогийн хайлт аль хэдийн хадгалагдсан эсэх
   //    • `canSaveCurrentSearch` — хадгалах УТГА байгаа эсэх (зөвхөн `page`/
   //      `view`/`sort` бол «Бүх зар» тул хадгалах утгагүй ✗ → товч идэвхгүй)
@@ -3334,7 +3334,7 @@ export default function HomeClient() {
                     шүүлтээ хадгалаад «Таалагдсан хайлтууд»-аас эргэн харна ✓
                     ⚠️ Энэ нь ШҮҮЛТ БИШ (үр дүн өөрчлөгдөхгүй) тул чипүүдийн
                        тоонд ОРОХГҮЙ; CDP/тестийн тогтвортой дэгээ:
-                       `[data-save-search]` (товчны бичиг: «🔖 Хадгалах» ↔
+                       `[data-save-search]` (товчны бичиг: «Хайлтыг хадгалах» ↔
                        «✓ Хадгалагдсан», `aria-pressed`) ✓
                     ⚠️ Хадгалах утга байхгүй (зөвхөн «Бүх зар») бол товч
                        ОГТ ГАРАХГҮЙ — `canSaveCurrentSearch` ✓ */}
@@ -3348,7 +3348,7 @@ export default function HomeClient() {
                     title={currentSearchSaved ? 'Энэ хайлт хадгалагдсан байна' : 'Одоогийн хайлтыг хадгалах'}
                     className={currentSearchSaved ? 'btn btn-outline btn-sm' : 'btn btn-secondary btn-sm'}
                   >
-                    {currentSearchSaved ? '✓ Хадгалагдсан' : '🔖 Хадгалах'}
+                    {currentSearchSaved ? '✓ Хадгалагдсан' : 'Хайлтыг хадгалах'}
                   </button>
                 )}
 
