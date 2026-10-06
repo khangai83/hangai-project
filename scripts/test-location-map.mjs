@@ -40,6 +40,7 @@ import {
   isValidCoord, coordOf, hasCoords, districtCenter, cityCenter,
   khorooNumber, khorooCenter, autoCenterFor, mapCenterFor, sameCoord,
 } from '../lib/locationGeo.mjs';
+import { KHOROO_CENTERS, ubKhorooCenter } from '../lib/ubKhorooCenters.mjs';
 import {
   DEFAULT_CITY, noLocationPatch, bankedLocation, restoreLocationPatch,
 } from '../lib/listingLocation.mjs';
@@ -153,14 +154,16 @@ t('② `mapCenterFor` — ⓵ пин → ⓶ дүүрэг → ⓷ хот → ⓸
   assert.deepEqual({ lat: none.lat, lng: none.lng }, DEFAULT_MAP_CENTER);
 });
 
-t('② `mapCenterFor` — хороо сонгосон бол ХОРООНЫ ойролцоо төв (дүүрэг БИШ)', () => {
+t('② `mapCenterFor` — хороо сонгосон бол ХОРООНЫ БОДИТ цэг (дүүрэг БИШ)', () => {
   const k = mapCenterFor({ city: 'Улаанбаатар', district: 'Хан-Уул', khoroo: '23-р хороо' });
-  assert.equal(k.exact, false, 'пингүй тул ойролцоо');
+  assert.equal(k.exact, false, 'пингүй тул ойролцоо (exact биш)');
   const base = UB_DISTRICT_CENTERS['Хан-Уул'];
   assert.ok(!sameCoord({ lat: k.lat, lng: k.lng }, base), 'хороо сонгосон ч дүүргийн төв дээрээ байна ✗');
-  const dLat = Math.abs(k.lat - base.lat);
-  const dLng = Math.abs(k.lng - base.lng);
-  assert.ok(dLat <= KHOROO_SPREAD && dLng <= KHOROO_SPREAD * 1.6, 'ойролцоо биш (хэт хол)');
+  // 🆕 ⓵ БОДИТ полигон доторх цэг байх ёстой (`khoroos.json`, 0BSD) ✓
+  assert.deepEqual(
+    { lat: k.lat, lng: k.lng }, ubKhorooCenter('Хан-Уул', 23),
+    'Хан-Уул 23-р хорооны БОДИТ цэг биш',
+  );
 });
 
 t('②′ `khorooNumber` — нэрнээс дугаар унших («23-р хороо» → 23)', () => {
@@ -193,6 +196,39 @@ t('②′ `khorooCenter` — хороо бүр ЯЛГААТАЙ · ойролц�
   const a = khorooCenter('Улаанбаатар', 'Хан-Уул', '23-р хороо');
   const b = khorooCenter('Улаанбаатар', 'Хан-Уул', '23-р хороо');
   assert.deepEqual(a, b, 'нэг хороо өөр өөр цэг өгч байна ✗');
+});
+
+t('②′ `khorooCenter` — FALLBACK: датад байхгүй дугаар дүүргийн төвийн ойролцоо', () => {
+  const base = UB_DISTRICT_CENTERS['Хан-Уул'];
+  const c = khorooCenter('Улаанбаатар', 'Хан-Уул', '99-р хороо');
+  assert.ok(c, 'fallback координат байхгүй');
+  const dLat = Math.abs(c.lat - base.lat);
+  const dLng = Math.abs(c.lng - base.lng);
+  assert.ok(dLat <= KHOROO_SPREAD && dLng <= KHOROO_SPREAD * 1.6, 'fallback ойролцоо биш');
+});
+
+t('②′ `ubKhorooCenters` — 9 дүүрэг · 204 хороо · Монгол дотор', () => {
+  assert.equal(Object.keys(KHOROO_CENTERS).length, 9, 'дүүргийн тоо 9 биш');
+  let total = 0;
+  Object.values(KHOROO_CENTERS).forEach((row) => { total += Object.keys(row).length; });
+  assert.equal(total, 204, 'хорооны нийт тоо 204 биш');
+  assert.equal(ubKhorooCenter('Байхгүй-дүүрэг', 1), null);
+  assert.equal(ubKhorooCenter('Хан-Уул', 999), null);
+  assert.equal(ubKhorooCenter(undefined, 1), null);
+  assert.ok(insideMN(ubKhorooCenter('Хан-Уул', 23)), 'Монголын гадна');
+});
+
+t('②′ `khorooCenter` — 204 хороо БҮГД өөрийн БОДИТ полигон ДОТОР (khoroos.json)', () => {
+  const geo = JSON.parse(readSrc('public/data/ub-khoroos.json'));
+  assert.equal(geo.length, 204, 'эх дата 204 хороо биш');
+  for (const f of geo) {
+    const c = khorooCenter('Улаанбаатар', f.district, f.khoroo);
+    assert.ok(c, `${f.district} ${f.khoroo}: координат байхгүй`);
+    assert.equal(
+      pointInGeoJson(c.lat, c.lng, f.geometry), true,
+      `${f.district} ${f.khoroo}: цэг полигоны ГАДНА (${c.lat}, ${c.lng})`,
+    );
+  }
 });
 
 t('②′ `autoCenterFor` — хороо → дүүрэг → хот → анхдагч (дараалал)', () => {
