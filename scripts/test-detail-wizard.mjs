@@ -116,6 +116,11 @@ const t = (name, fn) => {
 console.log('\n📱 3-р алхам (📋 Дэлгэрэнгүй): «асуулт бүр нэг дэлгэц» (мобайл)\n');
 
 const FORM = readSrc('components/AddListingClient.jsx');
+/**
+ * 📍 «Байршил»-ийн ЦЭВЭР модуль (2026-10-06) — `pickedLocationPath` болон
+ * тусгаарлагч нь эндээс (`PATH_SEP`) ⇒ гэрээг хоёр файлаас шалгана ✓
+ */
+const LOC_SRC = readSrc('lib/listingLocation.mjs');
 const CSS = readSrc('app/globals.css');
 
 /** 🧩 `{ … }` тэнцвэртэй блокийн ТӨГСГӨЛИЙН дараах индекс */
@@ -478,13 +483,18 @@ t('🖥 НЭГ ЭХ СУРВАЛЖ: 📱 `mobileAnswerRows` ба 🖥 `DesktopSu
   assert.match(FORM, /rows\.push\(\{ key: 'step-location', label: 'Зарын байршил', value: pickedLocationPath \}\)/);
   /** ② 🖥 хүснэгт нь ЯГ ижил утгуудыг prop-оор авна ✓ */
   assert.match(FORM, /<DesktopSummary\s+categoryPath=\{pickedCategoryPath\}\s+locationPath=\{pickedLocationPath\}\s+step=\{step\}\s+onEdit=\{mobileAnswerEdit\}\s*\/>/);
-  /** ③ 📱-ийн тусгаарлагчид (` ▸ ` ба ` — `) ХЭВЭЭР ✓ */
-  assert.ok(FORM.includes(".join(' ▸ ')") && FORM.includes(".join(' — ')"), 'тусгаарлагчид хэвээр байх ёстой');
+  /** ③ 📱-ийн тусгаарлагчид (` ▸ ` ба ` — `) ХЭВЭЭР ✓
+      ⚠️ 2026-10-06: 📍-ийн тусгаарлагч (` — `) нь ЦЭВР модуль руу шилжив
+      (`lib/listingLocation.mjs → PATH_SEP`, «Байршил оруулахгүй» чекбокстой
+      хамт) — ⚠️ утга нь ХӨНДӨГДӨӨГҮЙ эсэхийг хоёр файлаас шалгана ✓ */
+  assert.ok(FORM.includes(".join(' ▸ ')"), 'ангиллын тусгаарлагч хэвээр байх ёстой');
+  assert.ok(FORM.includes('locationPathText(form)'), '📍 мөр нь модулиар бичигдэнэ');
+  assert.ok(LOC_SRC.includes("const PATH_SEP = ' — '"), '📍-ийн тусгаарлагч хэвээр байх ёстой');
 });
 
 t('🖥 Утга нь формойн state-ээс ШУУД — 🆕 `useState` / DB / API БАЙХГҮЙ (хадгалалт нэмэгдээгүй ✓)', () => {
   assert.match(FORM, /const pickedCategoryPath = form\.propertyType/);
-  assert.match(FORM, /const pickedLocationPath = \[form\.city, form\.district, form\.khoroo\]/);
+  assert.match(FORM, /const pickedLocationPath = locationPathText\(form\)/);
   assert.ok(!FORM.includes('setPickedCategoryPath'), 'setPickedCategoryPath байж болохгүй');
   assert.ok(!FORM.includes('setPickedLocationPath'), 'setPickedLocationPath байж болохгүй');
 });

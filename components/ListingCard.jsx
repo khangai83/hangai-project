@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { priceLabel, hasRealPrice, getPropertyIcon, firstImage, getFloorLabel, timeAgo, formatAddress, listingTitle } from '../lib/format';
+import { shortPriceLabel, hasRealPrice, getPropertyIcon, firstImage, getFloorLabel, timeAgo, formatAddress, listingTitle } from '../lib/format';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 import Avatar from './Avatar';
 import VerifiedBadge from './VerifiedBadge';
@@ -20,7 +20,6 @@ import VerifiedBadge from './VerifiedBadge';
  *   │                          │  340 сая ₮          ← үнэ (том, bold) │
  *   │                          │  Бзд центр аппартмент-д 3 өрөө …   ← 2 мөр│
  *   │                          │  🛏 3 өрөө · 📐 80 м² · 🏢 5/9        │
- *   │                          │  Тайлбар … (2 мөр, бүдэг саарал)       │
  *   │  🎥                      │  🕒 27 минутын өмнө | 📍 Баянзүрх  ❤️ 5 │
  *   └──────────────────────────┴──────────────────────────────────────┘
  *
@@ -39,6 +38,9 @@ import VerifiedBadge from './VerifiedBadge';
  *      доод мөр нь `max-sm:pr-20` (80px) хоосон зай үлдээнэ
  * ⚠️ `author.displayName` хоосон бол нийтлэгчийн band ОГТ ХАРАГДАХГҮЙ
  *    (`0017_profile_identity.sql` → `show_identity = false`) ✓
+ * 🗑 2026-10-06: 📝 ТАЙЛБАР (`listing.description`) карт дээр ХАСАГДАВ —
+ *    хэрэглэгчийн хүсэлт («Нүүр хуудас дээрх зарын карт дээрээс Тайлбарыг
+ *    байхгүй болго»). ⚠️ Дэлгэрэнгүй хуудас (`ListingDetailClient`) ХӨНДӨӨГДӨӨГҮЙ.
  * 🔍 ХАЙХ ҮГ: ListingCard, sm:h-[300px], data-listing-card, line-clamp-2
  */
 export default function ListingCard({ listing, author, attrsLine }) {
@@ -59,8 +61,11 @@ export default function ListingCard({ listing, author, attrsLine }) {
   // 🏷️ Зарын гарчиг (0027_listing_title.sql) — хоосон бол мөр ГАРАХГҮЙ
   const title = listingTitle(listing);
   const address = formatAddress(listing);
-  // 📝 Тайлбар — зөвхөн 2 МӨР хүртэл (`line-clamp-2`), хоосон бол блок харагдахгүй
-  const description = typeof listing.description === 'string' ? listing.description.trim() : '';
+  // ⚠️ 2026-10-06: 📝 ТАЙЛБАР карт дээр ХАСАГДАВ (хэрэглэгчийн хүсэлт:
+  //    «Нүүр хуудас дээрх зарын карт дээрээс Тайлбарыг байхгүй болго»).
+  //    `listing.description`-ыг унших/харуулах код БАЙХГҮЙ; карт нь НЭГ
+  //    компонент тул нүүр · Таалагдсан · Нийтлэгч · газрын зураг БҮГДЭД хасагдана ✓.
+  //    ⚠️ Дэлгэрэнгүй хуудсанд (`ListingDetailClient`) Тайлбар ХЭВЭЭР ✓.
   // 🛏 Байрны мэдээлэл — 0 байж болох тул `> 0` шалгалттай; `floorLabel` '' байж болно
   const hasPropertyLine =
     listing.rooms > 0 || listing.bathrooms > 0 || listing.area > 0 || floorLabel || listing.build_year > 0;
@@ -134,10 +139,15 @@ export default function ListingCard({ listing, author, attrsLine }) {
         )}
 
         {/* 💰 ҮНЭ — том, bold (unegui). ⚠️ «Үнэ тохирно» карт дээр ГАРАХГҮЙ
-            (`hasRealPrice` — 2026-10-02-ын хэрэглэгчийн шийдвэр ✓) */}
+            (`hasRealPrice` — 2026-10-02-ын хэрэглэгчийн шийдвэр ✓)
+            🆕 2026-10-06 (хэрэглэгчийн хүсэлт): ҮНЭ НЬ ТОВЧ ФОРМАТТАЙ БОЛОВ —
+            `shortPriceLabel` нь «760,000,000» БИШ «760 сая ₮», «44.8 сая ₮»
+            гэж харуулна (`lib/format.js → shortPriceLabel`, нэгж нь `shortPrice`-
+            ийн «сая/тэрбум/мянга»-тай ИЖИЛ). ⚠️ «₮» нь ТӨГСГӨЛД.
+            📏 `text-[22px] font-extrabold` ХӨНДӨӨГДӨӨГҮЙ (`test-card` гэрээ ✓) */}
         {hasRealPrice(listing) && (
           <div className="text-[22px] font-extrabold leading-tight tracking-[-0.01em] text-gray-900">
-            {priceLabel(listing)}
+            {shortPriceLabel(listing)}
           </div>
         )}
 
@@ -168,10 +178,8 @@ export default function ListingCard({ listing, author, attrsLine }) {
               </div>
             )}
 
-        {/* 📝 ТАЙЛБАР — 2 мөр хүртэл (unegui: бүдэг саарал) */}
-        {description && (
-          <p className="mt-1.5 line-clamp-2 text-[14px] leading-relaxed text-gray-500">{description}</p>
-        )}
+        {/* ⚠️ 2026-10-06: 📝 ТАЙЛБАР блок ХАСАГДАВ (хэрэглэгчийн хүсэлт) —
+            карт дээр `listing.description` харуулахгүй ✓ (Дэлгэрэнгүй хуудсанд ХЭВЭЭР) */}
 
         {/* 📅 ДООД МЕТА МӨР — 🕒 огноо | 📍 хаяг   …   👁 үзсэн  ❤️/🤍 таалагдсан
             ⚠️ `mt-auto` — агуулга бага байсан ч мөрийг картын ёроолд тогтооно ✓

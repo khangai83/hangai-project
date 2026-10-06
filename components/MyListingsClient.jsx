@@ -7,6 +7,12 @@ import { fetchMyListings, deleteListing } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
 import { priceLabel, negotiableNote, getPropertyIcon, timeAgo, getFloorLabel, getGarageLabel } from '../lib/format';
 import MyListingsStatsPanel from './MyListingsStatsPanel';
+/**
+ * 📍 Байршилгүй зар («Байршил оруулахгүй» чекбокс) дээр «📍 » хоосон үлдэхгүйн
+ *    тулд `NO_LOCATION_LABEL` («Байршил заагаагүй») хэрэглэнэ — нэг эх сурвалж
+ *    (`lib/listingLocation.mjs`) ✓
+ */
+import { NO_LOCATION_LABEL } from '../lib/listingLocation.mjs';
 
 /**
  * Энэ хуудас нь ЗӨВХӨН ӨӨРИЙН зарыг харуулна.
@@ -179,7 +185,12 @@ export default function MyListingsClient() {
                         <h4 className="mb-1 text-base font-semibold transition group-hover:text-primary">
                           {getPropertyIcon(l.property_type)} {l.property_type}
                         </h4>
-                        <p className="text-[13px] text-gray-500">📍 {[l.city, l.district].filter(Boolean).join(', ')}</p>
+                        {/* 📍 Байршил — 🚫 байршилгүй зар дээр «📍 » ганцаараа
+                            үлдэхээс сэргийлж «Байршил заагаагүй» гэж харуулна
+                            (нэг эх сурвалж: `lib/listingLocation.mjs`) */}
+                        <p className="text-[13px] text-gray-500">
+                          📍 {[l.city, l.district].filter(Boolean).join(', ') || NO_LOCATION_LABEL}
+                        </p>
                         <p className="text-[13px] text-gray-500">💰 {priceLabel(l)}</p>
                         {/* 🤝 «Үнэ тохирно» — үнийн ЯГ ДОР (2026-09-29) */}
                         {negotiableNote(l) && (

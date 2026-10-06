@@ -5,7 +5,7 @@
 // болгоорой» + **unegui.mn**-ийн жишээ картууд (ажил · орон сууц) —
 //   • зүүн талд ТОМ зураг (42%) + «🖼 1/16» зургийн тоо
 //   • мэдээллийн хэсгийн ДЭЭД талд нийтлэгчийн band (Avatar + нэр + ✅)
-//   • ТОМ bold үнэ → 2 МӨРТ гарчиг → дэлгэрэнгүй мөр → 2 мөр тайлбар
+//   • ТОМ bold ТОВЧ үнэ → 2 МӨРТ гарчиг → дэлгэрэнгүй мөр → доод мета мөр
 //   • доод мета мөр: 🕒 огноо | 📍 хаяг  …  👁 үзсэн  ❤️/🤍
 //
 // ЯАГААД ХЭРЭГТЭЙ ВЭ:
@@ -19,6 +19,8 @@
 //   ② «Зарах / Түрээслэх» badge ЗӨВХӨН үл хөдлөхөд
 //   ③ ❤️/🤍 нь favourite toggle БА нийт тоо (listings.likes)
 //   ④ Карт бүхэлдээ нэг `<Link>` — дотор нь өөр `<Link>` БАЙХГҮЙ
+//   ⑤ Үнэ нь ТОВЧ форматтай — «760 сая ₮» (🆕 2026-10-06, `shortPriceLabel`;
+//      «760,000,000» ХАРАГДАХГҮЙ — урт `priceLabel` нь зөвхөн экспорт/админд ✓)
 //
 // АЖИЛЛУУЛАХ:  npm run test:card
 // ⚠️ DB/React ХОЛБОГДОХГҮЙ — зөвхөн Node (эх кодын ГЭРЭЭ).
@@ -66,10 +68,13 @@ t('🖼 Зураг нь зүүн талд `sm:w-[42%]` + `sm:h-full` (мобай
 });
 
 // ---------- ② МЭДЭЭЛЛИЙН ДАРААЛАЛ ----------
-t('💰 Үнэ нь ТОМ bold (`text-[22px] font-extrabold`)', () => {
+t('💰 Үнэ нь ТОМ bold (`text-[22px] font-extrabold`) + ТОВЧ формат (`shortPriceLabel`)', () => {
   assert.match(CARD_CODE, /text-\[22px\]/, 'үнийн хэмжээ `text-[22px]` алга ✗');
   assert.match(CARD_CODE, /font-extrabold/, 'үнэ bold (`font-extrabold`) биш ✗');
-  assert.match(CARD_CODE, /priceLabel\(listing\)/, 'үнэ `priceLabel`-ээр гарахгүй ✗');
+  // 🆕 2026-10-06 (хэрэглэгчийн хүсэлт): «760,000,000» БИШ «760 сая ₮» харагдана
+  assert.match(CARD_CODE, /shortPriceLabel\(listing\)/, 'үнэ товч шошгоор (`shortPriceLabel`) гарахгүй ✗');
+  // ⚠️ Урт хэлбэр (`priceLabel`) карт дээр БУЦАЖ ОРОХ ЁСГҮЙ (export/админ ХӨНДӨӨГДӨӨГҮЙ ✓)
+  assert.ok(!/\bpriceLabel\b/.test(CARD_CODE), 'карт дээр урт `priceLabel` буцаж орсон ✗');
 });
 
 t('🏷️ Гарчиг нь 2 МӨР (`line-clamp-2`) — `listingTitle` (0027)', () => {
@@ -77,12 +82,13 @@ t('🏷️ Гарчиг нь 2 МӨР (`line-clamp-2`) — `listingTitle` (0027)
   assert.match(CARD_CODE, /listingTitle\(listing\)/, '`listingTitle` ашиглахгүй ✗');
 });
 
-t('📝 Тайлбар нь 2 мөр (`line-clamp-2`) — `listing.description`', () => {
-  // 🆕 2026-10-04 (24): «Хайлт + Зар НЭГДМЭЛ» — тайлбар/мета нь 13 → **14px**
-  //    болов (хэрэглэгчийн хүсэлт: «Одоо байгаа font ийг бага зэрэг томруул»).
-  //    ⚠️ Үнэ (`text-[22px]`) ба гарчиг (`text-[15px]`) ХӨНДӨӨГДӨӨГҮЙ ✓
-  assert.match(CARD_CODE, /line-clamp-2 text-\[14px\] leading-relaxed/, 'тайлбар 2 мөр биш ✗');
-  assert.match(CARD_CODE, /listing\.description/, '`listing.description` уншихгүй ✗');
+t('🗑 📝 Тайлбар (`listing.description`) карт дээр БАЙХГҮЙ (2026-10-06)', () => {
+  // Хэрэглэгчийн хүсэлт: «Нүүр хуудас дээрх зарын карт дээрээс Тайлбарыг
+  // байхгүй болго». ⏳ Хуучин `line-clamp-2 text-[14px]` тайлбарын `<p>` ба
+  // `listing.description`-ыг унших код `ListingCard`-ээс ХАСАГДСАН ✓
+  // ⚠️ Дэлгэрэнгүй хуудсанд (`ListingDetailClient`) Тайлбар ХЭВЭЭР ✓
+  assert.ok(!/listing\.description/.test(CARD_CODE), 'карт дээр `listing.description` буцаж орсон ✗');
+  assert.ok(!/line-clamp-2 text-\[14px\] leading-relaxed/.test(CARD_CODE), 'тайлбарын `<p>` буцаж орсон ✗');
 });
 
 t('👤 Нийтлэгчийн band нь 28px Avatar + нэр + ✅ VerifiedBadge', () => {

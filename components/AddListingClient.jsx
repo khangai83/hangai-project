@@ -24,6 +24,27 @@ import { compressImages, formatBytes } from '../lib/imageUtils';
 import {
   draftKey, serializeDraft, parseDraft, isMeaningfulDraft, draftNoticeText,
 } from '../lib/listingDraft.mjs';
+/**
+ * 📍 БАЙРШИЛ ОРУУЛАХГҮЙ (2026-10-06, хэрэглэгчийн хүсэлт: «зарим хэрэглэгч
+ *    зарын Байршилаа оруулахыг хүсэхгүй байж магадгүй … Байршил хэсэгт
+ *    “Байршил хэрэглэхгүй” гэсэн сонголт (Check box) оруулж өгье») —
+ *    2-р алхмын чекбокс. ⚠️ Дүрэм нь ЦЭВЭР модуль дотор (форм · шалгалт ·
+ *    харуулалт ГУРВУУЛАА нэг эх сурвалж; `scripts/test-location-optional.mjs`)
+ */
+import {
+  DEFAULT_CITY, NO_LOCATION_TITLE, NO_LOCATION_HINT, NO_LOCATION_SUMMARY,
+  isNoLocation, locationMissing, noLocationPatch, bankedLocation,
+  restoreLocationPatch, locationPathText,
+} from '../lib/listingLocation.mjs';
+/**
+ * 🎯 АНГИЛАЛ УРЬДЧИЛАН БӨГЛӨХ (2026-10-06) — «Зар нэмэх» товч (`AppProviders`)
+ *    нь хэрэглэгч аль ангилалд явж байсныг URL-д (`?section=…&category=…&type=…`)
+ *    дамжуулна ⇒ форм тэр ангилал дээр СОНГОГДСОН байдлаар нээгдэнэ ✓
+ *    (дэлгэрэнгүй дүрэм: `lib/listingPrefill.mjs` — цэвэр модуль, тесттэй ✓)
+ */
+import {
+  listingPrefillFromSearch, applyPrefill, prefillMobileCatStep,
+} from '../lib/listingPrefill.mjs';
 
 // 🚗🌈 БРЭНДЭЭС ХАМААРАХ ЗАГВАР (2026-10-01) — зөвхөн ЭНЭ модулийн туслахууд:
 //    `lookupMap` (талбарын `optionsMap`-аас сонголт), `cascadeAttrs`
@@ -149,9 +170,16 @@ function listingToForm(l) {
     //    ⚠️ `parsePaymentList` нь хүчингүй/хоосон утгыг ЧИМЭЭГҮЙ хасна ✓
     payments: parsePaymentList(l.attrs && l.attrs.payment_terms),
     area: l.area ? String(l.area) : '',
-    city: l.city || 'Улаанбаатар',
+    // ⚠️ `|| DEFAULT_CITY` БИШ — байршилгүй зар (`city === ''`) нь засах
+    //    горимд «Улаанбаатар» болж ХУУРАМЧ харагдах ёсгүй ✗; зөвхөн мөр
+    //    бүтэн байхгүй (`undefined` — `select('*')` тул практикт байхгүй) үед
+    //    анхдагчийг хэрэглэнэ ✓
+    city: typeof l.city === 'string' ? l.city : DEFAULT_CITY,
     district: l.district || '',
     khoroo: l.khoroo || '',
+    // 📍 «Байршил оруулахгүй» — DB-д ийм багана БАЙХГҮЙ (0 migration) тул
+    //    зөвхөн хоосон хотоос сэргээнэ ✓ (`city === ''` ⇒ чекбокс асаалттай)
+    noLocation: !l.city,
     price: l.price ? String(l.price) : '',
     // 🤝 «Үнэ тохирно» — үнэ 0/хоосон бол чекбокс асаалттай нээгдэнэ (lib/format.js)
     negotiable: isNegotiablePrice(l),
@@ -769,6 +797,16 @@ export default function AddListingClient() {
   const editId = searchParams.get('edit') || '';
   const stepRaw = Number(searchParams.get('step') || '1');
   const step = Math.min(STEPS.length - 1, Math.max(0, (Number.isFinite(stepRaw) ? stepRaw : 1) - 1));
+  /**
+   * 🎯 УРЬДЧИЛСАН АНГИЛАЛ (`/listings/new?section=…&type=…`) — «Зар нэмэх»
+   *    товч нь хэрэглэгч аль ангилалд явж байсныг энэ 2 параметрээр дамжуулна.
+   *    ⚠️ `?step=` шиг URL-ААР удирдагдана: refresh/линк хуваалцсан ч,
+   *    «Хамгаалалт» (`?step=`) буцах ч ангилал БИЧИГДСЭН хэвээр үлдэнэ ✓
+   *    ⚠️ Засах горим (`?edit=`) дээр ХҮЧИНГҮЙ — DB-ийн зарын утга лавлагдана
+   *    (`listingToForm`), тэгэхдээ `?edit=` линк дээр эдгээр параметр
+   *    байхгүй тул `prefill` нь `{}` (нөлөөгүй ✓)
+   */
+  const prefill = listingPrefillFromSearch(searchParams.toString());
 
   const userId = user ? user.id : null;
   const displayName = profileName || (user && user.phone) || '';
@@ -791,9 +829,18 @@ export default function AddListingClient() {
     //    хэсэг дэмжихгүй/хоосон бол `null` ⇒ `attrs`-аас түлхүүр УСТАНА ✓
     payments: [],
     area: '',
-    city: 'Улаанбаатар',
+    /**
+     * 📍 БАЙРШИЛ (2026-10-06 — «Байршил оруулахгүй» чекбокс):
+     *    ⚠️ `city: ''` + `noLocation: true` = «зар дээр байршил харагдахгүй».
+     *    ⚠️ `emptyForm()`-ийн түлхүүрүүд нь нооргийн түлхүүрүүд
+     *       (`Object.keys(emptyForm())`) тул `noLocation` нь ноорогт
+     *       АВТОМАТААР орно ✓ (нооргийн ХУВИЛБАР хөндөх шаардлагагүй —
+     *       хуучин ноорогт тэр түлхүүр байхгүй ⇒ `false` мэт уншигдана ✓)
+     */
+    city: DEFAULT_CITY,
     district: '',
     khoroo: '',
+    noLocation: false,
     price: '',
     // 🤝 «Үнэ тохирно» — үнэ нь ЗААВАЛ БИШ (2026-09-29). Шинэ зар дээр
     //    анхдагчаар УНТРААЛТТАЙ (хэрэглэгч үнэ бичих нь элбэг ✓).
@@ -940,12 +987,23 @@ export default function AddListingClient() {
     if (authLoading || !userId) return undefined;
 
     if (!editId) {
-      const initial = emptyForm();
+      /**
+       * 🎯 УРЬДЧИЛСАН АНГИЛАЛ (2026-10-06) — «Зар нэмэх» товчийг дарахад
+       *    URL-д ирсэн ангилал (`?section=…&type=…`) формо дээр ШУУД
+       *    сонгогдоно (`applyPrefill` — хүчингүй утгыг хаяна ✓).
+       *    ⚠️ БҮЛЭГ нь автоматаар нээгдэнэ — доорх `useEffect`
+       *    (`findSubtypeGroup`) `openGroup`-ыг дэд төрлөөс олдог ✓
+       *    ⚠️ Анхдагч (`baselineRef`) нь Ч БӨГЛӨГДСӨН форм байна ⇒ зөвхөн
+       *    урьдчилсан утгатай форм нь «бохир» БИШ (ноорог бичигдэхгүй ✓)
+       */
+      const initial = applyPrefill(emptyForm(), prefill);
       setEditing(null);
       setForm(initial);
       setPending([]);
       setExistingImages([]);
       setError('');
+      // 📱 <640px: дэд төрөл сонгогдсон бол ШУУД «Төрөл» дэлгэцээс эхэлнэ
+      setMobileCatStep(prefillMobileCatStep(prefill));
       baselineRef.current = JSON.stringify(initial);
       setLoadingEdit(false);
       return undefined;
@@ -1131,11 +1189,54 @@ export default function AddListingClient() {
    */
   const togglePayment = (value) => setForm((f) => ({ ...f, payments: togglePaymentValue(f.payments, value) }));
 
+  /**
+   * 📍 БАЙРШИЛ ОРУУЛАХГҮЙ — 2-р алхмын ЧЕКБОКС (2026-10-06, хэрэглэгчийн
+   *    хүсэлт: «зарим хэрэглэгч зарын Байршилаа оруулахыг хүсэхгүй хүн байж
+   *    магадгүй … Байршил хэсэгт “Байршил хэрэглэхгүй” гэсэн сонголт оруулъя»)
+   *
+   * ⚠️ Төлөв нь ЗӨВХӨН `form.noLocation` — `city === ''` ганцаараа
+   *    «сонгоогүй» (алдаа) ба «заахгүй гэж ШИЙДСЭН» гэсэн ХОЁРЫГ ялгаж
+   *    чадахгүй ✗ (дүрэм: `lib/listingLocation.mjs → locationMissing`)
+   *    ⇒ `validateStep('location')` нь чекбоксоор дамжина ✓
+   *
+   * АСААХАД: хот/дүүрэг/хороо ЦЭВЭРЛЭГДЭнэ (`noLocationPatch`) ба өмнөх
+   *    сонголт нь `bankedLocationRef`-д хадгалагдана ✓
+   * УНТРААХАД: хадгалагдсан байршил (эсвэл анхдагч хот) БУЦАЖ ирнэ
+   *    (`restoreLocationPatch`) — «хоосон орхиод дараа нь алдаа харуулах» нь
+   *    хэрэглэгчийг төөрөгдүүлэх тул сонгов ✓
+   * ⚠️ DB рүү `noLocation` ЯВАХГҮЙ: `handleSubmit` нь формыг бүтнээр
+   *    `payload` болгоно ч `lib/queries.js → listingPayloadToRow()` нь
+   *    танихгүй түлхүүрийг ШҮҮН ХАЯНА ⇒ DB өөрчлөлт/migration 0 ✓
+   */
+  const bankedLocationRef = useRef(null);
+  const toggleNoLocation = (on) => {
+    setError('');
+    if (on) {
+      bankedLocationRef.current = bankedLocation(form);
+      setForm((f) => ({ ...f, ...noLocationPatch() }));
+      // 📱 Drill-down-ийг эхний дэлгэц рүү буцаана — чекбокс унтраахад
+      //    «Хот/Аймаг» дэлгэцээс эхэлнэ (дунд дэлгэц дээр гацахгүй ✓)
+      setMobileLocStep('city');
+      return;
+    }
+    setForm((f) => ({ ...f, ...restoreLocationPatch(bankedLocationRef.current) }));
+    bankedLocationRef.current = null;
+  };
+
   const changeCity = (city) => setForm((f) => ({ ...f, city, district: '', khoroo: '' }));
   const changeDistrict = (district) => setForm((f) => ({ ...f, district, khoroo: '' }));
 
   const districts = getDistricts(form.city);
   const khoroos = getKhoroos(form.city, form.district);
+
+  /**
+   * 📍⏭ «Байршил оруулахгүй» чекбокс асаалттай эсэх (2026-10-06) — зөвхөн
+   *    ОДООГИЙН алхам/хураангуйн харагдацад нөлөөлнө (🖥 багана идэвхгүй,
+   *    📱 дэлгэцүүд гарахгүй, хураангуй текстийн өнгө) ✓
+   * ⚠️ Дүрэм нь ЦЭВЭР модуль дотор (`isNoLocation`) — шалгалт (`locationMissing`)
+   *    ба нооргийн сэргээлттэй ЯГ ижил эх сурвалж ✓
+   */
+  const noLoc = isNoLocation(form);
 
   /* ==========================================================================
      📍 2-Р АЛХАМ («Байршил») — 3 БАГАНАТ СОНГОЛТ (2026-10-01, хэрэглэгчийн
@@ -1666,7 +1767,14 @@ export default function AddListingClient() {
       selectedLeafLabel,
     ].filter(Boolean).join(' ▸ ')
     : '';
-  const pickedLocationPath = [form.city, form.district, form.khoroo].filter(Boolean).join(' — ');
+  /**
+   * 📍 Зарын байршлын мөр (🖥 3-р алхмын «📍 Зарын байршил» / 📱 дэлгэрэнгүй).
+   * ⚠️ Чекбокс («Байршил оруулахгүй») асаалттай бол «Байршил заагаагүй» —
+   *    эс бөгөөс «хот — дүүрэг — хороо». Дүрэм нь ЦЭВЭР модуль дотор
+   *    (`locationPathText`) ⇒ хураангуй ба шалгалт ЗӨРӨХГҮЙ ✓
+   * ⚠️ Хоосон мөр (`''`) үлдвэл 🖥 хураангуй дээр 📍 мөр ХООСОН харагдана ✗
+   */
+  const pickedLocationPath = locationPathText(form);
 
   /**
    * 📱 3-р алхмын толгойн ДОРХ мөрүүд (unegui.mn-ийн хэв, 2026-10-03 (17)):
@@ -1842,7 +1950,15 @@ export default function AddListingClient() {
       return '';
     }
     if (key === 'location') {
-      if (!form.city) return 'Хот/Аймгаа сонгоно уу';
+      /**
+       * 📍⏭ «БАЙРШИЛ ОРУУЛАХГҮЙ» (2026-10-06) — чекбокс асаалттай бол хот
+       *    сонгохыг ШААРДАХГҮЙ ✓
+       * ⚠️ Шалгалт нь ЗӨВХӨН «чекбокс унтраалттай атлаа хот хоосон» үед л
+       *    алдаа буцаана (`locationMissing` — нэг эх сурвалж:
+       *    `lib/listingLocation.mjs`); `!form.city` гэж бичвэл чекбокс
+       *    асаалттай үед хэрэглэгч 2-р алхмаас ЦААШ ГАРАХГҮЙ болно ✗
+       */
+      if (locationMissing(form)) return 'Хот/Аймгаа сонгоно уу';
       return '';
     }
     if (key === 'details') {
@@ -1919,6 +2035,17 @@ export default function AddListingClient() {
     setWheel(null);
     const qs = new URLSearchParams();
     if (editId) qs.set('edit', editId);
+    /**
+     * 🎯 УРЬДЧИЛСАН АНГИЛАЛ (2026-10-06) — алхмыг солиход ч эдгээр нь URL-д
+     *    ҮЛДЭНЭ: эс бөгөөс 2-р алхам дээр refresh хийхэд (эсвэл линк
+     *    хуваалцахад) `prefill` нь `{}` болж, ангилал АЛГА БОЛНО ✗
+     *    ⚠️ Форм дээрх утга нь state-д хэвээр байдаг тул энэ нь ЗӨВХӨН
+     *    «хаяг»-ын хадгалалт (шинэ утга оруулахгүй ✓); `?edit=` горимд
+     *    `prefill` нь `{}` тул юу ч нэмэгдэхгүй ✓
+     */
+    if (prefill.section) qs.set('section', prefill.section);
+    if (prefill.category) qs.set('category', prefill.category);
+    if (prefill.type) qs.set('type', prefill.type);
     qs.set('step', String(n + 1));
     router.replace(`/listings/new?${qs.toString()}`, { scroll: false });
   };
@@ -2359,8 +2486,49 @@ export default function AddListingClient() {
                 ⚠️ Засах горимд хуучин утга (`city`/`district`/`khoroo`) нь
                    `form`-оос уншигдаж ТОХИРСОН баганад идэвхтэй харагдана ✓ */}
             <div data-step-block="location" className={step === 1 ? '' : 'hidden'}>
-            {/* 📱 МОБАЙЛ (<640px): Хот/Аймаг → Дүүрэг/Сум → Хороо — нэг
-                нэгээр нь (1-р алхмын `MobileQuestion`-тэй ЯГ ИЖИЛ харагдац) */}
+            {/* ═══════════ 🚫 «БАЙРШИЛ ОРУУЛАХГҮЙ» ЧЕКБОКС (2026-10-06) ═══════════
+                ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Зарим хэрэглэгч зарын Байршилаа оруулахыг
+                   хүсэхгүй хүн байж магадгүй. Тэдгээр хүмүүст зориулж Байршил
+                   хэрэглэхгүй гэсэн сонголтыг (Check box ч юм уу) Байршил
+                   хэсэгт оруулж өгье»
+                ⚠️ АСААВАЛ: ① 3 баганат сонголт ИДЭВХГҮЙ (📱 дээр дэлгэцүүд
+                   бүхэлдээ гарахгүй) ② хот/дүүрэг/хороо ЦЭВЭРЛЭГДЭнэ ⇒ зар нь
+                   БАЙРШИЛГҮЙ хадгалагдана (`city = ''`, DB/migration өөрчлөлт 0 ✓)
+                ⚠️ УНТРААВАЛ: өмнө сонгосон байршил нь БУЦАЖ ирнэ (алдагдахгүй ✓)
+                ⚠️ Байршил нь 🖥/📱 ХОЁУЛАНД харагдана — алхмын хамгийн ДЭЭДЭД
+                   (📱 дээр «асуулт бүр нэг дэлгэц»-ийн 3 дэлгэцийг бүхэлд нь
+                   алгасах боломж; `MobileQuestion` нь `!noLoc` үед л гарна ✓)
+                ⚠️ `data-no-location` — CDP/тестийн тогтвортой selector; текстийн
+                   эх сурвалж нь `lib/listingLocation.mjs` (`NO_LOCATION_*`) ✓
+                🔍 Хайх үг: data-no-location, toggleNoLocation, isNoLocation,
+                   noLocationPatch, locationMissing, bankedLocationRef */}
+            <label
+              data-no-location
+              className={`mb-3 flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5 transition ${
+                noLoc ? 'border-primary bg-primary-light' : 'border-gray-300 bg-white hover:bg-gray-50'
+              }`}
+            >
+              <input
+                type="checkbox"
+                data-no-location-input
+                checked={noLoc}
+                onChange={(e) => toggleNoLocation(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+              />
+              <span className="min-w-0">
+                <span className={`block text-[13.5px] font-semibold ${noLoc ? 'text-primary' : 'text-gray-900'}`}>
+                  {NO_LOCATION_TITLE}
+                </span>
+                <span className="block text-[12.5px] leading-snug text-gray-500">{NO_LOCATION_HINT}</span>
+              </span>
+            </label>
+            {/* 📱 МОБАЙЛ (<640px): Хот/Аймаг → Дүүрэг → Хороо — нэг нэгээр нь
+                (1-р алхмын `MobileQuestion`-тэй ЯГ ИЖИЛ харагдац)
+                ⚠️ Чекбокс асаалттай бол дэлгэцүүд ОГТ ГАРАХГҮЙ (`!noLoc`) —
+                   📱 дээр «Байршил оруулахгүй» гэсэн 1 дарт хангалттай ✓
+                ⚠️ Алхмын доод «← Буцах / Үргэлжлүүлэх →» товчнууд нь ЭНЭ блокийн
+                   ГАДНА (`<form>`-ийн ёроолд) тул 📱 дээр навигаци хаагдахгүй ✓ */}
+            {!noLoc && (
             <MobileQuestion
               key={`loc-${mobileLocScreen.key}`}
               title={mobileLocScreen.title}
@@ -2370,12 +2538,20 @@ export default function AddListingClient() {
               onBack={mobileLocBack}
               emptyText="Сонголт байхгүй"
             />
+            )}
             {/* 🖥 ≥640px: 3 БАГАНАТ СОНГОЛТ (`hidden sm:grid` — 🆕 2026-10-05:
-                баганын тоо нь ХЭСГЭЭС ХАМААРАХГҮЙ, үргэлж 3 ✓) */}
+                баганын тоо нь ХЭСГЭЭС ХАМААРАХГҮЙ, үргэлж 3 ✓)
+                ⚠️ Чекбокс асаалттай бол `pointer-events-none opacity-40` +
+                   `aria-disabled` — мөрүүд нь DOM-д ХЭВЭЭР (CDP тестийн
+                   баганын тоо/жагсаалт хөндөгдөхгүй ✓), зөвхөн дарагдахгүй ✓ */}
             <div
               role="group"
               aria-label="Байршлаа сонгоно уу"
-              className="hidden gap-px overflow-hidden rounded-lg border border-gray-300 bg-gray-200 sm:grid sm:grid-cols-3"
+              aria-disabled={noLoc ? 'true' : 'false'}
+              data-location-disabled={noLoc ? 'true' : 'false'}
+              className={`hidden gap-px overflow-hidden rounded-lg border border-gray-300 bg-gray-200 sm:grid sm:grid-cols-3 ${
+                noLoc ? 'pointer-events-none opacity-40' : ''
+              }`}
             >
               {/* ① ХОТ / АЙМАГ — солисон үед дүүрэг ба хороо ЦЭВЭРЛЭГДЭНЭ ✓ */}
               <PickerColumn
@@ -2418,8 +2594,17 @@ export default function AddListingClient() {
                 ижил харагдац. ⚠️ ТУСДАА атрибут (`data-location-summary`) —
                 picker-ийн CDP тест `[data-picker-summary]`-г дан ганц гэж
                 үздэг тул саад болохгүй ✓ ---- */}
-            <p data-location-summary className="mt-3 rounded-lg bg-gray-50 px-3 py-2.5 text-[13px] text-gray-600">
-              {form.city ? (
+            <p
+              data-location-summary
+              className={`mt-3 rounded-lg px-3 py-2.5 text-[13px] ${
+                noLoc ? 'bg-primary-light text-primary' : 'bg-gray-50 text-gray-600'
+              }`}
+            >
+              {noLoc ? (
+                /* 🚫 Чекбокс асаалттай — юу болохыг тодорхой хэлнэ (нэг эх
+                   сурвалж: `lib/listingLocation.mjs → NO_LOCATION_SUMMARY`) */
+                NO_LOCATION_SUMMARY
+              ) : form.city ? (
                 <>
                   Сонгосон:{' '}
                   <b className="text-gray-900">📍 {form.city}</b>

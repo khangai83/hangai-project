@@ -10,6 +10,9 @@ import { fetchAdminMe } from '../lib/adminApi';
 import { useFavorites } from '../lib/favorites';
 import { useUnreadMessages } from '../lib/messagesClient';
 import phoneEmail from '../lib/phoneEmail';
+// 🎯 АНГИЛАЛ УРЬДЧИЛАН БӨГЛӨХ (2026-10-06) — хэрэглэгч аль ангилалд явж
+//    байсныг URL-ээс уншиж `/listings/new?section=…&type=…` руу шилжүүлнэ ✓
+import { listingPrefillFromSearch, newListingHref } from '../lib/listingPrefill.mjs';
 import AuthModal from './AuthModal';
 import ProfileModal from './ProfileModal';
 import MessageIcon from './MessageIcon';
@@ -191,9 +194,23 @@ export default function AppProviders({ children }) {
   // 🪜 «Зар нэмэх» нь ОДОО ТУСДАА ХУУДАС (`/listings/new`) — модал БИШ.
   //    ⚠️ Ингэснээр хэрэглэгч хаана явж байгаа нь URL + breadcrumb + алхмаар
   //    тодорхой харагдана ✓ (модал дотор байсан үед мэдэгдэхгүй байв)
+  // 🎯 АНГИЛАЛ УРЬДЧИЛАН БӨГЛӨХ (2026-10-06, хэрэглэгчийн хүсэлт: «Зар нэмэхээ
+  //    дархад Энэ ангилал нь сонгогдсон эхэлдэг байвал сайхан юм шиг санагдаж
+  //    байна») — товч дарах мөчид БРАУЗЕРЫН одоогийн URL-ийн шүүлтийг
+  //    (`?section=services&type=Гагнуурын үйлчилгээ`) уншиж, ангилалыг форм руу
+  //    дамжуулна ⇒ форм «Бүх зар › Ажил, Үйлчилгээ › … › Гагнуурын үйлчилгээ»
+  //    замаар сонгогдсон байдлаар нээгдэнэ ✓
+  //    ⚠️ `useSearchParams()` БИШ `window.location.search` — учир нь энэ
+  //    context нь БҮХ хуудсанд (root layout) байдаг ба `useSearchParams()`
+  //    нь бүх хуудсыг dynamic болгоно ✗; `openAdd` нь ЗӨВХӨН клик дээр
+  //    ажилладаг тул `window` үргэлж байна ✓
+  //    ⚠️ Шүүлтгүй хуудас (`/my-listings`, зарын дэлгэрэнгүй …) дээр
+  //    `listingPrefillFromSearch('')` нь `{}` буцаах тул линк ХУУЧИН хэвээр
+  //    `/listings/new` ✓ (зан төлөв хөндөгдөхгүй)
   const openAdd = useCallback(() => {
     if (!user) { showToast('Эхлээд нэвтрэх шаардлагатай', 'error'); setAuthOpen(true); return; }
-    router.push('/listings/new');
+    const search = typeof window === 'undefined' ? '' : window.location.search;
+    router.push(newListingHref(listingPrefillFromSearch(search)));
   }, [user, showToast, router]);
   // Засах горим: ижил хуудас, гэхдээ `?edit=<id>` — утгууд урьдчилан бөглөгдөнө
   const openEdit = useCallback((listing) => {

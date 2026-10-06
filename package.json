@@ -32,6 +32,8 @@
     "test:wheel": "node scripts/test-wheel-render.mjs",
     "test:wizard": "node scripts/test-detail-wizard.mjs",
     "test:draft": "node scripts/test-draft.mjs",
+    "test:prefill": "node scripts/test-prefill.mjs",
+    "test:location": "node scripts/test-location-optional.mjs",
     "test:breadcrumb": "node scripts/test-breadcrumb.mjs",
     "cdp:rooms": "node scripts/cdp-rooms.mjs",
     "cdp:districts": "node scripts/cdp-districts.mjs",

@@ -28,7 +28,7 @@ assert(!/^import /m.test(stripped), 'бүх import хасагдсан байх �
 const tmp = path.join(here, '..', '.format.test.tmp.mjs');
 fs.writeFileSync(tmp, stripped);
 
-const { formatThousands, digitCount, shortPrice, isNegotiablePrice, priceLabel, hasRealPrice, negotiableNote, NEGOTIABLE_PRICE_LABEL, listingTitle, MAX_LISTING_TITLE_LENGTH } = await import(`${tmp}?t=${Date.now()}`);
+const { formatThousands, digitCount, shortPrice, isNegotiablePrice, priceLabel, shortPriceLabel, hasRealPrice, negotiableNote, NEGOTIABLE_PRICE_LABEL, listingTitle, MAX_LISTING_TITLE_LENGTH } = await import(`${tmp}?t=${Date.now()}`);
 fs.unlinkSync(tmp);
 
 let passed = 0;
@@ -138,6 +138,35 @@ t('🤝 priceLabel: үнэ БИЧСЭН бол «₮…» — «Үнэ тохи�
   // бичсэн бол үнэ ХЭВЭЭР харагдана, тэмдэглэгч нь ДООР нь тусдаа мөр болно ✓
   assert.equal(priceLabel({ price: 1500000, attrs: { negotiable: 'yes' } }), '₮1,500,000');
   assert.equal(priceLabel({ price: 5000000, attrs: { negotiable: 'yes' } }), '₮5,000,000');
+});
+
+// ============================================================
+// 📉 ТОВЧ ҮНИЙН ШОШГО (2026-10-06) — карт ба дэлгэрэнгүй хуудас
+// ============================================================
+// ⚠️ ЯАГААД ТЕСТЛЭХ ВЭ: хэрэглэгчийн хүсэлтээр КАРТ (`ListingCard`) ба
+//    ДЭЛГЭРЭНГҮЙ (`ListingDetailClient`) дээр «760,000,000» БИШ «760 сая ₮»
+//    харагдах ёстой. `shortPriceLabel` нь `priceLabel`-ыг (экспорт/админ)
+//    ХӨНДӨХГҮЙ тул хоёр функцийг ЗЭРЭГ шалгана ✓
+t('📉 shortPriceLabel: карт/дэлгэрэнгүйд ТОВЧ үнэ («760 сая ₮», «44.8 сая ₮»)', () => {
+  assert.equal(shortPriceLabel({ price: 760000000 }), '760 сая ₮');
+  assert.equal(shortPriceLabel({ price: 44800000 }), '44.8 сая ₮');
+  assert.equal(shortPriceLabel({ price: 2000000000 }), '2 тэрбум ₮');
+  assert.equal(shortPriceLabel({ price: 250000000 }), '250 сая ₮');
+  // ⚠️ «₮» нь ТӨГСГӨЛД; экспорт/админы `priceLabel` нь ХӨНДӨӨГДӨӨГҮЙ (эхэнд) ✓
+  assert.equal(priceLabel({ price: 760000000 }), '₮760,000,000');
+});
+
+t('📉 shortPriceLabel: үнэгүй → «Үнэ тохирно» / ажил дээр «Цалин тохиролцоно»', () => {
+  assert.equal(shortPriceLabel({ price: 0 }), 'Үнэ тохирно');
+  assert.equal(shortPriceLabel({ price: '' }), 'Үнэ тохирно');
+  assert.equal(shortPriceLabel({}), 'Үнэ тохирно');
+  assert.equal(shortPriceLabel(null), 'Үнэ тохирно');
+  assert.equal(shortPriceLabel({ price: 0, section: 'jobs' }), 'Цалин тохиролцоно');
+  // 🙅 Үнэ БИЧСЭН + «тохирно» тэмдэглэсэн ч үнэ ХЭВЭЭР (товч хэлбэрээр) гарна —
+  //    `priceLabel`-тай ЯГ ИЖИЛ дүрэм (тэмдэглэгчийг `negotiableNote` харуулна ✓)
+  assert.equal(shortPriceLabel({ price: 44800000, attrs: { negotiable: 'yes' } }), '44.8 сая ₮');
+  assert.equal(shortPriceLabel({ price: 1500000, section: 'jobs' }), '1.5 сая ₮');
+  assert.equal(shortPriceLabel({ price: 900000 }), '900 мянга ₮');
 });
 
 t('🤝 hasRealPrice: 0 / хоосон / null → false, тоо → true', () => {

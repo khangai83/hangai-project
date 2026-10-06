@@ -386,12 +386,18 @@ npm run test:format
 | `hasRealPrice(l)` | `price` нь **0-ээс их** эсэх (`0`/`''`/`null` → `false`) |
 | `isNegotiablePrice(l)` | `attrs.negotiable === 'yes'` **ЭСВЭЛ** үнэ байхгүй бол `true` |
 | `priceLabel(l)` | үнэтэй → `'₮' + formatPrice(price)`; үнэгүй → `Үнэ тохирно` |
+| `shortPriceLabel(l)` 🆕 | 📉 **КАРТ + ДЭЛГЭРЭНГҮЙ** дээрх ТОВЧ үнэ (2026-10-06): үнэтэй → `'760 сая ₮'` · `'44.8 сая ₮'` · `'2 тэрбум ₮'` (нэгж нь `shortPrice`-тэй ИЖИЛ, `₮` нь **ТӨГСГӨЛД**); үнэгүй → `Үнэ тохирно` / `Цалин тохиролцоно` (ажил) |
 | `negotiableNote(l)` | үнэтэй **БА** тэмдэглэсэн үед л `Үнэ тохирно`, эс бөгөөс `''` |
 
 Холбосон гадаргуу (`grep -rn priceLabel components`): `ListingCard` · `ListingDetailClient`
 · `MyListingsClient` · `MapView` (газрын зургийн popup) · `MyListingsStatsPanel` ·
 `AdminListingsClient` · `AdminDashboardClient` · `AdminFeedbackClient` ·
 `FavoritesClient` (хүснэгтийн «Үнэ» багана) ✓
+
+> 🆕 **2026-10-06 (хэрэглэгчийн хүсэлт):** `ListingCard` ба `ListingDetailClient` нь
+> `priceLabel` БИШ **`shortPriceLabel`** ашигладаг болов (`760 сая ₮`) — ⚠️ бусад
+> гадаргуу (экспорт/админ/газрын зураг/статистик) нь ЯГ ТОО (`₮760,000,000`)
+> харуулсаар байна ✓ (Excel/PDF-д «760 сая» нь тооцоо/шүүлтэд тохиромжгүй ✗)
 
 `negotiableNote` нь үнийн **ЯГ ДОР** нэмэгдэнэ — ⚠️ **2026-10-02-ноос эхлэн
 ЗӨВХӨН 2 дэлгэцэд** (**дэлгэрэнгүй** · миний зарууд) ✓ — **карт дээр
@@ -533,7 +539,7 @@ Node дээр `chrome --headless=new --remote-debugging-port=9335` + `WebSocket`
 | # | Алхам | `?step=` | Юу асууна |
 |---|---|---|---|
 | 1 | 🗂 **Ангилал** | `1` | 🖥 **3 БАГАНАТ СОНГОЛТ** (unegui.mn загвар): Хэсэг → «Зарах / Түрээслэх» эсвэл Дэд бүлэг → **Төрөл** · 📱 **НЭГ ДЭЛГЭЦ** (2026-10-02): Хэсэг → Зарна/Түрээслүүлнэ → Төрөл → **Өрөө** гэж дараалан |
-| 2 | 📍 **Байршил** | `2` | 🖥 **2–3 БАГАНАТ СОНГОЛТ** (1-р алхмын формат) · 📱 **НЭГ ДЭЛГЭЦ**: Хот/Аймаг → Дүүрэг → Хороо · «Дэлгэрэнгүй хаяг» **ХАСАГДСАН** |
+| 2 | 📍 **Байршил** | `2` | 🖥 **2–3 БАГАНАТ СОНГОЛТ** (1-р алхмын формат) · 📱 **НЭГ ДЭЛГЭЦ**: Хот/Аймаг → Дүүрэг → Хороо · «Дэлгэрэнгүй хаяг» **ХАСАГДСАН** · 🆕 **2026-10-06: `☐ 📍 Байршил оруулахгүй` ЧЕКБОКС** (`[data-no-location]`) — асаавал 3 багана идэвхгүй + 📱 дэлгэцүүд алгасагдаж, зар нь **байршилгүй** (`city = ''`) хадгалагдана ✓ |
 | 3 | 📋 **Дэлгэрэнгүй** | `3` | attrs (брэнд/он/гүйлт …) + Өрөө (**📱 мобайлд ХАРАГДАХГҮЙ** — 1-р алхамд асуусан) · Талбай · Давхар · **Угаалгын өрөөний тоо** · Тагт · Гараж — **БҮГД ЦУВАА (1 БАГАНА)** ✓ · 📱 **ТООН талбар нь ДУГУЙ** (🎡 iOS Timer, 2026-10-02): «Ашиглалтанд орсон он» · «Барилгын нийт давхар» · «Байрны давхар» · «Угаалгын өрөөний тоо» · «Тагт» — тоон самбар БИШ, эргүүлж сонгоно (🖥 ≥640px дээр хуучин гар бичилт ХЭВЭЭР ✓) |
 | 4 | 💰 **Үнэ** | `4` | Үнэ (+ `☐ Үнэ тохирно`) · Тайлбар · YouTube видео |
 | 5 | 📷 **Зураг** | `5` | Холбоо барих утас · Зураг оруулах → **Нийтлэх** |
@@ -554,7 +560,113 @@ Node дээр `chrome --headless=new --remote-debugging-port=9335` + `WebSocket`
 > ⚠️ `validateStep`/`firstInvalidStep` нь `STEPS[i].key`-ээр ажилладаг (нэг эх
 > сурвалж) тул ЗӨРЧИЛГҮЙ — зөвхөн `{step === N && …}` блокуудын дугаар солигдов ✓
 
+#### 🎯 АНГИЛАЛ УРЬДЧИЛАН БӨГЛӨХ — «Зар нэмэх» товч (2026-10-06)
+
+Хэрэглэгчийн хүсэлт: *«Хэрэглэгч зар нэмэх товч дархад, тэр нь ямар нэг ангилалд
+явж байвал зар нэмэх хэсэгт нь тохируулагдсан байдлаар орж ирдэг байвал зүгээр
+юм байна. Жишээ нь Бүх зар › Ажил, Үйлчилгээ › Барилга & Засвар үйлчилгээ ›
+Гагнуурын үйлчилгээ, Энд явж байгаад Зар нэмэхээ дархад Энэ ангилал нь
+сонгогдсон эхэлдэг байвал сайхан юм шиг санагдаж байна»*
+
+- **Хэрхэн ажилладаг вэ:** `AppProviders.openAdd()` нь товч дарах МӨЧИД
+  БРАУЗЕРЫН одоогийн URL-ийн шүүлтийг уншиж (`?section=services&type=Гагнуурын үйлчилгээ`) →
+  `/listings/new?section=services&type=…` руу шилжүүлнэ. Форм
+  (`components/AddListingClient.jsx`) тэр параметрүүдийг уншаад **1-р алхмын
+  ангиллыг сонгосон байдлаар** нээгдэнэ ✓ (⚠️ `useSearchParams()` БИШ
+  `window.location.search` — `AppProviders` нь root layout-д байдаг тул
+  `useSearchParams()` нь БҮХ хуудсыг dynamic болгоно ✗; клик дээр `window` үргэлж бий ✓)
+- **«БҮЛЭГ» нь тусдаа параметр БИШ** — дэд төрөл сонгоход форм нь
+  `findSubtypeGroup()`-оор бүлгээ өөрөө олж, `openGroup`-оо АВТОМАТААР нээнэ ✓
+  (ж: «Гагнуурын үйлчилгээ» → «Барилга & Засвар үйлчилгээ» бүлэг нээлттэй;
+  нэг эх сурвалж: дэд төрөл)
+- **🔗 Алхам солиход ч ХАЯГ дээр үлдэнэ** — `gotoStep()` (`?step=N`) нь
+  `section`/`category`/`type`-ыг URL-д ХАДГАЛНА ⇒ 2-р алхам дээр REFRESH хийсэн
+  ч, линк хуваалцсан ч ангилал хэвээр нээгдэнэ ✓ (`?edit=` горимд нэмэгдэхгүй)
+- **⚠️ ЗӨВХӨН АНГИЛАЛ** — байршил (`city`/`district`/`khoroo`), өрөө, үнэ
+  **ОРУУЛАХГҮЙ** (хэрэглэгчийн баталгаажуулалт, 2026-10-06: «Зөвхөн ангилал»):
+  байршил/өрөө нь ЗАР БҮРД өөр байдаг тул буруу утга бөглөгдөх эрсдэлтэй ✗
+- **⚠️ ХҮЧИНГҮЙ утга ЧИМЭЭГҮЙ ХАЯГДАНА** — `?section=xyz` (хуучин/буруу линк),
+  тухайн хэсэгт байхгүй дэд төрөл, `?category=all` (формд «Бүгд» БАЙХГҮЙ) ⇒
+  форм худал сонголттой нээгдэхгүй ✓
+- **⚠️ Ноорог давамгайлна** — `localStorage`-д ноорог байвал тэр нь сэргээгдэж
+  урьдчилсан ангилалыг дарна (хэрэглэгчийн оруулж байсан ажил алдагдахгүй ✓);
+  урьдчилсан ангилал нь ЗӨВХӨН ноороггүй үед бөглөгдөнө
+- **⚠️ Засах горим** (`?edit=<id>`) дээр ХҮЧИНГҮЙ — DB-ийн зарын утга
+  лавлагдана ✓ (тэр линк дээр эдгээр параметр байхгүй)
+- **📱 <640px:** дэд төрөл сонгогдсон бол drill-down ШУУД «Төрөл» дэлгэцээс
+  эхэлнэ (`prefillMobileCatStep`); эс бөгөөс «Хэсэг» дэлгэцээс ✓
+- **⚠️ SSR/HYDRATION:** `useState(emptyForm)` ХЭВЭЭР — урьдчилсан утга нь
+  `useEffect`-ээр ордог тул сервер ба клиент ЗӨРҮҮ рендэрлэхгүй ✓
+- **🧩 Файлууд:** `lib/listingPrefill.mjs` (ЦЭВЭР: `listingPrefillFromSearch` ·
+  `newListingHref` · `applyPrefill` · `prefillMobileCatStep`) ·
+  `components/AppProviders.jsx` (`openAdd`) · `components/AddListingClient.jsx`
+- **🧪 ТЕСТ:** `npm run test:prefill` (**28 тест** — хэрэглэгчийн жишээний
+  round-trip + бүлэг, БҮХ 12 хэсэг, хүчингүй утга хаях дүрэм, линк угсралт,
+  форм бөглөлт, 📱 анхны дэлгэц, эх файлын гэрээ) ✓ ·
+  `test:draft` (ноорог давамгайлах) 26 ✓
+- **⚠️ DB / query / URL бүтэц / migration — 0 өөрчлөлт** (зөвхөн форм дээрх
+  НЭГ УДААГИЙН анхны сонголт; зар хадгалах үед л `section`/`property_type` бичигдэнэ) ✓
+- 🔍 Хайх үг: `listingPrefill.mjs`, `applyPrefill`, `newListingHref`, `openAdd`,
+  «Урьдчилан бөглөх», «Гагнуурын үйлчилгээ»
+
+#### 📍 БАЙРШИЛ ОРУУЛАХГҮЙ — чекбокс (2026-10-06)
+
+Хэрэглэгчийн хүсэлт: *«Магадгүй зарим хэрэглэгч зарын Байршилаа оруулахыг
+хүсэхгүй хүн байж магадгүй. Тэдгээр хүмүүст зориулж Байршил хэрэглэхгүй гэсэн
+сонголтыг (Check box ч юм уу) Байршил хэсэгт оруулж өгье»*
+
+- **Хаана:** 2-р алхам (**📍 Байршил**)-ын ХАМГИЙН ДЭЭДЭД `☐ 📍 Байршил
+  оруулахгүй` — 🖥 ба 📱 хоёуланд харагдана
+  (`[data-no-location]` / `[data-no-location-input]` — CDP selector ✓)
+- **✅ Асаавал:** ① хот/дүүрэг/хороо **ЦЭВЭРЛЭГДЭнэ** (`noLocationPatch()`) ② 🖥
+  3 баганат сонголт **ИДЭВХГҮЙ** болно (`pointer-events-none opacity-40`,
+  мөрүүд DOM-д ХЭВЭЭР ⇒ баганын тоо/жагсаалтын тест хөндөгдөхгүй ✓) ③ 📱 дээр
+  `MobileQuestion` дэлгэцүүд **ГАРАХГҮЙ** (3 асуултыг 1 дартаа алгасна) ④
+  хураангуй нь «🚫 Байршил заагаагүй …» болно ✓
+- **↩️ Унтраавал:** өмнө сонгосон байршил (эсвэл анхдагч `Улаанбаатар`)
+  **БУЦАЖ ИРНЭ** — `bankedLocation()` / `restoreLocationPatch()` (ref-д
+  хадгална тул өгөгдөл алдагдахгүй ✓; «хоосон орхиод дараа нь алдаа
+  харуулах» нь төөрөгдүүлэх тул сонгогүй ✗)
+- **⚠️ Хоёр `city === ''` ЯЛГААГДАНА** (нэг эх сурвалж:
+  `lib/listingLocation.mjs`): ① «сонгоогүй» → `validateStep('location')`
+  «Хот/Аймгаа сонгоно уу» ✓ ② «заахгүй гэж ШИЙДСЭН» (`noLocation: true`) →
+  алдаагүй, цааш явах боломжтой ✓ — тиймээс `!form.city` гэж бичих БОЛОХГҮЙ
+  (чекбоксыг үл хардаг ✗), `locationMissing(form)`-ийг ашиглана ✓
+- **📝 Ноорог (54):** `noLocation` нь `emptyForm()`-ийн түлхүүр тул
+  ноорогт АВТОМАТААР орно (`Object.keys(emptyForm())`) — `DRAFT_VERSION`
+  хөндөгдөөгүй, хуучин ноорог хүчингүй болохгүй (тэр түлхүүр байхгүй ⇒
+  `false` мэт уншигдана ✓)
+- **🛠 Засах горим:** `city === ''` нь `''` ХЭВЭЭР уншигдана (хуурамч
+  «Улаанбаатар» бөглөхгүй ✗) + чекбокс асаалттай нээгдэнэ — `listingToForm()`
+- **Харуулалт:** ① зарын **карт** — байршилгүй үед 📍 мөр ОГТ ГАРАХГҮЙ
+  (`formatAddress()` → `''`, `{address && …}`) ② **дэлгэрэнгүй** хуудас —
+  «📍 Байршил заагаагүй» (⛔ «Хаяг тодорхойгүй» гэсэн алдаа мэт текст
+  ХАСАГДАВ) ③ **Миний зарууд** — «📍 » хоосон үлдэхгүй (fallback текст)
+  ④ админ (`AdminListingsClient`) — аль хэдийн `—` ✓
+- **⚠️ Хайлт:** хот/дүүрэг шүүлттэй үед эдгээр зар ГАРАХГҮЙ (байршил нь
+  мэдэгдэхгүй тул зөв ✓); «Бүх байршил» (анхдагч) дээр ХАРАГДАНА ✓
+- **⚠️ 0014 dedupe:** `dedupe_key` нь `…|city|district|khoroo|…` тул байршилгүй
+  зарууд нэг бүлэгт орно — ижил төрөл + өрөө + талбайтай 2 дахь байршилгүй
+  зарыг 30 хоногт оруулахыг триггер хориглоно (SPAM дүрэм ХЭВЭЭР, шинэ дүрэм
+  биш ✓)
+- **⚠️ DB / query / migration — 0 өөрчлөлт:** `city` нь `text not null default
+  'Улаанбаатар'` тул `''` нь ХҮЧИНТЭЙ (constraint хөндөгдөхгүй ✓);
+  `noLocation` нь `lib/queries.js → listingPayloadToRow()`-д ороогүй тул DB рүү
+  ЯВАХГҮЙ ✓ (багана нэмэх шаардлагагүй)
+- **🧩 Файлууд:** `lib/listingLocation.mjs` (ЦЭВЭР: `isNoLocation` ·
+  `hasLocation` · `locationMissing` · `noLocationPatch` · `bankedLocation` ·
+  `restoreLocationPatch` · `locationPathText` + `NO_LOCATION_*` текстүүд) ·
+  `components/AddListingClient.jsx` · `components/ListingDetailClient.jsx` ·
+  `components/MyListingsClient.jsx`
+- **🧪 ТЕСТ:** `npm run test:location` (`scripts/test-location-optional.mjs`) —
+  модулийн дүрэм, чекбоксын round-trip (алдагдалгүй), шалгалт, эх файлын
+  гэрээ, DB-д 0 өөрчлөлт, харуулалт, README/package.json ✓
+- 🔍 Хайх үг: `listingLocation.mjs`, `noLocation`, `Байршил оруулахгүй`,
+  `data-no-location`, `locationMissing`
+
 #### 🗂 1-Р АЛХАМ — 3 БАГАНАТ СОНГОЛТ (2026-10-01, 4 дэх засвар)
+
+
 
 Хэрэглэгчийн хүсэлт: *«Эхний хэсгийг ийм болго»* — `unegui.mn/post_ad/` дээрх ЯГ ИЖИЛ
 харагдац. ⚠️ Өмнө нь 2–3 `<select>` байсныг **3 БАГАНАТ жагсаалт** болгов.
@@ -992,6 +1104,9 @@ Node дээр `chrome --headless=new --remote-debugging-port=9335` + `WebSocket`
   товч ЯГ 1) — ⑦′ хэсэгт +7 тест) ·
   🆕 `test:draft` **26** (2026-10-05 (54): 📝 НООРОГ — `lib/listingDraft.mjs`-ийн
   түлхүүр/TTL/whitelist/`editId` + формоны сэргээх/бичих эффект + 🗑 товч)) ·
+  🆕 `test:location` **34** (2026-10-06: 📍 «Байршил оруулахгүй» чекбокс —
+  `lib/listingLocation.mjs`-ийн дүрэм, round-trip, шалгалт, эх файлын гэрээ,
+  DB-д 0 migration, харуулалт) ·
   `npm run build` ✓ EXIT=0.
   🐍 CDP БОДИТ Chrome дээр (2026-10-05): `cdp:chips` **54 OK** (`#filter-bar` pill +
   ⌄ панель + олон сонголт) · `cdp:rooms` **47 OK** · `cdp:payments` **59 OK** ·
@@ -2780,14 +2895,14 @@ sel('condition', CONDITION_LABEL, CONDITION_OPTIONS, '✅', CONDITION_FILTER_EXT
 | Үр дүнгийн `h1` | HomeClient | `20` / `24px` | **`24` / `26px`** |
 | «Эрэмбэлэх» / sort `<select>` | HomeClient | `12.5` / `13px` | **`13.5` / `14px`** |
 | Идэвхтэй чип / «Бүгдийг цэвэрлэх» | HomeClient | `12px` | **`13px`** |
-| Карт — мета мөр ба тайлбар | `ListingCard` | `13px` | **`14px`** |
+| Карт — 📋 дэлгэрэнгүй мөр | `ListingCard` | `13px` | **`14px`** |
 | Карт — доод мөр / нийтлэгч | `ListingCard` | `12.5` / `13px` | **`13.5px`** |
 | Breadcrumb | `Breadcrumb.jsx` | `14px` | **`15px`** |
 
 - ⚠️ **`ListingCard`-ийн ҮНЭ (`text-[22px]`) ба ГАРЧИГ (`text-[15px]`)
   ХӨНДӨӨГДӨӨГҮЙ** — хэрэглэгчийн шийдвэр (`scripts/test-card.mjs`-д түгжсэн
-  гэрээ ✓); зөвхөн тайлбарын хэмжээ `13 → 14px` болсон тул тэр **НЭГ `assert`**
-  шинэчлэгдэв ✓
+  гэрээ ✓); зөвхөн 📋 дэлгэрэнгүй мөрийн хэмжээ `13 → 14px` болсон ✓
+  🆕 **2026-10-06:** 📝 Тайлбар карт дээр БҮРЭН ХАСАГДАВ (хэрэглэгчийн хүсэлт ✓)
 - ⚠️ **Апп даяар:** `.form-*` · `.chip-toggle` · `.segmented-item` нь
   `AddListingClient` (зар оруулах 3 алхам) ба `AuthModal`-д ч хэрэглэгддэг тул
   тэд ч хамт томров — **санаатай** (нэгдмэл байдал ✓)
@@ -4700,6 +4815,8 @@ npm run test:search      # 🔢 тооны хүрээ (цэгээр бүлэгл
 npm run test:choices     # 🎡 МОБАЙЛ СОНГОЛТ — тоон жагсаалт/дараалал/2 БАГАНАТ ЖАГСААЛТын гэрээ (36 тест, 0₮)
 npm run test:wheel       # 🎡 дугуйны SSR рендэр — 27/48 мөр, `aria-selected`, 📱390/🖥1440 (10 тест, 0₮)
 npm run test:draft       # 📝 НООРОГ — `localStorage` (refresh-ээс хамгаалалт): түлхүүр/TTL/whitelist + формоны гэрээ (26 тест, 0₮)
+npm run test:prefill     # 🎯 АНГИЛАЛ УРЬДЧИЛАН БӨГЛӨХ — «Зар нэмэх» товч (`?section=…&type=…` → форм сонгогдсон нээгдэнэ) (28 тест, 0₮)
+npm run test:location    # 📍 «БАЙРШИЛ ОРУУЛАХГҮЙ» чекбокс — round-trip/шалгалт/гэрээ/DB-д 0 migration (34 тест, 0₮)
 npm run cdp:picker       # 🐍 БОДИТ Chrome (:9222) — пикер/форм/📱wizard/📝 ноорог refresh (183/183 ✓)
 npm run cdp:wheel        # 🐍 БОДИТ Chrome (:9222) дээр 📱 ГАРААС БИЧИЛТ (он/давхар) + дугуй (НЭМЭЛТ боломж) — 51/51 шалгалт
                          #   ⚠️ Форм нь НЭВТЭРСЭН хэрэглэгчид харагддаг тул профайл нь
@@ -5032,17 +5149,19 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 
 
 | `scripts/test-rooms.mjs` | **44 тест** — `npm run test:rooms` (🆕 2026-10-03 (4): өрөөний **UI ЭРГЭЖ ИРСНИЙ** гэрээг хамгаална — `codeOnly()`-оор `data-room-filter`/`data-room-value`/`ROOM_OPTIONS`/`toggleRoomValue`/`toggleRooms`/`clearRooms`/`showRooms`/«Өрөөний тоо» **КОДОД БАЙНА** ✓ ба ⚠️ `data-room-filter` нь «Үнэ, ₮»-ний **ӨМНӨ** байрлана (`indexOf`) ✓; ⚠️ ХАДГАЛАГДСАН: `rooms: []`, `parseRoomList(sp.get('rooms'))`, `roomsUrlValue(filters.rooms)`, `roomsFilterLabel(filters.rooms)`; 📌 CDP скрипт нь `dom.chips === 5` (Орон сууц дээр чип 5 байна) ба `clickRoom(` (чип дарж URL/DB шалгах) замыг шаардана ✓. Мөн: `ROOM_VALUES`/`normalizeRoomValue` (`'5+'`/`+5`/`5` → `'5'`)/`parseRoomList` (эвдэрсэн `abc` хасаж, өсөх эрэмбээр)/`toggleRoomValue`/`isRoomsEmpty`/`countRooms`/`roomsUrlValue`/`roomsFilterLabel`/`roomsFilterDescriptor` ба `applyRoomFilter` fake builder-ээр — **`['5']`→`gte 5`, `['3']`→`in ['3']` (хуучин үр дүнтэй ЯГ ижил)**, `['4','5']`→`gte 4`, `['1','5']`→`or(…)`; ⚠️ 2026-09-30 (4)-д тестэд гарсан алдаа: `ROOM_OPTIONS`-ийн хүлээлт нь `'2 өрөө','2 өрөө'` гэж бичигдсэн байсныг `'1 өрөө'` болгож зассан ✓) |
-| `scripts/test-card.mjs` | 🆕 **16 тест** — `npm run test:card` (🆕 2026-10-03 (8): 📇 зарын картын ДИЗАЙНЫ гэрээ (**unegui.mn** хэв) — `codeOnly()`-оор ① `sm:h-[300px]` + `sm:flex-row` + `data-listing-card` ② зураг `sm:w-[42%]` + `sm:h-full` (мобайл `h-52`) ③ үнэ `text-[22px] font-extrabold` ④ гарчиг `line-clamp-2` ⑤ тайлбар `line-clamp-2 text-[14px]` (`listing.description`; 🆕 2026-10-04 (24): 13 → **14px** — «Хайлт + Зар НЭГДМЭЛ») ⑥ нийтлэгчийн band (28px Avatar + ✅ 13) ⑦ 🖼 `1/N` (`imageCount > 1`) ⑧ 🎥 (`video_url`) ⑨ badge зөвхөн `isRealEstate` ⑩ мета: `timeAgo`/`formatAddress`/👁 ⑪ ❤️ toggle (`preventDefault`+`stopPropagation`) ⑫ `pr-20`/`sm:pr-0` нөөц ⑬ «Үнэ тохирно» ГАРАХГҮЙ (`hasRealPrice` хаалт, `negotiableNote` БАЙХГҮЙ) ⑭ НЭГ `<Link>` ⑮ `getPropertyIcon` placeholder ⑯ HomeClient `attrsLine`+`author` — БҮГД эх кодоор ✓) |
+| `scripts/test-card.mjs` | 🆕 **16 тест** — `npm run test:card` (🆕 2026-10-03 (8): 📇 зарын картын ДИЗАЙНЫ гэрээ (**unegui.mn** хэв) — `codeOnly()`-оор ① `sm:h-[300px]` + `sm:flex-row` + `data-listing-card` ② зураг `sm:w-[42%]` + `sm:h-full` (мобайл `h-52`) ③ үнэ `text-[22px] font-extrabold` + ТОВЧ формат `shortPriceLabel` (🆕 2026-10-06: «760 сая ₮» · «44.8 сая ₮»; урт `priceLabel` карт дээр БАЙХГҮЙ) ④ гарчиг `line-clamp-2` ⑤ 🗑 тайлбар (`listing.description`) карт дээр БАЙХГҮЙ (🆕 2026-10-06 — хэрэглэгчийн хүсэлтээр ХАСАГДАВ) ⑥ нийтлэгчийн band (28px Avatar + ✅ 13) ⑦ 🖼 `1/N` (`imageCount > 1`) ⑧ 🎥 (`video_url`) ⑨ badge зөвхөн `isRealEstate` ⑩ мета: `timeAgo`/`formatAddress`/👁 ⑪ ❤️ toggle (`preventDefault`+`stopPropagation`) ⑫ `pr-20`/`sm:pr-0` нөөц ⑬ «Үнэ тохирно» ГАРАХГҮЙ (`hasRealPrice` хаалт, `negotiableNote` БАЙХГҮЙ) ⑭ НЭГ `<Link>` ⑮ `getPropertyIcon` placeholder ⑯ HomeClient `attrsLine`+`author` — БҮГД эх кодоор ✓) |
 | `scripts/cdp-job-chips.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:chips` (**54 шалгалт · ✅ 54 OK / 0 FAIL**, 2026-10-05 — 🆕 2026-10-03 (11): 💼 АЖЛЫН ЗАРЫН 4 ЧИП ТАЛБАР: ① демо хэрэглэгчээр нэвтэрч `/listings/new` → 💼 → 3-р алхам ② 4 блок `[data-attr-field]` (jobType 5 · experience 2 · advertiser 3 · jobLevel 5 чип) ЧИП ба 💰 `salaryType` `<select>` ХЭВЭЭР ③ чип дарах → `aria-pressed=true` + `chip-toggle-active` + блок бүрд ЯГ 1 (mutual exclusive) ④ идэвхтэй чип дээр дахин дарах → **ЦУЦЛАГДАНА** (бусад 3 чип + 💰 `<select>` хөндөгдөхгүй) ④b `?edit=<id>` (засах горим — чипүүд DB-ээс УРЬДЧИЛАН сонгогдсон эсэх; демо хэрэглэгчид ажлын зар байхгүй бол SKIP) ⑤ 📱 390px — 4 талбар БҮГД хүрэх (нэг дэлгэцэд НЭГ), `flex-wrap`, гүйлт 0 (`docW === vw`) ⑥ хайлтын хуудас `?section=jobs&type=…` — 🆕 **2026-10-05 (42): 🕒/📊/📈 нь САЙДБАРТ БИШ, `#filter-bar`-т 3 PILL** (`[data-filter-pill]` jobType · experience · jobLevel; ⌄ панель `[data-filter-panel]`; дотор нь `[data-attr-filter]` + `data-attr-multi="true"`; чип 12 = 5+2+5; `role="group"`; ⛔ панель дотор `<select>` БАЙХГҮЙ) ба **сайдбарт attr шүүлт 0** (`aside [data-attr-filter]` 0 — зөвхөн «Байршил» + «Цалин, ₮»), форм блок 0, байрлал нь `#listing-results` доторх «Эрэмбэлэх»-ийн ДООР (🆕 2026-10-03 (13): aside нь ХЭСГИЙН түвшинд ч гардаг болов — энэ шалгалт нь формтой жиших тул `&type=` ХЭВЭЭР ✓) ⑥b 🆕 (42): pill НЭЭЖ (⌄ панель `invisible` үед текст уншигдахгүй тул) чип дарж `?attr_jobType=Бүтэн цагийн,Цагийн` (**2 чип ЗЭРЭГ идэвхтэй** — ⛔ хуучин нэг сонголттой зан төлөв БАЙХГҮЙ), badge «2» + «2 сонгосон» + «✕ Цуцлах» → URL-ээс түлхүүр АРИЛНА; 📊 ч 2 утга ЗЭРЭГ (`?attr_experience=Шаардлагагүй,Шаардлагатай`), 📈 ХӨНДӨГДӨХГҮЙ ⑦ JS exception/console.error **0**) |
 | `scripts/test-jobs.mjs` | **20 тест** — `npm run test:jobs` (🆕 2026-10-03 (9), 🆕 **2026-10-05 (42)**: 💼 АЖЛЫН ЗАРЫН ГЭРЭЭ — `lib/locationData.js` ШУУД + `codeOnly()` эх кодоор ① форм талбарууд ЯГ 5 — `['jobType','experience','advertiser','jobLevel','salaryType']` (🆕 (10): 🏢 `company` / 💼 `position` ХАСАГДАВ) ② 🕒 «Ажлын цаг» 5 сонголт + **`chips` + `multi` + `filterBar`** (🆕 (42)) ③ 📊 Туршлага/🏷️ Зарлагч/📈 Мэргэжлийн түвшин/💰 Цалингийн төрөл (📊/📈 ч **`chips` + `multi` + `filterBar`** — 🆕 (42)) ④ 🗑 salary/education/workMode/expiry ХАСАГДАВ ⑤ **хайлтын 3 шүүлт — ГУРВУУЛАА `chips` + `multi` + `filterBar`** (`jobType` · `experience` · `jobLevel`; 🆕 (42)) ба 🆕 `HomeClient`-ийн `attrFilters.filter((f) => f.chips && f.multi && f.filterBar)` / `.filter((f) => !f.filterBar)` хоёр мөр + `data-filter-pill`/`data-filter-panel` дэгээ (хатуу жагсаалт `FILTER_BAR_ATTR_KEYS` БАЙХГҮЙ ✓) ⑥ `priceWord`/`isJobsSection` ⑦ `format.js` `NEGOTIABLE_SALARY_LABEL`+`negotiableLabel` ⑧ форм «Цалингийн хэмжээ»+«Цалин тохиролцоно» ⑨ `f.chips` салбар (`chip-toggle`/`data-attr-value`) ⑩ `priceSideBlock` + ажилд attr шүүлтүүдийн ӨМНӨ дараалал (regex + `indexOf`) ⑪ картын мөр ⑫ `getAttrRows` `salary`/`company`/`position` МӨР БАЙХГҮЙ ⑬ seed шинэ утгууд ✓) |
 | `scripts/test-search.mjs` | **53 тест** — `npm run test:search` (2026-09-30: 🔢 `lib/rangeFilter.mjs` (`groupDigits`/`parseNum`/`formatGroupedInput`/`clampNum`/`snapNum`/`toFilterPair`/`isRangeActive`/`rangeLabel`/`yearBounds`; 🆕 2026-10-04 (41): `FLOOR_BOUNDS`/`buildYearBounds`/`BUILD_YEAR_START`) + 🔀 `lib/sortOptions.mjs` (`SORT_OPTIONS`/`normalizeSort`/`sortOrders`/`sortLabel`) — `order=price.asc.nullslast,id.desc` ба HomeClient/queries-ийн гэрээ ✓; 📌 регресс: ① слайдер (`RangeSlider`/`rangeSlider.mjs`/`role="slider"`/pointer handler) ХААНА Ч БАЙХГҮЙ ② он БҮЛЭГЛЭГДЭХГҮЙ («2.026» ✗) ③ «1.234,5» → `1234.5` ✓ ④ хил дээрх `0` → «₮0 – ₮5 тэрбум» (өмнө нь «₮ – …» хоосон ✗) ⑤ **2026-09-30 (3): `priceQuickPicks()` эскпорт БАЙХГҮЙ, `quickPicks`/`data-quick-pick`/`aria-pressed` КОДОД БАЙХГҮЙ (комментыг `codeOnly()`-оор хасч шалгана), `snapNum` ЦЭВЭР туслах хэвээр, шошго нь `placeholder="Доод"`/`"Дээд"` + `(доод хязгаар)`/`(дээд хязгаар)` — «Эхлэх / Дуусах» кодод БАЙХГҮЙ** ✓) |
 | `scripts/test-filters.mjs` | **103 тест** — `npm run test:filters` (🆕 2026-10-04 (31): 🏠 «хэсгийн панель — 2 алхамт drill»: `showsSectionSubtypes` 2×3 хүснэгт (үл хөдлөх `all`→хаалттай, `sell`/`rent`→нээлттэй; бусад 11 хэсэгт дангааруу) + HomeClient-ийн `showSubtypes`/`data-section-panel` гэрээ (🆕 2026-10-03 (17): 🚗 «Жолооны хүрд» (`steering`) — форм БА карт («🚗 Зөв хүрд»), `Зөв`/`Буруу`, ⚙️ «Хурдны хайрцаг»-ийн ЯГ дараа, шүүлтэд ОРООГҮЙ, `getAttrRows(auto)` → **10 мөр**; 🆕 2026-10-01 (13): 🎨 өнгө **12** сонголт — `assert.deepEqual`-ээр ЯГ дараалал (Цагаан … Бусад), давхардал 0 (`new Set().size === 12`), сүүлийнх нь «Бусад»; 2026-09-28: attrFilters-ийн гэрээ — 🚙 Загвар текст, 📅/📥 оны хүрээ, `parseAttrRangeKey`, `formatAttrsLine`; 2026-09-29: ⚽ hobby — `attrFilters`/`attrFields` зөвхөн `condition`, `hasSimpleForm`; ✅ «Шинэ / Хуучин» — attrFields ба attrFilters ХОЁУЛАА 2 сонголттой байв (2026-09-29; ⚠️ 2026-10-02-д **3** болов), хуучин 4 утга (Хэрэглэсэн — сайн/хэвийн, Засвар шаардлагатай, Хэвийн) БҮРЭН ХАСАГДСАН; 🆕 **2026-10-02: «Шинэ / Шинэвтэр / Хуучин» — attrFields ба attrFilters ХОЁУЛАА ЯГ 3 сонголттой** (ЯГ дараалал `Шинэ → Шинэвтэр → Хуучин` бүх 8 хэсэгт, `new Set().size === 3` давхардал 0, картын мөр `✅ Шинэвтэр` нэг л удаа, ⚠️ DB migration ШААРДЛАГАГҮЙ) → **87 тест** ✓; 2026-09-30: ⚡ electric — 8 бүлэг/26 дэд төрөл, 3 бүлэг `collapsed`, 4 дэх түвшин БАЙХГҮЙ, 🛋️ home-оос ХАСАГДСАН; 2026-09-30: 🛋️ home — 2 бүлэг (**«Тавилга» ЭХЭНД**)/22 дэд төрөл, хоёулаа `collapsed`, хуучин 9 хавтгай нэр ХАСАГДСАН, breadcrumb, картын мөр/шүүлт ХЭВЭЭР — ⚠️ 2026-09-30 (5)-д энэ мод ХУВААГДАВ; 2026-09-30 (5): **12 хэсэг ба ЯГ дараалал** (`SECTIONS.length === 12`), 🛋️ `furniture` 13 / 🧳 `travel` 12 / 🧺 `home` 9 / ⚽ `hobby` 6 дэд төрөл ЯГ таарах, дөрвүүлээ **ХАВТГАЙ** (`getSubtypeGroups` → `[]`), `hasSimpleForm` нь ⚽/🧺/⚡/🛋️/🧳 дээр `true` ба real-estate/auto/jobs/computers/services дээр `false` (тестээр түгжсэн 10 хэсэг), «Бусад» нь furniture/travel/electric/construction-д байгаа ба home/hobby-д **БАЙХГҮЙ**, ба `0026_furniture_travel_sections.sql`-ийн гэрээ (CHECK 12 утга, `home`→`furniture` 13, `hobby`→`travel` 12, «Аяллын хэрэгсэл» → «Бусад»/`travel`, `delete`/`truncate` БАЙХГҮЙ ✓); 🆕 **2026-09-30 (6): 💻 Notebook-ийн 📺/⚙️/🧠/💾 — 4 талбар `txt` → `sel`** (дараалал `brand·model·screen·cpu·ram·storage·condition·warranty`, сонголт 7/19/13/6, давхардал 0, `required` БАЙХГҮЙ, `attrFilters` нь `brand·condition` (🛡️ `warranty` 2026-10-01 (18)-д ХАСАГДСАН); талбар нь **ЗӨВХӨН** `PC_SPEC_SUBTYPES` = 21 Notebook брэнд (⚠️ «Бусад»-ГҮЙ) + «Иж бүрэн компьютер» + «Процессор, сервер» = **23** дэд төрөлд, харин «Бусад»/Mouse/Keyboard/Xbox/Чихэвч/тонер/Проектор/Дэлгэц/хоосон дэд төрөлд **ХАРАГДАХГҮЙ**; `getAttrField` нь `onlySubtypes`-аас ХАМААРАХГҮЙ (картын мөр/шүүлтэд хуучин утга харагдана ✓) ба бусад 11 хэсэгт талбар ХАСАГДАХГҮЙ; картын мөр `Lenovo ThinkPad T14 · ⚙️ Intel Core i5 · 16 GB · 512 GB · ✅ Шинэ` (📺 ОРООГҮЙ); хуучин/demo cpu (`Intel Core i5`…`Apple M2`) ба ram утга бүр шинэ сонголтод БАГТСАН, «512 GB SSD + 1 TB HDD» нь БАГТААГҮЙ (`legacy`-ээр хамгаалагдана); `AddListingModal.jsx`/`seed-sections.mjs`-ийн гэрээ; 🆕 **2026-10-01: 🔧 «Хөдөлгүүр» `txt` → `sel` (`ENGINE_OPTIONS` — ЯГ 7 утга: `1.5л хүртэл` … `Цахилгаан (EV)`, label нь зөвхөн «Хөдөлгүүр», ⚠️ шүүлтэд ОРООГҮЙ) ба 🎨 «Өнгө» НЭМЭГДЭВ (`AUTO_COLOR_OPTIONS` — 12 сонголт, форм **ба** sidebar); 🔀 «Хөтлөгч» (`drive`) форм/`attrFilters`/`CARD_ATTR_ORDER` **ГУРВААС** ХАСАГДАВ (хуучин `attrs.drive` карт дээр ГАРАХГҮЙ ✓); `formatAttrsLine` нь хүрээний утгад «л» **ДАВХАР залгахгүй** («1.5л - 2.0л»), зөвхөн ХУУЧИН тоон «2.5»-д залгана → 68 → **72 тест**; 🆕 **2026-10-01 (2): 🎨 «Өнгө» нь 🚙 «Загвар»-ын ЯГ ДАРАА — 3 газарт** (`attrFields` форм · `attrFilters` sidebar · `CARD_ATTR_ORDER.auto` картын мөр; ⚠️ дараалал нь массивын дараалал тул компонент дээр код засахгүй; карт дээр толгой нь «брэнд + загвар + он» нэг хэсэг тул «Өнгө» нь толгойн дараах ЭХНИЙ үзүүлэлт — `Toyota Prius, 2021 · 🎨 Цагаан · 95,200 км · …`; форм + sidebar дарааллын шинэ тест + картын мөрийн ЯГ тэнцэл → **80 тест** ✓; 🆕 **2026-10-01 (16): 📋 `getAttrRows` — зарын дэлгэрэнгүй хуудсанд `attrs` нь хэсгийн `attrFields`-ийн шошго/icon/дарааллаар 2 БАГАНАТ хүснэгт болж гарна** (4 тест: 🚗 `auto` → ЯГ 9 мөр `brand·model·color·year·importYear·mileage·transmission·engine·fuel`, 🛣️ гүйлт `146000` → **`146,000`** («км» шошгонд тул ДАВХАРДСАНГҮЙ), 🔧 «2.1л - 2.7л» давхар нэгжгүй ба хуучин тоон «2.5» → «2.5 л», `negotiable` ба **ХАСАГДСАН `drive`** ХАРАГДАХГҮЙ, `0` нь ХООСОН БИШ = `formatAttrsLine`-тэй ижил, `null`/`undefined`/`{}`/`'Toyota'` дээр КРАШГҮЙ, 💻 `onlySubtypes` → 📺/⚙️/🧠/💾 Notebook дээр л гарах ба Mouse-д ГАРАХГҮЙ, 🏠 `real-estate` (`attrFields: []`) → **0 мөр** ба 12 хэсэг бүгд крашгүй; 🆕 **2026-10-01 (18): 🛡️ 💻 «Баталгаа» (`warranty`) БҮРЭН ХАСАГДАВ** — форм · `attrFilters` · карт · `getAttrRows` ГУРВААС (💻 шүүлт 3 → **2**, форм талбар 8 → **7**; Notebook 8 → **7**, Mouse 4 → **3** мөр; ХУУЧИН `attrs.warranty`-тай зар карт/дэлгэрэнгүй дээр ГАРАХГҮЙ ✓; seed нь `warranty` ҮҮСГЭХГҮЙ; `getAttrField` → `null`) → 85 → 87 тест; 🆕 **2026-10-03 (7): 💻 Notebook-ийн 📺/⚙️/🧠/💾 ШҮҮЛТ — 6 тест** (① `getAttrFilters('computers','Apple')` → `brand·screen·cpu·ram·storage·condition` (формтой ижил дараалал, `model` шүүлтэд ОРООГҮЙ) ② сонголт нь либын экспорттой ИЖИЛ объект — 7/19/13/6, `type: select` ба `searchable` БИШ ③ 23 `PC_SPEC_SUBTYPES` дээр 4 шүүлт, холдуу дэд төрөл (Mouse/Keyboard/тонер/чихэвч) ба `''` дээр 0 ④ бусад 11 хэсэг дэд төрөл дамжуулахад ХӨНДӨГДӨӨГҮЙ ⑤ HomeClient-ийн ЭХ ФАЙЛЫН ГЭРЭЭ: `getAttrFilters(section, filters.propertyType)`, `pruneGatedAttrs` 2 зам, `data-attr-filter` ⑥ 🆕 **`pruneGatedAttrs` цэвэр функц** — Notebook үзүүлэлт Mouse/`''` дээр хасагдана, ⚠️ хүрээний түлхүүр (`year_from`)/формойн `model`/`null`/массив ХӨНДӨГДӨХГҮЙ, 12 хэсэг бүгд крашгүй; мөн 💻 «Баталгаа» тестэд `getAttrFilters('computers','HP')` нэмэгдэв) → **94 тест**; 🆕 **2026-10-03 (20): 🏷️ 💻 «Брэнд» нь `filterSubtypes: PC_SPEC_SUBTYPES`-тай** (① талбар нь `filterSubtypes`-тай, `onlySubtypes`/`searchable` нь хэвээр ② ХАЙЛТАД 23 PC_SPEC дэд төрөл дээр БАЙНА, Mouse/Keyboard/Дэлгэц/iPad/принтер/тонер/чихэвч/`''` дээр БАЙХГҮЙ ③ ФОРМ бүх дэд төрөлд ХЭВЭЭР ④ `getAttrField` ХӨНДӨГДӨӨГҮЙ ⑤ `filterSubtypes` туг нь ЗӨВХӨН `computers.brand`-д ⑥ бусад 12 хэсэг хөндөгдөөгүй; `computers` тоо 2 → **1**, `pruneGatedAttrs` Mouse/`''` дээр `{brand:…}` → `{}`; 🏷️ ⑥-з тест → 101 ✓; 🆕 **2026-10-04 (23): 🖥📱 хэсгийн панелийн «Зарах / Түрээслэх» нь `segmented` ба `getSectionCategoryChoices`** (② тест — туслахын гэрээ: дараалал `sell→rent→all`, БҮТЭН шошго «Үл хөдлөх зарна / Үл хөдлөх түрээслүүлнэ» ба 📱 «Зарна / Түрээслүүлнэ», бусад 11 хэсэгт `[]`, `CATEGORIES` ХӨНДӨӨГДӨӨГҮЙ; HomeClient-ийн гэрээ: `getSectionCategoryChoices(section)` дуудах + `getSectionCategories` БАЙХГҮЙ + `data-category-value`/`segmented`/`segmented-item-active`/`aria-pressed`/`hidden sm:inline`+`sm:hidden` ба хуучин `💰 Зарах`/`🔑 Түрээслэх` нүүр хуудсанд БАЙХГҮЙ) → **101 тест** ✓) |
-| `scripts/test-format.mjs` | **25 тест** — `npm run test:format` (🆕 **2026-10-02: 🏷️ `listingTitle()` — 5 тест** (`MAX_LISTING_TITLE_LENGTH` = **120**: гарчигтай → текстээ · `null`/`''`/зай → `''` (**мөр ГАРАХГҮЙ**) · олон зай/мөр таслалт → **НЭГ зай** · 120-аас урт → таслагдана (DB CHECK-тай ИЖИЛ) · тоон/бусад төрөл → текст (крашгүй)); 2026-09-29: 🤝 `hasRealPrice` / `priceLabel` (үнэ БИЧСЭН бол «₮…» — ДАРАХГҮЙ) / `negotiableNote` (зөвхөн үнэтэй + тэмдэглэсэн үед) + `toNumber('250,000,000') → 0` регресс) |
+| `scripts/test-format.mjs` | **27 тест** — `npm run test:format` (🆕 **2026-10-06: 📉 `shortPriceLabel()` — 2 тест** (КАРТ + ДЭЛГЭРЭНГҮЙ дээрх ТОВЧ үнэ: `760 сая ₮` · `44.8 сая ₮` · `2 тэрбум ₮` · `1.5 сая ₮` · `900 мянга ₮` · үнэгүй → «Үнэ тохирно» / ажил → «Цалин тохиролцоно» · «₮» ТӨГСГӨЛД байх; ⚠️ `priceLabel` ХӨНДӨӨГДӨӨГҮЙ → `₮760,000,000`); 🆕 **2026-10-02: 🏷️ `listingTitle()` — 5 тест** (`MAX_LISTING_TITLE_LENGTH` = **120**: гарчигтай → текстээ · `null`/`''`/зай → `''` (**мөр ГАРАХГҮЙ**) · олон зай/мөр таслалт → **НЭГ зай** · 120-аас урт → таслагдана (DB CHECK-тай ИЖИЛ) · тоон/бусад төрөл → текст (крашгүй)); 2026-09-29: 🤝 `hasRealPrice` / `priceLabel` (үнэ БИЧСЭН бол «₮…» — ДАРАХГҮЙ) / `negotiableNote` (зөвхөн үнэтэй + тэмдэглэсэн үед) + `toNumber('250,000,000') → 0` регресс) |
 | `scripts/test-storage.mjs` | 🆕 **57 тест** — `npm run test:storage` (**2026-10-02: ☁️ Supabase Storage → Cloudflare R2 шилжилт** — `lib/storageKeys.mjs`-ийн ЦЭВЭР дүрэм: ① файл нь import/require-ГҮЙ эсэх ② `isStorageBucket` (2 bucket л) ③ хязгаар (зар 5 MB / аватар 2 MB / 10 зураг — формтой ИЖИЛ) ④ төрөл (аватар gif-ГҮЙ) ⑤ `buildStorageKey` = `<bucket>/<uid>/<ts>-<rand>.<ext>` ба **эхний фолдер = uid** (RLS-ийн орлуулга) ⑥ буруу bucket/uid → алдаа ⑦ `evil.php` → MIME-ээр `jpg` ⑧ `isOwnedStorageKey` бүтэц+эзэн (аюулгүй байдал) ⑨ `storageKeyFromUrl` нь ХУУЧИН Supabase ба ШИНЭ R2 URL-ыг ХОЁУЛАНГИЙН задална ⑩ 🔁 round-trip ⑪ `splitStorageUrls` шилжилтийн үед зөв ялгах; 🆕 **14 async тест — BROWSER тал** (`lib/storageClient.mjs`, `fetch`-ийг дуурайв): `putToR2` нь `PUT`+`Content-Type`+`File` илгээж publicUrl буцаана · 403 үед CORS сануулсан монгол алдаа · `NO_SESSION` (fetch хийгдэхгүй) · 503 код хадгалагдана · сүлжээний алдаа крашгүй · устгалт ШИДЭХГҮЙ (зар устгалт сүйтгэхгүй) · 🆕 **`isR2UploadReady()` — `R2_PUBLIC_BASE`-гүй (5-ын 4) бол `false`** → presign 503 → browser Supabase руу буцаж, DB-д «https://R2_PUBLIC_BASE-тохируулаагүй/…» ХОГ URL бичигдэхээс ХАМГААЛНА (эс бөгөөс зураг ХЭЗЭЭ Ч харагдахгүй байв ✗) ✓); 🆕 **2026-10-02 (2): 🌍 `lib/corsOrigins.mjs` + 8 тест —** presigned PUT-ийг BROWSER илгээдэг тул САЙТЫН домэйн R2-ийн `AllowedOrigins`-д БАЙХ ЁСТОЙ: ① төгсгөлийн `/` ХАСАГДАНА (Cloudflare: «Invalid AllowedOrigins value: `https://x.com/`» ✗) ② `--origin`/`--origin=`/`R2_CORS_ORIGIN=…, …`-ийг нэгтгэж, давхардлыг цэвэрлэнэ ③ утга өгвөл анхдагч (`localhost:3000`) СОЛИГДОНО (production домэйн шалгахад localhost-ийн ❌ саад болохгүй ✓) ④ `corsOriginProblem()` — зам/`*` 2+/портын `*`-ыг барина, `https://*.mn` ба `https://hangai-project-*.vercel.app` (цэг дамжсан `*`) зөвийг хүлээнэ ⑤ `corsPolicyJson()` — `PUT`+`GET`+`HEAD` ба `content-type` ЗААВАЛ орсон (эс бөгөөс browser-ээс upload ХИЙГДЭХГҮЙ ✗); 🆕 `putToR2`-д +1 тест: CORS унасан үед `fetch` нь response-ГҮЙГЭЭР шиддэг тул `!res.ok` салбарт ХҮРЭХГҮЙ байсныг барьж, ойлгомжтой монгол мессеж (`{ cause }` хамт) шидэх болсон ✓; 🆕 **2026-10-02 (4): 🔁 домэйн солих +5 тест —** `publicBaseOf()` (URL-ийн угтвар, `?query` хамт ч), `rebaseStorageUrl()` (түлхүүр ЯГ хэвээр ✓ / Supabase-ийн хуучин URL хэвээр ✓ / `--from` таарахгүй эсвэл хоосон бол бичихгүй ✓ / демо+youtube утга хэвээр ✓), `rebaseStorageUrls()` (эх массив хөндөгдөхгүй ✓) ✓) |
 | `lib/numberChoices.mjs` | 🎡 **Тоон сонголтын жагсаалт (цэвэр функцууд)** — `countChoices(from,to)` (`1…150`) · `yearChoices(from,to,includeValue?)` (**буурах** эрэмбэ — шинэ он эхэнд) · `floorChoices(total,value?)` (нийт давхраас ХЭТРЭХГҮЙ) · `toChoiceItems(list,{emptyLabel,unit})` (утга нь **текст** ⇒ DB-д `''` vs `0` зөрчил гарахгүй ✓; `unit: 'давхар'` → «9 давхар» гэх мэт шошго) · `nearestIndex(scrollTop,itemH,count)` · `labelFor`/`isChoice`/`choiceText`/`scrollTopFor` — ⚠️ React/`window`-оос ХАМААРАЛГҮЙ тул `test-choices` нь рендэргүйгээр шалгана ✓ |
 | `components/WheelPicker.jsx` | 📱 **iOS Timer маягийн дугуй** (`[data-wheel]`): төвийн заагч + мөр бүр **40px** + `scroll-snap-type: y mandatory` + хоёр үзүүрийн зай · мөр дээр дарахад ШУУД бичнэ (дугуй НЭЭТЭЙ хэвээр — iOS-ийн зан) · гүйлгээ зогсоход төвд байгаа мөр автоматаар бичигдэнэ (`scroll` debounce + `nearestIndex`) · хаах 3 зам (`Escape` · ард тал · «Болсон») · `role="dialog"` + `aria-selected` + `role="option"` · тогтвортой selector-ууд: `[data-wheel-title]` · `[data-wheel-scroll]` · `[data-wheel-value]` · `[data-wheel-marker]` · `[data-wheel-done]` · `[data-wheel-backdrop]` |
 | `scripts/test-number-choices.mjs` | **36 тест** — `npm run test:choices` (🎡 `numberChoices`-ийн гэрээ: ① `countChoices` 1…150/хязгаар/хоосон ② `yearChoices` буурах ба **47 → 48** (`includeValue` хүрээнээс гадуур «1965»-ыг хамгаална) ③ `floorChoices` нийт давхраас хэтрэхгүй, `total` хоосон → 150, **«150» нь жагсаалтад БАЙНА** ④ `toChoiceItems` утга ТЕКСТ + «—» эхний мөр + нэгж + 🆕 **«+5» хүрээ** (`plusValue`, угаалгын өрөө = `1,2,3,4,+5` ба тагт = `1…4,+5`) ба `choiceText`-ийн «+5 тагт» ✓ ⑤ `nearestIndex` дугуйлалт/хязгаар ⑥ CSS гэрээ — 🆕 2026-10-03 (17): `.mob-options` (2 БАГАНАТ grid) · `.mob-option`/`.mob-option-on`/`.mob-skip`/`.mob-wheel-link` ба форм нь `MobileOptions`-ийг ХЭРЭГЛЭНЭ («Сонгох» товч БАЙХГҮЙ, `WHEEL_LINK_MIN` босго), `.hide-below-sm` (📱 <640px-д гар бичилт/`<select>` нуугдана), дугуйн scrollbar НУУГДСАН) |
 | `scripts/test-wheel-render.mjs` | **10 тест** — `npm run test:wheel`: 🎡 `WheelPicker`-ийг `react-dom/server`-ээр БОДИТООР рендэрлэж түгжинэ (151 мөр = «—»+1…150, `aria-selected` төвд, `scroll-snap-type`, товч `aria-haspopup`, 📱390px ба 🖥1440px дээрх харагдац) — ⚠️ тест нь эхлээд `sucrase` (JSX)+`react-dom/server`-ийг `require.resolve`-оор шалгаж, байхгүй бол SKIP ✓ |
+| `scripts/test-location-optional.mjs` | 🆕 **34 тест** — `npm run test:location` (2026-10-06: 📍 **«БАЙРШИЛ ОРУУЛАХГҮЙ» ЧЕКБОКС** — хэрэглэгчийн хүсэлт «зарим хэрэглэгч зарын Байршилаа оруулахыг хүсэхгүй хүн байж магадгүй … Байршил хэсэгт “Байршил хэрэглэхгүй” гэсэн сонголт (Check box) оруулъя» ⇒ ① `lib/listingLocation.mjs`-ийн БҮХ дүрэм: `isNoLocation` (⚠️ зөвхөн `=== true`, `'true'`/`1` хүчингүй) · `hasLocation` (чекбокс асаалттай бол `city` үлдсэн ч `false`) · `cityOf` (trim/бус төрөл) · `locationMissing` (② «сонгоогүй» (алдаа) ба «заахгүй гэж ШИЙДСЭН» ЯЛГААГДАНА) · 📄 `DEFAULT_CITY`/`NO_LOCATION_*` текстүүд (⛔ «Хаяг тодорхойгүй» буцаж орохгүй) ② Чекбоксын ROUND-TRIP — асаавал 3 талбар цэвэрлэгдэж, бусад талбар (үнэ/гарчиг/төрөл) ХӨНДӨГДӨХГҮЙ · унтраавал өмнөх сонголт БУЦАЖ ирнэ · асаа→унтраа→асаа→унтраа нь форм ЯГ анхныхтайгаа тэнцэнэ (⚠️ өгөгдөл АЛДАГДАХГҮЙ) · хот сонгоогүй үед анхдагч хот · 🧹 бохир утга (`'  '`/`null`/тоо) цэвэр болно · 📝 ноорог (JSON) round-trip + хуучин ноорог (`noLocation` байхгүй → `false`) ③ ШАЛГАЛТ: чекбокс УНТРААЛТТАЙ+хот хоосон ⇒ «Хот/Аймгаа сонгоно уу» (хуучин зан ✓) · АСААЛТТАЙ+хоосон ⇒ АЛДААГҮЙ (цааш явах боломжтой) · хот сонгосон ⇒ алдаагүй · дүүрэг/хороо сонгоогүй ч ЗӨВХӨН хот хангалттай ④ ГЭРЭЭ (`AddListingClient`): модуль импортлогдсон · `locationMissing(form)` (⚠️ РЕГРЕСС барь: `if (!form.city) …` КОДОД БАЙХГҮЙ — эс бөгөөс 2-р алхамд ГАЦНА) · `emptyForm()` → `noLocation: false` + `city: DEFAULT_CITY` (хатуу бичсэн хот үлдээгүй) · `listingToForm()` → `city === ''` ХЭВЭЭР + `noLocation: !l.city` (хуурамч «Улаанбаатар» болохгүй) · `[data-no-location]`/`[data-no-location-input]`/`checked={noLoc}`/`onChange`/`setMobileLocStep('city')` · 🖥 3 багана `[data-location-disabled]` + `pointer-events-none opacity-40` (⚠️ `pickRole="loc-"` ЯГ 3 = CDP хөндөгдөхгүй) · 📱 `{!noLoc && (` (MobileQuestion ХЭВЭЭР) · нооргийн түлхүүр `Object.keys(emptyForm())` ×2 + `DRAFT_VERSION = 1` ХЭВЭЭР · `pickedLocationPath = locationPathText(form)` + `NO_LOCATION_*` текстүүд ⑤ DB: `listingPayloadToRow()` нь талбар БҮРЭЭР (⚠️ `...payload` тархахгүй ⇒ `noLocation` DB рүү ЯВАХГҮЙ) · БҮХ `supabase/migrations/*.sql`-д `no_location`/`noLocation` БАЙХГҮЙ (0 migration) · `createListing`/`updateListing` хуучин зам ⑥ ХАРУУЛАЛТ: `formatAddress()` байршилгүй үед `''` (карт дээр мөр ГАРАХГҮЙ) · `ListingCard` `{address && (` · `ListingDetailClient` `NO_LOCATION_LABEL` (⛔ «Хаяг тодорхойгүй» устав) · `MyListingsClient` fallback ⑦ README + `package.json`) |
+| `scripts/test-prefill.mjs` | 🆕 **28 тест** — `npm run test:prefill` (2026-10-06: 🎯 **АНГИЛАЛ УРЬДЧИЛАН БӨГЛӨХ** — хэрэглэгчийн хүсэлт «…Бүх зар › Ажил, Үйлчилгээ › Барилга & Засвар үйлчилгээ › Гагнуурын үйлчилгээ … Зар нэмэхээ дархад Энэ ангилал нь сонгогдсон эхэлдэг байвал» ⇒ ① хэрэглэгчийн жишээний round-trip (`?section=services&type=Гагнуурын үйлчилгээ` → форм; ⚠️ бүлэг нь `findSubtypeGroup()`-оос — тусдаа параметр БАЙХГҮЙ) ② `listingPrefillFromSearch`: 🏠 `real-estate`+`rent`+`type` · 🚗 сонголтгүй хэсэгт `category` ХАЯГДАНА · танихгүй `section` → `{}` · хүчингүй дэд төрөл → зөвхөн `section` · `category=all` ХАЯГДАНА · `?type=Орон сууц` (section-гүй) → үл хөдлөх · `?type=Суудлын машин` ГАНЦААРАА → `{}` · `''`/`undefined`/объект → `{}` (крашгүй) · 🌐 БҮХ **12 хэсэг** round-trip ③ `newListingHref` (цэвэр линк · хоосон утга бичигдэхгүй · дараалал `section`›`category`›`type` · `?step=` БАЙХГҮЙ) ④ `applyPrefill` (ангилал бөглөх · «Зарах/Түрээслэх» зөвхөн үл хөдлөхөд · хэсэг солиход `sell` · байхгүй талбарыг ХӨНДӨХГҮЙ · хүчингүй `type` 2 дахь хамгаалалт · эх форм хөндөгдөхгүй) ⑤ 📱 `prefillMobileCatStep` (дэд төрөлтэй → «Төрөл» дэлгэц) ⑥ эх файлын ГЭРЭЭ (`AppProviders` → `newListingHref(listingPrefillFromSearch(window.location.search))`, хатуу `router.push('/listings/new')` БАЙХГҮЙ; `AddListingClient` → `applyPrefill(emptyForm(), prefill)` + `useState(emptyForm)` ХЭВЭЭР = hydration зөрүүгүй; `listingPrefill.mjs` цэвэр — `window`/`document`/`'use client'` байхгүй) ⑦ README-ийн бичигдэл) |
 | `scripts/test-draft.mjs` | 🆕 **26 тест** — `npm run test:draft` (2026-10-05 (54): 📝 **НООРОГ** — хэрэглэгчийн гомдол «зар нэмж байх үедээ гар утасны browser санамсаргүй refresh хийхэд оруулж байсан мэдээлэл байхгүй болж байна» ⇒ форм нь оруулсан утгаа `localStorage`-д бичдэг болов. ① `lib/listingDraft.mjs` (ЦЭВЭР): `draftKey` (хэрэглэгч/зар тусдаа · нэвтрээгүй → `''` = огт бичихгүй) · `pickDraftForm` **whitelist** (гараар нэмсэн `user_id`/`images`/`id` нь payload руу ОРОХГҮЙ ✓) · `serializeDraft`/`parseDraft` (тойрог, `v` хувилбар, **TTL 3 хоног**, `editId` тохирол, эвдэрсэн хог → `null`) · `isDirtyForm` (JSON мөр ч хүлээнэ) · `isMeaningfulDraft` (хоосон форм → сэргээхгүй; зурагтай бол ҮНЭ ЦЭНЭТЭЙ) · `draftNoticeText` ② `components/AddListingClient.jsx`-ийн гэрээ: сэргээх эффект нь `authLoading`/`loadingEdit`-ийг хүлээж **формоо бэлдэх эффектийн ДАРАА** (ноорог ЛАВЛАГДАНА) + `draftCheckedRef` (нэг л удаа) · авто-хадгалалт нь `draftReady` дуустал БИЧИХГҮЙ/УСТГАХГҮЙ + `DRAFT_SAVE_DELAY = 400` debounce + deps (`form`/`pending`/`existingImages`/`mobileDetailStep`) · 🛡️ «Хамгаалалт» (`?step=`) нь `draftReady`-г ХҮЛЭЭНЭ (refresh бүрд 1-р алхам руу шидэхгүй ✓) · хадгалсны дараа ноорог УСТАНА (`router.push`-ийн өмнө) · «Цуцлах» нь «УСТАНА» биш «НООРОГ болж хадгалагдана» · 🗑 `[data-draft-discard]` нь `type="button"` ба формоо анхдагч/DB руу буцаана · `beforeunload` КОДОД БАЙХГҮЙ (📱 iOS дээр ХҮЧИНГҮЙ) ③ README-ийн бичигдэл) |
 | `scripts/cdp-picker.mjs` | 🐍 **CDP (бодит Chrome)** — 🆕 2026-10-05 (54): ⑪⁗ хэсэгт **183/183** — 📝 ноорог: гарчиг + «12» бичиэд `location.reload()` → утга ХЭВЭЭР (`localStorage`-д `zar:listing-draft:…`), «📝 Хадгалагдсан ноорог сэргээгдлээ» + 🗑 «Устгах» гарч ирэв · 🗑 дарсны дараа ноорог УСТАЖ форм ХООСОН · дараагийн refresh ч хоосон ✓ · ⚠️ `clearDrafts()` нь script-ийн эхэлд ба `gotoStepUrl`/🛡️ хэсэгт нооргийг цэвэрлэдэг (форм шинэ байх ёстой шалгалтуудын төлөө) |
 
@@ -6098,6 +6217,8 @@ lib/
   breadcrumb.js              # breadcrumb-ийн мөрүүд + URL угсрах (buildListingBreadcrumb/buildHomeBreadcrumb)
   messages.mjs               # ✉️ ЦЭВЭР мессежийн логик (нөгөө тал, уншаагүй, preview, шалгалт) — Node тестэд шууд
   messagesClient.js          # ✉️ 'use client' — `notifyMessagesChanged()`, `useUnreadMessages()` (nav badge)
+  listingPrefill.mjs         # 🎯 «Зар нэмэх» формо дээр ангилал УРЬДЧИЛАН бөглөх (`?section=…&type=…`) — Node тестэд шууд
+  listingLocation.mjs        # 📍 «Байршил оруулахгүй» чекбоксын дүрэм (`noLocation`/`locationMissing`/`bankedLocation`) — Node тестэд шууд
 supabase/migrations/0001_schema.sql, 0003_listing_details.sql, 0004_remove_listing_drafts.sql
 scripts/seed-supabase.js, check-supabase.js, check-verify-mn.js
 ```
@@ -6365,7 +6486,8 @@ Breadcrumb      Бүх зар › Автомашин › Суудлын маши
 - ⚠️ «Байршил» мөр шинж чанарын хүснэгтээс ХАСАГДСАН (2026-10-01) — дээрх 📍-тэй
   ДАВХАРДАНА байв ✗. ℹ️ 2026-10-01 (14)-д 📍 толгойд буцсан ч хүснэгтэд
   БУЦААГҮЙ ✓ (хаяг нь хуудсан дээр 1 л удаа харагдана)
-- Баруун талд `sticky` холбоо барих карт: үнэ, «📞 Дугаар харах» товч, газрын зураг
+- Баруун талд `sticky` холбоо барих карт: үнэ (🆕 2026-10-06: ТОВЧ формат —
+  `shortPriceLabel` → «760 сая ₮», «44.8 сая ₮»), «📞 Дугаар харах» товч, газрын зураг
 - Жижиг дэлгэцэд нэг багана болж эвдэрнэ (`lg:grid-cols-[minmax(0,1fr)_350px]`)
 
 ### Зарын карт (`ListingCard.jsx`)
@@ -6381,7 +6503,6 @@ Breadcrumb      Бүх зар › Автомашин › Суудлын маши
 │        🖼 ЗУРАГ (42%)    │ ₮12,000,000          ← 💰 үнэ (22px extrabold) │
 │                          │ Toyota Prius 30, 2011 …  ← 🏷️ гарчиг (2 мөр)   │
 │                          │ Toyota Prius 30 ·    …   ← 📋 attr / байр мөр  │
-│                          │ Zarnaa ene mashiniig     ← 📝 тайлбар (2 мөр)  │
 │ 🎥 Видео                 │ 🕒 1 өдрийн өмнө | 📍 2-р хороо…  👁 1  🤍 1  │
 └──────────────────────────┴──────────────────────────────────────────────┘
 ```
@@ -6400,6 +6521,10 @@ Breadcrumb      Бүх зар › Автомашин › Суудлын маши
 - **💰 Үнэ** — `text-[22px] font-extrabold tracking-[-0.01em]`, ЗӨВХӨН
   `hasRealPrice` үед (2026-10-02: «Үнэ тохирно» карт дээр ГАРАХГҮЙ — зөвхөн
   дэлгэрэнгүй хуудсанд үнийн ЯГ ДОР).
+  🆕 **2026-10-06 — ТОВЧ ФОРМАТ:** «760,000,000» БИШ **«760 сая ₮»** ба
+  «44.8 сая ₮» (`lib/format.js → shortPriceLabel`; нэгж нь `shortPrice`-ийн
+  «сая/тэрбум/мянга»-тай ИЖИЛ, «₮» нь **ТӨГСГӨЛД**). ⚠️ Хэмжээ
+  (`text-[22px] font-extrabold`) ХӨНДӨӨГДӨӨГҮЙ (`test-card` гэрээ ✓)
 - **🏷️ Зарын гарчиг** — үнийн доор, `line-clamp-2` (**2 мөр**) `text-[15px]
   font-semibold` (`lib/format.js` → `listingTitle()`, DB: `0027_listing_title.sql`).
   ⚠️ `null`/`''`/зөвхөн зай үед мөр **ОГТ ГАРАХГҮЙ** (хуучин 782 зар дээр backfill
@@ -6407,10 +6532,10 @@ Breadcrumb      Бүх зар › Автомашин › Суудлын маши
 - **📋 Дэлгэрэнгүй мөр** — 🏠 үл хөдлөхөд `🛏 өрөө · 🚿 угаалгын өрөө · 📐 м² ·
   🏢 давхар · 📅 он`; бусад хэсэгт `attrsLine` (`formatAttrsLine`). Хоёулаа
   хоосон бол мөр ГАРАХГҮЙ ✓
-- **📝 Тайлбар** 🆕 — `line-clamp-2` (**2 мөр**) `text-[14px] leading-relaxed
-  text-gray-500` (🆕 2026-10-04 (24): `13 → 14px` — «Хайлт + Зар НЭГДМЭЛ»;
-  мөн 📋 дэлгэрэнгүй мөр `13 → 14px`, 👤 нийтлэгч `13 → 13.5px`), хоосон бол
-  блок гарахгүй.
+- **📝 Тайлбар** — ⏳ **2026-10-06-нд КАРТ ДЭЭР ХАСАГДАВ** (хэрэглэгчийн хүсэлт:
+  «Нүүр хуудас дээрх зарын карт дээрээс Тайлбарыг байхгүй болго»). ⚠️ Дэлгэрэнгүй
+  хуудсанд (`ListingDetailClient`) Тайлбар ХЭВЭЭР (`text-[15px]`) ✓; 📋 дэлгэрэнгүй
+  мөр `13 → 14px`, 👤 нийтлэгч `13 → 13.5px` (🆕 2026-10-04 (24) — «Хайлт + Зар НЭГДМЭЛ»).
 - **📅 Доод мета мөр** — `🕒 огноо | 📍 хаяг` (зүүн) + `👁 үзсэн`, `❤️/🤍` (баруун)
   (🆕 2026-10-04 (24): `text-[12.5px]` → **`text-[13.5px]`** — картын бусад
   текстийн хэмжээнд ойртуулав ✓).

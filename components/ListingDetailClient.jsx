@@ -14,11 +14,18 @@ import Avatar from './Avatar';
 import VerifiedBadge from './VerifiedBadge';
 import { trackListingView } from '../lib/statsClient';
 import { normalizeError } from '../lib/errors';
-import { formatPrice, priceLabel, negotiableNote, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress } from '../lib/format';
+import { formatPrice, shortPriceLabel, negotiableNote, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress } from '../lib/format';
 import { buildListingBreadcrumb } from '../lib/breadcrumb';
 import { getAttrRows } from '../lib/locationData';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 import { parseYouTube } from '../lib/youtube.mjs';
+/**
+ * 📍 ХЭРЭГЛЭГЧ БАЙРШЛАА ЗААГААГҮЙ ЗАР (2026-10-06) — «Байршил оруулахгүй»
+ *    чекбоксоор хадгалагдсан зар дээр `city = ''` байдаг тул «📍 Хаяг
+ *    тодорхойгүй» (алдаа/дутуу мэт) БИШ, «📍 Байршил заагаагүй» гэж харуулна
+ *    (мэдээллийн текст нь `lib/listingLocation.mjs` — нэг эх сурвалж ✓)
+ */
+import { NO_LOCATION_LABEL } from '../lib/listingLocation.mjs';
 
 export default function ListingDetailClient({ id }) {
   const { showToast } = useToast();
@@ -303,7 +310,11 @@ export default function ListingDetailClient({ id }) {
             ⚠️ Хаяг эхний мөрөнд, огноо нь ЯГ ДООРХ мөрөнд — хоёулаа ЗҮҮН тийш.
                (`flex`/`justify-between` БИШ — тусдаа block div-үүд.) */}
         <div className="text-sm text-gray-600">
-          <div className="min-w-0">📍 {address || 'Хаяг тодорхойгүй'}</div>
+          {/* 📍 Байршил — 🚫 «Байршил оруулахгүй» чекбоксоор хадгалагдсан зар
+              (`city = ''`) дээр «Хаяг тодорхойгүй» БИШ, «Байршил заагаагүй»
+              гэж харуулна (хэрэглэгч ЗОРИУДОО заагаагүй тул «алдаа» мэт
+              харуулах нь буруу ✗ — нэг эх сурвалж: `lib/listingLocation.mjs`) */}
+          <div className="min-w-0">📍 {address || NO_LOCATION_LABEL}</div>
           <div className="text-[13px] text-gray-500">📅 {timeAgo(listing.created_at)}</div>
         </div>
       </header>
@@ -501,7 +512,10 @@ export default function ListingDetailClient({ id }) {
         {/* ===== БАРУУН БАГАНА (ХОЛБОО БАРИХ) ===== */}
         <aside className="space-y-4 lg:sticky lg:top-[88px] lg:self-start">
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-card sm:p-6">
-            <div className="text-3xl font-bold text-primary">{priceLabel(listing)}</div>
+            {/* 🆕 2026-10-06 (хэрэглэгчийн хүсэлт): үнэ нь ТОВЧ форматтай —
+                «760 сая ₮», «44.8 сая ₮» (`shortPriceLabel`; «₮» нь ТӨГСГӨЛД).
+                ⚠️ `text-3xl font-bold text-primary` ХӨНДӨӨГДӨӨГҮЙ ✓ */}
+            <div className="text-3xl font-bold text-primary">{shortPriceLabel(listing)}</div>
             {/* 🤝 «Үнэ тохирно» — үнийн ЯГ ДОР (2026-09-29, хэрэглэгчийн
                 хүсэлт): үнэ БИЧСЭН + тэмдэглэсэн үед л гарна ✓ (үнэгүй үед
                 дээрх мөр өөрөө «Үнэ тохирно» тул давхардахгүй) */}
