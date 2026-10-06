@@ -9,8 +9,9 @@
  *
  * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ:
  *   ① Орон сууц дээр чип БАЙГАА: `[data-room-filter]` === 1,
- *      `[data-room-value]` === 5, шошгууд «1 өрөө» … «+5 өрөө»; «Өрөөний тоо»
- *      блок нь «Үнэ, ₮»-ний ӨМНӨ байрлана (хэрэглэгчийн хүсэлт ✓)
+ *      `[data-room-value]` === 5, шошгууд «1 өрөө» … «+5 өрөө»; 🆕 2026-10-06:
+ *      блок нь САЙДБАРТ («📍 Байршил»-ийн ЯГ ДАРАА, 💳 Төлбөрийн нөхцөлийн
+ *      ӨМНӨ) — `#filter-bar`-т pill БАЙХГҮЙ (хэрэглэгчийн хүсэлт ✓)
  *   ①b ЧИП ДАРАХ: «1 өрөө» + «3 өрөө» → URL `?rooms=1,3` · DB
  *      `rooms=in.(1,3)` · «2 сонгосон» badge · дахин дарвал ЦУЦЛАГДАНА (toggle)
  *   ② Өрөөгүй төрөл (Оффис, Гараж …) дээр блок ХАРАГДАХГҮЙ
@@ -225,17 +226,18 @@ const labels1 = await sideLabels();
 check('🧭 Sidebar-ийн ЭХНИЙ блок «Байршил» (өрөөний блок ЭХНИЙ биш ✓)',
   /Байршил/.test(labels1[0] || ''), labels1.join(' → '));
 /**
- * 🆕 2026-10-04 (38): 🛏 «Өрөөний тоо» нь сайдбараас ГАРЧ, үр дүнгийн ДЭЭРХ
- *    ХЭВТЭЭ мөр (`#filter-bar`) руу «Төлбөрийн нөхцөл шиг» pill dropdown болов
- *    (хэрэглэгчийн хүсэлт) ⇒ сайдбарт БАЙХГҮЙ, `#filter-bar`-т 💳-ийн ӨМНӨ ✓
+ * 🆕 2026-10-06: 🛏 «Өрөөний тоо» ба 💳 «Төлбөрийн нөхцөл» нь `#filter-bar`-ийн
+ *    pill БАЙХАА БОЛЬЖ, сайдбарт ЭРГЭЖ ОРОВ (хэрэглэгчийн хүсэлт: «Үл хөдлөхийн
+ *    хайлт дээр байгаа Өрөөний тоо, Төлбөрийн нөхцөлийг Дэлгэрэнгүй хайлтын
+ *    Байршил-ийн доор оруул») ⇒ «📍 Байршил» ЭХНИЙ, дараа нь «Өрөөний тоо»,
+ *    түүний дараа «Төлбөрийн нөхцөл» ✓
  */
-check('🧭 «Өрөөний тоо» сайдбарт БАЙХГҮЙ (1 → #filter-bar ✓)',
-  labels1.every((l) => !/Өрөөний тоо/.test(l)), labels1.join(' → '));
+check('🧭 Sidebar: «Байршил» ЭХНИЙ, «Өрөөний тоо» нь ЯГ 2 ДАХЬ блок ✓',
+  /Байршил/.test(labels1[0] || '') && /Өрөөний тоо/.test(labels1[1] || ''),
+  labels1.join(' → '));
 const barOrder1 = await evalJs(`[...document.querySelectorAll('#filter-bar [data-filter-pill]')].map((p) => p.getAttribute('data-filter-pill'))`);
-const ri1 = barOrder1.indexOf('rooms');
-const pi1 = barOrder1.indexOf('payment');
-check('🧭 `#filter-bar`: 🛏 «Өрөөний тоо» нь 💳 «Төлбөрийн нөхцөл»-ийн ӨМНӨ ✓',
-  ri1 >= 0 && pi1 >= 0 && ri1 < pi1, barOrder1.join(' → '));
+check('🧭 `#filter-bar`-т 🛏 «Өрөөний тоо» pill БАЙХГҮЙ (2 ӨӨР UI БАЙХГҮЙ ✓)',
+  !barOrder1.includes('rooms'), `bar=[${barOrder1.join(',')}]`);
 check('📊 Зарын тоо татдаг `rooms=` HEAD query ОГТ ЯВАХГҮЙ (хэвээр ✓)',
   roomCountReqs.filter((u) => u.includes('rooms=')).length === 0,
   `${roomCountReqs.filter((u) => u.includes('rooms=')).length} rooms-query (нийт ${roomCountReqs.length} HEAD)`);
@@ -273,11 +275,10 @@ check('🆕 Хэсгийн түвшинд (төрөл ГҮЙ) ч «Өрөөни�
   domNoType.blocks === 1 && domNoType.chips === 5,
   `blocks=${domNoType.blocks} chips=${domNoType.chips}`);
 const noTypeLabels = await sideLabels();
-const noTypeBar = await evalJs(`[...document.querySelectorAll('#filter-bar [data-filter-pill]')].map((p) => p.getAttribute('data-filter-pill'))`);
-check('🆕 Хэсгийн түвшинд (төрөл ГҮЙ) ч `#filter-bar`-т «Өрөөний тоо» pill БИЙ (`showRooms` ✓)',
-  noTypeBar.includes('rooms'), noTypeBar.join(','));
-check('🆕 Sidebar нь ч БИЙ — «Байршил» ЭХНИЙ, «Өрөөний тоо» сайдбарт БАЙХГҮЙ ✓',
-  /Байршил/.test(noTypeLabels[0] || '') && noTypeLabels.every((l) => !/Өрөөний тоо/.test(l)),
+check('🆕 Хэсгийн түвшинд (төрөл ГҮЙ) ч «Өрөөний тоо» блок САЙДБАРТ БИЙ (`showRooms` ✓)',
+  noTypeLabels.includes('Өрөөний тоо'), noTypeLabels.join(' → '));
+check('🆕 Sidebar нь ч БИЙ — «Байршил» ЭХНИЙ, «Өрөөний тоо» 2 ДАХЬ ✓',
+  /Байршил/.test(noTypeLabels[0] || '') && /Өрөөний тоо/.test(noTypeLabels[1] || ''),
   noTypeLabels.join(' → '));
 await go(`${BASE}/?section=auto`);
 check('🚗 Үл хөдлөх БИШ хэсэгт «Өрөөний тоо» блок БАЙХГҮЙ (`isRealEstate` ✗)',

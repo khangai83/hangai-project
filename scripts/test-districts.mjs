@@ -403,11 +403,15 @@ t('🛏 HomeClient.jsx: «Өрөөний тоо»-гийн доорх «Өрөө
   assert.match(ui, /data-room-value/, 'өрөөний чип алга болсон ✗');
   /**
    * ⚠️ badge нь «N сонгосон» хэвээр (`cdp-rooms.mjs` бодит текстээр шалгана ✓)
-   * 🆕 2026-10-04 (38): «Өрөөний тоо» нь `#filter-bar` pill dropdown болов ⇒
-   *    badge-ийн текст нь `FilterPill` дотор (`{count} сонгосон`) render болж,
-   *    утга нь `count={filters.rooms.length}`-ээр холбогдоно ✓
+   * 🆕 2026-10-06: «Өрөөний тоо» нь сайдбарт (`SideBlock label="Өрөөний тоо"`,
+   *    📍 Байршил-ийн доор) буцав ⇒ badge-ийн тоо нь `{filters.rooms.length}` —
+   *    СОНГОЛТТОЙ үед л render болно ✓ (`FilterPill` нь зөвхөн `filterBar: true`
+   *    тугтай attr pill-үүдэд үлдсэн — өрөө/төлбөрт БИШ ✓)
    */
-  assert.match(ui, /count=\{filters\.rooms\.length\}/, 'өрөөний pill-ийн count холбоо алга ✗');
+  assert.match(ui, /SideBlock label="Өрөөний тоо"/,
+    'өрөөний блок нь сайдбарын `SideBlock` БИШ ✗');
+  assert.match(ui, /\{filters\.rooms\.length\} сонгосон/,
+    'өрөөний «N сонгосон» тоо холбоо алга ✗');
   assert.match(ui, /data-filter-pill=\{testKey\}/, '`FilterPill`-ийн `data-filter-pill` дэгээ алга ✗');
 });
 

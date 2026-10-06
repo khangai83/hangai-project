@@ -1720,20 +1720,23 @@ export default function HomeClient() {
    * 🧩🎛 2026-10-04 (37) · 🆕 2026-10-05 (42): ҮР ДҮҮНГИЙН ДЭЭРХ ХЭВТЭЭ
    *    ШҮҮЛТИЙН МӨР (eBay-ийн «Color ⌄» шиг) — 🎨 Өнгө · ⚙️ Хурдны хайрцаг ·
    *    ⛽ Түлш (🚗 авто) ба 🆕 💼 🕒 Ажлын цаг · 📊 Туршлага · 📈 Мэргэжлийн
-   *    түвшин; 💳 Төлбөрийн нөхцөл ба 🛏 Өрөөний тоо нь тусдаа pill (доор
-   *    `showPayments`/`showRooms`).
+   *    түвшин (+ 💻 📺/⚙️/🧠/💾 ба ✅ «Төлөв»).
+   * 🆕 2026-10-06: 🛏 «Өрөөний тоо» ба 💳 «Төлбөрийн нөхцөл» нь ЭНД БАЙХГҮЙ —
+   *    хоёулаа САЙДБАРТ («📍 Байршил»-ийн доор) буцав (хэрэглэгчийн хүсэлт) ⇒
+   *    мөр нь ЗӨВХӨН `filterBar: true` тугтай attr pill-үүдээс бүрдэнэ ✓
    * ⚠️ Аль талбар ЭНД ирэх нь `lib/locationData.js`-ийн **`filterBar: true`**
    *    тугаар шийдэгдэнэ — хатуу жагсаалт (`FILTER_BAR_ATTR_KEYS`) БАЙХГҮЙ
    *    болсон тул хайлтын дүрслэл attr-ийн нэрийг мэдэхгүй ✓ (нэг эх сурвалж)
    * ⚠️ Эдгээр нь САЙДБАРААС ГАРСАН (доорх `.filter` нь хаана) — 2 өөр UI
-   *    БАЙХГҮЙ ✓; утга/URL/DB (`lib/attrMultiFilter.mjs`, `lib/paymentFilter.mjs`)
-   *    ХӨНДӨГДӨХГҮЙ ✓
+   *    БАЙХГҮЙ ✓; утга/URL/DB (`lib/attrMultiFilter.mjs`) ХӨНДӨГДӨХГҮЙ ✓
    */
   const filterBarAttrs = useMemo(
     () => attrFilters.filter((f) => f.chips && f.multi && f.filterBar),
     [attrFilters]
   );
-  const hasFilterBar = filterBarAttrs.length > 0 || showRooms || showPayments;
+  /** ⚠️ 2026-10-06: `showRooms`/`showPayments` нь ЭНД ОРОХГҮЙ — тэр хоёр блок
+   *  сайдбарт тул `#filter-bar` нь зөвхөн attr pill-тэй үед л render болно ✓ */
+  const hasFilterBar = filterBarAttrs.length > 0;
   /** «Зарах / Түрээслэх» сонголт харагдах эсэх — ⚠️ ЗӨВХӨН үл хөдлөхөд */
   const showCategories = hasCategoryChoice(section);
   /**
@@ -2710,12 +2713,17 @@ export default function HomeClient() {
               </div>
 
               <div className="divide-y divide-gray-100 px-4">
-                {/* 🆕ℹ️ 2026-10-03 (4): 2026-09-30 (4)-д хасагдсан
-                    «🛏 Өрөөний тоо» блок ЭРГЭЖ ИРЭВ (хэрэглэгчийн хүсэлт) —
-                    гэхдээ ЭХНИЙ биш, «Үнэ, ₮»-ний өмнө байрлана ✓
+                {/* 🆕ℹ️ 2026-10-06: 🛏 «Өрөөний тоо» ба 💳 «Төлбөрийн нөхцөл»
+                    нь үр дүнгийн дээрх `#filter-bar`-ийн PILL-ээс ЭРГЭЖ САЙДБАРТ
+                    ИРЭВ (хэрэглэгчийн хүсэлт: «Үл хөдлөхийн хайлт дээр байгаа
+                    Өрөөний тоо, Төлбөрийн нөхцөлийг Дэлгэрэнгүй хайлтын
+                    Байршил-ийн доор оруул») ⇒ 2 ӨӨР UI БАЙХГҮЙ ✓
                     Sidebar-ийн дараалал:
-                    «Байршил» → [attr шүүлтүүд] → «🛏 Өрөөний тоо»
-                    → «Үнэ, ₮» → «Талбай, м²» ✓ */}
+                    «Байршил» → «🛏 Өрөөний тоо» → «💳 Төлбөрийн нөхцөл»
+                    → [attr шүүлтүүд] → «Үнэ, ₮» → «Талбай, м²» ✓
+                    (⏳ 2026-10-03 (4): «Үнэ, ₮»-ний өмнө сайдбарт; 2026-10-04 (38):
+                       өрөө нь `#filter-bar` pill; (37): төлбөр ч мөн pill — ОДОО
+                       хоёулаа сайдбарт буцав ✓) */}
 
                 {/* ===== 📍 БАЙРШИЛ — НЭГ ТОВЧ → `LocationPicker` (modal) =====
                     ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-04 (28)): «Дэлгэрэнгүй хайлт-ийн
@@ -2790,6 +2798,117 @@ export default function HomeClient() {
                     </div>
                   )}
                 </SideBlock>
+
+                {/* ===== 🛏 ӨРӨӨНИЙ ТОО — НЭГ ДАРЖ ОЛОН СОНГОЛТ (2026-10-03) =====
+                    🆕 2026-10-06: «Үл хөдлөх» хайлт дээр `#filter-bar` pill байсныг
+                    ЭРГЭЖ «📍 Байршил»-ийн ЯГ ДООР сайдбарт оруулав (хэрэглэгчийн
+                    хүсэлт) ⇒ 2 ӨӨР UI БАЙХГҮЙ ✓
+                    ⚠️ Хэв нь ХӨНДӨГДӨӨГҮЙ: `chip-toggle` чипүүд (flex-wrap) +
+                       `aria-pressed` + идэвхтэй үед `✓` ба `chip-toggle-active`
+                    ⚠️ Утга (`filters.rooms` МАССИВ), URL (`?rooms=1,3`), DB
+                       (`lib/queries.js → applyRoomFilter`) БҮГД ХЭВЭЭР ✓
+                    ⚠️ `data-room-filter` / `data-room-value` нь `scripts/cdp-rooms.mjs`-ийн
+                       дэгээ — УСТГАХГҮЙ ✓; «N сонгосон» ба «✕ Цуцлах» ХЭВЭЭР ✓ */}
+                {showRooms && (
+                  <SideBlock label="Өрөөний тоо">
+                    <div
+                      className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
+                      data-room-filter
+                      role="group"
+                      aria-label="Өрөөний тоо"
+                    >
+                      <div className="flex flex-wrap gap-1.5">
+                        {ROOM_OPTIONS.map((r) => {
+                          const on = filters.rooms.includes(r.value);
+                          return (
+                            <button
+                              key={r.value}
+                              type="button"
+                              aria-pressed={on}
+                              data-room-value={r.value}
+                              onClick={() => toggleRooms(r.value)}
+                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                            >
+                              {on && <span aria-hidden="true">✓</span>}
+                              {r.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {filters.rooms.length > 0 && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[13px] font-semibold text-gray-600">
+                          {filters.rooms.length} сонгосон
+                        </span>
+                        <button
+                          type="button"
+                          onClick={clearRooms}
+                          className="text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                        >
+                          ✕ Цуцлах
+                        </button>
+                      </div>
+                    )}
+                  </SideBlock>
+                )}
+
+                {/* ===== 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — НЭГ ДАРЖ ОЛОН СОНГОЛТ (2026-10-03) =====
+                    🆕 2026-10-06: `#filter-bar` pill байсныг ЭРГЭЖ «📍 Байршил»-ийн
+                    доор (🛏 «Өрөөний тоо»-ны ДАРАА) сайдбарт оруулав ⇒ 2 ӨӨР UI
+                    БАЙХГҮЙ ✓ (хэрэглэгчийн хүсэлт: «…Төлбөрийн нөхцөлийг
+                    Дэлгэрэнгүй хайлтын Байршил-ийн доор оруул»)
+                    ⚠️ ЗӨВХӨН `real-estate` ба `auto` хэсэгт (`showPayments`) —
+                       ажил/компьютер/бараа/үйлчилгээнд лизинг гэж байхгүй ✓
+                    ⚠️ Шүүлт нь `?payment=lease,cash` → `lib/queries.js` →
+                       `applyPaymentFilter()` (jsonb `cs` + OR) — UI-ийн өөрчлөлт
+                       нь URL/DB-д ОГТ хүрэхгүй ✓
+                    ⚠️ `data-payment-filter` / `data-payment-value` нь
+                       `scripts/cdp-payments.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓ */}
+                {showPayments && (
+                  <SideBlock label="Төлбөрийн нөхцөл">
+                    <div
+                      className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
+                      data-payment-filter
+                      role="group"
+                      aria-label="Төлбөрийн нөхцөл"
+                    >
+                      <div className="flex flex-wrap gap-1.5">
+                        {PAYMENT_OPTIONS.map((o) => {
+                          const on = filters.payments.includes(o.value);
+                          return (
+                            <button
+                              key={o.value}
+                              type="button"
+                              aria-pressed={on}
+                              data-payment-value={o.value}
+                              onClick={() => togglePayments(o.value)}
+                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
+                            >
+                              {on && <span aria-hidden="true">✓</span>}
+                              {o.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {countPayments(filters.payments) > 0 && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[13px] font-semibold text-gray-600">
+                          {countPayments(filters.payments)} сонгосон
+                        </span>
+                        <button
+                          type="button"
+                          onClick={clearPayments}
+                          className="text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                        >
+                          ✕ Цуцлах
+                        </button>
+                      </div>
+                    )}
+                  </SideBlock>
+                )}
+
                 {/* 💰💼 2026-10-03 (9): «Үнэ, ₮» / «Цалин, ₮» блок — АЖЛЫН ЗАРТ
                     энд (attr шүүлтүүдийн ӨМНӨ) байрлана (unegui.mn-ийн ажлын
                     хайлтын зурагтай ИЖИЛ); бусад хэсэгт доор (хуучин байрлал) ✓ */}
@@ -3081,76 +3200,32 @@ export default function HomeClient() {
                   );
                 })}
 
-                {/* ⏳ ИСТОРИ: 🛏 «ӨРӨӨНИЙ ТОО» — 2026-10-04 (38)-д сайдбараас ГАРЧ,
-                    үр дүнгийн ДЭЭРХ ХЭВТЭЭ мөр (`#filter-bar`) руу 💳 Төлбөрийн
-                    нөхцөлийн ЯГ ӨМНӨ pill dropdown болов (`FilterPill
-                    testKey="rooms"`; хэрэглэгчийн хүсэлт: «Хайлтын өрөөний тоог
-                    төлбөр нөхцөл шиг болго, Төлбөрийн нөхцөлийн урд оруулаарай»).
-                    Доорх нь ТҮҮХЭН тайлбар — одоо ЭНД UI БАЙХГҮЙ ✓
-                    ═══ (2026-10-03 (4): ХОРООНЫ блоктой ИЖИЛ ХЭВ МАЯГ) ═══
-                    🆕 2026-10-03 (4) (хэрэглэгчийн хүсэлт: «орон сууцны
-                    өрөөний тоогоор хайх ... 1 өрөө 2 өрөө 3 өрөө 4 өрөө
-                    5+ өрөө ... Хороо сонгодог хэсэгтэй адилхан, Үнийн дээр»)
-                    ⚠️ 2026-09-30 (4)-д хасагдсан байсныг ЯГ ТЭР хэв маягаар
-                       нь сэргээв: `chip-toggle` чипүүд, `✓` тэмдэг,
-                       «N сонгосон» badge, «✕ Цуцлах» товч ✓
-                    ⚠️ Утгууд нь `lib/roomFilter.mjs → ROOM_VALUES` (1,2,3,4,+5;
-                       «+5» = `rooms >= 5` ХҮРЭЭ) — «Хороо»-той ижил
-                       олон сонголт (checkbox мэт) ✓
-                    ⚠️ Утга нь МАССИВ (`['1','3']`) → `?rooms=1,3` ба DB дээр
-                       `rooms IN (1,3)` / завсартай бол `.or()`
-                       (`lib/queries.js → applyRoomFilter`) ✓
-                    ⚠️ `showRooms` — үл хөдлөх БА (төрөл сонгоогүй эсвэл
-                       өрөөтэй төрөл). Газар/Оффис/Үйлдвэрт өрөө гэж байхгүй ✗
-                    ⚠️ `data-room-filter` / `data-room-value` нь CDP тестийн
-                       (`scripts/cdp-rooms.mjs`) дэгээ — УСТГАХГҮЙ ✓
-                    🗑 2026-10-03 (10): «🛏 Өрөөний тоо»-гийн ДООРХ «Өрөө»
-                       гэсэн ИЛҮҮЦЭЛ шошго ХАСАГДАВ (хэрэглэгчийн хүсэлт:
-                       «🛏 Өрөөний тоо гэдгийн доор Өрөө гэсэн байгаа text ийг
-                       арилга») — блокийн гарчиг аль хэдийн «Өрөөний тоо» гэж
-                       хэлж байгаа тул давхар бичих шаардлагагүй ✗
-                       ⚠️ «N сонгосон» badge ХЭВЭЭР (CDP тест үүнийг шалгана) —
-                          зөвхөн «Өрөө» гэсэн ТЕКСТ арилав ✓ */}
-                {/* 🆕 2026-10-04 (38): 🛏 «Өрөөний тоо» нь ЭНД (сайдбарт) БИШ —
-                    `#filter-bar`-т 💳 Төлбөрийн нөхцөлийн ӨМНӨ pill dropdown ✓ */}
+                {/* ⏳ ИСТОРИ: 🛏 «ӨРӨӨНИЙ ТОО» нь 2026-10-03 (4)-д ЭНД (сайдбарт,
+                    «Үнэ, ₮»-ний өмнө) байв → 2026-10-04 (38)-д сайдбараас ГАРЧ
+                    `#filter-bar` pill болов → 🆕 2026-10-06-д ЭРГЭЖ сайдбарт
+                    («📍 Байршил»-ийн ЯГ ДООР) орлоо (хэрэглэгчийн хүсэлт) ⇒
+                    UI нь ЭНД БИШ, ДЭЭР (Байршлын дараа) — 1 Л ГАЗАР ✓
+                    🔍 Хайх үг: data-room-filter, toggleRooms, ROOM_OPTIONS
+                    ⚠️ Утга/URL/DB/breadcrumb ХӨНДӨГДӨӨГҮЙ: `?rooms=1,3` →
+                       `lib/queries.js → applyRoomFilter`, «N сонгосон» +
+                       «✕ Цуцлах» ХЭВЭЭР (CDP: `scripts/cdp-rooms.mjs` ✓)
+                    ⚠️ `showRooms` — үл хөдлөх БА (төрөл сонгоогүй эсвэл өрөөтэй
+                       төрөл). Газар/Оффис/Үйлдвэрт өрөө гэж байхгүй ✗
+                    🗑 2026-10-03 (10): «Өрөөний тоо»-гийн ДООРХ «Өрөө» гэсэн
+                       ИЛҮҮЦЭЛ шошго ХАСАГДАВ (хэрэглэгчийн хүсэлт) ✓ */}
 
-                {/* ===== 💳 ТӨЛБӨРИЙН НӨХЦӨЛ (2026-10-03) =====
-                    Хэрэглэгчийн хүсэлт: «Төлбөрийн нөхцөлийг Үл хөдлөх
-                    зарна, Автомашин зарна гэсэн дээр хайх хэсэгт гардаг
-                    болгоё … олон сонголт хийж байгаа боломж»
-                    🆕 ХЭВ 2026-10-03 (16) — хэрэглэгчийн хүсэлт: «Зар хайх
-                       хэсэгийн 💳 Төлбөрийн нөхцөлийг ӨРӨӨНИЙ ТОО шиг
-                       СОНГОДОГ болго»:
-                         [✓ 💳 Хувь лизингээр] [Бэлэн төлөлтөөр]
-                         [Банкны зээлээр] [Бартер сонирхоно]
-                       ⇒ «🛏 Өрөөний тоо»-той ЯГ ИЖИЛ хэв: rounded-lg
-                          хайрцаг + `chip-toggle` чипүүд (flex-wrap) +
-                          `aria-pressed` + идэвхтэй үед `✓` ба
-                          `chip-toggle-active` ✓
-                       ⏳ (6) 2026-10-03: unegui.mn-ийн зурагт тулгуурлан
-                          ☑ checkbox (2 баганат `.pay-grid`) байсан — энэ
-                          нь ОДОО ЗӨВХӨН ЗАР ОРУУЛАХ ФОРМ дээр
-                          (`AddListingClient.jsx → data-payment-picker`) ✓
-                       ⚠️ CSS нь нэг газар (`app/globals.css`): хайлт нь
-                          `.chip-toggle` (өрөө/хороотой НЭГ класс),
-                          форм нь `.pay-grid`/`.pay-check` ✓
+                {/* ===== 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — UI нь ДЭЭР (📍 Байршлын доор) =====
+                    ⏳ ИСТОРИ: 2026-10-03 (16)-д ЭНД сайдбарт ЧИП байв →
+                    2026-10-04 (37)-д `#filter-bar` pill болов → 🆕 2026-10-06-д
+                    ЭРГЭЖ сайдбарт («📍 Байршил»-ийн доор, 🛏 өрөөний тооныхоо
+                       ДАРАА) орлоо (хэрэглэгчийн хүсэлт: «…Төлбөрийн нөхцөлийг
+                       Дэлгэрэнгүй хайлтын Байршил-ийн доор оруул») ⇒ 1 Л ГАЗАР ✓
+                    🔍 Хайх үг: data-payment-filter, togglePayments, PAYMENT_OPTIONS
                     ⚠️ ЗӨВХӨН `real-estate` ба `auto` хэсэгт (`showPayments`)
                        — ажил/компьютер/бараа/үйлчилгээнд лизинг гэж байхгүй ✓
-                    ⚠️ Шүүлт нь `?payment=lease,cash` → `lib/queries.js` →
-                       `applyPaymentFilter()` (jsonb `cs` + OR) ✓ — UI-ийн
-                       өөрчлөлт нь URL/DB-д ОГТ хүрэхгүй ✓
-                    ⚠️ `data-payment-filter` / `data-payment-value` нь
-                       `scripts/cdp-payments.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓
-                       (2026-10-03 (16)-аас утга нь `<button>` дээр ✓) */}
-                {/* 🎛 2026-10-04 (37): 💳 «Төлбөрийн нөхцөл» нь ЭНД (сайдбарт) БИШ —
-                    үр дүнгийн ДЭЭРХ ХЭВТЭЭ шүүлтийн мөрөнд (`#filter-bar`,
-                    `FilterPill`) «eBay-ийн Color ⌄» шиг pill + хөвөг dropdown
-                    болж шилжсэн (хэрэглэгчийн хүсэлт: «…Color шиг болгоод өг,
-                    Төлбөрийн нөхцөл ба Өнгө олон сонголт хийх боломжтой байх»)
-                    ⇒ 2 өөр UI БАЙХГҮЙ ✓
                     ⚠️ Утга (`filters.payments`), URL (`?payment=lease,cash`), DB
-                    (`lib/queries.js → applyPaymentFilter`, jsonb `cs` + OR) БҮГД
-                    ХЭВЭЭР ✓ — зөвхөн ХАРАГДАЦ солигдов */}
+                       (`lib/queries.js → applyPaymentFilter`, jsonb `cs` + OR)
+                       БҮГД ХӨНДӨГДӨӨГҮЙ ✓ («N сонгосон» + «✕ Цуцлах» ХЭВЭЭР) */}
 
                 {/* ===== ҮНЭ, ₮ — 2026-09-30: ЧИРДЭГ ХҮРЭЭ БА ТҮРГЭН ХҮРЭЭ ХАСАГДАВ =====
                     ⚠️ Хэрэглэгчийн хүсэлт (1): «дээд доод үнэ, талбай дээр чирдэгээ
@@ -3472,80 +3547,17 @@ export default function HomeClient() {
                     </div>
                   </FilterPill>
                 ))}
-                {/* 🆕 2026-10-04 (38): 🛏 «Өрөөний тоо» — сайдбараас ГАРЧ,
-                    💳 «Төлбөрийн нөхцөл»-ийн ЯГ ӨМНӨ pill dropdown болов
-                    (хэрэглэгчийн хүсэлт: «Хайлтын өрөөний тоог төлбөр нөхцөл
-                    шиг болго, Төлбөрийн нөхцөлийн урд оруулаарай») ✓
-                    ⚠️ Утга (`filters.rooms` МАССИВ), URL (`?rooms=1,3`), DB
-                    (`lib/queries.js → applyRoomFilter`) БҮГД ХӨНДӨГДӨӨГҮЙ ✓ */}
-                {showRooms && (
-                  <FilterPill
-                    testKey="rooms"
-                    label="Өрөөний тоо"
-                    count={filters.rooms.length}
-                    onClear={clearRooms}
-                  >
-                    <div
-                      className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
-                      data-room-filter
-                      role="group"
-                      aria-label="Өрөөний тоо"
-                    >
-                      <div className="flex flex-wrap gap-1.5">
-                        {ROOM_OPTIONS.map((r) => {
-                          const on = filters.rooms.includes(r.value);
-                          return (
-                            <button
-                              key={r.value}
-                              type="button"
-                              aria-pressed={on}
-                              data-room-value={r.value}
-                              onClick={() => toggleRooms(r.value)}
-                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
-                            >
-                              {on && <span aria-hidden="true">✓</span>}
-                              {r.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </FilterPill>
-                )}
-                {showPayments && (
-                  <FilterPill
-                    testKey="payment"
-                    label="Төлбөрийн нөхцөл"
-                    count={countPayments(filters.payments)}
-                    onClear={clearPayments}
-                  >
-                    <div
-                      className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
-                      data-payment-filter
-                      role="group"
-                      aria-label="Төлбөрийн нөхцөл"
-                    >
-                      <div className="flex flex-wrap gap-1.5">
-                        {PAYMENT_OPTIONS.map((o) => {
-                          const on = filters.payments.includes(o.value);
-                          return (
-                            <button
-                              key={o.value}
-                              type="button"
-                              aria-pressed={on}
-                              data-payment-value={o.value}
-                              onClick={() => togglePayments(o.value)}
-                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
-                            >
-                              {on && <span aria-hidden="true">✓</span>}
-                              {o.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </FilterPill>
-                )}
+                {/* ⏳ ИСТОРИ: 🛏 «Өрөөний тоо» (2026-10-04 (38)) ба 💳 «Төлбөрийн
+                    нөхцөл» (2026-10-04 (37)) нь ЭНД `#filter-bar` pill байв —
+                    🆕 2026-10-06-д хоёулаа САЙДБАРТ («Дэлгэрэнгүй хайлт» →
+                       «📍 Байршил»-ийн доор) ЭРГЭЖ ОРОВ (хэрэглэгчийн хүсэлт:
+                       «Үл хөдлөхийн хайлт дээр байгаа Өрөөний тоо, Төлбөрийн
+                       нөхцөлийг Дэлгэрэнгүй хайлтын Байршил-ийн доор оруул»)
+                    ⇒ `#filter-bar`-т ЗӨВХӨН `filterBar: true` тугтай attr
+                       pill-үүд үлдэнэ (2 ӨӨР UI БАЙХГҮЙ ✓)
+                    ⚠️ Утга/URL/DB БҮГД ХӨНДӨГДӨӨГҮЙ: `?rooms=1,3` →
+                       `lib/queries.js → applyRoomFilter`, `?payment=lease,cash`
+                       → `applyPaymentFilter` (jsonb `cs` + OR) ✓ */}
               </div>
             )}
 

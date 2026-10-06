@@ -279,18 +279,17 @@ const labels1 = await sideLabels();
 const roomsIdx = labels1.findIndex((l) => /Өрөөний тоо/.test(l));
 const priceIdx = labels1.findIndex((l) => /Үнэ/.test(l));
 /**
- * 🆕 2026-10-04 (37): 💳 «Төлбөрийн нөхцөл» нь САЙДБАРААС ГАРЧ, үр дүнгийн
- *    дээрх ХЭВТЭЭ шүүлтийн мөр (`#filter-bar`) руу «eBay-ийн Color ⌄» шиг pill
- *    болж шилжсэн (хэрэглэгчийн хүсэлт) ⇒ сайдбарт ОГТ БАЙХГҮЙ, харин
- *    `#filter-bar` дотор 1 (`[data-payment-filter]`) байна ✓
+ * 🆕 2026-10-06: 💳 «Төлбөрийн нөхцөл» нь `#filter-bar` pill БАЙХАА БОЛЬЖ,
+ *    сайдбарт («📍 Байршил»-ийн доор, 🛏 «Өрөөний тоо»-ны ДАРАА) ЭРГЭЖ ОРОВ
+ *    (хэрэглэгчийн хүсэлт) ⇒ сайдбарт БИЙ, `#filter-bar`-т БАЙХГҮЙ ✓
  */
 const payBar = await evalJs(`document.querySelectorAll('#filter-bar [data-payment-filter]').length`);
-check('🧭 💳 сайдбарт БАЙХГҮЙ, харин `#filter-bar`-т БИЙ (pill dropdown ✓)',
-  labels1.every((l) => !/Төлбөрийн нөхцөл/.test(l)) && payBar === 1,
+check('🧭 💳 сайдбарт БИЙ, `#filter-bar`-т БАЙХГҮЙ (pill БИШ — `SideBlock` ✓)',
+  labels1.includes('Төлбөрийн нөхцөл') && payBar === 0,
   `payBar=${payBar} — ${labels1.join(' → ')}`);
-check('🧭 Сайдбар: «Өрөөний тоо» ч ГАРСАН (`#filter-bar` pill ✓), «Үнэ, ₮» бий',
-  roomsIdx < 0 && priceIdx > 0,
-  `өрөө=#${roomsIdx} үнэ=#${priceIdx} — ${labels1.join(' → ')}`);
+check('🧭 Сайдбар дараалал: «Байршил» → «Өрөөний тоо» → «Төлбөрийн нөхцөл» → «Үнэ, ₮»',
+  roomsIdx === 1 && labels1.indexOf('Төлбөрийн нөхцөл') === 2 && priceIdx > 2,
+  `өрөө=#${roomsIdx} төлбөр=#${labels1.indexOf('Төлбөрийн нөхцөл')} үнэ=#${priceIdx} — ${labels1.join(' → ')}`);
 
 // ═══════ ② 🚗 АВТО: БАЙНА · ⛔ АЖИЛ/КОМПЬЮТЕР/«БҮХ ЗАР»: БАЙХГҮЙ ═══════
 // 🆕 2026-10-03 (13): progressive disclosure ХАСАГДАВ — `<aside>` нь хэсэг

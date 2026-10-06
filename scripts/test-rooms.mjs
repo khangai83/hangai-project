@@ -314,7 +314,7 @@ t('lib/queries.js: `applyRoomFilter`-ийг хэрэглэнэ (дүрмийг �
   assert.ok(!/Number\(value\) >= 5/.test(src), 'хуучин давхар дүрэм үлдсэн ✗');
 });
 
-t('🛏 HomeClient.jsx: өрөө сонгох UI ЭРГЭЖ ИРЭВ + «Үнэ»-ний ӨМНӨ — 2026-10-03 (4)', () => {
+t('🛏 HomeClient.jsx: өрөө сонгох UI — САЙДБАРТ (📍 Байршил-ийн доор) — 2026-10-06', () => {
   const src = readSrc('components/HomeClient.jsx');
   const ui = codeOnly(src);
   // ① Блок ба чипүүд DOM-д байгаа (CDP тестийн дэгээнүүд ✓)
@@ -328,21 +328,34 @@ t('🛏 HomeClient.jsx: өрөө сонгох UI ЭРГЭЖ ИРЭВ + «Үнэ�
   assert.match(ui, /showRooms/, 'showRooms нөхцөл алга ✗');
   assert.match(src, /Өрөөний тоо/, '«Өрөөний тоо» блокын шошго алга ✗');
   /**
-   * ③ БАЙРЛАЛ (🆕 2026-10-04 (38), хэрэглэгчийн хүсэлт: «Хайлтын өрөөний тоог
-   *    төлбөр нөхцөл шиг болго, Төлбөрийн нөхцөлийн урд оруулаарай»):
-   *    өрөөний чип нь сайдбараас ГАРЧ, үр дүнгийн ДЭЭРХ ХЭВТЭЭ мөр
-   *    (`#filter-bar`) руу 💳 «Төлбөрийн нөхцөл»-ийн ЯГ ӨМНӨ pill болов ✓
-   *    (⏳ 2026-10-03 (4)-д «Үнэ, ₮»-ний өмнө сайдбарт байсан — ОДОО тийм БИШ)
+   * ③ БАЙРЛАЛ (🆕 2026-10-06, хэрэглэгчийн хүсэлт: «Үл хөдлөхийн хайлт дээр
+   *    байгаа Өрөөний тоо, Төлбөрийн нөхцөлийг Дэлгэрэнгүй хайлтын Байршил-ийн
+   *    доор оруул»): өрөөний чип нь САЙДБАРТ (`<aside id="advanced-filters">`)
+   *    — «📍 Байршил» блокийн ДАРАА, 💳 «Төлбөрийн нөхцөл»-ийн ӨМНӨ байрлана ✓
+   *    (⏳ 2026-10-03 (4): «Үнэ, ₮»-ний өмнө сайдбарт; 2026-10-04 (38):
+   *       `#filter-bar` pill байв — ОДОО тийм БИШ ✓)
    */
-  assert.match(ui, /id="filter-bar"/, '#filter-bar (үр дүнгийн дээрх мөр) алга ✗');
+  const asideAt = ui.indexOf('id="advanced-filters"');
+  const barAt = ui.indexOf('id="filter-bar"');
+  const locAt = ui.indexOf('SideBlock label="Байршил"');
   const roomsAt = ui.indexOf('data-room-filter');
   const payAt = ui.indexOf('data-payment-filter');
+  assert.ok(asideAt > 0, '`<aside id="advanced-filters">` алга ✗');
+  assert.ok(barAt > 0, '#filter-bar (үр дүнгийн дээрх мөр) алга ✗');
+  assert.ok(locAt > 0, '«Байршил» блок алга ✗');
   assert.ok(roomsAt > 0, 'өрөөний блок олдсонгүй ✗');
   assert.ok(payAt > 0, 'төлбөрийн блок олдсонгүй ✗');
-  assert.ok(roomsAt < payAt, 'өрөөний pill төлбөрийн ДАРАА байна ✗ (урд байх ёстой)');
-  // ④ ХОРООНЫ блоктой ИЖИЛ хэв маяг (`chip-toggle` + «N сонгосон»)
+  // ⚠️ 2 ӨӨР UI БАЙХГҮЙ — rooms/payment нь `#filter-bar`-т ОГТ БАЙХГҮЙ ✓
+  assert.ok(roomsAt < barAt, 'өрөөний блок `#filter-bar`-т байна ✗ (сайдбарт байх ёстой)');
+  assert.ok(payAt < barAt, 'төлбөрийн блок `#filter-bar`-т байна ✗ (сайдбарт байх ёстой)');
+  // ⚠️ Сайдбар дотор: «Байршил» → «Өрөөний тоо» → «Төлбөрийн нөхцөл» ✓
+  assert.ok(asideAt < locAt && locAt < roomsAt,
+    'өрөөний блок «Байршил»-ийн ДАРАА биш ✗');
+  assert.ok(roomsAt < payAt, 'өрөөний блок төлбөрийн ДАРАА байна ✗ (урд байх ёстой)');
+  // ④ ХОРООНЫ блоктой ИЖИЛ хэв маяг (`chip-toggle` + «N сонгосон» + «✕ Цуцлах»)
   assert.match(ui, /chip-toggle-active/, 'чипийн идэвхтэй хэв маяг алга ✗');
   assert.match(src, /сонгосон/, '«N сонгосон» badge алга ✗');
+  assert.match(src, /✕ Цуцлах/, '«✕ Цуцлах» товч алга ✗');
   // ⑤ Зөвхөн өрөөтэй төрөлд (`hasRoomsFields`) — хорооны нөхцөлтэй ижил зарчим
   assert.match(ui, /hasRoomsFields\(filters\.propertyType\)/, 'showRooms-ийн нөхцөл алга ✗');
 });

@@ -43,8 +43,9 @@
  *   ⑦ 🚗 БУСАД ХЭСЭГ: авто дээр `[data-attr-filter]` === 3 (🎨 өнгө · 🔀 хайрцаг ·
  *      ⛽ түлш — 🏷️ брэнд нь combobox, он нь хүрээ; ⚠️ 2026-10-03 (22)-оос 🔀 ба
  *      ⛽ ХОЁУЛАА ЧИП болсон тул авто дээр НЭГ Ч `<select>` БАЙХГҮЙ ✓)
- *      🆕 (43): 3-уулаа `#filter-bar` PILL (💳 «Төлбөрийн нөхцөл»-ийн хамт ⇒
- *      `barKeys` = `color,transmission,fuel,payment`) ба сайдбарт attr 0 ✓
+ *      🆕 (43): 3-уулаа `#filter-bar` PILL (🆕 2026-10-06: 💳 «Төлбөрийн нөхцөл»
+ *      сайдбарт буцсан тул ⏳ (43)-ийн `barKeys` = `color,transmission,fuel,payment`
+ *      нь ОДОО **`color,transmission,fuel`**) ба сайдбарт attr 0 ✓
  *   ⑦b 🎨 **ОЛОН СОНГОЛТТОЙ «ӨНГӨ»** (2026-10-03 (19), хэрэглэгчийн хүсэлт:
  *      «Зар хайлт дээр Авто машин сонголт дээр Өнгө ийг Төлбөрийн нөхцөл шиг
  *      олон сонголттой болго»): 🎨 нь `<select>` БИШ, 12 `chip-toggle`
@@ -260,7 +261,8 @@ const specUi = () => evalJs(`(() => {
      *    гэдгийг (sidebar + pill) батлана ✓
      */
     asideTotal: document.querySelectorAll('#advanced-filters [data-attr-filter]').length,
-    /** «#filter-bar» дахь PILL-ийн түлхүүрүүд («data-filter-pill» — ⚠️ 💳/🛏 ч) */
+    /** «#filter-bar» дахь PILL-ийн түлхүүрүүд («data-filter-pill» — ⚠️ 2026-10-06:
+     *  💳/🛏 нь pill БИШ, сайдбарт (SideBlock) ⇒ зөвхөн attr pill-үүд ✓) */
     barKeys: [...document.querySelectorAll('#filter-bar [data-filter-pill]')]
       .map((el) => el.getAttribute('data-filter-pill')),
     /**
@@ -605,14 +607,22 @@ check('🚗 Авто дээр `[data-attr-filter]` === 3 (🎨 өнгө · 🔀 
 check('🚗 Дараалал нь `attrFilters`-ийн дараалал (color → transmission → fuel)',
   auto.keys.join(',') === 'color,transmission,fuel', auto.keys.join(','));
 /**
- * 🆕 2026-10-05 (43): 🎨/🔀/⛽ нь `filterBar: true` (2026-10-04 (37)/(42)) —
- *    ⚠️ 💳 «Төлбөрийн нөхцөл» нь МӨН pill (`filterBar` туггүй, `showPayments`)
- *    тул `barKeys` нь 4: `color,transmission,fuel,payment` ✓
- *    ⚠️ «Юу ч үлдээгүй» гэдгийг `asideTotal === 0` батлана ✓
+ * 🆕 2026-10-05 (43) → 🆕 2026-10-06: 🎨/🔀/⛽ нь `filterBar: true` тул
+ *    `#filter-bar` PILL хэвээр ✓, харин 💳 «Төлбөрийн нөхцөл» нь pill БАЙХАА
+ *    БОЛЬЖ сайдбарт («📍 Байршил»-ийн доор) ЭРГЭЖ ОРОВ (хэрэглэгчийн хүсэлт)
+ *    ⇒ `barKeys` нь ГУРАВ (`color,transmission,fuel`) болж, `#filter-bar`-т
+ *    `[data-payment-filter]` БАЙХГҮЙ ✓
+ *    ⚠️ «Юу ч үлдээгүй» гэдгийг `asideTotal === 0` батлана (attr шүүлт) ✓
  */
-check('🎛 🆕 (43): авто дээр 3 нь `#filter-bar` PILL (💳-тэй хамт · сайдбарт attr 0 ✓)',
-  auto.barKeys.join(',') === 'color,transmission,fuel,payment' && auto.asideTotal === 0,
+const autoPayInAside = await evalJs(`(() => {
+  const a = document.getElementById('advanced-filters');
+  return a ? document.querySelectorAll('#advanced-filters [data-payment-filter]').length : -1;
+})()`);
+check('🎛 🆕 (43): авто дээр 3 нь `#filter-bar` PILL (💳 нь сайдбарт — 2026-10-06 ✓)',
+  auto.barKeys.join(',') === 'color,transmission,fuel' && auto.asideTotal === 0,
   `pills=[${auto.barKeys.join(', ')}] · aside=${auto.asideTotal}`);
+check('💳 🆕 2026-10-06: 💳 блок нь САЙДБАРТ 1 (`#advanced-filters [data-payment-filter]`)',
+  autoPayInAside === 1, `aside=${autoPayInAside}`);
 check('🎨 «Өнгө» нь ЧИП блок (12 товч · `data-attr-multi` · `<button>` · сонголт 0)',
   auto.chipBlocks[0] && auto.chipBlocks[0].key === 'color'
     && auto.chipBlocks[0].multi === true && auto.chipBlocks[0].total === 12
