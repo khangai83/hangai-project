@@ -407,9 +407,14 @@ t('🛏 HomeClient.jsx: «Өрөөний тоо»-гийн доорх «Өрөө
    *    📍 Байршил-ийн доор) буцав ⇒ badge-ийн тоо нь `{filters.rooms.length}` —
    *    СОНГОЛТТОЙ үед л render болно ✓ (`FilterPill` нь зөвхөн `filterBar: true`
    *    тугтай attr pill-үүдэд үлдсэн — өрөө/төлбөрт БИШ ✓)
+   * 🆕 2026-10-06 (18): блок нь ХУРААГДДАГ болов (`SideBlock` нь олон мөрт
+   *    проптой — `collapsible` + `collapseKey="rooms"` + `open={blockOpen(…)}`)
+   *    ⇒ шалгалт нь мөр хооронд таарах `[\s\S]` хэрэглэнэ ✓
    */
-  assert.match(ui, /SideBlock label="Өрөөний тоо"/,
+  assert.match(ui, /<SideBlock[\s\S]{0,240}?label="Өрөөний тоо"/,
     'өрөөний блок нь сайдбарын `SideBlock` БИШ ✗');
+  assert.match(ui, /collapseKey="rooms"[\s\S]{0,80}?collapsible/,
+    'өрөөний блок `collapsible` биш ✗ (2026-10-06 (18))');
   assert.match(ui, /\{filters\.rooms\.length\} сонгосон/,
     'өрөөний «N сонгосон» тоо холбоо алга ✗');
   assert.match(ui, /data-filter-pill=\{testKey\}/, '`FilterPill`-ийн `data-filter-pill` дэгээ алга ✗');

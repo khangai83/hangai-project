@@ -48,7 +48,11 @@ import {
   showsSectionSubtypes,
   // 🎨 2026-10-06 (17): «afterPayment» тест нь Өнгө-ний либын экспорттой харьцуулна
   AUTO_COLOR_OPTIONS,
+  // 🆕 2026-10-06 (18): сайдбарын чип блок хураагдах босго + өрөөний сонголтууд
+  SIDEBAR_CHIP_COLLAPSE_MIN, ROOM_OPTIONS,
 } from '../lib/locationData.js';
+// 🆕 2026-10-06 (18): 💳 «Төлбөрийн нөхцөл»-ийн сонголтын тоо (босготой харьцуулна)
+import { PAYMENT_OPTIONS } from '../lib/paymentFilter.mjs';
 // 🚗🌈 2026-10-01: 🏷️ «Үйлдвэрлэгч» → 🚙 «Загвар» (cascading) — зөвхөн ЦЭВЭР
 //    функцууд + өгөгдөл (сүлжээ/DB-д хүрэхгүй тул шууд ачаалж болно ✓)
 import {
@@ -1133,6 +1137,88 @@ t('🔀 (17) HomeClient: `afterPaymentAttrs` нь 💳-ийн ЯГ ДАРАА, �
   assert.match(src, /const attrChipsBlock = \(f\) => \(/);
   assert.match(src, /\{attrChipBox\(f\)\}/);
   assert.match(src, /\{attrChipsBlock\(f\)\}/);
+});
+
+// ---------- 🗂 🆕 2026-10-06 (18): САЙДБАРЫН ЧИП БЛОК — ХУРААХ/ДЭЛГЭХ ГЭРЭЭ ----------
+/**
+ * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Энэ дэлгэрэнгүй дотор байгаа Ажлын цаг [гэх мэт]
+ *   сонголт чинь хураагдаж болдоггүй юм уу, их зай эзлээд лалрын байна».
+ *
+ * ⚠️ ДҮРЭМ (НЭГ ЭХ СУРВАЛЖ `SIDEBAR_CHIP_COLLAPSE_MIN`): 5 ба түүнээс олон
+ *    сонголттой чип блок нь анхдагчаар ХУРААСАН (`aria-expanded="false"`),
+ *    цөөн сонголттой нь НЭЭЛТТЭЙ; идэвхтэй утгатай блок АВТОМАТААР НЭЭЛТТЭЙ
+ *    (шүүлт нь ДАЛД үлдэхгүй ✓); хэрэглэгчийн товшилт нь анхдагчаас ДЭЭГҮҮР ✓
+ * ⚠️ Утга/URL/DB ХӨНДӨӨГДӨХГҮЙ — зөвхөн ХАРАГДАЦ; хаалттай ч чипүүд DOM-д
+ *    БАЙНА (зөвхөн `hidden` класс) ⇒ CDP-ийн дэгээнүүд (`data-attr-value`,
+ *    `aria-pressed`, `data-room-value`, `data-payment-value`) ХЭВЭЭР ✓
+ */
+t('🗂 (18) `SIDEBAR_CHIP_COLLAPSE_MIN` = 5 (нэг эх сурвалж — HomeClient уншина)', () => {
+  assert.equal(typeof SIDEBAR_CHIP_COLLAPSE_MIN, 'number');
+  assert.equal(SIDEBAR_CHIP_COLLAPSE_MIN, 5, 'босго 5 биш ✗');
+  assert.ok(SIDEBAR_CHIP_COLLAPSE_MIN >= 2 && SIDEBAR_CHIP_COLLAPSE_MIN <= 8,
+    'босго нь «хэт бага/их» — 2..8 хооронд байх ёстой ✗');
+});
+
+t('🗂 (18) Анхдагч төлөв: 5+ сонголттой нь ХУРААСАН, цөөн нь НЭЭЛТТЭЙ (либээс тоолно)', () => {
+  /** [шошго, сонголтын тоо] — хатуу тоо БИШ, либээс (`ROOM_OPTIONS`/`PAYMENT_OPTIONS`) ✓ */
+  const rows = [
+    ['Өрөөний тоо', ROOM_OPTIONS.length],
+    ['Төлбөрийн нөхцөл', PAYMENT_OPTIONS.length],
+    ...getAttrFilters('jobs').map((f) => [f.label, (f.options || []).length]),
+    ...getAttrFilters('auto').filter((f) => f.afterPayment).map((f) => [f.label, (f.options || []).length]),
+  ];
+  const collapsed = rows.filter(([, n]) => n >= SIDEBAR_CHIP_COLLAPSE_MIN).map(([l]) => l);
+  const open = rows.filter(([, n]) => n < SIDEBAR_CHIP_COLLAPSE_MIN).map(([l]) => l);
+  assert.deepEqual(collapsed, ['Өрөөний тоо', 'Ажлын цаг', 'Мэргэжлийн түвшин', 'Өнгө', 'Түлш'],
+    `хураасан блок: ${collapsed.join(', ')}`);
+  assert.deepEqual(open, ['Төлбөрийн нөхцөл', 'Туршлага', 'Хурдны хайрцаг'],
+    `нээлттэй блок: ${open.join(', ')}`);
+});
+
+t('🗂 (18) HomeClient: `SideBlock` ЭВХЭГДДЭГ (`data-side-collapse` + `aria-expanded`) · контент DOM-д', () => {
+  const src = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
+  const at = src.indexOf('function SideBlock(');
+  assert.ok(at > 0, '`SideBlock` функц олдсонгүй ✗');
+  const rest = src.slice(at);
+  const end = rest.indexOf('\nfunction ');
+  const block = end > 0 ? rest.slice(0, end) : rest;
+  // ① Гарчиг нь ДАРАГДДАГ товч — ARIA + CDP дэгээ
+  assert.match(block, /data-side-collapse=\{collapseKey\}/, '`data-side-collapse` дэгээ БАЙХГҮЙ ✗');
+  assert.match(block, /aria-expanded=\{open\}/, '`aria-expanded` БАЙХГҮЙ ✗');
+  assert.match(block, /onClick=\{onToggle\}/, 'товчны `onClick` БАЙХГҮЙ ✗');
+  // ② ХУРААСАН ч контент DOM-д — зөвхөн `hidden` класс солигдоно ✓
+  assert.match(block, /className=\{open \? 'flex flex-col gap-2' : 'hidden'\}/,
+    'контент нь `hidden` классоор нуугдахгүй (CDP дэгээнүүд унана ✗)');
+  assert.ok(!/\{open && /.test(block),
+    'контентыг НӨХЦӨЛТЭЙ рендэр болгосон — DOM-д байх ЁСТОЙ (CDP ✗)');
+  assert.match(block, /\{children\}/, '`children` рендэрлэгдэхгүй ✗');
+  // ③ Анхдагч дүрэм + 3 давхарга төлөв (панелийн «Бүгдийг нээх» товчтой)
+  assert.match(src, /return activeCount > 0 \|\| optionCount < SIDEBAR_CHIP_COLLAPSE_MIN;/,
+    'идэвхтэй утгатай блок автоматаар нээгдэхгүй ✗');
+  assert.match(src, /data-side-toggle-all/, '«Бүгдийг нээх/Хураах» товч БАЙХГҮЙ ✗');
+  assert.match(src, /const toggleAllSideBlocks = \(\) => \{/, '`toggleAllSideBlocks` БАЙХГҮЙ ✗');
+  assert.match(src, /const \[allBlocksOpen, setAllBlocksOpen\] = useState\(null\)/,
+    '«Бүгдийг» төлөв (`allBlocksOpen`) БАЙХГҮЙ ✗');
+});
+
+t('🗂 (18) HomeClient: 🛏/💳 · 🔀 afterPayment · 💼 чип блокууд `collapsible` тугтай (тоо нь либээс)', () => {
+  const src = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
+  // 🛏 «Өрөөний тоо» ба 💳 «Төлбөрийн нөхцөл» — тусдаа блок (хатуу тоо БАЙХГҮЙ ✓)
+  assert.match(src, /label="Өрөөний тоо"\s*\n\s*collapseKey="rooms"\s*\n\s*collapsible/,
+    '🛏 блок `collapsible` биш ✗');
+  assert.match(src, /blockOpen\('rooms', ROOM_OPTIONS\.length, filters\.rooms\.length\)/,
+    '🛏 блокын босго нь либээс уншигдахгүй ✗');
+  assert.match(src, /label="Төлбөрийн нөхцөл"\s*\n\s*collapseKey="payments"\s*\n\s*collapsible/,
+    '💳 блок `collapsible` биш ✗');
+  assert.match(src, /blockOpen\('payments', PAYMENT_OPTIONS\.length, countPayments\(filters\.payments\)\)/,
+    '💳 блокын босго нь либээс уншигдахгүй ✗');
+  // 🔀 afterPayment (🚗 🎨/⛽/⚙️) — `attrChipsBlock` нь хураагддаг SideBlock дотор ✓
+  assert.match(src, /collapseKey=\{f\.key\}[\s\S]{0,120}?collapsible[\s\S]{0,400}?attrChipsBlock\(f\)/,
+    '🔀 afterPayment блок `collapsible` биш ✗');
+  // 💼 үндсэн attr жагсаалт — ЗӨВХӨН чип талбар (`<select>`/текст нь хэвээр ✓)
+  assert.match(src, /collapsible=\{!!f\.chips\}/, 'чип бус талбар ч хураагддаг болов ✗');
+  assert.match(src, /open=\{!f\.chips \|\| blockOpen\(f\.key, chipOptions, chipActive\)\}/,
+    'чип бус талбар нээлттэй байх дүрэм алга ✗');
 });
 
 /**

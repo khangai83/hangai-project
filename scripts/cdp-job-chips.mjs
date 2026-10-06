@@ -567,6 +567,72 @@ for (let i = 0; i < 12; i += 1) {
 }
 console.log('   aside=' + JSON.stringify(side.replace(/\n/g, ' | ').slice(0, 300)));
 ok('sidebar: «Цалин, ₮» байна', /Цалин, ₮/.test(side));
+
+// ═══════ ⑥⓪ 🆕 2026-10-06 (18): ХУРААГДДАГ ЧИП БЛОК (accordion) ═══════
+/**
+ * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Энэ дэлгэрэнгүй дотор байгаа Ажлын цаг [гэх мэт]
+ *   сонголт чинь хураагдаж болдоггүй юм уу, их зай эзлээд лалрын байна».
+ *
+ * ⚠️ ДҮРЭМ (`lib/locationData.js → SIDEBAR_CHIP_COLLAPSE_MIN` = 5):
+ *    ① 5 ба түүнээс олон сонголттой чип блок нь АНХДАГЧААР ХУРААСАН
+ *       (`aria-expanded="false"`) — 💼 дээр 🕒 «Ажлын цаг» (5) ба
+ *       📈 «Мэргэжлийн түвшин» (5); 📊 «Туршлага» (2) нь НЭЭЛТТЭЙ ✓
+ *    ② Идэвхтэй (сонгосон) утгатай блок АВТОМАТААР НЭЭЛТТЭЙ — шүүлт нь
+ *       ДАЛД үлдэхгүй (§⑥d ✓)
+ *    ③ Хураасан ч чипүүд DOM-д ХЭВЭЭР (зөвхөн `hidden` класс) ⇒ дэгээнүүд
+ *       (`data-attr-value`, `aria-pressed`) ХЭВЭЭР; «Бүгдийг нээх/Хураах»
+ *       товч (`data-side-toggle-all`) нэг даралтаар БҮГДИЙГ нээнэ ✓
+ *    ⚠️ Утга/URL/DB ХӨНДӨӨГДӨӨГҮЙ — зөвхөн ХАРАГДАЦ (хаах/нээх) ✓
+ */
+console.log('\n⑥⓪ ХУРААГДДАГ ЧИП БЛОК — анхдагч төлөв + «Бүгдийг нээх»');
+/** Блок бүрийн толгой + хайрцгийн төлөв (координатгүй — зөвхөн DOM) */
+const accordionUi = () => evaluate(`(() => {
+  const heads = [...document.querySelectorAll('aside [data-side-collapse]')];
+  const box = document.querySelector('aside [data-attr-filter="jobType"]');
+  const tgl = document.querySelector('aside [data-side-toggle-all]');
+  const aside = document.querySelector('aside');
+  return {
+    keys: heads.map((h) => h.getAttribute('data-side-collapse')),
+    expanded: heads.map((h) => h.getAttribute('aria-expanded')),
+    headText: heads.map((h) => h.textContent.trim()),
+    toggleLabel: tgl ? tgl.textContent.trim() : null,
+    togglePressed: tgl ? tgl.getAttribute('aria-pressed') : null,
+    chipsInDom: box ? box.querySelectorAll('[data-attr-value]').length : -1,
+    boxH: box ? Math.round(box.getBoundingClientRect().height) : -1,
+    asideH: aside ? Math.round(aside.getBoundingClientRect().height) : -1,
+  };
+})()`);
+const acc0 = await accordionUi();
+ok('🆕 (18) 3 чип блок ХУРААГДДАХ боломжтой (`[data-side-collapse]` = jobType/experience/jobLevel)',
+  JSON.stringify(acc0.keys) === JSON.stringify(['jobType', 'experience', 'jobLevel']),
+  JSON.stringify(acc0.keys));
+ok('🆕 (18) 5 сонголттой 🕒/📈 АНХДАГЧААР ХУРААСАН · 📊 «Туршлага» (2) НЭЭЛТТЭЙ',
+  JSON.stringify(acc0.expanded) === JSON.stringify(['false', 'true', 'false']),
+  JSON.stringify(acc0.expanded));
+ok('🆕 (18) ХУРААСАН ч чипүүд DOM-д ХЭВЭЭР (`[data-attr-value]` = 5) ч ХАРАГДАХ өндөр 0',
+  acc0.chipsInDom === 5 && acc0.boxH === 0, `chips=${acc0.chipsInDom} h=${acc0.boxH}`);
+ok('🆕 (18) толгойд «Бүгдийг нээх» товч (`[data-side-toggle-all]` — 1 товч, 2 үүрэг ✓)',
+  acc0.toggleLabel === 'Бүгдийг нээх' && acc0.togglePressed === 'false',
+  `${acc0.toggleLabel} / ${acc0.togglePressed}`);
+
+const toggleAllRes = await evaluate(`(() => {
+  const b = document.querySelector('aside [data-side-toggle-all]');
+  if (!b) return 'NO_BTN';
+  b.click();
+  return 'OK';
+})()`);
+await wait(800);
+const acc1 = await accordionUi();
+ok('🆕 (18) «Бүгдийг нээх» → БҮХ 3 блок `aria-expanded=true` + чипүүд ХАРАГДАВ (өндөр > 0)',
+  toggleAllRes === 'OK' && JSON.stringify(acc1.expanded) === JSON.stringify(['true', 'true', 'true'])
+    && acc1.boxH > 0, `${toggleAllRes} ${JSON.stringify(acc1.expanded)} h=${acc1.boxH}`);
+ok('🆕 (18) нээхэд sidebar-ийн өндөр НЭМЭГДЭВ (хураасан нь ЗАЙ ХЭМНЭЖ байна ✓)',
+  acc1.asideH > acc0.asideH, `asideH ${acc0.asideH} → ${acc1.asideH}`);
+ok('🆕 (18) товч «Хураах» болов (`aria-pressed=true`)',
+  acc1.toggleLabel === 'Хураах' && acc1.togglePressed === 'true',
+  `${acc1.toggleLabel} / ${acc1.togglePressed}`);
+/** 🆕 (17)-ийн шалгалт нь чипүүд ХАРАГДАЖ байхыг шаардана ⇒ `side`-ийг ШИНЭЧИЛНЭ */
+side = await evaluate(`(() => { const a = document.querySelector('aside'); return a ? a.innerText : ''; })()`);
 ok('🆕 (17) sidebar: 🕒/📊/📈 шүүлт БУЦАЖ ИРЭВ (шошго + «Бүтэн цагийн» чип харагдана)',
   /Ажлын цаг/.test(side) && /Туршлага/.test(side) && /Мэргэжлийн түвшин/.test(side)
     && /Бүтэн цагийн/.test(side));
@@ -823,6 +889,55 @@ ok('Идэвхтэй чип HOVER: фон/текст ХЭВЭЭР (`hover:text-w
     && actHov.color === 'rgb(255, 255, 255)' && lum(actHov.bg) === lum(actBase.bg),
   actHov && `${actHov.bg} / ${actHov.color}`);
 await mouseAway();
+
+// ═══════ ⑥d 🆕 2026-10-06 (18): ЛИНКЭЭР (идэвхтэй утгатай) → БЛОК АВТОМАТААР НЭЭЛТТЭЙ ═══════
+/**
+ * ⚠️ ЧУХАЛ ДҮРЭМ: идэвхтэй шүүлт нь ХАРАГДАХГҮЙ үлдэх ЁСТОЙГҮЙ — хэрэглэгч
+ *    «юу шүүснээ» мэдэх ёстой тул утгатай блок нь анхдагчаар НЭЭЛТТЭЙ байна ✓
+ *    (`blockOpen` — идэвхтэй тоо > 0). Мөн ГАРААР хааж болно (товшилт нь
+ *    анхдагчаас дээгүүр ✓) — хаасан ч чип DOM-д, URL/утга ХӨНДӨӨГДӨХГҮЙ ✓
+ */
+console.log('\n⑥d ИДЭВХТЭЙ УТГАТАЙ БЛОК АВТОМАТААР НЭЭЛТТЭЙ (шүүлт ДАЛД БАЙХГҮЙ ✓)');
+await rpc('Page.navigate', { url: SIDE_URL + '&attr_jobType=' + encodeURIComponent('Бүтэн цагийн') });
+await wait(3500);
+/** 🕒 блокийн толгой/хайрцаг/чип + URL-ыг НЭГ удаа уншина */
+const jobBlockUi = () => evaluate(`(() => {
+  const head = document.querySelector('aside [data-side-collapse="jobType"]');
+  const box = document.querySelector('aside [data-attr-filter="jobType"]');
+  const chip = box ? box.querySelector('[data-attr-value="Бүтэн цагийн"]') : null;
+  return {
+    expanded: head ? head.getAttribute('aria-expanded') : null,
+    headText: head ? head.textContent.trim() : null,
+    boxH: box ? Math.round(box.getBoundingClientRect().height) : -1,
+    pressed: chip ? chip.getAttribute('aria-pressed') : null,
+    url: decodeURIComponent(location.search).replace(/\\+/g, ' '),
+  };
+})()`);
+const dOpen = await jobBlockUi();
+ok('🆕 (18) `?attr_jobType=…` линкээр → блок АВТОМАТААР НЭЭЛТТЭЙ (`aria-expanded=true`, чип харагдана)',
+  dOpen.expanded === 'true' && dOpen.boxH > 0 && /attr_jobType=/.test(dOpen.url),
+  `${dOpen.expanded} h=${dOpen.boxH}`);
+ok('🆕 (18) чип нь ТЭМДЭГЛЭГДСЭН (`aria-pressed=true`) — шүүлт ХАРАГДАЖ байна ✓',
+  dOpen.pressed === 'true', String(dOpen.pressed));
+
+/** Толгой дээр дарж ГАРААР хураана — ⚠️ дараа нь утга/URL ХӨНДӨӨГДӨХГҮЙ */
+const manualClosed = await evaluate(`(() => {
+  const h = document.querySelector('aside [data-side-collapse="jobType"]');
+  if (!h) return 'NO_HEAD';
+  h.click();
+  return 'OK';
+})()`);
+await wait(800);
+const dClosed = await jobBlockUi();
+ok('🆕 (18) гарчиг дээр дарвал ХУРААГДАВ (`aria-expanded=false`, өндөр 0)',
+  manualClosed === 'OK' && dClosed.expanded === 'false' && dClosed.boxH === 0,
+  `${manualClosed} ${dClosed.expanded} h=${dClosed.boxH}`);
+ok('🆕 (18) хаасан ч чип DOM-д ТЭМДЭГТЭЙ + URL ХЭВЭЭР (шүүлт АЛДАГДАХГҮЙ ✓)',
+  dClosed.pressed === 'true' && /attr_jobType=Бүтэн цагийн(&|$)/.test(dClosed.url),
+  `${dClosed.pressed} · ${dClosed.url}`);
+ok('🆕 (18) хаалттай толгойд «N сонгосон» badge (тоо) харагдана',
+  /Ажлын цаг/.test(dClosed.headText || '') && /1/.test(dClosed.headText || ''),
+  JSON.stringify(dClosed.headText));
 
 // ═══════ ⑦ ДҮГНЭЛТ ═══════
 const real = problems.filter((p) => !/Failed to load resource/.test(p));

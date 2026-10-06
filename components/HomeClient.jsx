@@ -38,6 +38,7 @@ import {
   parseAttrRangeKey, getAttrRangeKeys,   // 📅 оны хүрээ (2026-09-28)
   priceWord,   // 💼 ажил → «Цалин», бусад → «Үнэ» (2026-10-03 (9))
   getSubtypeGroups,   // 🛠 3 дахь түвшин (2026-09-27) — зөвхөн `services`
+  SIDEBAR_CHIP_COLLAPSE_MIN,   // 🆕 2026-10-06 (18): чип блок хураагдах босго
 } from '../lib/locationData';
 import { getCategoryLabel, getPropertyTypeLabel, formatPrice, formatCount, shortPrice } from '../lib/format';
 import { buildHomeBreadcrumb } from '../lib/breadcrumb';
@@ -279,12 +280,57 @@ function GroupHeading({ label, collapsible = false, open = false, onToggle }) {
  *       бий болно ✓
  *    ⚠️ Зарын картын үнэ/гарчиг (`text-[22px]`/`text-[15px]`) ХӨНДӨГДӨӨГҮЙ
  *       (`scripts/test-card.mjs` түгжсэн гэрээ ✓)
+ *
+ * 🆕 2026-10-06 (18): ЭВХЭГДДЭГ (accordion) БОЛОВ — хэрэглэгчийн хүсэлт:
+ *    «Энэ дэлгэрэнгүй дотор байгаа Ажлын цаг [гэх мэт] сонголт чинь
+ *    хураагдаж болдоггүй юм уу, их зай эзлээд лалрын байна».
+ *    • `collapsible = true` үед гарчиг нь ДАРАГДДАГ ТОВЧ болно:
+ *      `aria-expanded` + chevron (▶ ↔ ▼ — `GroupHeading`-тэй ИЖИЛ хэв/хэмжээ,
+ *      ⚠️ chevron нь SVG тул `textContent`-д ОРОХГҮЙ ⇒ CDP-ийн
+ *      «блокийн гарчиг === `Төлбөрийн нөхцөл`» шалгалтууд хэвээр ✓)
+ *    • `count > 0` үед гарчгийн хажууд тооны badge (хаалттай үед ч харагдана ✓)
+ *    • ⚠️ ХААЛТТАЙ үед ч `children` нь DOM-д БАЙНА (зөвхөн `hidden` класс) —
+ *      контентыг УСТГАХГҮЙ тул `data-attr-value`/`aria-pressed`/
+ *      `data-room-value`/`data-payment-value` дэгээнүүд ХЭВЭЭР ажиллана ✓
+ *      (URL/DB/утгад ЯМАР Ч нөлөөгүй — зөвхөн ХАРАГДАЦ ✓)
+ *    • Анхдагч төлөв ба «Бүгдийг нээх» товчны логик нь компонентын ДЭЭР
+ *      (`blockOpen` / `toggleSideBlock` / `toggleAllSideBlocks`) ✓
  */
-function SideBlock({ label, children }) {
+function SideBlock({
+  label, children, collapsible = false, open = true, onToggle, count = 0, collapseKey,
+}) {
   return (
     <div className="py-4">
-      <span className="mb-2 block text-[16px] font-bold text-gray-900">{label}</span>
-      <div className="flex flex-col gap-2">{children}</div>
+      {collapsible ? (
+        <button
+          type="button"
+          data-side-collapse={collapseKey}
+          aria-expanded={open}
+          onClick={onToggle}
+          className={`flex w-full items-center gap-1.5 text-left ${open ? 'mb-2' : ''}`}
+        >
+          <span className="text-[16px] font-bold text-gray-900">{label}</span>
+          {count > 0 && (
+            <span className="rounded-full bg-primary px-1.5 py-px text-[11px] font-bold text-white">
+              {count}
+            </span>
+          )}
+          {/* chevron — хаалттай үед ▶, нээлттэй үед ▼ (эргэлдэнэ ✓) */}
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            className={`ml-auto shrink-0 text-gray-400 transition-transform duration-150 ${open ? 'rotate-90' : ''}`}
+            aria-hidden="true"
+          >
+            <path d="M9 6l6 6-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      ) : (
+        <span className="mb-2 block text-[16px] font-bold text-gray-900">{label}</span>
+      )}
+      <div className={open ? 'flex flex-col gap-2' : 'hidden'}>{children}</div>
     </div>
   );
 }
@@ -1847,6 +1893,42 @@ export default function HomeClient() {
       )}
     </>
   );
+  /**
+   * 🆕 2026-10-06 (18): САЙДБАРЫН ЧИП БЛОКУУД ХУРААГДАХ/ДЭЛГЭГДЭХ БОЛОВ
+   *    (хэрэглэгчийн хүсэлт: «Энэ дэлгэрэнгүй дотор байгаа Ажлын цаг [гэх мэт]
+   *    сонголт чинь хураагдаж болдоггүй юм уу, их зай эзлээд лалрын байна»).
+   *
+   *    ⚠️ Босго (5 ба түүнээс олон сонголт ⇒ анхдагчаар ХУРААСАН) нь
+   *       `lib/locationData.js → SIDEBAR_CHIP_COLLAPSE_MIN` (НЭГ ЭХ СУРВАЛЖ) ✓
+   *    ⚠️ 3 давхарга төлөв (дээрээс доош):
+   *       ① `openBlocks[key]` — ХЭРЭГЛЭГЧИЙН тодорхой блокийн товшилт
+   *       ② `allBlocksOpen` — «Бүгдийг нээх/хураах» (панелийн толгойн товч)
+   *       ③ АНХДАГЧ: идэвхтэй (сонгосон) утгатай бол НЭЭЛТТЭЙ, эс бөгөөс
+   *          сонголтын тоо босгоос цөөн бол нээлттэй
+   *    ⚠️ Идэвхтэй утгатай блок АВТОМАТААР нээлттэй байх нь ЧУХАЛ: шүүлт
+   *       нь ХАРАГДАХГҮЙ үлдвэл хэрэглэгч «юу шүүснээ» мэдэхгүй болно ✗
+   *    ⚠️ Утга/URL/DB ХӨНДӨӨГДӨХГҮЙ — зөвхөн `hidden` класс солигдоно ✓
+   */
+  const [openBlocks, setOpenBlocks] = useState({}); // { [key]: true|false } — блок тус бүрийн товшилт
+  const [allBlocksOpen, setAllBlocksOpen] = useState(null); // null = анхдагч (товч дараагүй)
+  /** Блокийн ОДООГИЙН төлөв (`optionCount` = сонголтын тоо, `activeCount` = сонгосон) */
+  const blockOpen = (key, optionCount, activeCount) => {
+    if (openBlocks[key] !== undefined) return openBlocks[key];
+    if (allBlocksOpen !== null) return allBlocksOpen;
+    return activeCount > 0 || optionCount < SIDEBAR_CHIP_COLLAPSE_MIN;
+  };
+  /** Нэг блокийг нээх/хаах (товшилт нь анхдагчаас дээгүүр ✓) */
+  const toggleSideBlock = (key, optionCount, activeCount) =>
+    setOpenBlocks((s) => ({ ...s, [key]: !blockOpen(key, optionCount, activeCount) }));
+  /**
+   * «Бүгдийг нээх» ↔ «Хураах» — НЭГ товч (панелийн толгой).
+   *    ⚠️ Дарахад `openBlocks`-ийг ЦЭВЭРЛЭНЭ (бүх блок нэг төлөвт орно ✓)
+   */
+  const toggleAllSideBlocks = () => {
+    setOpenBlocks({});
+    setAllBlocksOpen((v) => v !== true);
+  };
+
   /** «Зарах / Түрээслэх» сонголт харагдах эсэх — ⚠️ ЗӨВХӨН үл хөдлөхөд */
   const showCategories = hasCategoryChoice(section);
   /**
@@ -2819,7 +2901,20 @@ export default function HomeClient() {
                 </h2>
                 {/* ⚠️ 2026-09-27: «✕ Хаах» товч ХАСАГДСАН — панель үргэлж
                     нээлттэй тул «хаах» ойлголт байхгүй ✓
-                    (товч нь зөвхөн мобайл sheet-ийг хаадаг байсан ✗) */}
+                    (товч нь зөвхөн мобайл sheet-ийг хаадаг байсан ✗)
+                    🆕 2026-10-06 (18): ОРОНД нь «Бүгдийг нээх / Хураах»
+                    товч — БҮХ эвхэгддэг чип блокийг нэг даралтаар нээх/хаах ✓
+                    (тусдаа блок бүр өөрийн гарчгаараа ч нээгдэнэ ✓;
+                     дэгээ: `data-side-toggle-all` — CDP `cdp:job-chips` §⑥⓪) */}
+                <button
+                  type="button"
+                  data-side-toggle-all
+                  aria-pressed={allBlocksOpen === true}
+                  onClick={toggleAllSideBlocks}
+                  className="shrink-0 whitespace-nowrap text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                >
+                  {allBlocksOpen === true ? 'Хураах' : 'Бүгдийг нээх'}
+                </button>
               </div>
 
               <div className="divide-y divide-gray-100 px-4">
@@ -2924,9 +3019,19 @@ export default function HomeClient() {
                     ⚠️ Утга (`filters.rooms` МАССИВ), URL (`?rooms=1,3`), DB
                        (`lib/queries.js → applyRoomFilter`) БҮГД ХЭВЭЭР ✓
                     ⚠️ `data-room-filter` / `data-room-value` нь `scripts/cdp-rooms.mjs`-ийн
-                       дэгээ — УСТГАХГҮЙ ✓; «N сонгосон» ба «✕ Цуцлах» ХЭВЭЭР ✓ */}
+                       дэгээ — УСТГАХГҮЙ ✓; «N сонгосон» ба «✕ Цуцлах» ХЭВЭЭР ✓
+                    🆕 2026-10-06 (18): блок нь ЭВХЭГДДЭГ (`collapsible`) — 5 чип нь
+                       босго (`SIDEBAR_CHIP_COLLAPSE_MIN`) хүрсэн тул анхдагчаар
+                       ХУРААСАН (сонгосон утга байвал АВТОМАТААР НЭЭЛТТЭЙ ✓) */}
                 {showRooms && (
-                  <SideBlock label="Өрөөний тоо">
+                  <SideBlock
+                    label="Өрөөний тоо"
+                    collapseKey="rooms"
+                    collapsible
+                    open={blockOpen('rooms', ROOM_OPTIONS.length, filters.rooms.length)}
+                    onToggle={() => toggleSideBlock('rooms', ROOM_OPTIONS.length, filters.rooms.length)}
+                    count={filters.rooms.length}
+                  >
                     <div
                       className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
                       data-room-filter
@@ -3104,8 +3209,26 @@ export default function HomeClient() {
                   const depOptions = f.optionsFrom
                     ? lookupMap(f.optionsMap, attrValue(f.optionsFrom))
                     : [];
+                  /**
+                   * 🆕 2026-10-06 (18): ЗӨВХӨН ЧИП талбар (`f.chips`) нь ХУРААГДДАГ
+                   *    (`<select>`/текст/combobox/хүрээ нь жижиг тул хэвээр ✓) —
+                   *    5+ сонголттой чип блок анхдагчаар хаалттай, сонгосон утга
+                   *    байвал нээлттэй (`blockOpen` — нэг дүрэм ✓)
+                   */
+                  const chipActive = f.chips ? countAttrValues(attrArray(f.key)) : 0;
+                  const chipOptions = (f.options || []).length;
                   return (
-                  <SideBlock key={f.key} label={f.label}>
+                  <SideBlock
+                    key={f.key}
+                    label={f.label}
+                    collapseKey={f.key}
+                    collapsible={!!f.chips}
+                    open={!f.chips || blockOpen(f.key, chipOptions, chipActive)}
+                    onToggle={f.chips
+                      ? () => toggleSideBlock(f.key, chipOptions, chipActive)
+                      : undefined}
+                    count={chipActive}
+                  >
                     {f.chips ? (
                       f.multi ? (
                         /* 🎨 ОЛОН СОНГОЛТТОЙ ЧИП (2026-10-03 (19); ✅ «Шинэ /
@@ -3289,9 +3412,19 @@ export default function HomeClient() {
                     ⚠️ `data-payment-filter` / `data-payment-value` нь
                        `scripts/cdp-payments.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓
                     🆕 2026-10-06 (17): ЭНЭ блокийн ЯГ АРАА 🚗 🎨 Өнгө · ⛽ Түлш ·
-                       ⚙️ Хурдны хайрцаг гарна (`afterPaymentAttrs`) — доор ✓ */}
+                       ⚙️ Хурдны хайрцаг гарна (`afterPaymentAttrs`) — доор ✓
+                    🆕 2026-10-06 (18): 💳 нь 4 сонголттой (босгоос ЦӨӨН) тул
+                       анхдагчаар НЭЭЛТТЭЙ ч, «Дэлгэрэнгүй хайлт»-ийн товчоор
+                       (эсвэл гарчиг дээр дарж) хураагдаж болно ✓ */}
                 {showPayments && (
-                  <SideBlock label="Төлбөрийн нөхцөл">
+                  <SideBlock
+                    label="Төлбөрийн нөхцөл"
+                    collapseKey="payments"
+                    collapsible
+                    open={blockOpen('payments', PAYMENT_OPTIONS.length, countPayments(filters.payments))}
+                    onToggle={() => toggleSideBlock('payments', PAYMENT_OPTIONS.length, countPayments(filters.payments))}
+                    count={countPayments(filters.payments)}
+                  >
                     <div
                       className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
                       data-payment-filter
@@ -3351,7 +3484,17 @@ export default function HomeClient() {
                        🏠 үл хөдлөх · 💼 ажил · 💻 компьютер зэрэгт `afterPayment`
                        талбар БАЙХГҮЙ тул энэ блок тэнд ОГТ ГАРАХГҮЙ ✓ */}
                 {afterPaymentAttrs.map((f) => (
-                  <SideBlock key={f.key} label={f.label}>
+                  <SideBlock
+                    key={f.key}
+                    label={f.label}
+                    collapseKey={f.key}
+                    collapsible
+                    open={blockOpen(f.key, (f.options || []).length, countAttrValues(attrArray(f.key)))}
+                    onToggle={() => toggleSideBlock(
+                      f.key, (f.options || []).length, countAttrValues(attrArray(f.key)),
+                    )}
+                    count={countAttrValues(attrArray(f.key))}
+                  >
                     {attrChipsBlock(f)}
                   </SideBlock>
                 ))}
