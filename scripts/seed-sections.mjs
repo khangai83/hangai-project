@@ -43,10 +43,11 @@
 import { createRequire } from 'node:module';
 import {
   SECTIONS, getSubtypes, CAR_BRANDS, CITIES, getDistricts, getKhoroos,
-  COMPUTER_SUBTYPE_GROUPS,   // 💻 Notebook бүлгийн брэндүүд (2026-09-29)
   // 💻 2026-09-30 (6): Notebook-ийн 4 үзүүлэлт — форм дээрх СОНГОЛТУУД нь
   //    ЭНД ХАДГАЛАГДСАН демо утгуудтай ЯГ ИЖИЛ байх ЁСТОЙ (доорх шалгалт ✓)
-  NOTEBOOK_BRANDS, PC_SPEC_SUBTYPES,
+  //    (🗑 2026-10-07 (57): `NOTEBOOK_BRANDS` ХАСАГДАВ — Notebook нь ганц
+  //     дэд төрөл болов; `PC_SPEC_SUBTYPES` нь зөвхөн `['Notebook']` ✓)
+  PC_SPEC_SUBTYPES,
   NOTEBOOK_SCREEN_OPTIONS, NOTEBOOK_CPU_OPTIONS, NOTEBOOK_RAM_OPTIONS, NOTEBOOK_STORAGE_OPTIONS,
   // 🚗 2026-10-01: 🔧 «Хөдөлгүүр» + 🎨 «Өнгө» — демо утга нь форм дээрх
   //    СОНГОЛТУУДТАЙ ЯГ ИЖИЛ байх ёстой (доор `makeAttrs`-д эдгээрээс сонгоно ✓)
@@ -454,19 +455,16 @@ const HOBBY_SIZE = {
 const HOBBY_SIZE_DEFAULT = ['Стандарт хэмжээ', 'Иж бүрэн', '1 багц'];
 
 /**
- * 💻 «Notebook» бүлгийн БРЭНД дэд төрлүүд (2026-09-29) — `lib/locationData.js`-ийн
- * `COMPUTER_SUBTYPE_GROUPS`-ээс АВТОМАТААР уншина (нэг эх сурвалж ✓).
- * ⚠️ Эдгээр дэд төрөлд `attrs.brand` нь дэд төрлийн нэртэй ЯГ ИЖИЛ байх ёстой
- *    (эс бөгөөс «Apple» төрөлд «Dell XPS» гэж гарч төөрөгдүүлнэ ✗)
- * ⚠️ 2026-09-30 (6): унших логик нь `lib/locationData.js` → `NOTEBOOK_BRANDS`
- *    болж ЗӨӨРӨВ (форм дээрх `PC_SPEC_SUBTYPES` ч мөн адил) — энд зөвхөн
- *    `Set` болгож хөрвүүлнэ ✓
- */
-const PC_NOTEBOOK_BRANDS = new Set(NOTEBOOK_BRANDS);
-
-/**
- * ⚠️ 💻 Notebook-ийн 21 брэнд дээр л `attrs.screen|cpu|ram|storage` үүснэ
- *    (2026-09-30 (6)) — формын `PC_SPEC_SUBTYPES`-тай ЯГ ИЖИЛ жагсаалт ✓
+ * 🗑 2026-10-07 (57) (хэрэглэгчийн хүсэлт: «Notebook ний зар оруулах хэсгийн
+ *    step=1 дээр брэнд сонгох хэсгийг delete хийнэ үү»): «Notebook» нь ОДОО
+ *    ганц дэд төрөл (`property_type = 'Notebook'`) ⇒ брэнд нь дэд төрөл БИШ,
+ *    харин форм дээрх `attrs.brand` (доорх `PC_SUBTYPE_PAIRS['Notebook']`-ээс
+ *    санамсаргүй сонгоно ✓). ⏳ Өмнө нь `PC_NOTEBOOK_BRANDS` (21 брэнд)
+ *    байв — брэнд нь дэд төрөл байсан тул `attrs.brand` нь дэд төрлийн
+ *    нэртэй ЯГ ИЖИЛ байх ёстой байлаа ✗
+ *
+ * ⚠️ `attrs.screen|cpu|ram|storage` нь ЗӨВХӨН `PC_SPEC_SUBTYPES` (= `['Notebook']`)
+ *    дэд төрөлд үүснэ (2026-09-30 (6)) — формын жагсаалттай ЯГ ИЖИЛ ✓
  *    (Mouse/Keyboard/тонер/тоглоом/чихэвч/«Иж бүрэн компьютер» (52)/
  *     «Процессор, сервер» (55) дээр эдгээр талбар форм дээр ХАРАГДАХГҮЙ
  *     болсон тул демо өгөгдөл ч үүсгэхгүй ✓)
@@ -520,28 +518,32 @@ const PC_SUBTYPE_PAIRS = {
   'Процессор, сервер': [['Intel', 'Xeon E-2336'], ['AMD', 'EPYC 7302'], ['Dell', 'PowerEdge T40'], ['HP', 'ProLiant ML30'], ['Intel', 'Core i7-12700K'], ['AMD', 'Ryzen 7 5800X']],
   'Mouse': [['Logitech', 'MX Master 3S'], ['Logitech', 'G102 Lightsync'], ['A4Tech', 'Bloody V7'], ['Razer', 'DeathAdder V2'], ['Microsoft', 'Wireless 1850']],
   'Keyboard': [['Logitech', 'K380'], ['Razer', 'BlackWidow V3'], ['A4Tech', 'Bloody B120'], ['HyperX', 'Alloy Origins'], ['Apple', 'Magic Keyboard']],
-  // ---------- 🏷 Notebook (брэнд бүр өөрийн загвартай) ----------
-  'Apple': [['Apple', 'MacBook Pro 14'], ['Apple', 'MacBook Air M2'], ['Apple', 'MacBook Pro 16 M3']],
-  'Acer': [['Acer', 'Aspire 5'], ['Acer', 'Nitro 5']],
-  'Asus': [['Asus', 'VivoBook 15'], ['Asus', 'ROG Strix G15']],
-  'Toshiba': [['Toshiba', 'Satellite C55'], ['Toshiba', 'Portégé X30']],
-  'Compaq': [['Compaq', 'Presario CQ58'], ['Compaq', 'Presario V3000']],
-  'Dell': [['Dell', 'XPS 15'], ['Dell', 'Latitude 5420'], ['Dell', 'Inspiron 3510']],
-  'Dere': [['Dere', 'R14 Pro'], ['Dere', 'M15']],
-  'Evoo': [['Evoo', 'EVOO 14"'], ['Evoo', 'EVOO 15.6"']],
-  'Fujitsu': [['Fujitsu', 'LifeBook A357'], ['Fujitsu', 'LifeBook U938']],
-  'Gateway': [['Gateway', 'GWNC21524'], ['Gateway', 'GWTN141-10']],
-  'Haier': [['Haier', 'Y11B'], ['Haier', 'Laptop 15 Pro']],
-  'HP': [['HP', 'Pavilion 15'], ['HP', 'EliteBook 840'], ['HP', 'ProBook 450']],
-  'Lenovo': [['Lenovo', 'ThinkPad T14'], ['Lenovo', 'IdeaPad 3'], ['Lenovo', 'Legion 5']],
-  'LG': [['LG', 'Gram 16'], ['LG', 'Ultra PC 15']],
-  'Microsoft Surface': [['Microsoft', 'Surface Laptop 5'], ['Microsoft', 'Surface Pro 9']],
-  'MSI': [['MSI', 'Katana GF66'], ['MSI', 'Modern 14']],
-  'Samsung': [['Samsung', 'Galaxy Book2'], ['Samsung', 'Galaxy Book3 Pro']],
-  'Sony': [['Sony', 'VAIO E Series'], ['Sony', 'VAIO Pro 13']],
-  'Redmi': [['Redmi', 'RedmiBook 15'], ['Redmi', 'RedmiBook Pro 14']],
-  'Razer Blade': [['Razer', 'Blade 15'], ['Razer', 'Blade 14']],
-  'Huawei': [['Huawei', 'MateBook D15'], ['Huawei', 'MateBook X Pro']],
+  // ---------- 🏷 Notebook (🗑 2026-10-07 (57): ОДОО ганц дэд төрөл —
+  //    «Notebook»; брэнд нь `attrs.brand` болсон тул бүх брэндийн
+  //    загваруудыг НЭГДҮҮЛСЭН нөөцөөс санамсаргүй сонгоно ✓) ----------
+  'Notebook': [
+    ['Apple', 'MacBook Pro 14'], ['Apple', 'MacBook Air M2'], ['Apple', 'MacBook Pro 16 M3'],
+    ['Acer', 'Aspire 5'], ['Acer', 'Nitro 5'],
+    ['Asus', 'VivoBook 15'], ['Asus', 'ROG Strix G15'],
+    ['Toshiba', 'Satellite C55'], ['Toshiba', 'Portégé X30'],
+    ['Compaq', 'Presario CQ58'], ['Compaq', 'Presario V3000'],
+    ['Dell', 'XPS 15'], ['Dell', 'Latitude 5420'], ['Dell', 'Inspiron 3510'],
+    ['Dere', 'R14 Pro'], ['Dere', 'M15'],
+    ['Evoo', 'EVOO 14"'], ['Evoo', 'EVOO 15.6"'],
+    ['Fujitsu', 'LifeBook A357'], ['Fujitsu', 'LifeBook U938'],
+    ['Gateway', 'GWNC21524'], ['Gateway', 'GWTN141-10'],
+    ['Haier', 'Y11B'], ['Haier', 'Laptop 15 Pro'],
+    ['HP', 'Pavilion 15'], ['HP', 'EliteBook 840'], ['HP', 'ProBook 450'],
+    ['Lenovo', 'ThinkPad T14'], ['Lenovo', 'IdeaPad 3'], ['Lenovo', 'Legion 5'],
+    ['LG', 'Gram 16'], ['LG', 'Ultra PC 15'],
+    ['Microsoft', 'Surface Laptop 5'], ['Microsoft', 'Surface Pro 9'],
+    ['MSI', 'Katana GF66'], ['MSI', 'Modern 14'],
+    ['Samsung', 'Galaxy Book2'], ['Samsung', 'Galaxy Book3 Pro'],
+    ['Sony', 'VAIO E Series'], ['Sony', 'VAIO Pro 13'],
+    ['Redmi', 'RedmiBook 15'], ['Redmi', 'RedmiBook Pro 14'],
+    ['Razer', 'Blade 15'], ['Razer', 'Blade 14'],
+    ['Huawei', 'MateBook D15'], ['Huawei', 'MateBook X Pro'],
+  ],
   // ---------- 🎮 PS, XBox, Nintendo ----------
   'Xbox': [['Microsoft', 'Xbox Series X'], ['Microsoft', 'Xbox Series S'], ['Microsoft', 'Xbox One S']],
   'Xbox-ын тоглоомууд': [['Microsoft', 'Halo Infinite'], ['Microsoft', 'Forza Horizon 5'], ['Microsoft', 'Gears 5'], ['Microsoft', 'EA FC 24']],
@@ -779,8 +781,9 @@ const HOME_PRICE_DEFAULT = [50e3, 3e6];
 // ⚠️ 2026-09-30 (5): `HOME_FURNITURE` (Set) ХАСАГДАВ — «Тавилга» нь 🛋️
 // `furniture` ТУСДАА ХЭСЭГ болсон тул `makeAttrs` нь хэсгээрээ шууд шалгана
 // (`section === 'furniture'`) → материал/хэмжээ нь бүлгээс хамаарах
-// шаардлагагүй ✓ (💻 `PC_NOTEBOOK_BRANDS`-ийн зарчим ХЭВЭЭР: `COMPUTER_
-// SUBTYPE_GROUPS`-ээс уншина — ⚠️ тэр нь ОДОО ч 3 дахь түвшинтэй)
+// шаардлагагүй ✓ (💻 компьютерийн зарчим ХЭВЭЭР: `section === 'computers'`)
+// 🗑 2026-10-07 (57): `COMPUTER_SUBTYPE_GROUPS`-ийг seed ОДОО уншихгүй —
+//    «Notebook» нь ганц дэд төрөл болов (`NOTEBOOK_BRANDS` ХАСАГДАВ) ✓
 
 /** 🛋️ Тавилгын материал — ⚠️ «Шил»/«Керамик» нь буйдан/ор дээр утгагүй ✗ */
 const FURNITURE_MATERIALS = ['Мод', 'Мод', 'Мод', 'Арьс', 'Даавуу', 'Металл'];
@@ -1102,13 +1105,12 @@ function makeAttrs(section, subtype) {
   }
   if (section === 'computers') {
     // ⚠️ 2026-09-29: дэд төрөл нь 3 ТҮВШНИЙ мод болов (`COMPUTER_SUBTYPE_GROUPS`)
-    //    — Notebook бүлэгт брэнд нь ӨӨРӨӨ дэд төрөл тул `attrs.brand` нь
-    //    дэд төрлийн нэртэй ЯГ ИЖИЛ байх ёстой ✓
+    // 🗑 2026-10-07 (57): Notebook нь ОДОО ганц дэд төрөл — брэнд нь дэд
+    //    төрөл БИШ, харин `attrs.brand` (брэнд+загвар нь нэгдсэн нөөцөөс ✓)
     const [brand, model] = pick(PC_SUBTYPE_PAIRS[subtype] || PC_PAIRS);
     /**
      * ⚠️ 2026-09-30 (6): Дэлгэц/CPU/RAM/Хард нь ЗӨВХӨН `PC_SPEC_SUBTYPES`
-     *    (Notebook-ийн 21 брэнд) дэд төрөлд үүснэ — форм дээр ч ЯГ тэнд л
-     *    харагдана ✓.
+     *    (`['Notebook']`) дэд төрөлд үүснэ — форм дээр ч ЯГ тэнд л харагдана ✓.
      * ⚠️ 🆕 2026-10-07 (52): «Иж бүрэн компьютер» `PC_SPEC_SUBTYPES`-ээс
      *    ХАСАГДАВ (форм нь «Дэлгэц»-тэй ЯГ ИЖИЛ — зөвхөн ✅ «Төлөв») ⇒ specs
      *    нь ОДОО тэр дэд төрөлд үүсэхгүй ✓ (брэнд/загвар нь demo-д ХЭВЭЭР)
@@ -1120,7 +1122,7 @@ function makeAttrs(section, subtype) {
      *    форм дээр хэмжээний сонголт байхгүй, картын мөрөнд ч ороогүй ✓)
      */
     return {
-      brand: PC_NOTEBOOK_BRANDS.has(subtype) ? subtype : brand,
+      brand,
       model,
       ...(PC_SPEC.has(subtype)
         ? {
@@ -1570,7 +1572,7 @@ if (IS_DIRECT_RUN) (async () => {
       ['real-estate', 'Орон сууц', 0], ['real-estate', 'Орон сууц', 1],
       ['auto', 'Суудлын машин', 0], ['auto', 'Жийп, SUV', 1],
       ['jobs', 'МТ, харилцаа холбоо', 0], ['jobs', 'Гүйцэтгэх удирдлага', 1],
-      ['jobs', 'Цагийн ажил', 2], ['computers', 'Apple', 0],
+      ['jobs', 'Цагийн ажил', 2], ['computers', 'Notebook', 0],
       ['computers', 'Иж бүрэн компьютер', 1], ['computers', 'Чихэвч', 2],
       // 🛋️ Тавилга / 🧺 Гэр ахуйн бараа (2026-09-30 (5)-д 2 хэсэг болов)
       ['furniture', 'Буйдан, кресло', 0], ['furniture', 'Зочны өрөөний', 1],

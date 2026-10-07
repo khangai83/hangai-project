@@ -247,8 +247,8 @@ t('📝 (2026-10-07) `descriptionAfterTitle` — энгийн формтой х�
   //    адил condition-only болов ⇒ 📝 тайлбар ГАРЧГИЙН ДАРАА гарна ✓
   assert.equal(descriptionAfterTitle('computers', 'Процессор, сервер'), true, '💻 «Процессор, сервер» (Mouse-той адил) ✗');
   assert.equal(descriptionAfterTitle('computers', 'Mouse'), true, '💻 Mouse ✗');
-  /** ③ ⚠️ ХӨНДӨӨГДӨХГҮЙ: 💻 Notebook гэр бүл · 🏠 үл хөдлөх · 🚗 авто · 💼 ажил ⇒ false */
-  assert.equal(descriptionAfterTitle('computers', 'Apple'), false, '💻 Notebook (Apple) ✗');
+  /** ③ ⚠️ ХӨНДӨӨГДӨХГҮЙ: 💻 Notebook · 🏠 үл хөдлөх · 🚗 авто · 💼 ажил ⇒ false */
+  assert.equal(descriptionAfterTitle('computers', 'Notebook'), false, '💻 Notebook ✗');
   assert.equal(descriptionAfterTitle('real-estate'), false, '🏠 үл хөдлөх ✗');
   assert.equal(descriptionAfterTitle('auto'), false, '🚗 авто ✗');
   assert.equal(descriptionAfterTitle('jobs'), false, '💼 ажил ✗');

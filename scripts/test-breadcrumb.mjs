@@ -137,16 +137,20 @@ t('💼 jobs «Программист»: хэсгийн нэр «Ажлын за
 // ============================================================
 // ③ 🛠 БҮЛЭГ (3 дахь түвшин) — `computers`/`electric`/`services`…
 // ============================================================
-t('💻 computers «Apple»: бүлэг «Notebook» замд НЭМЭГДЭНЭ', () => {
-  const items = buildListingBreadcrumb({ section: 'computers', property_type: 'Apple' });
-  assert.deepEqual(labels(items), ['Бүх зар', 'Компьютер, Дагалдах хэрэгсэл', 'Notebook', 'Apple']);
-  // 🔗 2026-10-01 (15): сүүлийн crumb («Apple») Ч линк — `linkLast: true` ✓
+t('💻 computers «Notebook»: бүлэг crumb БАЙХГҮЙ — дэд төрөл нь ШУУД', () => {
+  // 🗑 2026-10-07 (57): «Notebook» нь leaf дэд төрөл болов ⇒ `findSubtypeGroup`
+  //    NULL тул «Notebook» ГАНЦ удаа (бүлэг + дэд төрөл давхардахгүй) ✓
+  const items = buildListingBreadcrumb({ section: 'computers', property_type: 'Notebook' });
+  assert.deepEqual(labels(items), ['Бүх зар', 'Компьютер, Дагалдах хэрэгсэл', 'Notebook']);
+  // 🔗 2026-10-01 (15): сүүлийн crumb («Notebook») Ч линк — `linkLast: true` ✓
   assert.equal(items[items.length - 1].linkLast, true);
 });
 
-t('💻 computers «Apple»-ийн бүлэг crumb нь `section=computers` линктэй', () => {
+t('💻 computers «Apple» (ХУУЧИН брэнд зар): бүлэггүй, дэд төрөл нь ШУУД', () => {
+  // ⚠️ 0039 migration-аас өмнөх зар (`property_type='Apple'`) — `findSubtypeGroup`
+  //    NULL (брэнд нь дэд төрөл БИШ) ⇒ зөвхөн section › type ✓ (крашгүй)
   const items = buildListingBreadcrumb({ section: 'computers', property_type: 'Apple' });
-  assert.ok(items[2].href.includes('section=computers'), items[2].href);
+  assert.deepEqual(labels(items), ['Бүх зар', 'Компьютер, Дагалдах хэрэгсэл', 'Apple']);
 });
 
 // ============================================================

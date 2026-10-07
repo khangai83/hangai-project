@@ -508,11 +508,12 @@ t('💻 (43) 📺/⚙️/🧠/💾: `type: select` ХЭВЭЭР ч `chips` + `mu
       [['in', `attrs->>${key}`, ['Intel Core i5']]], key);
     assert.deepEqual(callsFor(key, []), [], key);
   });
-  // ⚠️ Зөвхөн Notebook-ийн гэр бүлд (📺/⚙️/🧠/💾 нь `onlySubtypes` — хэвээр ✓)
-  assert.ok(getAttrFilters('computers', 'Lenovo').some((x) => x.key === 'cpu'));
+  // ⚠️ Зөвхөн Notebook дэд төрөлд (📺/⚙️/🧠/💾 нь `onlySubtypes` — 🗑 2026-10-07 (57):
+  //    Notebook нь ганц дэд төрөл болов)
+  assert.ok(getAttrFilters('computers', 'Notebook').some((x) => x.key === 'cpu'));
   assert.ok(!getAttrFilters('computers', 'Mouse').some((x) => x.key === 'cpu'));
   // ⚠️ Хуучин шүүлтийн дараалал ХӨНДӨГДӨӨГҮЙ (`brand → … → condition` ✓)
-  assert.deepEqual(getAttrFilters('computers', 'Lenovo').map((x) => x.key),
+  assert.deepEqual(getAttrFilters('computers', 'Notebook').map((x) => x.key),
     ['brand', 'screen', 'cpu', 'ram', 'storage', 'condition']);
 });
 

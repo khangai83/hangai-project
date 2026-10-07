@@ -46,7 +46,7 @@
  *   ③ ХАВТГАЙ хэсэг (🚗 auto) → багана 3 АРИЛНА (2 багана) + хуучин сонголт
  *      цэвэрлэгдэнэ ✓ (толгойн нэр 2026-10-01-нд ХАСАГДСАН тул одоо «сонгосон
  *      мөр 0» гэдгээр шалгана ✓)
- *   ④ БҮЛЭГТЭЙ хэсэг (💻 computers) → 9 бүлэг, «Notebook» → 22 брэнд (3 багана) ✓
+ *   ④ БҮЛЭГТЭЙ хэсэг (💻 computers) → 9 бүлэг, «Notebook» нь LEAF (3 дахь багана 0) ✓
  *   ⑤ ДООД ТҮВШИНГҮЙ бүлэг (💻 Чихэвч) нь ӨӨРӨӨ leaf болж хадгалагдана
  *   ⑥ АЛХМЫН ТАБ ба форм дотрох АЛХМЫН ГАРЧИГ ХОЁУЛАА ХАСАГДСАН
  *      (0 `role="tab"` · `[data-step-heading]` = 0) + «Үргэлжлүүлэх» → 2-р алхам
@@ -556,32 +556,32 @@ ok('хавтгай: багана 2-т «Жийп, SUV» ГАНЦ (цэнхэр �
   p4.cols.level2?.dupe === 1 && p4.pickerTitles === 0,
   `dupe=${p4.cols.level2?.dupe} pickerTitles=${p4.pickerTitles}`);
 
-console.log('\n── ④ БҮЛЭГТЭЙ ХЭСЭГ (💻 Компьютер) → 3 БАГАНА ──');
+console.log('\n── ④ БҮЛЭГТЭЙ ХЭСЭГ (💻 Компьютер) → «Notebook» нь LEAF ──');
 await click('[data-picker="section"] button[data-picker-value="computers"]');
 const p5 = await probe();
 ok('3 багана буцаж ирэв (DOM-д нийт 6 = 🗂 3 + 📍 3 ✓)', p5.colCount === 6, `colCount=${p5.colCount}`);
 ok('багана 2 = 9 БҮЛЭГ', p5.cols.level2?.items.length === 9, JSON.stringify(p5.cols.level2?.items));
 ok('багана 3 хоосон (бүлэг сонгоогүй)', p5.cols.level3?.items.length === 0, String(p5.cols.level3?.items.length));
+/**
+ * 🗑 2026-10-07 (57): «Notebook» нь ДООД ТҮВШИНГҮЙ бүлэг болов (хэрэглэгчийн
+ *    хүсэлт) ⇒ дармагц өөрөө дэд төрөл болно (`property_type='Notebook'`),
+ *    3 дахь багана ГАРАХГҮЙ ✓ (⏳ өмнө нь 22 брэнд гардаг байв ✗)
+ */
 await click('[data-picker="level2"] button[data-picker-value="Notebook"]');
-const p6 = await probe();
-ok('багана 2: «💻 Notebook» сонгосон утга ГАНЦ (толгойд давхардахгүй ✓)',
-  p6.cols.level2?.dupe === 1, `dupe=${p6.cols.level2?.dupe} selected=${JSON.stringify(p6.cols.level2?.selected)}`);
-ok('багана 3 = Notebook-ийн 22 брэнд', p6.cols.level3?.items.length === 22, String(p6.cols.level3?.items.length));
-await click('[data-picker="level3"] button[data-picker-value="Apple"]');
 const p7 = await probe();
-ok('багана 3-т «Apple» сонгогдов', JSON.stringify(p7.cols.level3?.selected) === '["Apple"]', JSON.stringify(p7.cols.level3?.selected));
-ok('бүлэгтэй: багана 3-т «Apple» ГАНЦ (цэнхэр мөр ✓, толгой ХАСАГДСАН ✓)',
-  p7.cols.level3?.dupe === 1 && p7.pickerTitles === 0,
-  `dupe=${p7.cols.level3?.dupe} pickerTitles=${p7.pickerTitles}`);
-ok('дүгнэлтэд БҮТЭН ЗАМ («Компьютер … › Notebook › Apple»)',
-  ['Компьютер', 'Notebook', 'Apple'].every((x) => (p7.summary || '').includes(x)), p7.summary);
+ok('багана 2: «💻 Notebook» сонгосон (leaf — 3 дахь багана 0 ✓)',
+  p7.cols.level3?.items.length === 0,
+  `level3=${p7.cols.level3?.items.length}`);
+ok('дүгнэлтэд «Notebook» ГАНЦ удаа (бүлэг=leaf — давхардалгүй ✓)',
+  (p7.summary || '').includes('Notebook')
+    && (p7.summary || '').split('Notebook').length - 1 === 1, p7.summary);
 
 console.log('\n── ⑤ ДООД ТҮВШИНГҮЙ БҮЛЭГ (💻 Чихэвч) = өөрөө leaf ──');
 await click('[data-picker="level2"] button[data-picker-value="Чихэвч"]');
 const p8 = await probe();
 ok('багана 2-т «Чихэвч» сонгогдов', JSON.stringify(p8.cols.level2?.selected) === '["Чихэвч"]', JSON.stringify(p8.cols.level2?.selected));
 ok('дүгнэлтэд «Чихэвч» (бүлэг=leaf) 1 УДАА — давхардалгүй',
-  (p8.summary || '').includes('Чихэвч') && !(p8.summary || '').includes('Apple')
+  (p8.summary || '').includes('Чихэвч')
   && (p8.summary || '').split('Чихэвч').length - 1 === 1, p8.summary);
 
 console.log('\n── ⑥ ТАБ БА АЛХМЫН ГАРЧИГ ХАСАГДСАН + 2-Р АЛХАМ = 📍 БАЙРШИЛ ──');

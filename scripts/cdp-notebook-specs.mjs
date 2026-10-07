@@ -24,7 +24,7 @@
  *   ардаас оруул») ⇒ 🚗/🏠-аас бусад хэсэгт `#filter-bar` ОГТ БАЙХГҮЙ ✓
  *
  * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ:
- *   ① `?section=computers&type=Apple` (Notebook брэнд) дээр `[data-attr-filter]`
+ *   ① `?section=computers&type=Notebook` (Notebook дэд төрөл) дээр `[data-attr-filter]`
  *      === 5 (📺 → ⚙️ → 🧠 → 💾 → ✅), дараалал/шошго нь ЛИБЭЭС ижил ✓
  *      ⚠️ 5-уулаа `#filter-bar` PILL (`filterBar: true`) — сайдбарт attr шүүлт 0,
  *         НЭГ Ч `<select>` БАЙХГҮЙ (⏳ 2026-10-03 (7)-д 4 нь `<select>` байв ✗)
@@ -356,7 +356,7 @@ const lastQ = () => {
  *    ⚠️ 🏷️ «Брэнд» нь `searchable` тул `SearchableSelect` (combobox) болж зурагдана
  *       — тэр нь `[data-attr-filter]` дэгээгүй ✗ ⇒ харьцуулалтаас ХАСНА
  */
-const EXPECT = getAttrFilters('computers', 'Apple').filter((f) => !f.searchable);
+const EXPECT = getAttrFilters('computers', 'Notebook').filter((f) => !f.searchable);
 /**
  * 🆕 2026-10-03 (21): ✅ «Шинэ / Шинэвтэр / Хуучин» нь ЧИП блок болов
  *    (`chips: true`) — тэр нь `.options`/`.value` БАЙХГҮЙ (`<select>` БИШ) тул
@@ -379,7 +379,7 @@ await rpc('Emulation.setDeviceMetricsOverride', { width: 1280, height: 1400, dev
 
 // ═══════ ① 💻 NOTEBOOK БРЭНД (Apple): 5 PILL (4 ҮЗҮҮЛЭЛТ + ✅ «Төлөв») ═══════
 listingReqs.length = 0;
-await go(`${BASE}/?section=computers&type=Apple`);
+await go(`${BASE}/?section=computers&type=Notebook`);
 /**
  * ⚠️ `go()` нь зөвхөн шүүлтийн pill-ийг ХҮЛЭЭНЭ — САЙДБАРЫН доод
  *    «N зар харуулах» мөр (үр дүнгийн НИЙТ тоо) нь ЖАГСААЛТ ачаалагдсаны
@@ -504,7 +504,7 @@ check('✅ «Төлөв» блок нь 3 чип (Шинэ · Шинэвтэр �
 
 // ═══════ ③ ЛИНКЭЭР ОРОХ (`?attr_cpu=…`) — PILL дотор тэмдэглэгдэнэ ═══════
 listingReqs.length = 0;
-await go(`${BASE}/?section=computers&type=Apple&attr_cpu=Intel+Core+i5`);
+await go(`${BASE}/?section=computers&type=Notebook&attr_cpu=Intel+Core+i5`);
 const deep = await specUi();
 const deepCpu = deep.chipBlocks.find((b) => b.key === 'cpu');
 check('🔗 Линкээр орсон утга pill дотор ТЭМДЭГЛЭГДЭВ',
@@ -516,7 +516,7 @@ check('🔎 DB: `attrs->>cpu=in.(Intel Core i5)` хэвээр (⚠️ урьд `
 
 // ---- ③d 🆕 (43) 📺 МЭТ ТЭМДЭГТТЭЙ утга («14.0"») — `in.(…)` дотор ч ЭВДРЭХГҮЙ ----
 listingReqs.length = 0;
-await go(`${BASE}/?section=computers&type=Apple&attr_screen=`
+await go(`${BASE}/?section=computers&type=Notebook&attr_screen=`
   + `${encodeURIComponent('14.0"')},${encodeURIComponent('15.6"')}`);
 await sleep(1500);
 const inch = await specUi();
@@ -588,7 +588,7 @@ check('🕳 URL-аас `attr_brand` АРИЛАВ (үл үзэгдэх Брэнд
   !/attr_brand/.test(decodeURIComponent(await url())), (await url()) || '(хоосон)');
 check('🔎 DB: `attrs->>brand` ОГТ ЯВАХГҮЙ (харагдахгүй шүүлт явахгүй ✓)',
   !dbQ('attrs->>brand'), lastQ());
-check('🏷 Харьцуулбал Notebook брэнд (Apple) дээр «Брэнд» блок БАЙНА (ялгаа тод ✓)',
+check('🏷 Харьцуулбал Notebook дээр «Брэнд» блок БАЙНА (ялгаа тод ✓)',
   /Брэнд/.test(apple.blocks.join(' ')), apple.blocks.join(' | '));
 
 // ═══ ⑥ 🆕 ДЭД ТӨРӨЛ СОНГООГҮЙ Ч SIDEBAR БАЙНА (хэсэг = 2-р түвшин) ═══
@@ -930,7 +930,7 @@ check('🔎 DB: `attrs->>condition=in.(Хуучин)` (нэг утга ч `in.()
 
 // ═══════ ⑧ 📱 МОБАЙЛ (390×844) ═══════
 await rpc('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 3, mobile: true });
-await go(`${BASE}/?section=computers&type=Apple`);
+await go(`${BASE}/?section=computers&type=Notebook`);
 const mobile = await specUi();
 check('📱 Мобайл: 5 шүүлт ХАРАГДАНА (`data-attr-filter` === 5 ✓)',
   mobile.total === 5, `total=${mobile.total}`);
@@ -1021,7 +1021,7 @@ const probeUntil = async (key, okFn, tries = 6) => {
 };
 
 console.log('\n⑧b PILL HOVER — 💻 (computers): «бараан» болно (2026-10-06 (16))');
-await go(`${BASE}/?section=computers&type=Apple`);
+await go(`${BASE}/?section=computers&type=Notebook`);
 /** ⚠️ Нээлттэй ⌄ панель нь pill-ийн HOVER ЦЭГИЙГ халхална ✗ → ESC */
 await rpc('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27, nativeVirtualKeyCode: 27 });
 await rpc('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27, nativeVirtualKeyCode: 27 });
