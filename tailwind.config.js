@@ -169,12 +169,24 @@ module.exports = {
           from: { transform: 'scaleY(0)' },
           to: { transform: 'scaleY(1)' },
         },
+        /* 🆕 2026-10-07: 📝 «Хадгалагдсан ноорог сэргээгдлээ» FLASH —
+           доороос бага зэрэг гарч (уусан), 3.2 сек харагдаад, дахин уусаж
+           АЛГА БОЛНО (хэрэглэгч: «flash байдлаар гараад 3 sek орой үзэгдээд
+           алга болдог … уусгалттай»). ⚠️ `forwards` — төгсгөлд нь opacity 0
+           хэвээр (JS таймер элементийг мөн адил 3.2 сек-д устгана ✓) */
+        draftFlash: {
+          '0%': { opacity: '0', transform: 'translateY(10px) scale(0.98)' },
+          '12%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+          '85%': { opacity: '1', transform: 'translateY(0) scale(1)' },
+          '100%': { opacity: '0', transform: 'translateY(0) scale(1)' },
+        },
       },
       animation: {
         spin: 'spin 0.8s linear infinite',
         'slide-in': 'slideIn 0.3s ease',
         'slide-down': 'slideDown 0.18s ease-out',
         'grow-up': 'growUp 0.45s cubic-bezier(0.16, 1, 0.3, 1)',
+        'draft-flash': 'draftFlash 3.2s ease forwards',
       },
     },
   },

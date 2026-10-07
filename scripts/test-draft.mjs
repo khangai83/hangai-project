@@ -277,6 +277,41 @@ t('② `beforeunload`-д НАЙДАХГҮЙ (📱 iOS Safari/Firefox дээр Х
 });
 
 // ────────────────────────────────────────────────────────────
+// ②′ 📝 FLASH МЭДЭГДЭЛ (2026-10-07) — доод-төвд, саарал, уусгалттай, 3.2 сек
+// ────────────────────────────────────────────────────────────
+t('②′ FLASH: мэдэгдэл нь дэлгэцийн ДООД-ТӨВД `fixed` (form дотроос гадагшаа гарна ✓)', () => {
+  assert.ok(FORM.includes('fixed inset-x-0 bottom-20 z-[1500] flex justify-center'),
+    'доод-төв `fixed` хайрцаг алга ✗');
+  assert.ok(FORM.includes('pointer-events-none fixed'),
+    'гадны хайрцаг `pointer-events-none` БИШ ✗ (даралт хулгайлна)');
+});
+
+t('②′ FLASH: СААРАЛ өнгө + `backdrop-blur` + `animate-draft-flash` pill', () => {
+  assert.ok(FORM.includes('bg-gray-700/95'), 'саарал дэвсгэр (`bg-gray-700/95`) алга ✗');
+  assert.ok(FORM.includes('backdrop-blur-sm'), '`backdrop-blur-sm` алга ✗');
+  assert.ok(FORM.includes('animate-draft-flash'), '`animate-draft-flash` алга ✗');
+  // ⚠️ Хуучин АМБЕР (шар) баннер бүрэн ХАСАГДСАН
+  assert.equal(FORM.includes('bg-amber-50'), false, 'хуучин амбер баннер үлдсэн ✗');
+});
+
+t('②′ FLASH: `DRAFT_FLASH_MS` (=3200) таймер нь мэдэгдлийг DOM-оос УСТГАНА', () => {
+  assert.ok(/const DRAFT_FLASH_MS = 3200;/.test(FORM), '`DRAFT_FLASH_MS = 3200` алга ✗');
+  assert.ok(/setTimeout\(\(\) => setDraftNotice\(null\), DRAFT_FLASH_MS\)/.test(FORM),
+    'авто-устгах таймер алга ✗');
+  assert.ok(FORM.includes('}, [draftNotice]);'), 'таймерын effect dep (`[draftNotice]`) алга ✗');
+});
+
+t('②′ FLASH: `tailwind.config.js` — `draftFlash` keyframe + `draft-flash` 3.2s анимаци', () => {
+  const TW = readSrc('tailwind.config.js');
+  assert.ok(TW.includes('draftFlash:'), '`draftFlash` keyframe алга ✗');
+  assert.ok(TW.includes("'draft-flash': 'draftFlash 3.2s ease forwards'"),
+    '`draft-flash` анимаци (3.2s) алга ✗');
+  // ⚠️ Анимаци ба JS таймер ИЖИЛ хугацаатай БАЙХ ЁСТОЙ (3.2s = 3200ms)
+  assert.ok(TW.includes("'draft-flash': 'draftFlash 3.2s"),
+    'анимацийн хугацаа 3.2s БИШ ✗');
+});
+
+// ────────────────────────────────────────────────────────────
 // ③ 📄 DOC ГЭРЭЭ (`README.md`)
 // ────────────────────────────────────────────────────────────
 console.log('\n── ③ README — баримт ──');

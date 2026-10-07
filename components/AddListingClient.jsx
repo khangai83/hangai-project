@@ -436,6 +436,16 @@ const MOBILE_SKIP = '__skip__';
  */
 const DRAFT_SAVE_DELAY = 400;
 
+/**
+ * 📝 Нооргийн FLASH мэдэгдлийн ҮРГЭЛЖИЛГЭЭ (ms) — 2026-10-07 (хэрэглэгчийн хүсэлт:
+ *    «📝 Хадгалагдсан ноорог сэргээгдлээ гэдгийг дэлгэцийн center-ийн доод
+ *     хэсэгт flash байдлаар гараад 3 sek орчим үзэгдээд алга болдогоор»).
+ * ⚠️ Утга нь `tailwind.config.js`-ийн `draft-flash` анимаци (3.2s)-тай ЯГ ИЖИЛ
+ *    байх ёстой — анимаци fade-out болж дуусах тэр мөчид энэ таймер элементийг
+ *    DOM-оос УСТГАНА ✓ (эс бөгөөс үл үзэгдэх хэвээр үлдэж, даралт хулгайлна ✗)
+ */
+const DRAFT_FLASH_MS = 3200;
+
 
 /**
  * 🎡 УРТ жагсаалтад (ж: 📅 1980–2026 он = 48 мөр, 🏢 1–150 давхар = 151 мөр)
@@ -1195,6 +1205,22 @@ export default function AddListingClient() {
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftReady, authLoading, loadingEdit, userId, editId, draftStorageKey, form, pending, existingImages, mobileDetailStep]);
+
+
+  /**
+   * 📝 FLASH мэдэгдэл АВТО-УСТГАХ (2026-10-07) — `DRAFT_FLASH_MS` (~3.2 сек)-ийн
+   *    дараа `draftNotice`-ыг `null` болгоно ⇒ DOM-оос бүрэн арилна ✓
+   * ⚠️ `draftNotice` солигдох бүрд таймер ДАХИН эхэлнэ (шинэ сэргээлт).
+   *    ⚠️ Хэрэглэгч 🗑 «Устгах» дарвал `discardDraft` нь `null` болгож, энэ
+   *       эффектийн cleanup таймерыг цэвэрлэнэ ✓
+   *    ⚠️ Утга нь `tailwind.config.js`-ийн `draft-flash` (3.2s) анимацитай ИЖИЛ
+   *       тул fade-out дуусах тэр мөчид элемент DOM-оос арилна ✓
+   */
+  useEffect(() => {
+    if (!draftNotice) return undefined;
+    const t = setTimeout(() => setDraftNotice(null), DRAFT_FLASH_MS);
+    return () => clearTimeout(t);
+  }, [draftNotice]);
 
 
   /**
@@ -2514,30 +2540,43 @@ export default function AddListingClient() {
           <form onSubmit={handleSubmit}>
             {error && <div className="mb-3 rounded-lg bg-red-50 p-2.5 text-red-800">{error}</div>}
 
-            {/* ═══ 📝 НООРОГ СЭРГЭЭГДЭВ (2026-10-05, 54) ═══
-                Хэрэглэгчийн гомдол: «…гар утасны browser санамсаргүй refresh
-                хийхэд оруулж байсан мэдээлэл байхгүй болж байна» ⇒ `localStorage`-д
-                хадгалагдсан ноорог сэргээгдсэн үед ЭНЭ мэдэгдэл гарна.
-                ⚠️ Зөвхөн сэргээлт БОЛСОН үед (`draftNotice`) — хоосон форм дээр
+            {/* ═══ 📝 НООРОГ СЭРГЭЭГДЭВ — FLASH TOAST (2026-10-05 → 2026-10-07) ═══
+                Эх (54): «…гар утасны browser санамсаргүй refresh хийхэд оруулж
+                байсан мэдээлэл байхгүй болж байна» ⇒ `localStorage`-д хадгалагдсан
+                ноорог сэргээгдсэн үед мэдэгдэл гардаг байв (амбер, форм дотрох
+                бүтэн мөр).
+                🆕 2026-10-07 (хэрэглэгчийн хүсэлт): «📝 Хадгалагдсан ноорог
+                сэргээгдлээ гэдгийг дэлгэцийн center-ийн доод хэсэгт flash
+                байдлаар гараад 3 sek орчим үзэгдээд алга болдогоор … өнгө нь
+                саарал … уусгалттай» ⇒
+                  ① `fixed inset-x-0 bottom-*` — дэлгэцийн ДООД-ТӨВД ✓
+                  ② СААРАЛ (`bg-gray-700/95`, `backdrop-blur`) pill ✓
+                  ③ `animate-draft-flash` — доороос уусан гарч (fade-in) 3.2 сек
+                     харагдаад (fade-out) → DOM-оос УСТАНА (`DRAFT_FLASH_MS`) ✓
+                ⚠️ ЗӨВХӨН сэргээлт БОЛСОН үед (`draftNotice`) — хоосон форм дээр
                    хэзээ ч гарахгүй ✓
-                ⚠️ Товч нь `type="button"` — форм ДОТОР байгаа тул заавал
+                ⚠️ Гадны хайрцаг `pointer-events-none` (хуудасны даралтыг хулгайлахгүй);
+                   зөвхөн pill нь `pointer-events-auto` (товч дарагдана ✓)
+                ⚠️ Товч нь `type="button"` — `<form>` ДОТОР тул заавал
                    (эс бөгөөс дарахад форм submit болж, «Зарын гарчиг оруулна уу»
                    гэсэн алдаа гарна ✗ — (52)-ийн «✏️ Засах»-тай ижил урхи)
-                🔍 Хайх үг: data-draft-restored, data-draft-discard, ноорог */}
+                🔍 Хайх үг: data-draft-restored, data-draft-discard, animate-draft-flash */}
             {draftNotice && (
               <div
                 data-draft-restored="true"
-                className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[13px] leading-snug text-amber-900"
+                className="pointer-events-none fixed inset-x-0 bottom-20 z-[1500] flex justify-center px-4 lg:bottom-8"
               >
-                <span className="min-w-[12rem] flex-1">{draftNoticeText(draftNotice)}</span>
-                <button
-                  type="button"
-                  data-draft-discard="true"
-                  onClick={discardDraft}
-                  className="shrink-0 rounded-md border border-amber-400 bg-white px-2.5 py-1 font-medium text-amber-900 hover:bg-amber-100"
-                >
-                  🗑 Устгах
-                </button>
+                <div className="pointer-events-auto flex max-w-[92vw] flex-wrap items-center justify-center gap-x-3 gap-y-1.5 rounded-full bg-gray-700/95 px-4 py-2 text-[13px] font-medium text-white shadow-lg backdrop-blur-sm animate-draft-flash">
+                  <span>{draftNoticeText(draftNotice)}</span>
+                  <button
+                    type="button"
+                    data-draft-discard="true"
+                    onClick={discardDraft}
+                    className="shrink-0 rounded-full bg-white/15 px-2.5 py-1 font-semibold text-white transition hover:bg-white/25"
+                  >
+                    🗑 Устгах
+                  </button>
+                </div>
               </div>
             )}
 

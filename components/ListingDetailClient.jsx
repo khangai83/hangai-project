@@ -583,7 +583,7 @@ export default function ListingDetailClient({ id }) {
                  дүүрэг/хотын төв рүү буулгана) ✓ */}
           <section data-component="ListingMap" className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white">
             <h2 className="border-b border-gray-100 px-5 py-4 text-base font-semibold text-gray-800">
-              Зарын дэд байршил:{' '}
+              Байршил:{' '}
               <span className="font-normal text-gray-500">{address || NO_LOCATION_LABEL}</span>
             </h2>
             <div className="h-[320px] w-full">

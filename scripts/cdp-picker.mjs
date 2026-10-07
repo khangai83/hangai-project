@@ -1320,7 +1320,16 @@ ok('💾 ноорог `localStorage`-д ХАДГАЛАГДСАН (`zar:listing-d
 
 // 🔄 САНАМСАРГҮЙ REFRESH — энэ бол хэрэглэгчийн ГОЛ АСУУДАЛ байв
 await evaluate('location.reload()');
-await wait(6500);
+/**
+ * 📝 Мэдэгдэл нь ОДОО **FLASH** (2026-10-07) — `animate-draft-flash` ~3.2 сек
+ *    л харагдаад DOM-оос УСТАНА (`DRAFT_FLASH_MS`) ⇒ ⏳ хуучин `wait(6500)`
+ *    нь мэдэгдлийг АЛГА БОЛСНЫ дараа шалгах байв ✗. Тиймээс ГАРАХЫГ нь
+ *    хүлээгээд (poll), харагдах цонхонд ШУУД шалгана ✓
+ */
+for (let i = 0; i < 75; i += 1) {
+  if (await evaluate(`!!document.querySelector('[data-draft-restored]')`)) break;
+  await wait(200);
+}
 const d1 = await wprobe();
 const draftAfter = await dprobe();
 ok('📝 REFRESH-ийн дараа ГАРЧИГ ХЭВЭЭР («2 өрөө байр, Баянгол» — алга болохгүй ✓)',
