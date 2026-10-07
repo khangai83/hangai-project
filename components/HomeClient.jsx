@@ -2384,8 +2384,10 @@ export default function HomeClient() {
             sectionOpen
               /* unegui.mn-ийн «SubcategoryPanel» — саарал дугуй панел */
               ? 'rounded-2xl bg-gray-100 px-3 py-4 pt-5 sm:px-8'
-              /* 6 хэсгийн tile сүлжээ — цагаан карт */
-              : 'rounded-xl border border-gray-200 bg-white p-2.5 shadow-card sm:p-3.5'
+              /* ✏️ 2026-10-07 — ХЭСГИЙН tile сүлжээ unegui.mn ШИГ ХАВТГАЙ
+                 болов: БОРДЮР (border) + СҮҮДЭР (shadow) АРИЛАВ — зөвхөн
+                 цагаан гадаргуу + padding (BORDERED CARD БАЙХГҮЙ ✓) */
+              : 'rounded-xl bg-white p-2 sm:p-3'
           }`}
         >
 
@@ -2783,13 +2785,24 @@ export default function HomeClient() {
                    цуулахгүй) ✓
                    ⚠️ `auto-rows-fr` + `h-full` → 1 мөртэй, 2 мөртэй картууд ИЖИЛ
                       өндөртэй (эгнээ эгц, эмх цэгцтэй) ✓
-             🔤 ФОНТ (2026-09-27 хэвээр): `font-bold`; сонгоогүй → `text-gray-900`
-                (#1B1815), сонгосон → `text-primary-dark` (#1d4ed8, primary-light
-                дээр 5.55:1 ✅ AA — `text-primary` #2563eb нь 4.03:1 тул ХҮРЭХГҮЙ ✗).
-             ⚠️ Сонгосон карт дээр ГАРАХ ЗҮЙЛС: primary хүрээ + `ring-1` + цэнхэр
-                дэвсгэр + icon badge цагаан + баруун дээд буланд ✓ badge.
-             🔗 `title={s.label}` — `line-clamp-2`-оос болж товчлогдсон урт нэрийг
-                хулганаа дээр нь аваачахад бүтнээр нь харуулна ✓ */
+             🆕 2026-10-07 (хэрэглэгчийн хүсэлт: «unegui.mn шиг ХАВТГАЙ
+                (flat) сүлжээ болго — emoji + нэр, картын хүрээ/сүүдэр
+                БАЙХГҮЙ»): дээрх КАРТ загвар (① ② ③ + ФОНТ) БҮРЭН ОРЛОГДОВ —
+                   • `border` · `shadow-card` · `ring-1` · `hover:-translate-y` ·
+                     `rounded-xl` · icon-ийн дугуй `bg` дэвсгэр БҮГД АРИЛАВ
+                   • icon нь зүгээр emoji (`text-[22px]`), нэр нь ХАТУУ
+                     `font-semibold` (`text-[14px] sm:text-[15px]`)
+                   • icon + нэр ХЭВТЭЭ мөрөнд (`flex items-center`), зүүн тийш
+                     эгнэв — unegui.mn-ийн ангиллын жагсаалт мэт ✓
+                   • сонгосон → `bg-primary-light` + `text-primary-dark` (✓
+                     badge БАЙХГҮЙ — өнгийн ялгаа + `aria-selected` хангалттай)
+                   • hover → `bg-gray-100` + `text-primary` (flat, хөдөлгөөнгүй)
+             ⚠️ ХАМГААЛАГДСАН ГЭРЭЭ (тест): `.tile-grid button[role="tab"]` нь
+                ХЭВЭЭР 12 ширхэг (`cdp:services` ⑧), tile бүрийн TEXT нь
+                `<emoji> <нэр>` ХЭВЭЭР (`includes('Ажил, Үйлчилгээ')` ✓)
+             ⚠️ ТОО (ad count) ГАРАХГҮЙ — хэсэг тус бүрийн тоо нь тусдаа query
+                (12 HEAD) шаарддаг тул (хэрэглэгчийн шийдвэр) ОРХИВ ✓
+             🔗 `title={s.label}` — бүтэн нэрийг hover-т харуулна ✓ */
           <div className="tile-grid grid auto-rows-fr grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" role="tablist" aria-label="Зарын хэсэг">
             {SECTIONS.map((s) => {
               const on = s.value === section;
@@ -2801,35 +2814,21 @@ export default function HomeClient() {
                   aria-selected={on}
                   onClick={() => changeSection(s.value)}
                   title={s.label}
-                  className={`relative flex h-full min-h-[100px] w-full flex-col items-center justify-center gap-2 rounded-xl border px-3 py-3 text-center transition ${
+                  className={`flex h-full w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition ${
                     on
-                      ? 'border-primary bg-primary-light shadow-card ring-1 ring-primary'
-                      : 'border-gray-200 bg-white hover:-translate-y-0.5 hover:border-primary/60 hover:bg-primary-light/40 hover:shadow-card'
+                      ? 'bg-primary-light text-primary-dark'
+                      : 'text-gray-800 hover:bg-gray-100 hover:text-primary'
                   }`}
                 >
                   <span
                     aria-hidden="true"
-                    className={`grid h-11 w-11 shrink-0 place-items-center rounded-full text-[24px] leading-none transition ${
-                      on ? 'bg-white' : 'bg-gray-100'
-                    }`}
+                    className="shrink-0 text-[22px] leading-none"
                   >
                     {s.icon}
                   </span>
-                  <span
-                    className={`line-clamp-2 w-full min-w-0 break-words text-[13.5px] font-bold leading-snug sm:text-[14.5px] ${
-                      on ? 'text-primary-dark' : 'text-gray-900'
-                    }`}
-                  >
+                  <span className="min-w-0 break-words text-[14px] font-semibold leading-snug sm:text-[15px]">
                     {s.label}
                   </span>
-                  {on && (
-                    <span
-                      aria-hidden="true"
-                      className="absolute right-2 top-2 grid h-4 w-4 place-items-center rounded-full bg-primary text-[10px] font-bold leading-none text-white"
-                    >
-                      ✓
-                    </span>
-                  )}
                 </button>
               );
             })}
