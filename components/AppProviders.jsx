@@ -32,6 +32,10 @@ function resolveUserPhone(u) {
 /** Supabase-ийн англи алдааг хэрэглэгчид ойлгомжтой Монгол мессеж болгох */
 function friendlySignInError(error) {
   const msg = `${(error && error.code) || ''} ${(error && error.message) || ''}`.toLowerCase();
+  // 🚫 Блоклогдсон (бан) — админ хэрэглэгчийг «block» хийсэн (0038_user_blocks.sql)
+  if (msg.includes('banned') || msg.includes('user_banned')) {
+    return 'Таны бүртгэл блоклогдсон байна. Дэлгэрэнгүйг админаас тодруулна уу.';
+  }
   if (msg.includes('invalid login') || msg.includes('invalid_credentials')) {
     return 'Утасны дугаар эсвэл нууц үг буруу байна.';
   }

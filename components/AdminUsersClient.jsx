@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from './AppProviders';
-import { fetchAdminUsers, updateUserAdmin } from '../lib/adminApi';
+import { fetchAdminUsers, updateUserAdmin, updateUserBlocked } from '../lib/adminApi';
 import { timeAgo } from '../lib/format';
 
 /** 97688093663 / +97688093663 → 88093663 */
@@ -72,6 +72,31 @@ export default function AdminUsersClient() {
       return;
     }
     setNotice(`${res.data.isAdmin ? '🛠 Админ болголоо' : '👤 Админ эрх авагдлаа'}: ${displayPhone(row)}`);
+    load();
+  };
+
+  // 🚫 Блоклох / блокыг авах — БЛОКЛОХ нь дэлгэцийн баталгаа асууна
+  // (үр дагавар нь ноцтой: зар нийтэд харагдахгүй + системд нэвтрэхгүй).
+  const toggleBlock = async (row) => {
+    const next = !row.blocked;
+    if (next) {
+      const who = row.name ? `${row.name} (${displayPhone(row)})` : displayPhone(row);
+      const ok = window.confirm(
+        `${who}-г БЛОКЛОХ уу?\n\n` +
+        '• Түүний зарууд нийтэд ХАРАГДАХГҮЙ болно\n' +
+        '• Системд НЭВТРЭХ боломжгүй болно'
+      );
+      if (!ok) return;
+    }
+    setBusyId(row.id);
+    setNotice('');
+    const res = await updateUserBlocked(row.id, next);
+    setBusyId(null);
+    if (res.error) {
+      setNotice(`❌ ${res.error}`);
+      return;
+    }
+    setNotice(next ? `🚫 Блоклогдлоо: ${displayPhone(row)}` : `✅ Блокыг авлаа: ${displayPhone(row)}`);
     load();
   };
 
@@ -169,10 +194,11 @@ export default function AdminUsersClient() {
       </div>
 
       {/* ===== Статистик ===== */}
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
         {[
           { label: 'Нийт хэрэглэгч', value: stats.users, icon: '👥' },
           { label: 'Админ', value: stats.admins, icon: '🛠' },
+          { label: 'Блоклогдсон', value: stats.blocked, icon: '🚫' },
           { label: 'Нийт зар', value: stats.listings, icon: '🏠' },
           { label: 'Зартай хэрэглэгч', value: stats.withListings, icon: '📋' },
         ].map((s) => (
@@ -199,7 +225,7 @@ export default function AdminUsersClient() {
 
       {/* ===== Хүснэгт ===== */}
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-        <table className="w-full min-w-[760px] text-left text-sm">
+        <table className="w-full min-w-[920px] text-left text-sm">
           <thead className="border-b border-gray-200 bg-gray-50 text-[12px] uppercase tracking-wide text-gray-500">
             <tr>
               <th className="px-4 py-3">Хэрэглэгч</th>
@@ -208,6 +234,7 @@ export default function AdminUsersClient() {
               <th className="px-4 py-3">Сүүлд нэвтэрсэн</th>
               <th className="px-4 py-3 text-center">Зар</th>
               <th className="px-4 py-3 text-center">Эрх</th>
+              <th className="px-4 py-3 text-center">Төлөв</th>
             </tr>
           </thead>
           <tbody>
@@ -225,6 +252,11 @@ export default function AdminUsersClient() {
                     {r.isAdmin && (
                       <span className="ml-2 rounded bg-amber-100 px-1.5 py-px text-[11px] font-semibold text-amber-800">
                         ADMIN
+                      </span>
+                    )}
+                    {r.blocked && (
+                      <span className="ml-2 rounded bg-red-100 px-1.5 py-px text-[11px] font-semibold text-red-700">
+                        БЛОКЛОГДСОН
                       </span>
                     )}
                   </p>
@@ -263,11 +295,33 @@ export default function AdminUsersClient() {
                     {busyId === r.id ? '...' : r.isAdmin ? '👤 Эрх авах' : '🛠 Админ болгох'}
                   </button>
                 </td>
+                <td className="px-4 py-3 text-center">
+                  {r.blocked ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-[11px] font-semibold text-red-600">🚫 Блоклогдсон</span>
+                      <button
+                        className="btn btn-outline btn-sm"
+                        disabled={busyId === r.id}
+                        onClick={() => toggleBlock(r)}
+                      >
+                        {busyId === r.id ? '...' : '✅ Блокыг авах'}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="btn btn-outline btn-sm text-red-600 hover:bg-red-50"
+                      disabled={busyId === r.id}
+                      onClick={() => toggleBlock(r)}
+                    >
+                      {busyId === r.id ? '...' : '🚫 Блоклох'}
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
             {!rows.length && (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-gray-500">
+                <td colSpan={7} className="px-4 py-10 text-center text-gray-500">
                   Хэрэглэгч олдсонгүй
                 </td>
               </tr>
@@ -280,6 +334,7 @@ export default function AdminUsersClient() {
         Нийт {stats.users} хэрэглэгчээс {rows.length} харуулж байна. Эрх нь Supabase-ийн{' '}
         <code>app_metadata.is_admin</code>-д хадгалагдана (клиент хуурах боломжгүй).
         {' '}👤 <b>Нэр / утас эсвэл «👁 харах» тоо</b> дээр дарж тухайн хэрэглэгчийн зарууд руу орно.
+        {' '}🚫 <b>«Блоклох»</b> нь түүний зарыг нийтэд харагдуулахгүй + системд нэвтрэх эрхийг хаана.
       </p>
     </div>
   );

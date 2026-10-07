@@ -37,6 +37,7 @@
     "test:wheel": "node scripts/test-wheel-render.mjs",
     "test:wizard": "node scripts/test-detail-wizard.mjs",
     "test:draft": "node scripts/test-draft.mjs",
+    "test:block": "node scripts/test-block.mjs",
     "test:prefill": "node scripts/test-prefill.mjs",
     "test:location": "node scripts/test-location-optional.mjs",
     "test:location-map": "node scripts/test-location-map.mjs",

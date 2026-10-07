@@ -1,15 +1,21 @@
 // ============================================================
-// PATCH /api/admin/users/[id] — Хэрэглэгчид админ эрх олгох / авах
+// PATCH /api/admin/users/[id] — Хэрэглэгчийн ЭРХ / БЛОК удирдах
 //
 // Header: Authorization: Bearer <админ access_token>
-// Body:   { isAdmin: true | false }
-// Resp:   { ok, userId, isAdmin }
+// Body:   { isAdmin: true|false }   // эрх олгох / авах
+//         { blocked: true|false }   // 🚫 блоклох / блокыг авах
+//         (хоёуланг нь нэг хүсэлтэд өгч болно)
+// Resp:   { ok, userId, isAdmin, blocked }
 //
 // ⚠️ Эрх нь `app_metadata`-д хадгалагдана (клиент хуурах боломжгүй).
-// ⚠️ Админ өөрөөсөө эрхээ авч чадахгүй (бүх админ алга болохоос сэргийлж).
+// ⚠️ Админ өөрөөсөө эрхээ / өөрийгөө блоклож чадахгүй (өөрийгөө түгжихээс
+//    сэргийлж). Мөн бүх админ алга болохоос сэргийлнэ.
+// 🚫 Блоклох нь: ① `profiles.blocked` (зар нийтэд харагдахгүй) ба
+//    ② Supabase-ийн бан (`ban_duration` — нэвтрэх хориг) хоёрыг ХАМТ бичнэ.
+//    Дэлгэрэнгүй: `lib/adminAuth.js → setUserBlocked`, `0038_user_blocks.sql`.
 // ============================================================
 import { NextResponse } from 'next/server';
-import { requireAdmin, setUserAdmin } from '../../../../../lib/adminAuth';
+import { requireAdmin, setUserAdmin, setUserBlocked, isUserBlocked } from '../../../../../lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,24 +33,47 @@ export async function PATCH(req, { params }) {
   } catch (e) {
     body = {};
   }
-  const isAdmin = !!body.isAdmin;
 
-  if (gate.user.id === id && !isAdmin) {
+  const hasIsAdmin = typeof body.isAdmin === 'boolean';
+  const hasBlocked = typeof body.blocked === 'boolean';
+
+  if (!hasIsAdmin && !hasBlocked) {
+    return NextResponse.json(
+      { ok: false, error: 'Өөрчлөх утга байхгүй — `isAdmin` эсвэл `blocked` илгээнэ үү.' },
+      { status: 400 }
+    );
+  }
+
+  const self = gate.user.id === id;
+
+  if (self && hasIsAdmin && !body.isAdmin) {
     return NextResponse.json(
       { ok: false, error: 'Өөрөөсөө админ эрхээ авч болохгүй (бүх админ алга болохоос сэргийлж).' },
       { status: 400 }
     );
   }
+  if (self && hasBlocked && body.blocked) {
+    return NextResponse.json(
+      { ok: false, error: 'Өөрийгөө блоклож болохгүй (системд нэвтрэх боломжгүй болно).' },
+      { status: 400 }
+    );
+  }
 
   try {
-    const user = await setUserAdmin(id, isAdmin);
+    let user = null;
+    // Эрх солих (эхлээд) → дараа нь блок (app_metadata-ыг дахин бичихдээ
+    // эрхийг хадгална — хоёулаа `getUserById`→merge хийдэг).
+    if (hasIsAdmin) user = await setUserAdmin(id, body.isAdmin);
+    if (hasBlocked) user = await setUserBlocked(id, body.blocked);
+
     return NextResponse.json({
       ok: true,
       userId: user.id,
       isAdmin: !!(user.app_metadata && user.app_metadata.is_admin),
+      blocked: isUserBlocked(user),
     });
   } catch (err) {
     console.error('[admin/users/:id] алдаа:', (err && err.message) || err);
-    return NextResponse.json({ ok: false, error: (err && err.message) || 'Эрх солиж чадсангүй.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: (err && err.message) || 'Төлөв солиж чадсангүй.' }, { status: 400 });
   }
 }
