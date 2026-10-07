@@ -567,7 +567,15 @@ export default function ListingDetailClient({ id }) {
           {listing.description && (
             <section className="mt-6 rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
               <h2 className="mb-4 text-base font-semibold text-gray-800">Тайлбар</h2>
-              <p className="whitespace-pre-line text-[15px] leading-[1.8] text-gray-600">{listing.description}</p>
+              {/* 🆕 2026-10-08 (61) — ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «Тайлбарын урт
+                  текст хайрцгаас хэтэрч гардаг» ⇒ `break-words` (`overflow-wrap:
+                  break-word`): ЗАЙГҮЙ урт үг (линк, `ыбөыбө…` мэт дараалсан үсэг)
+                  ч гэсэн хайрцгийн өргөнд ХУВААГДАНА ✓
+                  ⚠️ CDP хэмжилт (1280px, `🥚 ыбөыбө…` 892 тэмдэгт үгтэй зар):
+                     өмнө нь `<p>`-ээс **6856px** хэтэрч, ХУУДАСНЫ хэвтээ гүйлт
+                     **6418px** байв ✗ → одоо 0 ✓
+                  ⚠️ `whitespace-pre-line` ХӨНДӨӨГДӨӨГҮЙ (мөр таслалт хэвээр) */}
+              <p className="whitespace-pre-line break-words text-[15px] leading-[1.8] text-gray-600">{listing.description}</p>
             </section>
           )}
 
@@ -620,13 +628,23 @@ export default function ListingDetailClient({ id }) {
                   title="Энэ хүний бусад зарыг харах"
                   className="group flex items-center gap-3 rounded-lg bg-gray-50 p-3 transition hover:bg-primary-light"
                 >
-                  <Avatar src={author && author.avatarUrl} name={sellerName} size={120} />
+                  {/* 🆕 2026-10-08 (61) — ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «Зар нийтлэгчийн
+                      мэдээлэл карт дотроо бүрэн харагдахгүй байна» ⇒ ⏳ `size={120}`
+                      (2026-09-27-ны андуу орсон утга — тухайн commit нь КАРТЫН
+                      өндрийн тухай байв) нь 350px-ийн баганад багтахгүй, баруун
+                      талын мэдээллийг 3-4 мөрөөр эвдэж байв ✗ (CDP: аватар 120px,
+                      мөр 144px өндөр, «✅ Утсаар баталгаажсан»/«Элссэн огноо» 2 мөр
+                      болж тасарч байв) ⇒ `size={44}` — доорх (user_id-гүй) салбар ба
+                      `MessagesClient`-тай ИЖИЛ хэмжээ болов ✓
+                      ⚠️ Нэр нь `truncate` БИШ `break-words` — урт нэр КАРТ ДОТРОО
+                      бүтнээрээ (2 мөр болж ч) харагдана ✓ */}
+                  <Avatar src={author && author.avatarUrl} name={sellerName} size={44} />
                   <div className="min-w-0 flex-1">
                     {/* ✅ БАТАЛГААЖСАН badge (Facebook-ийнх шиг) — ListingCard-тай
                         ижил. ⚠️ Зөвхөн `listing.user_id` БАЙГАА үед (энэ салбар)
                         — эс бөгөөс нийтлэгч тодорхойгүй тул badge ч байхгүй ✓ */}
                     <div className="flex items-center gap-1.5 text-base font-semibold text-gray-800 transition group-hover:text-primary">
-                      <span className="truncate">{sellerName}</span>
+                      <span className="min-w-0 break-words">{sellerName}</span>
                       <VerifiedBadge size={16} className="text-primary" />
                     </div>
                     <div className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
@@ -654,7 +672,10 @@ export default function ListingDetailClient({ id }) {
                 <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
                   <Avatar src={author && author.avatarUrl} name={sellerName} size={44} />
                   <div className="min-w-0">
-                    <div className="truncate text-base font-semibold text-gray-800">
+                    {/* 🆕 2026-10-08 (61): нэр `truncate` БИШ `break-words` —
+                        дээрх (`user_id`-тай) салбартай ИЖИЛ: урт нэр карт дотроо
+                        бүтнээрээ харагдана ✓ */}
+                    <div className="break-words text-base font-semibold text-gray-800">
                       {sellerName}
                     </div>
                     <div className="text-xs text-gray-500">Зар нийтэлсэн</div>

@@ -136,6 +136,35 @@ t('④ 🎯 `MapView` — ГАНЦ пинд `fitBounds` БИШ тогтмол з
     'MapView-ийн солбицлын шүүлт өөрчлөгдсөн ✗');
 });
 
+// ---------- ⑥ 📏 Урт текст + нийтлэгчийн карт (2026-10-08 (61)) ----------
+t('⑥ 📝 «Тайлбар» нь `break-words` — ЗАЙГҮЙ урт үг хайрцгаас ХЭТРЭХГҮЙ ✓', () => {
+  /** ⚠️ ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «Тайлбарын урт текст хайрцгаас хэтэрч гардаг».
+   *  CDP хэмжилт (1280px, 892 тэмдэгт зайгүй үгтэй зар): өмнө нь `<p>`-ээс
+   *  **6856px** хэтэрч, ХУУДАСНЫ хэвтээ гүйлт **6418px** байв ✗ → `break-words`
+   *  (`overflow-wrap: break-word`)-оор 0 болов ✓
+   *  ⚠️ `whitespace-pre-line` (мөр таслалт) ХӨНДӨӨГДӨӨГҮЙ ✓ */
+  assert.match(DET_CODE, /<p className="whitespace-pre-line break-words text-\[15px\] leading-\[1\.8\] text-gray-600">\{listing\.description\}<\/p>/,
+    'Тайлбарын `<p>`-д `break-words` алга ✗ (урт үг хайрцгаас хэтэрнэ)');
+});
+
+t('⑥ 👤 Нийтлэгч: аватар `size={120}` БАЙХГҮЙ → `size={44}` (карт дотроо бүрэн багтана) ✓', () => {
+  /** ⚠️ 120px аватар нь 350px-ийн баганын картыг хагас эзэлж, «✅ Утсаар
+   *  баталгаажсан»/«Элссэн огноо» мөрүүдийг 2 мөр болгон эвдэж байв ✗
+   *  (CDP: мөр 144px → 96px, карт 409px → 361px) */
+  assert.ok(!DET_CODE.includes('size={120}'), '`size={120}` (хэт том аватар) үлдсэн ✗');
+  assert.equal((DET_CODE.match(/name=\{sellerName\} size=\{44\}/g) || []).length, 2,
+    'нийтлэгчийн 2 салбарт (user_id-тай / user_id-гүй) `size={44}` байх ёстой ✗');
+});
+
+t('⑥ 👤 Нийтлэгчийн НЭР `truncate` БИШ `break-words` — карт дотроо бүтэн харагдана ✓', () => {
+  assert.ok(DET_CODE.includes('<span className="min-w-0 break-words">{sellerName}</span>'),
+    '`user_id`-тай салбарын нэр `break-words` биш ✗');
+  assert.ok(!/<div className="truncate text-base font-semibold text-gray-800">/.test(DET_CODE),
+    '`user_id`-гүй салбарын нэр `truncate` (тайрагддаг) хэвээр ✗');
+  assert.ok(DET_CODE.includes('<div className="break-words text-base font-semibold text-gray-800">'),
+    '`user_id`-гүй салбарын нэр `break-words` болоогүй ✗');
+});
+
 // ---------- ⑤ README + package.json ----------
 t('⑤ 📦 `package.json`-д `test:detail-ui` скрипт + README-д бүртгэл ✓', () => {
   const pkg = JSON.parse(readSrc('package.json'));
@@ -146,5 +175,5 @@ t('⑤ 📦 `package.json`-д `test:detail-ui` скрипт + README-д бүрт
   assert.ok(README.includes('scripts/test-detail-ui.mjs'), 'README-д файлын нэр алга ✗');
 });
 
-console.log(`\n✅ БҮГД ОК: ${passed} тест — jobs зураггүй · Нэр талбар · тэгш өнцөгт Avatar · бүх зарт газрын зураг ✓\n`);
+console.log(`\n✅ БҮГД ОК: ${passed} тест — jobs зураггүй · Нэр талбар · тэгш өнцөгт Avatar · бүх зарт газрын зураг · урт текст 'break-words' · нийтлэгчийн карт (44px аватар) ✓\n`);
 

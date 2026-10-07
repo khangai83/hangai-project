@@ -1236,6 +1236,45 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   хүснэгт) · `docs/IMPROVEMENTS.md` (энэ мөр)
   🔍 Хайх үг: `max-w-[480px]`, `mx-auto`, `isHeader`, `HeaderSearchBar`,
   `test-search-bar-width`
+- 📏 **ТАЙЛБАРЫН ХАЙРЦАГ −20% ӨРГӨН · +10% ӨНДӨР · УРТ ТЕКСТ ХАЙРЦГААС
+  ХЭТРЭХГҮЙ · ЗАР НИЙТЛЭГЧИЙН КАРТ БҮРЭН ХАРАГДАХ БОЛОВ (2026-10-08 (61))** —
+  хэрэглэгчийн 3 хүсэлт: ① Тайлбарын Text box-ийн өргөнийг 20% хасаж, өндрийг
+  10% нэмэх ② дэлгэрэнгүй хуудсан дээрх Тайлбарын урт текст хайрцгаас хэтэрч
+  гарах ③ «Зар нийтлэгчийн мэдээлэл карт дотроо бүрэн харагдахгүй байгааг зас».
+  ⚠️ **ГУРВУУЛАА ЗӨВХӨН ХАРАГДАЦ — MIGRATION 0**: DB/query/`form.description`/
+  `set('description', …)`/`validateStep`/payload БҮГД ХӨНДӨӨГДӨӨГҮЙ ✓
+  **① 📝 ФОРМ (`components/AddListingClient.jsx` — Тайлбарын 2 `<textarea>`):**
+  `rows="8"` хэвээр (58-ын гэрээ) + 🆕 **`className="!w-[80%] !h-[222px]"`**.
+  ⚠️ `!` (important) ЗААВАЛ — `app/globals.css`-ийн
+  `.form-group :is(input, select, textarea):not([type="checkbox"]):not([type="radio"])`
+  (specificity **0,3,1**, `width: 100%`) нь `w-[80%]` (**0,1,0**)-г ДАРНА ✗
+  (`.form-group textarea { min-h-[100px] }` 0,1,1 мөн) ✓
+  📏 **CDP хэмжилт** (1280px, 640px `.form-group` доторх probe): `rows="8"`-ийн
+  БОДИТ өндөр **202px** (22.5px/мөр × 8 + padding) ⇒ **+10% = 222px** ✓; өргөн
+  640px → **512px** = ЯГ **80% (−20%)** ✓
+  **② 📝 ДЭЛГЭРЭНГҮЙ (`components/ListingDetailClient.jsx` → «Тайлбар» `<p>`):**
+  🆕 **`break-words`** (`overflow-wrap: break-word`) — ЗАЙГҮЙ урт үг (линк,
+  `ыбөыбө…` мэт дараалсан үсэг) ч хайрцгийн өргөнд ХУВААГДАНА ✓
+  📏 CDP BEFORE/AFTER (бодит зар, 892 тэмдэгт зайгүй үгтэй): өмнө нь `<p>`-ээс
+  **6856px** хэтэрч, ХУУДАСНЫ хэвтээ гүйлт **6418px** байв ✗ → одоо **0 / 0** ✓
+  (`whitespace-pre-line` мөр таслалт ХӨНДӨӨГДӨӨГҮЙ ✓)
+  **③ 👤 НИЙТЛЭГЧИЙН БЛОК (`ListingDetailClient.jsx`):** ⏳ `size={120}`
+  (2026-09-27-ны АНДУУ орсон утга — тэр commit нь КАРТЫН өндрийн тухай байв) нь
+  350px-ийн баганад `✅ Утсаар баталгаажсан`/`Элссэн огноо` мөрүүдийг 2 мөр
+  болгон эвдэж байв ✗ ⇒ 🆕 **`size={44}`** (доорх `user_id`-гүй салбар ба
+  `MessagesClient`-тай ИЖИЛ) · нэр нь `truncate` БИШ 🆕 **`break-words`**
+  (2 салбарт ч) ⇒ урт нэр КАРТ ДОТРОО бүтнээрээ харагдана ✓
+  📏 CDP: аватар **120 → 44px** · мөр **144 → 96px** · карт **409 → 361px** ·
+  картаас гарсан элемент **0** ✓
+  🧪 `test:detail-ui` **12 → 15 ✓** (🆕 ⑥: «Тайлбар» `<p>`-д `break-words` ·
+  `size={120}` БАЙХГҮЙ ба `size={44}` ×2 · нэр `truncate` БАЙХГҮЙ) ·
+  `test:wizard` **64 → 65 ✓** (🆕 гэрээ: `!w-[80%] !h-[222px]` 2 газарт + `!`
+  (important) заавал) · `test:*` **31/31 ✓** · `lint:migrations` 38/38 ✓ ·
+  `npm run build` EXIT=0 ✓ · 🐍 CDP (бодит Chrome, before/after хэмжилт +
+  зураг) ✓
+  📄 DOC: `README.md` (энэ bullet + тестийн хүснэгт) · `docs/IMPROVEMENTS.md`
+  🔍 Хайх үг: `!w-[80%]`, `!h-[222px]`, `break-words`, `size={120}`, `size={44}`,
+  `descAfterTitle`, `Тайлбар`
 - 📋 **«МИНИЙ ЗАРУУД» КАРТУУД 🖥 DESKTOP ДЭЭР 2-3 БАГАНАТАЙ БОЛОВ (БАЙРШЛЫН
   ГРИД, ВЕРТИКАЛЬ КАРТ) (2026-10-07 (59)):** хэрэглэгчийн хүсэлт: «desktop дээр
   Миний зарууд ын картуудыг 2-3 эгнээ болгож харагдуулвал зүгээр юм» ⇒
@@ -5674,7 +5713,7 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 | `scripts/test-search-bar-width.mjs` | 🆕 **7 тест** — `npm run test:search-bar` (🆕 **2026-10-07 (60): 🔍 HOME-ИЙН 🖥 ТОЛГОЙН ХАЙЛТЫН МӨР ~ХАГАС БОЛОВ** — хэрэглэгч: «home ийн search bar арай л урт юм аа, талиг нь хасаач». ① ТОЛГОЙН форм нь `max-w-[480px]`-ээр ХЯЗГААРЛАГДАНА ② зөвхөн `isHeader ? 'mx-auto max-w-[480px]' : ''` (📱 мобайл БҮТЭН өргөн ХЭВЭЭР) ③ `mx-auto` төвлөрүүлэлт ④ ⏳ ХУУЧИН `className="flex w-full min-w-0 items-center gap-2"` (бүтэн өргөн) БАЙХГҮЙ ⑤ `role="search"`/`onSubmit="{handleSubmit}"`/`data-search-suggest`/`role="combobox"`/`id="{idBase}"` ХЭВЭЭР ⑥ 📱 мобайл слат (`renderSearchBar('mobile')` + `xl:hidden`) ХЭВЭЭР ⑦ `AppProviders` слат (`hidden min-w-0 flex-1 items-center px-2 xl:flex xl:px-3`) ХӨНДӨӨГДӨӨГҮЙ. ⚠️ Тайлбарыг `stripComments()`-оор хасаж шалгана) |
 
 | `scripts/test-share-btn.mjs` | 🆕 **6 тест** — `npm run test:share-btn` (🆕 2026-10-07: 🔗 **«Хуваалцах» товчны ГЭРЭЭ** — хэрэглэгч: «Хуваалцах ыг Таалагдсаны ард талд нь хийчих л дээ». ① `ListingDetailClient` footer-ийн ДАРААЛАЛ: 👁 үзсэн → 🤍/❤️ таалагдсан → 🔗 Хуваалцах (ЯГ 1 `<ShareButton`) ② Буцахгүй: «Хуваалцах» нь 👁-ийн ЯГ ХАЖУУД БИШ (🤍/❤️-ийн дараа) ③ `ShareButton.jsx` — `navigator.clipboard` → `document.execCommand('copy')` fallback + `window.isSecureContext` + `typeof window !== 'undefined'` SSR хамгаалалт + `label = 'Хуваалцах'` + `data-share-button` + `🔗`→`✓`) |
-| `scripts/test-detail-ui.mjs` | 🆕 **12 тест** — `npm run test:detail-ui` (🆕 2026-10-07: 📋 **ЗАРЫН ФОРМ + ДЭЛГЭРЭНГҮЙ ХУУДСАНЫ 4 ХҮСЭЛТ** — ① «Зөвхөн Ажлын зар дээр Зураг оруулах хэсгийг болиулах» ⇒ 💼 `jobs`-д 🖼 Зураг блок `{allowImages && …}` (`section !== 'jobs'`), payload `images: allowImages ? … : []` ② «бүх хэсэгт … Нэр оруулдаг байх … байгууллагынхаа өмнөөс … өөрийх нь нэр гарах нь зохимжгүй» ⇒ формд 👤 «Нэр» талбар (`form.contactName`, анхдагч `displayName`), дэлгэрэнгүйд `sellerName = contact_name → displayName → …` (ТҮРҮҮЛНЭ) ③ «Profile зургийг … тэгш өнцөгтөөр» ⇒ `Avatar` `rounded-full`→`rounded-lg` ④ «газрын зургийг … Unegui.mn шиг … Бүх зар дээр» ⇒ дэлгэрэнгүйд «Байршил» гарчигтай `data-component="ListingMap"` (`mapCenterFor` нөөц төв; ХУУЧИН sidebar газрын зураг ХАСАГДАВ) + `MapView` ганц пинд `SINGLE_ZOOM`). ⚠️ DB/query ХӨНДӨӨГДӨӨГҮЙ — migration 0 ✓ |
+| `scripts/test-detail-ui.mjs` | **15 тест** — `npm run test:detail-ui` (🆕 **2026-10-08 (61)**: ⑥ «Тайлбар» `<p>`-д `break-words` (⏳ CDP: `<p>`-ээс 6856px хэтэрч, хуудас 6418px хэвтээ гүйлттэй байв → 0 ✓) · нийтлэгчийн аватар `size={120}` БАЙХГҮЙ → **`size={44}`** (2 салбарт) · нэр `truncate` БАЙХГҮЙ, `break-words` ✓. ⏳ 🆕 2026-10-07: 📋 **ЗАРЫН ФОРМ + ДЭЛГЭРЭНГҮЙ ХУУДСАНЫ 4 ХҮСЭЛТ** — ① «Зөвхөн Ажлын зар дээр Зураг оруулах хэсгийг болиулах» ⇒ 💼 `jobs`-д 🖼 Зураг блок `{allowImages && …}` (`section !== 'jobs'`), payload `images: allowImages ? … : []` ② «бүх хэсэгт … Нэр оруулдаг байх … байгууллагынхаа өмнөөс … өөрийх нь нэр гарах нь зохимжгүй» ⇒ формд 👤 «Нэр» талбар (`form.contactName`, анхдагч `displayName`), дэлгэрэнгүйд `sellerName = contact_name → displayName → …` (ТҮРҮҮЛНЭ) ③ «Profile зургийг … тэгш өнцөгтөөр» ⇒ `Avatar` `rounded-full`→`rounded-lg` ④ «газрын зургийг … Unegui.mn шиг … Бүх зар дээр» ⇒ дэлгэрэнгүйд «Байршил» гарчигтай `data-component="ListingMap"` (`mapCenterFor` нөөц төв; ХУУЧИН sidebar газрын зураг ХАСАГДАВ) + `MapView` ганц пинд `SINGLE_ZOOM`). ⚠️ DB/query ХӨНДӨӨГДӨӨГҮЙ — migration 0 ✓ |
 
 
 
@@ -7186,6 +7225,23 @@ Breadcrumb      Бүх зар › Автомашин › Суудлын маши
   үед гардаг байв — тэр нөхцөлт блок **ХАСАГДАВ** ✗ (одоо зөвхөн ЭНД, нэг л газар).
   🎯 `MapView` — ГАНЦ пинд `fitBounds` (хэт зум) БИШ `SINGLE_ZOOM` (15) хэрэглэнэ ✓
   🧪 `npm run test:detail-ui`
+- 📏 **«ТАЙЛБАР»-ЫН ХАЙРЦАГ + ЗАР НИЙТЛЭГЧИЙН КАРТ** (🆕 2026-10-08 (61),
+  хэрэглэгчийн 3 хүсэлт: форм дээрх Text box-ийн өргөн −20% · өндөр +10% ·
+  «Тайлбарын урт текст хайрцгаас хэтэрч гардаг» · «Зар нийтлэгчийн мэдээлэл карт
+  дотроо бүрэн харагдахгүй байгааг зас»).
+  **(1) 📝 Форм (`AddListingClient.jsx`):** Тайлбарын `<textarea>` (2 газар) нь
+  `rows="8"` хэвээр + `className="!w-[80%] !h-[222px]"` — ⚠️ `!` (important)
+  ЗААВАЛ, эс бөгөөс `app/globals.css`-ийн `.form-group :is(input, select, textarea)…`
+  (specificity 0,3,1, `width: 100%`) нь `w-[80%]`-г дарна ✗. CDP: `rows="8"` = 202px
+  ⇒ +10% = **222px**, өргөн 640 → **512px** (ЯГ 80%) ✓
+  **(2) 📝 Дэлгэрэнгүй («Тайлбар» `<p>`):** 🆕 `break-words` — зайгүй урт үг (линк,
+  `ыбөыбө…` 892 тэмдэгт) ч хайрцгийн өргөнд хуваагдана. ⏳ CDP: `<p>`-ээс **6856px**
+  хэтэрч, ХУУДАСНЫ хэвтээ гүйлт **6418px** байв ✗ → **0 / 0** ✓
+  **(3) 👤 Нийтлэгчийн блок:** ⏳ `size={120}` (2026-09-27-ны андуу утга — тэр commit
+  нь картын өндрийн тухай байв) → 🆕 **`size={44}`** (`ListingCard` 28 ·
+  `MessagesClient` 44-тэй нийцэв), нэр нь `truncate` биш 🆕 `break-words` ⇒ мэдээлэл
+  КАРТ ДОТРОО бүтэн (CDP: мөр 144 → 96px · карт 409 → 361px · гадагш гарсан элемент 0) ✓
+  ⚠️ **Migration 0** (зөвхөн харагдац) · 🧪 `test:detail-ui` **15** · `test:wizard` **65** ✓
 - 👤 **ЗАРЫН ФОРМ — «НЭР» талбар + 💼 Ажлын зар дээр зураггүй** (🆕 2026-10-07,
   хэрэглэгч: «бүх хэсэгт … Нэр оруулдаг байх … байгууллагынхаа өмнөөс … өөрийх нь
   нэр гарах нь зохимжгүй юм» + «Зөвхөн Ажлын зар дээр Зураг оруулах хэсгийг
@@ -7198,7 +7254,7 @@ Breadcrumb      Бүх зар › Автомашин › Суудлын маши
   `jobs` хэсэгт 🖼 «Зураг оруулах» блок БҮРЭН ХАРАГДАХГҮЙ (`allowImages =
   section !== 'jobs'`); хадгалах үед `images` нь `[]`. ⚠️ DB/query ХӨНДӨӨГДӨӨГҮЙ.
   **(3) 👤 Profile зураг:** `components/Avatar.jsx` нь `rounded-full` (дугуй) БИШ
-  `rounded-lg` (**тэгш өнцөгт** — unegui хэв). 🧪 `npm run test:detail-ui` (**12 тест**)
+  `rounded-lg` (**тэгш өнцөгт** — unegui хэв). 🧪 `npm run test:detail-ui` (**15 тест**)
 
 - 🍞 **Breadcrumb-ийн БҮХ мөр ЛИНК** (2026-10-01 (15)) — сүүлийн мөр («Суудлын машин») ч
   `<a>` болж, дарахад тухайн шүүлтийн ЗАРЛУУД (нүүр) нээгдэнэ. ⚠️ Линк бүр `?section=…`

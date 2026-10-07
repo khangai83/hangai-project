@@ -3090,7 +3090,16 @@ export default function AddListingClient() {
                   {/* 🆕 2026-10-07 (58): хэрэглэгчийн хүсэлт — тайлбарын оролтын өндөр
                       2 ДАХИН (rows 4 → 8). ⚠️ `.form-group textarea`-ийн `min-h-[100px]`
                       (app/globals.css) ХӨНДӨӨГДӨӨГҮЙ — 8 мөр (~180px) түүнээс ЭРС өндөр ✓ */}
-                  <textarea rows="8" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Зарын дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..." />
+                  {/* 🆕 2026-10-08 (61) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Тайлбарын Text box-ийг
+                      өргөнөөс 20% хасаж, өндрийг 10% нэм». 📏 `rows="8"`-ийн БОДИТ
+                      өндөр нь 202px (мөр 22.5px × 8 + padding/border — CDP хэмжилт:
+                      640px `.form-group` доторх probe) ⇒ **+10% = 222px** ✓
+                      ⚠️ Tailwind-ийн `!` (important) ЗААВАЛ — эс бөгөөс `app/globals.css`
+                      дэх `.form-group :is(input, select, textarea):not([type="checkbox"]):not([type="radio"])`
+                      (specificity 0,3,1 — `width: 100%`) нь `w-[80%]` (0,1,0)-г ДАРНА ✗
+                      (мөн `.form-group textarea { min-h-[100px] }` 0,1,1).
+                      🔍 Хайх үг: descriptionWidth80, descBoxSize */}
+                  <textarea rows="8" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Зарын дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..." className="!w-[80%] !h-[222px]" />
                 </div>
               </div>
             )}
@@ -3770,7 +3779,11 @@ export default function AddListingClient() {
               {/* 🆕 2026-10-07 (58): тайлбарын оролтын өндөр 2 ДАХИН (rows 4 → 8) —
                   энэ талбар нь `descAfterTitle`-гүй хэсэгт (💰 үнийн дараа); 3090-р
                   мөрийн талбартай ИЖИЛ утга (📱/🖥 хоёуланд ✓) */}
-              <textarea rows="8" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Зарын дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..." />
+              {/* 🆕 2026-10-08 (61): 📏 `!w-[80%] !h-[222px]` — 3093-р мөрийн
+                  талбартай ЯГ ИЖИЛ (өргөн −20% · өндөр +10%, CDP: 202 → 222px),
+                  `!` (important) нь `.form-group :is(…input/textarea…)` (0,3,1)-ийг
+                  давахад ЗААВАЛ ✓ */}
+              <textarea rows="8" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Зарын дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..." className="!w-[80%] !h-[222px]" />
             </div>
             )}
 

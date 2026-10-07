@@ -374,6 +374,20 @@ t('📝 (2026-10-07 (58)) Тайлбарын `<textarea>` нь `rows="8"` — ө
   assert.ok(!/<textarea rows="4"/.test(FORM), '`rows="4"` ҮЛДЭЭГҮЙ байх ёстой');
 });
 
+t('📏 (2026-10-08 (61)) Тайлбарын `<textarea>` — өргөн 80% (−20%), өндөр 222px (+10%) ✓', () => {
+  /** ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Тайлбарын Text box-ийн өргөнийг 20% хасаж, өндрийг 10% нэм».
+   *  📏 CDP хэмжилт: `rows="8"`-ийн БОДИТ өндөр = **202px** (`text-[15px]` × 1.5 = 22.5px/мөр
+   *  + padding 2×10px + border 1px) ⇒ +10% = **222px**; өргөн нь `.form-group`-ийн
+   *  640px → **512px** = ЯГ 80% ✓
+   *  ⚠️ `!` (important) ЗААВАЛ: `app/globals.css`-ийн
+   *     `.form-group :is(input, select, textarea):not([type="checkbox"]):not([type="radio"])`
+   *     (specificity 0,3,1 — `width: 100%`) нь `w-[80%]` (0,1,0)-г дарна ✗
+   *  ⚠️ `rows="8"` ХЭВЭЭР (дээрх тест) — зөвхөн класс нэмэгдэв ✓ */
+  const sized = FORM.match(/<textarea rows="8"[\s\S]*?className="!w-\[80%\] !h-\[222px\]" \/>/g) || [];
+  assert.equal(sized.length, 2, '`className="!w-[80%] !h-[222px]"` тайлбарын 2 газарт байх ёстой ✗');
+  assert.equal((sized.join(' ').match(/!w-\[80%\]/g) || []).length, 2, '`!` (important) алга ✗');
+  assert.ok(!/className="w-\[80%\]|className="h-\[222px\]/.test(FORM), '`!`-гүй класс олдлоо ✗');
+});
 t('📱 «Өрөө» (`rooms`) — 3-р алхмын дэлгэцэд БАЙХГҮЙ (`data-mobile-active="false"` + `.hide-below-sm` ✓)', () => {
   const at = step3.indexOf('data-detail-field="rooms"');
   assert.ok(at > -1, 'rooms талбар олдсонгүй');
