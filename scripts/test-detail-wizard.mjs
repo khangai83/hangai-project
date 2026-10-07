@@ -242,6 +242,11 @@ t('📝 (2026-10-07) `descriptionAfterTitle` — энгийн формтой х�
   assert.equal(descriptionAfterTitle('computers', 'Дэлгэц'), true, '💻 «Дэлгэц» ✗');
   assert.equal(descriptionAfterTitle('computers', 'Иж бүрэн компьютер'), true, '💻 «Иж бүрэн компьютер» ✗');
   assert.equal(descriptionAfterTitle('computers', 'PS, XBox, Nintendo'), true, '💻 «PS, XBox, Nintendo» ✗');
+  // 🆕 2026-10-07 (55) (хэрэглэгчийн хүсэлт: «Процессор, сервер ийн зарын
+  //    оролтын мэдээлэл Mouse тай адил болго»): «Процессор, сервер» нь Mouse
+  //    адил condition-only болов ⇒ 📝 тайлбар ГАРЧГИЙН ДАРАА гарна ✓
+  assert.equal(descriptionAfterTitle('computers', 'Процессор, сервер'), true, '💻 «Процессор, сервер» (Mouse-той адил) ✗');
+  assert.equal(descriptionAfterTitle('computers', 'Mouse'), true, '💻 Mouse ✗');
   /** ③ ⚠️ ХӨНДӨӨГДӨХГҮЙ: 💻 Notebook гэр бүл · 🏠 үл хөдлөх · 🚗 авто · 💼 ажил ⇒ false */
   assert.equal(descriptionAfterTitle('computers', 'Apple'), false, '💻 Notebook (Apple) ✗');
   assert.equal(descriptionAfterTitle('real-estate'), false, '🏠 үл хөдлөх ✗');
