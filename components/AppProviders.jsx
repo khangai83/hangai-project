@@ -16,6 +16,7 @@ import { listingPrefillFromSearch, newListingHref } from '../lib/listingPrefill.
 import AuthModal from './AuthModal';
 import ProfileModal from './ProfileModal';
 import MessageIcon from './MessageIcon';
+import { HeartIcon } from './HeaderIcons';
 
 /** Supabase-ийн user → '+976XXXXXXXX' (эсвэл null).
  *  Гурван эх сурвалжаас дарааллаар нь хайна:
@@ -360,35 +361,40 @@ export default function AppProviders({ children }) {
                 {/* ---- ③ ➕ Зар нэмэх (ГОЛ үйлдэл — цорын ганц брэнд өнгөтэй товч) ---- */}
                 <button className="btn btn-primary btn-sm" onClick={openAdd}>➕ Зар нэмэх</button>
 
-                {/* ---- ② ❤️ Таалагдсан ---- */}
+                {/* ---- ② ❤️ Таалагдсан (icon-only — 2026-10-07) ----
+                    ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Таалагдсан, Мессеж-ийг текстгүй
+                       icon болго, хар цагаанаас өөр өнгө орсон icon бүү
+                       болгоорой» ✓ emoji `❤️` нь УЛААН өнгөтэй байсан ✗ →
+                       `HeartIcon` SVG (`currentColor` = товчны саарал/хар) болов.
+                    ⚠️ Зөвхөн ТЕКСТ хасагдав; тоолуур (badge) ХЭВЭЭР ✓ */}
                 <Link
                   href="/favorites"
                   className="btn btn-outline btn-sm"
                   title="Таалагдсан зарууд"
+                  aria-label="Таалагдсан зарууд"
                   onClick={closeUserMenus}
                 >
-                  ❤️ Таалагдсан
+                  <HeartIcon className="h-[15px] w-[15px]" />
                   {favoriteIds.length > 0 && (
- /* ⚠️ Тоо нь урьд нь УЛААН (bg-red-500) байв — улаан нь алдааны
-                       семантик өнгө тул тоолуурт тохирохгүй → брэнд өнгө. */
                     <span className="ml-1 rounded-full bg-primary px-1.5 py-px text-[11px] font-bold text-white">
                       {favoriteIds.length}
                     </span>
                   )}
                 </Link>
 
-                {/* ---- ③ ✉️ Мессеж (уншаагүй тоотой badge) ---- */}
+                {/* ---- ③ ✉️ Мессеж (icon-only — 2026-10-07) ----
+                    ⚠️ «Мессеж» ТЕКСТ ХАСАГДАВ (хэрэглэгчийн хүсэлт:
+                       «текстгүй icon болго»). Икон нь `MessageIcon` SVG
+                       (`currentColor` = товчны саарал/хар, өнгө ГАРАХГҮЙ ✓).
+                    ⚠️ Уншаагүй тоолуур (badge) ХЭВЭЭР ✓ */}
                 <Link
                   href="/messages"
                   className="btn btn-outline btn-sm"
                   title="Мессеж — зар нийтлэгчтэй харилцах"
+                  aria-label="Мессеж"
                   onClick={closeUserMenus}
                 >
-                  {/* ⚠️ 2026-09-29: emoji `✉️` → `MessageIcon` SVG (хэрэглэгчийн
-                      хүсэлт: «messege ийн symbol -ийг илүү орчин үеийн symbol
-                      болго») ✓ `.btn` нь `gap-2` учир зай автоматаар ✓ */}
                   <MessageIcon className="h-[15px] w-[15px]" />
-                  Мессеж
                   {unreadMessages > 0 && (
                     <span className="ml-1 rounded-full bg-primary px-1.5 py-px text-[11px] font-bold text-white">
                       {unreadMessages > 99 ? '99+' : unreadMessages}
