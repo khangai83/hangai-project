@@ -66,7 +66,7 @@ t('① descriptor: «Категори» ба «Байршил» нь unegui.mn-�
 
 t('② descriptor: 3-р түвшний БҮЛЭГ (🛠 services) замад багтана', () => {
   const d = savedSearchDescriptor(link({ section: 'services', type: 'Гадаад хэл' }));
-  assert.equal(d.category, 'Ажил, Үйлчилгээ — Сургалт, курс — Гадаад хэл');
+  assert.equal(d.category, 'Үйлдвэр & Үйлчилгээ, Бизнес — Сургалт, курс — Гадаад хэл');
 });
 
 t('③ descriptor: давхардсан шошго 1 Л удаа (авто хэсэгт «Автомашин»)', () => {

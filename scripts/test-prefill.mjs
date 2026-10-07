@@ -4,7 +4,7 @@
 // 🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-06): «Хэрэглэгч зар нэмэх товч дархад, тэр нь
 //    ямар нэг ангилалд явж байвал зар нэмэх хэсэгт нь тохируулагдсан байдлаар
 //    орж ирдэг байвал зүгээр юм байна. Жишээ нь Бүх зар › Ажил, Үйлчилгээ ›
-//    Барилга & Засвар үйлчилгээ › Гагнуурын үйлчилгээ, Энд явж байгаад Зар
+//    Барилга & Засвар үйлчилгээ › Гагнуур, Энд явж байгаад Зар
 //    нэмэхээ дархад Энэ ангилал нь сонгогдсон эхэлдэг байвал сайхан юм шиг
 //    санагдаж байна.» ⇒ ЭНЭ тест тэр засварын гэрээг түгжинэ ✓
 //
@@ -59,24 +59,24 @@ const t = (name, fn) => {
 console.log('\n🧪 «Зар нэмэх» форм — АНГИЛАЛ УРЬДЧИЛАН БӨГЛӨХ (lib/listingPrefill.mjs)\n');
 
 /** Хэрэглэгчийн жишээний БОДИТ URL (`/listings/new` руу дамжих хэлбэр) */
-const GANGA_URL = '/?section=services&type=' + encodeURIComponent('Гагнуурын үйлчилгээ');
+const GANGA_URL = '/?section=services&type=' + encodeURIComponent('Гагнуур');
 
 // ────────────────────────────────────────────────────────────
 // ① ХЭРЭГЛЭГЧИЙН ЖИШЭЭ — бодит зам
 // ────────────────────────────────────────────────────────────
-console.log('── ① Хэрэглэгчийн жишээ: … › Ажил, Үйлчилгээ › Барилга & Засвар үйлчилгээ › Гагнуурын үйлчилгээ ──');
+console.log('── ① Хэрэглэгчийн жишээ: … › Ажил, Үйлчилгээ › Барилга & Засвар үйлчилгээ › Гагнуур ──');
 
 t('① хэсэг + дэд төрөл уншигдана (`section`/`type`)', () => {
   assert.deepEqual(
     listingPrefillFromSearch(GANGA_URL.slice(1)),
-    { section: 'services', type: 'Гагнуурын үйлчилгээ' }
+    { section: 'services', type: 'Гагнуур' }
   );
 });
 
 t('① бүлэг нь `type`-аас өөрөө олдоно — URL-д бүлгийн параметр БАЙХГҮЙ ✓', () => {
   // ⚠️ Форм дээр `openGroup`-ыг `findSubtypeGroup` тогтоодог тул бүлгийг
   //    тусдаа дамжуулах шаардлагагүй (нэг эх сурвалж: дэд төрөл ✓)
-  assert.equal(findSubtypeGroup('services', 'Гагнуурын үйлчилгээ').label, 'Барилга & Засвар үйлчилгээ');
+  assert.equal(findSubtypeGroup('services', 'Гагнуур').label, 'Барилга & Зам');
   assert.deepEqual(listingPrefillFromSearch('?section=services&group=Барилга'), { section: 'services' });
 });
 
@@ -86,7 +86,7 @@ t('① линк нь ЦЭВЭР `/listings/new?section=…&type=…` (кирил
   assert.equal(href.includes(' '), false); // ⚠️ зай RAW байх ёсгүй (линк эвдэрнэ ✗)
   const qs = new URLSearchParams(href.slice(href.indexOf('?')));
   assert.equal(qs.get('section'), 'services');
-  assert.equal(qs.get('type'), 'Гагнуурын үйлчилгээ');
+  assert.equal(qs.get('type'), 'Гагнуур');
   assert.equal(href.includes('step='), false); // ⚠️ `?step=` ОРУУЛАХГҮЙ
 });
 
@@ -115,7 +115,7 @@ t('② ⚠️ Танихгүй `section` → `{}` (форм АНХДАГЧ хэ�
 });
 
 t('② ⚠️ ХҮЧИНГҮЙ дэд төрөл → зөвхөн `section` (худал сонголт үүсгэхгүй)', () => {
-  assert.deepEqual(listingPrefillFromSearch('?section=auto&type=Гагнуурын үйлчилгээ'), { section: 'auto' });
+  assert.deepEqual(listingPrefillFromSearch('?section=auto&type=Гагнуур'), { section: 'auto' });
   // ⚠️ `type` нь ХЭСГИЙН утгатай тэнцэх ч дэд төрөл БИШ (`services` ∉ subtypes)
   assert.deepEqual(listingPrefillFromSearch('?section=services&type=services'), { section: 'services' });
 });
@@ -188,9 +188,9 @@ const emptyForm = () => ({
 });
 
 t('④ Ангилал сонгогдоно (`section` + `propertyType` = дэд төрөл)', () => {
-  const f = applyPrefill(emptyForm(), { section: 'services', type: 'Гагнуурын үйлчилгээ' });
+  const f = applyPrefill(emptyForm(), { section: 'services', type: 'Гагнуур' });
   assert.equal(f.section, 'services');
-  assert.equal(f.propertyType, 'Гагнуурын үйлчилгээ');
+  assert.equal(f.propertyType, 'Гагнуур');
   // 🏠 үл хөдлөх БИШ тул «Зарах / Түрээслэх» нь форм-ийн дүрмээр `sell` ✓
   assert.equal(f.category, 'sell');
 });
@@ -216,7 +216,7 @@ t('④ ⚠️ Байхгүй талбарыг ХӨНДӨХГҮЙ (зөвхөн `
 });
 
 t('④ ⚠️ ХҮЧИНГҮЙ `type` гараар ирвэл ч ХАЯГДАНА (2 дахь хамгаалалт ✓)', () => {
-  const f = applyPrefill(emptyForm(), { section: 'auto', type: 'Гагнуурын үйлчилгээ' });
+  const f = applyPrefill(emptyForm(), { section: 'auto', type: 'Гагнуур' });
   assert.equal(f.section, 'auto');
   assert.equal(f.propertyType, '');
 });
@@ -224,7 +224,7 @@ t('④ ⚠️ ХҮЧИНГҮЙ `type` гараар ирвэл ч ХАЯГДАН�
 t('④ ⚠️ Эх форм ХӨНДӨГДӨХГҮЙ (шинэ объект буцна ✓)', () => {
   const base = emptyForm();
   const before = JSON.stringify(base);
-  const f = applyPrefill(base, { section: 'services', type: 'Гагнуурын үйлчилгээ' });
+  const f = applyPrefill(base, { section: 'services', type: 'Гагнуур' });
   assert.equal(JSON.stringify(base), before);
   assert.notEqual(f, base);
 });
@@ -242,7 +242,7 @@ t('④ Бөглөлтгүй (`{}` / `undefined`) → форм ХЭВЭЭР (нө
 console.log('\n── ⑤ 📱 390px — анхны дэлгэц ──');
 
 t('⑤ 📱 Дэд төрөлтэй → шууд «Төрөл» дэлгэцээс эхэлнэ', () => {
-  assert.equal(prefillMobileCatStep({ section: 'services', type: 'Гагнуурын үйлчилгээ' }), 'subtype');
+  assert.equal(prefillMobileCatStep({ section: 'services', type: 'Гагнуур' }), 'subtype');
 });
 
 t('⑤ 📱 Дэд төрөлгүй → «Хэсэг» дэлгэцээс эхэлнэ (сонголтоо харна ✓)', () => {
@@ -299,7 +299,7 @@ t('⑦ README: «Зар нэмэх» хэсэгт урьдчилсан анги�
   const at = README.indexOf('УРЬДЧИЛАН БӨГЛӨХ');
   assert.ok(at > 0, 'README-д «УРЬДЧИЛАН БӨГЛӨХ» хэсэг БАЙХГҮЙ');
   const block = README.slice(at - 200, at + 4000);
-  assert.ok(block.includes('Гагнуурын үйлчилгээ'), 'хэрэглэгчийн жишээ алга');
+  assert.ok(block.includes('Гагнуур'), 'хэрэглэгчийн жишээ алга');
   assert.ok(block.includes('listingPrefill.mjs'), 'модулийн нэр алга');
   assert.ok(block.includes('Ноорог'), 'ноорог давамгайлах дүрэм алга');
 });
