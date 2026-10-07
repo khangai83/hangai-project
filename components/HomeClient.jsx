@@ -1996,6 +1996,23 @@ export default function HomeClient() {
         // ⚠️ Бусад хэсэг (0016): «Автомашин», «Ажлын зар», «Компьютер» …
         : (category === 'rent' ? `${sec.label} түрээслүүлнэ` : sec.label);
 
+  /** 🧭 Нүүр хуудсны breadcrumb (2026-10-07, хэрэглэгчийн хүсэлт: «home page
+   *  ээс Бүх зар гэсэн текстийг үгүй хий»). ⚠️ ЗӨВХӨН нэг crumb буюу үндсэн
+   *  «Бүх зар» дэлгэц дээр breadcrumb ХАРАГДАХГҮЙ (`length > 1` шалгалт доор) —
+   *  хэсэг/категори/дэд төрөл сонгомогц (2+ crumb) ХЭВЭЭР харагдана ✓
+   *  ℹ️ Тооцоо нь хямд тул `useMemo`-гүй (өмнөх `buildHomeBreadcrumb` JSX дотор
+   *     render бүрд ажилладаг байв). */
+  const homeCrumbs = buildHomeBreadcrumb({
+    category,
+    section,
+    propertyType: filters.propertyType,
+    rooms: filters.rooms,
+    districts: filters.districts,
+    /* 🎯 FOCUS (2026-09-30) — «Notebook» гэх мэт `collapsed` бүлэг
+       НЭЭЛТТЭЙ бол хэсгийн crumb нь линк болно (`linkLast`) ✓ */
+    focus: !!focusedGroup,
+  });
+
   // 🔖 «Хайлтыг хадгалах» товчны төлөв (2026-10-06, unegui.mn шиг):
   //    • `currentSearchSaved` — одоогийн хайлт аль хэдийн хадгалагдсан эсэх
   //    • `canSaveCurrentSearch` — хадгалах УТГА байгаа эсэх (зөвхөн `page`/
@@ -2356,23 +2373,17 @@ export default function HomeClient() {
                crumb, мөн 700) ижил жинтэй, зөвхөн өнгөөр ялгагдана (цэнхэр =
                дарж болно, саарал = одоогийн байрлал) ✓
                ⚠️ Мөн ЗӨВХӨН ЭНЭ ХУУДАС (бусад 2 хуудсанд линк хуучнаараа ✓) */}
-        <Breadcrumb
-          items={buildHomeBreadcrumb({
-            category,
-            section,
-            propertyType: filters.propertyType,
-            rooms: filters.rooms,
-            districts: filters.districts,
-            /* 🎯 FOCUS (2026-09-30) — «Notebook» гэх мэт `collapsed` бүлэг
-               НЭЭЛТТЭЙ бол хэсгийн crumb нь линк болно (`linkLast`) ✓
-               ⚠️ `focusedGroup` нь ДЭЭР (мөр 713) бодогдсон — панелийн
-                  drill-down төлөв (URL-д ОРОХГҮЙ) */
-            focus: !!focusedGroup,
-          })}
-          onNavigate={goToCrumb}
-          lastClassName="font-bold text-gray-700"
-          linkClassName="font-bold text-primary hover:underline"
-        />
+        {/* ⚠️ 2026-10-07: breadcrumb нь ЗӨВХӨН 2+ crumb үед харагдана —
+            үндсэн «Бүх зар» (ганц crumb) дэлгэц дээр давхардсан текст
+            үүсгэхгүйн тулд НУУГДАВ (хэрэглэгчийн хүсэлт). */}
+        {homeCrumbs.length > 1 && (
+          <Breadcrumb
+            items={homeCrumbs}
+            onNavigate={goToCrumb}
+            lastClassName="font-bold text-gray-700"
+            linkClassName="font-bold text-primary hover:underline"
+          />
+        )}
 
         {/* ⚠️ 2026-09-29: `<RecentlyViewedStrip />` (🕓 «Саяхан үзсэн» картын
             мөр) ХАСАГДАВ — хэрэглэгчийн хүсэлт: нүүр хуудсанд хэрэггүй.
@@ -2515,7 +2526,7 @@ export default function HomeClient() {
                 (`category !== 'all'`) энэ сонголт ХАРАГДАХГҮЙ — зөвхөн дэд
                 төрлүүд ба дээрх категорийн НЭР л үлдэнэ (unegui.mn шиг) ✓ */}
             {showCategories && categoryChoices.length > 0 && category === 'all' && (
-              <div className="mb-3 flex flex-wrap items-center gap-x-7 gap-y-1.5" role="group" aria-label="Зарах эсвэл түрээслэх">
+              <div className="mb-[30px] flex flex-wrap items-center gap-x-7 gap-y-1.5" role="group" aria-label="Зарах эсвэл түрээслэх">
                 {categoryChoices.map((c) => {
                   const active = category === c.value;
                   return (
@@ -3726,7 +3737,14 @@ export default function HomeClient() {
                 «Хайлтыг хадгалах» бар руу шилжсэн ✓ (гарчиг ганцаараа үлдэв) */}
             <div className="mb-3">
               <div className="min-w-0">
-                {!panelShowsTitle && (
+                {/* ✏️ 2026-10-07 (хэрэглэгчийн хүсэлт: «Орон сууц зарна гээд
+                    орсон байхад "Орон сууц зарна 16" гэсэн Head хайлтыг
+                    хадгалахын дээр гарч байгааг үгүй хий»): дэд төрөл
+                    сонгосон үед (`filters.propertyType`) үр дүнгийн `h1`
+                    ХАРАГДАХГҮЙ — тэр мэдээллийг breadcrumb болон хайлтын
+                    чип аль хэдийн харуулж байна (давхардсан гарчиг ✗).
+                    ⚠️ Үндсэн «Бүх зар» дэлгэцэд `h1` ХЭВЭЭР ✓ */}
+                {!panelShowsTitle && !filters.propertyType && (
                   <h1 className="text-2xl font-bold text-gray-900 sm:text-[26px]">
                     {pageTitle}
                     {listings !== null && !loadError && (
