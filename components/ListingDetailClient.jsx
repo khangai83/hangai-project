@@ -308,34 +308,33 @@ export default function ListingDetailClient({ id }) {
           {getPropertyIcon(listing.property_type, listing.section)} {typeLabel}
           {address ? ` — ${address}` : ''}
         </h1>
-        {/* ===== 📍 БАЙРШИЛ (1-р мөр) + 🕒 НИЙТЭЛСЭН · 🔖 ЗАРЫН ДУГААР (2-р мөр) =====
+        {/* ===== 📍 БАЙРШИЛ · 🕒 НИЙТЭЛСЭН · 🔖 ЗАРЫН ДУГААР — НЭГ МӨРӨНД (unegui хэв) =====
             ⚠️ 2026-10-01 (14) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТЭЭР ГАЛЕРЕЙ КАРТЫН footer-оос
                ЭНД БУЦАЖ ИРЭВ («📍 … · 📅 … энийгээ буцаагаад байранд нь тавия»).
-               ⛔ (12)-д 👁/🤍 мөрийн ЯГ АРААС, картын дотоод 1 МӨРӨНД шилжүүлсэн
-                  байв — хэрэглэгчид тохирохгүй байсан тул буцаав ✓
-            ⚠️ Хаяг эхний мөрөнд, огноо (+ 🆕 зарын дугаар) нь ЯГ ДООРХ мөрөнд.
-            ⚠️ 2026-10-07 — хэрэглэгчийн хүсэлтээр 2-р мөрөнд 🔖 БОГИНО ЗАРЫН
-               ДУГААР нэмэгдэж, огнооны icon нь 📅 → 🕒 болов (карт дээрхтэй ЯГ
-               ижил — unegui хэв). */}
-        <div className="text-sm text-gray-600">
+            ⚠️ 2026-10-07 — 🔖 БОГИНО ЗАРЫН ДУГААР нэмэгдэж, огнооны icon 📅 → 🕒 болов
+               (карт дээрхтэй ЯГ ижил).
+            ⚠️ 2026-10-07 (2 дахь засвар) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «unegui шиг 1 мөрөнд
+               хийчих боломж алга уу» ⇒ (өмнө нь 📍 нь 1-р мөр, 🕒·🔖 нь 2-р мөр байв)
+               ОДОО БҮГД НЭГ МӨРӨНД: `📍 хаяг · 🕒 огноо · 🔖 зарын дугаар`.
+               Дэлгэц нарийсахад `flex-wrap`-ээр эвхэгдэнэ — хэвтээ overflow ✗ ✓
+            ⚠️ Огноо ХАРЬЦАНГУУ (`timeAgo` — карт дээрхтэй ЯГ ижил); зарын дугаар нь
+               БОГИНО (`shortListingId`); бүтэн uuid нь `title` (hover) дээр — админ
+               ID-ийн эхний тэмдэгтээр хайдаг тул богино дугаар шууд олдоно ✓ */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-gray-500">
           {/* 📍 Байршил — 🚫 «Байршил сонгохгүй» чекбоксоор хадгалагдсан зар
               (`city = ''`) дээр «Хаяг тодорхойгүй» БИШ, «Байршил заагаагүй»
               гэж харуулна (хэрэглэгч ЗОРИУДОО заагаагүй тул «алдаа» мэт
-              харуулах нь буруу ✗ — нэг эх сурвалж: `lib/listingLocation.mjs`) */}
-          <div className="min-w-0">📍 {address || NO_LOCATION_LABEL}</div>
-          {/* 🕒 ОГНОО · 🔖 ЗАРЫН ДУГААР — unegui.mn-ийн хэв маяг (2026-10-07).
-              ⚠️ Огноо ХАРЬЦАНГУУ (`timeAgo` — карт дээрхтэй ЯГ ижил) хэвээр;
-                 зөвхөн 🆕 БОГИНО зарын дугаар (`shortListingId`) нэмэгдэв.
-              ⚠️ БҮТЭН uuid нь `title` (hover) дээр байна — хэрэглэгчид харагддаг
-                 боловч мөр хэт урт болохгүй ✓; админ ID-ийн эхний тэмдэгтээр
-                 хайдаг тул энэ богино дугаар нь шууд олдоно ✓ */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-gray-500">
-            <span title="Нийтэлсэн огноо">🕒 {timeAgo(listing.created_at)}</span>
-            <span aria-hidden="true" className="text-gray-300">·</span>
-            <span title={`Зарын дугаар — бүтэн ID: ${listing.id}`}>
-              🔖 Зарын дугаар: <span className="font-mono font-semibold text-gray-600">{shortId}</span>
-            </span>
-          </div>
+              харуулах нь буруу ✗ — нэг эх сурвалж: `lib/listingLocation.mjs`).
+              ⚠️ `min-w-0 truncate` — хаяг урт үед `…` болж, БҮТЭН хаяг `title`-д ✓ */}
+          <span className="min-w-0 truncate" title={address || NO_LOCATION_LABEL}>📍 {address || NO_LOCATION_LABEL}</span>
+          <span aria-hidden="true" className="text-gray-300">·</span>
+          {/* 🕒 ОГНОО — харьцангуу (`timeAgo` — карт дээрхтэй ЯГ ижил) */}
+          <span title="Нийтэлсэн огноо" className="whitespace-nowrap">🕒 {timeAgo(listing.created_at)}</span>
+          <span aria-hidden="true" className="text-gray-300">·</span>
+          {/* 🔖 БОГИНО ЗАРЫН ДУГААР — бүтэн uuid нь `title` (hover) дээр ✓ */}
+          <span title={`Зарын дугаар — бүтэн ID: ${listing.id}`} className="whitespace-nowrap">
+            🔖 Зарын дугаар: <span className="font-mono font-semibold text-gray-600">{shortId}</span>
+          </span>
         </div>
       </header>
 

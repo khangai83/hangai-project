@@ -389,6 +389,26 @@ t('⑥ `ListingDetailClient` — «Хаяг тодорхойгүй» БИШ «Б
   assert.equal(src.includes('Хаяг тодорхойгүй'), false, 'хуучин текст үлдсэн ✗');
 });
 
+/**
+ * 🆕 2026-10-07 (2 дахь засвар) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «unegui шиг 1 мөрөнд
+ *    хийчих боломж алга уу». ⚠️ УРЬД НЬ 📍 нь 1-р мөр, 🕒·🔖 нь 2-р мөр
+ *    (тус тусдаа `<div>`) байв ⇒ ОДОО гурвуулаа НЭГ `flex flex-wrap` мөрөнд
+ *    `·` тусгаарлагчтай. Энэ тест тэр нэгдлийг түгжинэ (буцаж 2 мөр болвол ✗).
+ */
+t('⑥ 🆕`ListingDetailClient` — 📍 · 🕒 · 🔖 НЭГ МӨРӨНД (unegui хэв, 2026-10-07)', () => {
+  const src = codeOnly('components/ListingDetailClient.jsx');
+  // ⚠️ ХУУЧИН 2-МӨРИЙН хэв (📍 нь өөрийн гэсэн `<div>`-тэй) БУЦАЖ БОЛОХГҮЙ
+  assert.equal(src.includes('<div className="min-w-0">📍'), false, '📍 тусдаа мөрөнд үлдсэн ✗');
+  const row = src.slice(src.indexOf('flex flex-wrap items-center gap-x-2 gap-y-0.5'));
+  const at = row.indexOf('📍 {address || NO_LOCATION_LABEL}');
+  const time = row.indexOf('🕒 {timeAgo(listing.created_at)}');
+  const id = row.indexOf('🔖 Зарын дугаар:');
+  assert.ok(at >= 0, '📍 нэг мөрөнд БАЙХГҮЙ');
+  assert.ok(time > at, '🕒 нь 📍-ийн ДАРАА байх ёстой ✗');
+  assert.ok(id > time, '🔖 нь 🕒-ийн ДАРАА байх ёстой ✗');
+  assert.ok(row.includes('{shortId}'), 'богино зарын дугаар (`shortId`) алга ✗');
+});
+
 t('⑥ `MyListingsClient` — «📍 » хоосон үлдэхгүй (fallback текст)', () => {
   const src = codeOnly('components/MyListingsClient.jsx');
   assert.ok(src.includes("from '../lib/listingLocation.mjs'"));
