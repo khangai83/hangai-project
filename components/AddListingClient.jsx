@@ -62,7 +62,7 @@ import { coordOf, hasCoords, districtCenter, khorooCenter, autoCenterFor, sameCo
 import {
   parseGoogleMapsLink, isShortMapsLink,
   MAP_LINK_LABEL, MAP_LINK_PLACEHOLDER, MAP_LINK_BTN,
-  MAP_LINK_OK, MAP_LINK_ERR, MAP_LINK_SHORT_HINT,
+  MAP_LINK_OK, MAP_LINK_ERR, MAP_LINK_SHORT_HINT, MAP_LINK_RESOLVING,
 } from '../lib/locationGeo.mjs';
 /**
  * 🎯 АНГИЛАЛ УРЬДЧИЛАН БӨГЛӨХ (2026-10-06) — «Зар нэмэх» товч (`AppProviders`)
@@ -1366,8 +1366,9 @@ export default function AddListingClient() {
    *    пин тавихаас ГАДНА, Google Maps-ийн «Copy link»-ийг тавьж бас болно.
    *    ⚠️ Линк өөрөө ХАДГАЛАГДАХГҮЙ — зөвхөн `lat`/`lng` нь задарч
    *    `form.latitude`/`longitude` руу бичигдэнэ (DB migration 0 ✓)
-   *    ⚠️ Богино линк (`maps.app.goo.gl/…`) нь солбицол агуулахгүй тул
-   *    ТУСДАА зөвлөмж өгнө (`MAP_LINK_SHORT_HINT`) ✓
+   *    🆕 (2026-10-07) БОГИНО линк (`maps.app.goo.gl/…`): хөтөч дээр солбицол
+   *    өгдөггүй тул СЕРВЕР (`/api/resolve-map-link`) дамжиж задална —
+   *    амжилттай бол солбицол бичигдэнэ, эс бөгөөс `MAP_LINK_SHORT_HINT` ✓
    */
   const [mapLink, setMapLink] = useState('');
   const [mapLinkMsg, setMapLinkMsg] = useState({ kind: '', text: '' });
@@ -1375,22 +1376,36 @@ export default function AddListingClient() {
     setMapLink(value);
     if (mapLinkMsg.kind) setMapLinkMsg({ kind: '', text: '' });
   };
-  const applyMapLink = () => {
+  const applyMapLink = async () => {
     const raw = mapLink.trim();
     if (!raw) {
       setMapLinkMsg({ kind: '', text: '' });
       return;
     }
+    // ① ШУУД задалж үзнэ (бүрэн линк / «lat,lng» текст)
     const c = parseGoogleMapsLink(raw);
     if (c) {
       setForm((f) => ({ ...f, latitude: c.lat, longitude: c.lng }));
       setMapLinkMsg({ kind: 'ok', text: MAP_LINK_OK });
       return;
     }
-    setMapLinkMsg({
-      kind: 'err',
-      text: isShortMapsLink(raw) ? MAP_LINK_SHORT_HINT : MAP_LINK_ERR,
-    });
+    // ② БОГИНО линк (`maps.app.goo.gl/…`) — СЕРВЕРЭЭР задална (2026-10-07)
+    if (isShortMapsLink(raw)) {
+      setMapLinkMsg({ kind: 'loading', text: MAP_LINK_RESOLVING });
+      try {
+        const res = await fetch(`/api/resolve-map-link?url=${encodeURIComponent(raw)}`);
+        const data = await res.json();
+        if (data && data.ok && Number.isFinite(data.lat) && Number.isFinite(data.lng)) {
+          setForm((f) => ({ ...f, latitude: data.lat, longitude: data.lng }));
+          setMapLinkMsg({ kind: 'ok', text: MAP_LINK_OK });
+          return;
+        }
+      } catch (e) { /* сүлжээний алдаа — доор зөвлөмж гаргана */ }
+      setMapLinkMsg({ kind: 'err', text: MAP_LINK_SHORT_HINT });
+      return;
+    }
+    // ③ Солбицолгүй энгийн текст
+    setMapLinkMsg({ kind: 'err', text: MAP_LINK_ERR });
   };
   /**
    * 🗺 Одоогийн солбицол нь АВТОМАТ (ойролцоо) төв — хороо/дүүрэг/хот —
@@ -2808,10 +2823,14 @@ export default function AddListingClient() {
                     ⇒ Пин тавихаас ГАДНАХ гарц: линк тавиад «Оруулах» дарбал
                       `parseGoogleMapsLink` нь СОЛБИЦОЛЫГ задлаж, пингүй бол
                       ЗАР ГАЗРЫН ЗУРАГ ДЭЭР ГАРАХ болов ✓
+                    🆕 (2026-10-07) БОГИНО линк (`maps.app.goo.gl/…`): хөтчөөс
+                      солбицол өгдөггүй тул СЕРВЕР (`/api/resolve-map-link`)
+                      дамжиж задална — амжилттай бол солбицол бичигдэнэ ✓
                     ⚠️ Линк өөрөө ХАДГАЛАГДАХГҮЙ — зөвхөн `latitude`/`longitude`
                        (аль хэдийн байгаа багана) руу бичигдэнэ (migration 0 ✓)
                     🔍 Хайх үг: data-map-link-input, data-map-link-btn,
-                       data-map-link-msg, applyMapLink, parseGoogleMapsLink */}
+                       data-map-link-msg, applyMapLink, parseGoogleMapsLink,
+                       resolve-map-link, isShortMapsLink */}
                 <div className="mt-3 border-t border-gray-200 pt-3">
                   <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-600">
                     📋 {MAP_LINK_LABEL}
@@ -2833,7 +2852,8 @@ export default function AddListingClient() {
                       type="button"
                       data-map-link-btn
                       onClick={applyMapLink}
-                      className="shrink-0 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-[13.5px] font-semibold text-gray-800 transition hover:border-primary hover:text-primary"
+                      disabled={mapLinkMsg.kind === 'loading'}
+                      className="shrink-0 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-[13.5px] font-semibold text-gray-800 transition hover:border-primary hover:text-primary disabled:opacity-60"
                     >
                       {MAP_LINK_BTN}
                     </button>
@@ -2843,7 +2863,11 @@ export default function AddListingClient() {
                       data-map-link-msg
                       data-map-link-msg-state={mapLinkMsg.kind}
                       className={`mt-1.5 text-[12.5px] leading-snug ${
-                        mapLinkMsg.kind === 'ok' ? 'font-medium text-primary' : 'text-red-600'
+                        mapLinkMsg.kind === 'ok'
+                          ? 'font-medium text-primary'
+                          : mapLinkMsg.kind === 'loading'
+                            ? 'text-gray-500'
+                            : 'text-red-600'
                       }`}
                     >
                       {mapLinkMsg.text}

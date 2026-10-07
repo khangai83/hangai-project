@@ -20,6 +20,8 @@
 //   ⑧ 🆕 🔍 ХОРООНЫ НАРИЙВЧЛАЛ — `geocodeUrl`/`parseGeocodeResults` (Nominatim)
 //   ⑨ 🆕 🗺 ПИНГИЙН ХАЯГ — `reverseGeocodeUrl`/`parseReverseResult` (Nominatim reverse)
 //   ⑩ 🆕 📐 ДҮҮРГИЙН БОДИТ ХИЛ — `districtPolygonUrl`/`extractPolygon`/`pointInGeoJson`
+//   ⑪ 🆕 📋 GOOGLE MAPS ЛИНК — `parseGoogleMapsLink`/`isShortMapsLink` +
+//      🆕 БОГИНО линкийг СЕРВЕР (`app/api/resolve-map-link`) задалдаг ГЭРЭЭ
 //
 // АЖИЛЛУУЛАХ:  npm run test:location-map
 // ⚠️ DB/React/CDP ХОЛБОГДОХГҮЙ — зөвхөн Node (цэвэр модуль + эх файлын гэрээ).
@@ -40,7 +42,7 @@ import {
   isValidCoord, coordOf, hasCoords, districtCenter, cityCenter,
   khorooNumber, khorooCenter, autoCenterFor, mapCenterFor, sameCoord,
   parseGoogleMapsLink, isShortMapsLink, MAP_LINK_LABEL, MAP_LINK_BTN,
-  MAP_LINK_OK, MAP_LINK_ERR, MAP_LINK_SHORT_HINT,
+  MAP_LINK_OK, MAP_LINK_ERR, MAP_LINK_SHORT_HINT, MAP_LINK_RESOLVING,
 } from '../lib/locationGeo.mjs';
 import { KHOROO_CENTERS, ubKhorooCenter } from '../lib/ubKhorooCenters.mjs';
 import {
@@ -753,7 +755,28 @@ t('⑪ `isShortMapsLink` — БОГИНО линк (солбицолгүй)', ()
   assert.equal(isShortMapsLink('https://www.google.com/maps/@47.9,106.9,15z'), false, 'бүрэн линк');
   assert.equal(isShortMapsLink('47.9,106.9'), false, 'энгийн солбицол');
   assert.equal(isShortMapsLink(null), false, 'null');
-  assert.deepEqual(parseGoogleMapsLink('https://maps.app.goo.gl/abcdEFGH'), null, 'богино линкээс солбицол гарахгүй');
+  assert.deepEqual(parseGoogleMapsLink('https://maps.app.goo.gl/abcdEFGH'), null, 'богино линкээс шууд солбицол гарахгүй (сервер задална)');
+});
+
+t('⑪ `parseGoogleMapsLink` — 🆕 СЕРВЕР задалсан `/maps/search/LAT,+LNG`', () => {
+  assert.deepEqual(
+    parseGoogleMapsLink('https://www.google.com/maps/search/47.906319,+106.904352?entry=tts&g_ep=Egoy'),
+    { lat: 47.906319, lng: 106.904352 },
+    'сервер богино линкийг задалж буцаасан хэлбэр',
+  );
+  assert.deepEqual(parseGoogleMapsLink('47.906319,+106.904352'), { lat: 47.906319, lng: 106.904352 }, '«+» знак');
+  assert.deepEqual(parseGoogleMapsLink('47.906319,-106.904352'), { lat: 47.906319, lng: -106.904352 }, '«-» знак');
+  assert.deepEqual(parseGoogleMapsLink('https://www.google.com/maps?q=47.9,+106.9'), { lat: 47.9, lng: 106.9 }, '`?q=` доторх «+»');
+});
+
+t('⑪ ГЭРЭЭ `/api/resolve-map-link` — БОГИНО линкийг СЕРВЕР задална', () => {
+  const src = codeOnly('app/api/resolve-map-link/route.js');
+  assert.ok(src.includes('isShortMapsLink'), 'SSRF: зөвхөн богино линк хүлээнэ');
+  assert.ok(src.includes("redirect: 'manual'"), '302-ын `Location`-ыг уншина');
+  assert.ok(src.includes('parseGoogleMapsLink'), 'задарсан линкээс солбицол авна');
+  assert.ok(src.includes("dynamic = 'force-dynamic'"), 'сервер рүү явах ёстой');
+  assert.ok(src.includes('NextResponse.json({ ok: false })'), 'алдаа ШИДЭХГҮЙ — `ok:false`');
+  assert.ok(src.includes('AbortController'), 'timeout хамгаалалт алга');
 });
 
 t('⑪ ГЭРЭЭ `AddListingClient` — 📋 линк талбар + товч + мессеж (дэгээнүүдтэй)', () => {
@@ -767,6 +790,10 @@ t('⑪ ГЭРЭЭ `AddListingClient` — 📋 линк талбар + товч +
   assert.ok(src.includes('const applyMapLink'), 'applyMapLink функц алга');
   assert.ok(src.includes('latitude: c.lat, longitude: c.lng'), 'солбицол форм руу бичигдэхгүй');
   assert.ok(src.includes('MAP_LINK_SHORT_HINT'), 'богино линкний зөвлөмж алга');
+  assert.ok(src.includes('const applyMapLink = async'), 'applyMapLink нь `async` байх ёстой (богино линк серверээр)');
+  assert.ok(src.includes('/api/resolve-map-link'), 'богино линкийг СЕРВЕРЭЭР задалдаггүй');
+  assert.ok(src.includes('MAP_LINK_RESOLVING'), '«нээж байна…» текст алга');
+  assert.ok(src.includes('Number.isFinite(data.lat)'), 'серверийн хариуг шалгахгүй');
   // ⚠️ Линк өөрөө ХАДГАЛАГДАХГҮЙ — `emptyForm()`-д шинэ түлхүүр НЭМЭЭГҮЙ (DB 0)
   assert.equal(src.includes("mapLink: ''"), false, 'линк нь формойн тогтмол талбар БОЛОХГҮЙ');
 });
@@ -782,11 +809,14 @@ t('⑪ ТЕКСТ ТОГТМОЛУУД — нэг эх сурвалж (UI ба �
   assert.equal(typeof MAP_LINK_LABEL, 'string');
   assert.equal(typeof MAP_LINK_BTN, 'string');
   assert.equal(MAP_LINK_OK.length > 0, true);
+  assert.equal(typeof MAP_LINK_RESOLVING, 'string');
+  assert.ok(MAP_LINK_RESOLVING.includes('линк'), 'богино линк задалж байгаа текст');
   assert.ok(MAP_LINK_ERR.includes('Солбицол олдсонгүй'), 'ерөнхий алдааны текст');
   assert.ok(MAP_LINK_SHORT_HINT.includes('богино линк'), 'богино линкний зөвлөмж');
   // ⚠️ UI (AddListingClient) нь эдгээрийг ХЭРЭГЛЭНЭ (хатуу бичсэн давхардал БИШ)
   const src = codeOnly('components/AddListingClient.jsx');
   assert.ok(src.includes('MAP_LINK_LABEL') && src.includes('MAP_LINK_BTN'), 'UI текст тогтмолыг ашиглахгүй');
+  assert.ok(src.includes('MAP_LINK_RESOLVING'), 'UI богино линкний «нээж байна» текстийг ашиглахгүй');
 });
 
 console.log(`\n✅ БҮГД ТЭНЦСЭН — ${passed} тест\n`);
