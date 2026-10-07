@@ -73,6 +73,11 @@ import { DEFAULT_SORT, SORT_OPTIONS, normalizeSort } from '../lib/sortOptions.mj
 //       дүрэм ДАХИН БИЧИХГҮЙ ✓
 import { useSavedSearches } from '../lib/savedSearches';
 import { isSaveableSearch } from '../lib/savedSearch.mjs';
+// 🕐 ХАЙЛТЫН ТҮҮХ (2026-10-07, хэрэглэгчийн хүсэлт: «цагийн icon ... ийш
+//    орход тухайн хэрэглэгчийн хайлтуудыг харуулдаг болгох») — хайх БҮРД
+//    автоматаар бүртгэгдэнэ. Хадгалалт нь нэвтэрсэн бол DB
+//    (`search_history` — 0032), зочин бол localStorage (hybrid ✓)
+import { useSearchHistory } from '../lib/searchHistory';
 // 🛏 ӨРӨӨНИЙ ТОО — ОЛОН СОНГОЛТ — цэвэр логик нь `lib/roomFilter.mjs`
 //    (URL, DB, breadcrumb бүгд тэр модулийг хэрэглэнэ) ✓
 // 🆕 2026-10-03 (4): ХЭРЭГЛЭГЧИЙН ХҮСЭЛТЭЭР UI ЭРГЭЖ ИРЭВ —
@@ -876,6 +881,13 @@ export default function HomeClient() {
   //       шийднэ) — `useAuth()` нь root provider-оос ирнэ ✓
   const { user } = useAuth();
   const savedSearches = useSavedSearches(user);
+  // 🕐 ХАЙЛТЫН ТҮҮХ (2026-10-07) — хайх БҮРД автоматаар бүртгэгдэнэ.
+  //    ⚠️ `record` нь эффект дотор ref-ээр дуудагдана (deps-д оруулбал
+  //       эффект дахин дахин ажиллах эрсдэл ✗); таймер нь debounce-ны төлөв ✓
+  const searchHistory = useSearchHistory(user);
+  const historyRecordRef = useRef(searchHistory.record);
+  historyRecordRef.current = searchHistory.record;
+  const historyTimer = useRef(null);
   /**
    * 🔗 Одоогийн хайлтын URL — «Хайлтыг хадгалах» товч ЯГ ҮҮНИЙГ хадгална.
    * ⚠️ Доорх URL-шинэчлэх эффект нь адресны мөрийг бичдэг тул тэр `next`
@@ -1242,6 +1254,18 @@ export default function HomeClient() {
     //    бол зөвхөн харагдацын синк; энэ нь React-ийн төлөв ✓
     setCurrentUrl(next);
     if (next !== current) router.replace(next, { scroll: false });
+    // 🕐 ХАЙЛТЫН ТҮҮХ — линк СТОПОЛСНЫ дараа (900мс, debounce) нэг л удаа
+    //    бүртгэнэ. ⚠️ Шууд бүртгэвэл шүүлт бичих/солих БҮРД олон мөр үүснэ ✗
+    //    ⚠️ «Бүх зар» (`isSaveableSearch` false) бол ОГТ бүртгэхгүй ✓
+    if (isSaveableSearch(next)) {
+      if (historyTimer.current) clearTimeout(historyTimer.current);
+      historyTimer.current = setTimeout(() => {
+        if (historyRecordRef.current) historyRecordRef.current(next);
+      }, 900);
+    }
+    // ⚠️ Дараагийн өөрчлөлт эсвэл unmount дээр хуучин таймерыг цуцална —
+    //    энэ нь яг debounce-ны зан төлөв (зөвхөн СҮҮЛИЙН төлөвийг бүртгэнэ ✓)
+    return () => { if (historyTimer.current) clearTimeout(historyTimer.current); };
   }, [urlReady, category, section, query, filters, view, page, sort, router]);
 
   /**

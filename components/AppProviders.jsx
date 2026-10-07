@@ -16,7 +16,7 @@ import { listingPrefillFromSearch, newListingHref } from '../lib/listingPrefill.
 import AuthModal from './AuthModal';
 import ProfileModal from './ProfileModal';
 import MessageIcon from './MessageIcon';
-import { HeartIcon, ChatIcon } from './HeaderIcons';
+import { HeartIcon, ChatIcon, ClockIcon } from './HeaderIcons';
 
 /** Supabase-ийн user → '+976XXXXXXXX' (эсвэл null).
  *  Гурван эх сурвалжаас дарааллаар нь хайна:
@@ -255,6 +255,14 @@ export default function AppProviders({ children }) {
         href: '/messages',
         icon: <MessageIcon className="h-[15px] w-[15px]" />,
       },
+      // 🕐 Хайлтын түүх (`/history`) — 2026-10-07. `icon` талбартай тул
+      //    desktop dropdown ба мобайл доод sheet ХОЁУЛАА ижил иконтой ✓
+      {
+        key: 'history',
+        label: '🕐 Хайлтын түүх',
+        href: '/history',
+        icon: <ClockIcon className="h-[15px] w-[15px]" />,
+      },
     ];
     if (isAdmin) {
       items.push(
@@ -433,6 +441,28 @@ export default function AppProviders({ children }) {
                   )}
                 </Link>
 
+                {/* ---- ④ 🕐 Хайлтын түүх (icon-only — 2026-10-07) ----
+                    ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-07, жишээ зурагтай):
+                       «Энэ цагийн icon ийг messege icon ний дараа оруулах ба
+                       ийш орход тухайн хэрэглэгчийн хайлтуудыг харуулдаг
+                       болгох» ✓ → Мессежийн ЯГ ДАРАА, зөвхөн icon товч.
+                    ⚠️ Икон нь `ClockIcon` SVG (циферблат + 12 ба 3 цаг руу
+                       чиглэсэн 2 зүү) — `currentColor` = саарал/хар, өнгө
+                       ГАРАХГҮЙ ✓ (`HeaderIcons.jsx`-ийн тайлбарыг үз).
+                    ⚠️ ❤️/💬-тай ЯГ ИЖИЛ хэв — `p-1.5`, `h-6 w-6`,
+                       hover-т `group-hover:scale-110`; тоолуур (badge)
+                       БАЙХГҮЙ (түүх нь тоолуур шаардахгүй ✓).
+                    ⚠️ `/history` хуудас — хайлтууд КАРТ хэлбэрээр ✓ */}
+                <Link
+                  href="/history"
+                  className="group relative inline-flex items-center justify-center rounded-full p-1.5 text-gray-700 transition-colors hover:text-gray-900"
+                  title="Хайлтын түүх — сүүлийн хайлтууд"
+                  aria-label="Хайлтын түүх"
+                  onClick={closeUserMenus}
+                >
+                  <ClockIcon className="h-6 w-6 transition-transform duration-200 ease-out group-hover:scale-110" />
+                </Link>
+
                 {/* ---- ① Нэвтрэх / Хэрэглэгчийн цэс ----
                     ⚠️ БАЙР СОЛИСОН: өмнө нь ЗҮҮН талд (хамгийн эхэнд) байсан.
                     Одоо баруун захад — Zillow шиг «хэрэглэгчийн цэс хамгийн
@@ -487,6 +517,11 @@ export default function AppProviders({ children }) {
                 <Link href="/messages" className="inline-flex items-center gap-1.5 transition hover:text-white">
                   <MessageIcon className="h-[14px] w-[14px]" />
                   Мессеж
+                </Link>
+                {/* 🕐 Хайлтын түүх (2026-10-07) — `ClockIcon` SVG (emoji биш) */}
+                <Link href="/history" className="inline-flex items-center gap-1.5 transition hover:text-white">
+                  <ClockIcon className="h-[14px] w-[14px]" />
+                  Хайлтын түүх
                 </Link>
               </nav>
               <p className="text-[13.5px]">🏠 ZARLAA.MN — Үл хөдлөх хөрөнгийн зар. Next.js + Supabase хувилбар.</p>
