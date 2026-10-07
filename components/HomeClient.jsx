@@ -193,9 +193,11 @@ function parseListParam(raw) {
  *   ③ доод түвшингүй бүлэг (`items: []`) — өөрөө сонгогдоно.
  * 🗑 CHEVRON (›) ХАСАГДАВ (2026-09-30, хэрэглэгчийн хүсэлт: «category-уудын
  *    урд байгаа > энэ тэмдэгийг болъё») — ⚠️ ЗӨВХӨН чимэглэлийн `<svg>`
- *    (`opacity-30`) арилав; шошго/фонт/жин/hover (`hover:bg-white`,
- *    `group-hover:text-primary`)/padding (`px-2 py-1.5`)/`break-inside-avoid`
- *    БҮГД ХЭВЭЭР ✓. Тиймээс мөр бүр одоо ЗҮҮН захаас `px-2`-оос эхэлнэ.
+ *    (`opacity-30`) арилав; шошго/фонт/жин/`group-hover:text-primary`/
+ *    padding (`px-2 py-1.5`)/`break-inside-avoid` БҮГД ХЭВЭЭР ✓. Тиймээс
+ *    мөр бүр одоо ЗҮҮН захаас `px-2`-оос эхэлнэ.
+ *    ✏️ 2026-10-07: `hover:bg-white` АРИЛАВ — панелийн саарал дэвсгэр
+ *    (`bg-gray-100`) байхгүй болсон тул цагаан hover нь хачирхалтай байв ✓
  *    ℹ️ `GroupHeading`-ийн ▶/▼ chevron нь ҮЙЛДЛИЙН ДОХИО (нээх/хаах,
  *    `aria-expanded`) тул ХАСАГДААГҮЙ ✓; breadcrumb-ийн `›` нь
  *    ТУСГААРЛАГЧ (`components/Breadcrumb.jsx`) тул мөн хэвээр.
@@ -210,7 +212,7 @@ function SubtypeRow({ label, onSelect, bold = false }) {
       role="tab"
       aria-selected={false}
       onClick={onSelect}
-      className="group flex w-full break-inside-avoid items-start rounded-md px-2 py-1.5 text-left transition hover:bg-white"
+      className="group flex w-full break-inside-avoid items-start rounded-md px-2 py-1.5 text-left transition"
     >
       <span
         className={`line-clamp-2 overflow-hidden text-[14px] tracking-[-0.01em] text-ellipsis text-gray-900 sm:text-[15px] group-hover:text-primary ${
@@ -244,7 +246,7 @@ function GroupHeading({ label, collapsible = false, open = false, onToggle }) {
       onClick={onToggle}
       aria-expanded={open}
       title={open ? 'Дэд төрлүүдийг хаах' : 'Дэд төрлүүдийг харах'}
-      className={`flex w-full items-center gap-1 rounded-md px-2 pb-1 pt-2 text-left transition hover:bg-white ${text}`}
+      className={`flex w-full items-center gap-1 rounded-md px-2 pb-1 pt-2 text-left transition ${text}`}
     >
       {/* chevron — хаалттай үед ▶, нээлттэй үед ▼ (эргэлдэнэ ✓) */}
       <svg
@@ -2380,15 +2382,14 @@ export default function HomeClient() {
              энэ доторх `[data-category-value]` ба `button[role="tab"]`
              (дэд төрөл)-ийг тоолж, 2 алхамт drill-ыг шалгана ✓ */
           data-section-panel
-          className={`mb-5 ${
-            sectionOpen
-              /* unegui.mn-ийн «SubcategoryPanel» — саарал дугуй панел */
-              ? 'rounded-2xl bg-gray-100 px-3 py-4 pt-5 sm:px-8'
-              /* ✏️ 2026-10-07 — ХЭСГИЙН tile сүлжээ unegui.mn ШИГ ХАВТГАЙ
-                 болов: БОРДЮР (border) + СҮҮДЭР (shadow) АРИЛАВ — зөвхөн
-                 цагаан гадаргуу + padding (BORDERED CARD БАЙХГҮЙ ✓) */
-              : 'rounded-xl bg-white p-2 sm:p-3'
-          }`}
+          /* ✏️ 2026-10-07 (хэрэглэгчийн хүсэлт) — ДЭВСГЭР (background) БҮРЭН
+             АРИЛАВ: «background өнгийг байхгүй болгоод маш minimal харуул».
+             • State 2 (нээлттэй) — `bg-gray-100` саарал дугуй панел ✗
+             • State 1 (12 tile)  — `bg-white` цагаан хайрцаг ✗
+             Хоёулаа `bg-gray-50` хуудас дээр ХАЙРЦАГ мэт харагдаж байв →
+             ОДОО дэвсгэр/padding/хүрээ БАЙХГҮЙ (unegui.mn шиг агуулга нь
+             хуудсан дээр ШУУД) ✓ */
+          className="mb-5"
         >
 
         {sectionOpen ? (
@@ -2442,22 +2443,29 @@ export default function HomeClient() {
                    (`text-[15px] sm:text-[16px]`); тоо нь түүний доторх `<span>`.
                 ⚠️ «Бүх зар» гэсэн BREADCRUMB нь ЭНЭ ФАЙЛД БИШ — `components/
                    Breadcrumb.jsx` (мөр 32, `text-[15px]`) ✓ */}
-            <div className="mb-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+            {/* ---------- ТОЛГОЙ: ХЭСГИЙН НЭР + ТОО (unegui.mn шиг) ----------
+                ✏️ 2026-10-07 (хэрэглэгчийн хүсэлт: «category-д орсны дараа
+                   хаана байгаагаа мэдэгдэхгүй байна, зүүн тийшээ томорсон
+                   байгаа»): ТӨВД байсан МАЛУУ ЦЭНХЭР товч → ОДОО **ЗҮҮН тийш
+                   ТОМ BOLD хар гарчиг + саарал тоо** (үр дүнгийн `<h1>`-тэй
+                   ЯГ ИЖИЛ хэмжээ/өнгө) — unegui.mn ангиллын хуудас шиг,
+                   «хаана байгаа нь» нэг харцаар мэдэгдэнэ ✓
+                🗑 SEPARATOR (1px зураас) ХАСАГДАВ (unegui.mn-д байхгүй) ✓
+                ⚠️ Товчны ҮЙЛДЭЛ ХЭВЭЭР (`setSectionOpen(false)`) — нэрэн дээр
+                   дарахад панель хаагдаж 12 ХЭСГИЙН tile дэлгэц гарна ✓ */}
+            <div className="mb-3">
               <button
                 type="button"
                 onClick={() => setSectionOpen(false)}
                 title="Энэ хэсгийн БҮХ зарыг харах"
-                className="flex items-center justify-center gap-1.5 rounded-md px-2 py-1 text-[15px] font-bold text-primary transition hover:bg-white sm:text-[16px]"
+                className="text-left text-2xl font-bold text-gray-900 transition hover:text-primary sm:text-[26px]"
               >
                 {sec.label}
                 {sectionTotal > 0 && (
-                  <span className="text-[14px] font-normal text-gray-600">{formatCount(sectionTotal)}</span>
+                  <span className="ml-2 align-middle text-[17px] font-normal text-gray-500">{formatCount(sectionTotal)}</span>
                 )}
               </button>
             </div>
-
-            {/* ---------- SEPARATOR ---------- */}
-            <div className="mb-1.5 h-px w-full bg-gray-200" />
 
             {/* ---------- КАТЕГОРИ (зөвхөн үл хөдлөх) ----------
                 🆕 2026-10-04 (хэрэглэгчийн хүсэлт): «Үл хөдлөх зарна» /
@@ -2472,26 +2480,30 @@ export default function HomeClient() {
                    getSectionCategoryChoices` (нэг эх сурвалж) — хатуу
                    бичсэн нэр БАЙХГҮЙ ✓
                 ⚠️ `data-category-value` нь CDP тестийн тогтвортой дэгээ ✓ */}
+            {/* ✏️ 2026-10-07 — `segmented` (саарал дүүргэлттэй pill, ТӨВД)
+                → ЗҮҮН тийш эгнэсэн ХАВТГАЙ текст линк (unegui.mn шиг).
+                ⚠️ `data-category-value`/`aria-pressed`/богино-урт шошго
+                   (hidden sm:inline / sm:hidden) БҮГД ХЭВЭЭР — CDP ✓ */}
             {showCategories && categoryChoices.length > 0 && (
-              <div className="mb-2 flex justify-center">
-                <div className="segmented" role="group" aria-label="Зарах эсвэл түрээслэх">
-                  {categoryChoices.map((c) => {
-                    const active = category === c.value;
-                    return (
-                      <button
-                        key={c.value}
-                        type="button"
-                        aria-pressed={active}
-                        data-category-value={c.value}
-                        onClick={() => setCategory(c.value)}
-                        className={`segmented-item ${active ? 'segmented-item-active' : ''}`}
-                      >
-                        <span className="hidden sm:inline">{c.label}</span>
-                        <span className="sm:hidden">{c.shortLabel}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+              <div className="mb-3 flex flex-wrap items-center gap-x-7 gap-y-1.5" role="group" aria-label="Зарах эсвэл түрээслэх">
+                {categoryChoices.map((c) => {
+                  const active = category === c.value;
+                  return (
+                    <button
+                      key={c.value}
+                      type="button"
+                      aria-pressed={active}
+                      data-category-value={c.value}
+                      onClick={() => setCategory(c.value)}
+                      className={`text-left text-[15px] font-semibold transition sm:text-[16px] ${
+                        active ? 'text-primary' : 'text-gray-800 hover:text-primary'
+                      }`}
+                    >
+                      <span className="hidden sm:inline">{c.label}</span>
+                      <span className="sm:hidden">{c.shortLabel}</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
 

@@ -2277,7 +2277,7 @@ t('🖥📱 getSectionCategoryChoices — үл хөдлөхөд ЯГ 3 (sell→r
     .forEach((s) => assert.deepEqual(getSectionCategoryChoices(s.value), [], s.value));
 });
 
-t('🖥 ГЭРЭЭ: HomeClient — категори нь `segmented` + `getSectionCategoryChoices` + `data-category-value`', () => {
+t('🖥 ГЭРЭЭ: HomeClient — категори нь `getSectionCategoryChoices` + `data-category-value` (хавтгай линк)', () => {
   const home = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
   // ① Шошго/дараалал нь НЭГ ЭХ СУРВАЛЖААС (`lib/locationData.js`) — хатуу бичсэн нэр БАЙХГҮЙ ✓
   assert.ok(/getSectionCategoryChoices\(section\)/.test(home),
@@ -2286,10 +2286,16 @@ t('🖥 ГЭРЭЭ: HomeClient — категори нь `segmented` + `getSecti
     'хуучин `getSectionCategories` дуудлага ҮЛДСЭН байна ✗');
   assert.ok(/data-category-value=\{c\.value\}/.test(home),
     'CDP дэгээ (`data-category-value`) алга ✗');
-  // ② Харагдац нь `.segmented` (unegui.mn-ийн «Зарна / Түрээслүүлнэ» хэв) ✓
-  assert.ok(/className="segmented"/.test(home), '`segmented` контроль алга ✗');
-  assert.ok(/segmented-item-active/.test(home), 'идэвхтэй сегментийн класс алга ✗');
+  // ② ✅ 2026-10-07 (хэрэглэгчийн хүсэлт: «background өнгийг байхгүй болгож,
+  //    зүүн тийш том, маш minimal — unegui.mn шиг») — ТӨВД байсан саарал
+  //    дүүргэлттэй `segmented` pill ХАСАГДАВ → ЗҮҮН хавтгай текст линк.
+  assert.ok(!/className="segmented"/.test(home),
+    'хуучин `segmented` pill ҮЛДСЭН байна (хавтгай болох ёстой) ✗');
+  assert.ok(!/segmented-item-active/.test(home),
+    'хуучин `segmented-item-active` класс ҮЛДСЭН байна ✗');
   assert.ok(/aria-pressed=\{active\}/.test(home), '`aria-pressed` алга ✗');
+  assert.ok(/className=\{`text-left text-\[15px\] font-semibold/.test(home),
+    'хавтгай категори линкийн класс (`text-left text-[15px] font-semibold`) алга ✗');
   // ③ 📱 <640px богино шошго / 🖥 ≥640px бүтэн шошго (390px дээр гүйлэхгүй ✓)
   assert.ok(/hidden sm:inline/.test(home) && /sm:hidden/.test(home),
     'шошгын мобайл/десктоп солилт алга ✗');
