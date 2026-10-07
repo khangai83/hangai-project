@@ -99,6 +99,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
+/**
+ * 📝 2026-10-07 — «Тайлбар» нь 🏷️ гарчигны ЯГ ДАРАА гарах хэсэг эсэх нь
+ *    ЦЭВЭР модуль дээр (`descriptionAfterTitle`). Энэ тест нь тэр гэрээг
+ *    «энгийн формтой» БҮХ хэсэг (+ 💻 condition-only дэд төрөл) ба
+ *    ХӨНДӨӨГДӨХГҮЙ хэсгүүд (🏠/🚗/💼/💻 Notebook) дээр түгждэг ✓
+ */
+import { descriptionAfterTitle } from '../lib/locationData.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(here, '..');
@@ -174,11 +181,14 @@ t('📱 `mobileDetailStep` нь эхний дэлгэц `title`-ээр эхэл�
 
 const screensBody = bodyOf(FORM, 'const detailScreens = (() => {');
 
-t('📱 `detailScreens` нь ЗӨВ дараалалтай (гарчиг → аттр* → 💳 төлбөр → талбай → он → нийт давхар → давхар → угаалгын өрөөний тоо → тагт → гараж ✓)', () => {
+t('📱 `detailScreens` нь ЗӨВ дараалалтай (гарчиг → 📝 тайлбар* → аттр* → 💳 төлбөр → талбай → он → нийт давхар → давхар → угаалгын өрөөний тоо → тагт → гараж ✓)', () => {
   const order = [...screensBody.matchAll(/key:\s*'([^']+)'|key:\s*`attr-\$\{f\.key\}`/g)]
     .map((m) => m[1] || 'attr-<key>');
+  /** ⚠️ 2026-10-07: 📝 `description` нь ЭНГИЙН формтой хэсэгт (⚙️ attr нь
+   *  зөвхөн ✅ «Төлөв», эсвэл огт байхгүй — `descriptionAfterTitle`) гарчигны
+   *  ЯГ ДАРАА нэмэгдэнэ; бусад хэсэгт нэмэгдэхгүй (`if (descAfterTitle)`) ✓ */
   assert.deepEqual(order, [
-    'title', 'attr-<key>', 'payments', 'area',
+    'title', 'description', 'attr-<key>', 'payments', 'area',
     'buildYear', 'totalFloors', 'floor', 'bathrooms', 'balconies', 'garage',
   ]);
 });
@@ -221,6 +231,22 @@ t('📱 Хэсгийн НЭМЭЛТ талбарууд (ж: 🚗 Брэнд/Он
 
 t('📱 Гарчиг нь ЗӨВХӨН шинэ зард «заавал» (засах горимд `validateStep` ч шаарддаггүй ✓)', () => {
   assert.ok(screensBody.includes('required: !isEdit'), 'required: !isEdit');
+});
+
+t('📝 (2026-10-07) `descriptionAfterTitle` — энгийн формтой хэсэгт ГАРЧГИЙН ДАРАА, бусадт ҮНЭ-ний дараа ✓', () => {
+  /** ① Энгийн форм (⚙️ attr нь ЗӨВХӨН ✅ «Төлөв», эсвэл огт байхгүй) ⇒ true */
+  ['furniture', 'home', 'electric', 'construction', 'equipment', 'travel', 'hobby', 'services']
+    .forEach((s) => assert.equal(descriptionAfterTitle(s), true,
+      `${s}: 📝 тайлбар нь гарчигны дараа БАЙХ ЁСТОЙ ✗`));
+  /** ② 💻 condition-only ДЭД ТӨРӨЛ (getAttrFields зөвхөн ✅ үлдээнэ) ⇒ true */
+  assert.equal(descriptionAfterTitle('computers', 'Дэлгэц'), true, '💻 «Дэлгэц» ✗');
+  assert.equal(descriptionAfterTitle('computers', 'Иж бүрэн компьютер'), true, '💻 «Иж бүрэн компьютер» ✗');
+  assert.equal(descriptionAfterTitle('computers', 'PS, XBox, Nintendo'), true, '💻 «PS, XBox, Nintendo» ✗');
+  /** ③ ⚠️ ХӨНДӨӨГДӨХГҮЙ: 💻 Notebook гэр бүл · 🏠 үл хөдлөх · 🚗 авто · 💼 ажил ⇒ false */
+  assert.equal(descriptionAfterTitle('computers', 'Apple'), false, '💻 Notebook (Apple) ✗');
+  assert.equal(descriptionAfterTitle('real-estate'), false, '🏠 үл хөдлөх ✗');
+  assert.equal(descriptionAfterTitle('auto'), false, '🚗 авто ✗');
+  assert.equal(descriptionAfterTitle('jobs'), false, '💼 ажил ✗');
 });
 
 t('📱 Хүчингүй түлхүүр (ж: хэсэг солигдов) → ЭХНИЙ дэлгэц рүү унана (index < 0 → 0 ✓)', () => {
@@ -286,8 +312,8 @@ const step3 = (() => {
   return FORM.slice(from, to);
 })();
 
-t('📱 7 МӨР (title · attrs · 💳 payments · area · floors-1 · floors-2 [давхар+угаалгын өрөөний тоо+тагт] · garage) бүгд `data-detail-row` + `data-mobile-active`-тай (CSS-ийн НЭГ эх сурвалж ✓)', () => {
-  const rows = ['title', 'attrs', 'payments', 'area', 'floors-1', 'floors-2', 'garage'];
+t('📱 8 МӨР (title · 📝 description · attrs · 💳 payments · area · floors-1 · floors-2 [давхар+угаалгын өрөөний тоо+тагт] · garage) бүгд `data-detail-row` + `data-mobile-active`-тай (CSS-ийн НЭГ эх сурвалж ✓)', () => {
+  const rows = ['title', 'description', 'attrs', 'payments', 'area', 'floors-1', 'floors-2', 'garage'];
   rows.forEach((name) => {
     const re = new RegExp('data-detail-row="' + name + '"[\\s\\S]{0,200}?'
       + "data-mobile-active=\\{detailRowActive\\('" + name + "'\\)\\}");
@@ -296,8 +322,8 @@ t('📱 7 МӨР (title · attrs · 💳 payments · area · floors-1 · floors-
   assert.equal((step3.match(/data-detail-row="/g) || []).length, rows.length);
 });
 
-t('📱 Гарчиг / Талбай / Гараж / 💳 төлбөр — `.form-group` дээр `data-detail-field` + `detailFieldActive` ✓', () => {
-  ['title', 'area', 'garage'].forEach((k) => {
+t('📱 Гарчиг / Тайлбар / Талбай / Гараж / 💳 төлбөр — `.form-group` дээр `data-detail-field` + `detailFieldActive` ✓', () => {
+  ['title', 'description', 'area', 'garage'].forEach((k) => {
     assert.ok(step3.includes('data-detail-field="' + k + '" data-mobile-active={detailFieldActive(\'' + k + '\')}'),
       `талбар «${k}»`);
   });
@@ -324,12 +350,14 @@ t('📱 `ChoiceField` өөрөө маркийг ТУСГААР нэмнэ (та�
   const cf = fnBody(FORM, 'function ChoiceField(');
   assert.ok(cf.includes('data-detail-field={fieldKey || undefined}'));
   assert.ok(cf.includes("data-mobile-active={mobileActive === undefined ? undefined : (mobileActive ? 'true' : 'false')}")); 
-  /** ⚠️ 3-р алхамд БОДИТ `data-detail-field=` марк ЗӨВХӨН 6 газар (title · attrs ·
-   *  💳 payments · rooms · area · garage); `ChoiceField`-ийн 5 талбар нь ПРОПСООР авна
-   *  (DOM ХОЁР ДАХИН рендэрлэхгүй — `form`/DB/`validateStep` хөндөгдөхгүй ✓)
+  /** ⚠️ 3-р алхамд БОДИТ `data-detail-field=` марк ЗӨВХӨН 7 газар (title · 📝
+   *  description · attrs · 💳 payments · rooms · area · garage); `ChoiceField`-ийн
+   *  5 талбар нь ПРОПСООР авна (DOM ХОЁР ДАХИН рендэрлэхгүй — `form`/DB/
+   *  `validateStep` хөндөгдөхгүй ✓). 🆕 2026-10-07: 📝 `description` (гарчигны
+   *  дараа, `descAfterTitle` үед) НЭМЭГДЭВ ⇒ 6 → 7 ✓
    *  ⚠️ `=`-тэй тоолно: 💳 блокийн JSX коммент дотор ч `data-detail-field` гэсэн
    *     ҮГ бий (дэгээг тайлбарласан) — тэр нь марк БИШ ✓ */
-  assert.equal((step3.match(/data-detail-field=/g) || []).length, 6);
+  assert.equal((step3.match(/data-detail-field=/g) || []).length, 7);
 });
 
 t('📱 «Өрөө» (`rooms`) — 3-р алхмын дэлгэцэд БАЙХГҮЙ (`data-mobile-active="false"` + `.hide-below-sm` ✓)', () => {

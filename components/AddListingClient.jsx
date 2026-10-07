@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, useToast, useUI } from './AppProviders';
 import { createListing, updateListing, uploadImages, fetchListingById } from '../lib/queries';
-import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, hasSimpleForm, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSection, getSubtypes, hasCategoryChoice, getSectionCategories, getSubtypeGroups, findSubtypeGroup, getAttrFields, PROPERTY_TYPE_ICONS } from '../lib/locationData';
+import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, hasSimpleForm, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSection, getSubtypes, hasCategoryChoice, getSectionCategories, getSubtypeGroups, findSubtypeGroup, getAttrFields, PROPERTY_TYPE_ICONS, descriptionAfterTitle } from '../lib/locationData';
 import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice, isNegotiablePrice, NEGOTIABLE_PRICE_LABEL, NEGOTIABLE_SALARY_LABEL, MAX_LISTING_TITLE_LENGTH } from '../lib/format';
 import phoneEmail from '../lib/phoneEmail';
 import YouTubeField from './YouTubeField';
@@ -1591,6 +1591,14 @@ export default function AddListingClient() {
    */
   const attrFields = getAttrFields(form.section || 'real-estate', form.propertyType);
   /**
+   * 📝 «Тайлбар» нь 🏷️ «Зарын гарчиг»-ийн ЯГ ДАРАА гарах эсэх (2026-10-07).
+   * ⚠️ Дүрэм нь ЦЭВЭР модуль дээр (`lib/locationData.js → descriptionAfterTitle`) —
+   *    🖥 3-р алхам · 📱 wizard (`detailScreens`) · 🏷️ гарчгийн дараах мөр БҮГД
+   *    энэ НЭГ тугыг ашиглана ✓ (эс бөгөөс нэг нь мартагдаж зөрүү үүснэ ✗)
+   * 🔍 Хайх үг: descriptionAfterTitle, descAfterTitle, Тайлбар
+   */
+  const descAfterTitle = descriptionAfterTitle(form.section || 'real-estate', form.propertyType);
+  /**
    * 💼 АЖЛЫН ЗАРТ «ҮНЭ» БИШ — ЦАЛИН (2026-10-03 (9), хэрэглэгчийн хүсэлт).
    * ⚠️ Хэрэглэгч: «Жич Энд Үнэ биш Цалин байх юм шүү хавсралтыг хараарай» ⇒
    *    4-р алхмын үнийн талбар нь ажлын зар дээр «Цалингийн хэмжээ» болж,
@@ -1869,6 +1877,15 @@ export default function AddListingClient() {
   const detailScreens = (() => {
     /** ⚠️ `required` — зөвхөн ШИНЭ зард (засах горимд `validateStep` ч шаарддаггүй ✓) */
     const out = [{ key: 'title', title: 'Зарын гарчиг', group: 'title', required: !isEdit }];
+    /**
+     * 📝 «Тайлбар» — 🏷️ гарчигны ЯГ ДАРАА (2026-10-07, `descriptionAfterTitle`):
+     *    энгийн формтой хэсэгт (⚙️ attr нь зөвхөн ✅ «Төлөв», эсвэл огт байхгүй)
+     *    тайлбар нь аттрибутуудын ӨМНӨ гарна ⇒ 📱 дэлгэц нь ч бас энд (гарчгийн
+     *    дараа) байх ЁСТОЙ, эс бөгөөс 🖥/📱 дараалал ЗӨРӨХГҮЙ ✗
+     * ⚠️ Бусад хэсэгт (🏠/🚗/💼/💻 Notebook) дэлгэц НЭМЭГДЭХГҮЙ — тайлбар нь
+     *    4-р алхамд (💰 үнийн дараа, `desc` блок) хэвээр ✓
+     */
+    if (descAfterTitle) out.push({ key: 'description', title: 'Тайлбар', group: 'description' });
     /** Хэсгийн нэмэлт талбарууд (брэнд/он/гүйлт/компьютер …) — нэг нэгээрээ */
     attrFields.forEach((f) => out.push({
       key: `attr-${f.key}`,
@@ -1935,6 +1952,8 @@ export default function AddListingClient() {
    */
   const detailAnswerText = (key) => {
     if (key === 'title') return String(form.title || '').trim();
+    /** 📝 «Тайлбар» (2026-10-07) — энгийн формтой хэсэгт дэлгэцтэй (`descAfterTitle`) */
+    if (key === 'description') return String(form.description || '').trim();
     if (key === 'payments') return form.payments.map((v) => paymentOptionLabel(v)).join(', ');
     if (key === 'area') return form.area ? `${form.area} м²` : '';
     if (key === 'buildYear') return form.buildYear ? choiceText(form.buildYear, 'он') : '';
@@ -3046,6 +3065,32 @@ export default function AddListingClient() {
                 </p>
               </div>
             </div>
+            {/* ═══ 📝 ТАЙЛБАР — 🏷️ ГАРЧИГНЫ ЯГ ДАРАА (2026-10-07) ═══
+                Хэрэглэгчийн хүсэлт: «Тавилга, Гэр ахуйн бараа, Цахилгаан бараа,
+                Үйлдвэр & Үйлчилгээ, Бизнес, Барилгын материал, Тоног төхөөрөмж,
+                Аяны бараа, Спорт бараа … бараг л бүх газар» ⇒ энгийн формтой
+                (⚙️ attr нь зөвхөн ✅ «Төлөв», эсвэл огт байхгүй) хэсэгт 📝 тайлбар
+                нь ✅/💰-ний ӨМНӨ — 🏷️ гарчигны ЯГ ДАРАА: Гарчиг → Тайлбар → Төлөв → Үнэ ✓
+                ⚠️ Дүрэм нь ЦЭВЭР модуль дээр (`lib/locationData.js →
+                   descriptionAfterTitle`); 🖥/📱 ХОЁУЛАА НЭГ DOM, зөвхөн CSS
+                   (`data-mobile-active`) ⇒ талбарыг ХОЁР ДАХИН рендэрлэхгүй ✓
+                ⚠️ Бусад хэсэг (🏠 үл хөдлөх · 🚗 авто · 💼 ажил · 💻 Notebook…)
+                   дээр ДАРААЛАЛ ХӨНДӨГДӨХГҮЙ — 📝 тайлбар нь 💰 үнийн дараа
+                   (`desc` блок) хэвээр ✓
+                🔍 Хайх үг: descriptionAfterTitle, descAfterTitle, Тайлбар, гарчигны дараа */}
+            {descAfterTitle && (
+              <div
+                className="form-row-single"
+                data-form-row="details"
+                data-detail-row="description"
+                data-mobile-active={detailRowActive('description')}
+              >
+                <div className="form-group" data-detail-field="description" data-mobile-active={detailFieldActive('description')}>
+                  <label>Тайлбар</label>
+                  <textarea rows="4" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Зарын дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..." />
+                </div>
+              </div>
+            )}
             {/* ⚠️ Энэ хэсэг/төрөлд тохирох нэмэлт талбар БАЙХГҮЙ бол
                 хэрэглэгчид ойлгуулна (ж: «Газар» төрөлд өрөө/давхар байхгүй) ✓ */}
             {!(showRooms || showFloors || showApartment || showBathrooms || attrFields.length > 0) && (
@@ -3708,6 +3753,10 @@ export default function AddListingClient() {
                 ⚠️ 2026-10-05 (57): `price`-тай ЯГ ИЖИЛ хаалт (`hidden sm:block`) —
                    🖥 дээр 3, 4, 5-р алхам НЭГ хуудас болсон тул хамт харагдана ✓ */}
             <div data-step-block="desc" className={step === 3 ? '' : step === 2 || step === 4 ? 'hidden sm:block' : 'hidden'}>
+            {/* 📝 Тайлбар нь 🏷️ гарчигны ЯГ ДАРАА (3-р алхам, `descAfterTitle`)
+                гарсан хэсэгт ЭНД ДАХИН ХАРАГДАХГҮЙ ✗; бусад хэсэгт (🏠/🚗/💼/💻)
+                💰 үнийн дараа хэвээр ✓ — 🔍 Хайх үг: descAfterTitle, descriptionAfterTitle */}
+            {!descAfterTitle && (
             <div className="form-group">
               {/* 🏷️ 2026-10-03 (14) (хэрэглэгчийн хүсэлт: «байрны зар оруулахад
                   Нэмэлт тайлбар гэхийг зүгээр л Тайлбар гэчих»): шошго
@@ -3719,6 +3768,7 @@ export default function AddListingClient() {
               <label>Тайлбар</label>
               <textarea rows="4" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Зарын дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..." />
             </div>
+            )}
 
             {/* 🎥 YouTube видео линк — Storage 0 MB (файл биш, линк хадгална).
                 ⚡ ХЯЛБАР ФОРМ (hobby) дээр ХАРАГДАХГҮЙ — хэрэглэгчийн хүсэлт:

@@ -1168,6 +1168,37 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   `test:format`) · `docs/IMPROVEMENTS.md` (энэ мөр)
   🔍 Хайх үг: `listingTitle`, `MAX_LISTING_TITLE_LENGTH`, `0027_listing_title.sql`,
   `Зарын гарчиг`
+- **📝 «ТАЙЛБАР» — 🏷️ ГАРЧИГНЫ ЯГ ДАРАА, «ЭНГИЙН ФОРМТОЙ» БАРАГ БҮХ ХЭСЭГТ
+  (2026-10-07)** — хэрэглэгчийн хүсэлт: «Тавилга, Гэр ахуйн бараа, Цахилгаан
+  бараа, Үйлдвэр & Үйлчилгээ, Бизнес …, Барилгын материал, Тоног төхөөрөмж,
+  Аяны бараа, Спорт бараа … бараг л бүх газар» ⇒ 3-р алхам (📋 Дэлгэрэнгүй) дээр
+  дараалал нь **🏷️ Гарчиг → 📝 Тайлбар → ✅ Төлөв → 💰 Үнэ** болов (⏳ өмнө нь
+  тайлбар ХАМГИЙН СҮҮЛД — 💰 үнийн дараа байв ✗).
+  ⚠️ **Дүрэм нь ЦЭВЭР МОДУЛЬ дээр** — `lib/locationData.js → descriptionAfterTitle(section, subtype)`:
+  хэсгийн ⚙️ `attrFields` нь **ЗӨВХӨН `condition`** (эсвэл огт байхгүй) үед
+  тайлбар нь гарчигны дараа гарна. ⇒ ⚽ `hobby` · 🧺 `home` · 🛋️ `furniture` ·
+  🧳 `travel` · ⚡ `electric` · 🧱 `construction` · 🏭 `equipment` · 🛠️ `services`
+  («Үйлдвэр & Үйлчилгээ, Бизнес» — `simpleForm` туггүй ч `attrFields` ХООСОН тул
+  багтана; 🎥 YouTube линк хэвээр) БА 💻 `computers`-ийн `condition`-only ДЭД
+  ТӨРӨЛ («Дэлгэц» · «Иж бүрэн компьютер» · «PS, XBox, Nintendo» — 2026-10-05 (56)-аас
+  хойш `getAttrFields` зөвхөн ✅ үлдээнэ) ✓.
+  ⚠️ **ХӨНДӨӨГДӨХГҮЙ:** 🏠 `real-estate` · 🚗 `auto` · 💼 `jobs` (өрөө/талбай/
+  давхар/цалин гэх мэт ӨӨРИЙН талбартай) ба 💻 Notebook гэр бүл (брэнд/загвар/📺/
+  ⚙️/🧠/💾) — тайлбар нь 💰 үнийн дараа хэвээр ✓.
+  ⚠️ **НЭГ ЭХ СУРВАЛЖ:** `AddListingClient.jsx` → `descAfterTitle` туг —
+  🖥 гарчгийн дараах мөр (`.form-row-single` + `data-form-row="details"` +
+  `data-detail-row="description"`) · 📱 wizard-ийн «📝 Тайлбар» дэлгэц
+  (`detailScreens`, гарчигны дараа) · `desc` блокийн хуучин талбар
+  `{!descAfterTitle && (…)}` болж НУУГДАНА; талбар нь **НЭГ DOM** (зөвхөн
+  `data-mobile-active` CSS) ⇒ давхар рендэр 0, `form`/DB/`validateStep` хөндөгдөхгүй ✓.
+  🧪 `test:wizard` **62 → 63 ✓** (🆕 `descriptionAfterTitle` гэрээ + `detailScreens`
+  дараалал «title → description → attr…» + мөр/талбарын тоо 7→8 / 6→7) ·
+  `test:filters` 122 ✓ · `test:card`/`test:detail-ui`/`test:jobs`/`test:attrMulti`/
+  `test:draft`/`test:block`/`test:prefill`/`test:format` ✓ · `npm run build` EXIT=0 ✓.
+  ⚠️ **DB/URL/query/`validateStep`/payload ХӨНДӨӨГДӨӨГҮЙ — MIGRATION 0** ✓
+  📄 DOC: `README.md` (энэ bullet) · `docs/IMPROVEMENTS.md` (энэ мөр)
+  🔍 Хайх үг: `descriptionAfterTitle`, `descAfterTitle`, `data-detail-row="description"`,
+  `Тайлбар`
 - **💳 «ТӨЛБӨРИЙН НӨХЦӨЛ» (`attrs.payment_terms`) — ХАЙЛТАД ЧИП, 3-Р АЛХАМД ☑
   CHECKBOX + ШИНЭ ЗАРД ЗААВАЛ (2026-10-03 (5), дизайн (6), хайлтын хэв (16))** —
   4 кодтой `jsonb` **массив**
