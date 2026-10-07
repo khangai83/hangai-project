@@ -1203,6 +1203,23 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   📄 DOC: `README.md` (энэ bullet) · `docs/IMPROVEMENTS.md` (энэ мөр)
   🔍 Хайх үг: `descriptionAfterTitle`, `descAfterTitle`, `data-detail-row="description"`,
   `Тайлбар`
+- 📝 **«ТАЙЛБАР» ОРУУЛАХ ХЭСЭГ 2 ДАХИН ӨНДӨР БОЛОВ — `rows="4"` → `rows="8"`
+  (2026-10-07 (58), хэрэглэгчийн хүсэлт: «Тайлбар хэсгийн текст оруулах хэсгийг
+  одоо байгаагаас нь 2 дахин өндөр болго»):**
+  `components/AddListingClient.jsx`-ийн Тайлбарын `<textarea>` нь 2 газар рендэрлэгддэг
+  — ① 📱/🖥 `descAfterTitle` мөр (энгийн формтой хэсэг, гарчгийн дараа) ② 🖥/📱 `desc`
+  блок (💰 үнийн дараа) — ХОЁУЛАНД нь `rows="4"` → **`rows="8"`** болов ⇒ харагдах
+  өндөр ≈**2 дахин** (мөр бүр `text-[15px]`×1.5 ≈ 22.5px ⇒ 4 → 8 мөр).
+  ⚠️ `.form-group textarea`-ийн `min-h-[100px]` (`app/globals.css`) ХӨНДӨӨГДӨӨГҮЙ —
+  зөвхөн ДООД хязгаар бөгөөд 8 мөр (~180px) түүнээс ЭРС өндөр тул нөлөөгүй ✓
+  (тусдаа класс/`style` НЭМЭЭГҮЙ).
+  ⚠️ **Логик ХӨНДӨӨГДӨӨГҮЙ — MIGRATION 0:** `form.description` · `set('description', …)` ·
+  `placeholder` · DB багана · `validateStep`/payload БҮГД ХЭВЭЭР — зөвхөн харагдацын
+  `rows` атрибут ✓
+  🧪 `test:wizard` **63 → 64 ✓** (🆕 гэрээ: `rows="8"` нь 2 текст талбарт байна,
+  `rows="4"` ҮЛДЭЭГҮЙ) · `test:*` БҮГД ✓ · `npm run build` EXIT=0 ✓.
+  📄 DOC: `README.md` (энэ bullet) · `docs/IMPROVEMENTS.md` (энэ мөр)
+  🔍 Хайх үг: `rows="8"`, `rows="4"`, `Тайлбар`, `.form-group textarea`
 - **💳 «ТӨЛБӨРИЙН НӨХЦӨЛ» (`attrs.payment_terms`) — ХАЙЛТАД ЧИП, 3-Р АЛХАМД ☑
   CHECKBOX + ШИНЭ ЗАРД ЗААВАЛ (2026-10-03 (5), дизайн (6), хайлтын хэв (16))** —
   4 кодтой `jsonb` **массив**

@@ -3087,7 +3087,10 @@ export default function AddListingClient() {
               >
                 <div className="form-group" data-detail-field="description" data-mobile-active={detailFieldActive('description')}>
                   <label>Тайлбар</label>
-                  <textarea rows="4" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Зарын дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..." />
+                  {/* 🆕 2026-10-07 (58): хэрэглэгчийн хүсэлт — тайлбарын оролтын өндөр
+                      2 ДАХИН (rows 4 → 8). ⚠️ `.form-group textarea`-ийн `min-h-[100px]`
+                      (app/globals.css) ХӨНДӨӨГДӨӨГҮЙ — 8 мөр (~180px) түүнээс ЭРС өндөр ✓ */}
+                  <textarea rows="8" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Зарын дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..." />
                 </div>
               </div>
             )}
@@ -3764,7 +3767,10 @@ export default function AddListingClient() {
                      `set('description', …)`, `placeholder`, `rows` бүгд
                      ХӨНДӨГДӨӨГҮЙ ✓ (карт/дэлгэрэнгүй хуудас ХЭВЭЭР ✓) */}
               <label>Тайлбар</label>
-              <textarea rows="4" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Зарын дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..." />
+              {/* 🆕 2026-10-07 (58): тайлбарын оролтын өндөр 2 ДАХИН (rows 4 → 8) —
+                  энэ талбар нь `descAfterTitle`-гүй хэсэгт (💰 үнийн дараа); 3090-р
+                  мөрийн талбартай ИЖИЛ утга (📱/🖥 хоёуланд ✓) */}
+              <textarea rows="8" value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Зарын дэлгэрэнгүй мэдээлэл, онцлог шинж чанарууд..." />
             </div>
             )}
 

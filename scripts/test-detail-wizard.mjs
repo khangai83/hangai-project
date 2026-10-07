@@ -365,6 +365,15 @@ t('📱 `ChoiceField` өөрөө маркийг ТУСГААР нэмнэ (та�
   assert.equal((step3.match(/data-detail-field=/g) || []).length, 7);
 });
 
+t('📝 (2026-10-07 (58)) Тайлбарын `<textarea>` нь `rows="8"` — өндөр 2 ДАХИН (⏳ өмнө нь `rows="4"`) ✓', () => {
+  /** ⚠️ Тайлбар нь 2 газар рендэрлэгддэг: ① 📱/🖥 `descAfterTitle` мөр (энгийн формтой
+   *  хэсэг — гарчгийн дараа) ② 🖥/📱 `desc` блок (💰 үнийн дараа) — ХОЁУЛАНД нь
+   *  `value={form.description}`-той ИЖИЛ `<textarea>` ⇒ `rows="8"` 2 удаа байх ёстой ✓ */
+  const eight = FORM.match(/<textarea rows="8" value=\{form\.description\}/g) || [];
+  assert.equal(eight.length, 2, '`rows="8"` тайлбар 2 газар (descAfterTitle + desc) байх ёстой');
+  assert.ok(!/<textarea rows="4"/.test(FORM), '`rows="4"` ҮЛДЭЭГҮЙ байх ёстой');
+});
+
 t('📱 «Өрөө» (`rooms`) — 3-р алхмын дэлгэцэд БАЙХГҮЙ (`data-mobile-active="false"` + `.hide-below-sm` ✓)', () => {
   const at = step3.indexOf('data-detail-field="rooms"');
   assert.ok(at > -1, 'rooms талбар олдсонгүй');
