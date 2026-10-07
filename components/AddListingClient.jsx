@@ -52,6 +52,19 @@ import {
  */
 import { coordOf, hasCoords, districtCenter, khorooCenter, autoCenterFor, sameCoord, mapCenterFor, PICK_ZOOM, DEFAULT_MAP_ZOOM } from '../lib/locationGeo.mjs';
 /**
+ * 📋 GOOGLE MAPS «Copy link» → СОЛБИЦОЛ (2026-10-07) — хэрэглэгчийн хүсэлт:
+ *    «… газрын зураг дээр заах хэсэг дээр оруулах сонголтоос гадна,
+ *    нэмэлтээр google maps аас авсан Copy link ээ оруулдаг хэсэгтэй байвал
+ *    болох уу» ⇒ пин тавих ХОЁР дахь гарц: линкээс солбицол задлана
+ *    (`parseGoogleMapsLink` — цэвэр модуль, `npm run test:location-map`)
+ *    ⚠️ DB ӨӨРЧЛӨЛТ 0 — аль хэдийн байгаа `latitude`/`longitude` руу бичнэ ✓
+ */
+import {
+  parseGoogleMapsLink, isShortMapsLink,
+  MAP_LINK_LABEL, MAP_LINK_PLACEHOLDER, MAP_LINK_BTN,
+  MAP_LINK_OK, MAP_LINK_ERR, MAP_LINK_SHORT_HINT,
+} from '../lib/locationGeo.mjs';
+/**
  * 🎯 АНГИЛАЛ УРЬДЧИЛАН БӨГЛӨХ (2026-10-06) — «Зар нэмэх» товч (`AppProviders`)
  *    нь хэрэглэгч аль ангилалд явж байсныг URL-д (`?section=…&category=…&type=…`)
  *    дамжуулна ⇒ форм тэр ангилал дээр СОНГОГДСОН байдлаар нээгдэнэ ✓
@@ -1348,6 +1361,37 @@ export default function AddListingClient() {
   };
   /** 🗑 Пингүй болгох (солбицлыг цэвэрлэнэ) */
   const clearMapPick = () => setForm((f) => ({ ...f, latitude: null, longitude: null }));
+  /**
+   * 📋 GOOGLE MAPS ЛИНКЭЭС СОЛБИЦОЛ (2026-10-07) — хэрэглэгчийн хүсэлт:
+   *    пин тавихаас ГАДНА, Google Maps-ийн «Copy link»-ийг тавьж бас болно.
+   *    ⚠️ Линк өөрөө ХАДГАЛАГДАХГҮЙ — зөвхөн `lat`/`lng` нь задарч
+   *    `form.latitude`/`longitude` руу бичигдэнэ (DB migration 0 ✓)
+   *    ⚠️ Богино линк (`maps.app.goo.gl/…`) нь солбицол агуулахгүй тул
+   *    ТУСДАА зөвлөмж өгнө (`MAP_LINK_SHORT_HINT`) ✓
+   */
+  const [mapLink, setMapLink] = useState('');
+  const [mapLinkMsg, setMapLinkMsg] = useState({ kind: '', text: '' });
+  const changeMapLink = (value) => {
+    setMapLink(value);
+    if (mapLinkMsg.kind) setMapLinkMsg({ kind: '', text: '' });
+  };
+  const applyMapLink = () => {
+    const raw = mapLink.trim();
+    if (!raw) {
+      setMapLinkMsg({ kind: '', text: '' });
+      return;
+    }
+    const c = parseGoogleMapsLink(raw);
+    if (c) {
+      setForm((f) => ({ ...f, latitude: c.lat, longitude: c.lng }));
+      setMapLinkMsg({ kind: 'ok', text: MAP_LINK_OK });
+      return;
+    }
+    setMapLinkMsg({
+      kind: 'err',
+      text: isShortMapsLink(raw) ? MAP_LINK_SHORT_HINT : MAP_LINK_ERR,
+    });
+  };
   /**
    * 🗺 Одоогийн солбицол нь АВТОМАТ (ойролцоо) төв — хороо/дүүрэг/хот —
    *    эсэх (хэрэглэгч пин тавиагүй). UI дээр «(ойролцоо)» гэж ялгаж
@@ -2712,7 +2756,11 @@ export default function AddListingClient() {
                 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Хэрэглэгч хаягаа оруулсны дараа шууд
                    газрын зураг дээр зааж өгөх боломжтой хэсэг тухайн цонхон
                    дээр нь гараад ирдэг юм байна (unegui.mn)» ⇒ 2-р алхамд
-                   «🗺 Газрын зураг дээр байршлаа заах» товч + пингийн утга ✓
+                   «🗺 Газрын зураг дээр заах» товч + пингийн утга ✓
+                🆕 (2026-10-07) товчны нэр НЭГДСЭН «Газрын зураг дээр заах»
+                   боллоо (хэрэглэгчийн хүсэлт: «Газрын зураг дээр дахин заах
+                   хэсэг гэдгийг Газрын зураг дээр заах гэж нэрлэ») + доор нь
+                   📋 Google Maps «Copy link» оруулах талбар (`data-map-link-*`)
                 ⚠️ Пин-пикер нь ТУСДАА модаль (`components/LocationMapPicker.jsx`)
                    — доорх 3 баганат сонголтыг ХӨНДӨХГҮЙ ✓
                 ⚠️ Чекбокс асаалттай (`noLoc`) үед ЭНЭ блок ГАРАХГҮЙ (байршил
@@ -2728,7 +2776,7 @@ export default function AddListingClient() {
                     onClick={() => setMapPickerOpen(true)}
                     className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-[14px] font-semibold text-gray-800 transition hover:border-primary hover:text-primary"
                   >
-                    🗺 {hasCoords(form) ? 'Газрын зураг дээр дахин заах' : 'Газрын зураг дээр байршлаа заах'}
+                    🗺 Газрын зураг дээр заах
                   </button>
                   {hasCoords(form) && (
                     <>
@@ -2753,6 +2801,55 @@ export default function AddListingClient() {
                     ? ` Одоогоор ${form.khoroo ? 'сонгосон хорооны' : form.district ? 'сонгосон дүүргийн' : 'хотын'} төвд ойролцоогоор байна — нарийвчлах бол газрын зураг дээр дарна уу.`
                     : ''}
                 </p>
+                {/* ═══════════ 📋 GOOGLE MAPS «COPY LINK» (2026-10-07) ═══════════
+                    ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «… газрын зураг дээр заах хэсэг дээр
+                       оруулах сонголтоос гадна, нэмэлтээр google maps аас авсан
+                       Copy link ээ оруулдаг хэсэгтэй байвал болох уу»
+                    ⇒ Пин тавихаас ГАДНАХ гарц: линк тавиад «Оруулах» дарбал
+                      `parseGoogleMapsLink` нь СОЛБИЦОЛЫГ задлаж, пингүй бол
+                      ЗАР ГАЗРЫН ЗУРАГ ДЭЭР ГАРАХ болов ✓
+                    ⚠️ Линк өөрөө ХАДГАЛАГДАХГҮЙ — зөвхөн `latitude`/`longitude`
+                       (аль хэдийн байгаа багана) руу бичигдэнэ (migration 0 ✓)
+                    🔍 Хайх үг: data-map-link-input, data-map-link-btn,
+                       data-map-link-msg, applyMapLink, parseGoogleMapsLink */}
+                <div className="mt-3 border-t border-gray-200 pt-3">
+                  <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-600">
+                    📋 {MAP_LINK_LABEL}
+                  </label>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <input
+                      type="text"
+                      inputMode="url"
+                      data-map-link-input
+                      value={mapLink}
+                      onChange={(e) => changeMapLink(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); applyMapLink(); }
+                      }}
+                      placeholder={MAP_LINK_PLACEHOLDER}
+                      className="min-w-0 flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-[13.5px] text-gray-900 outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
+                    />
+                    <button
+                      type="button"
+                      data-map-link-btn
+                      onClick={applyMapLink}
+                      className="shrink-0 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-[13.5px] font-semibold text-gray-800 transition hover:border-primary hover:text-primary"
+                    >
+                      {MAP_LINK_BTN}
+                    </button>
+                  </div>
+                  {mapLinkMsg.kind && (
+                    <p
+                      data-map-link-msg
+                      data-map-link-msg-state={mapLinkMsg.kind}
+                      className={`mt-1.5 text-[12.5px] leading-snug ${
+                        mapLinkMsg.kind === 'ok' ? 'font-medium text-primary' : 'text-red-600'
+                      }`}
+                    >
+                      {mapLinkMsg.text}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
             {/* ═══════════ 🚫 «Байршил сонгохгүй» ЧЕКБОКС — ДООД ТАЛД ═══════════

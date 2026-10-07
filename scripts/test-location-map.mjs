@@ -39,6 +39,8 @@ import {
   districtPolygonUrl, extractPolygon, pointInRing, pointInGeoJson,
   isValidCoord, coordOf, hasCoords, districtCenter, cityCenter,
   khorooNumber, khorooCenter, autoCenterFor, mapCenterFor, sameCoord,
+  parseGoogleMapsLink, isShortMapsLink, MAP_LINK_LABEL, MAP_LINK_BTN,
+  MAP_LINK_OK, MAP_LINK_ERR, MAP_LINK_SHORT_HINT,
 } from '../lib/locationGeo.mjs';
 import { KHOROO_CENTERS, ubKhorooCenter } from '../lib/ubKhorooCenters.mjs';
 import {
@@ -344,7 +346,7 @@ t('④ 2-р алхам — «🗺 байршлаа заах» товч ба пи
   const src = codeOnly('components/AddListingClient.jsx');
   ['data-map-picker-block', 'data-map-picker-open', 'data-map-picker-value', 'data-map-picker-clear']
     .forEach((hook) => assert.ok(src.includes(hook), `${hook} дэгээ алга`));
-  assert.ok(src.includes('Газрын зураг дээр байршлаа заах'), 'товчны текст алга');
+  assert.ok(src.includes('Газрын зураг дээр заах'), 'товчны текст алга');
 });
 
 t('④ Модаль — `{mapPickerOpen && ( <LocationMapPicker … /> )}` form дотор', () => {
@@ -699,6 +701,92 @@ t('⑩ ГЭРЭЭ `AddListingClient` — picker руу `city`/`district` дам�
   const src = codeOnly('components/AddListingClient.jsx');
   assert.ok(src.includes('city={form.city}'), '`city` prop алга');
   assert.ok(src.includes('district={form.district}'), '`district` prop алга');
+});
+
+// ────────────────────────────────────────────────────────────
+// ⑪ 📋 GOOGLE MAPS «COPY LINK» → СОЛБИЦОЛ (2026-10-07)
+// ────────────────────────────────────────────────────────────
+console.log('\n── ⑪ Google Maps линк: `parseGoogleMapsLink` / `isShortMapsLink` ──');
+
+t('⑪ `parseGoogleMapsLink` — ④ `!3d`/`!4d` (PLACE) нь `@`-оос ТҮРҮҮЛНЭ', () => {
+  const c = parseGoogleMapsLink(
+    'https://www.google.com/maps/place/Somewhere/@47.9000,106.9000,17z/data=!4m2!3m1!1s0x0:0x0!3d47.8899!4d106.7368',
+  );
+  assert.deepEqual(c, { lat: 47.8899, lng: 106.7368 }, 'PLACE пин (@ биш) авах ёстой');
+});
+
+t('⑪ `parseGoogleMapsLink` — ① `@lat,lng[,zoom]` (газрын зургийн төв)', () => {
+  assert.deepEqual(
+    parseGoogleMapsLink('https://www.google.com/maps/place/X/@47.9188,106.9176,17z'),
+    { lat: 47.9188, lng: 106.9176 },
+  );
+  assert.ok(insideMN(parseGoogleMapsLink('https://www.google.com/maps/@47.9150,106.8950,15z')), 'Монголын дотор');
+});
+
+t('⑪ `parseGoogleMapsLink` — ②③ `?q=`/`?ll=`/`?center=`/`?query=`', () => {
+  assert.deepEqual(parseGoogleMapsLink('https://www.google.com/maps?q=47.9150,106.8950'), { lat: 47.9150, lng: 106.8950 });
+  assert.deepEqual(parseGoogleMapsLink('https://maps.google.com/?ll=47.92,106.91'), { lat: 47.92, lng: 106.91 });
+  assert.deepEqual(parseGoogleMapsLink('https://www.google.com/maps?center=47.876,106.91&z=15'), { lat: 47.876, lng: 106.91 });
+  assert.deepEqual(parseGoogleMapsLink('https://www.google.com/maps?query=47.9250,106.9200'), { lat: 47.9250, lng: 106.9200 });
+});
+
+t('⑪ `parseGoogleMapsLink` — ⑤ зүгээр «lat,lng» текст', () => {
+  assert.deepEqual(parseGoogleMapsLink('47.8760, 106.9100'), { lat: 47.8760, lng: 106.9100 });
+  assert.deepEqual(parseGoogleMapsLink('  47.9188,106.9176  '), { lat: 47.9188, lng: 106.9176 }, 'trim хийгдэнэ');
+});
+
+t('⑪ `parseGoogleMapsLink` — ХҮЧИНГҮЙ оролт/солбицол → `null`', () => {
+  assert.equal(parseGoogleMapsLink('hello world'), null, 'солбицолгүй текст');
+  assert.equal(parseGoogleMapsLink('https://www.google.com/maps/@0,0,15z'), null, '(0,0) ХҮЧИНГҮЙ');
+  assert.equal(parseGoogleMapsLink('200,300'), null, 'мужнаас гадуур');
+  assert.equal(parseGoogleMapsLink(''), null, 'хоосон');
+  assert.equal(parseGoogleMapsLink('   '), null, 'зөвхөн зай');
+  assert.equal(parseGoogleMapsLink(null), null, 'null');
+  assert.equal(parseGoogleMapsLink(undefined), null, 'undefined');
+  assert.equal(parseGoogleMapsLink(123), null, 'тоо биш мөр');
+  assert.equal(parseGoogleMapsLink('https://www.google.com/maps/%'), null, 'муу encode ч унахгүй');
+});
+
+t('⑪ `isShortMapsLink` — БОГИНО линк (солбицолгүй)', () => {
+  assert.equal(isShortMapsLink('https://maps.app.goo.gl/abcdEFGH'), true);
+  assert.equal(isShortMapsLink('https://goo.gl/maps/xyz'), true);
+  assert.equal(isShortMapsLink('https://www.google.com/maps/@47.9,106.9,15z'), false, 'бүрэн линк');
+  assert.equal(isShortMapsLink('47.9,106.9'), false, 'энгийн солбицол');
+  assert.equal(isShortMapsLink(null), false, 'null');
+  assert.deepEqual(parseGoogleMapsLink('https://maps.app.goo.gl/abcdEFGH'), null, 'богино линкээс солбицол гарахгүй');
+});
+
+t('⑪ ГЭРЭЭ `AddListingClient` — 📋 линк талбар + товч + мессеж (дэгээнүүдтэй)', () => {
+  const src = codeOnly('components/AddListingClient.jsx');
+  assert.ok(src.includes("from '../lib/locationGeo.mjs'"), 'модуль импортлогдсон эсэх');
+  assert.ok(src.includes('parseGoogleMapsLink') && src.includes('isShortMapsLink'), 'цэвэр функцүүд импортлогдоогүй');
+  assert.ok(src.includes('data-map-link-input'), 'линк талбарын дэгээ алга');
+  assert.ok(src.includes('data-map-link-btn'), 'линк товчны дэгээ алга');
+  assert.ok(src.includes('data-map-link-msg'), 'линк мессежийн дэгээ алга');
+  assert.ok(src.includes('data-map-link-msg-state'), 'мессежийн төлөвийн дэгээ алга');
+  assert.ok(src.includes('const applyMapLink'), 'applyMapLink функц алга');
+  assert.ok(src.includes('latitude: c.lat, longitude: c.lng'), 'солбицол форм руу бичигдэхгүй');
+  assert.ok(src.includes('MAP_LINK_SHORT_HINT'), 'богино линкний зөвлөмж алга');
+  // ⚠️ Линк өөрөө ХАДГАЛАГДАХГҮЙ — `emptyForm()`-д шинэ түлхүүр НЭМЭЭГҮЙ (DB 0)
+  assert.equal(src.includes("mapLink: ''"), false, 'линк нь формойн тогтмол талбар БОЛОХГҮЙ');
+});
+
+t('⑪ ГЭРЭЭ `AddListingClient` — товчны нэр «Газрын зураг дээр заах» (дахин/байршлаа ХАСАГДАВ)', () => {
+  const src = codeOnly('components/AddListingClient.jsx');
+  assert.ok(src.includes('🗺 Газрын зураг дээр заах'), 'шинэ нэр алга');
+  assert.equal(src.includes('Газрын зураг дээр дахин заах'), false, 'хуучин «дахин заах» үлдсэн ✗');
+  assert.equal(src.includes('Газрын зураг дээр байршлаа заах'), false, 'хуучин «байршлаа заах» үлдсэн ✗');
+});
+
+t('⑪ ТЕКСТ ТОГТМОЛУУД — нэг эх сурвалж (UI ба тест ижил мөр)', () => {
+  assert.equal(typeof MAP_LINK_LABEL, 'string');
+  assert.equal(typeof MAP_LINK_BTN, 'string');
+  assert.equal(MAP_LINK_OK.length > 0, true);
+  assert.ok(MAP_LINK_ERR.includes('Солбицол олдсонгүй'), 'ерөнхий алдааны текст');
+  assert.ok(MAP_LINK_SHORT_HINT.includes('богино линк'), 'богино линкний зөвлөмж');
+  // ⚠️ UI (AddListingClient) нь эдгээрийг ХЭРЭГЛЭНЭ (хатуу бичсэн давхардал БИШ)
+  const src = codeOnly('components/AddListingClient.jsx');
+  assert.ok(src.includes('MAP_LINK_LABEL') && src.includes('MAP_LINK_BTN'), 'UI текст тогтмолыг ашиглахгүй');
 });
 
 console.log(`\n✅ БҮГД ТЭНЦСЭН — ${passed} тест\n`);
