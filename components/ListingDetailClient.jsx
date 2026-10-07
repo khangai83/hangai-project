@@ -8,13 +8,14 @@ import ReportListingModal from './ReportListingModal';
 import Breadcrumb from './Breadcrumb';
 import MessageButton from './MessageButton';
 import CopyButton from './CopyButton';
+import ShareButton from './ShareButton';
 import { useAuth, useToast } from './AppProviders';
 import { fetchListingById, fetchSellerCategoryCounts, fetchProfilesByIds } from '../lib/queries';
 import Avatar from './Avatar';
 import VerifiedBadge from './VerifiedBadge';
 import { trackListingView } from '../lib/statsClient';
 import { normalizeError } from '../lib/errors';
-import { formatPrice, shortPriceLabel, negotiableNote, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress } from '../lib/format';
+import { formatPrice, shortPriceLabel, negotiableNote, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress, shortListingId } from '../lib/format';
 import { buildListingBreadcrumb } from '../lib/breadcrumb';
 import { getAttrRows } from '../lib/locationData';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
@@ -181,6 +182,9 @@ export default function ListingDetailClient({ id }) {
   const images = Array.isArray(listing.images) ? listing.images : [];
   // 📍 Хаяг — карттай ЯГ ижил форматаар (lib/format.js → formatAddress)
   const address = formatAddress(listing);
+  // 🔖 Хэрэглэгчид харагдах БОГИНО зарын дугаар (uuid-ийн эхний 8 hex) — 2026-10-07
+  //    (хэрэглэгчийн хүсэлт: «зарын id … богино болгож хэрэглэгчдэд харуулах»)
+  const shortId = shortListingId(listing.id);
   const typeLabel = getPropertyTypeLabel(listing.property_type, listing.category);
   const garageLabel = getGarageLabel(listing.has_garage);
   const isSell = listing.category === 'sell';
@@ -282,13 +286,15 @@ export default function ListingDetailClient({ id }) {
           ⚠️ 👁/❤️ тоо БА ❤️ товч энд БАЙХГҮЙ — Facebook-ийн зарчмаар зургийн
              ДОР (доорх Gallery картын footer) байрлана. */}
       <header className="mb-5">
-        <div className="mb-2 flex flex-wrap items-center gap-2">
-          {/* ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд (`ListingCard`-ийн ижил) */}
-          {isRealEstate && (
+        {/* ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд (`ListingCard`-ийн ижил).
+            ⚠️ 2026-10-07: ЭНЭ мөрнөөс «ID: <бүтэн uuid>» ХАСАГДАВ — хэрэглэгчид
+               хэт урт байсан тул БОГИНО дугаар (`shortListingId`) болж доорх
+               meta блок руу шилжив ✓ */}
+        {isRealEstate && (
+          <div className="mb-2 flex flex-wrap items-center gap-2">
             <span className={`badge ${isSell ? 'badge-sell' : 'badge-rent'}`}>{getCategoryLabel(listing.category)}</span>
-          )}
-          <span className="text-[13px] text-gray-400">ID: {listing.id}</span>
-        </div>
+          </div>
+        )}
         {/* ===== 🚫 ХАРАГДАХ ГАРЧИГ (H1) БАЙХГҮЙ (2026-10-01) =====
             Хэрэглэгчийн хүсэлт: «Суудлын машин руу ороод тухайн зарын дэлгэрэнгүй
             үзэхэд 🚗 Суудлын машин гэж … харуулмааргүй байна. Бүх зар › Автомашин ›
@@ -302,20 +308,34 @@ export default function ListingDetailClient({ id }) {
           {getPropertyIcon(listing.property_type, listing.section)} {typeLabel}
           {address ? ` — ${address}` : ''}
         </h1>
-        {/* ===== 📍 БАЙРШИЛ (1-р мөр) + 📅 НИЙТЭЛСЭН (2-р мөр) =====
+        {/* ===== 📍 БАЙРШИЛ (1-р мөр) + 🕒 НИЙТЭЛСЭН · 🔖 ЗАРЫН ДУГААР (2-р мөр) =====
             ⚠️ 2026-10-01 (14) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТЭЭР ГАЛЕРЕЙ КАРТЫН footer-оос
                ЭНД БУЦАЖ ИРЭВ («📍 … · 📅 … энийгээ буцаагаад байранд нь тавия»).
                ⛔ (12)-д 👁/🤍 мөрийн ЯГ АРААС, картын дотоод 1 МӨРӨНД шилжүүлсэн
                   байв — хэрэглэгчид тохирохгүй байсан тул буцаав ✓
-            ⚠️ Хаяг эхний мөрөнд, огноо нь ЯГ ДООРХ мөрөнд — хоёулаа ЗҮҮН тийш.
-               (`flex`/`justify-between` БИШ — тусдаа block div-үүд.) */}
+            ⚠️ Хаяг эхний мөрөнд, огноо (+ 🆕 зарын дугаар) нь ЯГ ДООРХ мөрөнд.
+            ⚠️ 2026-10-07 — хэрэглэгчийн хүсэлтээр 2-р мөрөнд 🔖 БОГИНО ЗАРЫН
+               ДУГААР нэмэгдэж, огнооны icon нь 📅 → 🕒 болов (карт дээрхтэй ЯГ
+               ижил — unegui хэв). */}
         <div className="text-sm text-gray-600">
           {/* 📍 Байршил — 🚫 «Байршил сонгохгүй» чекбоксоор хадгалагдсан зар
               (`city = ''`) дээр «Хаяг тодорхойгүй» БИШ, «Байршил заагаагүй»
               гэж харуулна (хэрэглэгч ЗОРИУДОО заагаагүй тул «алдаа» мэт
               харуулах нь буруу ✗ — нэг эх сурвалж: `lib/listingLocation.mjs`) */}
           <div className="min-w-0">📍 {address || NO_LOCATION_LABEL}</div>
-          <div className="text-[13px] text-gray-500">📅 {timeAgo(listing.created_at)}</div>
+          {/* 🕒 ОГНОО · 🔖 ЗАРЫН ДУГААР — unegui.mn-ийн хэв маяг (2026-10-07).
+              ⚠️ Огноо ХАРЬЦАНГУУ (`timeAgo` — карт дээрхтэй ЯГ ижил) хэвээр;
+                 зөвхөн 🆕 БОГИНО зарын дугаар (`shortListingId`) нэмэгдэв.
+              ⚠️ БҮТЭН uuid нь `title` (hover) дээр байна — хэрэглэгчид харагддаг
+                 боловч мөр хэт урт болохгүй ✓; админ ID-ийн эхний тэмдэгтээр
+                 хайдаг тул энэ богино дугаар нь шууд олдоно ✓ */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-gray-500">
+            <span title="Нийтэлсэн огноо">🕒 {timeAgo(listing.created_at)}</span>
+            <span aria-hidden="true" className="text-gray-300">·</span>
+            <span title={`Зарын дугаар — бүтэн ID: ${listing.id}`}>
+              🔖 Зарын дугаар: <span className="font-mono font-semibold text-gray-600">{shortId}</span>
+            </span>
+          </div>
         </div>
       </header>
 
@@ -378,11 +398,13 @@ export default function ListingDetailClient({ id }) {
               </div>
             )}
 
-            {/* ===== FB-style POST FOOTER — 👁/❤️ тоо ЗУРГИЙН ДОР =====
+            {/* ===== FB-style POST FOOTER — 👁/❤️/🔗 тоо ЗУРГИЙН ДОР =====
                 ⚠️ НҮҮРЭН ДЭЭРХ КАРТТАЙ (ListingCard.jsx) ЯГ ИЖИЛ загвар:
-                   `👁 N үзсэн` ба `🤍/❤️ N таалагдсан` — хоёр л элемент,
-                   сүүлийнх нь ӨӨРӨӨ товч: дарвал ❤️↔🤍 солигдож, сервер дээрх
-                   тоо ±1 болно (lib/favorites.js).
+                   `👁 N үзсэн` ба `🤍/❤️ N таалагдсан` — сүүлийнх нь ӨӨРӨӨ
+                   товч: дарвал ❤️↔🤍 солигдож, сервер дээрх тоо ±1 болно.
+                ⚠️ 🆕 2026-10-07 — 🔗 ХУВААЛЦАХ товч (`ShareButton`) нь
+                   «👁 N үзсэн»-ийн ЯГ ХАЖУУД нэмэгдэв (хэрэглэгчийн хүсэлт) —
+                   дарахад зарын ЛИНК clipboard-д хуулагдана ✓
                 ⚠️ Өмнө нь «таалагдсан» ХОЁР газарт (зүүн талд тоо + баруун талд
                    том товч) харагддаг байсныг нэгтгэв — duplicate байхгүй.
                 ⚠️ Зурган дээр ямар ч тэмдэглээ байхгүй (карттай ижил дүрэм).
@@ -394,6 +416,10 @@ export default function ListingDetailClient({ id }) {
               <span title="Энэ зарыг хэдэн хүн үзсэн" className="font-semibold tabular-nums">
                 👁 {viewCount} үзсэн
               </span>
+              {/* 🔗 ХУВААЛЦАХ — хэрэглэгчийн хүсэлт: «зар хуваалцах буюу зарын
+                  link хуулж авах товчийг Үзсэн …-ын хажууд оруулаад ирвэл зүгээр».
+                  ⚠️ `ShareButton` нь одоогийн хуудасны URL-ыг clipboard-д хуулна ✓ */}
+              <ShareButton />
               <button
                 type="button"
                 onClick={() => toggleFavorite(listing.id)}

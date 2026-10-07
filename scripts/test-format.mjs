@@ -28,7 +28,7 @@ assert(!/^import /m.test(stripped), 'бүх import хасагдсан байх �
 const tmp = path.join(here, '..', '.format.test.tmp.mjs');
 fs.writeFileSync(tmp, stripped);
 
-const { formatThousands, digitCount, shortPrice, isNegotiablePrice, priceLabel, shortPriceLabel, hasRealPrice, negotiableNote, NEGOTIABLE_PRICE_LABEL, listingTitle, MAX_LISTING_TITLE_LENGTH } = await import(`${tmp}?t=${Date.now()}`);
+const { formatThousands, digitCount, shortPrice, isNegotiablePrice, priceLabel, shortPriceLabel, hasRealPrice, negotiableNote, NEGOTIABLE_PRICE_LABEL, listingTitle, MAX_LISTING_TITLE_LENGTH, shortListingId, SHORT_LISTING_ID_LENGTH } = await import(`${tmp}?t=${Date.now()}`);
 fs.unlinkSync(tmp);
 
 let passed = 0;
@@ -269,6 +269,44 @@ t(`🏷️ listingTitle: ${MAX_LISTING_TITLE_LENGTH} тэмдэгтээр тас
 t('🏷️ listingTitle: тоон/бусад төрөл ч текст болно (крашгүй)', () => {
   assert.equal(listingTitle({ title: 12345 }), '12345');
   assert.equal(listingTitle({ title: '  abc123  ' }), 'abc123');
+});
+
+// ============================================================
+// 🔖 ЗАРЫН ДУГААР (shortListingId) — 2026-10-07
+// ============================================================
+// ⚠️ ЯАГААД ТЕСТЛЭХ ВЭ: хэрэглэгчийн хүсэлт («зарын id … богино болгож
+//    хэрэглэгчдэд харуулах»). `listings.id` нь 36 тэмдэгт uuid — харагдац
+//    дээр зөвхөн эхний 8 hex-ийг ТОМ үсгээр харуулна. Энэ нь зөвхөн ХАРАГДАЦ
+//    (DB/URL 36 тэмдэгтийн uuid ХЭВЭЭР) тул буруу болбол админ хайлт таарахгүй,
+//    эсвэл хэрэглэгч «урт» гэж гомдоллох тул гэрээг түгжинэ ✓
+t('🔖 shortListingId: uuid → эхний 8 hex, ТОМ үсэг', () => {
+  assert.equal(shortListingId('a1b2c3d4-5e6f-4789-a012-3456789abcde'), 'A1B2C3D4');
+  assert.equal(shortListingId('A1B2C3D4-5E6F-4789-A012-3456789ABCDE'), 'A1B2C3D4');
+});
+
+t('🔖 shortListingId: урт нь 8 (SHORT_LISTING_ID_LENGTH) ба таслалт зөв', () => {
+  assert.equal(SHORT_LISTING_ID_LENGTH, 8);
+  assert.equal(shortListingId('a1b2c3d4-5e6f-4789-a012-3456789abcde').length, 8);
+  // `-` тусахгүй бол 9 болж, дараагийн тэмдэгт гээгдэнэ ✗
+  assert.equal(shortListingId('abcd-ef01-2345'), 'ABCDEF01');
+});
+
+t("🔖 shortListingId: хоосон/null/undefined → '' (крашгүй)", () => {
+  assert.equal(shortListingId(''), '');
+  assert.equal(shortListingId(null), '');
+  assert.equal(shortListingId(undefined), '');
+});
+
+t('🔖 shortListingId: 8-аас богино утга ч зөв (тоо/бусад төрөл)', () => {
+  assert.equal(shortListingId('abc'), 'ABC');
+  assert.equal(shortListingId(12345678), '12345678');
+});
+
+t('🔖 shortListingId: бүтэн uuid ХЭВЭЭР (зөвхөн харагдац — DB хөндөхгүй)', () => {
+  const full = 'a1b2c3d4-5e6f-4789-a012-3456789abcde';
+  assert.equal(full.length, 36);
+  assert.notEqual(shortListingId(full), full);
+  assert.ok(full.startsWith(shortListingId(full).toLowerCase())); // админ хайлт нийцтэй ✓
 });
 
 console.log(`\n✅ БҮГД ТЭНЦСЭН — ${passed} тест\n`);
