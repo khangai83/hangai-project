@@ -1499,6 +1499,16 @@ t('🛠 services: 8 бүлэг, бүгд ШУУД нээлттэй (`collapsed` 
     'Компани ба бэлэн бизнес зарна', 'Хөрөнгө зуучлал', 'Үнэлгээ',
     'Мөнгө санхүү ба зээл', 'Нотариат', 'Өмгөөлөгч', 'Харуул хамгаалалт',
   ]);
+  // ✏️ 2026-10-07 (60) — «Өрх гэр & Ахуйн үйлчилгээ» бүлэг **6 → 7** дэд
+  //    төрөл (хэрэглэгчийн хүсэлт: «Нүүлгэлт ба тээвэр ийг Нүүлгэлт , Хүргэлт
+  //    гэж 2 үйлчилгээ болго») ⇒ «Нүүлгэлт ба тээвэр» нь 2 болж САЛСАВ.
+  //    ⚠️ Бүлгийн БАЙРЛАЛ ХӨНДӨӨГДӨӨГҮЙ (индекс 2) — зөвхөн item солигдов ✓
+  const household = groups.find((g) => g.label === 'Өрх гэр & Ахуйн үйлчилгээ');
+  assert.equal(household.items.length, 7);
+  assert.ok(household.items.includes('Нүүлгэлт'), '«Нүүлгэлт» алга ✗');
+  assert.ok(household.items.includes('Хүргэлт'), '«Хүргэлт» алга ✗');
+  assert.ok(!household.items.includes('Нүүлгэлт ба тээвэр'),
+    'хуучин «Нүүлгэлт ба тээвэр» бүлэгт БАЙХ ЁСТОЙГҮЙ ✗');
   // ⚠️ Шинэ 4 leaf нь `getSubtypes`-д ЗААВАЛ байх ёстой (форм/шүүлт/тоо/
   //    breadcrumb бүгд `getSubtypes`-ээр ажиллана) ✓
   const subtypes = getSubtypes('services');
@@ -1506,7 +1516,7 @@ t('🛠 services: 8 бүлэг, бүгд ШУУД нээлттэй (`collapsed` 
     'Гагнуурын үйлчилгээ', 'Шүдний эмнэлэг', 'Эрэгтэйчүүдийн эмнэлэг',
     'Эмэгтэйчүүдийн эмнэлэг',
   ].forEach((s) => assert.ok(subtypes.includes(s), `${s} дэд төрөлд алга ✗`));
-  assert.equal(subtypes.length, 54);
+  assert.equal(subtypes.length, 55);
   // 🆕 2026-10-06 (11): шинэ 21 мэргэжлийн курс БҮГД `getSubtypes`-д байх ЁСТОЙ
   //    (форм/шүүлт/тоо/breadcrumb бүгд `getSubtypes`-ээр ажиллана ✓)
   [
@@ -2198,6 +2208,20 @@ const SERVICES_AT_0030 = [
   'Шүдний эмнэлэг', 'Эрэгтэйчүүдийн эмнэлэг', 'Эмэгтэйчүүдийн эмнэлэг',
 ];
 
+// 🛠 0034-ын үеийн `services` дэд төрлийн БҮРЭН ЖАГСААЛТ (54) — түүхэн snapshot.
+// ⚠️ 2026-10-07 (60)-д «Өрх гэр & Ахуйн үйлчилгээ» бүлгийн «Нүүлгэлт ба тээвэр»
+//    нь «Нүүлгэлт» + «Хүргэлт» болж САЛСАВ (54 → 55) ⇒ 0034-ийн SQL нь шинэ 2
+//    нэрийг МЭДЭХГҮЙ — түүхэн snapshot нь ЗӨВ ✓ (SERVICES_AT_0030-тай ЯГ ИЖИЛ зарчим)
+const SERVICES_AT_0034 = [
+  // 🗂 Групп 1–6 (23 + 6 + 6 + 1 + 5 + 3 = 44) — SERVICES_AT_0030-аас ХӨНДӨӨГДӨӨГҮЙ
+  ...SERVICES_AT_0030.slice(0, 44),
+  // 🗂 Групп 7 — «Бизнес, Санхүү & Хууль» (7 — ✏️ 2026-10-07 (58))
+  'Компани ба бэлэн бизнес зарна', 'Хөрөнгө зуучлал', 'Үнэлгээ',
+  'Мөнгө санхүү ба зээл', 'Нотариат', 'Өмгөөлөгч', 'Харуул хамгаалалт',
+  // 🗂 Групп 8 — «Эмнэлэг» (3)
+  'Шүдний эмнэлэг', 'Эрэгтэйчүүдийн эмнэлэг', 'Эмэгтэйчүүдийн эмнэлэг',
+];
+
 t('🛠 0030 migration: «Сургалт ба курс» → «Бусад» + модноос гадуур утга үлдээхгүй СҮЛЖЭЭ', () => {
   const sql = readFileSync(
     new URL('../supabase/migrations/0030_services_surgalt_kurs.sql', import.meta.url), 'utf8',
@@ -2240,10 +2264,38 @@ t('🛠 0034 migration: «Бизнес, Санхүү & Хууль» 5 → 7 + м
   assert.ok(sql.includes("'Хууль ба эрх зүй'"), 'хуучин «Хууль ба эрх зүй» алга ✗');
   assert.ok(/set property_type = 'Хөрөнгө зуучлал'/.test(sql), '«Хөрөнгө зуучлал» руу шилжүүлэлт алга ✗');
   assert.ok(/set property_type = 'Өмгөөлөгч'/.test(sql), '«Өмгөөлөгч» руу шилжүүлэлт алга ✗');
-  // ③ 🕸 СҮЛЖЭЭ: `getSubtypes('services')`-ийн 54 нэр БҮГД `not in (…)`-д байх
+  // ③ 🕸 СҮЛЖЭЭ: 0034-ын үеийн `services`-ийн 54 нэр (`SERVICES_AT_0034`) БҮГД
+  //    `not in (…)`-д байх ЁСТОЙ (эс бөгөөс танил бус утга гарвал тэр зар
+  //    баригдахгүй өнгөрнө ✗). ⚠️ 2026-10-07 (60)-д `services` 54 → 55 болсон
+  //    («Нүүлгэлт ба тээвэр» → «Нүүлгэлт» + «Хүргэлт») тул `getSubtypes` БИШ —
+  //    түүхэн snapshot ашиглана ✓
+  const subtypes = SERVICES_AT_0034;
+  assert.equal(subtypes.length, 54);
+  subtypes.forEach((s) => assert.ok(sql.includes(`'${s}'`), `сүлжээнд «${s}» алга ✗`));
+  // ④ ХАМГААЛАЛТ: зар УСТГАХГҮЙ ба `section` (DB утга) солигдохгүй ✓
+  assert.ok(!/\bdelete\s+from\b/i.test(sql), '⚠️ зар УСТГАХГҮЙ (зөвхөн нэр солино)');
+  assert.ok(!/\btruncate\b/i.test(sql), 'truncate хориглоно ✗');
+  assert.ok(!/set section = /.test(sql), '`section` солигдох ЁСТОЙГҮЙ (нэр нь UI-д) ✗');
+});
+
+t('🛠 0035 migration: «Нүүлгэлт ба тээвэр» → «Нүүлгэлт» + «Хүргэлт» + модноос гадуур утга үлдээхгүй СҮЛЖЭЭ', () => {
+  const sql = readFileSync(
+    new URL('../supabase/migrations/0035_services_household_subtypes.sql', import.meta.url), 'utf8',
+  );
+  // ① ЗӨВХӨН 🛠️ `services` хэсгийн мөрүүдэд хүрнэ (бусад хэсгийн зар ХӨНДӨГДӨХГҮЙ ✓)
+  assert.ok(/section = 'services'/.test(sql), "`section = 'services'` алга ✗");
+  assert.ok(
+    !/section = '(hobby|travel|home|furniture|jobs|auto|computers|electric|construction|equipment)'/.test(sql),
+    'өөр хэсэгт хүрсэн ✗',
+  );
+  // ② ХУУЧИН нэр файлд байх ЁСТОЙ + ШИНЭ 2 утга руу шилжинэ ✓
+  assert.ok(sql.includes("'Нүүлгэлт ба тээвэр'"), 'хуучин «Нүүлгэлт ба тээвэр» алга ✗');
+  assert.ok(/set property_type = 'Нүүлгэлт'/.test(sql), '«Нүүлгэлт» руу шилжүүлэлт алга ✗');
+  assert.ok(sql.includes("'Хүргэлт'"), '🆕 «Хүргэлт» файлд алга ✗');
+  // ③ 🕸 СҮЛЖЭЭ: `getSubtypes('services')`-ийн 55 нэр БҮГД `not in (…)`-д байх
   //    ЁСТОЙ (эс бөгөөс танил бус утга гарвал тэр зар баригдахгүй өнгөрнө ✗)
   const subtypes = getSubtypes('services');
-  assert.equal(subtypes.length, 54);
+  assert.equal(subtypes.length, 55);
   subtypes.forEach((s) => assert.ok(sql.includes(`'${s}'`), `сүлжээнд «${s}» алга ✗`));
   // ④ ХАМГААЛАЛТ: зар УСТГАХГҮЙ ба `section` (DB утга) солигдохгүй ✓
   assert.ok(!/\bdelete\s+from\b/i.test(sql), '⚠️ зар УСТГАХГҮЙ (зөвхөн нэр солино)');
