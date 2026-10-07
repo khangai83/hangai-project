@@ -1974,6 +1974,12 @@ export default function HomeClient() {
    *    тэр нэрээр гарч, категори сонголт (зарна/түрээслүүлнэ) ХАРАГДАХГҮЙ ✓
    */
   const panelTitle = categoryChoices.find((c) => c.value === category)?.label || sec.label;
+  /** 🏷 Панель өөрийн ТОМ гарчиг харуулж байна уу (2026-10-07, хэрэглэгчийн
+   *  хүсэлт: «зөвхөн НЭГ гарчиг байг»). Үр дүнгийн `h1`-ийг давхардуулахгүйн
+   *  тулд нууна — панелийн толгой нь хуудасны ГОЛ `<h1>` болно.
+   *  ⚠️ Дэд төрөл сонгосон үед панель БҮРЭН арилдаг (`filters.propertyType`
+   *     үнэн) тул тэр үед үр дүнгийн `h1` л үлдэнэ ✓ */
+  const panelShowsTitle = sectionOpen && !filters.propertyType;
 
   /** Хуудасны гарчиг — «Бүх зар» / «Орон сууц түрээслүүлнэ 12» / «Автомашин 34» */
   const pageTitle = filters.propertyType
@@ -2291,8 +2297,9 @@ export default function HomeClient() {
              хэсгийн вэб дээд хэсэгт болгож өөрчил», жишээ зурагтай) — хайлтын
              мөр нь `AppProviders`-ийн header-ийн ГОЛ хэсэгт (лого ба баруун
              товчнуудын ДУНД) шилжив ✓ (`useHeaderSlot()` → `homeSearchBar`).
-          ⚠️ Хуудасны ГОЛ `<h1>` нь доорх үр дүнгийн толгой («Бүх зар · N») —
-             толгойд h1 БАЙХГҮЙ ч a11y/SEO эвдрэхгүй ✓
+          ⚠️ Хуудасны ГОЛ `<h1>` — панель харагдах үед түүний толгой
+             («Үл хөдлөх зарна 19»), эс бөгөөс үр дүнгийн толгой
+             («Бүх зар · N»). Хоёул НЭГ л удаа (давхардахгүй) ✓
           📱 `xl`-ээс доош — доорх наалдамхай (`sticky top-16`) мөрөнд; `xl`+ дээр
              мөр нь толгойд гардаг тул энэ нь `xl:hidden` ✓ */}
 
@@ -2470,7 +2477,9 @@ export default function HomeClient() {
                 🗑 SEPARATOR (1px зураас) ХАСАГДАВ (unegui.mn-д байхгүй) ✓
                 ⚠️ Товчны ҮЙЛДЭЛ ХЭВЭЭР (`setSectionOpen(false)`) — нэрэн дээр
                    дарахад панель хаагдаж 12 ХЭСГИЙН tile дэлгэц гарна ✓ */}
-            <div className="mb-3">
+            {/* 🏷 ГОЛ `<h1>` — панель харагдах үед ЭНЭ нь хуудасны цор ганц
+                гарчиг (үр дүнгийн h1 нуугдана, `panelShowsTitle`) ✓ */}
+            <h1 className="mb-3">
               <button
                 type="button"
                 onClick={() => setSectionOpen(false)}
@@ -2482,7 +2491,7 @@ export default function HomeClient() {
                   <span className="ml-2 align-middle text-[17px] font-normal text-gray-500">{formatCount(sectionTotal)}</span>
                 )}
               </button>
-            </div>
+            </h1>
 
             {/* ---------- КАТЕГОРИ (зөвхөн үл хөдлөх) ----------
                 🆕 2026-10-04 (хэрэглэгчийн хүсэлт): «Үл хөдлөх зарна» /
@@ -3717,15 +3726,17 @@ export default function HomeClient() {
                 «Хайлтыг хадгалах» бар руу шилжсэн ✓ (гарчиг ганцаараа үлдэв) */}
             <div className="mb-3">
               <div className="min-w-0">
-                <h1 className="text-2xl font-bold text-gray-900 sm:text-[26px]">
-                  {pageTitle}
-                  {listings !== null && !loadError && (
-                    <span className="ml-2 align-middle text-[17px] font-normal text-gray-500">
-                      {/* 📄 НИЙТ зарын тоо (`count`) — хуудасны биш ✓ */}
-                      {formatCount(total ?? listings.length)}
-                    </span>
-                  )}
-                </h1>
+                {!panelShowsTitle && (
+                  <h1 className="text-2xl font-bold text-gray-900 sm:text-[26px]">
+                    {pageTitle}
+                    {listings !== null && !loadError && (
+                      <span className="ml-2 align-middle text-[17px] font-normal text-gray-500">
+                        {/* 📄 НИЙТ зарын тоо (`count`) — хуудасны биш ✓ */}
+                        {formatCount(total ?? listings.length)}
+                      </span>
+                    )}
+                  </h1>
+                )}
                 {query && <p className="mt-0.5 text-[14px] text-gray-500">«{query}» хайлтын үр дүн</p>}
                 {/* 📄 Хуудас 2+ үед «N дэх хуудас» гэж тодруулна (төөрөгдөлөөс сэргийлэв) */}
                 {page > 1 && listings !== null && !loadError && (
