@@ -365,23 +365,36 @@ export default function AppProviders({ children }) {
                     ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Таалагдсан, Мессеж-ийг текстгүй
                        icon болго, хар цагаанаас өөр өнгө орсон icon бүү
                        болгоорой» ✓ emoji `❤️` нь УЛААН өнгөтэй байсан ✗ →
-                       `HeartIcon` SVG (`currentColor` = товчны саарал/хар) болов.
-                    ⚠️ Зөвхөн ТЕКСТ хасагдав; тоолуур (badge) ХЭВЭЭР ✓
-                    🐭 HOVER EFFECT (2026-10-07, хэрэглэгчийн хүсэлт: «like,
-                       messege icon дээр mouse аваачихад нааш хөдөлж байгаа
-                       юм шиг effect тэй болго»): товч нь `group` болж, доторх
-                       SVG нь hover-т `scale-[1.3]`-аар томорно («нааш ирж»
-                       байгаа мэт) — `duration-200 ease-out`, badge хөндөгдөхгүй ✓ */}
+                       `HeartIcon` SVG (`currentColor` = саарал/хар) болов.
+                    ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-07, «button bish»):
+                       «like bolon messege iig button bish bolgoj boloh uu…
+                       button dotor orood dotroh durs ni jijighen
+                       haragdaad bna. zugeer icon oor ni bailgaad, mouse aa
+                       awaachihad tomordog baiwal ih zugeer bna» ✓
+                       Тиймээс `btn btn-outline btn-sm` (хүрээ + дэвсгэр +
+                       жижиг padding) ХАСАГДАЖ, зүгээр ЦЭВЭР icon болов:
+                         • икон 15px → **24px** (`h-6 w-6`) — товчныхоо
+                           хүрээнд чимэглэгдээгүй тул ТОМ, тод харагдана ✓
+                         • товчны дүр биш — зөвхөн `p-1.5` (хүрэх талбар)
+                             + `text-gray-700`, hover-т `hover:text-gray-900` ✓
+                       🐭 HOVER EFFECT («нааш хөдөлж» байгаа мэт): link нь
+                          `group` болж, доторх SVG нь hover-т `group-hover:
+                          scale-110`-аар ЗӨӨЛӨН томорно — `duration-200
+                          ease-out` ✓
+                    ⚠️ Тоолуур (badge) ХЭВЭЭР ч байр нь СОЛИГДОВ: товчны дотор
+                       БИШ, icon-ий баруун дээд буланд НААЛДУУЛАН
+                       (`absolute -right-0.5 -top-0.5`) — icon-only хэлбэрт
+                       тохирсон «notification dot» ✓ */}
                 <Link
                   href="/favorites"
-                  className="btn btn-outline btn-sm group"
+                  className="group relative inline-flex items-center justify-center rounded-full p-1.5 text-gray-700 transition-colors hover:text-gray-900"
                   title="Таалагдсан зарууд"
                   aria-label="Таалагдсан зарууд"
                   onClick={closeUserMenus}
                 >
-                  <HeartIcon className="h-[15px] w-[15px] transition-transform duration-200 ease-out group-hover:scale-[1.3]" />
+                  <HeartIcon className="h-6 w-6 transition-transform duration-200 ease-out group-hover:scale-110" />
                   {favoriteIds.length > 0 && (
-                    <span className="ml-1 rounded-full bg-primary px-1.5 py-px text-[11px] font-bold text-white">
+                    <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
                       {favoriteIds.length}
                     </span>
                   )}
@@ -390,27 +403,31 @@ export default function AppProviders({ children }) {
                 {/* ---- ③ 💬 Мессеж (icon-only — 2026-10-07) ----
                     ⚠️ «Мессеж» ТЕКСТ ХАСАГДАВ (хэрэглэгчийн хүсэлт:
                        «текстгүй icon болго»). Икон нь `ChatIcon` SVG —
-                       хоёр давхарласан ярианы бөмбөлөг + 3 цэг (`currentColor`
-                       = товчны саарал/хар, өнгө ГАРАХГҮЙ ✓).
-                    ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-07, жишээ зурагтай):
-                       «iim messege icon bolgochihoo» → дугтуй (`MessageIcon`)
-                       → чат бөмбөлөг (`ChatIcon`) болгов. ⚠️ Зөвхөн энэ
-                       толгойн мөрний товчид — мобайл доод цэс/footer/`/messages`
-                       зэрэг газрын дугтуй ХЭВЭЭР (`ChatIcon` тайлбарыг үз).
-                    ⚠️ Уншаагүй тоолуур (badge) ХЭВЭЭР ✓
-                    🐭 HOVER EFFECT — 💛 ❤️ Таалагдсан товчтой ЯГ ИЖИЛ
-                       (`group` + `group-hover:scale-[1.3]`, «нааш хөдөлж»
-                       байгаа мэт) ✓ */}
+                       хоёр давхарласан ярианы бөмбөлөг (`currentColor` =
+                       саарал/хар, өнгө ГАРАХГҮЙ ✓).
+                    ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-07, жишээ зурагтай,
+                       «messege nii icon iig solij uguuchl») → `ChatIcon`-ийг
+                       ЗУРАГ ДЭЭРХ шиг ХОЁР ДУГУЙ БУЛАНТАЙ бөмбөлөг болгов
+                       (хойд — баруу дээд + доош сүүл; урд — зүүн доод +
+                       зүүн доош сүүл). `HeaderIcons.jsx`-ийн `ChatIcon`
+                       тайлбарыг үз ✓
+                    ⚠️ «button bish» (2026-10-07): яг ❤️ Таалагдсантай ИЖИЛ —
+                       `btn btn-outline btn-sm` ХАСАГДАЖ зүгээр icon болов,
+                       икон `h-6 w-6` (ТОМ), hover-т `group-hover:scale-110` ✓
+                    ⚠️ Зөвхөн энэ толгойн мөрний товчид — мобайл доод цэс/
+                       footer/`/messages` зэрэг газрын дугтуй ХЭВЭЭР ✓
+                    ⚠️ Уншаагүй тоолуур (badge) — ❤️-тай ИЖИЛ, icon-ий баруун
+                       дээд буланд наалдсан (`absolute -right-0.5 -top-0.5`) ✓ */}
                 <Link
                   href="/messages"
-                  className="btn btn-outline btn-sm group"
+                  className="group relative inline-flex items-center justify-center rounded-full p-1.5 text-gray-700 transition-colors hover:text-gray-900"
                   title="Мессеж — зар нийтлэгчтэй харилцах"
                   aria-label="Мессеж"
                   onClick={closeUserMenus}
                 >
-                  <ChatIcon className="h-[15px] w-[15px] transition-transform duration-200 ease-out group-hover:scale-[1.3]" />
+                  <ChatIcon className="h-6 w-6 transition-transform duration-200 ease-out group-hover:scale-110" />
                   {unreadMessages > 0 && (
-                    <span className="ml-1 rounded-full bg-primary px-1.5 py-px text-[11px] font-bold text-white">
+                    <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-[16px] place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
                       {unreadMessages > 99 ? '99+' : unreadMessages}
                     </span>
                   )}
