@@ -186,6 +186,34 @@ function parseListParam(raw) {
 }
 
 /**
+ * 🎨 НҮҮР ХУУДСНЫ ХЭСГИЙН КАРТЫН ӨНГӨ (2026-10-07, хэрэглэгчийн хүсэлт:
+ *    «Үл хөдлөх, Автомашин, Ажлын зар гэх мэт эдгээр картуудаа ийм болгоё»
+ *    + жишээ зураг — пастел дэвсгэртэй, бөөрөнхий, icon нь төвд том карт).
+ *
+ * ⚠️ Утга нь `SECTIONS`-ийн `value`-тэй ЯГ тохирно (12 хэсэг) — шинэ хэсэг
+ *    нэмэгдвэл энд ч мөр нэмнэ; олдохгүй бол `bg-gray-100` (нейтрал) руу унана ✓
+ * ⚠️ Зөвхөн Tailwind-ийн `*-100` (маш цайвар пастел) сонгосон — тод өнгө нь
+ *    карт дээрх ХАР тексттэй (gray-900) мууддаг тул ✓
+ * ⚠️ ХҮЙТЭН/ДУЛААН албан ёсны gray нь `tailwind.config.js`-д дарж бичигдсэн
+ *    ч бусад өнгө (violet/sky/amber …) нь Tailwind-ийн анхдагч — ОРШИХ ✓
+ * 🔍 Хайх үг: SECTION_TILE_TONE, tile өнгө, пастел карт
+ */
+const SECTION_TILE_TONE = {
+  'real-estate': 'bg-violet-100',
+  auto: 'bg-sky-100',
+  jobs: 'bg-amber-100',
+  computers: 'bg-indigo-100',
+  furniture: 'bg-rose-100',
+  home: 'bg-emerald-100',
+  electric: 'bg-yellow-100',
+  construction: 'bg-orange-100',
+  equipment: 'bg-cyan-100',
+  travel: 'bg-teal-100',
+  hobby: 'bg-green-100',
+  services: 'bg-fuchsia-100',
+};
+
+/**
  * 🛠 ДЭД ТӨРЛИЙН НЭГ МӨР + шошго — 3 газарт ижил markup хэрэглэгддэг тул
  * НЭГ компонент болгов (2026-09-29):
  *   ① энгийн дэд төрөл (`subtypes` — бусад хэсэг),
@@ -2817,27 +2845,30 @@ export default function HomeClient() {
                    цуулахгүй) ✓
                    ⚠️ `auto-rows-fr` + `h-full` → 1 мөртэй, 2 мөртэй картууд ИЖИЛ
                       өндөртэй (эгнээ эгц, эмх цэгцтэй) ✓
-             🆕 2026-10-07 (хэрэглэгчийн хүсэлт: «unegui.mn шиг ХАВТГАЙ
-                (flat) сүлжээ болго — emoji + нэр, картын хүрээ/сүүдэр
-                БАЙХГҮЙ»): дээрх КАРТ загвар (① ② ③ + ФОНТ) БҮРЭН ОРЛОГДОВ —
-                   • `border` · `shadow-card` · `ring-1` · `hover:-translate-y` ·
-                     `rounded-xl` · icon-ийн дугуй `bg` дэвсгэр БҮГД АРИЛАВ
-                   • icon нь зүгээр emoji (`text-[22px]`), нэр нь ХАТУУ
-                     `font-semibold` (`text-[14px] sm:text-[15px]`)
-                   • icon + нэр ХЭВТЭЭ мөрөнд (`flex items-center`), зүүн тийш
-                     эгнэв — unegui.mn-ийн ангиллын жагсаалт мэт ✓
-                   • сонгосон → `bg-primary-light` + `text-primary-dark` (✓
-                     badge БАЙХГҮЙ — өнгийн ялгаа + `aria-selected` хангалттай)
-                   • hover → `bg-gray-100` + `text-primary` (flat, хөдөлгөөнгүй)
+             🎨 2026-10-07 (хэрэглэгчийн хүсэлт: «Үл хөдлөх, Автомашин, Ажлын
+                зар гэх мэт эдгээр картуудаа ийм болгоё» + жишээ зураг):
+                ХАВТГАЙ (flat, emoji + нэр) загвар → **ПАСТЕЛ КАРТ** болов —
+                   • карт бүр өөрийн ЗӨӨЛӨН дэвсгэр өнгөтэй (`SECTION_TILE_TONE`,
+                     дээр — 12 хэсэгт 12 өнгө), `rounded-2xl` (бөөрөнхий)
+                   • нэр нь картын ДЭЭД талд ХАР BOLD (`text-[13px] sm:text-[14px]`,
+                     `line-clamp-2` — урт нэр «Компьютер, Дагалдах хэрэгсэл» хүрээнд
+                     багтана ✓), icon нь доор ТӨВД ТОМ emoji (`text-[34px] sm:text-[40px]`)
+                   • 🐭 HOVER EFFECT: карт нь `-translate-y-1` дээш + `shadow-lg`
+                     сүүдэр + icon нь `scale-110` томорч «нааш хөдөлж» байна ✓
+                     (бүгд `duration-200 ease-out` — зөөлөн)
+                   • сонгосон → `ring-2 ring-primary/60` (цагираг тодорхойлно;
+                     ⚠️ дэвсгэр өнгө нь хэвээр — пастел дээр цагираг тод харагдана ✓)
              ⚠️ ХАМГААЛАГДСАН ГЭРЭЭ (тест): `.tile-grid button[role="tab"]` нь
                 ХЭВЭЭР 12 ширхэг (`cdp:services` ⑧), tile бүрийн TEXT нь
-                `<emoji> <нэр>` ХЭВЭЭР (`includes('Ажил, Үйлчилгээ')` ✓)
+                `<нэр> <emoji>` ХЭВЭЭР (`includes('Ажил, Үйлчилгээ')` ✓ — emoji
+                ба нэр хоёулаа DOM-д байгаа тул `innerText` шалгалт хэвээр ✓)
              ⚠️ ТОО (ad count) ГАРАХГҮЙ — хэсэг тус бүрийн тоо нь тусдаа query
                 (12 HEAD) шаарддаг тул (хэрэглэгчийн шийдвэр) ОРХИВ ✓
              🔗 `title={s.label}` — бүтэн нэрийг hover-т харуулна ✓ */
           <div className="tile-grid grid auto-rows-fr grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" role="tablist" aria-label="Зарын хэсэг">
             {SECTIONS.map((s) => {
               const on = s.value === section;
+              const tone = SECTION_TILE_TONE[s.value] || 'bg-gray-100';
               return (
                 <button
                   key={s.value}
@@ -2846,20 +2877,20 @@ export default function HomeClient() {
                   aria-selected={on}
                   onClick={() => changeSection(s.value)}
                   title={s.label}
-                  className={`flex h-full w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition ${
+                  className={`group flex h-full min-h-[104px] w-full flex-col gap-1 rounded-2xl px-3.5 pb-3 pt-3 text-left transition-all duration-200 ease-out ${tone} ${
                     on
-                      ? 'bg-primary-light text-primary-dark'
-                      : 'text-gray-800 hover:bg-gray-100 hover:text-primary'
+                      ? 'ring-2 ring-primary/60'
+                      : 'hover:-translate-y-1 hover:shadow-lg'
                   }`}
                 >
+                  <span className="min-w-0 text-[13px] font-bold leading-tight text-gray-900 line-clamp-2 sm:text-[14px]">
+                    {s.label}
+                  </span>
                   <span
                     aria-hidden="true"
-                    className="shrink-0 text-[22px] leading-none"
+                    className="mx-auto flex flex-1 items-center justify-center text-[34px] leading-none transition-transform duration-200 ease-out group-hover:scale-110 sm:text-[40px]"
                   >
                     {s.icon}
-                  </span>
-                  <span className="min-w-0 break-words text-[14px] font-semibold leading-snug sm:text-[15px]">
-                    {s.label}
                   </span>
                 </button>
               );

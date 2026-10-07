@@ -366,15 +366,20 @@ export default function AppProviders({ children }) {
                        icon болго, хар цагаанаас өөр өнгө орсон icon бүү
                        болгоорой» ✓ emoji `❤️` нь УЛААН өнгөтэй байсан ✗ →
                        `HeartIcon` SVG (`currentColor` = товчны саарал/хар) болов.
-                    ⚠️ Зөвхөн ТЕКСТ хасагдав; тоолуур (badge) ХЭВЭЭР ✓ */}
+                    ⚠️ Зөвхөн ТЕКСТ хасагдав; тоолуур (badge) ХЭВЭЭР ✓
+                    🐭 HOVER EFFECT (2026-10-07, хэрэглэгчийн хүсэлт: «like,
+                       messege icon дээр mouse аваачихад нааш хөдөлж байгаа
+                       юм шиг effect тэй болго»): товч нь `group` болж, доторх
+                       SVG нь hover-т `scale-[1.3]`-аар томорно («нааш ирж»
+                       байгаа мэт) — `duration-200 ease-out`, badge хөндөгдөхгүй ✓ */}
                 <Link
                   href="/favorites"
-                  className="btn btn-outline btn-sm"
+                  className="btn btn-outline btn-sm group"
                   title="Таалагдсан зарууд"
                   aria-label="Таалагдсан зарууд"
                   onClick={closeUserMenus}
                 >
-                  <HeartIcon className="h-[15px] w-[15px]" />
+                  <HeartIcon className="h-[15px] w-[15px] transition-transform duration-200 ease-out group-hover:scale-[1.3]" />
                   {favoriteIds.length > 0 && (
                     <span className="ml-1 rounded-full bg-primary px-1.5 py-px text-[11px] font-bold text-white">
                       {favoriteIds.length}
@@ -392,15 +397,18 @@ export default function AppProviders({ children }) {
                        → чат бөмбөлөг (`ChatIcon`) болгов. ⚠️ Зөвхөн энэ
                        толгойн мөрний товчид — мобайл доод цэс/footer/`/messages`
                        зэрэг газрын дугтуй ХЭВЭЭР (`ChatIcon` тайлбарыг үз).
-                    ⚠️ Уншаагүй тоолуур (badge) ХЭВЭЭР ✓ */}
+                    ⚠️ Уншаагүй тоолуур (badge) ХЭВЭЭР ✓
+                    🐭 HOVER EFFECT — 💛 ❤️ Таалагдсан товчтой ЯГ ИЖИЛ
+                       (`group` + `group-hover:scale-[1.3]`, «нааш хөдөлж»
+                       байгаа мэт) ✓ */}
                 <Link
                   href="/messages"
-                  className="btn btn-outline btn-sm"
+                  className="btn btn-outline btn-sm group"
                   title="Мессеж — зар нийтлэгчтэй харилцах"
                   aria-label="Мессеж"
                   onClick={closeUserMenus}
                 >
-                  <ChatIcon className="h-[15px] w-[15px]" />
+                  <ChatIcon className="h-[15px] w-[15px] transition-transform duration-200 ease-out group-hover:scale-[1.3]" />
                   {unreadMessages > 0 && (
                     <span className="ml-1 rounded-full bg-primary px-1.5 py-px text-[11px] font-bold text-white">
                       {unreadMessages > 99 ? '99+' : unreadMessages}
