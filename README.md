@@ -1220,6 +1220,26 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   `rows="4"` ҮЛДЭЭГҮЙ) · `test:*` БҮГД ✓ · `npm run build` EXIT=0 ✓.
   📄 DOC: `README.md` (энэ bullet) · `docs/IMPROVEMENTS.md` (энэ мөр)
   🔍 Хайх үг: `rows="8"`, `rows="4"`, `Тайлбар`, `.form-group textarea`
+- 📋 **«МИНИЙ ЗАРУУД» КАРТУУД 🖥 DESKTOP ДЭЭР 2-3 БАГАНАТАЙ БОЛОВ (БАЙРШЛЫН
+  ГРИД, ВЕРТИКАЛЬ КАРТ) (2026-10-07 (59)):** хэрэглэгчийн хүсэлт: «desktop дээр
+  Миний зарууд ын картуудыг 2-3 эгнээ болгож харагдуулвал зүгээр юм» ⇒
+  `components/MyListingsClient.jsx`-ийн картын жагсаалт нь ⏳ `flex flex-col gap-3`
+  (нэг урт багана) байсныг **`grid grid-cols-1 gap-3 sm:grid-cols-2
+  lg:grid-cols-3`** болгов — 📱 1 · 📲 sm(≥640) **2** · 🖥 lg(≥1024) **3** багана.
+  ⚠️ Карт бүр **ВЕРТИКАЛЬ** болов (зураг дээгүүр · текст доор · товчнууд хамгийн
+  доор) — хавтээ `sm:flex-row sm:items-center` (нэг урт мөр) нь 2-3 баганад
+  багтахгүй тул ХАСАГДАВ; зураг нь БҮХ дэлгэцэд бүтэн өргөн (`w-full`,
+  ⏳ `sm:h-20 sm:w-[100px]` жижиг thumbnail хасагдав), товчнууд БҮХ дэлгэцэд
+  хэвтээ мөрөнд (⏳ `sm:w-auto sm:flex-col` хасагдав).
+  ⚠️ **MIGRATION 0 — зөвхөн ХАРАГДАЦ:** `fetchMyListings`/`deleteListing` · линк ·
+  `openEdit` · `handleDelete` БҮГД ХӨНДӨӨГДӨӨГҮЙ ✓.
+  🧪 🆕 `scripts/test-my-listings-grid.mjs` (`npm run test:my-grid`) — **6/6 ✓**
+  (grid класс · ⏳ `flex flex-col gap-3`/`sm:flex-row`/`sm:w-[100px]`/`sm:flex-col`
+  БАЙХГҮЙ · товч/линк ХЭВЭЭР) · `test:*` БҮГД ✓ · `npm run build` EXIT=0 ✓.
+  📄 DOC: `README.md` (энэ bullet + «Миний зарууд + Статистик» хэсэг + тестийн
+  хүснэгт) · `docs/IMPROVEMENTS.md` (энэ мөр)
+  🔍 Хайх үг: `sm:grid-cols-2`, `lg:grid-cols-3`, `MyListingsClient`,
+  `test-my-listings-grid`
 - **💳 «ТӨЛБӨРИЙН НӨХЦӨЛ» (`attrs.payment_terms`) — ХАЙЛТАД ЧИП, 3-Р АЛХАМД ☑
   CHECKBOX + ШИНЭ ЗАРД ЗААВАЛ (2026-10-03 (5), дизайн (6), хайлтын хэв (16))** —
   4 кодтой `jsonb` **массив**
@@ -5633,6 +5653,7 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 
 | `scripts/test-rooms.mjs` | **44 тест** — `npm run test:rooms` (🆕 2026-10-03 (4): өрөөний **UI ЭРГЭЖ ИРСНИЙ** гэрээг хамгаална — `codeOnly()`-оор `data-room-filter`/`data-room-value`/`ROOM_OPTIONS`/`toggleRoomValue`/`toggleRooms`/`clearRooms`/`showRooms`/«Өрөөний тоо» **КОДОД БАЙНА** ✓ ба ⚠️ `data-room-filter` нь «Үнэ, ₮»-ний **ӨМНӨ** байрлана (`indexOf`) ✓; ⚠️ ХАДГАЛАГДСАН: `rooms: []`, `parseRoomList(sp.get('rooms'))`, `roomsUrlValue(filters.rooms)`, `roomsFilterLabel(filters.rooms)`; 📌 CDP скрипт нь `dom.chips === 5` (Орон сууц дээр чип 5 байна) ба `clickRoom(` (чип дарж URL/DB шалгах) замыг шаардана ✓. Мөн: `ROOM_VALUES`/`normalizeRoomValue` (`'5+'`/`+5`/`5` → `'5'`)/`parseRoomList` (эвдэрсэн `abc` хасаж, өсөх эрэмбээр)/`toggleRoomValue`/`isRoomsEmpty`/`countRooms`/`roomsUrlValue`/`roomsFilterLabel`/`roomsFilterDescriptor` ба `applyRoomFilter` fake builder-ээр — **`['5']`→`gte 5`, `['3']`→`in ['3']` (хуучин үр дүнтэй ЯГ ижил)**, `['4','5']`→`gte 4`, `['1','5']`→`or(…)`; ⚠️ 2026-09-30 (4)-д тестэд гарсан алдаа: `ROOM_OPTIONS`-ийн хүлээлт нь `'2 өрөө','2 өрөө'` гэж бичигдсэн байсныг `'1 өрөө'` болгож зассан ✓) |
 | `scripts/test-edit-btn.mjs` | 🆕 **13 тест** — `npm run test:edit-btn` (🆕 **2026-10-06 (6): ✅ «✏️ Засах» товчны НОГООН гэрээ** — ① `tailwind.config.js` → `success` токен (`#059669`/`#047857`/`#D1FAE5`) + `btn-success*` 3 сүүдэр (гэрэлтэлт `rgba(5,150,105,…)` ЯГ 2 газар) ② `app/globals.css` → `.btn-success` (`#10B981` → `#059669` → `#047857`) + hover/active ③ `MyListingsClient` карт ба `MyListingsStatsPanel` ЯГ 2 товч `btn-success`, 🖥 pill `bg-success` ④ ⚠️ `primary`/`secondary`/`danger` ХӨНДӨӨГДӨӨГҮЙ ба «Засах»-ийн ОЙР цэнхэр/бэх товч 0) |
+| `scripts/test-my-listings-grid.mjs` | 🆕 **6 тест** — `npm run test:my-grid` (🆕 **2026-10-07 (59): 📋 «Миний зарууд» 🖥 DESKTOP 2-3 БАГАНА** — картын жагсаалт нь `grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3` (⏳ `flex flex-col gap-3` БАЙХГҮЙ); карт бүр ВЕРТИКАЛЬ (⏳ `sm:flex-row` БАЙХГҮЙ) · зураг бүтэн өргөн (⏳ `sm:h-20 sm:w-[100px]` БАЙХГҮЙ) · товч хэвтээ мөрөнд (⏳ `sm:w-auto sm:flex-col` БАЙХГҮЙ); зарын линк · `✏️ Засах`/`🗑 Устгах` · `openEdit`/`handleDelete` ХЭВЭЭР ✓. ⚠️ Тайлбарыг `stripComments()`-оор хасаж шалгана — регресс нь тайлбар доторх хуучин классуудаар хуурамчаар УНАХГҮЙ ✓) |
 
 | `scripts/test-share-btn.mjs` | 🆕 **6 тест** — `npm run test:share-btn` (🆕 2026-10-07: 🔗 **«Хуваалцах» товчны ГЭРЭЭ** — хэрэглэгч: «Хуваалцах ыг Таалагдсаны ард талд нь хийчих л дээ». ① `ListingDetailClient` footer-ийн ДАРААЛАЛ: 👁 үзсэн → 🤍/❤️ таалагдсан → 🔗 Хуваалцах (ЯГ 1 `<ShareButton`) ② Буцахгүй: «Хуваалцах» нь 👁-ийн ЯГ ХАЖУУД БИШ (🤍/❤️-ийн дараа) ③ `ShareButton.jsx` — `navigator.clipboard` → `document.execCommand('copy')` fallback + `window.isSecureContext` + `typeof window !== 'undefined'` SSR хамгаалалт + `label = 'Хуваалцах'` + `data-share-button` + `🔗`→`✓`) |
 | `scripts/test-detail-ui.mjs` | 🆕 **12 тест** — `npm run test:detail-ui` (🆕 2026-10-07: 📋 **ЗАРЫН ФОРМ + ДЭЛГЭРЭНГҮЙ ХУУДСАНЫ 4 ХҮСЭЛТ** — ① «Зөвхөн Ажлын зар дээр Зураг оруулах хэсгийг болиулах» ⇒ 💼 `jobs`-д 🖼 Зураг блок `{allowImages && …}` (`section !== 'jobs'`), payload `images: allowImages ? … : []` ② «бүх хэсэгт … Нэр оруулдаг байх … байгууллагынхаа өмнөөс … өөрийх нь нэр гарах нь зохимжгүй» ⇒ формд 👤 «Нэр» талбар (`form.contactName`, анхдагч `displayName`), дэлгэрэнгүйд `sellerName = contact_name → displayName → …` (ТҮРҮҮЛНЭ) ③ «Profile зургийг … тэгш өнцөгтөөр» ⇒ `Avatar` `rounded-full`→`rounded-lg` ④ «газрын зургийг … Unegui.mn шиг … Бүх зар дээр» ⇒ дэлгэрэнгүйд «Байршил» гарчигтай `data-component="ListingMap"` (`mapCenterFor` нөөц төв; ХУУЧИН sidebar газрын зураг ХАСАГДАВ) + `MapView` ганц пинд `SINGLE_ZOOM`). ⚠️ DB/query ХӨНДӨӨГДӨӨГҮЙ — migration 0 ✓ |
@@ -6130,7 +6151,10 @@ npm run test:activity
 - **Карт бүхэлдээ линк** — карт дээрээ дарахад зарын дэлгэрэнгүй нээгдэнэ
   (`hover` дээр хүрээ брэнд өнгөөр будагдаж, сүүдэр нэмэгдэж, гарчиг өнгө солигдоно).
   Тусдаа «👁 Харах» товч **байхгүй** — илүүц давхардал байсан.
-- Картын баруун талд зөвхөн үйлдлийн товчнууд: «✏️ Засах» / «🗑 Устгах».
+- 🖥 **Desktop дээр картууд 2-3 БАГАНА** — `grid grid-cols-1 gap-3 sm:grid-cols-2
+  lg:grid-cols-3` (2026-10-07 (59)): 📱 1 · 📲 sm(≥640) 2 · 🖥 lg(≥1024) 3 багана;
+  карт бүр **вертикаль** (зураг дээгүүр · текст доор · товчнууд хамгийн доор).
+- Картын доод хэсэгт зөвхөн үйлдлийн товчнууд: «✏️ Засах» / «🗑 Устгах».
   ⚠️ Эдгээр нь `<Link>`-ээс **ГАДНА** байрлана — `<a>` дотор `<button>` хийх нь
   invalid HTML (браузер нь линк рүү шилжүүлчихдэг).
 - Нэвтрээгүй зочинд «🔑 Миний заруудыг харахын тулд нэвтрэх шаардлагатай» гэж

@@ -152,13 +152,22 @@ export default function MyListingsClient() {
               <button className="btn btn-primary mt-4" onClick={openAdd}>➕ Зар нэмэх</button>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            /* 🆕 2026-10-07 (59): 🖥 DESKTOP дээр 2-3 БАГАНА (grid) — хэрэглэгчийн
+               хүсэлт («desktop дээр Миний заруудын картуудыг 2-3 эгнээ болгож
+               харагдуул»). 📱 1 · 📲 sm(≥640) 2 · 🖥 lg(≥1024) 3 багана. ⚠️ Карт бүр
+               ОДОО ВЕРТИКАЛЬ (зураг дээгүүр · текст доор · товч хамгийн доор) болов
+               — олон баганад ЭВТЭЙ (⏳ `sm:flex-row` хэвтээ карт нь 2-3 баганад
+               багтахгүй тул ХАСАГДАВ ✓). ⚠️ Зөвхөн ХАРАГДАЦ — fetch/DB/payload
+               ХӨНДӨӨГДӨӨГҮЙ. */
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {listings.map((l) => {
                 const firstImage = Array.isArray(l.images) && l.images.length ? l.images[0] : null;
+                /* 🆕 2026-10-07 (59): хавтээ карт → ВЕРТИКАЛЬ — `sm:flex-row
+                   sm:items-center` ХАСАГДАВ (2-3 баганын grid-д эвтэй ✓) */
                 return (
                   <div
                     key={l.id}
-                    className="group flex flex-col items-start gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover sm:flex-row sm:items-center"
+                    className="group flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover"
                   >
                     {/* ⚠️ КАРТ БҮХЭЛДЭЭ линк — «👁 Харах» товч ХЭРЭГГҮЙ.
                         Үйлдлийн товчнууд (Засах/Устгах) нь линкээс ГАДНА —
@@ -166,9 +175,12 @@ export default function MyListingsClient() {
                     <Link
                       href={`/listings/${l.id}`}
                       title="Зарын дэлгэрэнгүйг харах"
-                      className="flex min-w-0 flex-1 flex-col items-start gap-4 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 sm:flex-row sm:items-center"
+                      className="flex min-w-0 flex-1 flex-col gap-4 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45"
                     >
-                      <div className="h-[150px] w-full shrink-0 overflow-hidden rounded-lg bg-gray-100 sm:h-20 sm:w-[100px]">
+                      {/* 🆕 2026-10-07 (59): зураг нь БҮХ дэлгэцэд бүтэн өргөн
+                          (`w-full`) — карт вертикаль болсон тул `sm:h-20 sm:w-[100px]`
+                          жижиг thumbnail ХАСАГДАВ ✓ */}
+                      <div className="h-[150px] w-full shrink-0 overflow-hidden rounded-lg bg-gray-100">
                         {firstImage ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -206,7 +218,9 @@ export default function MyListingsClient() {
                         <p className="text-xs text-gray-400">📅 {timeAgo(l.created_at)}</p>
                       </div>
                     </Link>
-                    <div className="flex w-full flex-row gap-2 sm:w-auto sm:flex-col">
+                    {/* 🆕 2026-10-07 (59): товчнууд БҮХ дэлгэцэд ХЭВТЭЭ мөрөнд
+                        (карт вертикаль ⇒ `sm:w-auto sm:flex-col` ХАСАГДАВ ✓) */}
+                    <div className="flex w-full flex-row gap-2">
                       {/* 🆕 2026-10-06 (6): «✏️ Засах» НОГООН болов — `btn-success`
                           (хэрэглэгчийн хүсэлт ✓). 🗑 Устгах нь улаан ХЭВЭЭР тул
                           нэг харцаар ялгагдана. */}
