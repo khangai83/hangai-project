@@ -8,6 +8,12 @@ const TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const MARKER_ICON = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png';
 const MARKER_RETINA = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png';
 const MARKER_SHADOW = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png';
+/**
+ * 🆕 2026-10-07 — ГАНЦ ПИНТЭЙ газрын зургийн зум (дэлгэрэнгүй хуудас).
+ * ⚠️ `fitBounds` нь НЭГ цэг дээр ХЭТ их зум (maxZoom ≈ 18) болгодог тул
+ *    гудамжны түвшний ТОГТМОЛ зум хэрэглэнэ ✓ (unegui.mn-ийн хэв)
+ */
+const SINGLE_ZOOM = 15;
 
 export default function MapView({ listings }) {
   const elRef = useRef(null);
@@ -50,7 +56,11 @@ export default function MapView({ listings }) {
         markers.push(m);
       });
 
-      if (markers.length) {
+      if (points.length === 1) {
+        // ⚠️ ГАНЦ пин (дэлгэрэнгүй хуудас) — `fitBounds` ХЭТ их зум болгоно ✗
+        //    ⇒ гудамжны түвшний тогтмол зум (`SINGLE_ZOOM`) ✓
+        map.setView([points[0].latitude, points[0].longitude], SINGLE_ZOOM);
+      } else if (markers.length) {
         map.fitBounds(markers.map((m) => m.getLatLng()), { padding: [40, 40] });
       }
     };

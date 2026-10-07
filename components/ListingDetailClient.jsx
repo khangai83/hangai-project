@@ -20,6 +20,9 @@ import { buildListingBreadcrumb } from '../lib/breadcrumb';
 import { getAttrRows } from '../lib/locationData';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 import { parseYouTube } from '../lib/youtube.mjs';
+// 🗺 Газрын зургийн ТӨВ (2026-10-07) — БҮХ зарт газрын зураг харуулах
+//    (солбицолгүй ч хороо/дүүрэг/хотын төв рүү буулгана) ✓
+import { mapCenterFor } from '../lib/locationGeo.mjs';
 /**
  * 📍 ХЭРЭГЛЭГЧ БАЙРШЛАА ЗААГААГҮЙ ЗАР (2026-10-06) — «Байршил сонгохгүй»
  *    чекбоксоор хадгалагдсан зар дээр `city = ''` байдаг тул «📍 Хаяг
@@ -268,11 +271,40 @@ export default function ListingDetailClient({ id }) {
   ].filter(Boolean);
 
   // ---- ЗАР НИЙТЛЭГЧИЙН ХАРАГДАХ НЭР ----
-  // ⚠️ Дарааллаар: нэр (`display_name`, нийтэд) → зарын холбоо барих нэр
-  // (`contact_name`) → ерөнхий төлөв. Жинхэнэ нэр (`profiles.name`) нь
-  // НИЙТЭД ХАРАГДАХГҮЙ (хэрэглэгч нэрээ нууцалж чадна — 0015).
+  /**
+   * 🆕 2026-10-07 — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «бүх хэсэгт Зар оруулах үед Нэр
+   *    оруулдаг байх … байгууллагынхаа өмнөөс зар оруулж байвал зарын
+   *    мэдээлэл дээр өөрийх нь нэр нь гарах нь зохимжгүй юм».
+   *    ⇒ Дараалал нь ОДОО **форм дээр оруулсан нэр (`listing.contact_name`)
+   *      → профайлын нэр (`display_name`) → ерөнхий төлөв**. Ингэснээр
+   *      хэрэглэгч зарын «Нэр» талбарт байгууллагын нэрээ бичвэл зар дээр
+   *      ЯГ ТЭР нэр гарна (өөрийн нэр биш) ✓.
+   *    ⚠️ Урьд нь `display_name` (профайлын нэр) түрүүлж байв ⇒ форм дээр
+   *      бичсэн нэр үл хайхрагдаж, байгууллагын зар дээр хувь хүний нэр
+   *      гардаг байв ✗ (яг зассан асуудал).
+   * ⚠️ Жинхэнэ нэр (`profiles.name`) нь НИЙТЭД ХАРАГДАХГҮЙ (0015) — `author`
+   *    нь `show_identity = false` үед хоосон ирдэг тул `contact_name` үлдэнэ ✓
+   */
   const sellerName =
-    (author && author.displayName) || listing.contact_name || 'Холбоо барих хүн';
+    listing.contact_name || (author && author.displayName) || 'Холбоо барих хүн';
+
+  /**
+   * 🗺 ГАЗРЫН ЗУРГИЙН ГАНЦ ПИН (2026-10-07).
+   * ⚠️ Төв нь `mapCenterFor(listing)` — ⓵ бодит пин → ⓶ хороо → ⓷ дүүрэг →
+   *    ⓸ хот → ⓹ анхдагч. Тиймээс СОЛБИЦОЛГҮЙ ЗАР ч газрын зурагтай гарна ✓
+   *    (хэрэглэгчийн хүсэлт: «газрын зургийг … Бүх зар дээр»).
+   * ⚠️ `MapView` нь `latitude`/`longitude`-тай зарыг л зурдаг тул пиний утгыг
+   *    төвийн координатаар дүүргэж дамжуулна ✓
+   */
+  const mapPoint = mapCenterFor(listing);
+  const mapListing = {
+    id: listing.id,
+    property_type: listing.property_type,
+    price: listing.price,
+    attrs: listing.attrs,
+    latitude: mapPoint.lat,
+    longitude: mapPoint.lng,
+  };
 
   // «Элссэн огноо» — «Элссэн огноо 3-р сар, 2021» загвар
   const joinedAt = author && author.createdAt ? new Date(author.createdAt) : null;
@@ -538,6 +570,26 @@ export default function ListingDetailClient({ id }) {
               <p className="whitespace-pre-line text-[15px] leading-[1.8] text-gray-600">{listing.description}</p>
             </section>
           )}
+
+          {/* ===== 🗺 ЗАРЫН ДЭД БАЙРШИЛ (unegui.mn хэв, 2026-10-07) =====
+              ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «газрын зургийг байж Unegui.mn шиг
+                 харуулдаг байя, Бүх зар дээр» ⇒ газрын зураг нь БҮХ зарт,
+                 ҮНДСЭН БАГАНАД (галерей/шинж/тайлбарын дараа), «Зарын дэд
+                 байршил: <хаяг>» гарчгийн дор гарна ✓
+              ⚠️ Урьд нь газрын зураг нь БАРУУН баганад, зөвхөн солбицолтой үед
+                 гардаг байв (`listing.latitude && listing.longitude`) — тэр нь
+                 ХАСАГДАВ ✗ (одоо зөвхөн ЭНД, нэг л газар гаргана ✓)
+              ⚠️ Төв нь `mapPoint` (`mapCenterFor` — солбицолгүй зар ч хороо/
+                 дүүрэг/хотын төв рүү буулгана) ✓ */}
+          <section data-component="ListingMap" className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white">
+            <h2 className="border-b border-gray-100 px-5 py-4 text-base font-semibold text-gray-800">
+              Зарын дэд байршил:{' '}
+              <span className="font-normal text-gray-500">{address || NO_LOCATION_LABEL}</span>
+            </h2>
+            <div className="h-[320px] w-full">
+              <MapView listings={[mapListing]} />
+            </div>
+          </section>
         </div>
 
         {/* ===== БАРУУН БАГАНА (ХОЛБОО БАРИХ) ===== */}
@@ -683,11 +735,8 @@ export default function ListingDetailClient({ id }) {
             </details>
           )}
 
-          {listing.latitude && listing.longitude && (
-            <div className="h-[280px] overflow-hidden rounded-xl border border-gray-200">
-              <MapView listings={[listing]} />
-            </div>
-          )}
+          {/* 🗺 ГАЗРЫН ЗУРАГ 2026-10-07-нд БАРУУН баганаас ХАСАГДАВ — одоо
+              ҮНДСЭН БАГАНАД («Зарын дэд байршил» гарчигтай), БҮХ зарт гарна ✓ */}
         </aside>
       </div>
     </div>

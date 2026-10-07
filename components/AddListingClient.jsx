@@ -1441,6 +1441,15 @@ export default function AddListingClient() {
   //    талбарууд нь `rooms`/`floor`/`build_year` … тусдаа БАГАНА дээр.
   //    Бусад хэсэг (авто/ажил/компьютер/бараа/үйлчилгээ) нь `attrs` jsonb.
   const isRealEstate = (form.section || 'real-estate') === 'real-estate';
+  /**
+   * 🖼 ЗУРАГ ОРУУЛАХ ЭСЭХ (2026-10-07) — хэрэглэгчийн хүсэлт: «Зөвхөн Ажлын
+   *    зар дээр Зураг оруулах хэсгийг болиулах».
+   * ⚠️ Зөвхөн 💼 `jobs` хэсэгт `false` — бусад БҮХ хэсэгт зураг хэвээр ✓
+   * ⚠️ Зураг нь заавал биш (`validateStep('media')` зөвхөн утас шаарддаг) тул
+   *    хасахад урсгал ХЭВДРЭХГҮЙ; хадгалах үед `images` нь `[]` болно ✓
+   * ⚠️ DB/query ХӨНДӨГДӨХГҮЙ (`listings.images` багана хэвээр) — migration 0 ✓
+   */
+  const allowImages = (form.section || 'real-estate') !== 'jobs';
   const subtypes = getSubtypes(form.section || 'real-estate');
   /**
    * 🛠 БҮЛГҮҮД (3 дахь түвшин, 2026-09-27) — зөвхөн `services` хэсэгт.
@@ -2299,7 +2308,9 @@ export default function AddListingClient() {
         ...form,
         phone: normalizePhone(form.phone).replace(/^\+/, ''),
         // Засах үед хуучин зургуудыг хадгалаад шинээр нэмсэнийг залгана
-        images: [...existingImages, ...uploaded],
+        // ⚠️ 💼 «Ажлын зар» (jobs) дээр зураг оруулах хэсэг ХАРАГДАХГҮЙ тул
+        //    `images` нь хоосон байна (`allowImages === false`) ✓
+        images: allowImages ? [...existingImages, ...uploaded] : [],
         // Тухайн төрөлд хамаарахгүй нэмэлт талбаруудыг хоосолж хадгална
         // ⚠️ 0016: үл хөдлөхийн талбарууд (өрөө, талбай, давхар…) нь ЗӨВХӨН
         //    үл хөдлөх хэсэгт утгатай — бусад хэсэгт хоосон хадгална.
@@ -3688,16 +3699,40 @@ export default function AddListingClient() {
                 <label>Холбоо барих утас *</label>
                 <input type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="99112233" required />
               </div>
-              {/* <div className="form-group">
-                <label>Холбоо барих хүн</label>
-                <input type="text" value={form.contactName} onChange={(e) => set('contactName', e.target.value)} placeholder="Таны нэр" />
-              </div> */}
+              {/* 👤 НЭР (2026-10-07) — хэрэглэгчийн хүсэлт: «бүх хэсэгт Зар оруулах
+                  үед Нэр оруулдаг байх». ⚠️ Урьд нь ЭНЭ талбар НУУГДМАЛ
+                  (коммент) байв → одоо БҮХ хэсэгт харагдана ✓
+                  ⚠️ Анхдагчаар нэвтэрсэн хэрэглэгчийн нэрээр бөглөгдөнө
+                  (`emptyForm() → contactName: displayName`). Хэрэглэгч
+                  БАЙГУУЛЛАГЫН өмнөөс зар оруулж байгаа бол өөрийн нэрээ БИШ
+                  байгууллагын нэрээ бичнэ — тэр нь зар дээр нийтэд харагдана.
+                  ⚠️ Утга нь `listings.contact_name` баганад хадгалагдана
+                  (`lib/queries.js → listingPayloadToRow`: `contact_name`) —
+                  ⚠️ DB багана (0001) ХЭВЭЭР, migration 0 ✓ */}
+              <div className="form-group">
+                <label>Нэр</label>
+                <input
+                  type="text"
+                  value={form.contactName}
+                  onChange={(e) => set('contactName', e.target.value)}
+                  placeholder="Таны нэр эсвэл байгууллагын нэр"
+                />
+                <p className="form-hint">
+                  Зар дээр харагдах нэр. Байгууллагын өмнөөс зар оруулж байгаа бол
+                  байгууллагын нэрээ бичнэ үү.
+                </p>
+              </div>
             </div>
             </div>
 
             {/* ═══ 5-р алхам (үргэлжлэл) · ЗУРАГ — одоогийн ба шинэ зураг
                 ⚠️ 2026-10-05 (57): `media`-тай ЯГ ИЖИЛ хаалт — 🖥 дээр 3 дахь
                    хуудсанд (💰 Үнэ + 📝 Тайлбар-ын дараа) хамт харагдана ✓ */}
+            {/* 🖼 ЗУРАГ ОРУУЛАХ — 💼 «Ажлын зар» (jobs) дээр БҮРЭН ХАРАГДАХГҮЙ
+                (хэрэглэгчийн хүсэлт: «Зөвхөн Ажлын зар дээр Зураг оруулах хэсгийг
+                болиулах»). ⚠️ `allowImages` = `section !== 'jobs'` — бусад хэсэгт
+                ХЭВЭЭР ✓. Блок бүхэлдээ нөхцөлтэй (пикер, одоогийн/шинэ зураг). */}
+            {allowImages && (
             <div data-step-block="media-images" className={step === 4 ? '' : step === 2 || step === 3 ? 'hidden sm:block' : 'hidden'}>
             {isEdit && existingImages.length > 0 && (
               <div className="form-group">
@@ -3777,6 +3812,7 @@ export default function AddListingClient() {
               )}
             </div>
             </div>
+            )}
 
             {/* 🪜 АЛХМЫН НАВИГАЦ — Буцах / Үргэлжлүүлэх / Нийтлэх
                 📱 2026-10-02 — 3-Р АЛХАМ (📋 Дэлгэрэнгүй) дээр мобайл нь

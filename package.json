@@ -28,6 +28,7 @@
     "test:card": "node scripts/test-card.mjs",
     "test:edit-btn": "node scripts/test-edit-btn.mjs",
     "test:share-btn": "node scripts/test-share-btn.mjs",
+    "test:detail-ui": "node scripts/test-detail-ui.mjs",
     "test:jobs": "node scripts/test-jobs.mjs",
     "test:payments": "node scripts/test-payments.mjs",
     "test:attrMulti": "node scripts/test-attr-multi.mjs",
