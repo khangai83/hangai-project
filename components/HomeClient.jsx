@@ -186,32 +186,19 @@ function parseListParam(raw) {
 }
 
 /**
- * 🎨 НҮҮР ХУУДСНЫ ХЭСГИЙН КАРТЫН ӨНГӨ (2026-10-07, хэрэглэгчийн хүсэлт:
- *    «Үл хөдлөх, Автомашин, Ажлын зар гэх мэт эдгээр картуудаа ийм болгоё»
- *    + жишээ зураг — пастел дэвсгэртэй, бөөрөнхий, icon нь төвд том карт).
+ * 🎨 НҮҮР ХУУДСНЫ ХЭСГИЙН КАРТ (2026-10-07, хэрэглэгчийн хүсэлт).
  *
- * ⚠️ Утга нь `SECTIONS`-ийн `value`-тэй ЯГ тохирно (12 хэсэг) — шинэ хэсэг
- *    нэмэгдвэл энд ч мөр нэмнэ; олдохгүй бол `bg-gray-100` (нейтрал) руу унана ✓
- * ⚠️ Зөвхөн Tailwind-ийн `*-100` (маш цайвар пастел) сонгосон — тод өнгө нь
- *    карт дээрх ХАР тексттэй (gray-900) мууддаг тул ✓
- * ⚠️ ХҮЙТЭН/ДУЛААН албан ёсны gray нь `tailwind.config.js`-д дарж бичигдсэн
- *    ч бусад өнгө (violet/sky/amber …) нь Tailwind-ийн анхдагч — ОРШИХ ✓
- * 🔍 Хайх үг: SECTION_TILE_TONE, tile өнгө, пастел карт
+ * ✏️ 2 дахь хүсэлт («бүх 12 картын пастел дэвсгэрийг аваад цагаан карт
+ *    болгох»): өмнөх `SECTION_TILE_TONE` (12 хэсэгт 12 пастел өнгө)
+ *    БҮРЭН АРИЛАВ ⇒ карт бүр одоо ЦАГААН:
+ *      `bg-white` + `border border-gray-200` + `shadow-card` (`.section-card`-ийн
+ *      ИЖИЛ хэлбэр). Сонгосон → `ring-2 ring-primary/60`.
+ * ⚠️ ХҮРЭЭ/СҮҮДЭР ЗААВАЛ ХЭРЭГТЭЙ: хуудасны дэвсгэр нь `bg-gray-50` (крем) тул
+ *    цагаан карт хүрээ/сүүдэргүй бол дэвсгэрээс ялгарахгүй ✗
+ * ⚠️ Өнгө нь ЗӨВХӨН `SECTIONS`-ийн `value`-ээр биш — нэг л хэв маяг тул
+ *    тусдаа map ХЭРЭГГҮЙ болов ✓
+ * 🔍 Хайх үг: tile карт, цагаан карт, пастел арилгав
  */
-const SECTION_TILE_TONE = {
-  'real-estate': 'bg-violet-100',
-  auto: 'bg-sky-100',
-  jobs: 'bg-amber-100',
-  computers: 'bg-indigo-100',
-  furniture: 'bg-rose-100',
-  home: 'bg-emerald-100',
-  electric: 'bg-yellow-100',
-  construction: 'bg-orange-100',
-  equipment: 'bg-cyan-100',
-  travel: 'bg-teal-100',
-  hobby: 'bg-green-100',
-  services: 'bg-fuchsia-100',
-};
 
 /**
  * 🛠 ДЭД ТӨРЛИЙН НЭГ МӨР + шошго — 3 газарт ижил markup хэрэглэгддэг тул
@@ -2847,17 +2834,22 @@ export default function HomeClient() {
                       өндөртэй (эгнээ эгц, эмх цэгцтэй) ✓
              🎨 2026-10-07 (хэрэглэгчийн хүсэлт: «Үл хөдлөх, Автомашин, Ажлын
                 зар гэх мэт эдгээр картуудаа ийм болгоё» + жишээ зураг):
-                ХАВТГАЙ (flat, emoji + нэр) загвар → **ПАСТЕЛ КАРТ** болов —
-                   • карт бүр өөрийн ЗӨӨЛӨН дэвсгэр өнгөтэй (`SECTION_TILE_TONE`,
-                     дээр — 12 хэсэгт 12 өнгө), `rounded-2xl` (бөөрөнхий)
+                ХАВТГАЙ (flat, emoji + нэр) загвар → **КАРТ** болов —
+                   • ✏️ 2 дахь хүсэлт (2026-10-07: «бүх 12 картын пастел
+                     дэвсгэрийг аваад цагаан карт болгох»): `SECTION_TILE_TONE`
+                     пастел өнгө БҮРЭН АРИЛАВ ⇒ карт бүр ЦАГААН (`bg-white` +
+                     `border border-gray-200` + `shadow-card`), `rounded-2xl`
+                     (⚠️ хуудасны дэвсгэр `bg-gray-50` тул хүрээ/сүүдэр нь
+                     картыг ялгана ✓)
                    • нэр нь картын ДЭЭД талд ХАР BOLD (`text-[13px] sm:text-[14px]`,
                      `line-clamp-2` — урт нэр «Компьютер, Дагалдах хэрэгсэл» хүрээнд
                      багтана ✓), icon нь доор ТӨВД ТОМ emoji (`text-[34px] sm:text-[40px]`)
-                   • 🐭 HOVER EFFECT: карт нь `-translate-y-1` дээш + `shadow-lg`
-                     сүүдэр + icon нь `scale-110` томорч «нааш хөдөлж» байна ✓
+                   • 🐭 HOVER EFFECT: карт нь `-translate-y-1` дээш +
+                     `shadow-card-hover` сүүдэр + `hover:border-gray-300` + icon нь
+                     `scale-110` томорч «нааш хөдөлж» байна ✓
                      (бүгд `duration-200 ease-out` — зөөлөн)
-                   • сонгосон → `ring-2 ring-primary/60` (цагираг тодорхойлно;
-                     ⚠️ дэвсгэр өнгө нь хэвээр — пастел дээр цагираг тод харагдана ✓)
+                   • сонгосон → `ring-2 ring-primary/60` + `border-primary/40`
+                     (цагираг тодорхойлно ✓)
              ⚠️ ХАМГААЛАГДСАН ГЭРЭЭ (тест): `.tile-grid button[role="tab"]` нь
                 ХЭВЭЭР 12 ширхэг (`cdp:services` ⑧), tile бүрийн TEXT нь
                 `<нэр> <emoji>` ХЭВЭЭР (`includes('Ажил, Үйлчилгээ')` ✓ — emoji
@@ -2868,7 +2860,6 @@ export default function HomeClient() {
           <div className="tile-grid grid auto-rows-fr grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" role="tablist" aria-label="Зарын хэсэг">
             {SECTIONS.map((s) => {
               const on = s.value === section;
-              const tone = SECTION_TILE_TONE[s.value] || 'bg-gray-100';
               return (
                 <button
                   key={s.value}
@@ -2877,10 +2868,10 @@ export default function HomeClient() {
                   aria-selected={on}
                   onClick={() => changeSection(s.value)}
                   title={s.label}
-                  className={`group flex h-full min-h-[104px] w-full flex-col gap-1 rounded-2xl px-3.5 pb-3 pt-3 text-left transition-all duration-200 ease-out ${tone} ${
+                  className={`group flex h-full min-h-[104px] w-full flex-col gap-1 rounded-2xl border bg-white px-3.5 pb-3 pt-3 text-left shadow-card transition-all duration-200 ease-out ${
                     on
-                      ? 'ring-2 ring-primary/60'
-                      : 'hover:-translate-y-1 hover:shadow-lg'
+                      ? 'border-primary/40 ring-2 ring-primary/60'
+                      : 'border-gray-200 hover:-translate-y-1 hover:border-gray-300 hover:shadow-card-hover'
                   }`}
                 >
                   <span className="min-w-0 text-[13px] font-bold leading-tight text-gray-900 line-clamp-2 sm:text-[14px]">

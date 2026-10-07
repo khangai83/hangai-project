@@ -10,8 +10,11 @@ import { savedSearchDescriptor } from '../lib/savedSearch.mjs';
  * 🔖 «Таалагдсан хайлтууд» — unegui.mn-ийн хэв маягтай жагсаалт
  * (2026-10-06, хэрэглэгчийн хүсэлт: «unegui.mn шиг хайлтаа гоё хадгалдаг болъё»).
  *
- * Мөр бүр: ① «Категори: …» ② «Байршил: …» — баруун талд
- * **«Илэрц харуулах»** (хадгалсан линк рүү) + **«устгах»** товч.
+ * ✏️ 2026-10-07: МӨР (row) → **КАРТ** сүлжээ (хэрэглэгчийн хүсэлт — «Таалагдсан
+ *    хайлтуудын үр дүн хэсгийг бас карт болгоод өгөөч»). Карт бүр ЦАГААН
+ *    (`rounded-2xl border border-gray-200 bg-white shadow-card` + hover
+ *    `-translate-y-1 shadow-card-hover`): ① «Категори: …» ② «Байршил: …» —
+ *    доод мөрөнд **«Илэрц харуулах»** (хадгалсан линк рүү) + **«устгах»** товч.
  *
  * ⚠️ Хадгалалт: нэвтэрсэн бол Supabase (`saved_searches` — 0031), зочин бол
  *    localStorage. Сонголт/шинэчлэл нь `lib/savedSearches.js → useSavedSearches`
@@ -82,22 +85,26 @@ export default function SavedSearchesClient() {
           </div>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white" data-saved-searches-list>
+        <div
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          data-saved-searches-list
+        >
           {rows.map((it) => (
             <div
               key={it.id || it.url}
               data-saved-search-row
-              className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-gray-100 px-5 py-4 last:border-b-0"
+              title={it.desc.title}
+              className="flex flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-card transition-all duration-200 ease-out hover:-translate-y-1 hover:border-gray-300 hover:shadow-card-hover"
             >
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1 break-words">
                 {it.desc.category ? (
-                  <p className="text-[14px] text-gray-500">
+                  <p className="text-[13px] text-gray-500">
                     Категори:{' '}
                     <b className="font-semibold text-gray-900">{it.desc.category}</b>
                   </p>
                 ) : null}
                 {it.desc.location ? (
-                  <p className="mt-0.5 text-[14px] text-gray-500">
+                  <p className="mt-1 text-[13px] text-gray-500">
                     Байршил:{' '}
                     <b className="font-semibold text-gray-900">{it.desc.location}</b>
                   </p>
@@ -106,10 +113,10 @@ export default function SavedSearchesClient() {
                   <p className="font-semibold text-gray-900">Бүх зар</p>
                 ) : null}
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="mt-4 flex items-center gap-2 border-t border-gray-100 pt-3">
                 <Link
                   href={it.url}
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm flex-1 justify-center"
                   data-saved-search-open
                   title="Хадгалсан хайлтын үр дүнг харах"
                 >
@@ -117,7 +124,7 @@ export default function SavedSearchesClient() {
                 </Link>
                 <button
                   type="button"
-                  className="btn btn-outline btn-sm"
+                  className="btn btn-outline btn-sm shrink-0"
                   data-saved-search-remove
                   onClick={() => removeOne(it)}
                 >
