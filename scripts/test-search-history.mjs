@@ -200,7 +200,7 @@ t('⑮ ГЭРЭЭ: AppProviders нь Мессежийн ДАРАА цагийн 
   assert.match(app, /h-\[14px\] w-\[14px\]/, 'footer-ийн ClockIcon (14px) алга ✗');
 });
 
-t('⑯ ГЭРЭЭ: SearchHistoryClient — карт (leaf/дахин хайх/устгах + дэгээнүүд)', () => {
+t('⑯ ГЭРЭЭ: SearchHistoryClient — карт (leaf + БҮТЭН КАРТ линк + «Хасах»)', () => {
   const c = codeOnly(readSrc('components/SearchHistoryClient.jsx'));
   assert.match(c, /historyDescriptor\(it\.url\)/, 'шошгыг URL-ээс бодохгүй ✗');
   assert.match(c, /historyTimeAgo\(it\.createdAt\)/, 'харьцангуй цаг алга ✗');
@@ -208,8 +208,13 @@ t('⑯ ГЭРЭЭ: SearchHistoryClient — карт (leaf/дахин хайх/у
   assert.match(c, /data-search-history-row/);
   assert.match(c, /data-search-history-open/);
   assert.match(c, /data-search-history-remove/);
-  assert.match(c, /Дахин хайх/, '«Дахин хайх» товч алга ✗');
   assert.match(c, /desc\.leaf/, 'leaf харуулахгүй ✗');
+  // ✏️ 2026-10-07: карт БҮХЭЛДЭЭ дарагдана — «Дахин хайх» товч ХАСАГДАВ ✓
+  assert.ok(!/Дахин хайх/.test(c), '«Дахин хайх» товч ХАСАГДААГҮЙ ✗');
+  assert.match(c, /absolute inset-0 z-10/, 'бүтэн картын overlay линк алга ✗');
+  assert.match(c, /href=\{it\.url\}/, 'картын линк хайлтын URL рүү биш ✗');
+  assert.match(c, /Хасах/, '«Хасах» товч алга ✗');
+  assert.ok(!/>\s*устгах\s*</.test(c), '«устгах» товчны нэр ХӨНДӨӨГДӨӨГҮЙ ✗');
 });
 
 t('⑰ ГЭРЭЭ: /history хуудас SearchHistoryClient-ийг render хийнэ', () => {

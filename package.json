@@ -52,6 +52,7 @@
     "cdp:sections": "node scripts/cdp-sections.mjs",
     "cdp:services": "node scripts/cdp-services.mjs",
     "cdp:saved-searches": "node scripts/cdp-saved-searches.mjs",
+    "cdp:search-history": "node scripts/cdp-search-history.mjs",
     "cdp:search": "node scripts/cdp-search.mjs",
     "test:messages": "node scripts/test-messages.mjs",
     "test:youtube": "node scripts/test-youtube.mjs",

@@ -22,7 +22,13 @@ import { groupDigits } from '../lib/rangeFilter.mjs';
  *   ① ГОЛ шошго — категорийн сүүлийн нэр (`leaf`) + баруун дээд буланд 🕒 цаг
  *   ② Бүтэн категорийн зам («Цахилгаан бараа — Угаалгын машин»)
  *   ③ 📍 Байршил  ④ 🔑 хайсан түлхүүр үг  ⑤ 🛏 өрөө / 💰 үнэ (chip)
- *   доод мөрөнд **«Дахин хайх»** (хадгалсан линк рүү) + **«устгах»** товч
+ *   Доод баруун буланд **«Хасах»** товч.
+ *
+ * ✏️ 2026-10-07 (2): КАРТ БҮХЭЛДЭЭ ДАРАГДАНА (хэрэглэгчийн хүсэлт — «карт руу
+ *   орохдоо дахин хайх биш зүгээр л тухайн card дээрээ click хийхэд ордог
+ *   байхаар»). Картыг бүрхсэн `absolute inset-0` линк (`<Link href={it.url}>`,
+ *   дэгээ `data-search-history-open`) + түүнээс ДЭЭГҮҮР (`relative z-20`)
+ *   «Хасах» товч ⇒ **«Дахин хайх» товч ХАСАГДАВ** ✓
  *
  * ⚠️ Хадгалалт: нэвтэрсэн бол Supabase (`search_history` — 0032), зочин бол
  *    localStorage. Бүртгэл/устгалт нь `lib/searchHistory.js → useSearchHistory`
@@ -155,9 +161,11 @@ function HistoryEmpty({ openAuth }) {
 
 /**
  * 🃏 Нэг хайлтын КАРТ — категорийн сүүлийн нэр, зам, байршил, түлхүүр үг,
- *    өрөө/үнэ (chip) ба «Дахин хайх»/«устгах» үйлдлүүд.
- * ⚠️ CDP/тестийн тогтвортой дэгээ: `data-search-history-open` /
- *    `data-search-history-remove` (`SavedSearchesClient`-тэй ижил зарчим ✓)
+ *    өрөө/үнэ (chip). КАРТ БҮХЭЛДЭЭ дарагдана (бүрхсэн `absolute inset-0`
+ *    линк → хайлтын үр дүн); доод мөрөнд ЗӨВХӨН «Хасах» товч (overlay-с
+ *    дээгүүр `relative z-20`).
+ * ⚠️ CDP/тестийн тогтвортой дэгээ: `data-search-history-open` (картын линк) /
+ *    `data-search-history-remove` («Хасах» товч) ✓
  */
 function HistoryCard({ it, onRemove }) {
   const { desc } = it;
@@ -169,8 +177,17 @@ function HistoryCard({ it, onRemove }) {
     <div
       data-search-history-row
       title={desc.title}
-      className="flex flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-card transition-all duration-200 ease-out hover:-translate-y-1 hover:border-gray-300 hover:shadow-card-hover"
+      className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-card transition-all duration-200 ease-out hover:-translate-y-1 hover:border-gray-300 hover:shadow-card-hover"
     >
+      {/* ✏️ КАРТ БҮХЭЛДЭЭ дарагдана — бүрхсэн линк (агуулга нь доор, z-10-аар дээр) */}
+      <Link
+        href={it.url}
+        className="absolute inset-0 z-10 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        aria-label={`${desc.leaf || 'Бүх зар'} — хайлтын үр дүнг нээх`}
+        data-search-history-open
+        title="Энэ хайлтын үр дүнг нээх"
+      />
+
       <div className="flex items-start justify-between gap-2">
         <span className="inline-flex max-w-[75%] items-center break-words rounded-lg bg-primary/10 px-2.5 py-1 text-[14px] font-bold text-primary">
           {desc.leaf || 'Бүх зар'}
@@ -209,23 +226,18 @@ function HistoryCard({ it, onRemove }) {
         )}
       </div>
 
-      <div className="mt-4 flex items-center gap-2 border-t border-gray-100 pt-3">
-        <Link
-          href={it.url}
-          className="btn btn-primary btn-sm flex-1 justify-center"
-          data-search-history-open
-          title="Энэ хайлтын үр дүнг дахин харах"
-        >
-          Дахин хайх
-        </Link>
+      <div className="mt-4 flex items-center justify-between gap-2 border-t border-gray-100 pt-3">
+        <span className="text-[12px] font-semibold text-primary opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+          Үр дүнг харах →
+        </span>
         <button
           type="button"
-          className="btn btn-outline btn-sm shrink-0"
+          className="btn btn-outline btn-sm relative z-20 shrink-0"
           data-search-history-remove
-          title="Түүхээс устгах"
+          title="Түүхээс хасах"
           onClick={() => onRemove(it)}
         >
-          устгах
+          Хасах
         </button>
       </div>
     </div>
