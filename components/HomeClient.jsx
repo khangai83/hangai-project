@@ -639,7 +639,18 @@ function HeaderSearchBar({
   };
 
   return (
-    <form role="search" onSubmit={handleSubmit} className="flex w-full min-w-0 items-center gap-2">
+    /* 🖥📏 2026-10-07 (60) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «home ийн search bar арай л урт
+       юм аа, талиг нь хасаач» ⇒ ТОЛГОЙН хайлтын мөрийн ӨРГӨНИЙГ ХАГАСЛАВ.
+       ⚠️ `variant='header'` (🖥 ≥xl) дээр л `max-w-[480px]` + `mx-auto` — слат
+       (`AppProviders` → `flex-1 justify-between`-ийн дунд) дотор төвдөж, лого ↔
+       баруун товчнуудын завсарт 480px-ээр хязгаарлагдана; урд нь слатыг БҮТЭН
+       дүүргэж (~800px) хэт урт харагддаг байв ✗
+       📱 `variant='mobile'` (толгойн доорх наалдамхай мөр) нь БҮТЭН өргөн ХЭВЭЭР ✓ */
+    <form
+      role="search"
+      onSubmit={handleSubmit}
+      className={`flex w-full min-w-0 items-center gap-2 ${isHeader ? 'mx-auto max-w-[480px]' : ''}`}
+    >
       {/* 🗑 2026-10-07: ТОЛГОЙН «Ангилал» pill (`<select>`) БҮРЭН ХАСАГДАВ
           (хэрэглэгчийн хүсэлт: «Search-ийн өмнө байгаа Ангилал цэсийг үгүй
            болго»). ⏳ Мобайл хувилбараас 2026-10-04 (34)-д аль хэдийн хасагдсан
