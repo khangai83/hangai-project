@@ -7,15 +7,15 @@
  *
  * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ:
  *   ① 🏠 үл хөдлөх рүү ОРОХ үед панель ЗӨВХӨН категори
- *      («Үл хөдлөх зарна / Үл хөдлөх түрээслүүлнэ / Бүгд») харуулна —
+ *      («Үл хөдлөх зарна / Үл хөдлөх түрээслүүлнэ» — 🗑 «Бүгд» 2026-10-07-д ХАСАГДАВ) харуулна —
  *      дэд төрөл (`Орон сууц`, `Газар`, …) ХАРАГДАХГҮЙ ✓
  *   ② «Үл хөдлөх зарна» / «…түрээслүүлнэ» сонгомогц Л дэд төрлүүд (8)
  *      багана болж гарна (`getPropertyTypeLabel(t, category)`) ✓
- *   ③ «Бүгд» дарвал дэд төрлүүд дахин ХААГДАЖ, ерөнхий харагдац руу буцна ✓
+ *   ③ 🗑 «Бүгд» (`all`) сонголт DOM-д ОГТ БАЙХГҮЙ ✓
  *   ④ Категоригүй хэсэг (🚗 Автомашин) ХӨНДӨГДӨӨГҮЙ — сегмент БАЙХГҮЙ,
  *      дэд төрлүүд ШУУД харагдана ✓
  *   ⑤ 🔗 Линкээр (`?category=rent`) орж ирэхэд дэд төрлүүд ШУУД нээлттэй ✓
- *   ⑥ 📱 390px: БОГИНО шошго («Зарна / Түрээслүүлнэ / Бүгд»), орох үед дэд
+ *   ⑥ 📱 390px: БОГИНО шошго («Зарна / Түрээслүүлнэ»), орох үед дэд
  *      төрөл БАЙХГҮЙ, хэвтээ гүйлт (overflow) 0 ✓
  *   ⑦ 🗑 МОБАЙЛ ХАЙЛТЫН МӨРӨНД «Хэсэг» `<select>` БАЙХГҮЙ (2026-10-04 (34):
  *      хэрэглэгчийн хүсэлт «home-search-mobile-section ийг … байхгүй болгоё»)
@@ -179,11 +179,11 @@ await go(`${BASE}/?section=real-estate`);
 await waitFor(`!!document.querySelector('[data-category-value]')`);
 const d0 = await panelUi();
 check('🏠 Хэсгийн панель нээгдэв (`[data-section-panel]`)', d0.panel === true);
-check('🎛 Категори 3 сегмент (sell → rent → all)',
-  d0.seg === 3 && d0.values.join(',') === 'sell,rent,all', `values=[${d0.values.join(',')}]`);
-check('🎛 Анхдагч идэвхтэй нь «Бүгд» (`all`)', d0.active.join(',') === 'all', `active=[${d0.active.join(',')}]`);
-check('🏷 Бүтэн шошго (🖥 «Үл хөдлөх зарна / …түрээслүүлнэ / Бүгд»)',
-  d0.labels.join('|') === 'Үл хөдлөх зарна|Үл хөдлөх түрээслүүлнэ|Бүгд', d0.labels.join('|'));
+check('🎛 Категори 2 линк (sell → rent; «Бүгд» 2026-10-07-д ХАСАГДАВ)',
+  d0.seg === 2 && d0.values.join(',') === 'sell,rent', `values=[${d0.values.join(',')}]`);
+check('🎛 Анхдагч: идэвхтэй категори БАЙХГҮЙ (ерөнхий харагдац)', d0.active.length === 0, `active=[${d0.active.join(',')}]`);
+check('🏷 Бүтэн шошго (🖥 «Үл хөдлөх зарна / …түрээслүүлнэ», «Бүгд» БАЙХГҮЙ)',
+  d0.labels.join('|') === 'Үл хөдлөх зарна|Үл хөдлөх түрээслүүлнэ', d0.labels.join('|'));
 check('🆕 ОРОХ ҮЕД дэд төрөл ХАРАГДАХГҮЙ (0 мөр — хүсэлт «бүү харуул» ✓)',
   d0.subs === 0, `subs=${d0.subs}`);
 check('🆕 Панелийн ТЕКСТЭД «Орон сууц»/«Газар» БАЙХГҮЙ',
@@ -195,30 +195,35 @@ check('🎛 «Үл хөдлөх зарна» дардагдав', (await clickCa
 await waitFor(`document.querySelectorAll('[data-section-panel] button[role="tab"]').length > 0`);
 const d1 = await panelUi();
 check('🆕 «Үл хөдлөх зарна» сонгомогц дэд төрлүүд ГАРНА (8)', d1.subs === 8, `subs=${d1.subs}`);
+check('🗑 Категори сонгомогц сонголт (зарна/түрээслүүлнэ) ХАРАГДАХГҮЙ', d1.seg === 0, `seg=${d1.seg}`);
 check('🆕 Эхний мөр «Орон сууц зарна» (категори нь шошгонд шингэв)',
-  d1.subFirst === 'Орон сууц зарна', String(d1.subFirst));
+  String(d1.subFirst).startsWith('Орон сууц зарна'), String(d1.subFirst));
 // ⚠️ `router.replace` нь click-ийн дараа НЭГ tick-д хийгддэг тул хүлээнэ ✓
 await waitFor(`decodeURIComponent(location.search).includes('category=sell')`);
 const uSell = dec(await url());
 check('🔗 URL `?category=sell` болов', uSell.includes('category=sell'), uSell);
 
 // ─────── ③ «Үл хөдлөх түрээслүүлнэ» → ТҮРЭЭСИЙН ДЭД ТӨРЛҮҮД ───────
+//  ⚠️ 2026-10-07: категори сонгосон үед сонголт ХАРАГДАХГҮЙ тул эхлээд буцаана ✓
+await go(`${BASE}/?section=real-estate`);
+await waitFor(`!!document.querySelector('[data-category-value="rent"]')`);
 check('🎛 «Үл хөдлөх түрээслүүлнэ» дардагдав', (await clickCat('rent')) === 'OK');
 await waitFor(`/Орон сууц түрээслүүлнэ/.test(document.querySelector('[data-section-panel]') ? document.querySelector('[data-section-panel]').innerText : '')`);
 const d2 = await panelUi();
 check('🆕 Түрээс дээр «Орон сууц түрээслүүлнэ» гарна',
-  d2.subFirst === 'Орон сууц түрээслүүлнэ', String(d2.subFirst));
+  String(d2.subFirst).startsWith('Орон сууц түрээслүүлнэ'), String(d2.subFirst));
 await waitFor(`decodeURIComponent(location.search).includes('category=rent')`);
 const uRent = dec(await url());
 check('🔗 URL `?category=rent` болов', uRent.includes('category=rent'), uRent);
 
-// ─────── ④ «Бүгд» → ДЭД ТӨРЛҮҮД ДАХИН ХААГДАВ ───────
-check('🎛 «Бүгд» дардагдав', (await clickCat('all')) === 'OK');
-await waitFor(`document.querySelectorAll('[data-section-panel] button[role="tab"]').length === 0`);
+// ─────── ④ 🗑 «Бүгд» БАЙХГҮЙ + буцах зам ───────
+const hasAll = await evalJs(`document.querySelectorAll('[data-category-value="all"]').length`);
+check('🗑 «Бүгд» (`all`) сонголт DOM-д ОГТ БАЙХГҮЙ', hasAll === 0, `count=${hasAll}`);
+await go(`${BASE}/?section=real-estate`);
+await waitFor(`!!document.querySelector('[data-category-value="sell"]')`);
 const d3 = await panelUi();
-check('🆕 «Бүгд» → дэд төрлүүд дахин ХААГДАВ (ерөнхий харагдац)', d3.subs === 0, `subs=${d3.subs}`);
-check('🔗 URL цэвэр болов (`category` параметр арилав)',
-  !dec(await url()).includes('category='), dec(await url()));
+check('🆕 Хэсэг рүү буцвал дэд төрлүүд ДАХИН ХААГДАВ (ерөнхий харагдац)',
+  d3.subs === 0 && d3.seg === 2, `subs=${d3.subs}, seg=${d3.seg}`);
 // ─────── ⑤ КАТЕГОРИГҮЙ ХЭСЭГ ХӨНДӨГДӨӨГҮЙ ───────
 await go(`${BASE}/?section=auto`);
 await waitFor(`!!document.querySelector('[data-section-panel] button[role="tab"]')`);
@@ -232,7 +237,7 @@ await go(`${BASE}/?section=real-estate&category=rent`);
 await waitFor(`document.querySelectorAll('[data-section-panel] button[role="tab"]').length > 0`);
 const l0 = await panelUi();
 check('🔗 Линкээр орж ирэхэд дэд төрлүүд ШУУД ГАРНА (8)', l0.subs === 8, `subs=${l0.subs}`);
-check('🔗 «Түрээслүүлнэ» сегмент идэвхтэй', l0.active.join(',') === 'rent', `active=[${l0.active.join(',')}]`);
+check('🗑 Линкээр ороход ч категори сонголт ХАРАГДАХГҮЙ (түрээс сонгогдсон)', l0.seg === 0, `seg=${l0.seg}`);
 
 // ─────── ⑦ 🔍 ТОЛГОЙН ХАЙЛТЫН МӨР — «Хэсэг» PILL ХЭВЭЭР / МОБАЙЛ НЬ АРИЛСАН ───────
 //  (2026-10-04 (34) — хэрэглэгчийн хүсэлт: «home-search-mobile-section ийг …
@@ -251,8 +256,8 @@ await rpc('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, devic
 await go(`${BASE}/?section=real-estate`);
 await waitFor(`!!document.querySelector('[data-category-value]')`);
 const m0 = await panelUi();
-check('📱 390px: БОГИНО шошго («Зарна / Түрээслүүлнэ / Бүгд»)',
-  m0.labels.join('|') === 'Зарна|Түрээслүүлнэ|Бүгд', m0.labels.join('|'));
+check('📱 390px: БОГИНО шошго («Зарна / Түрээслүүлнэ», «Бүгд» БАЙХГҮЙ)',
+  m0.labels.join('|') === 'Зарна|Түрээслүүлнэ', m0.labels.join('|'));
 check('📱 390px: орох үед дэд төрөл ХАРАГДАХГҮЙ', m0.subs === 0, `subs=${m0.subs}`);
 check('📱 390px: хэвтээ гүйлт БАЙХГҮЙ', m0.overflow <= 0, `overflow=${m0.overflow}`);
 check('📱 390px: «Зарна» дардагдав', (await clickCat('sell')) === 'OK');

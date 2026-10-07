@@ -2257,19 +2257,19 @@ t('📋 getAttrRows — 🏠 ҮЛ ХӨДЛӨХ (`attrFields: []`) → 0 мөр, 
   SECTIONS.forEach((s) => assert.deepEqual(getAttrRows(s.value, {}), []));
 });
 
-t('🖥📱 getSectionCategoryChoices — үл хөдлөхөд ЯГ 3 (sell→rent→all), бусад 11 хэсэгт `[]`', () => {
+t('🖥📱 getSectionCategoryChoices — үл хөдлөхөд ЯГ 2 (sell→rent; «Бүгд» ХАСАГДСАН), бусад 11 хэсэгт `[]`', () => {
   // ⚠️ 2026-10-04 (хэрэглэгчийн хүсэлт): «🏠 Үл хөдлөх» рүү орох үед
   //    «💰 Зарах / 🔑 Түрээслэх» гэсэн БОГИНО шошго БИШ, «Үл хөдлөх зарна /
-  //    Үл хөдлөх түрээслүүлнэ» гэсэн БҮТЭН шошго — ба «Бүгд» ХАМГИЙН СҮҮЛД
+  //    Үл хөдлөх түрээслүүлнэ» гэсэн БҮТЭН шошго. 🗑 2026-10-07 (хэрэглэгчийн
+  //    хүсэлт: «Бүгд гэсэн лалрыг ер нь байхгүй болго») — «Бүгд» ХАСАГДАВ
   assert.deepEqual(getSectionCategoryChoices('real-estate'), [
     { value: 'sell', label: 'Үл хөдлөх зарна', shortLabel: 'Зарна' },
     { value: 'rent', label: 'Үл хөдлөх түрээслүүлнэ', shortLabel: 'Түрээслүүлнэ' },
-    { value: 'all', label: 'Бүгд', shortLabel: 'Бүгд' },
   ]);
-  // ⚠️ Дараалал нь `CATEGORIES` массив (`[all, sell, rent]`) БИШ —
-  //    «Бүгд» ХАМГИЙН СҮҮЛД байх ЁСТОЙ ✓
+  // ⚠️ Дараалал: sell → rent; 🗑 «Бүгд» ХАСАГДСАН ✓
   const vals = getSectionCategoryChoices('real-estate').map((c) => c.value);
-  assert.deepEqual(vals, ['sell', 'rent', 'all']);
+  assert.deepEqual(vals, ['sell', 'rent']);
+  assert.ok(!vals.includes('all'), '«Бүгд» (`all`) сонголт ҮЛДСЭН байна ✗');
   // ⚠️ `CATEGORIES` ХӨНДӨӨГДӨӨГҮЙ (форм хуучнаараа) — зөвхөн нүүр хуудсны туслах
   assert.deepEqual(getSectionCategories('real-estate').map((c) => c.value), ['all', 'sell', 'rent']);
   // ⚠️ Бусад 11 хэсэгт категори сонголт БАЙХГҮЙ ⇒ `[]` (крашгүй ✓)

@@ -205,14 +205,14 @@ function parseListParam(raw) {
  *    зарлавал render бүрд ШИНЭ тип болж, React төлөвийг алдаж unmount
  *    хийнэ (`role="tab"`-ийн focus ч алдагдана) ✗
  */
-function SubtypeRow({ label, onSelect, bold = false }) {
+function SubtypeRow({ label, onSelect, count, bold = false }) {
   return (
     <button
       type="button"
       role="tab"
       aria-selected={false}
       onClick={onSelect}
-      className="group flex w-full break-inside-avoid items-start rounded-md px-2 py-1.5 text-left transition"
+      className="group flex w-full break-inside-avoid items-baseline gap-1.5 rounded-md px-2 py-1.5 text-left transition"
     >
       <span
         className={`line-clamp-2 overflow-hidden text-[14px] tracking-[-0.01em] text-ellipsis text-gray-900 sm:text-[15px] group-hover:text-primary ${
@@ -221,6 +221,15 @@ function SubtypeRow({ label, onSelect, bold = false }) {
       >
         {label}
       </span>
+      {/* 🔢 Зарын тоо (unegui.mn шиг СААРАЛ) — 2026-10-07 (хэрэглэгчийн хүсэлт:
+          «зураг хар даа»). ⚠️ ЗӨВХӨН `count` дамжуулсан үед харагдана —
+          нүүр хуудсны ХАВТГАЙ дэд төрөл `typeCounts`-ээс тоог өгнө; харин
+          `services`/`computers` бүлгийн мөрүүд count-гүй тул хөндөгдөхгүй ✓ */}
+      {typeof count === 'number' && (
+        <span className="shrink-0 text-[13px] font-normal text-gray-500 sm:text-[14px]">
+          {formatCount(count)}
+        </span>
+      )}
     </button>
   );
 }
@@ -1958,6 +1967,14 @@ export default function HomeClient() {
     [typeCounts]
   );
 
+  /**
+   * 🏷 ПАНЕЛИЙН ГАРЧИГ (2026-10-07) — категори сонгосон бол ТҮҮНИЙ нэр
+   *    (ж: «Үл хөдлөх зарна»), эс бөгөөс хэсгийн нэр (ж: «Үл хөдлөх»).
+   *    ⚠️ unegui.mn шиг: «Үл хөдлөх зарна» руу ороход толгой нь цор ганц
+   *    тэр нэрээр гарч, категори сонголт (зарна/түрээслүүлнэ) ХАРАГДАХГҮЙ ✓
+   */
+  const panelTitle = categoryChoices.find((c) => c.value === category)?.label || sec.label;
+
   /** Хуудасны гарчиг — «Бүх зар» / «Орон сууц түрээслүүлнэ 12» / «Автомашин 34» */
   const pageTitle = filters.propertyType
     ? getPropertyTypeLabel(filters.propertyType, category)
@@ -2460,7 +2477,7 @@ export default function HomeClient() {
                 title="Энэ хэсгийн БҮХ зарыг харах"
                 className="text-left text-2xl font-bold text-gray-900 transition hover:text-primary sm:text-[26px]"
               >
-                {sec.label}
+                {panelTitle}
                 {sectionTotal > 0 && (
                   <span className="ml-2 align-middle text-[17px] font-normal text-gray-500">{formatCount(sectionTotal)}</span>
                 )}
@@ -2484,7 +2501,11 @@ export default function HomeClient() {
                 → ЗҮҮН тийш эгнэсэн ХАВТГАЙ текст линк (unegui.mn шиг).
                 ⚠️ `data-category-value`/`aria-pressed`/богино-урт шошго
                    (hidden sm:inline / sm:hidden) БҮГД ХЭВЭЭР — CDP ✓ */}
-            {showCategories && categoryChoices.length > 0 && (
+            {/* ⚠️ 2026-10-07 (хэрэглэгчийн хүсэлт: «Үл хөдлөх зарна гээд орсон
+                байхад … сонголтоо бүү харуул»): категори СОНГОСОН бол
+                (`category !== 'all'`) энэ сонголт ХАРАГДАХГҮЙ — зөвхөн дэд
+                төрлүүд ба дээрх категорийн НЭР л үлдэнэ (unegui.mn шиг) ✓ */}
+            {showCategories && categoryChoices.length > 0 && category === 'all' && (
               <div className="mb-3 flex flex-wrap items-center gap-x-7 gap-y-1.5" role="group" aria-label="Зарах эсвэл түрээслэх">
                 {categoryChoices.map((c) => {
                   const active = category === c.value;
@@ -2532,6 +2553,7 @@ export default function HomeClient() {
                 <SubtypeRow
                   key={t}
                   label={getPropertyTypeLabel(t, category)}
+                  count={typeCounts[t]}
                   onSelect={() => setF('propertyType', t)}
                 />
               ))}
