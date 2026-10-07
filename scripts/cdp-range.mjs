@@ -291,10 +291,12 @@ const qYear = await url(48);
 check('📅 URL-д `attr_year_from=2015` болов', /attr_year_from=2015/.test(qYear), qYear);
 check('🗄 DB query нь `attrs->>year=gte.2015` болов', /attrs->>year=gte\.2015/.test(lastQuery()), lastQuery().slice(0, 140));
 
-// ═══════ ⑩ 🔍 HERO «Бүх хэсэг ▾» + 🔀 ЭРЭМБЭЛЭХ ═══════
+// ═══════ ⑩ 🔍 HERO ХАЙЛТЫН МӨР + 🔀 ЭРЭМБЭЛЭХ ═══════
 await go(49, BASE);
-const heroOpts = await evalJs(50, `document.querySelectorAll('[data-hero-section] option').length`);
-check('🔍 Hero-д «Бүх хэсэг ▾» сонголт гарлаа (12 хэсэг + 1)', heroOpts === 13, `${heroOpts} option`);
+// 🗑 2026-10-07: толгойн «Ангилал» pill (`<select>`, `data-hero-section`) бүрэн
+//    хасагдсан (хэрэглэгчийн хүсэлт) тул одоо DOM-д ОГТ БАЙХГҮЙ ✓
+const heroSel = await evalJs(50, `!!document.querySelector('[data-hero-section]')`);
+check('🗑 Хайлтын мөрөнд «Ангилал» pill БАЙХГҮЙ (2026-10-07-д хасагдсан)', heroSel === false);
 check('🔀 Эрэмбэлэх сонголт гарлаа (3 утга)',
   (await evalJs(51, `document.querySelectorAll('[data-listing-sort] option').length`)) === 3);
 listingReqs.length = 0;

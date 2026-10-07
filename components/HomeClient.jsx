@@ -14,7 +14,7 @@ import CarPicker from './CarPicker';
 // 🧩 ТОЛГОЙН МӨРНИЙ ИКОНУУД (2026-10-04 (28)) — emoji (`📋 📍 ▾ 🔍`) БИШ
 //    `currentColor` SVG: өнгө нь идэвхтэй/идэвхгүй төлвөөр солигдоно,
 //    OS бүр дээр ЯГ ижил харагдана ✓ (`components/HeaderIcons.jsx`)
-import { ChevronDownIcon, ListIcon, PinIcon, SearchIcon } from './HeaderIcons';
+import { ChevronDownIcon, PinIcon, SearchIcon } from './HeaderIcons';
 import { useToast, useUI, useAuth, useHeaderSlot } from './AppProviders';
 import {
   fetchListings, fetchPropertyTypeCounts, fetchProfilesByIds,
@@ -505,39 +505,29 @@ function FilterPill({ label, count, onClear, testKey, children }) {
  *
  * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (жишээ зурагтай): «хайлт хэсгийн вэб дээд хэсэгт болгож
  * өөрчил» — хайлтын мөр нь толгойн мөрөнд (лого ба баруун товчнуудын ДҮНД)
- * байрлана. Бүтэц нь `unegui.mn`-ийн хэвтэй ижил:
- *   [ ☰ Ангилал ▾ ] [ 🔍 <хайлтын талбар> ] [ Хайх ] [ 📍 Бүх байршил ]
+ * байрлана. Бүтэц:
+ *   [ 🔍 <хайлтын талбар> ] [ Хайх ] [ 📍 Бүх байршил ]
  *
  * ⚠️ HERO-ийн хуучин хэлбэр (зурагтай дэвсгэр) ХАСАГДАВ — мөр нь цул цагаан
- *    толгойн мөрөнд шилжив; `data-hero-section` (13 option) дэгээ ХЭВЭЭР ✓
- *    (`scripts/cdp-range.mjs` шинэ газраас ч олно ✓)
+ *    толгойн мөрөнд шилжив ✓
+ * 🗑 2026-10-07: «Ангилал» `<select>` pill БҮРЭН ХАСАГДАВ (мобайл 2026-10-04
+ *    (34), толгой 2026-10-07) — хэрэглэгчийн хүсэлт: «Search-ийн өмнө байгаа
+ *    Ангилал цэсийг үгүй болго» ⇒ мөр нь ХОЁУЛ хувилбарт ЯГ ИЖИЛ
+ *    ([🔍 талбар][Хайх][📍]). `data-hero-section` · `#home-search-section` ·
+ *    `#home-search-mobile-section` дэгээнүүд ОГТ БАЙХГҮЙ (CDP шалгана ✓);
+ *    хэсэг солих нь мөрний ЯГ доорх tile панелаар (`data-section-panel`) ✓
  * ⚠️ `variant`:
- *      • `'header'` — толгойн МӨР (≥xl, ≥1280px). `data-hero-section` дэгээг
- *        ЗӨВХӨН энэ хувилбар авна (CDP нь `[data-hero-section] option` === 13
- *        гэж шалгана — ДАВХАР дэгээ гарвал 26 болж ХУУРАМЧ улаан өгнө ✗);
- *        ⚠️ «Хэсэг» `<select>` нь ЗӨВХӨН ЭНЭ хувилбарт (2026-10-04 (34))
- *      • `'mobile'` — толгойн ДООРХ наалдамхай мөр (`<xl`). 🗑 2026-10-04 (34):
- *        «Хэсэг» `<select>` (`#home-search-mobile-section` — хэрэглэгчийн
- *        хүсэлт «байхгүй болгоё») нь БҮРЭН ХАСАГДАВ ⇒ мобайлд хэсэг солих нь
- *        доорх tile панелаар (`data-section-panel`, мөрний ЯГ доор) хийгддэг
- *        тул pill нь илүүдэл давхарга байв; мөр нь [🔍 талбар][Хайх][📍] болов ✓
+ *      • `'header'` — толгойн МӨР (≥xl, ≥1280px)
+ *      • `'mobile'` — толгойн ДООРХ наалдамхай мөр (`<xl`)
  * ⚠️ Утгууд нь `HomeClient`-ийн төлөвөөс; илгээх нь Enter БА «Хайх» товч
  *    ХОЁУЛАА `onSubmit`-оор ажиллана ✓ (a11y дээр зөв — `<form role="search">`)
  * ⚠️ БҮТЭЦ (2026-10-04 (28) — «нимгэн» pill хэв) — бүх элемент `rounded-full`,
  *    иконууд нь emoji БИШ `currentColor` SVG (`components/HeaderIcons.jsx`):
- *   [≡ Ангилал ▾] [🔍 <хайлтын талбар>] [Хайх] [📍 Бүх байршил]
- * ⚠️ `<select>` — 2026-10-04 (33): `[field-sizing:content]` (pill нь СОНГОСОН
- *    option-ийн нэрээр сунана) + уян `max-w` (`160px → sm:200px → 2xl:300px`).
- *    ⏳ Урьд нь `max-w-[120px]` байсан тул «🏠 Үл хөдлөх» (текст **82px** +
- *    padding 68px = **150px**) нь ТАСАРЧ «🏠 Ул хө» болдог байв ✗ (хэрэглэгчийн
- *    гомдол). ⚠️ Native select-ийн ЭНГИЙН өргөн нь ХАМГИЙН УРТ option-оор
- *    (бодит хэмжилт **294px**) тодорхойлогддог тул ЗААВАЛ хязгаарлана — эс
- *    бөгөөс 390px дээр хэвтээ гүйлт үүсгэнэ ✗. `field-sizing` дэмждэггүй хөтөч
- *    (жишээ нь Firefox) дээр зөвхөн `max-w`-ийн утга харагдана (эвдрэхгүй ✓) */
+ *   [🔍 <хайлтын талбар>] [Хайх] [📍 Бүх байршил] */
 function HeaderSearchBar({
   variant = 'header',
-  section, search, total, locationLabel, hasLocation,
-  onSectionChange, onSearchChange, onSubmit, onOpenLocation, onPickSuggestion,
+  search, total, locationLabel, hasLocation,
+  onSearchChange, onSubmit, onOpenLocation, onPickSuggestion,
 }) {
   const placeholder = total != null ? `${formatCount(total)} зар байна` : 'Хайх...';
   const isHeader = variant === 'header';
@@ -645,56 +635,16 @@ function HeaderSearchBar({
 
   return (
     <form role="search" onSubmit={handleSubmit} className="flex w-full min-w-0 items-center gap-2">
-      {/* ⚙️ ХЭСЭГ («Ангилал») — ДУГУЙ pill — ⚠️ ЗӨВХӨН ТОЛГОЙН хувилбарт (≥xl).
-          🗑 2026-10-04 (34): МОБАЙЛ хувилбараас БҮРЭН ХАСАГДАВ (хэрэглэгчийн
-             хүсэлт: «home-search-mobile-section ийг … байхгүй болгоё»).
-             ⏳ Мобайлд дөрвүүлээ ([pill][талбар][Хайх][📍]) 390px-д багтахын
-             тулд хайлтын талбар 67px болтлоо шахагддаг байв ✗; хэсэг солих нь
-             доорх tile панелаар (`data-section-panel`, мөрний ЯГ доор) ч
-             хийгддэг тул pill нь ИЛҮҮДЭЛ давхарга байв ⇒ DOM-оос бүрэн арилав
-             (`#home-search-mobile-section` дэгээ ОГТ БАЙХГҮЙ ✓ — CDP шалгана)
-          ⚠️ native `<select>` ХЭВЭЭР (солигдоогүй): ① гар утасны OS-ийн
-             сонголтын жагсаалт (a11y) ✓ ② `data-hero-section` + 13 option
-             дэгээ (`scripts/cdp-range.mjs`) ✓
-          Зөвхөн ХАРАГДАЦ солигдов: `appearance-none` нь OS-ийн сумыг арилгаж,
-          оронд нь `ListIcon` (зүүн) + `ChevronDownIcon` (баруун) тавина —
-          эс бөгөөс «сонголт хийх боломжтой» гэдэг нь мэдэгдэхгүй болно ✗
-          ⚠️ 2026-10-04 (33): `[field-sizing:content]` — pill нь СОНГОСОН
-             option-ийн нэрээр сунана (ж: «🏠 Үл хөдлөх» = **152px**, «Ангилал»
-             = 125px) ⇒ нэр ТАСРАХГҮЙ ✓; `max-w` нь дээд хязгаар
-             (`160 → sm:200 → 2xl:300`) — ⚠️ `2xl` (≥1536px) дээр хамгийн урт
-             нэр («💻 Компьютер, Дагалдах хэрэгсэл», 294px) ч бүтэн багтана ✓.
-             ⚠️ Native select-ийн ЭНГИЙН өргөн нь ХАМГИЙН УРТ option-оор
-                тодорхойлогддог (294px) тул хязгаарлахгүй бол хэвтээ гүйлт
-                үүсгэнэ ✗ */}
-      {isHeader && (
-        <div className="relative shrink-0">
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-          >
-            <ListIcon className="h-4 w-4" />
-          </span>
-          <label className="sr-only" htmlFor={`${idBase}-section`}>Хэсэг сонгох</label>
-          <select
-            id={`${idBase}-section`}
-            aria-label="Хэсэг сонгох"
-            data-hero-section
-            value={section}
-            onChange={(e) => onSectionChange(e.target.value)}
-            className="h-10 max-w-[160px] shrink-0 cursor-pointer appearance-none rounded-full border border-gray-200 bg-gray-100 pl-9 pr-8 text-[13px] font-semibold text-gray-700 outline-none transition [field-sizing:content] hover:bg-gray-200 focus-visible:ring-2 focus-visible:ring-primary/40 sm:max-w-[200px] 2xl:max-w-[300px]"
-          >
-            <option value="all">Ангилал</option>
-            {SECTIONS.map((s) => <option key={s.value} value={s.value}>{s.icon} {s.label}</option>)}
-          </select>
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500"
-          >
-            <ChevronDownIcon className="h-4 w-4" />
-          </span>
-        </div>
-      )}
+      {/* 🗑 2026-10-07: ТОЛГОЙН «Ангилал» pill (`<select>`) БҮРЭН ХАСАГДАВ
+          (хэрэглэгчийн хүсэлт: «Search-ийн өмнө байгаа Ангилал цэсийг үгүй
+           болго»). ⏳ Мобайл хувилбараас 2026-10-04 (34)-д аль хэдийн хасагдсан
+             байв — одоо ТОЛГОЙН хувилбар ч мөн адил ⇒ мөр нь ЗӨВХӨН
+             [🔍 талбар][Хайх][📍] болов.
+          ⚠️ Хэсэг солих нь мөрний ЯГ доорх tile панелаар (`data-section-panel`,
+             `SECTIONS.map` → `changeSection`) хийгддэг тул pill нь ИЛҮҮДЭЛ
+             давхарга байв ✓
+          ⚠️ `#home-search-section` / `[data-hero-section]` дэгээ ОГТ БАЙХГҮЙ
+             (DOM-оос БҮРЭН арилсан — `scripts/cdp-sections.mjs` шалгана) */}
       {/* 🔍 ХАЙЛТЫН ТАЛБАР — дотор нь томруулдаг шил (`unegui.mn` шиг) ✓ */}
       <div className="relative min-w-0 flex-1">
         <span
@@ -1418,19 +1368,10 @@ export default function HomeClient() {
     setPage(1);
   };
 
-  /**
-   * 🔍 HERO-ийн «Бүх хэсэг ▾» (eBay-ийн «All Categories» сонголт шиг, 2026-09-30).
-   *
-   * ⚠️ «Бүх хэсэг» (`all`) сонгоход `sectionOpen` нь ЗААВАЛ `false` байх ёстой
-   *    — `resetAll()` ч яг тэгж хийдэг: `section='all'` + панель НЭЭЛТТЭЙ
-   *    гэсэн хослол нь байхгүй (тэр үед `getSection('all')` нь ЭХНИЙ хэсгийн
-   *    дэд төрлүүдийг харуулж, хэрэглэгчийг төөрөгдүүлнэ ✗)
-   * ⚠️ Хайлтын үг (`query`) ХӨНДӨГДӨХГҮЙ — зөвхөн хэсгийн хүрээ солигдоно
-   *    (eBay дээр «All Categories» солиход бичсэн үг үлддэгтэй ижил ✓)
-   */
-  const changeHeroSection = (value) => {
-    changeSection(value, { open: value !== 'all' });
-  };
+  /* 🗑 2026-10-07: `changeHeroSection()` ХАСАГДАВ — толгойн «Ангилал» `<select>`
+     (2026-10-04 (34)-д мобайл, 2026-10-07-д толгой) бүрэн хасагдсан тул
+     дуудагч үлдээгүй ✓. Хэсэг солих нь мөрний доорх tile панелаас ШУУД
+     `changeSection(v)` дуудна (`SECTIONS.map` → `onClick`) ✓ */
 
   /**
    * ХЭСЭГ солих (0016) — дэд төрөл/attr/өрөө бүгд ХҮЧИНГҮЙ болно.
@@ -2240,12 +2181,10 @@ export default function HomeClient() {
   const renderSearchBar = (variant) => (
     <HeaderSearchBar
       variant={variant}
-      section={section}
       search={search}
       total={total}
       locationLabel={locationLabel}
       hasLocation={Boolean(filters.city)}
-      onSectionChange={(v) => changeHeroSection(v)}
       onSearchChange={setSearch}
       onSubmit={(e) => { e.preventDefault(); setPage(1); setQuery(search); }}
       onPickSuggestion={(value) => { setSearch(value); setPage(1); setQuery(value); }}
@@ -2253,13 +2192,15 @@ export default function HomeClient() {
     />
   );
 
-  /** ⚠️ deps нь ЗӨВХӨН энгийн утгууд — `changeHeroSection` шиг ФУНКЦИЙГ
+  /** ⚠️ deps нь ЗӨВХӨН энгийн утгууд — ФУНКЦИЙГ (ж: `renderSearchBar`)
    *  deps-д оруулбал render БҮРТ шинэ болж `setHeaderSlot` ↔ re-render LOOP
    *  үүснэ ✗ (функцүүд дотроо зөвхөн эдгээр утга + тогтвортой setState-үүдийг
-   *  ашигладаг тул хуучин closure ч ЗӨВ ажиллана ✓) */
+   *  ашигладаг тул хуучин closure ч ЗӨВ ажиллана ✓)
+   *  🗑 2026-10-07: `section` deps-ээс ХАСАГДАВ — хайлтын мөр «Ангилал» pill-гүй
+   *  болсон тул `section`-д хамааралгүй ✓ */
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const homeSearchBar = useMemo(() => renderSearchBar('header'),
-    [section, search, total, locationLabel, filters.city]);
+    [search, total, locationLabel, filters.city]);
 
   // 🖥 Хайлтын мөрийг header-ийн ГОЛ хэсэгт оруулна (AppProviders-ийн завсар)
   useEffect(() => {

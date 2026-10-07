@@ -17,10 +17,11 @@
  *   ⑤ 🔗 Линкээр (`?category=rent`) орж ирэхэд дэд төрлүүд ШУУД нээлттэй ✓
  *   ⑥ 📱 390px: БОГИНО шошго («Зарна / Түрээслүүлнэ»), орох үед дэд
  *      төрөл БАЙХГҮЙ, хэвтээ гүйлт (overflow) 0 ✓
- *   ⑦ 🗑 МОБАЙЛ ХАЙЛТЫН МӨРӨНД «Хэсэг» `<select>` БАЙХГҮЙ (2026-10-04 (34):
- *      хэрэглэгчийн хүсэлт «home-search-mobile-section ийг … байхгүй болгоё»)
- *      — `#home-search-mobile-section` нь DOM-оос БҮРЭН арилсан; харин ТОЛГОЙН
- *      pill (`#home-search-section`) 13 option-той ХЭВЭЭР ✓
+ *   ⑦ 🗑 ХАЙЛТЫН МӨРНӨӨС «Хэсэг» `<select>` БАЙХГҮЙ — МОБАЙЛ 2026-10-04 (34),
+ *      ТОЛГОЙ 2026-10-07 (хэрэглэгчийн хүсэлт «Search-ийн өмнө байгаа Ангилал
+ *      цэсийг үгүй болго») — `#home-search-mobile-section` БА
+ *      `#home-search-section` хоёулаа DOM-оос БҮРЭН арилсан;
+ *      `[data-hero-section]` дэгээ ч ОГТ БАЙХГҮЙ ✓
  *   ⑧ 🧯 JS exception 0
  *
  * ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
@@ -247,8 +248,8 @@ const hp = JSON.parse(await evalJs(`JSON.stringify({
   mobile: !!document.querySelector('#home-search-mobile-section'),
   opts: document.querySelectorAll('[data-hero-section] option').length,
 })`));
-check('🖥 1280px: толгойн «Хэсэг» pill ХЭВЭЭР (`#home-search-section`)', hp.header === true);
-check('🖥 1280px: pill-д 13 option (`data-hero-section`)', hp.opts === 13, `opts=${hp.opts}`);
+check('🗑 1280px: толгойн «Хэсэг» pill БАЙХГҮЙ (`#home-search-section`)', hp.header === false);
+check('🗑 1280px: `[data-hero-section]` дэгээ ОГТ БАЙХГҮЙ (0 option)', hp.opts === 0, `opts=${hp.opts}`);
 check('🗑 1280px: мобайл pill DOM-д БАЙХГҮЙ (`#home-search-mobile-section`)', hp.mobile === false);
 
 // ═══════════════════ 📱 MOBILE (390px) ═══════════════════
