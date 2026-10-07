@@ -18,7 +18,13 @@
 //    ИЖИЛ — үр дүнгийн ДЭЭРХ ХЭВТЭЭ `#filter-bar`-т «pill + ⌄ хөвөг панель»
 //    (`filterBar: true` + `chips` + `multi`) ⇒ панель дотор ОЛОН сонголттой
 //    `chip-toggle` чипүүд, `?attr_jobType=Бүтэн цагийн,Цагийн` ба DB
-//    `attrs->>jobType=in.(…)` ✓ (⚠️ ФОРМ ХӨНДӨГДӨӨГҮЙ — `formChips` хэвээр ✓)
+//    `attrs->>jobType=in.(…)` ✓
+//
+// 🆕 2026-10-07 (хэрэглэгчийн хүсэлт: «Ажлын зар оруулах хэсэгт Ажлын цаг,
+//    Туршлага, Зарлагч, Мэргэжлийн түвшин оруулах format нь Цалингийн төрөл
+//    сонгохтой адилхан болго»): ФОРМ дээрх 4 талбар нь ⏳ 2026-10-03 (11)-ийн
+//    `formChips` (бөөрөнхий ЧИП ТОВЧ) ХАСАГДАЖ, 💰 «Цалингийн төрөл»-тэй ЯГ
+//    ИЖИЛ `<select>` болов (⚠️ ХАЙЛТЫН sidebar-ийн `chips` ХӨНДӨӨГДӨӨГҮЙ ✓)
 //
 // 🆕 2026-10-06 (17) (хэрэглэгчийн хүсэлт: «Ажлын зарын Ажлын цаг, Туршлага,
 //    Мэргэжлийн түвшин -ийг бас Дэлгэрэнгүй хайлт д оруул»): ⏳ (42)-ийн
@@ -124,21 +130,23 @@ t('💰 Цалингийн төрөл — Тогтмол / Хэлбэлзэх', 
   assert.deepEqual(f.options, ['Тогтмол', 'Хэлбэлзэх']);
 });
 
-t('🎛 Форм: 4 талбар нь ЧИПЭЭР сонгоно (`formChips: true`, 2026-10-03 (11))', () => {
-  // Хэрэглэгчийн хүсэлт: «Ажлын цаг, Туршлага, Зарлагч, Мэргэжлийн түвшин
-  // бүгдийг сонгож оруулдаг болгоё, Жишээг хар» + чип товчны зураг ⇒
-  // форм дээр `<select>` биш, бөөрөнхий ЧИП ТОВЧ ✓
-  ['jobType', 'experience', 'advertiser', 'jobLevel'].forEach((k) => {
-    assert.equal(getAttrField('jobs', k).formChips, true, `${k}: форм дээр чип биш ✗`);
+t('🎛 Форм: 4 талбар нь `<select>` — 💰 «Цалингийн төрөл»-тэй АДИЛХАН (🆕 2026-10-07)', () => {
+  // Хэрэглэгчийн хүсэлт: «Ажлын зар оруулах хэсэгт Ажлын цаг, Туршлага,
+  // Зарлагч, Мэргэжлийн түвшин оруулах format нь Цалингийн төрөл сонгохтой
+  // адилхан болго» ⇒ ⏳ 2026-10-03 (11)-ийн `formChips` (бөөрөнхий ЧИП ТОВЧ)
+  // ХАСАГДАВ: 4 талбар нь форм дээр 💰 `salaryType`-тай ЯГ ИЖИЛ `<select>` ба
+  // 📱 мобайлд 2 баганат шууд жагсаалт (`isAttrPick`) болж харагдана ✓
+  ['jobType', 'experience', 'advertiser', 'jobLevel', 'salaryType'].forEach((k) => {
+    const f = getAttrField('jobs', k);
+    assert.equal(f.type, 'select', `${k}: select биш ✗`);
+    assert.equal(f.formChips, undefined, `${k}: форм дээр чип хэвээр ✗`);
   });
-  // 💰 «Цалингийн төрөл» нь хэвээр `<select>` (хэрэглэгчийн жагсаалтад ороогүй ✓)
-  assert.equal(getAttrField('jobs', 'salaryType').formChips, undefined);
-  // ⚠️ `formChips` (форм) ба `chips` (sidebar ШҮҮЛТ) нь ТУСДАА туг —
-  //    🆕 2026-10-05 (42): sidebar-ийн 🕒/📊/📈 ч гурвуулаа чип болов ⇒
-  //    `chips` нь sidebar-ийн ДҮРСЛЭЛИЙГ л тодорхойлно (форм хөндөгдөхгүй ✓)
+  // ⚠️ `chips` (ХАЙЛТЫН sidebar-ийн чип ШҮҮЛТ) ХӨНДӨӨГДӨӨГҮЙ — 🕒/📊/📈
+  //    гурвуулаа сайдбарт чип хэвээр (форм өөрчлөгдсөн, шүүлт БИШ ✓)
   assert.equal(getAttrField('jobs', 'jobType').chips, true);
   assert.equal(getAttrField('jobs', 'experience').chips, true);
   assert.equal(getAttrField('jobs', 'jobLevel').chips, true);
+  assert.equal(getAttrField('jobs', 'advertiser').chips, undefined);
   assert.deepEqual(getAttrFilters('jobs').map((f) => f.chips === true), [true, true, true]);
 });
 

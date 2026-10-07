@@ -1,20 +1,26 @@
 // ============================================================
-// cdp-job-chips.mjs — 💼 АЖЛЫН ЗАРЫН ФОРМ: 4 ЧИП ТАЛБАР (CDP ШАЛГАЛТ)
+// cdp-job-chips.mjs — 💼 АЖЛЫН ЗАРЫН ФОРМ (`<select>`) + ХАЙЛТЫН ЧИП (CDP)
 //
-// 🎯 ЮУГ ШАЛГАХ ВЭ: `/listings/new` → 💼 Ажлын зар → дэд төрөл → 3-р алхам
-//    (📋 Дэлгэрэнгүй) дээр 🕒 Ажлын цаг · 📊 Туршлага · 🏷️ Зарлагч ·
-//    📈 Мэргэжлийн түвшин нь `<select>` БИШ, **СОНГОГДОХ ЧИП ТОВЧ**
-//    (`.chip-toggle`) болж харагдах ба утга нь ХУУЧИН `<select>`-тэй
-//    ЯГ ИЖИЛ (`form.attrs[key]` — текст) хадгалагдах:
-//    ① чип блок БАЙНА + сонголтын тоо (5/2/3/5) ② дарж СОНГОХ
-//    (mutual exclusive) ③ дахин дарж ЦУЦЛАХ (toggle — бүх чип идэвхгүй,
-//    бусдыг ХӨНДӨХГҮЙ) ④ 💰 `salaryType` нь `<select>` ХЭВЭЭР
-//    ⑤ 📱 390px — 4 талбар БҮГД хүрэх + overflow 0
-//    🆕 (17) ⑥ ХАЙЛТЫН ХУУДАС: 🕒/📊/📈 нь «Дэлгэрэнгүй хайлт»-ийн САЙДБАРТ
-//    (`aside [data-attr-filter="jobType|experience|jobLevel"]`; чип 12 = 5+2+5;
-//    ⚠️ jobs дээр `#filter-bar` ОГТ БАЙХГҮЙ — pill тугтай attr байхгүй ✓)
-//    ⑥b сайдбарын чип дарж `?attr_jobType=Бүтэн цагийн,Цагийн` (⛔ цуцлагдахгүй,
-//    «2 сонгосон» + «✕ Цуцлах») ⑥c сайдбарын чип HOVER (⑥c) ⑦ JS exception 0
+// 🎯 ЮУГ ШАЛГАХ ВЭ:
+//  Ⓐ ФОРМ (`/listings/new` → 💼 Ажлын зар → дэд төрөл → 3-р алхам 📋
+//    Дэлгэрэнгүй): 🕒 Ажлын цаг · 📊 Туршлага · 🏷️ Зарлагч · 📈 Мэргэжлийн
+//    түвшин нь 💰 «Цалингийн төрөл»-тэй ЯГ ИЖИЛ **`<select>`** (🆕 2026-10-07).
+//    Утга нь ХУУЧИН чиптэй ЯГ ИЖИЛ (`form.attrs[key]` — текст) хадгалагдана:
+//    ③ ЧИП БЛОК БАЙХГҮЙ + 5 `<select>` (сонголт 5/2/3/5/2) ④ сонгоход
+//    хадгалагдана (controlled) + «Сонгох» (= хоосон) → утга АРИЛНА
+//    ⑤ 📱 390px — 4 талбар БҮГД хүрэх (2 баганат жагсаалт) + overflow 0
+//  Ⓑ ХАЙЛТЫН ХУУДАС (`/?section=jobs&type=…`): 🕒/📊/📈 нь «Дэлгэрэнгүй
+//    хайлт»-ийн САЙДБАРТ **ЧИП ХЭВЭЭР** (`aside [data-attr-filter=…]`; чип 12 =
+//    5+2+5; ⚠️ jobs дээр `#filter-bar` ОГТ БАЙХГҮЙ — pill тугтай attr байхгүй ✓)
+//    ⑥ ⑥⓪ хураагдах блок ⑥b ОЛОН сонголт `?attr_jobType=A,B` (⛔ цуцлагдахгүй,
+//    «2 сонгосон» + «✕ Цуцлах») ⑥c чип HOVER ⑥d линкээр блок АВТОМАТААР
+//    НЭЭЛТТЭЙ ⑦ JS exception 0
+//
+// 🆕 2026-10-07 (хэрэглэгчийн хүсэлт: «Ажлын зар оруулах хэсэгт Ажлын цаг,
+//    Туршлага, Зарлагч, Мэргэжлийн түвшин оруулах format нь Цалингийн төрөл
+//    сонгохтой адилхан болго»): ФОРМ-ын 4 талбар нь ⏳ 2026-10-03 (11)-ийн
+//    ЧИП (`formChips`) байснаа `<select>` БОЛОВ ⇒ ③④⑤ нь чип биш `<select>`
+//    шалгана; ⚠️ ХАЙЛТЫН sidebar (⑥…) ХӨНДӨӨГДӨӨГҮЙ — чип хэвээр ✓
 //
 // 🆕 2026-10-06 (17) (хэрэглэгчийн хүсэлт: «Ажлын зарын Ажлын цаг, Туршлага,
 //    Мэргэжлийн түвшин -ийг бас Дэлгэрэнгүй хайлт д оруул»): ⏳ (42)-ийн
@@ -27,7 +33,7 @@
 //    цаг, Туршлага, Мэргэжлийн түвшиныг Өрөөний тоо шиг болго, хайлтыг хэлж
 //    байгаа биз дээ») ⇒ 🛏 «Өрөөний тоо» · 💳 «Төлбөрийн нөхцөл»-ийн ЯГ ИЖИЛ
 //    `#filter-bar` pill болов (`lib/locationData.js → filterBar: true` ✓)
-//    (⚠️ ФОРМ ХӨНДӨГДӨӨГҮЙ — ③④ нэг сонголттой чип хэвээр ✓)
+//    (⚠️ ФОРМ ХӨНДӨГДӨӨГҮЙ — ③④ нэг сонголттой чип хэвээр байв)
 //
 // ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
 //   1) сервер http://localhost:3000 (`npm run build && npm run start`)
@@ -41,24 +47,24 @@
 //   Дараа нь:  npm run cdp:chips
 //
 // ⚠️ Тогтвортой selector-ууд:
-//    `[data-attr-field="…"]` (формойн чип блок, `role="group"`) ·
-//    `[data-attr-value="…"]` (чип товч) · `[data-detail-field="attr-salaryType"]
-//    select` · `[data-detail-field="title"]` · `[data-picker="section"]` /
+//    `[data-detail-field="attr-<key>"] select` (формойн `<select>`, ⚠️ зөвхөн
+//    🖥 ≥640px — мобайлд `hide-below-sm` тул 📱 2 баганат жагсаалт
+//    `[data-detail-field="attr-<key>"] [data-mobile-option="…"]`) ·
+//    `[data-detail-field="title"]` · `[data-picker="section"]` /
 //    `[data-picker="level2"]` (`button[data-picker-value]`) ·
 //    `[data-step-current]` · `[data-mobile-detail-next]`
 //    ℹ️ ХАЙЛТЫН чип нь `[data-attr-filter="…"]` (+ `data-attr-multi="true"`)
-//       хайрцаг дотор — 🆕 (17)-д сайдбарт (`aside`), форм нь `data-attr-field`
-//       (`formChips`) тул ХОЛИГДОХГҮЙ ✓
-//       ⚠️ Форм дээрх чип нь НЭГ сонголттой хэвээр тул ③④ ХӨНДӨГДӨӨГҮЙ ✓
+//       хайрцаг дотор — 🆕 (17)-д сайдбарт (`aside`), форм нь `<select>`
+//       (🆕 2026-10-07) тул ХОЛИГДОХГҮЙ ✓
 //       ⚠️ 🆕 (17): хайлтын талд pill/⌄ панель БАЙХГҮЙ (💼 дээр `#filter-bar`
 //          ОГТ рендэрлэгдэхгүй) ⇒ pill НЭЭХ шаардлагагүй, чип нь ШУУД
 //          харагдана ✓ (⏳ (42)-(16)-д `[data-filter-pill]` + `visibility:hidden`
 //          панель байв ✗)
 //
 // ⚠️ МЭДЭГДЭХҮЙ АРГУУД (энэ скриптээр батлагдсан):
-//    ⓐ React-ийн `state.attrs`-ыг fiber-ээс уншихад COMMIT-ийн 1 АЛХАМ
-//       ХОЦРОЛТТОЙ (DOM аль хэдийн шинэчлэгдсэн байдаг) ⇒ шалгалт нь
-//       `aria-pressed` / `.chip-toggle-active`-ыг POLL хийнэ ✓
+//    ⓐ Форм нь 🆕 `<select>` (⏳ чип байсан) — ⚠️ `<select>` нь CONTROLLED
+//       (`value={form.attrs[key]}`) тул React хүлээж аваагүй бол DOM утга нь
+//       ЭРГЭЖ хоосон болно ⇒ шалгалт нь `select.value`-г POLL хийнэ (300-500ms) ✓
 //    ⓑ `<aside>` нь 🆕 2026-10-03 (13)-аас хойш ХЭСГИЙН түвшинд ч
 //       рендэрлэгддэг (`showAdvancedFilters` — үргэлж ✓); ⏳ урьд нь зөвхөн
 //       `filters.propertyType` сонгогдсон үед байв ✗ (`HomeClient.jsx`)
@@ -68,11 +74,14 @@
 //       📱 шалгалтын дараа метрикийг 1440px руу БУЦААНА ✓
 //    ⓓ 📱 3-р алхмын ЭХНИЙ дэлгэц нь «Зарын гарчиг» (ЗААВАЛ талбар) ⇒
 //       бөглөхгүй бол `[data-mobile-detail-next]` ХӨДӨЛӨХГҮЙ ✗
-//    ⓔ засах горим (④b) нь 💼 АЖЛЫН ЗАР шаардна — демо хэрэглэгчид
+//    ⓔ ⚠️ 📱 мобайлд сонголттой талбар (`pick: true`) нь сонголт дээр дармагц
+//       ДАРААГИЙН дэлгэц рүү шилжинэ (bottom товч ХАРАГДАХГҮЙ) ⇒ ⑤ нь
+//       `[data-mobile-option]` дарж дрилл-даун хийнэ ✓
+//    ⓕ засах горим (④b) нь 💼 АЖЛЫН ЗАР шаардна — демо хэрэглэгчид
 //       ажлын зар БАЙХГҮЙ бол ④b-г АЛГАСНА (бусад шалгалт хэвээр ✓)
-// 🔍 Хайх үг: cdp-job-chips, formChips, chip-toggle, data-attr-field,
-//    data-attr-value, attr-salaryType, jobs, filterBar, afterPayment,
-//    Дэлгэрэнгүй хайлт, Өрөөний тоо шиг
+// 🔍 Хайх үг: cdp-job-chips, formChips, chip-toggle, data-detail-field,
+//    data-mobile-option, data-mobile-options-grid, attr-salaryType, jobs,
+//    filterBar, afterPayment, Дэлгэрэнгүй хайлт, Цалингийн төрөл шиг
 // ============================================================
 const BASE = process.argv[2] || 'http://localhost:3000';
 const CDP = `http://127.0.0.1:${process.env.CDP_PORT || 9222}`;
@@ -171,10 +180,6 @@ const evaluate = async (expression) => {
   if (r.exceptionDetails) throw new Error(String(r.exceptionDetails.exception?.description || r.exceptionDetails.text));
   return r.result.value;
 };
-const byKeyState = (st, key, value) => {
-  const b = st.blocks.find((x) => x.key === key);
-  return (b?.chips || []).find((c) => c.v === value) || {};
-};
 
 // ═══════ ① НЭВТРЭЛТ (демо хэрэглэгч) ═══════
 // ⚠️ Форм нь ЗӨВХӨН нэвтэрсэн хэрэглэгчид харагдана — профайл нэвтэрсэн бол
@@ -231,151 +236,98 @@ for (let i = 0; i < 4; i += 1) {
   await wait(2500);
 }
 
-// ═══════ ③ ЧИП БЛОКУУД ═══════
-console.log('\n③ ЧИП ТАЛБАРУУД');
+// ═══════ ③ ФОРМ ТАЛБАРУУД — `<select>` (💰 salaryType-тай ИЖИЛ) ═══════
+console.log('\n③ ФОРМ ТАЛБАРУУД — `<select>` (🆕 2026-10-07)');
 /**
- * 🧪 Чип товч (`[data-attr-field]` → `[data-attr-value]`) + 💰 `<select>` +
- *    гарчгийн талбар — бүгд DOM-оос `aria-pressed`-ээр уншина
- *    ⚠️ `state.attrs` (React fiber) нь ЗӨВХӨН мэдээллийн зорилгоор (④-ийн
- *       poll нь DOM-оор шалгана — commit-ийн хоцролт ✗)
+ * 🧪 ФОРМ дээрх 4 талбар нь 💰 «Цалингийн төрөл»-тэй ЯГ ИЖИЛ `<select>` —
+ *    🖥 ≥640px дээр `[data-detail-field="attr-<key>"] select` (class
+ *    `hide-below-sm`). ⏳ 2026-10-03 (11)-ийн ЧИП БЛОК (`[data-attr-field]`)
+ *    ОДОО БАЙХГҮЙ (форм чипээс `<select>` болов ✓)
  */
+const KEYS = ['jobType', 'experience', 'advertiser', 'jobLevel', 'salaryType'];
+const EXPECT = {
+  jobType: ['Бүтэн цагийн', 'Хагас цагийн', 'Цагийн', 'Гэрээт', 'Түр хугацааны'],
+  experience: ['Шаардлагатай', 'Шаардлагагүй'],
+  advertiser: ['Байгууллага', 'Хувь хүн', 'Зуучлагч'],
+  jobLevel: ['Дадлагын', 'Анхан шатны', 'Мэргэжилтэн', 'Дунд шатны удирдлага', 'Дээд шатны удирдлага'],
+  salaryType: ['Тогтмол', 'Хэлбэлзэх'],
+};
 const READ = `(() => {
-  const blocks = [...document.querySelectorAll('[data-attr-field]')].map((b) => ({
-    key: b.dataset.attrField,
-    role: b.getAttribute('role'),
-    aria: b.getAttribute('aria-label'),
-    cls: b.className,
-    chips: [...b.querySelectorAll('[data-attr-value]')].map((c) => ({
-      v: c.dataset.attrValue,
-      on: c.getAttribute('aria-pressed') === 'true',
-      cls: c.className,
-      tag: c.tagName,
-    })),
-  }));
-  const el = document.querySelector('[data-attr-field]');
-  const fk = el ? Object.keys(el).find((k) => k.startsWith('__reactFiber$')) : null;
-  let node = fk ? el[fk] : null;
-  let attrs = null;
-  while (node && !attrs) {
-    let hook = node.memoizedState;
-    let i = 0;
-    while (hook && i < 80) {
-      const s = hook.memoizedState;
-      if (s && typeof s === 'object' && !Array.isArray(s) && 'section' in s && 'attrs' in s) { attrs = s.attrs; break; }
-      hook = hook.next; i += 1;
-    }
-    node = node.return;
-  }
+  const KEYS = ${JSON.stringify(KEYS)};
+  const sel = (k) => document.querySelector('[data-detail-field="attr-' + k + '"] select');
   return {
-    blocks,
-    attrs,
-    salarySelect: [...document.querySelectorAll('[data-detail-field="attr-salaryType"] select')].length,
-    salaryChipBlock: document.querySelectorAll('[data-attr-field="salaryType"]').length,
+    chipBlocks: document.querySelectorAll('[data-attr-field]').length,
+    selects: Object.fromEntries(KEYS.map((k) => [k, document.querySelectorAll('[data-detail-field="attr-' + k + '"] select').length])),
+    options: Object.fromEntries(KEYS.map((k) => { const s = sel(k); return [k, s ? [...s.options].map((o) => o.value).filter((v) => v !== '') : null]; })),
+    values: Object.fromEntries(KEYS.map((k) => { const s = sel(k); return [k, s ? s.value : null]; })),
     detailFields: [...document.querySelectorAll('[data-detail-field]')].map((e) => e.dataset.detailField),
   };
 })()`;
 
 let state = await evaluate(READ);
-console.log(`   чип блок: ${state.blocks.map((b) => `${b.key}(${b.chips.length})`).join(' · ')}`);
-ok('🕒 jobType — чип блок БАЙНА', state.blocks.some((b) => b.key === 'jobType'));
-ok('📊 experience — чип блок БАЙНА', state.blocks.some((b) => b.key === 'experience'));
-ok('🏷️ advertiser — чип блок БАЙНА', state.blocks.some((b) => b.key === 'advertiser'));
-ok('📈 jobLevel — чип блок БАЙНА', state.blocks.some((b) => b.key === 'jobLevel'));
-ok('💰 salaryType — чип БИШ (`<select>` хэвээр ✓)', state.salaryChipBlock === 0 && state.salarySelect === 1,
-  `chips=${state.salaryChipBlock} selects=${state.salarySelect}`);
-const byKey = Object.fromEntries(state.blocks.map((b) => [b.key, b]));
-ok('🕒 5 сонголт (Бүтэн…Түр хугацааны)', byKey.jobType?.chips.length === 5,
-  JSON.stringify(byKey.jobType?.chips.map((c) => c.v)));
-ok('📊 2 сонголт · 🏷️ 3 · 📈 5',
-  byKey.experience?.chips.length === 2 && byKey.advertiser?.chips.length === 3 && byKey.jobLevel?.chips.length === 5,
-  `${byKey.experience?.chips.length}/${byKey.advertiser?.chips.length}/${byKey.jobLevel?.chips.length}`);
-ok('чип бүр `<button>` + `chip-toggle` (sidebar-тай НЭГ CSS)',
-  state.blocks.every((b) => b.chips.every((c) => c.tag === 'BUTTON' && /chip-toggle/.test(c.cls))));
-ok('блок нь `role="group"` + `aria-label`', state.blocks.every((b) => b.role === 'group' && !!b.aria),
-  state.blocks.map((b) => `${b.key}:${b.role}/${b.aria}`).join(' '));
+console.log(`   талбарууд: ${JSON.stringify(state.selects)} · чип блок=${state.chipBlocks}`);
+ok('🆕 форм дээр ЧИП БЛОК БАЙХГҮЙ (`[data-attr-field]` = 0 — 4 талбар `<select>` болов ✓)',
+  state.chipBlocks === 0, String(state.chipBlocks));
+ok('🕒/📊/🏷️/📈/💰 — 5 талбар БҮГД ЯГ 1 `<select>` (💰 salaryType-тай ИЖИЛ)',
+  KEYS.every((k) => state.selects[k] === 1), JSON.stringify(state.selects));
+ok('🕒 5 сонголт · 📊 2 · 🏷️ 3 · 📈 5 · 💰 2 (агуулга нь ХУУЧИН чиптэй ЯГ ИЖИЛ)',
+  KEYS.every((k) => JSON.stringify(state.options[k]) === JSON.stringify(EXPECT[k])),
+  JSON.stringify(state.options));
 ok('форм дээрх талбарууд хэвээр (5 attr + гарчиг)',
   state.detailFields.filter((f) => f.startsWith('attr-')).length === 5 && state.detailFields.includes('title'),
   state.detailFields.join(','));
-ok('анхдагч: бүх чип СОНГООГҮЙ (`aria-pressed=false`)',
-  state.blocks.every((b) => b.chips.every((c) => c.on === false)));
-ok('`attrs` (React) анхдагч хоосон', state.attrs !== null && Object.keys(state.attrs).length === 0,
-  JSON.stringify(state.attrs));
+ok('анхдагч: бүх талбар ХООСОН (`<option value="">…` = сонгогдоогүй ✓)',
+  KEYS.every((k) => state.values[k] === ''), JSON.stringify(state.values));
 
-// ═══════ ④ ЧИП ДАРАХ ба ЦУЦЛАХ ═══════
-console.log('\n④ ЧИП ДАРАХ ба ЦУЦЛАХ');
-const clickChip = (key, value) => evaluate(
-  '(() => { const b = document.querySelector(\'[data-attr-field="' + key + '"] [data-attr-value="' + value + '"]\'); if (!b) return "NO_CHIP"; b.click(); return "OK"; })()',
-);
-ok('📊 «Шаардлагатай» дарав', (await clickChip('experience', 'Шаардлагатай')) === 'OK');
-// ⚠️ Чип нь `aria-pressed={value === o}` ба `form.attrs[key] === o` нь НЭГ эх
-//    сурвалжтай (`AddListingClient.jsx`) — идэвхтэй чип = state-д утга БИЙ ✓
-//    ⚠️ Fiber-ээс `attrs` уншихад commit-ийн 1 алхам хоцролттой тул DOM-оор poll
-const activeVals = (st, key) => ((st.blocks.find((b) => b.key === key) || {}).chips || []).filter((c) => c.on).map((c) => c.v);
-const pollActive = async (key, want, tries = 8) => {
-  for (let i = 0; i < tries; i += 1) {
-    state = await evaluate(READ);
-    if (JSON.stringify(activeVals(state, key)) === JSON.stringify(want)) return state;
-    await wait(350);
-  }
-  return null;
-};
-state = await pollActive('experience', ['Шаардлагатай']);
-ok('📊 чип идэвхтэй (`aria-pressed=true` + `chip-toggle-active`)', state !== null
-  && byKeyState(state, 'experience', 'Шаардлагатай').on === true
-  && /chip-toggle-active/.test(byKeyState(state, 'experience', 'Шаардлагатай').cls),
-  JSON.stringify(state ? activeVals(state, 'experience') : null));
-ok('📊 блок доторх БУСАД чип идэвхгүй (mutual exclusive)', state !== null
-  && activeVals(state, 'experience').length === 1
-  && byKeyState(state, 'experience', 'Шаардлагагүй').on === false);
-console.log('   (мэдээлэл) `form.attrs` fiber уншилт: ' + JSON.stringify(state?.attrs));
-
-ok('🕒 «Бүтэн цагийн» дарав', (await clickChip('jobType', 'Бүтэн цагийн')) === 'OK');
-await wait(300);
-ok('📈 «Мэргэжилтэн» дарав', (await clickChip('jobLevel', 'Мэргэжилтэн')) === 'OK');
-await wait(300);
-ok('🏷️ «Хувь хүн» дарав', (await clickChip('advertiser', 'Хувь хүн')) === 'OK');
-state = await pollActive('experience', ['Шаардлагатай']);
-state = await pollActive('jobType', ['Бүтэн цагийн']);
-state = await pollActive('jobLevel', ['Мэргэжилтэн']);
-state = await pollActive('advertiser', ['Хувь хүн']);
-ok('блок бүрд ЯГ 1 идэвхтэй (mutual exclusive)',
-  [['jobType', 'Бүтэн цагийн'], ['experience', 'Шаардлагатай'], ['advertiser', 'Хувь хүн'], ['jobLevel', 'Мэргэжилтэн']]
-    .every(([k, v]) => JSON.stringify(activeVals(state, k)) === JSON.stringify([v])),
-  JSON.stringify(state.blocks.map((b) => `${b.key}:${activeVals(state, b.key)}`)));
-
-// 💰 `<select>` нь ХЭВЭЭР ажиллана (ижил `attrs.salaryType` руу) — controlled тул
-//    React хүлээж аваагүй бол DOM утга нь эргэж ХООСОН болно ✓
-const salarySet = await evaluate(`(() => {
-  const s = document.querySelector('[data-detail-field="attr-salaryType"] select');
+// ═══════ ④ `<select>` СОНГОХ ба БУЦААХ ═══════
+console.log('\n④ `<select>` СОНГОХ ба БУЦААХ');
+/** `<select>`-ийн утгыг React-д мэдэгдэн тохируулна (controlled ✓) */
+const setSelect = (key, value) => evaluate(`(() => {
+  const s = document.querySelector('[data-detail-field="attr-${key}"] select');
   if (!s) return 'NO_SELECT';
   const set = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
-  set.call(s, 'Хэлбэлзэх'); s.dispatchEvent(new Event('change', { bubbles: true }));
+  set.call(s, ${JSON.stringify(value)});
+  s.dispatchEvent(new Event('change', { bubbles: true }));
   return 'OK';
 })()`);
-await wait(800);
-const salaryNow = await evaluate(`(() => { const s = document.querySelector('[data-detail-field="attr-salaryType"] select'); return s ? s.value : null; })()`);
-ok('💰 `<select>` сонголт хэвээр (controlled → React хүлээж авав)', salarySet === 'OK' && salaryNow === 'Хэлбэлзэх',
-  salarySet + ' value=' + JSON.stringify(salaryNow));
+const readVal = (key) => evaluate(`(() => { const s = document.querySelector('[data-detail-field="attr-${key}"] select'); return s ? s.value : null; })()`);
+/** controlled тул React хүлээж аваагүй бол DOM утга ЭРГЭЖ хоосон болно ⇒ poll ✓ */
+const pollVal = async (key, want, tries = 8) => {
+  for (let i = 0; i < tries; i += 1) {
+    if ((await readVal(key)) === want) return true;
+    await wait(350);
+  }
+  return false;
+};
 
-// 🔁 дахин дарвал ЦУЦЛАГДАНА (toggle-off) — JSON түлхүүр нь `delete` хийнэ ✓
-await clickChip('experience', 'Шаардлагатай');
-const cleared = await pollActive('experience', []);
-ok('📊 идэвхтэй чип дээр дахин дарвал ЦУЦЛАГДАНА (бүх чип идэвхгүй)',
-  cleared !== null && activeVals(cleared, 'experience').length === 0
-    && cleared.blocks.find((b) => b.key === 'experience').chips.length === 2
-    && cleared.blocks.find((b) => b.key === 'experience').chips.every((c) => !c.on),
-  JSON.stringify(activeVals(cleared, 'experience')));
-ok('📊 ЦУЦЛАХ нь БУСАД талбарыг ХӨНДӨӨГҮЙ (3 чип + 💰 select хэвээр)',
-  cleared !== null
-    && ['jobType', 'jobLevel', 'advertiser'].every((k) => activeVals(cleared, k).length === 1)
-    && (await evaluate(`(() => { const s = document.querySelector('[data-detail-field="attr-salaryType"] select'); return s ? s.value : null; })()`)) === 'Хэлбэлзэх',
-  JSON.stringify(cleared ? cleared.blocks.map((b) => `${b.key}:${activeVals(cleared, b.key)}`) : null));
+ok('📊 «Шаардлагатай» сонгов', (await setSelect('experience', 'Шаардлагатай')) === 'OK');
+ok('📊 утга ХАДГАЛАГДАВ (controlled → React хүлээж авав)', await pollVal('experience', 'Шаардлагатай'));
+ok('🕒 «Бүтэн цагийн» сонгов', (await setSelect('jobType', 'Бүтэн цагийн')) === 'OK');
+ok('📈 «Мэргэжилтэн» сонгов', (await setSelect('jobLevel', 'Мэргэжилтэн')) === 'OK');
+ok('🏷️ «Хувь хүн» сонгов', (await setSelect('advertiser', 'Хувь хүн')) === 'OK');
+await wait(500);
+const fourVals = [await readVal('jobType'), await readVal('experience'), await readVal('advertiser'), await readVal('jobLevel')];
+ok('🕒/📊/🏷️/📈 — 4 талбар БҮГД утгатай (💡 `<select>` нь 1 утга — mutual exclusive ✓)',
+  JSON.stringify(fourVals) === JSON.stringify(['Бүтэн цагийн', 'Шаардлагатай', 'Хувь хүн', 'Мэргэжилтэн']),
+  JSON.stringify(fourVals));
+
+// 💰 `<select>` (salaryType) ч ЯГ ИЖИЛ механизм — 4 талбартай НЭГ код зам ✓
+ok('💰 «Хэлбэлзэх» сонгов (salaryType — 4 талбартай НЭГ механизм)', (await setSelect('salaryType', 'Хэлбэлзэх')) === 'OK');
+ok('💰 утга ХАДГАЛАГДАВ', await pollVal('salaryType', 'Хэлбэлзэх'));
+
+// 🔁 «Сонгох» (= хоосон утга) сонговол утга АРИЛНА (⏳ чип toggle-off-той ИЖИЛ)
+await setSelect('experience', '');
+ok('📊 «Сонгох» (= хоосон) → утга АРИЛНА (⏳ чип toggle-off-той ИЖИЛ)', await pollVal('experience', ''));
+const restVals = [await readVal('jobType'), await readVal('advertiser'), await readVal('jobLevel'), await readVal('salaryType')];
+ok('📊 УТГА АРИЛГАХ нь БУСАД талбарыг ХӨНДӨӨГҮЙ (3 талбар + 💰 хэвээр)',
+  JSON.stringify(restVals) === JSON.stringify(['Бүтэн цагийн', 'Хувь хүн', 'Мэргэжилтэн', 'Хэлбэлзэх']),
+  JSON.stringify(restVals));
 
 // ═══════ ④b ЗАСАХ ГОРИМ — миний зар → чипүүд УРЬДЧИЛАН сонгогдсон эсэх ═══════
-// ⚠️ Засах горимд утга нь DB-ээс (`attrs`) ирдэг тул чипүүд нь `defaultValue`
-//    биш, `form.attrs`-аас УРЬДЧИЛАН сонгогдох ёстой ✓ (демо хэрэглэгчид
-//    💼 АЖЛЫН ЗАР байхгүй бол алгасна — бусад шалгалт хэвээр ✓)
-console.log('\n④b ЗАСАХ ГОРИМ — миний зар → чипууд урьдчилан сонгогдсон эсэх');
+// ⚠️ Засах горимд утга нь DB-ээс (`attrs`) ирдэг тул `<select value={...}>` нь
+//    `defaultValue` биш, `form.attrs`-аас УРЬДЧИЛАН сонгогдох ёстой ✓ (демо
+//    хэрэглэгчид 💼 АЖЛЫН ЗАР байхгүй бол алгасна — бусад шалгалт хэвээр ✓)
+console.log('\n④b ЗАСАХ ГОРИМ — миний зар → `<select>`-үүд урьдчилан сонгогдсон эсэх');
 await rpc('Page.navigate', { url: `${BASE}/my-listings` });
 let cands = [];
 for (let i = 0; i < 10; i += 1) {
@@ -437,25 +389,23 @@ if (!job) {
   for (let i = 0; i < 12; i += 1) {
     await wait(1200);
     ed = await evaluate(READ);
-    if (ed.blocks.length >= 4) break;
+    if (KEYS.every((k) => ed.selects[k] === 1)) break;
   }
-  const edActive = {};
-  ed.blocks.forEach((b) => { if (b.key) edActive[b.key] = activeVals(ed, b.key)[0] || ''; });
-  const edSalary = await evaluate(`(() => { const s = document.querySelector('[data-detail-field="attr-salaryType"] select'); return s ? s.value : ''; })()`);
+  const edVals = Object.fromEntries(KEYS.map((k) => [k, ed.values[k] || '']));
   console.log('   хуудас: ' + pubNav);
-  console.log('   формо дээрх чипүүд: ' + JSON.stringify(edActive) + ' 💰select=' + JSON.stringify(edSalary));
-  ok('засах горим: 4 чип блок хэвээр (форм зөв нээгдэв)', ed.blocks.length === 4,
-    ed.blocks.map((b) => b.key).join(','));
-  ok('засах горим: ДОР ХАЯЖ 1 чип (🕒 jobType) урьдчилан сонгогдсон',
-    !!edActive.jobType, JSON.stringify(edActive));
-  ok('засах горим: сонгогдсон чипүүд зарын ДЭЛГЭРЭНГҮЙ хуудсан дээрх утгатай ИЖИЛ (DB → форм ✓)',
-    Object.values(edActive).filter(Boolean).length > 0
-      && Object.values(edActive).filter(Boolean).every((v) => pubText.includes(v)),
-    'форм=' + JSON.stringify(Object.entries(edActive).filter(([, v]) => v))
+  console.log('   формо дээрх `<select>`: ' + JSON.stringify(edVals));
+  ok('засах горим: 5 талбар БҮГД `<select>` (форм зөв нээгдэв)', KEYS.every((k) => ed.selects[k] === 1),
+    JSON.stringify(ed.selects));
+  ok('засах горим: 🕒 jobType УРЬДЧИЛАН сонгогдсон (DB → форм ✓)',
+    !!edVals.jobType, JSON.stringify(edVals));
+  ok('засах горим: сонгогдсон утгууд зарын ДЭЛГЭРЭНГҮЙ хуудсан дээрх утгатай ИЖИЛ (DB → форм ✓)',
+    Object.values(edVals).filter(Boolean).length > 0
+      && Object.values(edVals).filter(Boolean).every((v) => pubText.includes(v)),
+    'форм=' + JSON.stringify(Object.entries(edVals).filter(([, v]) => v))
       + ' · дэлгэрэнгүй=' + JSON.stringify(pubText.replace(/\n/g, '|').slice(0, 160)));
-  if (edSalary) {
-    ok('засах горим: 💰 `<select>` (salaryType) ч урьдчилан сонгогдсон', pubText.includes(edSalary),
-      'select=' + edSalary);
+  if (edVals.salaryType) {
+    ok('засах горим: 💰 `<select>` (salaryType) ч урьдчилан сонгогдсон', pubText.includes(edVals.salaryType),
+      'select=' + edVals.salaryType);
   }
 }
 {
@@ -485,16 +435,16 @@ if (!job) {
   await evaluate(`(() => { const b = document.querySelector('[data-picker="level2"] [data-picker-value]'); if (b) b.click(); return !!b; })()`);
   await wait(1800);
   for (let i = 0; i < 4; i += 1) {
-    const has = await evaluate(`(() => document.querySelectorAll('[data-attr-field]').length)()`);
-    if (has >= 4) break;
+    const has = await evaluate(`(() => document.querySelectorAll('[data-detail-field^="attr-"]').length)()`);
+    if (has >= 5) break;
     await evaluate(`(() => { const t = [...document.querySelectorAll('button')].find((x) => /Үргэлжлүүлэх/.test(x.innerText) && x.offsetParent !== null); if (t) t.click(); return !!t; })()`);
     await wait(2500);
   }
-  console.log('   ↻ шинэ форм бэлэн: чип блок = ' + await evaluate(`(() => document.querySelectorAll('[data-attr-field]').length)()`));
+  console.log('   ↻ шинэ форм бэлэн: attr талбар = ' + await evaluate(`(() => document.querySelectorAll('[data-detail-field^="attr-"]').length)()`));
 }
 
 // ═══════ ⑤ 📱 МОБАЙЛ 390px (дрилл-даун: НЭГ ДЭЛГЭЦЭД НЭГ ТАЛБАР) ═══════
-console.log('\n⑤ 📱 МОБАЙЛ 390px — чипүүд харагдах / overflow');
+console.log('\n⑤ 📱 МОБАЙЛ 390px — 2 баганат жагсаалт харагдах / overflow');
 await rpc('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
 await wait(2500);
 // ⚠️ 📱 мобайлд 3-р алхмын ЭХНИЙ дэлгэц = «Зарын гарчиг» (ЗААВАЛ) — бөглөхгүй
@@ -508,26 +458,40 @@ const titleFilled = await evaluate(`(() => {
   return true;
 })()`);
 console.log('   гарчиг бөглөв: ' + titleFilled);
+/** ⏳ «Чип» үед автоматаар ШИЛЖДЭГГҮЙ (pick=false) байсан; 🆕 2026-10-07 `<select>`
+ *  тул `pick=true` — сонголт дээр дармагц ДАРААГИЙН дэлгэц рүү шилжинэ ⇒ мобайлд
+ *  `[data-mobile-option]` дарж урагшилна (⛔ доод товч ХАРАГДАХГҮЙ ✓) */
+const TARGET = ['jobType', 'experience', 'advertiser', 'jobLevel'];
 const seen = new Set();
 let mobInfo = null;
 let screens = 0;
 for (let i = 0; i < 14; i += 1) {
   screens = i + 1;
   const r = await evaluate(`(() => {
-    const vis = [...document.querySelectorAll('[data-attr-field]')].filter((b) => b.offsetParent !== null);
-    const b = vis[0];
+    const visAttr = [...document.querySelectorAll('[data-detail-field^="attr-"]')].filter((e) => e.offsetParent !== null);
+    const e = visAttr[0];
+    const opts = e ? [...e.querySelectorAll('[data-mobile-option]')].filter((x) => x.getBoundingClientRect().width > 0) : [];
+    const sel = e ? e.querySelector('select') : null;
+    const grid = e ? e.querySelector('[data-mobile-options-grid]') : null;
     return {
-      keys: vis.map((x) => x.dataset.attrField),
-      chips: b ? [...b.querySelectorAll('[data-attr-value]')].filter((c) => c.getBoundingClientRect().width > 0).length : 0,
-      wrap: b ? getComputedStyle(b).flexWrap : '',
+      keys: visAttr.map((x) => x.dataset.detailField.replace(/^attr-/, '')),
+      opts: opts.length,
+      selHidden: sel ? sel.getBoundingClientRect().width === 0 : null,
+      cols: grid ? getComputedStyle(grid).gridTemplateColumns : '',
       docW: document.documentElement.scrollWidth,
       vw: window.innerWidth,
     };
   })()`);
   r.keys.forEach((k) => seen.add(k));
   if (!mobInfo && r.keys.length) mobInfo = r;
-  if (seen.size >= 4) break;
+  if (TARGET.every((k) => seen.has(k))) break;
+  /** 📱 сонголттой талбар ⇒ `[data-mobile-option]` дарж урагшилна (pick ✓) */
   const adv = await evaluate(`(() => {
+    const e = [...document.querySelectorAll('[data-detail-field^="attr-"]')].find((x) => x.offsetParent !== null);
+    if (e) {
+      const opt = [...e.querySelectorAll('[data-mobile-option]')].find((x) => x.getBoundingClientRect().width > 0);
+      if (opt) { opt.click(); return 'OPTION'; }
+    }
     const b = document.querySelector('[data-mobile-detail-next]');
     if (b && b.offsetParent !== null) { b.click(); return 'MOBILE_NEXT'; }
     const t = [...document.querySelectorAll('button')].find((x) => /Үргэлжлүүлэх/.test(x.innerText) && x.offsetParent !== null);
@@ -537,9 +501,13 @@ for (let i = 0; i < 14; i += 1) {
   if (!adv) break;
   await wait(900);
 }
-console.log('   ' + JSON.stringify(mobInfo) + ' дэлгэц=' + screens);
-ok('📱 мобайл: 4 чип талбар БҮГД харагдана (нэг дэлгэцэд нэг)', seen.size === 4, [...seen].join(','));
-ok('📱 чипүүд харагдана (өргөн>0) + flex-wrap', !!mobInfo && mobInfo.chips > 0 && mobInfo.wrap === 'wrap',
+console.log('   ' + JSON.stringify(mobInfo) + ' дэлгэц=' + screens + ' adv-ууд=' + [...seen].join(','));
+ok('📱 мобайл: 🕒/📊/🏷️/📈 4 attr талбар БҮГД харагдана (нэг дэлгэцэд нэг)',
+  TARGET.every((k) => seen.has(k)), [...seen].join(','));
+ok('📱 2 БАГАНАТ ШУУД ЖАГСААЛТ (`[data-mobile-option]` харагдана + grid 2 багана)',
+  !!mobInfo && mobInfo.opts > 0 && mobInfo.cols.split(' ').filter(Boolean).length === 2,
+  JSON.stringify(mobInfo));
+ok('📱 🖥 `<select>` мобайлд ДАРАГДАВ (`.hide-below-sm` → өргөн 0 ✓)', !!mobInfo && mobInfo.selHidden === true,
   JSON.stringify(mobInfo));
 ok('📱 хэвтээ гүйлт (overflow) ГАРАХГҮЙ', !!mobInfo && mobInfo.docW <= mobInfo.vw + 1,
   JSON.stringify(mobInfo));

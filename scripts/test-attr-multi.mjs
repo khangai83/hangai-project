@@ -392,14 +392,15 @@ t("🔒 Олон сонголттой талбарууд нь ЯГ ТОДОРХ�
 t('💼 (42) jobs → 🕒/📊/📈: `chips` + `multi` (sidebar-д «Өрөөний тоо» шиг чип)', () => {
   // Хэрэглэгчийн хүсэлт: «Ажлын цаг, Туршлага, Мэргэжлийн түвшиныг Өрөөний тоо
   // шиг болго, хайлтыг хэлж байгаа биз дээ» ⇒ 3 нь ОЛОН СОНГОЛТТОЙ ЧИП болов.
-  // ⚠️ `type` нь `'select'` ХЭВЭЭР (форм нэг утга хадгална — чип болгож
-  //    болгох нь `formChips` туг 2026-10-03 (11) ✓)
+  // ⚠️ `type` нь `'select'` ХЭВЭЭР (форм нэг утга хадгална) — 🆕 2026-10-07:
+  //    `formChips` туг ХАСАГДАВ (форм нь 💰 «Цалингийн төрөл»-тэй ЯГ ИЖИЛ
+  //    `<select>`, ⏳ 2026-10-03 (11)-ийн бөөрөнхий ЧИП БИШ)
   ['jobType', 'experience', 'jobLevel'].forEach((k) => {
     const f = getAttrField('jobs', k);
     assert.equal(f.type, 'select', `${k}.type ✗`);
     assert.equal(f.chips, true, `${k}: sidebar чип болоогүй ✗`);
     assert.equal(f.multi, true, `${k}: олон сонголт болоогүй ✗`);
-    assert.equal(f.formChips, true, `${k}.formChips (форм чип) ХӨНДӨГДӨВ ✗`);
+    assert.equal(f.formChips, undefined, `${k}.formChips (форм чип) ХАСАГДААГҮЙ ✗`);
     assert.ok((getSection('jobs').attrFilters || []).includes(k), `${k} attrFilters-д БАЙХГҮЙ ✗`);
   });
   // ⛔ 🏷️ «Зарлагч» нь sidebar-ийн шүүлт БИШ (форм дээр л) — `multi` аваагүй ✓

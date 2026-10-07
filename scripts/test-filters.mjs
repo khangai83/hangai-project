@@ -1098,7 +1098,7 @@ t('🔀 (17) 🚗 🎨/⛽/⚙️ — `afterPayment` эрэмбэ 1/2/3 (pill т
 });
 
 t('🔀 (17) 💼 🕒/📊/📈 ба ✅ «Төлөв» (8 хэсэг) — pill туг БАЙХГҮЙ, чип блок ХЭВЭЭР', () => {
-  // 💼 — 3 шүүлт (форм дээр чип хэвээр: `formChips` ХӨНДӨӨГДӨӨГҮЙ ✓)
+  // 💼 — 3 шүүлт (🆕 2026-10-07: ФОРМ нь `<select>` болов ⇒ `formChips` ХАСАГДАВ ✓)
   const jobs = getAttrFilters('jobs');
   assert.deepEqual(jobs.map((f) => f.key), ['jobType', 'experience', 'jobLevel']);
   jobs.forEach((f) => {
@@ -1106,7 +1106,7 @@ t('🔀 (17) 💼 🕒/📊/📈 ба ✅ «Төлөв» (8 хэсэг) — pill
     assert.equal(f.afterPayment, undefined, `jobs.${f.key}: afterPayment ✗`);
     assert.equal(f.chips, true, `jobs.${f.key}: чип биш ✗`);
     assert.equal(f.multi, true, `jobs.${f.key}: олон сонголт биш ✗`);
-    assert.equal(f.formChips, true, `jobs.${f.key}: форм чип хөндөгдсөн ✗`);
+    assert.equal(f.formChips, undefined, `jobs.${f.key}: форм чип хэвээр ✗`);
   });
   // ✅ — 8 хэсэгт нэг туг (`CONDITION_FILTER_EXTRA`)
   const cond = SECTIONS.filter((s) => s.attrFields.some((f) => f.key === 'condition'));
@@ -2031,12 +2031,12 @@ t('💼 jobs: 2 түвшин, 3 шүүлт (🕒 · 📊 · 📈 — гурву�
     assert.equal(getAttrField('jobs', k).chips, true, `${k}.chips ✗`);
     assert.equal(getAttrField('jobs', k).multi, true, `${k}.multi ✗`);
   });
-  // 🎛 2026-10-03 (11): ФОРМ дээр 4 талбар нь чип (`formChips`) —
-  //    ⚠️ энэ нь sidebar-ийн `chips`-ээс ТУСДАА туг (форм нэг утга хадгална ✓)
-  ['jobType', 'experience', 'advertiser', 'jobLevel'].forEach((k) => {
-    assert.equal(getAttrField('jobs', k).formChips, true, `${k}.formChips ✗`);
+  // 🎛 🆕 2026-10-07: ФОРМ дээр 4 талбар нь 💰 «Цалингийн төрөл»-тэй ЯГ ИЖИЛ
+  //    `<select>` — ⏳ 2026-10-03 (11)-ийн `formChips` ХАСАГДАВ ✓
+  //    (⚠️ ХАЙЛТЫН sidebar-ийн `chips` дээрх — ХӨНДӨӨГДӨӨГҮЙ ✓)
+  ['jobType', 'experience', 'advertiser', 'jobLevel', 'salaryType'].forEach((k) => {
+    assert.equal(getAttrField('jobs', k).formChips, undefined, `${k}.formChips хэвээр ✗`);
   });
-  assert.equal(getAttrField('jobs', 'salaryType').formChips, undefined);
   assert.equal(hasSimpleForm('jobs'), false);
   assert.deepEqual(getSubtypeGroups('jobs'), []); // ⚠️ бүлэг (3 дахь түвшин) БАЙХГҮЙ
   assert.equal(findSubtypeGroup('jobs', getSubtypes('jobs')[0]), null);
