@@ -219,7 +219,7 @@ async function main() {
     { s: 'equipment', label: '🏭 Тоног төхөөрөмж (20 дэд төрөл)' },
     { s: 'electric', label: '⚡ Цахилгаан бараа' },
     { s: 'travel', label: '🧳 Аяны бараа (12 дэд төрөл)' },
-    { s: 'hobby', label: '⚽ Спорт (21 дэд төрөл)' },
+    { s: 'hobby', label: '⚽ Спорт бараа (19 дэд төрөл)' },
   ];
   for (const { s, label } of sectionSeeds) {
     try {
