@@ -16,7 +16,7 @@ import { listingPrefillFromSearch, newListingHref } from '../lib/listingPrefill.
 import AuthModal from './AuthModal';
 import ProfileModal from './ProfileModal';
 import MessageIcon from './MessageIcon';
-import { HeartIcon } from './HeaderIcons';
+import { HeartIcon, ChatIcon } from './HeaderIcons';
 
 /** Supabase-ийн user → '+976XXXXXXXX' (эсвэл null).
  *  Гурван эх сурвалжаас дарааллаар нь хайна:
@@ -382,10 +382,16 @@ export default function AppProviders({ children }) {
                   )}
                 </Link>
 
-                {/* ---- ③ ✉️ Мессеж (icon-only — 2026-10-07) ----
+                {/* ---- ③ 💬 Мессеж (icon-only — 2026-10-07) ----
                     ⚠️ «Мессеж» ТЕКСТ ХАСАГДАВ (хэрэглэгчийн хүсэлт:
-                       «текстгүй icon болго»). Икон нь `MessageIcon` SVG
-                       (`currentColor` = товчны саарал/хар, өнгө ГАРАХГҮЙ ✓).
+                       «текстгүй icon болго»). Икон нь `ChatIcon` SVG —
+                       хоёр давхарласан ярианы бөмбөлөг + 3 цэг (`currentColor`
+                       = товчны саарал/хар, өнгө ГАРАХГҮЙ ✓).
+                    ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-07, жишээ зурагтай):
+                       «iim messege icon bolgochihoo» → дугтуй (`MessageIcon`)
+                       → чат бөмбөлөг (`ChatIcon`) болгов. ⚠️ Зөвхөн энэ
+                       толгойн мөрний товчид — мобайл доод цэс/footer/`/messages`
+                       зэрэг газрын дугтуй ХЭВЭЭР (`ChatIcon` тайлбарыг үз).
                     ⚠️ Уншаагүй тоолуур (badge) ХЭВЭЭР ✓ */}
                 <Link
                   href="/messages"
@@ -394,7 +400,7 @@ export default function AppProviders({ children }) {
                   aria-label="Мессеж"
                   onClick={closeUserMenus}
                 >
-                  <MessageIcon className="h-[15px] w-[15px]" />
+                  <ChatIcon className="h-[15px] w-[15px]" />
                   {unreadMessages > 0 && (
                     <span className="ml-1 rounded-full bg-primary px-1.5 py-px text-[11px] font-bold text-white">
                       {unreadMessages > 99 ? '99+' : unreadMessages}
