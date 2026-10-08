@@ -343,16 +343,18 @@ export default function AppProviders({ children }) {
                  → Ингэснээр мобайлд header нь ЗӨВХӨН лого (төвд) ✓ */} 
           <header className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-card">
             <div className="relative mx-auto flex h-16 max-w-[1536px] items-center justify-center px-4 sm:px-6 lg:justify-between">
-              {/* 🏠 ЛОГО (2026-10-08 (69c): `🏠` emoji → `HomeIcon` SVG + ZARBOOK.MN):
-                   ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (69c): «логооны хойд хэсэгт home icon
-                     оруул, энд дархад мэдээж home page дээр ирдэг байх» ⇒
-                     икон + «ZARBOOK.MN» текст нь НЭГ `<Link href="/">` дотор —
-                     икон дээр дарах ч, текст дээр дарах ч НҮҮР ХУУДАС руу ✓
+              {/* 🏠 ЛОГО (2026-10-08 (69c): `🏠` emoji → `ZARBOOK.MN`;
+                   (69d): икон логоноос ГАРЧ хайлтын хэсгийн ӨМНӨ ТУСДАА болов):
                    ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-08 (69c)): «zarbook.mn гэсэн
                      domain хаяг авсан тул бүгдийг ийм нэртэй болго ZarBook.mn»
                      ⇒ брэнд БҮХЭЛДЭЭ `ZARBOOK.MN` (footer · `<title>` · terms ·
                      export · UA) — 🔒 `phone.zarmn.mn` (синтетик имэйл) ба
                      `zarmn_*` (localStorage/event) нь ХӨНДӨӨГДӨӨГҮЙ ✓
+                   ⚠️ ХЭРЭГЛЭГЧИЙН ТОДРУУЛГА (2026-10-08 (69d)): «би уугийг нь
+                     тусдаа icon болгоод өгөөч гэсэн юм… search хэсгийн өмнө
+                     тусдаа icon болгоод өгөөч» ⇒ (69c)-д икон нь логоны ДОТОР
+                     байсныг ГАРГАЖ, лого нь ЗӨВХӨН ТЕКСТ болов; 🏠 икон нь
+                     доор (лого ба хайлтын хэсгийн ХООРОНД) ТУСДАА `<Link>` ✓
                    ⚠️ `gap` ХАСАГДСАН хэвээр (2026-09-27, хэрэглэгчийн гомдол:
                      «лого нь zarlaa .mn гэж харагдаад байх юм»).
                      ШАЛТГААН: `display: flex` дотор `gap` нь ЗӨВХӨН flex item-үүдийн
@@ -361,26 +363,55 @@ export default function AppProviders({ children }) {
                      «ZARBOOK» ба «.MN»-ийн хооронд ХИЙМЭЛ 8px зай үүсээд
                      «ZARBOOK .MN» гэж уншигдана ✗
                      (CDP хэмжилт: textEnd 138.6 → spanStart 146.6 = 8px).
-                     ✅ Икон ба текстийн зайг ИКОНЫ `mr-1.5` (margin) өгнө —
-                     margin нь текст зангилаануудын хооронд зай ҮҮСГЭХГҮЙ тул
-                     «ZARBOOK.MN» НЭГ ҮГ мэт харагдана ✓
+                     ✅ Одоо лого дээр икон огт байхгүй тул `mr-*` ч
+                     шаардлагагүй — «ZARBOOK.MN» НЭГ ҮГ мэт харагдана ✓
                    ⚠️ `flex items-center` нь VERTICAL төвлөрүүлэлтэд ЗААВАЛ
-                     хэрэгтэй (икон 22px текстийн мөрөөс өндөр) — бүү хас.
+                     хэрэгтэй (22px текстийн мөр дэх `<span>` нь өөр өндөртэй) — бүү хас.
                    ⚠️ `gap` буцааж нэмэх бол дотоод `<span>`-ыг бүхэлд нь
                      НЭГ элементээр ороох хэрэгтэй (эс бөгөөс алдаа буцаж гарна). */}
               <Link
                 href="/"
                 title="Нүүр хуудас"
                 aria-label="ZARBOOK.MN — нүүр хуудас"
-                className="group flex items-center text-[22px] font-bold text-primary"
+                className="flex items-center text-[22px] font-bold text-primary"
+                onClick={closeUserMenus}
+              >
+                ZARBOOK<span className="text-gray-900">.MN</span>
+              </Link>
+              {/* ===== 🏠 НҮҮР ХУУДАСНЫ ИКОН — ТУСДАА, ХАЙЛТЫН хэсгийн ӨМНӨ (2026-10-08 (69d)) =====
+                  ⚠️ ХЭРЭГЛЭГЧИЙН ТОДРУУЛГА: «би уугийг нь тусдаа icon болгоод өгөөч
+                     гэсэн юм… search хэсгийн өмнө тусдаа icon болгоод өгөөч» ✓
+                  📐 DOM дараалал = харагдах дараалал:
+                     [лого ZARBOOK.MN] → [🏠 икон] → [{headerSlot} хайлтын мөр] →
+                     [➕ ❤️ 💬 🕐 🔔 👤]  ⇒ икон нь ХАЙЛТЫН хэсгийн ЯГ ӨМНӨ ✓
+                  ⚠️ Хэмжээ `h-6 w-6` (24px) — баруун талын icon-only товчнуудтай
+                     (❤️ `HeartIcon` / 💬 `ChatIcon` / 🕐 `ClockIcon` / 🔔 `BellIcon`)
+                     ЯГ ИЖИЛ (⏳ (69c)-д логоны 22px текстэд тааруулж `h-[22px]` байв —
+                     одоо ТУСДАА товч тул хэв нь 24px ✓)
+                  ⚠️ `p-1.5` + `rounded-full` + `text-gray-700` + `hover:text-gray-900`,
+                     дотор SVG нь `group-hover:scale-110` (`duration-200 ease-out`) —
+                     бусад icon-only товчнуудтай ЯГ ИЖИЛ хэв ✓
+                     (⚠️ `text-primary` БИШ — энэ нь толгойн icon-only товч, лого биш)
+                  ⚠️ `hidden … lg:inline-flex` — МОБАЙЛД ХАРАГДАХГҮЙ: мобайл дээр
+                     толгой нь зөвхөн лого (төвд, `justify-center`) + баруун хонхтой
+                     байдаг тул нэмэлт элемент логог төвөөс ЗӨРҮҮЛНЭ ✗ (мобайлд
+                     лого өөрөө `/` руу заадаг тул икон шаардлагагүй ✓)
+                  ⚠️ `shrink-0` — хайлтын мөр (`flex-1`) уртсах үед икон БҮРЧЛЭГДЭХГҮЙ ✓
+                  ⚠️ `ml-2` — лого ↔ иконы зай (`lg`-ээс доош харагдахгүй тул
+                     мобайлын харагдацад нөлөөлөхгүй ✓)
+                  ⚠️ Дарахад `closeUserMenus()` — бусад толгойн линктэй ИЖИЛ ✓ */}
+              <Link
+                href="/"
+                data-home-icon-link
+                title="Нүүр хуудас"
+                aria-label="Нүүр хуудас"
+                className="group ml-2 hidden shrink-0 items-center justify-center rounded-full p-1.5 text-gray-700 transition-colors hover:text-gray-900 lg:inline-flex"
                 onClick={closeUserMenus}
               >
                 <HomeIcon
                   data-home-icon
-                  className="mr-1.5 h-[22px] w-[22px] transition-transform duration-200 ease-out group-hover:scale-110"
-                  strokeWidth={2}
+                  className="h-6 w-6 transition-transform duration-200 ease-out group-hover:scale-110"
                 />
-                ZARBOOK<span className="text-gray-900">.MN</span>
               </Link>
               {/* ===== 🖥 ХАЙЛТЫН МӨР — header-ийн ГОЛ хэсэг (2026-10-04 (27)) =====
                   Нүүр хуудас (`HomeClient`) нь `useHeaderSlot()`-оор энэ завсрыг
