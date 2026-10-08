@@ -23,10 +23,12 @@ import {
   NOTIFICATIONS_EVENT, NOTIFICATIONS_LIMIT, NOTIFICATION_PANEL_LIMIT,
   NOTIFICATION_TYPE_LIKE, NOTIFICATION_TYPE_META, UNKNOWN_ACTOR,
   actorInitial, actorLabel, badgeLabel, formatPhone, groupByListing,
-  groupCountLabel, groupTitleLabel, listingLabel, normalizeNotificationRow,
+  groupCountLabel, groupTitleLabel, listingLabel, listingTitleLabel,
+  normalizeNotificationRow,
   notificationEmoji, notificationText, notificationTimeAgo, notificationTypeMeta,
   panelRows, phoneHref, sortNotifications, unreadCount,
 } from '../lib/notifications.mjs';
+import phoneEmail from '../lib/phoneEmail.js';
 
 let passed = 0;
 const t = (name, fn) => {
@@ -144,6 +146,22 @@ t('💬 Мөрний текст: «таны «3 өрөө байр» зарыг �
   assert.equal(text, 'таны «3 өрөө байр» зарыг таалагдлав');
   assert.ok(!text.includes('Бат'), 'хүний нэр текст дотор орсон ✗ (товч/мөрөнд тусдаа гарна)');
   assert.equal(notificationText(uiRow({ type: 'weird' })), 'таны «3 өрөө байр» зар дээр шинэ үйлдэл хийв');
+  // ⚠️ Гарчиг нь ТУСДАА (товдсон 🏠) мөрөнд гардаг газарт давхардуулахгүй ✓
+  assert.equal(notificationText(uiRow(), { withListing: false }), 'таны зарыг таалагдлав');
+  assert.equal(
+    notificationText(uiRow({ type: 'weird' }), { withListing: false }),
+    'таны зар дээр шинэ үйлдэл хийв'
+  );
+});
+
+t('🏠 `listingTitleLabel` — шошгогүй гарчиг; хоосон/байхгүй бол «Зар» (нэг эх сурвалж ✓)', () => {
+  assert.equal(listingTitleLabel(uiRow()), '3 өрөө байр');
+  assert.equal(listingTitleLabel(uiRow({ listing_title: '   ' })), 'Зар');
+  assert.equal(listingTitleLabel(uiRow({ listing_title: null })), 'Зар');
+  assert.equal(listingTitleLabel(null), 'Зар');
+  // ⚠️ Бүлгийн гарчиг нь ЯГ ИЖИЛ функцийг ашиглана (хоёр газар зөрөхгүй ✓)
+  assert.equal(listingTitleLabel({ listingTitle: ' Орон сууц · Баянгол ' }), 'Орон сууц · Баянгол');
+  assert.equal(groupTitleLabel({ listingTitle: ' Орон сууц · Баянгол ' }), 'Орон сууц · Баянгол');
 });
 
 // ---------- ⑤ Цаг ----------
@@ -307,6 +325,83 @@ t('🧱 Миграц нь idempotent (дахин ажиллуулж болно �
   assert.ok(/insert into public\.notifications/.test(sql), 'хуучин ❤️-ийн backfill алга ✗');
   assert.ok(/on conflict \(user_id, actor_id, type, listing_id\) do nothing/.test(sql), 'backfill давхардаж болно ✗');
 
+// ---------- ⑧b 0041 — 📞 ДУГААР + 🏠 ГАРЧИГ (2026-10-08 (69)) ----------
+const sql41 = codeOnly(readSrc('supabase/migrations/0041_notification_phone_title.sql'));
+const phoneSrc = readSrc('lib/phoneEmail.js');
+
+t('📞 0041: `phone_from_email()` нь `lib/phoneEmail.js`-ийн ЯГ ИЖИЛ дүрэмтэй ✓', () => {
+  // ⚠️ Хоёр газарт хоёр өөр дүрэм үүсвэл DB-д нэг, UI-д нөгөө дугаар гарч
+  //    «энэ хэн бэ» гэсэн эргэлзээ үүснэ ✗ — ижил домэйн + ижил «сүүлийн 8
+  //    цифр» дүрмийг ХОЁУЛАНД нь түгжинэ ✓
+  assert.ok(
+    /create or replace function public\.phone_from_email\(p_email text\)/.test(sql41),
+    'phone_from_email функц алга ✗'
+  );
+  assert.ok(sql41.includes("'%@phone.zarmn.mn'"), 'дотоод имэйлийн домэйн шалгалт алга ✗');
+  assert.ok(phoneSrc.includes("const EMAIL_DOMAIN = 'phone.zarmn.mn'"), 'lib/phoneEmail.js-ийн домэйн өөрчлөгдсөн ✗');
+  assert.ok(sql41.includes("'+976'"), "'+976' угтвар алга ✗");
+  assert.ok(
+    /right\(regexp_replace\(split_part\(p_email, '@', 1\), '\\D', '', 'g'\), 8\)/.test(sql41),
+    'сүүлийн 8 цифрийн дүрэм алга ✗'
+  );
+  // ⚠️ Бодит жишээ: JS тал ба SQL тал ИЖИЛ утга өгнө ✓
+  assert.equal(phoneEmail.emailToPhone('88093663@phone.zarmn.mn'), '+97688093663');
+  assert.equal(phoneEmail.emailToPhone('97699112233@phone.zarmn.mn'), '+97699112233');
+  assert.equal(phoneEmail.emailToPhone('bat@example.com'), null, 'гадаад имэйлээс дугаар гаргаж болохгүй ✗');
+});
+
+t('🏠 0041: гарчиг нь `title` → «төрөл · дүүрэг» → «Зар» дарааллаар нөөцлөгдөнө ✓', () => {
+  // ⚠️ `listings.title` нь ЗААВАЛ БИШ (0027) ⇒ хуучин 0040 нь бараг үргэлж
+  //    «Зар» гэж хадгалдаг байв — зарын эзэн АЛЬ ЗАР вэ гэдгээ мэдэхгүй байв ✗
+  assert.ok(/nullif\(btrim\(l\.title\), ''\)/.test(sql41), 'жинхэнэ гарчиг ТҮРҮҮЛЭХГҮЙ байна ✗');
+  assert.ok(/concat_ws\(' · '/.test(sql41), '«төрөл · дүүрэг» нөөц алга ✗');
+  assert.ok(/nullif\(btrim\(l\.property_type\), ''\)/.test(sql41), 'property_type нөөц алга ✗');
+  assert.ok(/nullif\(btrim\(l\.district\), ''\)/.test(sql41), 'district нөөц алга ✗');
+  assert.ok(
+    (sql41.match(/'Зар'/g) || []).length >= 3,
+    '«Зар» эцсийн нөөц бүх газарт (триггер + бөглөлт) алга ✗'
+  );
+});
+
+t('📞 0041: триггер дугаарыг `auth.users.phone` → хоосон бол ИМЭЙЛЭЭС авна ✓', () => {
+  assert.ok(
+    /create or replace function public\.notify_listing_like\(\)/.test(sql41),
+    'триггер шинэчлэгдээгүй ✗ (хуучин бие хэвээр үлдвэл дугаар null хэвээр)'
+  );
+  assert.ok(/security definer/.test(sql41), 'security definer алга ✗ (auth.users унших/RLS тойрох)');
+  assert.ok(
+    /coalesce\(\s*nullif\(btrim\(u\.phone\), ''\),\s*public\.phone_from_email\(u\.email\)\s*\)/.test(sql41),
+    '📞 `auth.users.phone` → имэйл нөөц алга ✗ (ГОЛ АЛДАА засагдахгүй)'
+  );
+  assert.ok(/from auth\.users u/.test(sql41), 'дугаар нь auth.users-ээс татагдахгүй ✗');
+  // ⚠️ Триггер нь 0040-д үүссэн хэвээр (OID хадгалагдана) — дахин үүсгэх хэрэггүй ✓
+  assert.ok(!/drop trigger/i.test(sql41), 'триггерийг дарж бичих шаардлагагүй ✗');
+  assert.ok(/after insert on public\.listing_likes/.test(sql), '(0040) триггер `after insert` ХЭВЭЭР ✓');
+  assert.ok(/owner_id is null or owner_id = new\.user_id/.test(sql41), 'зочин/өөрийн зарын шүүлт алга болсон ✗');
+  assert.ok(
+    /on conflict \(user_id, actor_id, type, listing_id\) do update/.test(sql41),
+    're-like үед `created_at`/`read_at` шинэчлэгдэхгүй ✗'
+  );
+});
+
+t('🧱 0041: хуучин мөрүүд БӨГЛӨГДӨНӨ (📞 + 🏠, idempotent) + RLS ХӨНДӨӨГДӨХГҮЙ ✓', () => {
+  assert.equal(
+    (sql41.match(/update public\.notifications n/g) || []).length,
+    2,
+    '📞 ба 🏠 гэсэн 2 бөглөлт байх ёстой ✗'
+  );
+  assert.ok(/and nullif\(btrim\(n\.actor_phone\), ''\) is null/.test(sql41), 'дугаартай мөрийг дарж бичиж байна ✗');
+  assert.ok(
+    /coalesce\(nullif\(btrim\(n\.listing_title\), ''\), 'Зар'\) = 'Зар'/.test(sql41),
+    'жинхэнэ гарчигтай мөрийг дарж бичиж байна ✗'
+  );
+  assert.ok(/\) <> 'Зар';/.test(sql41), 'бөглөх утга байхгүй ч мөр шинэчлэгдэнэ ✗ (idempotent биш)');
+  assert.ok(/public\.phone_from_email\(u\.email\)/.test(sql41), 'бөглөлт имэйлээс дугаар гаргахгүй байна ✗');
+  // ⚠️ RLS/эрх/хүснэгт ХӨНДӨӨГДӨХГҮЙ — 0040-ийн хатуурал хэвээр ✓
+  assert.ok(!/create policy|drop policy|revoke|grant/i.test(sql41), 'RLS/эрх ХӨНДӨӨГДӨЖ байна ✗');
+  assert.ok(!/alter table/i.test(sql41), 'хүснэгтийн бүтэц ХӨНДӨӨГДӨЖ байна ✗');
+});
+
 // ---------- ⑨ UI-ийн холболт (файл бүрэн эсэх) ----------
 t('🧩 queries.js: мэдэгдлийн DB функцууд бүгд байна ✓', () => {
   const q = readSrc('lib/queries.js');
@@ -338,16 +433,29 @@ t('🧩 notificationsClient.js: 2 hook + event (badge тэр даруй шинэ
   assert.ok(cl.includes('notifyNotificationsChanged()'), 'үйлдлийн дараа badge-ийг шинэчлэхгүй ✗');
 });
 
-t('🧩 NotificationBell: badge + самбар + утасны дугаар (эзэн залгаж чадна ✓)', () => {
+t('🧩 NotificationBell: badge + самбар + дугаар + 🏠 ГАРЧИГ (эзэн залгаж чадна ✓)', () => {
   const bell = readSrc('components/NotificationBell.jsx');
   for (const hook of [
     'data-notification-bell', 'data-notification-badge', 'data-notification-panel',
-    'data-notification-row', 'data-notification-phone', 'data-notification-remove',
+    'data-notification-row', 'data-notification-listing', 'data-notification-phone',
+    'data-notification-remove',
   ]) {
     assert.ok(bell.includes(hook), `NotificationBell: ${hook} дэгээ алга ✗ (CDP тест ажиллахгүй)`);
   }
   assert.ok(bell.includes('href="/notifications"'), 'самбарт «Бүгдийг харах» линк алга ✗');
   assert.ok(/formatPhone|actorLabel/.test(bell), 'самбарт дугаар/нэр харуулахгүй байна ✗');
+  // 🏠 АЛЬ ЗАР ВЭ (хэрэглэгчийн хүсэлт (69)) — товдсон, ТУСДАА мөрөнд ✓
+  assert.ok(bell.includes('listingTitleLabel'), 'самбарт зарын гарчиг харуулахгүй байна ✗');
+  assert.ok(
+    /data-notification-listing[\s\S]{0,200}🏠 \{title\}/.test(bell),
+    'гарчиг нь 🏠 тэмдэгтэй товдсон мөрөнд гарахгүй байна ✗'
+  );
+  assert.ok(
+    /notificationText\(row, \{ withListing: false \}\)/.test(bell),
+    'гарчиг нь өгүүлбэр дотор ДАВХАРДАЖ байна ✗ (мөр бүр 1 л гарчигтай байх ёстой)'
+  );
+  // 📞 Нэргүй хүний дугаар нь ч `tel:` линк (дан дарах → залгана ✓)
+  assert.ok(/nameIsPhone && tel/.test(bell), 'нэргүй хүний дугаар линк биш байна ✗ (залгаж чадахгүй)');
 });
 
 t('🧩 NotificationsClient: бүлэглэлт + «бүгдийг уншсан»/«цэвэрлэх» ✓', () => {

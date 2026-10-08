@@ -23,6 +23,14 @@
 //    badge эвдрэхгүй байхыг шалгана (0040 migration ОРООГҮЙ бол SKIP гэж
 //    мэдээлнэ — тест УНАХГҮЙ ✓)
 //
+// 📌 2026-10-08 (69) — хэрэглэгчийн хүсэлт: «notification руу ороод үзхэд ямар
+//    зар дээр нь like дарсаныг хараад ШУУД мэдэж болохоор зарын гарчигийг нь
+//    оруулж өгөөрэй. бас like дарсан хүний дугаарыг харуулвал ямар вэ» ⇒
+//    зочин хэсэг ХӨНДӨӨГДӨӨГҮЙ; нэвтэрсэн хэсэгт ⑥c нь «мөр БҮРД 📞» болж
+//    ХАТУУРАВ (0041 миграц имэйлээс ч бөглөдөг), ⑥g/⑥h нь хонхны самбарын мөр
+//    бүрд 🏠 зарын гарчиг ба 📞 `tel:` линк байгааг шалгана ✓
+//    ⇒ 0041 ажиллуулах: `npm run migration:copy 0041_notification_phone_title.sql`
+//
 // АЖИЛЛУУЛАХ:
 //   1) `npm run build && npm run start` — сервер http://localhost:3000
 //   2) Google Chrome-ыг CDP-ээр нээнэ:
@@ -298,8 +306,16 @@ if (!PHONE || !PASS) {
         const rows = await evalJs(`document.querySelectorAll('[data-notifications-row]').length`);
         const phones = await evalJs(`document.querySelectorAll('[data-notifications-phone]').length`);
         console.log(`   ℹ️ бүлэг=${groups}, мөр=${rows}, 📞 дугаартай мөр=${phones}`);
-        check('⑥c Мэдэгдэл байгаа бол мөр бүрд 📞 ДУГААР харагдана (хэрэглэгчийн гол хүсэлт ✓)',
-          rows === 0 || phones > 0, `rows=${rows}, phones=${phones}`);
+        // ⚠️ (69): 0041 миграц нь 📞-г дотоод имэйлээс ч бөглөдөг тул мөр БҮРД
+        //    дугаар байх ёстой (зочин ❤️-д мэдэгдэл үүсдэггүй ⇒ дарсан хүн
+        //    бүр бүртгэлтэй=утастай ✓)
+        check('⑥c Мэдэгдэл байгаа бол мөр БҮРД 📞 ДУГААР харагдана (хэрэглэгчийн гол хүсэлт ✓)',
+          rows === 0 || phones === rows,
+          `rows=${rows}, phones=${phones}${
+            rows > 0 && phones < rows
+              ? ' ⇒ `npm run migration:copy 0041_notification_phone_title.sql` ажиллуулна уу'
+              : ''
+          }`);
         const badge = await evalJs(`(() => { const b = document.querySelector('[data-notification-badge]'); return b ? b.innerText.trim() : ''; })()`);
         check('⑥d Хонхны badge нь тоо эсвэл хоосон (эвдэрсэн текст БИШ ✓)',
           badge === '' || /^(\d{1,2}|99\+)$/.test(badge), `badge="${badge}"`);
@@ -315,6 +331,30 @@ if (!PHONE || !PASS) {
         check('⑥f Бүлэг бүр ЗАРЫН НЭРТЭЙ + тоо нь мөрүүдтэй таарна',
           rows === 0 || (titles.length === groups && titles.every((t) => t.length > 0) && new RegExp(`^${rows} мэдэгдэл`).test(countText)),
           `бүлэг=${groups}, гарчиг=${titles.length}, тоо="${countText}"`);
+        // 🏠 + 📞 ХОНХНЫ САМБАР (2026-10-08 (69) — хэрэглэгчийн хүсэлт):
+        //   мөр бүрд ТУСДАА товдсон зарын гарчиг + 📞 дугаар харагдах ёстой.
+        //   ⚠️ Самбар нээгдэхэд уншаагүй мөрүүд «уншсан» болно — зохиомжоор
+        //      «нээсэн = уншсан» ✓ (⑥d badge-ийг үүнээс ӨМНӨ шалгасан ✓)
+        await evalJs(`document.querySelector('[data-notification-bell-button]').click()`);
+        const panelOpen = await waitFor(`document.querySelector('[data-notification-panel]')`, 6000);
+        if (!panelOpen) {
+          check('⑥g Хонхны самбар нээгдэв', false, '6с дотор нээгдсэнгүй ✗');
+        } else {
+          const panelRows = await evalJs(`document.querySelectorAll('[data-notification-panel] [data-notification-row]').length`);
+          const panelTitles = await evalJs(`[...document.querySelectorAll('[data-notification-panel] [data-notification-listing]')].map((e) => e.innerText.trim())`);
+          const panelPhones = await evalJs(`document.querySelectorAll('[data-notification-panel] [data-notification-phone]').length`);
+          console.log(`   ℹ️ самбар: мөр=${panelRows}, 🏠 гарчиг=${panelTitles.length}, 📞=${panelPhones}`);
+          if (panelRows === 0) {
+            skips('хонхны самбарт мөр алга (мэдэгдэл байхгүй) — 🏠/📞 шалгалт хийгдэхгүй');
+          } else {
+            check('⑥g Самбарын мөр БҮРД 🏠 ЗАРЫН ГАРЧИГ товдож харагдана (аль зар вэ нь ШУУД мэдэгдэнэ ✓)',
+              panelTitles.length === panelRows && panelTitles.every((t) => t.startsWith('🏠 ') && t.length > 3),
+              panelTitles.slice(0, 3).join(' | ') || '(гарчиг алга)');
+            check('⑥h Самбарын мөр БҮРД 📞 ДУГААР (`tel:` линк — нэргүй бол нэр нь өөрөө линк ✓)',
+              panelPhones === panelRows, `мөр=${panelRows}, 📞=${panelPhones}`);
+          }
+          await evalJs(`document.body.click()`); // самбарыг хаана
+        }
       }
     }
   }

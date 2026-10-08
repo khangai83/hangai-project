@@ -27,14 +27,21 @@
 // ⚠️ CDP/тестийн тогтвортой дэгээнүүд: `data-notification-bell`,
 //    `data-notification-bell-button`, `data-notification-badge`,
 //    `data-notification-panel`, `data-notification-row`,
-//    `data-notification-phone`, `data-notification-remove` ✓
+//    `data-notification-listing` (🏠 зарын гарчиг), `data-notification-phone`,
+//    `data-notification-remove` ✓
+//
+// 📌 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-08 (69)): «notification руу ороод үзхэд ямар
+//   зар дээр нь like дарсаныг хараад ШУУД мэдэж болохоор зарын гарчигийг нь
+//   оруулж өгөөрэй. бас like дарсан хүний дугаарыг харуулвал ямар вэ» ⇒ мөр
+//   бүр ТУСДАА товдсон 🏠 гарчгийн мөртэй болж, 📞 дугаар нь нэргүй хүнд ч
+//   `tel:` линк (дан дарах → залгана) боллоо ✓
 // ============================================================
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { BellIcon } from './HeaderIcons';
 import { useNotifications } from '../lib/notificationsClient';
 import {
-  actorLabel, badgeLabel, formatPhone, notificationEmoji,
+  actorLabel, badgeLabel, formatPhone, listingTitleLabel, notificationEmoji,
   notificationText, notificationTimeAgo, panelRows, phoneHref,
 } from '../lib/notifications.mjs';
 
@@ -164,18 +171,21 @@ function BellNotice({ children }) {
 
 /**
  * 🔔 Самбарын НЭГ мөр: ① дугуй avatar (хүний эхний үсэг + ❤️ төрлийн тэмдэг),
- * ② «<b>нэр/дугаар</b> таны «зар» зарыг таалагдлав» + 📞 дугаар/🕒 цаг,
- * ③ ✕ устгах товч. Мөр БҮХЭЛДЭЭ дарагдаж зар руу шилжинэ (`listingId` байвал ✓)
+ * ② «<b>нэр/дугаар</b> таны зарыг таалагдлав» + ③ **🏠 ЗАРЫН ГАРЧИГ**
+ * (товдсон, ТУСДАА мөр — «аль зар вэ» нь ШУУД мэдэгдэнэ ✓), ④ 📞 дугаар/🕒 цаг,
+ * ⑤ ✕ устгах товч. Мөр БҮХЭЛДЭЭ дарагдаж зар руу шилжинэ (`listingId` байвал ✓)
  */
 function BellRow({ row, fresh, onNavigate, onRemove }) {
   const name = actorLabel(row);
-  // ⚠️ `actorLabel` нь нэргүй хэрэглэгчид ДУГААРЫГ буцаадаг тул дугаарыг
-  //    зөвхөн НЭР БАЙГАА үед тусдаа (📞 линк) харуулна — давхардал ГАРАХГҮЙ ✓
   const phone = formatPhone(row.actorPhone);
   const tel = phoneHref(row.actorPhone);
-  const showPhone = !!phone && phone !== name;
+  // ⚠️ `actorLabel` нь нэргүй хэрэглэгчид ДУГААРЫГ буцаадаг ⇒ дугаар нь аль
+  //    хэдийн «нэр» болж байгаа бол доор ДАВХАРДУУЛЖ харуулахгүй, харин НЭРИЙГ
+  //    өөрөө `tel:` линк болгоно (дан дарахад шууд залгана ✓)
+  const nameIsPhone = !!phone && phone === name;
   const emoji = notificationEmoji(row.type);
   const ago = notificationTimeAgo(row.createdAt);
+  const title = listingTitleLabel(row);
 
   return (
     <div
@@ -207,10 +217,31 @@ function BellRow({ row, fresh, onNavigate, onRemove }) {
 
       <div className="min-w-0 flex-1">
         <p className={`text-[13px] leading-snug text-gray-700 ${fresh ? 'font-semibold' : ''}`}>
-          <b className="font-bold text-gray-900">{name}</b> {notificationText(row)}
+          {nameIsPhone && tel ? (
+            <a
+              href={tel}
+              data-notification-phone
+              className="relative z-20 font-bold text-gray-900 hover:text-primary"
+              title={`Залгах: ${phone}`}
+            >
+              {name}
+            </a>
+          ) : (
+            <b className="font-bold text-gray-900">{name}</b>
+          )}{' '}
+          {/* ⚠️ Гарчиг нь ДООР тусдаа мөрөнд гардаг тул энд давхардуулахгүй ✓ */}
+          {notificationText(row, { withListing: false })}
+        </p>
+        {/* 🏠 АЛЬ ЗАР ВЭ — товдсон ТУСДАА мөр (хэрэглэгчийн хүсэлт (69) ✓) */}
+        <p
+          data-notification-listing
+          title={title}
+          className="mt-0.5 truncate text-[12.5px] font-semibold text-gray-800"
+        >
+          🏠 {title}
         </p>
         <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-gray-500">
-          {showPhone && tel && (
+          {!nameIsPhone && tel && (
             <a
               href={tel}
               data-notification-phone
