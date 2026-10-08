@@ -1046,17 +1046,20 @@ check('🆕 (16) 💻 HOVER: хулганыг зайлуулахад фон БУ
   !!backPill && backPill.bg === 'rgb(255, 255, 255)' && backPill.hover === false,
   backPill ? `${backPill.bg} hover=${backPill.hover}` : 'NO_PILL');
 
-// ═══════ ⑨′ 🆕 (71) 🛏 «БУЙДАН БОЛДОГ» — ЗӨВХӨН «Буйдан, кресло» ДЭД ТӨРӨЛД ═══════
+// ═══════ ⑨′ 🆕 (71) · ✏️ (73) 🛏 «ОР БОЛДОГ ЭСЭХ» — ЗӨВХӨН «Буйдан, кресло» ДЭД ТӨРӨЛД ═══════
 /**
  * 🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-08 (71)): «Зөвхөн Буйдан, кресло -ийн зар
  *    оруулах болон хайх үед Буйдан болдог → Тийм/Үгүй гэсэн хэсэг нэмэх.
  *    Үүнийг Төлөв -ийн доор оруулах»
+ * ✏️ (73): хэрэглэгч «"Буйдан болдог" биш "Ор болдог эсэх" шүү дээ текстээ зас»
+ *    гэсэн тул `aria-label` (шошго) нь «Ор болдог эсэх» болов — ⚠️ `key`/URL/DB
+ *    (`sofaBed`) ХӨНДӨӨГДӨӨГҮЙ ✓
  * ⚠️ БОДИТ DOM дээр: ① дэд төрөл СОНГОСОН үед гарна ② ✅ «Төлөв»-ийн ЯГ ДООР
  *    ③ сонгоход URL `?attr_sofaBed=Тийм` ④ DB `attrs->>sofaBed=eq.Тийм`
  *    ⑤ холдуу дэд төрөл/дэд төрөлгүй үед ГАРАХГҮЙ (нэг л дүрэм ✓)
  * ⚠️ Тайлбар дотор BACKTICK БИЧИХГҮЙ — evalJs нь ТЕМПЛЭЙТ ЛИТЕРАЛ ✓
  */
-console.log('\n⑨′ 🛏 (2026-10-08 (71)) «Буйдан болдог» — зөвхөн «Буйдан, кресло» дэд төрөлд');
+console.log('\n⑨′ 🛏 (2026-10-08 (71) · ✏️ шошго (73)) «Ор болдог эсэх» — зөвхөн «Буйдан, кресло» дэд төрөлд');
 const sofaProbe = () => evalJs(`(() => {
   const aside = document.getElementById('advanced-filters');
   const el = aside ? aside.querySelector('[data-attr-filter="sofaBed"]') : null;
@@ -1075,14 +1078,16 @@ const sofaProbe = () => evalJs(`(() => {
 listingReqs.length = 0;
 await go(`${BASE}/?section=furniture&type=${encodeURIComponent('Буйдан, кресло')}`);
 const sofaSel = await sofaProbe();
-check('🛏 (71) «Буйдан, кресло» дээр 🛏 <select> ГАРНА (Бүгд/Тийм/Үгүй) ✓',
+check('🛏 (71/73) «Буйдан, кресло» дээр 🛏 <select> ГАРНА (Бүгд/Тийм/Үгүй) ✓',
   sofaSel.found && sofaSel.tag === 'SELECT' && sofaSel.opts.length === 3
     && sofaSel.opts[0] === '-:Бүгд' && sofaSel.opts[1] === 'Тийм:Тийм' && sofaSel.opts[2] === 'Үгүй:Үгүй',
   JSON.stringify(sofaSel));
-check('🛏 (71) Байрлал: ✅ «Төлөв»-ийн ЯГ ДООР (sidebar) + ДЭЛГЭЦ дээр харагдана ✓',
-  sofaSel.afterCond === true && sofaSel.visible === true && sofaSel.label === 'Буйдан болдог',
+check('🛏 (71/73) Байрлал: ✅ «Төлөв»-ийн ЯГ ДООР (sidebar) + ДЭЛГЭЦ дээр харагдана ✓',
+  sofaSel.afterCond === true && sofaSel.visible === true && sofaSel.label === 'Ор болдог эсэх',
   `afterCond=${sofaSel.afterCond} visible=${sofaSel.visible} label=${sofaSel.label}`);
-check('🛏 (71) Sidebar-д ЯГ 2 attr шүүлт (✅ Төлөв + 🛏 Буйдан болдог) ✓',
+check('🛏 (73) Шошго «Ор болдог эсэх» бөгөөд «Буйдан болдог» БУЦАЖ ОРООГҮЙ ✓',
+  !!sofaSel.label && !/Буйдан/.test(sofaSel.label), `label=${sofaSel.label}`);
+check('🛏 (71) Sidebar-д ЯГ 2 attr шүүлт (✅ Төлөв + 🛏 Ор болдог эсэх) ✓',
   sofaSel.asideCount === 2, `count=${sofaSel.asideCount}`);
 listingReqs.length = 0;
 const sofaPicked = await evalJs(`(() => {

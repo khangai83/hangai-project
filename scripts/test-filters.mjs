@@ -379,7 +379,7 @@ t("Бусад хэсгийн шүүлт (jobs: 3, computers: 1, furniture/home/t
   assert.equal(count('equipment'), 1);
   // 🛋️/🧳 2026-09-30 (5): 2 ШИНЭ 1-Р ТҮВШНИЙ хэсэг — мөн 1 л шүүлт
   //    (дэд төрөл нь ХАВТГАЙ: 13 ба 12 — 🧱/🏭-ийн ЯГ ИЖИЛ хялбар форм ✓)
-  // 🆕 2026-10-08 (71): 🛏 «Буйдан болдог» (`sofaBed`) нэмэгдсэн ч энэ дуудлага
+  // 🆕 2026-10-08 (71) · ✏️ шошго (73): 🛏 «Ор болдог эсэх» (`sofaBed`) нэмэгдсэн ч энэ дуудлага
   //    нь ДЭД ТӨРӨЛГҮЙ ⇒ `onlySubtypes` («Буйдан, кресло»)-аар шүүгдэж
   //    ХАРАГДАХГҮЙ тул тоо ХӨНДӨӨГДӨХГҮЙ (1 ✓); «Буйдан, кресло» дээр 2 (§⑧г ✓)
   assert.equal(count('furniture'), 1);
@@ -932,7 +932,7 @@ t('⚠️ `getAttrField` (картын мөр/шүүлт) нь `onlySubtypes`-а
   assert.equal(getAttrField('computers', 'cpu').label, 'Процессор (CPU)');
   // ⚠️ Зөвхөн 💻 хэсгийн 6 талбарт `onlySubtypes` байна — 🆕 (56): `brand`
   //    ба `model` ч нэмэгдэв (brand · model · screen · cpu · ram · storage) —
-  //    🆕 2026-10-08 (71): 🛋️ `furniture` дээр 🛏 «Буйдан болдог» (`sofaBed`)
+  //    🆕 2026-10-08 (71) · ✏️ шошго (73): 🛋️ `furniture` дээр 🛏 «Ор болдог эсэх» (`sofaBed`)
   //    нэмэгдэв (ЗӨВХӨН «Буйдан, кресло») — бусад 10 хэсэгт ямар ч талбар
   //    ХАСАГДАХГҮЙ (форм нь хэвээр бүгдийг харуулна ✓).
   //    ⚠️ `condition` нь `onlySubtypes`-ГҮЙ тул 💻/🛋️-ийн БҮХ дэд төрөлд ✓
@@ -1816,7 +1816,7 @@ t('🛋️ furniture: нэр «Тавилга», icon 🛋️, value `furniture`
   //    ЁСТОЙ → `0026_furniture_travel_sections.sql` (доор шалгана ✓)
   assert.equal(hasSimpleForm('furniture'), true);
   assert.deepEqual(getAttrFilters('furniture').map((f) => f.key), ['condition']);
-  // 🆕 2026-10-08 (71): 🛏 «Буйдан болдог» (`sofaBed`) нэмэгдэв — ⚠️ `attrFields`
+  // 🆕 2026-10-08 (71) · ✏️ шошго (73): 🛏 «Ор болдог эсэх» (`sofaBed`) нэмэгдэв — ⚠️ `attrFields`
   //    нь БҮТЭН жагсаалт (`onlySubtypes` шүүлт `getAttrFields(section, subtype)`
   //    дээр л ажиллана; энд `getSection().attrFields` нь ТҮҮХИЙ массив ✓)
   assert.deepEqual(getSection('furniture').attrFields.map((f) => f.key), ['condition', 'sofaBed']);

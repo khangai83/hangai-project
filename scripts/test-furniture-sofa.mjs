@@ -1,9 +1,12 @@
 // ============================================================
-// test-furniture-sofa.mjs — 🛏 «БУЙДАН БОЛДОГ» → Тийм / Үгүй (2026-10-08 (71))
+// test-furniture-sofa.mjs — 🛏 «ОР БОЛДОГ ЭСЭХ» → Тийм / Үгүй (2026-10-08 (71)/(73))
 //
 // 🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Зөвхөн Буйдан, кресло -ийн зар оруулах болон хайх
 //    үед Буйдан болдог → Тийм/Үгүй гэсэн хэсэг нэмэх. Үүнийг Төлөв -ийн доор
 //    оруулах» ✓
+//    ✏️ (73) ЗАСВАР: «"Буйдан болдог" биш "Ор болдог эсэх" шүү дээ текстээ зас»
+//       ⇒ шошго нь «Ор болдог эсэх»; ⚠️ `key` (`sofaBed`) ба URL/DB түлхүүр
+//       ХӨНДӨӨГДӨӨГҮЙ (хуучин заруудын `attrs->>sofaBed` утга ХЭВЭЭР ✓)
 //
 // 📐 ГУРВАН ГАЗАРТ НЭГ Л ДҮРМЭЭР (талбар нь 🛋️ `furniture`-ийн `attrFields`):
 //    ① 📝 ФОРМ (`AddListingClient` → `getAttrFields(section, propertyType)`)
@@ -49,13 +52,13 @@ const t = (name, fn) => {
 
 const SOFA = 'Буйдан, кресло';
 
-console.log('\n🛏 «Буйдан болдог» (Тийм / Үгүй) — 🛋️ «Буйдан, кресло» дэд төрөлд\n');
+console.log('\n🛏 «Ор болдог эсэх» (Тийм / Үгүй) — 🛋️ «Буйдан, кресло» дэд төрөлд\n');
 
 // ---------- ① ТАЛБАР ӨӨРӨӨ ----------
-t('① Талбар: key `sofaBed` · шошго «Буйдан болдог» · icon 🛏 · Тийм/Үгүй', () => {
+t('① Талбар: key `sofaBed` · шошго «Ор болдог эсэх» · icon 🛏 · Тийм/Үгүй', () => {
   const f = getAttrField('furniture', 'sofaBed');
   assert.ok(f, '`sofaBed` талбар БАЙХГҮЙ ✗');
-  assert.equal(f.label, 'Буйдан болдог');
+  assert.equal(f.label, 'Ор болдог эсэх');
   assert.equal(f.icon, '🛏');
   assert.deepEqual(f.options, ['Тийм', 'Үгүй']);
   assert.equal(f.type, 'select');
@@ -107,9 +110,9 @@ t('⑤ Гурвуулаа `onlySubtypes`-аар шүүгдэнэ (форм · ш
   assert.deepEqual(getAttrRows('furniture', attrs).map((r) => r.key), ['condition']);
 });
 
-t('⑥ 👁 Дэлгэрэнгүйд «🛏 Буйдан болдог: Тийм» мөр (icon + шошго + утга)', () => {
+t('⑥ 👁 Дэлгэрэнгүйд «🛏 Ор болдог эсэх: Тийм» мөр (icon + шошго + утга)', () => {
   const rows = getAttrRows('furniture', { sofaBed: 'Тийм' }, SOFA);
-  assert.deepEqual(rows, [{ key: 'sofaBed', label: 'Буйдан болдог', icon: '🛏', value: 'Тийм' }]);
+  assert.deepEqual(rows, [{ key: 'sofaBed', label: 'Ор болдог эсэх', icon: '🛏', value: 'Тийм' }]);
   // ⚠️ Хоосон утга мөр ҮҮСГЭХГҮЙ (хуучин зарууд «🛏 …» хоосон мөргүй ✓)
   assert.deepEqual(getAttrRows('furniture', { sofaBed: '' }, SOFA), []);
   assert.deepEqual(getAttrRows('furniture', {}, SOFA), []);
@@ -173,6 +176,24 @@ t('⑫ `npm run test:sofa` бүртгэгдсэн + README-д тест нэрэ�
   assert.equal(pkg.scripts['test:sofa'], 'node scripts/test-furniture-sofa.mjs',
     '`package.json`-д скрипт алга ✗');
   assert.ok(readSrc('README.md').includes('test-furniture-sofa.mjs'), 'README-д бүртгэл алга ✗');
+});
+
+t('⑬ ✏️ (73) ШОШГО «Ор болдог эсэх» — `key`/URL/DB нь `sofaBed` ХЭВЭЭР (регресс хориг)', () => {
+  const f = getAttrField('furniture', 'sofaBed');
+  assert.equal(f.label, 'Ор болдог эсэх', '(73)-ын шошго БИШ ✗');
+  // ⚠️ «Буйдан болдог» БУЦАЖ ОРОХ ЁСГҮЙ (хэрэглэгч тодорхой зассан ✗);
+  //    ⚠️ «Буйдан, кресло» нь ДЭД ТӨРЛИЙН нэр (DB) — тэр нь ХӨНДӨӨГДӨӨГҮЙ ✓
+  assert.ok(!/Буйдан/.test(f.label), 'шошгонд «Буйдан» буцаж орсон ✗');
+  assert.ok(getSubtypes('furniture').includes(SOFA), 'дэд төрлийн нэр ХӨНДӨГДСӨН ✗');
+  // ⚠️ ТҮЛХҮҮР ХӨНДӨӨГДӨӨГҮЙ — солибол хуучин заруудын `attrs->>sofaBed` утга
+  //    алга болж, `?attr_sofaBed=Тийм` линкээ ч хүчингүй болно ✗
+  assert.equal(f.key, 'sofaBed');
+  assert.match(readSrc('lib/locationData.js'),
+    /const SOFA_BED_LABEL = 'Ор болдог эсэх';/, '`SOFA_BED_LABEL`-ийн утга БИШ ✗');
+  // ⚠️ Шошго нь ЗӨВХӨН ХАРАГДАХ ТЕКСТ — DB/query-д хатсан БАЙХГҮЙ
+  //    (DB-д зөвхөн `Тийм`/`Үгүй` утга хадгалагдана ✓)
+  assert.ok(!/Ор болдог эсэх/.test(codeOnly(readSrc('lib/queries.js'))),
+    '`lib/queries.js`-д шошго хатсан ✗');
 });
 
 console.log(`\n✅ ${passed}/${passed} шалгалт АМЖИЛТТАЙ\n`);
