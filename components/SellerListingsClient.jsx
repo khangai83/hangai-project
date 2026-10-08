@@ -6,12 +6,24 @@ import ListingCard from './ListingCard';
 import Breadcrumb from './Breadcrumb';
 import MessageButton from './MessageButton';
 import CopyButton from './CopyButton';
+import Avatar from './Avatar';
 import { useAuth, useToast } from './AppProviders';
 import { fetchListingsBySeller, fetchProfile } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
 import { timeAgo } from '../lib/format';
 
 /**
+ * 🏪 НИЙТЛЭГЧИЙН ХУУДАС (`/sellers/<user_id>`) — тэр хүний БҮХ зар.
+ *
+ * 🆕 2026-10-08 (65) 👤 ПРОФАЙЛ ЗУРАГ: толгойн карт дээр `profiles.avatar_url`
+ *   харагдана (`Avatar` компонент, 64px) — өмнө нь ЗӨВХӨН нэрийн эхний ҮСЭГ
+ *   (`charAt(0)`, дугуй `rounded-full`) байв ✗ (⏳ (64): зарын дэлгэрэнгүй
+ *   хуудасны карт дээр ижил засвар хийгдсэн; энэ нь 2 дахь газар).
+ *   ⚠️ 0017-ийн `show_identity = false` дүрэм ЭНД ч мөрдөгдөнө (бусдын нүдээр
+ *   нэр/зураг харагдахгүй) — гэхдээ `user.id === sellerId` үед эзэн өөрөө
+ *   бүтнээрээ харна ✓. Зураг байхгүй бол `Avatar` нь нэрийн эхний үсгийг
+ *   үзүүлнэ (мөр хоосон харагдахгүй) ✓
+ *
  * Табууд: Бүгд / Зарах / Түрээслэх.
  * ⚠️ ижил зарчмаар «Зарах» ба «Түрээслэх» зарыг ЯЛГАЖ харуулна.
  */
@@ -25,6 +37,9 @@ export default function SellerListingsClient({ sellerId }) {
   const { user } = useAuth();
   const [listings, setListings] = useState(null); // null = ачаалж байна
   const [profileName, setProfileName] = useState(null);
+  // 🆕 (65) 👤 ПРОФАЙЛ ЗУРАГ (`profiles.avatar_url`) + «нийтэд харуулах эсэх»
+  const [profileAvatar, setProfileAvatar] = useState(null);
+  const [identityHidden, setIdentityHidden] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [tab, setTab] = useState('all'); // 'all' | 'sell' | 'rent'
 
@@ -38,9 +53,16 @@ export default function SellerListingsClient({ sellerId }) {
         const rows = await fetchListingsBySeller(sellerId);
         if (!mounted) return;
         setListings(rows);
-        // 2) Бүртгэлтэй нэр (profiles) — байхгүй бол contact_name-ийг ашиглана
+        // 2) 👤 ПРОФАЙЛ (profiles) — НЭР + ПРОФАЙЛ ЗУРАГ + «нийтэд харуулах эсэх».
+        //    ⚠️ `fetchProfile` нь `select('*')` — энд ТАЛБАРУУД нь бүгд хэрэгтэй:
+        //       `display_name` (хоч нэр), `avatar_url` (зураг), `show_identity` (0017).
         const p = await fetchProfile(sellerId);
-        if (mounted && p && p.name) setProfileName(p.name);
+        if (!mounted || !p) return;
+        setProfileName(String(p.display_name || p.name || '').trim() || null);
+        setProfileAvatar(p.avatar_url || null);
+        // ⚠️ Багана огт байхгүй (0017 ороогүй) бол `undefined` → ХАРАГДАНА ✓
+        //    (`fetchProfilesByIds`-ийн ижил дүрэм)
+        setIdentityHidden(p.show_identity === undefined ? false : p.show_identity !== true);
       } catch (err) {
         const e = normalizeError(err);
         console.error(e);
@@ -55,17 +77,34 @@ export default function SellerListingsClient({ sellerId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sellerId]);
 
- /** Зар нийтлэгчийн мэдээлэл — нэр, утас, хотууд, сүүлд нийтэлсэн огноо */
+ /**
+   * Зар нийтлэгчийн мэдээлэл — НЭР · 👤 ПРОФАЙЛ ЗУРАГ · утас · хотууд · огноо.
+   *
+   * 🆕 2026-10-08 (65) ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «профайл зургийг … дахин нэмээ» —
+   *   өмнө нь энэ хуудасны толгойд ЗӨВХӨН нэрийн ЭХНИЙ ҮСЭГ (`charAt(0)`,
+   *   `rounded-full` дугуй) харагддаг байв ✗ — `profiles.avatar_url` ОГТ
+   *   ашиглагдаагүй. Одоо бүх газартай ИЖИЛ `Avatar` компонент (`rounded-lg` +
+   *   зураггүй бол үсэг) ✓ (⏳ (64): зарын карт дээр ижил засвар хийгдсэн).
+   *
+   * ⚠️ ХАРАГДАХ ДҮРЭМ (0017_profile_identity.sql) — зарын карттай ЯГ ИЖИЛ:
+   *   `show_identity = false` үед БУСДЫН нүдээр нэр/зураг ХАРАГДАХГҮЙ
+   *   (нэр нь зарын `contact_name` болно); харин `user.id === sellerId`
+   *   (ӨӨРИЙН хуудас) үед эзэн нь өөрийн зургаа/нэрээ ҮРГЭЛЖ харна ✓ —
+   *   иймд «зургаа оруулсан ч харагдахгүй байна» гэсэн төөрөгдөл гарахгүй ✓
+   */
   const seller = useMemo(() => {
     const rows = listings || [];
-    if (!rows.length) return { name: '', phone: '', cities: [], lastPost: null };
+    if (!rows.length) return { name: '', phone: '', cities: [], lastPost: null, avatarUrl: null };
+    const isOwner = Boolean(user && user.id === sellerId);
+    const identityVisible = isOwner || !identityHidden;
     return {
-      name: profileName || rows[0].contact_name || 'Зар нийтлэгч',
+      name: (identityVisible && profileName) || rows[0].contact_name || 'Зар нийтлэгч',
+      avatarUrl: identityVisible ? profileAvatar : null,
       phone: rows[0].phone || '',
       cities: [...new Set(rows.map((l) => l.city).filter(Boolean))],
       lastPost: rows[0].created_at || null,
     };
-  }, [listings, profileName]);
+  }, [listings, profileName, profileAvatar, identityHidden, user, sellerId]);
 
   const sellListings = useMemo(() => (listings || []).filter((l) => l.category === 'sell'), [listings]);
   const rentListings = useMemo(() => (listings || []).filter((l) => l.category === 'rent'), [listings]);
@@ -145,9 +184,10 @@ export default function SellerListingsClient({ sellerId }) {
       {/* ===== ЗАР НИЙТЛЭГЧИЙН КАРТ ===== */}
       <section className="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card">
         <div className="flex flex-wrap items-center gap-4 p-5 sm:p-6">
-          <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full bg-primary-light text-2xl font-bold text-primary">
-            {(seller.name || '👤').trim().charAt(0).toUpperCase()}
-          </div>
+          {/* 👤 ПРОФАЙЛ ЗУРАГ — 🆕 (65) өмнө нь ЗӨВХӨН үсэг (`h-16 w-16 rounded-full`)
+              байсан; одоо зарын карт дээрхтэй ИЖИЛ `Avatar` (64px, `rounded-lg`,
+              зураггүй бол нэрийн эхний үсэг) ✓ */}
+          <Avatar src={seller.avatarUrl} name={seller.name} size={64} />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold text-gray-900 sm:text-2xl">{seller.name}</h1>
