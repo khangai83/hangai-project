@@ -96,7 +96,7 @@ function FavoritesAdsPanel() {
   const doPdf = () => {
     const opened = printTablePdf({
       title: 'Таалагдсан зарууд',
-      subtitle: `ZARLAA.MN — нийт ${listings.length} зар · ${new Date().toLocaleString('mn-MN')}`,
+      subtitle: `ZARBOOK.MN — нийт ${listings.length} зар · ${new Date().toLocaleString('mn-MN')}`,
       columns: exportColumns(origin),
       rows: listings,
     });

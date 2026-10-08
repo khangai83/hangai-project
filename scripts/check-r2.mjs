@@ -107,14 +107,14 @@ async function main() {
       `     Cloudflare → Storage & databases → R2 → ${cfg.bucket} → **Settings**\n` +
       '     · ТУРШИЛТАД: «Public Development URL» → Enable → `allow` гэж бичээд Allow\n' +
       `       → «Public Bucket URL» (жишээ: https://pub-1a2b3c.r2.dev)\n` +
-      '     · PRODUCTION: «Custom Domains» → Add → жишээ: img.zarlaa.mn (Cloudflare DNS өөрөө нэмнэ)\n' +
+      '     · PRODUCTION: «Custom Domains» → Add → жишээ: img.zarbook.mn (Cloudflare DNS өөрөө нэмнэ)\n' +
       '     Дараа нь .env.local → R2_PUBLIC_BASE=<тэр хаяг>  (⚠️ төгсгөлд нь / БИШ)');
   } else {
     if (/r2\.dev/i.test(cfg.publicBase)) {
       report(null, 'R2_PUBLIC_BASE нь r2.dev (туршилтын домэйн — өөрийн домэйн холбоогүй)',
         'r2.dev нь хурдны хязгаартай, WAF/cache ажиллахгүй ⇒ олон хэрэглэгчтэй\n' +
         '     production-д тохиромжгүй. ⚠️ Custom domain нь ХУДАЛДАЖ АВСАН домэйн\n' +
-        '     шаардана (жишээ: img.zarlaa.mn) — домэйн хараахан аваагүй бол r2.dev\n' +
+        '     шаардана (жишээ: img.zarbook.mn) — домэйн хараахан аваагүй бол r2.dev\n' +
         '     хэвээр ажиллана ✓ Харин авсны дараа: ① R2 → Settings → Custom Domains\n' +
         '     → Add  ② R2_PUBLIC_BASE-ыг солих  ③ npm run storage:rebase -- --apply\n' +
         '     (DB-д бичигдсэн хуучин домэйны URL-уудыг шинэчилнэ)');

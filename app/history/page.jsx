@@ -1,6 +1,6 @@
 import SearchHistoryClient from '../../components/SearchHistoryClient';
 
-export const metadata = { title: 'Хайлтын түүх — ZARLAA.MN' };
+export const metadata = { title: 'Хайлтын түүх — ZARBOOK.MN' };
 
 /**
  * 🕐 `/history` — «Хайлтын түүх» (сүүлд ҮЗСЭН ЗАРУУД).

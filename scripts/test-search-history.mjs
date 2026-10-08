@@ -64,7 +64,7 @@ console.log('\n🧪 Хайлтын түүх — ҮЗСЭН ЗАРУУД (лин�
 // ---------- ① Линк → зарын id (түүхэд ОРОХ утга) ----------
 t('① historyListingId: `/listings/<id>` → id (бүтэн линк, query, `/`-тай ч)', () => {
   assert.equal(historyListingId('/listings/abc-123'), 'abc-123');
-  assert.equal(historyListingId('https://zarlaa.mn/listings/abc-123?utm=x#top'), 'abc-123');
+  assert.equal(historyListingId('https://zarbook.mn/listings/abc-123?utm=x#top'), 'abc-123');
   assert.equal(historyListingId('/listings/abc-123/'), 'abc-123');
   assert.equal(historyListingId('  /listings/abc-123  '), 'abc-123');
 });
@@ -161,7 +161,7 @@ t('⑨ normalizeHistoryRow: ХУУЧИН хайлтын мөр (`/?…`) → `nu
 });
 
 t('⑩ normalizeHistoryRow: бүтэн линк хадгалагдсан ч каноник болно ✓', () => {
-  const r = normalizeHistoryRow({ id: '1', url: 'https://zarlaa.mn/listings/xyz?utm=a', createdAt: 'T' });
+  const r = normalizeHistoryRow({ id: '1', url: 'https://zarbook.mn/listings/xyz?utm=a', createdAt: 'T' });
   assert.equal(r.url, '/listings/xyz');
   assert.equal(r.listingId, 'xyz');
 });

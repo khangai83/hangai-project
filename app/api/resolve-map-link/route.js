@@ -35,7 +35,10 @@ const MAX_HOPS = 5;
  *    буцаадаг тул солбицол авч чадахгүй — ЭНГИЙН (browser биш) UA хэрэглэснээр
  *    302 + `Location` (солбицолтой) гарна ✓
  */
-const UA = 'ZarBot/1.0 (+https://zar.mn)';
+// 🏷️ (69c) User-Agent — Nominatim-ийн дүрэм: хэрэглэгчийг ТОДОРХОЙЛОХ нэр + холбоо.
+//    ⏳ урьд нь `ZarBot/1.0 (+https://zar.mn)` байв → брэнд нь `ZarBook.mn` болсон
+//    тул шинэ домэйн руу заана ✓ (шилжүүлэх хаяг нь тусдаа redirect — код 0 ✓)
+const UA = 'ZarBookBot/1.0 (+https://zarbook.mn)';
 
 /** Нэг хүсэлт явуулж 302-ын `Location`-ийг уншина (`redirect`-ыг дагахгүй) */
 async function hop(url, signal) {

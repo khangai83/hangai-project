@@ -1,6 +1,6 @@
 import NotificationsClient from '../../components/NotificationsClient';
 
-export const metadata = { title: 'Мэдэгдэл — ZARLAA.MN' };
+export const metadata = { title: 'Мэдэгдэл — ZARBOOK.MN' };
 
 /**
  * 🔔 `/notifications` — «Мэдэгдэл» (2026-10-08). Хэрэглэгчийн хүсэлт:

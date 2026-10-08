@@ -67,7 +67,7 @@ const {
 
 const UID = '8f3c1a2b-4d5e-4f60-9a1b-2c3d4e5f6a7b';
 const OTHER = '00000000-1111-2222-3333-444444444444';
-const R2_BASE = 'https://img.zarlaa.mn';
+const R2_BASE = 'https://img.zarbook.mn';
 const SUPABASE = 'https://abcdefghij.supabase.co';
 
 let passed = 0;
@@ -215,7 +215,7 @@ t('publicStorageUrl: base-ийн төгсгөлийн `/` давхарлахгү
   assert.equal(publicStorageUrl('', 'k'), '/k');
 });
 
-// ---- R2 нийтийн домэйн СОЛИХ (r2.dev → img.zarlaa.mn) ----
+// ---- R2 нийтийн домэйн СОЛИХ (r2.dev → img.zarbook.mn) ----
 // ⚠️ `R2_PUBLIC_BASE`-ыг сольсны дараа DB-д ХУУЧИН домэйн бичигдсэн үлдвэл
 //    (r2.dev-ийг унтраавал) тэр зураг НУРНА ✗ — `npm run storage:rebase`
 //    яг энэ хоёр функц дээр тулгуурлана ✓
@@ -484,7 +484,7 @@ const R2_ENV_SAMPLE = {
   R2_ACCESS_KEY_ID: 'AKIAEXAMPLE',
   R2_SECRET_ACCESS_KEY: 's3cr3t',
   R2_BUCKET: 'zar-media',
-  R2_PUBLIC_BASE: 'https://img.zarlaa.mn',
+  R2_PUBLIC_BASE: 'https://img.zarbook.mn',
 };
 const R2_ENV_ALL = [...Object.keys(R2_ENV_SAMPLE), 'NEXT_PUBLIC_R2_PUBLIC_BASE', 'R2_ENDPOINT'];
 // ⚠️ Тусдаа (цэвэр) module instance — `lib/r2.mjs` нь `.env.local`-ыг нэг удаа
@@ -536,7 +536,7 @@ t('isR2UploadReady: бүтэн 5 утгатай → true (эерэг зам)', (
   withR2Env(R2_ENV_SAMPLE, () => {
     assert.equal(r2lib.isR2UploadReady(), true);
     assert.deepEqual(r2lib.missingR2Env(), []);
-    assert.equal(r2lib.publicUrlFor('avatars/u/a.jpg'), 'https://img.zarlaa.mn/avatars/u/a.jpg');
+    assert.equal(r2lib.publicUrlFor('avatars/u/a.jpg'), 'https://img.zarbook.mn/avatars/u/a.jpg');
   });
 });
 
@@ -651,9 +651,9 @@ t('parseCorsOrigins: --origin / --origin= (production домэйн шалгах�
     'https://hangai-project.vercel.app',
   ]);
   // ⚠️ Хэрэглэгч dashboard-аас домэйноо `/`-тай хуулж болно → нормчлогдоно ✓
-  assert.deepEqual(parseCorsOrigins(['--origin=https://zarlaa.mn/'], ''), ['https://zarlaa.mn']);
+  assert.deepEqual(parseCorsOrigins(['--origin=https://zarbook.mn/'], ''), ['https://zarbook.mn']);
   // ⚠️ Утга өгвөл localhost-ийн ❌ нь саад болохгүй (default СОЛИГДОНО)
-  assert.equal(parseCorsOrigins(['--origin', 'https://zarlaa.mn'], '').includes('http://localhost:3000'), false);
+  assert.equal(parseCorsOrigins(['--origin', 'https://zarbook.mn'], '').includes('http://localhost:3000'), false);
 });
 
 t('parseCorsOrigins: R2_CORS_ORIGIN (таслалаар) + давхардлыг цэвэрлэнэ', () => {
@@ -664,7 +664,7 @@ t('parseCorsOrigins: R2_CORS_ORIGIN (таслалаар) + давхардлыг 
 t('corsOriginProblem: зөв утгууд → null (wildcard ч зөв)', () => {
   assert.equal(corsOriginProblem('http://localhost:3000'), null);
   assert.equal(corsOriginProblem('https://hangai-project.vercel.app'), null);
-  assert.equal(corsOriginProblem('https://*.zarlaa.mn'), null, '`*` дэд домэйнд — Cloudflare зөвшөөрнө');
+  assert.equal(corsOriginProblem('https://*.zarbook.mn'), null, '`*` дэд домэйнд — Cloudflare зөвшөөрнө');
   assert.equal(corsOriginProblem('https://hangai-project-*.vercel.app'), null, '`*` нь цэг дамжина');
 });
 

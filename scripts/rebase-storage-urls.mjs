@@ -6,7 +6,7 @@
 //   npm run storage:rebase                              # 🔍 DRY-RUN (юу ч бичихгүй)
 //   npm run storage:rebase -- --apply                    # ✅ R2_PUBLIC_BASE рүү шинэчилнэ
 //   npm run storage:rebase -- --apply --from https://pub-xxx.r2.dev   # зөвхөн тэр домэйныг
-//   npm run storage:rebase -- --apply --to https://img.zarlaa.mn      # домэйныг гараар заана
+//   npm run storage:rebase -- --apply --to https://img.zarbook.mn      # домэйныг гараар заана
 //
 // ЯАГААД ХЭРЭГТЭЙ ВЭ:
 //   Зургийн URL нь DB-д БИЧИГДЭЖ хадгалагддаг (`listings.images[]`,

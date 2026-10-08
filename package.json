@@ -1,8 +1,8 @@
 {
-  "name": "zar-mn",
+  "name": "zarbook-mn",
   "version": "3.0.0",
   "private": true,
-  "description": "Mongolian Real Estate Marketplace (Зарлаа.mn) — Next.js + Supabase",
+  "description": "Mongolian Real Estate Marketplace (ZarBook.mn) — Next.js + Supabase",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -65,6 +65,8 @@
     "test:messages": "node scripts/test-messages.mjs",
     "test:notifications": "node scripts/test-notifications.mjs",
     "cdp:notifications": "node scripts/cdp-notifications.mjs",
+    "test:brand": "node scripts/test-brand.mjs",
+    "cdp:brand": "node scripts/cdp-brand.mjs",
     "test:youtube": "node scripts/test-youtube.mjs",
     "migration:copy": "node scripts/setup-migration.js",
     "enable:phone-auth": "node scripts/enable-phone-auth.js",

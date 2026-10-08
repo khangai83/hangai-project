@@ -1,7 +1,7 @@
 import MessagesClient from '../../components/MessagesClient';
 
 export const metadata = {
-  title: 'Мессеж — ZARLAA.MN',
+  title: 'Мессеж — ZARBOOK.MN',
   description: 'Зар нийтлэгчтэй шууд харилцах мессежийн хэсэг (зөвхөн оролцогч хоёр харна).',
 };
 

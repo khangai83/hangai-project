@@ -19,7 +19,7 @@ import { listingPrefillFromSearch, newListingHref } from '../lib/listingPrefill.
 import AuthModal from './AuthModal';
 import ProfileModal from './ProfileModal';
 import MessageIcon from './MessageIcon';
-import { HeartIcon, ChatIcon, ClockIcon, BellIcon } from './HeaderIcons';
+import { HeartIcon, ChatIcon, ClockIcon, BellIcon, HomeIcon } from './HeaderIcons';
 import NotificationBell from './NotificationBell';
 
 /** Supabase-ийн user → '+976XXXXXXXX' (эсвэл null).
@@ -343,26 +343,44 @@ export default function AppProviders({ children }) {
                  → Ингэснээр мобайлд header нь ЗӨВХӨН лого (төвд) ✓ */} 
           <header className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-card">
             <div className="relative mx-auto flex h-16 max-w-[1536px] items-center justify-center px-4 sm:px-6 lg:justify-between">
+              {/* 🏠 ЛОГО (2026-10-08 (69c): `🏠` emoji → `HomeIcon` SVG + ZARBOOK.MN):
+                   ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (69c): «логооны хойд хэсэгт home icon
+                     оруул, энд дархад мэдээж home page дээр ирдэг байх» ⇒
+                     икон + «ZARBOOK.MN» текст нь НЭГ `<Link href="/">` дотор —
+                     икон дээр дарах ч, текст дээр дарах ч НҮҮР ХУУДАС руу ✓
+                   ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-08 (69c)): «zarbook.mn гэсэн
+                     domain хаяг авсан тул бүгдийг ийм нэртэй болго ZarBook.mn»
+                     ⇒ брэнд БҮХЭЛДЭЭ `ZARBOOK.MN` (footer · `<title>` · terms ·
+                     export · UA) — 🔒 `phone.zarmn.mn` (синтетик имэйл) ба
+                     `zarmn_*` (localStorage/event) нь ХӨНДӨӨГДӨӨГҮЙ ✓
+                   ⚠️ `gap` ХАСАГДСАН хэвээр (2026-09-27, хэрэглэгчийн гомдол:
+                     «лого нь zarlaa .mn гэж харагдаад байх юм»).
+                     ШАЛТГААН: `display: flex` дотор `gap` нь ЗӨВХӨН flex item-үүдийн
+                     хооронд зай тавьдаг — «ZARBOOK» текстийн зангилаа ба
+                     `<span>.MN</span>` хоёр нь ТУСДАА flex item болж,
+                     «ZARBOOK» ба «.MN»-ийн хооронд ХИЙМЭЛ 8px зай үүсээд
+                     «ZARBOOK .MN» гэж уншигдана ✗
+                     (CDP хэмжилт: textEnd 138.6 → spanStart 146.6 = 8px).
+                     ✅ Икон ба текстийн зайг ИКОНЫ `mr-1.5` (margin) өгнө —
+                     margin нь текст зангилаануудын хооронд зай ҮҮСГЭХГҮЙ тул
+                     «ZARBOOK.MN» НЭГ ҮГ мэт харагдана ✓
+                   ⚠️ `flex items-center` нь VERTICAL төвлөрүүлэлтэд ЗААВАЛ
+                     хэрэгтэй (икон 22px текстийн мөрөөс өндөр) — бүү хас.
+                   ⚠️ `gap` буцааж нэмэх бол дотоод `<span>`-ыг бүхэлд нь
+                     НЭГ элементээр ороох хэрэгтэй (эс бөгөөс алдаа буцаж гарна). */}
               <Link
                 href="/"
-                /* ⚠️ `gap-2` ХАСАГДСАН (2026-09-27, хэрэглэгчийн гомдол: «zarlaa.mn
-                   нь zarlaa .mn гэж харагдаад байх юм»).
-                   ШАЛТГААН: `display: flex` дотор `gap` нь ЗӨВХӨН flex item-үүдийн
-                   хооронд зай тавьдаг — «🏠 ZARLAA» текстийн зангилаа ба
-                   `<span>.MN</span>` хоёр нь ТУСДАА flex item болж,
-                   «ZARLAA» ба «.MN»-ийн хооронд ХИЙМЭЛ 8px зай үүсээд
-                   «ZARLAA .MN» гэж уншигдаж байв ✗
-                   (CDP хэмжилт: textEnd 138.6 → spanStart 146.6 = 8px).
-                   ✅ Одоо зайг ЗӨВХӨН текст дотрох ASCII space («🏠 ZARLAA»)
-                   өгнө — лого «🏠 ZARLAA.MN» гэж НЭГ ҮГ мэт харагдана ✓
-                   ⚠️ `flex items-center` нь VERTICAL төвлөрүүлэлтэд ЗААВАЛ
-                   хэрэгтэй (emoji 22px текстээс өндөр) — бүү хас.
-                   ⚠️ `gap` буцааж нэмэх бол дотоод `<span>`-ыг бүхэлд нь
-                   НЭГ элементээр ороох хэрэгтэй (эс бөгөөс алдаа буцаж гарна). */
-                className="flex items-center text-[22px] font-bold text-primary"
+                title="Нүүр хуудас"
+                aria-label="ZARBOOK.MN — нүүр хуудас"
+                className="group flex items-center text-[22px] font-bold text-primary"
                 onClick={closeUserMenus}
               >
-                🏠 ZARLAA<span className="text-gray-900">.MN</span>
+                <HomeIcon
+                  data-home-icon
+                  className="mr-1.5 h-[22px] w-[22px] transition-transform duration-200 ease-out group-hover:scale-110"
+                  strokeWidth={2}
+                />
+                ZARBOOK<span className="text-gray-900">.MN</span>
               </Link>
               {/* ===== 🖥 ХАЙЛТЫН МӨР — header-ийн ГОЛ хэсэг (2026-10-04 (27)) =====
                   Нүүр хуудас (`HomeClient`) нь `useHeaderSlot()`-оор энэ завсрыг
@@ -579,7 +597,10 @@ export default function AppProviders({ children }) {
                   Мэдэгдэл
                 </Link>
               </nav>
-              <p className="text-[13.5px]">🏠 ZARLAA.MN — Үл хөдлөх хөрөнгийн зар. Next.js + Supabase хувилбар.</p>
+              {/* 🏷️ БРЭНД (2026-10-08 (69c)): «ZARLAA.MN» → «ZARBOOK.MN» —
+                  хэрэглэгч `zarbook.mn` домэйныг авсан ✓ (логоны ЯГ ИЖИЛ нэр;
+                  зөвхөн ХАРАГДАЦ — линк/логик ХӨНДӨӨГДӨӨГҮЙ ✓) */}
+              <p className="text-[13.5px]">🏠 ZARBOOK.MN — Үл хөдлөх хөрөнгийн зар. Next.js + Supabase хувилбар.</p>
               {/* ⚠️ КОНТРАСТ ЗАСВАР: bg-gray-900 дээр text-gray-500 нь 3.55:1
                   байсан (AA 4.5:1-д хүрэхгүй). text-gray-400 → 7.41:1 ✅ */}
               <p className="mx-auto mt-2 max-w-[760px] text-[12px] leading-relaxed text-gray-400">

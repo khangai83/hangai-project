@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import AddListingClient from '../../../components/AddListingClient';
 
 export const metadata = {
-  title: 'Зар нэмэх — ZARLAA.MN',
+  title: 'Зар нэмэх — ZARBOOK.MN',
   description: 'Үл хөдлөх болон бусад зарыг алхам алхмаар оруулж нийтлэх хуудас.',
 };
 

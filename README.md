@@ -1,4 +1,11 @@
-# ZARLAA.MN — Үл хөдлөх хөрөнгийн зар (Next.js + Supabase)
+# ZARBOOK.MN — Үл хөдлөх хөрөнгийн зар (Next.js + Supabase)
+
+> 🏷️ **БРЭНД (2026-10-08 (69c)):** `zarbook.mn` домэйн ХУДАЛДАЖ АВСАН ⇒ төслийн
+> нэр БҮХЭЛДЭЭ **ZarBook.mn** (`ZARBOOK.MN`) болов — ⏳ урьд нь «ZARLAA.MN» байв.
+> Толгойн лого байсан `🏠 ZARLAA.MN` emoji-логог **`HomeIcon` SVG + `ZARBOOK.MN`**
+> болгож сольсон (икон дээр дарахад НҮҮР ХУУДАС руу — линк ХЭВЭЭР `/` ✓).
+> 🔒 `phone.zarmn.mn` (синтетик имэйл) ба `zarmn_*` (localStorage/event) нь
+> ХӨНДӨӨГДӨӨГҮЙ — соливол хуучин хэрэглэгч нэвтрэхгүй, өгөгдөл нь алга болно ✗
 
 Хуучин **Express + PostgreSQL + Cloudinary** хувилбарыг **Next.js (App Router) + Supabase** руу
 бүрэн хөрвүүлсэн хувилбар. Бүх боломж хадгалагдсан:
@@ -1236,6 +1243,36 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   хүснэгт) · `docs/IMPROVEMENTS.md` (энэ мөр)
   🔍 Хайх үг: `max-w-[480px]`, `mx-auto`, `isHeader`, `HeaderSearchBar`,
   `test-search-bar-width`
+- 🏠🏷️ **ЛОГО: HOME ICON + БРЭНД «ZARBOOK.MN» (2026-10-08 (69c))** —
+  хэрэглэгчийн хүсэлт (2 хэсэг): «логооны хойд хэсэгт home icon оруул, энд
+  дархад мэдээж home page дээр ирдэг байх» + «`zarbook.mn` гэсэн domain хаяг
+  авсан тул бүгдийг ийм нэртэй болго ZarBook.mn».
+  🏠 **Икон:** `components/HeaderIcons.jsx` → 🆕 `HomeIcon` — ЖИНХЭНЭ SVG
+  (`viewBox="0 0 24 24"`, `stroke="currentColor"`, round cap) 3 замтай
+  (дээвэр · хана+шал · хаалга — хэрэглэгчийн хавсаргасан зурагтай ИЖИЛ);
+  ⏳ `🏠` emoji логоноос ХАСАГДАВ (emoji нь OS бүрд өөр + өөрийн өнгөтэй ✗)
+  🔗 `AppProviders` — икон ба `ZARBOOK.MN` текст нь НЭГ `<Link href="/">` дотор
+  (`title`/`aria-label` нэмэгдэв) ⇒ икон дээр дарахад НҮҮР ХУУДАС ✓
+  📏 зайг ИКОНЫ `mr-1.5` margin өгнө — `gap-*` НЭМЭЭГҮЙ (2026-09-27-ийн
+  «ZARBOOK .MN» алдаа буцаж орохгүй ✓)
+  🏷️ **Брэнд:** footer · бүх хуудасны `<title>`/`description` (17 файл) ·
+  `/terms` (платформ + `zarbook.mn` домэйн) · CSV/HTML экспорт · хуваалцах
+  текст · статистикийн эх сурвалж · Nominatim UA (`ZarBookBot/1.0
+  (+https://zarbook.mn)`) · `package.json`+`package-lock.json` (`zarbook-mn`) ·
+  `scripts/*`-ийн жишээ домэйн · README · `docs/R2_SETUP.md`
+  🔒 **ХӨНДӨӨХГҮЙ:** `phone.zarmn.mn` (синтетик имэйл) ба `zarmn_*`/`zarmn:*`
+  (localStorage/event) — соливол хуучин хэрэглэгч нэвтрэхгүй, өгөгдөл нь алга
+  болно ✗
+  ⚠️ **MIGRATION 0 · DB/URL/логик ХӨНДӨӨГДӨӨГҮЙ** (зөвхөн харагдац ба нэр) ✓
+  🧪 🆕 `scripts/test-brand.mjs` (`npm run test:brand`) — **20/20 ✓**;
+  🐍 🆕 `scripts/cdp-brand.mjs` (`npm run cdp:brand`) — бодит Chrome: икон
+  22×22, текстийн ЗҮҮН талд, «ZARBOOK»↔«.MN» зай 0, **икон дээр БОДИТ даралт →
+  `/`**, `/terms`, 📱 390px, exception 0 ✓ · `test:*` БҮГД ✓ ·
+  `lint:migrations` **40/40 ✓** · `npm run build` EXIT=0 ✓
+  📄 DOC: `README.md` (энэ bullet + 🆕 «🏠 ЛОГО» хэсэг + тестийн 2 мөр) ·
+  `docs/IMPROVEMENTS.md` (энэ мөр)
+  🔍 Хайх үг: `HomeIcon`, `data-home-icon`, `ZARBOOK.MN`, `zarbook-mn`,
+  `test:brand`, `cdp:brand`
 - 🚫 **МЭДЭГДЛИЙН «… ЗАРЫГ ТААЛАГДЛАВ» ӨГҮҮЛБЭР ХАСАГДАВ — (2026-10-08 (69b))** —
   хэрэглэгчийн хүсэлт: «таны зарыг таалагдлав, зарыг таалагдав гэсэн
   текстүүдийг байхгүй болго».
@@ -2153,6 +2190,30 @@ E.164 болгоно.
 - ⚠️ Хайлтын панель дэх тусдаа «Төрөл» dropdown **хасагдсан** — давхардлаас зайлсхийж,
   төрөл зөвхөн энэ табуудаас сонгогдоно
 
+### 🏠 ЛОГО — HOME ICON + ZARBOOK.MN (🆕 2026-10-08 (69c))
+
+**ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ:** «логооны хойд хэсэгт home icon оруул, энд дархад мэдээж
+home page дээр ирдэг байх» + «`zarbook.mn` гэсэн domain хаяг авсан тул бүгдийг
+ийм нэртэй болго **ZarBook.mn**».
+
+```text
+┌──────────────────────────────────────────┐
+│ [🏠] ZARBOOK.MN   ← НЭГ <Link href="/">  │
+└──────────────────────────────────────────┘
+   ↑ SVG икон (22×22)      ↑ текст (22px, bold)
+```
+
+| Зүйл | Шийдэл |
+|---|---|
+| 🏠 Икон | `components/HeaderIcons.jsx` → 🆕 **`HomeIcon`** — ЖИНХЭНЭ **SVG** (`viewBox="0 0 24 24"`, `stroke="currentColor"`, 1.8px, round cap): ① дээвэр (орой + зах нь хананаас цухуйна) ② хана + шал ③ хаалга — хэрэглэгчийн хавсаргасан зурагтай ЯГ ИЖИЛ хэлбэр |
+| ⏳ Emoji | `🏠` emoji логоноос **ХАСАГДАВ** — emoji нь OS бүрд өөр өнгөтэй/өөр хэлбэрээр зурагдаж, брэнд өнгийг (`text-primary`) дагаж чаддаггүй ✗ (BellIcon/ClockIcon-той ИЖИЛ үндэслэл) |
+| 🔗 Даралт | Икон ба текст нь **НЭГ `<Link href="/">`** дотор (`title="Нүүр хуудас"`, `aria-label="ZARBOOK.MN — нүүр хуудас"`) ⇒ икон дээр ч, текст дээр ч дарахад НҮҮР ХУУДАС ✓ (линк нь ХӨНДӨӨГДӨӨГҮЙ, зөвхөн дотор нь икон нэмэгдэв) |
+| 📏 Зай | Икон ↔ текст зайг ИКОНЫ `mr-1.5` (6px margin) өгнө — ⚠️ `gap-*` БИШ: `gap` нь «ZARBOOK» ба `.MN`-ийг тусдаа flex item болгож «ZARBOOK .MN» алдаа (2026-09-27) үүсгэнэ ✗ |
+| 🖱 Hover | `group-hover:scale-110` — ❤️/💬/🕐/🔔 иконуудтай ЯГ ИЖИЛ хэв ✓ |
+| 🏷️ Брэнд | Лого · footer · бүх хуудасны `<title>`/`description` · `/terms` · CSV/HTML экспорт · хуваалцах текст · статистикийн эх сурвалж · Nominatim-ийн `User-Agent` (`ZarBookBot/1.0 (+https://zarbook.mn)`) · `package.json` (`zarbook-mn`) · README/doc — БҮГД `ZARBOOK.MN`/`zarbook.mn` ✓ |
+| 🔒 ХӨНДӨӨХГҮЙ | `phone.zarmn.mn` (синтетик имэйл — 0014/0041) ба `zarmn_*` / `zarmn:*` (localStorage/event) — соливол хуучин хэрэглэгч НЭВТРЭХГҮЙ, таалагдсан/хайлтын түүх АЛГА БОЛНО ✗ (`test:brand` ⑯/⑰ хамгаална) |
+| 🧪 Шалгалт | `npm run test:brand` — **20/20 ✓** (икон SVG эсэх, дараалал, `gap` хориг, брэндийн бүх газар, 🔒 түлхүүрүүд) · `npm run cdp:brand` — бодит Chrome: иконы солбицол/хэмжээ, **икон дээр БОДИТ даралт → `/`**, `/terms`, 📱 390px, exception 0 ✓ |
+
 ### 🔍 ХАЙЛТЫН МӨР — ТОЛГОЙН МӨРӨНД (🆕 2026-10-04 (27) · 🩹 (31) «Ангилал» pill хасав)
 
 > 🖥 **ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ** (жишээ зурагтай): «хайлт хэсгийн вэб дээд хэсэгт
@@ -2165,7 +2226,7 @@ E.164 болгоно.
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────────────┐
-│ 🏠 ZARLAA.MN │ [🔍 7,156 зар байна] [Хайх] [📍 Бүх байршил] │ ➕ ❤️ ✉️ 👤 │
+│ 🏠 ZARBOOK.MN │ [🔍 7,156 зар байна] [Хайх] [📍 Бүх байршил] │ ➕ ❤️ ✉️ 👤 │
 └───────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -5278,7 +5339,7 @@ cp .env.local.example .env.local
   Зөвхөн EU jurisdiction bucket үед `R2_ENDPOINT`-оор дарж бичиж болно (сонголтоор)
   📍 **`R2_PUBLIC_BASE`-ыг хаанаас авах вэ:** Cloudflare → Storage & databases →
   R2 → `<bucket>` → **Settings** → «Public Development URL» (Enable → `allow`, зөвхөн
-  туршилт) эсвэл «Custom Domains» (production: `img.zarlaa.mn`) — дэлгэрэнгүй
+  туршилт) эсвэл «Custom Domains» (production: `img.zarbook.mn`) — дэлгэрэнгүй
   [`docs/R2_SETUP.md`](docs/R2_SETUP.md) §3 ✓
   ⚠️ **Эдгээрийг тохируулаагүй ч сайт БҮРЭН ажиллана** — зураг нь хуучин
   Supabase Storage руу автоматаар хадгалагдана (нөөц зам) ✓
@@ -5839,7 +5900,7 @@ npm run check:r2 -- --origin https://hangai-project.vercel.app   # CORS-ыг т�
 npm run storage:migrate                     # 🔍 DRY-RUN (юу ч бичихгүй)
 npm run storage:migrate -- --apply          # ✅ хуучин зургуудыг R2 руу + DB URL солино
 npm run storage:rebase                      # 🔍 нийтийн домэйн сольсон бол DB-ийн URL-ыг шинэчилнэ (DRY-RUN)
-npm run storage:rebase -- --apply           # ✅ (ж: r2.dev → img.zarlaa.mn) — файл хөндөхгүй
+npm run storage:rebase -- --apply           # ✅ (ж: r2.dev → img.zarbook.mn) — файл хөндөхгүй
 npm run report:usage                        # R2 ба Supabase-ийн хэмжээг харна
 ```
 
@@ -5857,10 +5918,13 @@ npm run report:usage                        # R2 ба Supabase-ийн хэмжэ
 `splitStorageUrls()`-ээр хоёр замаар явдаг ✓ Шилжүүлэхийг хүсвэл дээрх
 `storage:migrate -- --apply`-г ажиллуулахад л хангалттай.
 
-> ✅ **Домэйн солих эрсдэл АРИЛСАН (2026-10-02):** `zarlaa.mn`-ийг **хараахан
-> аваагүй** (DNS-д resolve болохгүй) тул одоо **`r2.dev`-ээр ажиллаж байна** —
+> ✅ **Домэйн солих эрсдэл АРИЛСАН (2026-10-02) · 🆕 ДОМЭЙН АВСАН (2026-10-08 (69c)):**
+> `zarbook.mn` нь ХУДАЛДАЖ АВСАН домэйн болов (брэнд БҮХЭЛДЭЭ «ZarBook.mn») ⇒
+> R2-ийн custom domain нь **`img.zarbook.mn`**, CORS-д `https://zarbook.mn` +
+> `https://www.zarbook.mn` нэмэгдэнэ. ⚠️ **ОДОО болтол зураг нь `r2.dev`-ээр**
+> ажиллаж байна (Cloudflare-д custom domain холбоогүй / `R2_PUBLIC_BASE` хуучин) —
 > бүрэн хэвийн ✓ Гэхдээ `r2.dev` нь туршилтын домэйн (хурдны хязгаартай,
-> WAF/cache ажиллахгүй) тул **нийтэд нээхээс өмнө** домэйн авч холбох нь зүйтэй;
+> WAF/cache ажиллахгүй) тул **нийтэд нээхээс өмнө** `img.zarbook.mn` холбох нь зүйтэй;
 > тэр үед DB-д бичигдсэн хуучин домэйны URL-уудыг
 > **`npm run storage:rebase -- --apply`** шинэ рүү шилжүүлнэ — тиймээс r2.dev-д
 > **үүрд хавчуулагдахгүй** ✓ (checklist: домэйн авсны дараах 6 алхам —
@@ -5874,8 +5938,8 @@ npm run report:usage                        # R2 ба Supabase-ийн хэмжэ
 > хэрхэн эвдсэн тухай).
 >
 > 📱 **Одоогийн `AllowedOrigins` (5):** `http://localhost:3000` · **`http://192.168.1.2:3000`**
-> (утаснаас LAN-аар нээх үед) · `https://hangai-project.vercel.app` · `https://zarlaa.mn` ·
-> `https://www.zarlaa.mn`. Шинэ хаяг (IP солигдсон, preview deploy, шинэ домэйн)
+> (утаснаас LAN-аар нээх үед) · `https://hangai-project.vercel.app` · `https://zarbook.mn` ·
+> `https://www.zarbook.mn`. Шинэ хаяг (IP солигдсон, preview deploy, шинэ домэйн)
 > нэмэхгүй бол зураг оруулах нь «Зургийг R2 руу илгээж чадсангүй … **[Load failed]**»
 > гэж унана (⚠️ сервер талдаа лог үлдэхгүй, `presign` нь 200 буцаана) — шалгах:
 > `npm run check:r2 -- --origin <тэр хаяг>` → дэлгэрэнгүй: `docs/R2_SETUP.md` §4.
@@ -6041,6 +6105,9 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 | `scripts/cdp-search-history.mjs` | 🕐 **CDP (бодит Chrome)** — `npm run cdp:search-history` (**19 OK / 0 FAIL ✓** — 🆕 2026-10-08 (68), ✅ БОДИТ headless Chrome + сервер :3000), зочин (localStorage) горим: ① **ЗАР НЭЭХЭД** түүхэнд бичигдэв (утга нь `/listings/<id>` — хайлтын линк БИШ) ② **ХАЙЛТ хийхэд түүхэнд БИЧИГДЭХГҮЙ** (debounce 900мс-ээс хойш ч; мөрийн тоо ХЭВЭЭР) ③ `/history` дээр гарчиг **ХЭВЭЭР** («🕐 Хайлтын түүх») + `ListingCard` (зарын бүрэн карт) гарна; «🕒 … үзсэн» цаг картын **ДЭЭР** (геометрээр шалгана — халхлахгүй) ③e линк = `/listings/<id>` ③f «Хасах» ④ **УСТСАН зар** (түүхэнд байгаа ч `listings`-д байхгүй) карт БОЛОХГҮЙ + **ХУУЧИН хайлтын мөр** (`/?…`) карт БОЛОХГҮЙ + тоо нь «2 зар үзсэн (1 нь олдсон)» ⑤ **КАРТ ДЭЭР (товч БИШ) дарахад ЗАРЫН хуудас руу ОРНО** ⑥ «Хасах» → мөр арилна · navigation БОЛОХГҮЙ · localStorage-аас ч хасагдана ⑦ **Leaflet-ээс БУСАД JS exception 0** (⚠️ Leaflet-ийн `_leaflet_pos` нь зарын газрын зургийн zoom transition-ы алдаа — өөрчлөлтөөс ҮЛ ХАМААРАЛТАЙ, stack нь 100% leaflet дотоод ⇒ тусгаарлана; `cdp-seller-stats-link.mjs`-ийн ЯГ ИЖИЛ зарчим ✓) ⑦b консол дээр **hydration / `<a>` дотор `<a>` (validateDOMNesting) алдаа 0** — «Хасах» товч картын ГАДНА байгаа нь ТЭР алдаагүйгээр батлагдав ✓ — ⚠️ сервер (:3000) ба Chrome :9222 шаардна; байхгүй бол SKIP → exit 0 ✓; ⚠️ БОДИТ зарын id нь `.env.local` → Supabase REST (`/rest/v1/listings?limit=1`), нөөцөөр нүүр хуудасны `a[data-listing-card]`-аас авна; олдохгүй бол SKIP → exit 0 ✓) |
 | `scripts/test-notifications.mjs` | 🆕 **35 тест** — `npm run test:notifications` (2026-10-08 (67)–(69): 🔔 мэдэгдлийн ЦЭВЭР логик `lib/notifications.mjs` — ①–③ 📞 `formatPhone` («+976 8811 2233»; гадаад дугаар ХУЙВАРГҮЙ) + `phoneHref` → `tel:` (зөвхөн цифр) ④–⑤ `actorLabel` (хоч нэр → байхгүй бол ДУГААР — хэрэглэгчийн гол хүсэлт ✓) + `actorInitial` ⑥–⑨ `normalizeNotificationRow` (id дутуу → `null` — эвдэрхий мөр UI-д ГАРАХГҮЙ) / `notificationTypeMeta` (танихгүй төрөлд ❤️ нөөц) / 🚫 **«… зарыг таалагдлав» ӨГҮҮЛБЭР БАЙХГҮЙ (2026-10-08 (69b) — РЕГРЕСС ХОРИГ)**: 3 файл (`lib/notifications.mjs`, `NotificationBell`, `NotificationsClient`) дотор `notificationText` · `listingLabel(` · «зарыг таалагд» · «зар дээр шинэ үйлдэл» БАЙХГҮЙ (өгүүлбэр буцаж орохоос сэргийлнэ ✓) · `listingTitleLabel` (хоосон/байхгүй → «Зар»; `groupTitleLabel` түүн рүү ЗАЛГАНА ✓) ⑩ `notificationTimeAgo` нь 🕐 хайлтын түүхтэй ЯГ ИЖИЛ (нэг эх сурвалж) ⑪ `sortNotifications` (шинэ нь ЭХЭНД; оролт ХӨНДӨӨГДӨХГҮЙ) ⑫–⑬ `unreadCount` / `badgeLabel` (0/сөрөг → хоосон · 99+ → «99+») ⑭–⑰ `groupByListing`/`groupCountLabel`/`groupTitleLabel` (зараар бүлэглэлт; `listing_id` дутуу мөрүүд НЭГ бүлэгт — зар устсан ч мэдэгдэл алга болохгүй ✓) · **ГЭРЭЭ (⑱–㉞, `codeOnly()`)**: migration 0040 (хуулбар баганууд · CHECK нь `NOTIFICATION_TYPE_META`-той ИЖИЛ · **INSERT policy БАЙХГҮЙ** · триггер `after insert` `security definer` · `grant update (read_at)` БА «текст дарж бичих» эрх БАЙХГҮЙ · idempotent + хуучин ❤️ бөглөлт) · 🆕 **migration 0041** (`phone_from_email` дүрэм нь `lib/phoneEmail.js → emailToPhone`-ийнхтэй ИЖИЛ · `actor_phone` нь `coalesce(auth.users.phone, phone_from_email(email))` · гарчиг нь `title → «төрөл · дүүрэг» → 'Зар'` · бөглөлт idempotent · RLS/хүснэгт ХӨНДӨӨГДӨӨГҮЙ) · `queries.js` 5 функц · `notificationsClient.js` (2 hook + event) · `NotificationBell` · `NotificationsClient` · хонх нь «Хайлтын түүх»-ийн ДАРАА · `BellIcon` `currentColor` SVG (emoji БИШ) · `/notifications` хуудас — ⚠️ DB/React ХОЛБОГДОХГҮЙ ✓) |
 | `scripts/cdp-notifications.mjs` | 🆕 🔔 **CDP (бодит Chrome)** — `npm run cdp:notifications` (**13 OK / 0 FAIL / 1 SKIP ✓** — 2026-10-08 (67), ✅ БОДИТ headless Chrome 155 + сервер :3000), зочин горим: ① толгойн мөрөнд 🔔 хонх байна — **36×36px** ①b **хонх нь 🕐 «Хайлтын түүх»-ийн ЯГ ДАРАА** (x тэнхлэгээр: түүх 1041–1077 < хонх 1089–1125 ✓ — хэрэглэгчийн хүсэлт) ①c икон нь SVG + `currentColor` (emoji БИШ) ② зочин хонх дарвал 🔑 нэвтрэх цонх нээгдэв ②b хуудас СОЛИГДООГҮЙ (хонх нь `<Link>` БИШ — Facebook-ийн хэв ✓) ③ «✕» → цонх хаагдлав ④ `/notifications` нээгдэв (унасан/хоосон дэлгэц БИШ) ④b гарчиг 🔔 + тайлбар ④c «🔑 Нэвтрэх» товч ④d цонх нээгдэв ⑤ 📱 390px-д хонх харагдана (x=338–374) ⑤b баруун дээд (`right=374`, `scrollWidth=390` ⇒ хэвтээ гүйлт **0**) ⑦ JS exception **0** — ⏳ **SKIP:** нэвтэрсэн хэсэг ⑥ (`ZAR_PHONE`/`ZAR_PASS` өгөөгүй тул; ⑥ нь badge → dropdown → **мөр БҮРД 📞** (⑥c, 0041) → бүлгийн гарчиг/мөрийн тоо ТААРНА → 🆕 ⑥g/⑥h хонхны самбарын мөр бүрд 🏠 гарчиг ба 📞 `tel:` линк + 🆕 **⑥i/⑥j «зарыг таалагдлав» өгүүлбэр хуудас/самбарт БАЙХГҮЙ (69b) ✓**) — ⚠️ сервер (:3000) + Chrome `--remote-debugging-port=9222` шаардна; байхгүй бол SKIP → exit 0 ✓; ⚠️ миграц 0040 ороогүй бол `npm run migration:copy 0040_notifications.sql` гэсэн заавартай SKIP ✓; ⚠️ 🆕 **0041 ороогүй бол ⑥c («мөр БҮРД 📞») УНАЖ болзошгүй** (имэйлээс дугаар бөглөгдөхгүй) ⇒ `npm run migration:copy 0041_notification_phone_title.sql`) |
+| `scripts/test-brand.mjs` | 🏠🏷️ **20 тест** — `npm run test:brand` (🆕 **2026-10-08 (69c): ЛОГОНЫ HOME ICON + БРЭНД `ZARBOOK.MN`** — DOM/React-ГҮЙ, зөвхөн Node + `codeOnly()`): 🏠 `HomeIcon` экспортлогдсон ба нь **ЖИНХЭНЭ SVG** (нийтлэг `Icon` суурь — `viewBox`/`currentColor`; 3 зам: дээвэр · хана+шал · хаалга) · 🔗 лого нь `href="/"` + `title="Нүүр хуудас"` бөгөөд икон нь «ZARBOOK» ТЕКСТИЙН өмнө, МӨН НЭГ линк дотор (икон дээр ч, текст дээр ч дарахад home ✓) · ⏳ лого дээр `🏠` emoji БАЙХГҮЙ (SVG икон л) · 📏 зай нь иконы `mr-1.5` (жишээ нь `gap-*` нь «ZARBOOK .MN» алдаа үүсгэдэг — 2026-09-27 ⇒ хориг ✓) · 🖱 `group-hover:scale-110` хэвээр · 🏷️ footer/`app/layout.jsx`/**app доторх БҮХ `.jsx`** (≥20 файл) дээр хуучин брэнд 0 + `ZARBOOK.MN` олон · 📄 `/terms` (≥4 дурдалт + `zarbook.mn` домэйн) · 📤 `lib/exporters.js` · `FavoritesClient` · `PriceStatsClient` · 🤖 Nominatim UA = `ZarBookBot/1.0 (+https://zarbook.mn)` · 📦 `package.json`+`package-lock.json` (`zarbook-mn` — `npm ci` таарна) · 🧹 app/components/lib/scripts-ийн ЦЭВЭР код дээр `ZARLAA`/`zarlaa.mn` 0 (регресс хориг) · 🔒 `phone.zarmn.mn` ба `zarmn_*`/`zarmn:*` (6 файл) ХӨНДӨӨГДӨӨГҮЙ (соливол нэвтрэлт/өгөгдөл эвдэрнэ ✗) · 📖 `docs/R2_SETUP.md` дээр `zarlaa` 0 — ⚠️ DB/React ХОЛБОГДОХГҮЙ ✓) |
+| `scripts/cdp-brand.mjs` | 🏠🏷️ **CDP (бодит Chrome)** — `npm run cdp:brand` (🆕 2026-10-08 (69c), ✅ БОДИТ headless Chrome + сервер :3000), зочин горим: ① лого (`header a[href="/"]`) нь «ZARBOOK.MN» тексттэй, `🏠` EMOJI БАЙХГҮЙ ①a икон нь ЖИНХЭНЭ SVG (`viewBox="0 0 24 24"` + `stroke="currentColor"`), 3 зам ①b икон **22×22px** ①c икон ТЕКСТИЙН ЗҮҮН талд (`icon.right ≤ text.left`) ①d икон ↔ текст зай **4–10px** (`mr-1.5`) ①e «ZARBOOK» ↔ «.MN» **ХИЙМЭЛ ЗАЙГҮЙ** (≤1px — 2026-09-27-ийн алдаа буцаж ороогүй ✓) ② `document.title` нь `ZARBOOK.MN` + footer-т бий + хуучин брэнд ХАРАГДАХГҮЙ ②b `/terms` дээр ч мөн ③ 🖱 **ИКОН дээр БОДИТ хулганы даралт** (`Input.dispatchMouseEvent`) → НҮҮР ХУУДАС (`pathname === '/'` ✓) ④ 📱 390px: икон 22×22, «.MN» зай 0, хэвтээ гүйлт 0 ⑤ JS exception 0 (Leaflet-ийн дотоод алдааг тусад нь хасна) ⑤b hydration/React алдаа 0 + 📸 `/tmp/zar-69c-logo-home-icon.png` — ⚠️ сервер + Chrome `--remote-debugging-port=9222` шаардна; байхгүй бол SKIP → exit 0 ✓) |
+
 
 | `scripts/test-filters.mjs` | 🆕 **122 тест** (🆕 2026-10-07 (52): 121 → 122 — 💻 «Иж бүрэн компьютер» `PC_SPEC_SUBTYPES`-ээс ХАСАГДАВ, T1–T5 урт 23 → 22; 🆕 2026-10-07 (61): 120 → 121 — 🛠️ «Үйлдвэр & Үйлчилгээ, Бизнес» 10 бүлэг/81 дэд төрөл + 0036 migration-ийн гэрээ; 2026-10-06 (16): 107 → 110 — `FilterPill` HOVER-ийн гэрээ: ЯГ `hover:bg-gray-200` ба `hover:bg-primary/25` байх БА ⏳ `hover:bg-gray-50`/`hover:border-gray-300` БУЦАЖ ОРОХГҮЙ) — `npm run test:filters` (🆕 🗑 **2026-10-06 (5): 🛠 services-ийн 4 талбар (🏢 Нэр/компани · 📍 Хамрах хүрээ · 📊 Туршлага · 🕒 Ажиллах цаг) БҮГД ХАСАГДАВ** — форм `attrFields` **0** ба sidebar `attrFilters` **0** (⚽ `hobby`/🏠 `real-estate`-ийн ижил), картын мөр `formatAttrsLine('services', …)` **''**, `getAttrRows('services', …)` **0 мөр**, demo seed ч ҮҮСГЭХГҮЙ (`SERVICE_NAMES` ч УСТСАН ✓), ⚠️ ХАМГААЛАЛТ: 💼 `jobs`-ийн 🕒 `jobType`/📊 `experience`/🏷️ `advertiser`/📈 `jobLevel`/💰 `salaryType` + шүүлт 3 ХӨНДӨӨГДӨӨГҮЙ ✓; 🆕 2026-10-04 (31): 🏠 «хэсгийн панель — 2 алхамт drill»: `showsSectionSubtypes` 2×3 хүснэгт (үл хөдлөх `all`→хаалттай, `sell`/`rent`→нээлттэй; бусад 11 хэсэгт дангааруу) + HomeClient-ийн `showSubtypes`/`data-section-panel` гэрээ (🆕 2026-10-03 (17): 🚗 «Жолооны хүрд» (`steering`) — форм БА карт («🚗 Зөв хүрд»), `Зөв`/`Буруу`, ⚙️ «Хурдны хайрцаг»-ийн ЯГ дараа, шүүлтэд ОРООГҮЙ, `getAttrRows(auto)` → **10 мөр**; 🆕 2026-10-01 (13): 🎨 өнгө **12** сонголт — `assert.deepEqual`-ээр ЯГ дараалал (Цагаан … Бусад), давхардал 0 (`new Set().size === 12`), сүүлийнх нь «Бусад»; 2026-09-28: attrFilters-ийн гэрээ — 🚙 Загвар текст, 📅/📥 оны хүрээ, `parseAttrRangeKey`, `formatAttrsLine`; 2026-09-29: ⚽ hobby — `attrFilters`/`attrFields` зөвхөн `condition`, `hasSimpleForm`; ✅ «Шинэ / Хуучин» — attrFields ба attrFilters ХОЁУЛАА 2 сонголттой байв (2026-09-29; ⚠️ 2026-10-02-д **3** болов), хуучин 4 утга (Хэрэглэсэн — сайн/хэвийн, Засвар шаардлагатай, Хэвийн) БҮРЭН ХАСАГДСАН; 🆕 **2026-10-02: «Шинэ / Шинэвтэр / Хуучин» — attrFields ба attrFilters ХОЁУЛАА ЯГ 3 сонголттой** (ЯГ дараалал `Шинэ → Шинэвтэр → Хуучин` бүх 8 хэсэгт, `new Set().size === 3` давхардал 0, картын мөр `✅ Шинэвтэр` нэг л удаа, ⚠️ DB migration ШААРДЛАГАГҮЙ) → **87 тест** ✓; 2026-09-30: ⚡ electric — 8 бүлэг/26 дэд төрөл, 3 бүлэг `collapsed`, 4 дэх түвшин БАЙХГҮЙ, 🛋️ home-оос ХАСАГДСАН; 2026-09-30: 🛋️ home — 2 бүлэг (**«Тавилга» ЭХЭНД**)/22 дэд төрөл, хоёулаа `collapsed`, хуучин 9 хавтгай нэр ХАСАГДСАН, breadcrumb, картын мөр/шүүлт ХЭВЭЭР — ⚠️ 2026-09-30 (5)-д энэ мод ХУВААГДАВ; 2026-09-30 (5): **12 хэсэг ба ЯГ дараалал** (`SECTIONS.length === 12`), 🛋️ `furniture` 13 / 🧳 `travel` 12 / 🧺 `home` 9 / ⚽ `hobby` 6 дэд төрөл ЯГ таарах, дөрвүүлээ **ХАВТГАЙ** (`getSubtypeGroups` → `[]`), `hasSimpleForm` нь ⚽/🧺/⚡/🛋️/🧳 дээр `true` ба real-estate/auto/jobs/computers/services дээр `false` (тестээр түгжсэн 10 хэсэг), «Бусад» нь furniture/travel/electric/construction-д байгаа ба home/hobby-д **БАЙХГҮЙ**, ба `0026_furniture_travel_sections.sql`-ийн гэрээ (CHECK 12 утга, `home`→`furniture` 13, `hobby`→`travel` 12, «Аяллын хэрэгсэл» → «Бусад»/`travel`, `delete`/`truncate` БАЙХГҮЙ ✓); 🆕 **2026-09-30 (6): 💻 Notebook-ийн 📺/⚙️/🧠/💾 — 4 талбар `txt` → `sel`** (дараалал `brand·model·screen·cpu·ram·storage·condition·warranty`, сонголт 7/19/13/6, давхардал 0, `required` БАЙХГҮЙ, `attrFilters` нь `brand·condition` (🛡️ `warranty` 2026-10-01 (18)-д ХАСАГДСАН); талбар нь **ЗӨВХӨН** `PC_SPEC_SUBTYPES` = 21 Notebook брэнд (⚠️ «Бусад»-ГҮЙ) + «Процессор, сервер» = **22** дэд төрөлд (🆕 (52): «Иж бүрэн компьютер» ХАСАГДАВ), харин «Бусад»/Mouse/Keyboard/Xbox/Чихэвч/тонер/Проектор/Дэлгэц/хоосон дэд төрөлд **ХАРАГДАХГҮЙ**; `getAttrField` нь `onlySubtypes`-аас ХАМААРАХГҮЙ (картын мөр/шүүлтэд хуучин утга харагдана ✓) ба бусад 11 хэсэгт талбар ХАСАГДАХГҮЙ; картын мөр `Lenovo ThinkPad T14 · ⚙️ Intel Core i5 · 16 GB · 512 GB · ✅ Шинэ` (📺 ОРООГҮЙ); хуучин/demo cpu (`Intel Core i5`…`Apple M2`) ба ram утга бүр шинэ сонголтод БАГТСАН, «512 GB SSD + 1 TB HDD» нь БАГТААГҮЙ (`legacy`-ээр хамгаалагдана); `AddListingModal.jsx`/`seed-sections.mjs`-ийн гэрээ; 🆕 **2026-10-01: 🔧 «Хөдөлгүүр» `txt` → `sel` (`ENGINE_OPTIONS` — ЯГ 7 утга: `1.5л хүртэл` … `Цахилгаан (EV)`, label нь зөвхөн «Хөдөлгүүр», ⚠️ шүүлтэд ОРООГҮЙ) ба 🎨 «Өнгө» НЭМЭГДЭВ (`AUTO_COLOR_OPTIONS` — 12 сонголт, форм **ба** sidebar); 🔀 «Хөтлөгч» (`drive`) форм/`attrFilters`/`CARD_ATTR_ORDER` **ГУРВААС** ХАСАГДАВ (хуучин `attrs.drive` карт дээр ГАРАХГҮЙ ✓); `formatAttrsLine` нь хүрээний утгад «л» **ДАВХАР залгахгүй** («1.5л - 2.0л»), зөвхөн ХУУЧИН тоон «2.5»-д залгана → 68 → **72 тест**; 🆕 **2026-10-01 (2): 🎨 «Өнгө» нь 🚙 «Загвар»-ын ЯГ ДАРАА — 3 газарт** (`attrFields` форм · `attrFilters` sidebar · `CARD_ATTR_ORDER.auto` картын мөр; ⚠️ дараалал нь массивын дараалал тул компонент дээр код засахгүй; карт дээр толгой нь «брэнд + загвар + он» нэг хэсэг тул «Өнгө» нь толгойн дараах ЭХНИЙ үзүүлэлт — `Toyota Prius, 2021 · 🎨 Цагаан · 95,200 км · …`; форм + sidebar дарааллын шинэ тест + картын мөрийн ЯГ тэнцэл → **80 тест** ✓; 🆕 **2026-10-01 (16): 📋 `getAttrRows` — зарын дэлгэрэнгүй хуудсанд `attrs` нь хэсгийн `attrFields`-ийн шошго/icon/дарааллаар 2 БАГАНАТ хүснэгт болж гарна** (4 тест: 🚗 `auto` → ЯГ 9 мөр `brand·model·color·year·importYear·mileage·transmission·engine·fuel`, 🛣️ гүйлт `146000` → **`146,000`** («км» шошгонд тул ДАВХАРДСАНГҮЙ), 🔧 «2.1л - 2.7л» давхар нэгжгүй ба хуучин тоон «2.5» → «2.5 л», `negotiable` ба **ХАСАГДСАН `drive`** ХАРАГДАХГҮЙ, `0` нь ХООСОН БИШ = `formatAttrsLine`-тэй ижил, `null`/`undefined`/`{}`/`'Toyota'` дээр КРАШГҮЙ, 💻 `onlySubtypes` → 📺/⚙️/🧠/💾 Notebook дээр л гарах ба Mouse-д ГАРАХГҮЙ, 🏠 `real-estate` (`attrFields: []`) → **0 мөр** ба 12 хэсэг бүгд крашгүй; 🆕 **2026-10-01 (18): 🛡️ 💻 «Баталгаа» (`warranty`) БҮРЭН ХАСАГДАВ** — форм · `attrFilters` · карт · `getAttrRows` ГУРВААС (💻 шүүлт 3 → **2**, форм талбар 8 → **7**; Notebook 8 → **7**, Mouse 4 → **3** мөр; ХУУЧИН `attrs.warranty`-тай зар карт/дэлгэрэнгүй дээр ГАРАХГҮЙ ✓; seed нь `warranty` ҮҮСГЭХГҮЙ; `getAttrField` → `null`) → 85 → 87 тест; 🆕 **2026-10-03 (7): 💻 Notebook-ийн 📺/⚙️/🧠/💾 ШҮҮЛТ — 6 тест** (① `getAttrFilters('computers','Apple')` → `brand·screen·cpu·ram·storage·condition` (формтой ижил дараалал, `model` шүүлтэд ОРООГҮЙ) ② сонголт нь либын экспорттой ИЖИЛ объект — 7/19/13/6, `type: select` ба `searchable` БИШ ③ 23 `PC_SPEC_SUBTYPES` дээр 4 шүүлт, холдуу дэд төрөл (Mouse/Keyboard/тонер/чихэвч) ба `''` дээр 0 ④ бусад 11 хэсэг дэд төрөл дамжуулахад ХӨНДӨГДӨӨГҮЙ ⑤ HomeClient-ийн ЭХ ФАЙЛЫН ГЭРЭЭ: `getAttrFilters(section, filters.propertyType)`, `pruneGatedAttrs` 2 зам, `data-attr-filter` ⑥ 🆕 **`pruneGatedAttrs` цэвэр функц** — Notebook үзүүлэлт Mouse/`''` дээр хасагдана, ⚠️ хүрээний түлхүүр (`year_from`)/формойн `model`/`null`/массив ХӨНДӨГДӨХГҮЙ, 12 хэсэг бүгд крашгүй; мөн 💻 «Баталгаа» тестэд `getAttrFilters('computers','HP')` нэмэгдэв) → **94 тест**; 🆕 **2026-10-03 (20): 🏷️ 💻 «Брэнд» нь `filterSubtypes: PC_SPEC_SUBTYPES`-тай** (① талбар нь `filterSubtypes`-тай, `onlySubtypes`/`searchable` нь хэвээр ② ХАЙЛТАД 23 PC_SPEC дэд төрөл дээр БАЙНА, Mouse/Keyboard/Дэлгэц/iPad/принтер/тонер/чихэвч/`''` дээр БАЙХГҮЙ ③ ФОРМ бүх дэд төрөлд ХЭВЭЭР ④ `getAttrField` ХӨНДӨГДӨӨГҮЙ ⑤ `filterSubtypes` туг нь ЗӨВХӨН `computers.brand`-д ⑥ бусад 12 хэсэг хөндөгдөөгүй; `computers` тоо 2 → **1**, `pruneGatedAttrs` Mouse/`''` дээр `{brand:…}` → `{}`; 🏷️ ⑥-з тест → 101 ✓; 🆕 **2026-10-04 (23): 🖥📱 хэсгийн панелийн «Зарах / Түрээслэх» нь `segmented` ба `getSectionCategoryChoices`** (② тест — туслахын гэрээ: дараалал `sell→rent→all`, БҮТЭН шошго «Үл хөдлөх зарна / Үл хөдлөх түрээслүүлнэ» ба 📱 «Зарна / Түрээслүүлнэ», бусад 11 хэсэгт `[]`, `CATEGORIES` ХӨНДӨӨГДӨӨГҮЙ; HomeClient-ийн гэрээ: `getSectionCategoryChoices(section)` дуудах + `getSectionCategories` БАЙХГҮЙ + `data-category-value`/`segmented`/`segmented-item-active`/`aria-pressed`/`hidden sm:inline`+`sm:hidden` ба хуучин `💰 Зарах`/`🔑 Түрээслэх` нүүр хуудсанд БАЙХГҮЙ) → **101 тест** ✓) |
 | `scripts/test-format.mjs` | **32 тест** — `npm run test:format` (🆕 **2026-10-06: 📉 `shortPriceLabel()` — 2 тест** (КАРТ + ДЭЛГЭРЭНГҮЙ дээрх ТОВЧ үнэ: `760 сая ₮` · `44.8 сая ₮` · `2 тэрбум ₮` · `1.5 сая ₮` · `900 мянга ₮` · үнэгүй → «Үнэ тохирно» / ажил → «Цалин тохиролцоно» · «₮» ТӨГСГӨЛД байх; ⚠️ `priceLabel` ХӨНДӨӨГДӨӨГҮЙ → `₮760,000,000`); 🆕 **2026-10-02: 🏷️ `listingTitle()` — 5 тест** (`MAX_LISTING_TITLE_LENGTH` = **120**: гарчигтай → текстээ · `null`/`''`/зай → `''` (**мөр ГАРАХГҮЙ**) · олон зай/мөр таслалт → **НЭГ зай** · 120-аас урт → таслагдана (DB CHECK-тай ИЖИЛ) · тоон/бусад төрөл → текст (крашгүй)); 2026-09-29: 🤝 `hasRealPrice` / `priceLabel` (үнэ БИЧСЭН бол «₮…» — ДАРАХГҮЙ) / `negotiableNote` (зөвхөн үнэтэй + тэмдэглэсэн үед) + `toNumber('250,000,000') → 0` регресс); 🆕 **2026-10-07: 🔖 `shortListingId()` — 5 тест** (uuid → эхний 8 hex ТОМ үсэг · урт 8 + `-` таслалт · хоосон/`null` → `''` · богино утга/тоо · бүтэн uuid ХЭВЭЭР (зөвхөн харагдац)) |

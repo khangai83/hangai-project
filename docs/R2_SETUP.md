@@ -59,7 +59,7 @@ Browser                      Манай Next.js API            Cloudflare R2
 
 | Талбар | Утга |
 |---|---|
-| Token name | `zarlaa-web` |
+| Token name | `zarbook-web` |
 | Permissions | **Object Read & Write** |
 | Specify bucket | `my-zar` (зөвхөн энэ bucket) |
 
@@ -116,13 +116,13 @@ https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com
 | | Зам (дарж очно) | Үр дүн | Хэзээ |
 |---|---|---|---|
 | ⚠️ **r2.dev** | *Public Development URL* → **Enable** → цонхонд `allow` гэж бичээд **Allow** | `Public Bucket URL` = `https://pub-1a2b3c.r2.dev` | Зөвхөн ТУРШИЛТАД (хурдны хязгаартай, WAF/cache ажиллахгүй) |
-| ✅ **Custom domain** | *Custom Domains* → **Add**/**Connect Domain** → ж: `img.zarlaa.mn` | `img.zarlaa.mn` (Cloudflare DNS бичлэгийг өөрөө нэмнэ) | **Production (санал болгож байна)** |
+| ✅ **Custom domain** | *Custom Domains* → **Add**/**Connect Domain** → ж: `img.zarbook.mn` | `img.zarbook.mn` (Cloudflare DNS бичлэгийг өөрөө нэмнэ) | **Production (санал болгож байна)** |
 
 - Асаасны дараа «**Public URL Access: Allowed**» гэж харагдана ✓
 - ⚠️ `r2.dev` рүү CNAME бичлэг хийхийг Cloudflare **дэмждэггүй** — production-д
   өөрийн домэйн заавал холбоно.
-- ⚠️ **Зам/төгсгөлийн `/`-г ХАСАЖ бичнэ:** зөв нь `https://img.zarlaa.mn`,
-  буруу нь `https://img.zarlaa.mn/` ✗
+- ⚠️ **Зам/төгсгөлийн `/`-г ХАСАЖ бичнэ:** зөв нь `https://img.zarbook.mn`,
+  буруу нь `https://img.zarbook.mn/` ✗
 - Дараа нь `.env.local` → `R2_PUBLIC_BASE=<тэр хаяг>` ба **`npm run check:r2`**
   (энэ нь домэйныг HEAD хүсэлтээр БОДИТООР шалгана: `404 = ✅ зөв хариулж байна`,
   `403 = ❌ bucket нь public биш`) ✓
@@ -131,7 +131,7 @@ https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com
 
 ### 🕓 Домэйн ХАРААХАН аваагүй бол (2026-10-02-ны бодит байдал)
 
-`zarlaa.mn` нь **хараахан худалдаж аваагүй** (DNS-д resolve болохгүй) тул
+`zarbook.mn` нь **хараахан худалдаж аваагүй** (DNS-д resolve болохгүй) тул
 **одоо `r2.dev`-ээр ажиллаж байна** — энэ нь БҮРЭН хэвийн ✓ Upload, нийтийн
 URL, устгалт бүгд ажиллана (`npm run check:r2` → бүгд ✅).
 
@@ -140,7 +140,7 @@ URL, устгалт бүгд ажиллана (`npm run check:r2` → бүгд �
 - ✅ Тиймээс **нийтэд нээхээс өмнө** домэйн авч холбох нь зүйтэй (доорхи checklist)
 - 👍 Одоо DB-д R2 URL **0** байгаа нь давуу тал: домэйн холбоход хуучин URL
   шинэчлэх ажил бараг гарахгүй (гарсан ч `storage:rebase` л хангалттай ✓)
-- ℹ️ §4-ийн CORS-д `https://zarlaa.mn`, `https://www.zarlaa.mn` **аль хэдийн
+- ℹ️ §4-ийн CORS-д `https://zarbook.mn`, `https://www.zarbook.mn` **аль хэдийн
   бичигдсэн** байгаа тул домэйн авмагц нэмэлт ажил бараг байхгүй ✓
 
 **Домэйн авсны дараах checklist:**
@@ -168,7 +168,7 @@ URL, устгалт бүгд ажиллана (`npm run check:r2` → бүгд �
 npm run storage:rebase                         # 🔍 DRY-RUN — ямар домэйн, хэдэн URL вэ
 npm run storage:rebase -- --apply               # ✅ бүх R2 URL-ыг R2_PUBLIC_BASE рүү шинэчилнэ
 npm run storage:rebase -- --apply --from https://pub-1a2b3c.r2.dev
-npm run storage:rebase -- --apply --to https://img.zarlaa.mn   # R2_PUBLIC_BASE-ыг орхиж заана
+npm run storage:rebase -- --apply --to https://img.zarbook.mn   # R2_PUBLIC_BASE-ыг орхиж заана
 ```
 
 | Флаг | Утга |
@@ -206,8 +206,8 @@ requests from a browser») ✗
       "http://localhost:3000",
       "http://192.168.1.2:3000",
       "https://hangai-project.vercel.app",
-      "https://zarlaa.mn",
-      "https://www.zarlaa.mn"
+      "https://zarbook.mn",
+      "https://www.zarbook.mn"
     ],
     "AllowedMethods": ["PUT", "GET", "HEAD"],
     "AllowedHeaders": ["content-type"],
@@ -224,15 +224,15 @@ requests from a browser») ✗
 | `http://localhost:3000` | локал хөгжүүлэлт (`npm run dev`) |
 | `http://192.168.1.2:3000` | ⚠️ **утаснаас LAN-аар** шалгах үед — Mac-ийн IP (dev server нь `Network: http://…:3000` гэж өөрөө хэвлэнэ). DHCP-ээр IP солигдвол **шинэ хаягаа нэмнэ** (`ifconfig` → `inet …`); порт дотор `*` болохгүй тул порт бүрийг тус тусад нь жагсаана |
 | `https://hangai-project.vercel.app` | **Vercel-ийн хаяг** — ⚠️ төгсгөлийн `/` БЕЗ (`…app/` ✗) |
-| `https://zarlaa.mn` | өөрийн домэйн (Vercel дээр холбосон үед) |
-| `https://www.zarlaa.mn` | `www`-тэй хувилбар — тусдаа БИЧНЭ (автомат биш!) |
+| `https://zarbook.mn` | өөрийн домэйн (Vercel дээр холбосон үед) |
+| `https://www.zarbook.mn` | `www`-тэй хувилбар — тусдаа БИЧНЭ (автомат биш!) |
 | `https://hangai-project-*.vercel.app` | *(сонголтоор)* Vercel-ийн **preview** deploy-ууд — `*` нь 1 ширхэг, цэг дамжина |
 | `http://localhost:3001` | өөр порт → **ТУС ТУСД нь** (порт дотор `*` БОЛОХГҮЙ ✗) |
 
 ```bash
 # Шалгах (нэгийг эсвэл хэдийг ч зааж болно):
 npm run check:r2 -- --origin https://hangai-project.vercel.app
-npm run check:r2 -- --origin http://localhost:3000 --origin https://zarlaa.mn
+npm run check:r2 -- --origin http://localhost:3000 --origin https://zarbook.mn
 npm run check:r2 -- --origin http://192.168.1.2:3000                # 📱 утаснаас LAN-аар
 R2_CORS_ORIGIN=https://a.mn,https://b.mn npm run check:r2     # ⚠️ `*` байвал хашилтанд: 'https://x-*.vercel.app'
 ```
@@ -244,8 +244,8 @@ R2_CORS_ORIGIN=https://a.mn,https://b.mn npm run check:r2     # ⚠️ `*` ба�
 > ⚠️ `AllowedOrigins` нь **`scheme://host[:port]` ЗӨВХӨН** — зам (`/`) БИШ,
 > төгсгөлийн `/` БИШ (Cloudflare-ийн дүрэм: «Invalid AllowedOrigins value:
 > `https://static.example.com/`» — ийм утга ҮЙЛЧИЛЭХГҮЙ ✗). Wildcard нь
-> хамгийн ихдээ **нэг** `*` бөгөөд **цэг дамжина** (`https://*.zarlaa.mn` →
-> `a.zarlaa.mn`, `a.b.zarlaa.mn` ✓, харин `zarlaa.mn` ✗). **Порт дотор `*`
+> хамгийн ихдээ **нэг** `*` бөгөөд **цэг дамжина** (`https://*.zarbook.mn` →
+> `a.zarbook.mn`, `a.b.zarbook.mn` ✓, харин `zarbook.mn` ✗). **Порт дотор `*`
 > болохгүй** — localhost-ийн порт бүрийг ТУС ТУСД нь жагсаана.
 > ⚠️ Дүрэм **хар** байсан ч тархахад 30 секунд хүртэл хугацаа орж болно.
 
@@ -262,7 +262,7 @@ import { r2Client, r2Config } from './lib/r2.mjs';
 await r2Client().send(new PutBucketCorsCommand({
   Bucket: r2Config().bucket,
   CORSConfiguration: { CORSRules: [{
-    AllowedOrigins: ['http://localhost:3000', 'http://192.168.1.2:3000', 'https://hangai-project.vercel.app', 'https://zarlaa.mn', 'https://www.zarlaa.mn'],
+    AllowedOrigins: ['http://localhost:3000', 'http://192.168.1.2:3000', 'https://hangai-project.vercel.app', 'https://zarbook.mn', 'https://www.zarbook.mn'],
     AllowedMethods: ['PUT', 'GET', 'HEAD'],
     AllowedHeaders: ['content-type'],
     ExposeHeaders: ['etag'],
@@ -295,7 +295,7 @@ R2 env 5/5 байсан тул `presign` **200 · `backend: r2`** болж, PUT-
 
 | Origin | Дүн |
 |---|---|
-| `http://localhost:3000` · `https://hangai-project.vercel.app` · `https://zarlaa.mn` · `https://www.zarlaa.mn` | ✅ (production хэвийн) |
+| `http://localhost:3000` · `https://hangai-project.vercel.app` · `https://zarbook.mn` · `https://www.zarbook.mn` | ✅ (production хэвийн) |
 | **`http://192.168.1.2:3000`** (Mac-ийн LAN IP — утаснаас нээсэн хаяг) | ❌ **CORS ДУТУУ** ← ШАЛТГААН |
 
 ⚠️ Хичээл: `localhost` нь **утасны хувьд ч, бусад төхөөрөмжийн хувьд ч**
@@ -316,7 +316,7 @@ R2 env 5/5 байсан тул `presign` **200 · `backend: r2`** болж, PUT-
 
 ```bash
 npm run check:r2 -- --origin http://localhost:3000 --origin http://192.168.1.2:3000 \
-  --origin https://hangai-project.vercel.app --origin https://zarlaa.mn --origin https://www.zarlaa.mn
+  --origin https://hangai-project.vercel.app --origin https://zarbook.mn --origin https://www.zarbook.mn
 # → preflight 204 · ACAO = тухайн origin ✓  |  PUT 200 → publicUrl GET 200 → устгав 404 ✓
 ```
 
@@ -330,9 +330,9 @@ R2_ACCESS_KEY_ID=xxxxxxxxxxxxxxxxxxxxxxxx
 R2_SECRET_ACCESS_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 R2_BUCKET=my-zar
 #          ↑ ЯГ Cloudflare дээрх bucket-ийн нэр (мөрөн доторх зай/шинэ мөр БИШ)
-R2_PUBLIC_BASE=https://img.zarlaa.mn
+R2_PUBLIC_BASE=https://img.zarbook.mn
 #          ↑ §3-ын дагуу авна: Settings → Public Development URL (r2.dev, туршилт)
-#            эсвэл Custom Domains (img.zarlaa.mn, production) — төгсгөлд нь `/` БИШ ✓
+#            эсвэл Custom Domains (img.zarbook.mn, production) — төгсгөлд нь `/` БИШ ✓
 ```
 
 > ⚠️ **5-ыг нь БҮРЭН бөглөнө.** `R2_PUBLIC_BASE` (нийтийн домэйн) дутуу бол upload
