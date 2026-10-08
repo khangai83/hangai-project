@@ -34,6 +34,14 @@
  *   ⑤b 🖥 1024px (`lg` босго): икон харагдаж, баруун цэсэн товчнуудтай
  *      (`hidden lg:flex`) ЗӨРЧИЛДӨХГҮЙ (иконы right ≤ «➕ Зар нэмэх» left) ✓
  *
+ *   ⑥ 🆕 (72) `/` ба ЗАР (`/listings/<id>`) — 🏠 иконы x ЯГ ИЖИЛ (±2px; 🖥
+ *      1280/1440/1680px ба 📱 390px) бөгөөд ЗАР дээр икон нь логоноос 4–14px
+ *      зайд (`logo.right + 8` = `icon.left`) байх ЁСТОЙ — ⏳ буруу байхдаа
+ *      `headerSlot`-гүй хуудсанд икон чөлөөт зайны ГОЛД шилжиж 300–435px
+ *      болж байв ✗ (хэрэглэгчийн гомдол: «home ruu ordog icon chin zar luu
+ *      orohoor bairlalaa uurchluud baigaa») ⇒ `justify-between`-ийн дунд
+ *      хүүхэд болохоос сэргийлж `[лого + 🏠 икон]` НЭГ бүлэг болсныг хамгаална ✓
+ *
  * ⚙️ АЖИЛЛУУЛАХ:
  *   1) `npm run build && npm run start` (http://localhost:3000)
  *   2) Chrome: --headless=new --remote-debugging-port=9222
@@ -339,6 +347,92 @@ console.log(`     ℹ️ Leaflet дотоод алдаа: ${leafletOnly.length} 
 check('⑤ Leaflet-ээс БУСАД JS exception 0', otherExceptions.length === 0, otherExceptions.join(' | ').slice(0, 200) || '0');
 const nesting = consoleErrors.filter((e) => /nest|hydration|hydrat|validateDOM/i.test(e));
 check('⑤ консол дээр hydration/React алдаа 0', nesting.length === 0, nesting.join(' | ').slice(0, 200) || '0');
+
+// ---------- ⑥ 🆕 (72) 🏠 ИКОН ХУУДАС БҮРД ЯГ ИЖИЛ БАЙРЛАЛД (хэрэглэгчийн гомдол) ----------
+//  ⚠️ `lg:justify-between` дээр `headerSlot`-гүй хуудсанд (зар · мессеж …) 🏠 икон
+//    нь чөлөөт зайны ГОЛД шилжиж байв ✗ ⇒ `/` ба `/listings/<id>` дээр `icon.left`
+//    ЯГ ИЖИЛ (±2px) байх ба икон нь логоноос 8px (4–14) зайд байх ЁСТОЙ ✓
+const excBefore6 = exceptions.filter((e) => !/leaflet|_leaflet_pos/i.test(e)).length;
+const fs6 = await import('node:fs');
+
+/** 📄 `.env.local`-аас утга (байхгүй бол `''` — SKIP зам руу шилжинэ ✓) */
+const envRead = (k) => {
+  try {
+    const txt = fs6.readFileSync(new URL('../.env.local', import.meta.url), 'utf8');
+    return (txt.match(new RegExp(`^\\s*${k}\\s*=\\s*(.*)$`, 'm')) || [])[1]?.trim().replace(/^["']|["']$/g, '') || '';
+  } catch { return ''; }
+};
+
+/** 🆔 Шалгах ЗАРЫН id — ① Supabase REST, ② нөөц: нүүр хуудасны эхний картын линк */
+let ZAR_ID = '';
+{
+  const supaUrl = envRead('NEXT_PUBLIC_SUPABASE_URL');
+  const anonKey = envRead('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  if (supaUrl && anonKey) {
+    try {
+      const r = await fetch(`${supaUrl}/rest/v1/listings?select=id&limit=1`, {
+        headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+      });
+      if (r.ok) ZAR_ID = String((await r.json())?.[0]?.id || '');
+    } catch { /* алгасна */ }
+  }
+  if (!ZAR_ID) {
+    await goto(`${BASE}/`);
+    const href = await evalJs(`(() => { const a = document.querySelector('a[href^="/listings/"]'); return a ? a.getAttribute('href') : ''; })()`);
+    ZAR_ID = String(href || '').split('/').filter(Boolean).pop() || '';
+  }
+}
+
+/** 📐 Иконы байрлал: `logo.right + 8 = icon.left` ба бүлэг нь ЯГ 2 хүүхэдтэй */
+const ICON_AT = `(() => {
+  const logo = [...document.querySelectorAll('header a[href="/"]')].find((x) => /ZARBOOK/.test(x.textContent || ''));
+  const icon = document.querySelector('header a[data-home-icon-link] svg[data-home-icon]');
+  if (!logo || !icon) return null;
+  const b1 = logo.getBoundingClientRect();
+  const b2 = icon.getBoundingClientRect();
+  const wrap = logo.parentElement;
+  return {
+    l: +b2.left.toFixed(1), logoR: +b1.right.toFixed(1), gap: +(b2.left - b1.right).toFixed(1),
+    wrapKids: wrap ? wrap.children.length : 0,
+    scroll: document.documentElement.scrollWidth - window.innerWidth,
+    path: location.pathname,
+  };
+})()`;
+
+if (!/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(ZAR_ID)) {
+  console.log('  ⏭ ⑥ SKIP — ЗАРЫН id олдсонгүй (Supabase тохиргоо/карт алга) ✓');
+} else {
+  for (const w of [1280, 1440, 1680]) {
+    await goto(`${BASE}/`, w, 900);
+    const home = await evalJs(ICON_AT);
+    await goto(`${BASE}/listings/${ZAR_ID}`, w, 900);
+    const zar = await evalJs(ICON_AT);
+    check(`⑥ 🆕 (72) 🖥 ${w}px — ЗАР руу ороход 🏠 иконы x ШИЛЖИХГҮЙ (\`/\` ба ЗАР дээр ЯГ ИЖИЛ ±2px)`,
+      !!(home && zar) && Math.abs(home.l - zar.l) <= 2,
+      home && zar ? `нүүр=${home.l} · зар=${zar.l}` : 'икон олдсонгүй');
+    check(`⑥ 🖥 ${w}px — ЗАР дээр икон нь ЛОГОНЫ ЯГ ДАРАА (зай 4–14px; ⏳ 300–435px байв ✗)`,
+      !!zar && zar.gap >= 4 && zar.gap <= 14, zar ? `зай=${zar.gap}px (икон left=${zar.l})` : '—');
+    check(`⑥ 🖥 ${w}px — [лого + 🏠] бүлэг нь ЯГ 2 хүүхэд ба хэвтээ гүйлт 0`,
+      !!zar && zar.wrapKids === 2 && zar.scroll <= 0, zar ? `хүүхэд=${zar.wrapKids} · scrollX=${zar.scroll}` : '—');
+  }
+  await goto(`${BASE}/`, 390, 780);
+  const mHome = await evalJs(ICON_AT);
+  await goto(`${BASE}/listings/${ZAR_ID}`, 390, 780);
+  const mZar = await evalJs(ICON_AT);
+  check('⑥ 📱 390px — мобайлд ч нүүр ба ЗАР дээр икон ЯГ ИЖИЛ (±2px) ба логоны дараа 4–14px',
+    !!(mHome && mZar) && Math.abs(mHome.l - mZar.l) <= 2 && mZar.gap >= 4 && mZar.gap <= 14,
+    mHome && mZar ? `нүүр=${mHome.l} · зар=${mZar.l} · зай=${mZar.gap}px` : '—');
+  const excAfter6 = exceptions.filter((e) => !/leaflet|_leaflet_pos/i.test(e)).length;
+  check('⑥ ЗАР ба НҮҮР хуудсанд нэмэгдсэн JS exception 0 (Leaflet-ээс бусад)',
+    excAfter6 <= excBefore6, `${excAfter6 - excBefore6} шинэ`);
+
+  // 📸 ЗАРЫН хуудасны толгойн зураг (икон нь логоны ЯГ ДАРАА — гомдлын баталгаа ✓)
+  await goto(`${BASE}/listings/${ZAR_ID}`, 1280, 900);
+  const zClip = await evalJs(`(() => { const a = [...document.querySelectorAll('header a[href="/"]')].find((x) => /ZARBOOK/.test(x.textContent || '')); const i = document.querySelector('header a[data-home-icon-link]'); const f = document.querySelector('header form[role="search"]'); const r1 = a.getBoundingClientRect(); const r2 = (i || a).getBoundingClientRect(); const r3 = f ? f.getBoundingClientRect() : null; const left = Math.max(0, Math.round(r1.left) - 12); const right = Math.min(window.innerWidth, Math.round((r3 && r3.left + 40) || (r2.right + 40)) + 12); return { x: left, y: Math.max(0, Math.round(r1.top) + 2), width: Math.max(120, right - left), height: Math.round(r1.height) + 6 }; })()`);
+  const zShot = await rpc('Page.captureScreenshot', { format: 'png', clip: { ...zClip, scale: 3 } });
+  fs6.writeFileSync('/tmp/zar-72-zar-header-icon.png', Buffer.from(zShot.data, 'base64'));
+  console.log('  📸 зураг (🖥 1280px, ЗАР — лого + 🏠 икон): /tmp/zar-72-zar-header-icon.png');
+}
 
 // ---------- 📸 ЗУРАГ (лого → 🏠 икон → хайлт хүртэл) ----------
 await goto(`${BASE}/`);

@@ -370,57 +370,92 @@ export default function AppProviders({ children }) {
                      хэрэгтэй (22px текстийн мөр дэх `<span>` нь өөр өндөртэй) — бүү хас.
                    ⚠️ `gap` буцааж нэмэх бол дотоод `<span>`-ыг бүхэлд нь
                      НЭГ элементээр ороох хэрэгтэй (эс бөгөөс алдаа буцаж гарна). */}
-              <Link
-                href="/"
-                title="Нүүр хуудас"
-                aria-label="ZARBOOK.MN — нүүр хуудас"
-                className="flex items-center text-[22px] font-bold text-primary"
-                onClick={closeUserMenus}
-              >
-                ZARBOOK<span className="text-gray-900">.MN</span>
-              </Link>
-              {/* ===== 🏠 НҮҮР ХУУДАСНЫ ИКОН — ТУСДАА, ХАЙЛТЫН хэсгийн ӨМНӨ (2026-10-08 (69d)) =====
-                  ⚠️ ХЭРЭГЛЭГЧИЙН ТОДРУУЛГА: «би уугийг нь тусдаа icon болгоод өгөөч
-                     гэсэн юм… search хэсгийн өмнө тусдаа icon болгоод өгөөч» ✓
-                  📐 DOM дараалал = харагдах дараалал:
-                     [лого ZARBOOK.MN] → [🏠 икон] → [{headerSlot} хайлтын мөр] →
-                     [➕ ❤️ 💬 🕐 🔔 👤]  ⇒ икон нь ХАЙЛТЫН хэсгийн ЯГ ӨМНӨ ✓
-                  ⚠️ Хэмжээ `h-6 w-6` (24px) — баруун талын icon-only товчнуудтай
-                     (❤️ `HeartIcon` / 💬 `ChatIcon` / 🕐 `ClockIcon` / 🔔 `BellIcon`)
-                     ЯГ ИЖИЛ (⏳ (69c)-д логоны 22px текстэд тааруулж `h-[22px]` байв —
-                     одоо ТУСДАА товч тул хэв нь 24px ✓)
-                  ⚠️ `p-1.5` + `rounded-full` + `text-gray-700` + `hover:text-gray-900`,
-                     дотор SVG нь `group-hover:scale-110` (`duration-200 ease-out`) —
-                     бусад icon-only товчнуудтай ЯГ ИЖИЛ хэв ✓
-                     (⚠️ `text-primary` БИШ — энэ нь толгойн icon-only товч, лого биш)
-                  ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-08 (69e)): «home icon ямар ч
-                     хуудасруу орсон zarbook.mn logo ний хоёроо л байдаг
-                     баймаар байна» ⇒ ⏳ (69d)-д `hidden … lg:inline-flex`
-                     (зөвхөн ≥1024px) байсныг ХАСАЖ, икон нь БҮХ ӨРГӨНД (📱
-                     мобайл ч) ХАРАГДАХ болов — логоны ЯГ ДАРАА ✓
-                  ⚠️ `hidden` ба `lg:inline-flex` нь ХҮЧИНГҮЙ (регресс ХОРИГ —
-                     `npm run test:brand` ба `npm run cdp:brand` ④ шалгана ✓)
-                  ⚠️ <1024px үед толгой нь `justify-center` тул `[лого + 🏠 икон]`
-                     ХОЁУЛАА нийлээд ТӨВД (лого төвөөс ~20px зүүн тийш —
-                     2026-09-27-ийн «лого төвд» хүсэлттэй ойролцоо хэвээр ✓);
-                     ≥1024px үед `lg:justify-between` тул лого + икон ЗҮҮЛ
-                     захад хэвээр ✓ (CDP 390px: хэвтээ гүйлт 0 ✓)
-                  ⚠️ `shrink-0` — хайлтын мөр (`flex-1`) уртсах үед икон БҮРЧЛЭГДЭХГҮЙ ✓
-                  ⚠️ `ml-2` — лого ↔ иконы зай (бүх өргөнд 8px ✓)
-                  ⚠️ Дарахад `closeUserMenus()` — бусад толгойн линктэй ИЖИЛ ✓ */}
-              <Link
-                href="/"
-                data-home-icon-link
-                title="Нүүр хуудас"
-                aria-label="Нүүр хуудас"
-                className="group ml-2 inline-flex shrink-0 items-center justify-center rounded-full p-1.5 text-gray-700 transition-colors hover:text-gray-900"
-                onClick={closeUserMenus}
-              >
-                <HomeIcon
-                  data-home-icon
-                  className="h-6 w-6 transition-transform duration-200 ease-out group-hover:scale-110"
-                />
-              </Link>
+              {/* ===== [лого + 🏠 икон] = НЭГ БҮЛЭГ (2026-10-08 (72)) =====
+                  ⚠️ ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «home ruu ordog icon chin zar luu
+                     orohoor bairlalaa uurchluud baigaa» ⇒ ЗАР (`/listings/<id>`)
+                     руу ороход 🏠 икон баруун тийш 300–435px ШИЛЖИЖ байв ✗
+                  🔍 ШАЛТГААН (CDP хэмжилт 1280 / 1440 / 1680px): толгойн мөр нь
+                     `lg:justify-between`. `/` дээр `{headerSlot}` (хайлтын мөр,
+                     `flex-1`) байх тул чөлөөт зайг ТЭР шингээж, 🏠 икон логоны
+                     ЯГ ДАРАА (icon.left 185.5px) зогсож байв; харин БУСАД
+                     хуудсанд (зар · мессеж · таалагдсан …) `headerSlot`
+                     БАЙХГҮЙ ⇒ `justify-between` нь 3 хүүхдийн ДУНДЫНХ нь (🏠)-ыг
+                     чөлөөт зайны ГОЛД түлхэж байв ✗ (icon.left 485.7 / 565.7 /
+                     685.7px — 1280 / 1440 / 1680px дээр).
+                  ✅ ЗАСВАР: `[лого + 🏠 икон]` нь НЭГ `flex shrink-0` бүлэг болов
+                     (`justify-between`-д ЗӨВХӨН 1 хүүхэд) ⇒ икон нь ХУУДАС БҮРД,
+                     ӨРГӨН БҮРД логоноос ЯГ `ml-2` = **8px** зайд (`logo.right +
+                     8 = icon.left`) ✓; `/` дээрх байрлал ХӨНДӨГДӨӨГҮЙ ✓
+                  ⚠️ `shrink-0` — хайлтын мөр (`flex-1`) уртсах үед бүлэг
+                     БҮРЧЛЭГДЭХГҮЙ ✓; ⚠️ `gap` нэмэх ХОРИГ (2026-09-27-ийн
+                     «ZARBOOK .MN» алдаа буцаж гарна ✗) — зай нь ЗӨВХӨН иконы
+                     `ml-2`-оос ✓
+                  ⚠️ 📱 мобайл (`justify-center`) бүлэг БҮХЭЛДЭЭ төвд — логоны
+                     байрлал ⏳ (69e)-тэй ЯГ ИЖИЛ (CDP 390px: logo.left 99.2 =
+                     99.2 ✓, хэвтээ гүйлт 0 ✓)
+                  ⚠️ `npm run cdp:brand` ⑥ нь ЯГ энийг хамгаална: `/` ба ЗАР
+                     (`/listings/<id>`) дээр icon.left ЯГ ИЖИЛ (±2px) ✓ */}
+              <div className="flex shrink-0 items-center">
+                <Link
+                  href="/"
+                  title="Нүүр хуудас"
+                  aria-label="ZARBOOK.MN — нүүр хуудас"
+                  className="flex items-center text-[22px] font-bold text-primary"
+                  onClick={closeUserMenus}
+                >
+                  ZARBOOK<span className="text-gray-900">.MN</span>
+                </Link>
+                {/* ===== 🏠 НҮҮР ХУУДАСНЫ ИКОН — ТУСДАА, ХАЙЛТЫН хэсгийн ӨМНӨ (2026-10-08 (69d)) =====
+                    ⚠️ ХЭРЭГЛЭГЧИЙН ТОДРУУЛГА: «би уугийг нь тусдаа icon болгоод өгөөч
+                       гэсэн юм… search хэсгийн өмнө тусдаа icon болгоод өгөөч» ✓
+                    📐 DOM дараалал = харагдах дараалал (бүлгийн ДОТОР):
+                       [лого ZARBOOK.MN] → [🏠 икон], дараа нь [{headerSlot}
+                       хайлтын мөр] → [➕ ❤️ 💬 🕐 🔔 👤] ⇒ икон нь ХАЙЛТЫН
+                       хэсгийн ЯГ ӨМНӨ ✓
+                    ⚠️ 🆕 (72) икон нь логотой НЭГ `flex shrink-0` бүлэгт орсон
+                       (⚠️ бүлэг нь `justify-between`-д ЗӨВХӨН 1 хүүхэд болно) —
+                       тэс бөгөөс `headerSlot`-гүй хуудсанд (зар · мессеж …)
+                       икон чөлөөт зайны ГОЛД шилжиж байв ✗ (дэлгэрэнгүйг
+                       дээрх (72) тайлбараас үз ✓)
+                    ⚠️ Хэмжээ `h-6 w-6` (24px) — баруун талын icon-only товчнуудтай
+                       (❤️ `HeartIcon` / 💬 `ChatIcon` / 🕐 `ClockIcon` / 🔔 `BellIcon`)
+                       ЯГ ИЖИЛ (⏳ (69c)-д логоны 22px текстэд тааруулж `h-[22px]` байв —
+                       одоо ТУСДАА товч тул хэв нь 24px ✓)
+                    ⚠️ `p-1.5` + `rounded-full` + `text-gray-700` + `hover:text-gray-900`,
+                       дотор SVG нь `group-hover:scale-110` (`duration-200 ease-out`) —
+                       бусад icon-only товчнуудтай ЯГ ИЖИЛ хэв ✓
+                       (⚠️ `text-primary` БИШ — энэ нь толгойн icon-only товч, лого биш)
+                    ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-08 (69e)): «home icon ямар ч
+                       хуудасруу орсон zarbook.mn logo ний хоёроо л байдаг
+                       баймаар байна» ⇒ ⏳ (69d)-д `hidden … lg:inline-flex`
+                       (зөвхөн ≥1024px) байсныг ХАСАЖ, икон нь БҮХ ӨРГӨНД (📱
+                       мобайл ч) ХАРАГДАХ болов — логоны ЯГ ДАРАА ✓
+                    ⚠️ `hidden` ба `lg:inline-flex` нь ХҮЧИНГҮЙ (регресс ХОРИГ —
+                       `npm run test:brand` ба `npm run cdp:brand` ④ шалгана ✓)
+                    ⚠️ <1024px үед толгой нь `justify-center` тул `[лого + 🏠 икон]`
+                       бүлэг БҮХЭЛДЭЭ ТӨВД (лого төвөөс ~20px зүүн тийш —
+                       2026-09-27-ийн «лого төвд» хүсэлттэй ойролцоо хэвээр ✓);
+                       ≥1024px үед `lg:justify-between` тул бүлэг ЗҮҮЛ захад —
+                       икон нь ХУУДАС БҮРД логоноос ЯГ 8px зайд ✓ (🆕 (72);
+                       CDP 390px: хэвтээ гүйлт 0 ✓)
+                    ⚠️ `shrink-0` — бүлэг дотор ТАВИГДСАН (2026-10-08 (72)):
+                       хайлтын мөр (`flex-1`) уртсах үед икон БҮРЧЛЭГДЭХГҮЙ ✓
+                    ⚠️ `ml-2` — лого ↔ иконы зай (БҮХ хуудсанд, бүх өргөнд 8px ✓)
+                    ⚠️ Дарахад `closeUserMenus()` — бусад толгойн линктэй ИЖИЛ ✓ */}
+                <Link
+                  href="/"
+                  data-home-icon-link
+                  title="Нүүр хуудас"
+                  aria-label="Нүүр хуудас"
+                  className="group ml-2 inline-flex shrink-0 items-center justify-center rounded-full p-1.5 text-gray-700 transition-colors hover:text-gray-900"
+                  onClick={closeUserMenus}
+                >
+                  <HomeIcon
+                    data-home-icon
+                    className="h-6 w-6 transition-transform duration-200 ease-out group-hover:scale-110"
+                  />
+                </Link>
+              </div>
               {/* ===== 🖥 ХАЙЛТЫН МӨР — header-ийн ГОЛ хэсэг (2026-10-04 (27)) =====
                   Нүүр хуудас (`HomeClient`) нь `useHeaderSlot()`-оор энэ завсрыг
                   дүүргэнэ (лого ба баруун товчнуудын ДУНД — жишээ зурагтай ижил ✓).

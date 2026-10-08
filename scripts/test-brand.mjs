@@ -12,6 +12,10 @@
 //      өмнө тусдаа icon болгоод өгөөч» ⇒ икон нь логоны ДОТОР БИШ — лого нь
 //      ЗӨВХӨН ТЕКСТ (`ZARBOOK.MN`), 🏠 икон нь лого ба хайлтын хэсгийн ХООРОНД
 //      ТУСДАА `<Link href="/">` (`h-6 w-6`, `hidden lg:inline-flex`) ✓
+//   ④ 🆕 (72) «home ruu ordog icon chin zar luu orohoor bairlalaa uurchluud
+//      baigaa» ⇒ `[лого + 🏠 икон]` нь НЭГ `flex shrink-0` бүлэг болов (⏳ өмнө
+//      нь `justify-between`-ийн ДУНД хүүхэд байснаас `headerSlot`-гүй хуудсанд
+//      (зар · мессеж …) икон чөлөөт зайны ГОЛД шилжиж 300–435px болж байв ✗) ✓
 //
 //
 // ⚠️ ХАМГААЛАЛТ (🔒 ХӨНДӨӨХГҮЙ — солибол ХЭРЭГЛЭГЧИЙН ӨГӨГДӨЛ/НЭВТРЭЛТ ЭВДЭРНЭ):
@@ -110,6 +114,17 @@ t('📍 Дараалал нь [лого] → [🏠 икон] → [{headerSlot} �
   assert.ok(logo > -1 && icon > 0 && slot > 0, 'дэгээ олдсонгүй ✗');
   assert.ok(logo < icon, 'икон логоны ӨМНӨ байна (логоны дараа байх ёстой) ✗');
   assert.ok(icon < slot, 'икон ХАЙЛТЫН хэсгийн дараа байна (өмнө байх ёстой) ✗');
+});
+
+t('🧩 🆕 (72) [лого + 🏠 икон] нь НЭГ `flex shrink-0` бүлэгт — `justify-between`-ийн ДУНД хүүхэд БОЛОХГҮЙ (зар руу ороход икон ШИЛЖИХГҮЙ ✓)', () => {
+  const wrap = AP_CODE.search(/<div className="[^"]*\bflex\b[^"]*\bshrink-0\b[^"]*\bitems-center\b[^"]*">\s*<Link/);
+  assert.ok(wrap > -1, '`[лого + 🏠]` бүлгийн `div` алга ⇒ `justify-between` иконыг чөлөөт зайны ГОЛД түлхэнэ (хэрэглэгчийн гомдол буцаж гарна) ✗');
+  const logo = AP_CODE.indexOf('aria-label="ZARBOOK.MN — нүүр хуудас"');
+  const icon = AP_CODE.indexOf('data-home-icon-link');
+  const slot = AP_CODE.indexOf('{headerSlot &&');
+  assert.ok(wrap < logo && logo < icon, 'бүлэг нь [лого] → [🏠 икон] дараалалтай БИШ ✗');
+  assert.match(AP_CODE.slice(icon, slot), /<\/Link>\s*<\/div>/,
+    'бүлэг нь иконы дараа ХААГДААГҮЙ (икон бүлгээс ГАДНА үлдвэл хуудас бүрд шилжинэ ✗)');
 });
 
 t('📏 Икон `h-6 w-6` (24px — баруун талын ❤️/💬/🕐/🔔 icon-only товчнуудтай ИЖИЛ) ✓', () => {
