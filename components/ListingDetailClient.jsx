@@ -635,9 +635,14 @@ export default function ListingDetailClient({ id }) {
                    ⚠️ `group` + `hover:bg-primary-light` нь ХҮРЭЭ (`<div>`) дээр
                    үлдсэн тул КАРТЫН харагдац ХӨНДӨӨГДӨӨГҮЙ ✓
                    🆕 2026-10-08 (64): толгойн линк нь ОДОО ГОЛЛУУЛСАН
-                   БАГАНА (`flex flex-col items-center`) — профайл зураг (64px)
+                   БАГАНА (`flex flex-col items-center`) — профайл зураг
                    картын дээд талд, нэр/✅/огноо доор нь; «›» нь баруун дээд
-                   буланд (`absolute right-0 top-0`) — 2 линк ЗЭРЭГЦЭЭ хэвээр ✓ */
+                   буланд (`absolute right-0 top-0`) — 2 линк ЗЭРЭГЦЭЭ хэвээр ✓
+                   🆕 2026-10-08 (66): профайл зурагны хэмжээ `64` → **`96px`**
+                   (хэрэглэгчийн хүсэлт: «жаахан томруулаад өгөөч») — аватар нь
+                   ОДОО өөрийн гэсэн мөрөнд байгаа тул КАРТЫН өргөн хөндөгдөхгүй
+                   (300px хэвээр), зөвхөн өндөр нь **176 → 208px** болов;
+                   ⚠️ `size={120}` л хэт том (350px баганад багтахгүй) ✓ */
                 <div className="group rounded-lg bg-gray-50 p-3 transition hover:bg-primary-light">
                   <Link
                     href={`/sellers/${listing.user_id}`}
@@ -650,6 +655,12 @@ export default function ListingDetailClient({ id }) {
                         ✅, огноо нь ДООР нь), ГОЛЛУУЛЖ + `size={44}` → `size={64}`
                         (жаахан том — ⚠️ (61)-ийн 120px шиг хэт том БИШ) ⇒
                         профайл карт шиг харагдац болов ✓
+                        🆕 (66): «жаахан том» хэмжээ нь ОДОО **`size={96}`**
+                        (хэрэглэгчийн хүсэлт: «жаахан томруулаад өгөөч») —
+                        аватар нь тусдаа мөрөнд тул картын ЗАДАРГАА ХОХИРОХГҮЙ:
+                        CDP хэмжилт 96px дээр карт 300×176 → **300×208px**,
+                        📱 390px дээр 316×208, гадагш гарсан элемент **0**,
+                        хэвтээ гүйлт **0** ✓ (⚠️ `size={120}` ХЭВЭЭР ХОРИОТОЙ)
                         ⏳ (61) — ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «Зар нийтлэгчийн мэдээлэл
                         карт дотроо бүрэн харагдахгүй байна» ⇒ `size={120}`
                         (2026-09-27-ны андуу орсон утга — тухайн commit нь КАРТЫН
@@ -659,7 +670,7 @@ export default function ListingDetailClient({ id }) {
                         болж тасарч байв) ⇒ `size={44}` болов ✓
                         ⚠️ Нэр нь `truncate` БИШ `break-words` — урт нэр КАРТ ДОТРОО
                         бүтнээрээ (2 мөр болж ч) харагдана ✓ */}
-                    <Avatar src={author && author.avatarUrl} name={sellerName} size={64} />
+                    <Avatar src={author && author.avatarUrl} name={sellerName} size={96} />
                     <div className="w-full min-w-0">
                       {/* ✅ БАТАЛГААЖСАН badge (Facebook-ийнх шиг) — ListingCard-тай
                           ижил. ⚠️ Зөвхөн `listing.user_id` БАЙГАА үед (энэ салбар)
@@ -722,7 +733,7 @@ export default function ListingDetailClient({ id }) {
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2 rounded-lg bg-gray-50 p-3 text-center">
-                  <Avatar src={author && author.avatarUrl} name={sellerName} size={64} />
+                  <Avatar src={author && author.avatarUrl} name={sellerName} size={96} />
                   <div className="w-full min-w-0">
                     {/* 🆕 2026-10-08 (61): нэр `truncate` БИШ `break-words` —
                         дээрх (`user_id`-тай) салбартай ИЖИЛ: урт нэр карт дотроо

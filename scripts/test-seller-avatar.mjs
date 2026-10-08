@@ -17,7 +17,7 @@
 //
 // ХАМРАХ ХҮРЭЭ (DB/React/CDP ХОЛБОГДОХГҮЙ — зөвхөн Node):
 //   `components/SellerListingsClient.jsx` · `components/Avatar.jsx`
-//   · `components/ListingDetailClient.jsx` (⏳ (64) — регресс хамгаалалт)
+//   · `components/ListingDetailClient.jsx` (⏳ (64)(66) — регресс хамгаалалт)
 //
 // АЖИЛЛУУЛАХ:  npm run test:seller-avatar
 // ============================================================
@@ -128,8 +128,8 @@ t('⑫ `Avatar` нь `next/image` БИШ `<img>` (Storage-ийн нийтийн 
 });
 
 // ---------- Регресс: өмнөх зүйлс хэвээр ----------
-t('⑬ ⏳ (64) Зарын дэлгэрэнгүй хуудсан дээрх карт ХӨНДӨӨГДӨӨГҮЙ (Avatar 64px)', () => {
-  assert.match(DET_CODE, /<Avatar\s+src=\{author\s*&&\s*author\.avatarUrl\}\s+name=\{sellerName\}\s+size=\{64\}\s*\/>/, '(64)-ийн карт өөрчлөгдсөн байна');
+t('⑬ ⏳ (64)(66) Зарын дэлгэрэнгүй хуудсан дээрх карт ХӨНДӨӨГДӨӨГҮЙ (Avatar 96px)', () => {
+  assert.match(DET_CODE, /<Avatar\s+src=\{author\s*&&\s*author\.avatarUrl\}\s+name=\{sellerName\}\s+size=\{96\}\s*\/>/, '(64)-ийн картын бүтэц өөрчлөгдсөн байна (🆕 (66): 64 → 96px)');
 });
 
 t('⑭ Нийтлэгчийн хуудасны бусад үйлдэл ХЭВЭЭР (утас · мессеж · зарын тоо)', () => {
