@@ -9,6 +9,9 @@
  *   ③ 🆕 (69d) «би уугийг нь тусдаа icon болгоод өгөөч гэсэн юм… search хэсгийн
  *      өмнө тусдаа icon болгоод өгөөч» ⇒ икон нь логоны ДОТОР БИШ — лого нь
  *      ЗӨВХӨН ТЕКСТ, 🏠 икон нь лого ба хайлтын хэсгийн ХООРОНД ТУСДАА линк ✓
+ *   ④ 🆕 (69e) «home icon ямар ч хуудасруу орсон zarbook.mn logo ний хоёроо л
+ *      байдаг баймаар байна» ⇒ ⏳ (69d)-д <1024px-д `hidden` байсныг ХАСАЖ, икон
+ *      нь БҮХ өргөнд (📱 мобайл ч) логоны ЯГ ДАРАА харагдана ✓
  *
  * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ:
  *   ① 🏷️ Толгойн лого (`header a[href="/"]` бөгөөд текстидээ «ZARBOOK»-той):
@@ -23,8 +26,11 @@
  *   ③ 🖱 ЛОГО дээр БА **🏠 ИКОН дээр** БОДИТ хулганы даралт (`Input.dispatchMouseEvent`,
  *      `/terms` дээрээс эхэлж) → ХОЁУЛАА НҮҮР ХУУДАС руу (`pathname === '/'` ✓)
  *   ④ 🏷️ Брэнд: `document.title` ба footer нь `ZARBOOK.MN` (хуучин нэр 0 ✓)
- *   ⑤ 📱 390px: икон НУУГДСАН (`hidden lg:inline-flex`) — лого төвд хэвээр,
- *      хэвтээ гүйлт 0, JS exception 0 ✓
+ *   ⑤ 📱 390px: 🆕 (69e) 🏠 икон ХАРАГДАЖ байна (`inline-flex` — `hidden` ба
+ *      `lg:inline-flex` ХҮЧИНГҮЙ), логоны ЯГ ДАРАА (зай `ml-2` = 8px, 24×24),
+ *      `[лого + икон]` ХАМТ төвд (±14px), лого НЭГ мөрөнд, хэвтээ гүйлт 0 ✓
+ *   ⑤b 🖥 1024px (`lg` босго): икон харагдаж, баруун цэсэн товчнуудтай
+ *      (`hidden lg:flex`) ЗӨРЧИЛДӨХГҮЙ (иконы right ≤ «➕ Зар нэмэх» left) ✓
  *
  * ⚙️ АЖИЛЛУУЛАХ:
  *   1) `npm run build && npm run start` (http://localhost:3000)
@@ -168,6 +174,7 @@ const PROBE = `(() => {
     text,
     span: span ? R(span) : null,
     pageScroll: document.documentElement.scrollWidth - window.innerWidth,
+    vw: window.innerWidth,
     title: document.title,
     footerBrand: /ZARBOOK\\.MN/.test(body),
     oldBrand: OLD.test(body),
@@ -175,7 +182,7 @@ const PROBE = `(() => {
   };
 })()`;
 
-console.log(`\n🏠🏷️ CDP — ТУСДАА HOME ICON (хайлтын хэсгийн өмнө) + БРЭНД ZARBOOK.MN (өөрчлөлт (69c)/(69d))\n`);
+console.log(`\n🏠🏷️ CDP — ТУСДАА HOME ICON (логоны ДАРАА, бүх өргөнд) + БРЭНД ZARBOOK.MN (өөрчлөлт (69c)/(69d)/(69e))\n`);
 
 // ---------- ① 🏷️ ЛОГО (текст) + 🏠 ТУСДАА ИКОН (нүүр хуудас, 🖥 1280px) ----------
 await rpc('Page.bringToFront');
@@ -243,23 +250,55 @@ const after = await evalJs(`({ path: location.pathname, search: location.search 
 check('③ 🏠 ТУСДАА ИКОН дээр дарахад НҮҮР ХУУДАС руу шилжив (`/`)', after.path === '/' && after.search === '',
   `pathname=${after.path}${after.search}`);
 
-// ---------- ④ 📱 390px — икон НУУГДСАН, лого ТӨВД ----------
+// ---------- ④ 📱 390px (мобайл) — 🆕 (69e) икон Ч ХАРАГДАЖ, логоны ЯГ ДАРАА ----------
 await goto(`${BASE}/`, 390, 780);
 const m = await evalJs(PROBE);
 check('④ 📱 мобайл дээр лого харагдана (текст нь `ZARBOOK.MN`)', m.found && m.logoText === 'ZARBOOK.MN', m.logoText);
-check('④ 📱 🏠 икон МОБАЙЛД НУУГДСАН (`hidden lg:inline-flex`) — лого ТӨВД хэвээр ✓', m.iconLink === false, `visible=${m.iconLink}`);
+check('④ 📱 🆕 (69e) 🏠 икон МОБАЙЛД Ч ХАРАГДАЖ байна (`hidden`/`lg:inline-flex` ХҮЧИНГҮЙ ✓)',
+  m.iconLink === true, `visible=${m.iconLink}`);
+check('④ 📱 икон нь логоны ЯГ ДАРАА (логоны right ≤ иконы left — «logo ний хоёроо л байх» ✓)',
+  !!(m.logoRect && m.iconLinkRect) && m.logoRect.r <= m.iconLinkRect.l,
+  m.logoRect && m.iconLinkRect ? `лого right=${m.logoRect.r} ≤ икон left=${m.iconLinkRect.l}` : '—');
+check('④ 📱 лого ↔ икон зай 4–14px (`ml-2` = 8px — наалдсан/холдсонгүй ✓)',
+  !!(m.logoRect && m.iconLinkRect) && (m.iconLinkRect.l - m.logoRect.r) >= 4 && (m.iconLinkRect.l - m.logoRect.r) <= 14,
+  `${m.logoRect && m.iconLinkRect ? m.iconLinkRect.l - m.logoRect.r : '—'}px`);
+check('④ 📱 икон 24×24 (мобайлд ч бусад icon-only товчтой ИЖИЛ хэмжээ ✓)',
+  !!m.icon && m.icon.w === 24 && m.icon.h === 24, m.icon ? `${m.icon.w}×${m.icon.h}` : '—');
+check('④ 📱 [лого + 🏠 икон] ХАМТ ТӨВД (±14px — 2026-09-27-ийн «лого төвд» хүсэлт хэвээр ✓)',
+  !!(m.logoRect && m.iconLinkRect) && Math.abs(((m.logoRect.l + m.iconLinkRect.r) / 2) - m.vw / 2) <= 14,
+  `бүлгийн төв=${m.logoRect && m.iconLinkRect ? Math.round((m.logoRect.l + m.iconLinkRect.r) / 2) : '—'} · viewport төв=${m.vw / 2}`);
 check('④ 📱 лого НЭГ МӨРӨНД (текст node 1 rect + «.MN»-тэй ±6px ижил top — 2026-09-27-ийн хуваагдал буцаж ороогүй ✓)',
   m.text && m.text.lines === 1 && m.span && Math.abs(m.text.t - m.span.t) <= 6,
   `lines=${m.text && m.text.lines} · top=${m.text && m.text.t}/${m.span && m.span.t}`);
 check('④ 📱 «ZARBOOK» ↔ «.MN» зай 0 (нэг үг мэт)',
   m.text && m.span && (m.span.l - m.text.r) <= 1 && (m.span.l - m.text.r) >= -2,
   `${m.text && m.span ? m.span.l - m.text.r : '—'}px`);
-check('④ 📱 хэвтээ гүйлт 0 (лого төвд — баруун хонхтой зөрчилдөхгүй ✓)', m.pageScroll <= 0, `scrollX=${m.pageScroll}`);
-const mclip = await evalJs(`(() => { const a = [...document.querySelectorAll('header a[href="/"]')].find((x) => /ZARBOOK/.test(x.textContent || '')); const r = a.getBoundingClientRect(); return { x: Math.max(0, Math.round(r.left) - 12), y: Math.max(0, Math.round(r.top) - 8), width: Math.round(r.width) + 24, height: Math.round(r.height) + 16 }; })()`);
+check('④ 📱 хэвтээ гүйлт 0 (икон нэмэгдсэн ч багтана — баруун хонхтой зөрчилдөхгүй ✓)',
+  m.pageScroll <= 0, `scrollX=${m.pageScroll}`);
+const mclip = await evalJs(`(() => { const a = [...document.querySelectorAll('header a[href="/"]')].find((x) => /ZARBOOK/.test(x.textContent || '')); const i = document.querySelector('header a[data-home-icon-link]'); const r1 = a.getBoundingClientRect(); const r2 = (i || a).getBoundingClientRect(); const left = Math.max(0, Math.round(r1.left) - 14); const right = Math.min(window.innerWidth, Math.round(r2.right) + 14); return { x: left, y: Math.max(0, Math.round(r1.top) - 8), width: right - left, height: Math.round(r1.height) + 16 }; })()`);
 const mshot = await rpc('Page.captureScreenshot', { format: 'png', clip: { ...mclip, scale: 3 } });
 const fsMob = await import('node:fs');
-fsMob.writeFileSync('/tmp/zar-69d-home-mobile.png', Buffer.from(mshot.data, 'base64'));
-console.log('  📸 зураг (📱 390px): /tmp/zar-69d-home-mobile.png');
+fsMob.writeFileSync('/tmp/zar-69e-home-icon-mobile.png', Buffer.from(mshot.data, 'base64'));
+console.log('  📸 зураг (📱 390px — лого + 🏠 икон): /tmp/zar-69e-home-icon-mobile.png');
+
+// ---------- ④b 🖥 1024px (`lg` босго — баруун товчнууд ХАРАГДАХ хэмжээ): икон харагдаж, товчнуудтай ЗӨРЧИЛДӨХГҮЙ ----------
+await goto(`${BASE}/`, 1024, 800);
+const lg = await evalJs(`(() => {
+  const shown = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).display !== 'none';
+  const i = document.querySelector('header a[data-home-icon-link]');
+  const addBtn = [...document.querySelectorAll('header button')].find((b) => /Зар нэмэх/.test(b.textContent || ''));
+  const R = (el, k) => el ? Math.round(el.getBoundingClientRect()[k]) : null;
+  return {
+    icon: shown(i), iconIcon: shown(i ? i.querySelector('svg[data-home-icon]') : null),
+    iconRight: R(i, 'right'), addLeft: R(addBtn, 'left'), addShown: shown(addBtn),
+    scroll: document.documentElement.scrollWidth - window.innerWidth,
+  };
+})()`);
+check('④b 🖥 1024px (`lg` босго) — 🏠 икон ХАРАГДАЖ байна (өмнөх «зөвхөн ≥1024px» нуулт буцаж ороогүй ✓)',
+  lg.icon === true && lg.iconIcon === true, `линк=${lg.icon} · SVG=${lg.iconIcon}`);
+check('④b 🖥 1024px — баруун цэсэн товчнууд (`lg:flex`) харагдаж, иконтой ЗӨРЧИЛДӨХГҮЙ (иконы right ≤ «➕ Зар нэмэх» left)',
+  lg.addShown && lg.iconRight <= lg.addLeft, `икон right=${lg.iconRight} ≤ товч left=${lg.addLeft}`);
+check('④b 🖥 1024px — хэвтээ гүйлт 0', lg.scroll <= 0, `scroll=${lg.scroll}`);
 
 // ---------- ⑤ JS алдаа ----------
 const leafletOnly = exceptions.filter((e) => /leaflet|_leaflet_pos/i.test(e));
@@ -274,8 +313,8 @@ await goto(`${BASE}/`);
 const clip = await evalJs(`(() => { const a = [...document.querySelectorAll('header a[href="/"]')].find((x) => /ZARBOOK/.test(x.textContent || '')); const i = document.querySelector('header a[data-home-icon-link]'); const s = document.querySelector('#home-search'); const r1 = a.getBoundingClientRect(); const r2 = (i || a).getBoundingClientRect(); const r3 = s ? s.getBoundingClientRect() : r2; const left = Math.max(0, Math.round(r1.left) - 12); const right = Math.min(window.innerWidth, Math.round(Math.max(r2.right, r3.left + 60)) + 12); return { x: left, y: Math.max(0, Math.round(r1.top) + 2), width: right - left, height: Math.round(r1.height) + 6 }; })()`);
 const shot = await rpc('Page.captureScreenshot', { format: 'png', clip: { ...clip, scale: 3 } });
 const fsmod = await import('node:fs');
-fsmod.writeFileSync('/tmp/zar-69d-home-icon.png', Buffer.from(shot.data, 'base64'));
-console.log('  📸 зураг: /tmp/zar-69d-home-icon.png');
+fsmod.writeFileSync('/tmp/zar-69e-home-icon-desktop.png', Buffer.from(shot.data, 'base64'));
+console.log('  📸 зураг (🖥 1280px — лого → 🏠 икон → хайлт): /tmp/zar-69e-home-icon-desktop.png');
 
 console.log(`\n${fail === 0 ? '✅' : '❌'} РЕЗУЛЬТАТ: ${ok} OK / ${fail} FAIL\n`);
 await hardExit(fail === 0 ? 0 : 1);

@@ -340,7 +340,8 @@ export default function AppProviders({ children }) {
               ⚠️ Баруун талын товчнууд (`➕ Зар нэмэх`, `❤️ Таалагдсан`,
                  хэрэглэгчийн цэс) нь МОБАЙЛ дээр НУУГДАЖ (`hidden lg:flex` ✓),
                  оронд нь доод навигац (`<nav>` доор) гарна ✓
-                 → Ингэснээр мобайлд header нь ЗӨВХӨН лого (төвд) ✓ */} 
+                 → Ингэснээр мобайлд header нь ЗӨВХӨН [лого + 🏠 икон] (ХАМТ
+                   төвд) ✓ — 🆕 2026-10-08 (69e): икон бүх өргөнд харагдана */} 
           <header className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-card">
             <div className="relative mx-auto flex h-16 max-w-[1536px] items-center justify-center px-4 sm:px-6 lg:justify-between">
               {/* 🏠 ЛОГО (2026-10-08 (69c): `🏠` emoji → `ZARBOOK.MN`;
@@ -392,20 +393,27 @@ export default function AppProviders({ children }) {
                      дотор SVG нь `group-hover:scale-110` (`duration-200 ease-out`) —
                      бусад icon-only товчнуудтай ЯГ ИЖИЛ хэв ✓
                      (⚠️ `text-primary` БИШ — энэ нь толгойн icon-only товч, лого биш)
-                  ⚠️ `hidden … lg:inline-flex` — МОБАЙЛД ХАРАГДАХГҮЙ: мобайл дээр
-                     толгой нь зөвхөн лого (төвд, `justify-center`) + баруун хонхтой
-                     байдаг тул нэмэлт элемент логог төвөөс ЗӨРҮҮЛНЭ ✗ (мобайлд
-                     лого өөрөө `/` руу заадаг тул икон шаардлагагүй ✓)
+                  ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-08 (69e)): «home icon ямар ч
+                     хуудасруу орсон zarbook.mn logo ний хоёроо л байдаг
+                     баймаар байна» ⇒ ⏳ (69d)-д `hidden … lg:inline-flex`
+                     (зөвхөн ≥1024px) байсныг ХАСАЖ, икон нь БҮХ ӨРГӨНД (📱
+                     мобайл ч) ХАРАГДАХ болов — логоны ЯГ ДАРАА ✓
+                  ⚠️ `hidden` ба `lg:inline-flex` нь ХҮЧИНГҮЙ (регресс ХОРИГ —
+                     `npm run test:brand` ба `npm run cdp:brand` ④ шалгана ✓)
+                  ⚠️ <1024px үед толгой нь `justify-center` тул `[лого + 🏠 икон]`
+                     ХОЁУЛАА нийлээд ТӨВД (лого төвөөс ~20px зүүн тийш —
+                     2026-09-27-ийн «лого төвд» хүсэлттэй ойролцоо хэвээр ✓);
+                     ≥1024px үед `lg:justify-between` тул лого + икон ЗҮҮЛ
+                     захад хэвээр ✓ (CDP 390px: хэвтээ гүйлт 0 ✓)
                   ⚠️ `shrink-0` — хайлтын мөр (`flex-1`) уртсах үед икон БҮРЧЛЭГДЭХГҮЙ ✓
-                  ⚠️ `ml-2` — лого ↔ иконы зай (`lg`-ээс доош харагдахгүй тул
-                     мобайлын харагдацад нөлөөлөхгүй ✓)
+                  ⚠️ `ml-2` — лого ↔ иконы зай (бүх өргөнд 8px ✓)
                   ⚠️ Дарахад `closeUserMenus()` — бусад толгойн линктэй ИЖИЛ ✓ */}
               <Link
                 href="/"
                 data-home-icon-link
                 title="Нүүр хуудас"
                 aria-label="Нүүр хуудас"
-                className="group ml-2 hidden shrink-0 items-center justify-center rounded-full p-1.5 text-gray-700 transition-colors hover:text-gray-900 lg:inline-flex"
+                className="group ml-2 inline-flex shrink-0 items-center justify-center rounded-full p-1.5 text-gray-700 transition-colors hover:text-gray-900"
                 onClick={closeUserMenus}
               >
                 <HomeIcon

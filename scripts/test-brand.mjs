@@ -84,7 +84,7 @@ t('📐 Зургийн дагуу 3 хэсэг — дээвэр · хана+ша
   assert.doesNotMatch(body, /fill="(?!none)/, 'SVG дотор өнгөтэй `fill` байна (emoji-маяг) ✗');
 });
 
-// ---------- ② ЛОГОНЫ БҮТЭЦ (текст) + 🏠 ТУСДАА HOME ICON (69d) ----------
+// ---------- ② ЛОГОНЫ БҮТЭЦ (текст) + 🏠 ТУСДАА HOME ICON (69d) + БҮХ ӨРГӨНД харагдах (69e) ----------
 t('🔗 Логоны линк нь `href="/"` (home page) + `title`, текст нь `ZARBOOK.MN` ✓', () => {
   assert.match(AP_CODE, /<Link\s*href="\/"\s*title="Нүүр хуудас"[\s\S]{0,200}?>\s*ZARBOOK<span className="text-gray-900">\.MN<\/span>\s*<\/Link>/,
     'логоны `href="/"`/`title`/текст ✗');
@@ -117,10 +117,14 @@ t('📏 Икон `h-6 w-6` (24px — баруун талын ❤️/💬/🕐/�
     'иконы хэмжээ `h-6 w-6` биш (бусад толгойн икон 24px) ✗');
 });
 
-t('📱 Икон МОБАЙЛД НУУГДСАН (`hidden` + `lg:inline-flex`) — лого төвдөө хэвээр ✓', () => {
-  assert.match(AP_CODE,
-    /className="group ml-2 hidden shrink-0 items-center justify-center rounded-full p-1\.5 text-gray-700 transition-colors hover:text-gray-900 lg:inline-flex"/,
-    'мобайлд нуух класс алга (лого төвөөс зөрүүрнэ ✗)');
+t('📱 🆕 (69e) Икон БҮХ ӨРГӨНД ХАРАГДАХ (`inline-flex`) — `hidden`/`lg:inline-flex` ХОРИГ (мобайлд ч логоны дараа ✓)', () => {
+  const i = AP_CODE.indexOf('data-home-icon-link');
+  assert.ok(i > 0, '`data-home-icon-link` алга ✗');
+  const cls = AP_CODE.slice(i, i + 600).match(/className="([^"]*)"/);
+  assert.ok(cls, 'иконы класс олдсонгүй ✗');
+  assert.match(cls[1], /(^|\s)inline-flex(\s|$)/, '`inline-flex` алга (икон огт харагдахгүй ✗)');
+  assert.doesNotMatch(cls[1], /(^|\s)hidden(\s|$)/, '`hidden` буцаж орсон (мобайлд икон НУУГДАНА ✗)');
+  assert.doesNotMatch(cls[1], /lg:inline-flex/, '`lg:inline-flex` буцаж орсон (зөвхөн ≥1024px харагдана ✗)');
 });
 
 t('🖱 Hover-т икон бага зэрэг томорно (`group-hover:scale-110`) — бусад иконтой ИЖИЛ хэв ✓', () => {
