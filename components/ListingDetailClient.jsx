@@ -40,7 +40,7 @@ export default function ListingDetailClient({ id }) {
   const [active, setActive] = useState(0);
   const [phoneShown, setPhoneShown] = useState(false);
   const [views, setViews] = useState(null); // 👁 серверээс ирсэн «үзсэн» тоо (null = миграцгүй)
-  const [sellerStats, setSellerStats] = useState(null); // 📋 нийтлэгчийн зарын тоо (Зарах/Түрээслэх) — (62) «Зарын тоо: N идэвхтэй зар» линк
+  const [sellerStats, setSellerStats] = useState(null); // 📋 нийтлэгчийн зарын тоо (Зарах/Түрээслэх) — (62) «📋 N идэвхтэй зар» линк
   const [author, setAuthor] = useState(null); // 👤 нийтлэгчийн профайл (нэр + зураг)
   const favoriteIds = useFavorites(); // ❤️ (дээрх hook-уудтай хамт дуудагдах ёстой)
   const likes = useLikeCount(id, listing ? listing.likes : 0); // ❤️ нийт хэдэн хүн дарсан
@@ -100,13 +100,14 @@ export default function ListingDetailClient({ id }) {
 
 
   /**
-   * 📋 «Зар нийтлэгч» карт дээрх «Зарын тоо: N идэвхтэй зар» — тухайн хэрэглэгчийн
+   * 📋 «Зар нийтлэгч» карт дээрх «📋 N идэвхтэй зар» — тухайн хэрэглэгчийн
    * Зарах / Түрээслэх зарын тоо.
-   * 🆕 2026-10-08 (62): «Зарын тоо …» мөр нь ТУСДАА ЛИНК (`/sellers/[id]`) —
+   * 🆕 2026-10-08 (62)/(63): «📋 N идэвхтэй зар» мөр нь ТУСДАА ЛИНК (`/sellers/[id]`) —
    * линк шиг ХАРАГДАНА (`text-primary` + `underline`) ✓
+   * 🆕 (63) ХЭРЭГЛЭГЧИЙН ЗАСВАР: «Зарын тоо:» гэсэн УГТВАР ХАСАГДАВ — зөвхөн ТОО ✓
    * ⚠️ `listings` хүснэгтэд «идэвхгүй» гэсэн төлөв (`status`) БАГАНА БАЙХГҮЙ —
    * бүх мөр нь нийтлэгдсэн, ИДЭВХТЭЙ зар ⇒ тоо нь ЯГ зөв ✓
-   * ⚠️ Алдаа гарвал зүгээр л «📋 Зарын тоо: идэвхтэй зар» гэж харуулна
+   * ⚠️ Алдаа гарвал зүгээр л «📋 идэвхтэй зар» гэж харуулна
    * (үндсэн агуулгад нөлөөлөхгүй) ✓
    */
   useEffect(() => {
@@ -630,7 +631,7 @@ export default function ListingDetailClient({ id }) {
                    «🏷️ Зарах» / «🔑 Түрээслэх» гэж ЯЛГАГДАН харагдана.
                    ⚠️ 2026-10-08 (62): хүрээ нь ОДОО `<div>` — дотор нь 2 ЛИНК
                    байна (HTML-д `<a>` дотор `<a>` ХОРИОТОЙ): ① толгой мөр
-                   (аватар + нэр → `/sellers/<id>`) ② «Зарын тоо … идэвхтэй зар».
+                   (аватар + нэр → `/sellers/<id>`) ② «📋 {N} идэвхтэй зар».
                    ⚠️ `group` + `hover:bg-primary-light` нь ХҮРЭЭ (`<div>`) дээр
                    үлдсэн тул КАРТЫН харагдац ХӨНДӨӨГДӨӨГҮЙ ✓ */
                 <div className="group rounded-lg bg-gray-50 p-3 transition hover:bg-primary-light">
@@ -679,7 +680,9 @@ export default function ListingDetailClient({ id }) {
                        мэдэгддэггүй байв ✗): `text-primary` + `underline
                        underline-offset-2` — репогийн бусад текст линктэй ЯГ ИЖИЛ хэв
                        (`FavoritesClient`/`SavedSearchesClient`/`SearchHistoryClient`) ✓
-                    ② текст: «📋 {N} зар нийтэлсэн» → «📋 Зарын тоо: {N} идэвхтэй зар»
+                    ② текст: «📋 {N} зар нийтэлсэн» → «📋 {N} идэвхтэй зар»
+                       ⏳ (62)-т «Зарын тоо:» гэсэн УГТВАРТАЙ байсан — (63) угтвар ХАСАГДАВ
+                       (хэрэглэгч: «“Зарын тоо:” гэж текст гаргахгүй ээ, зүгээр л зарын тоогоо бич») ✓
                        (⚠️ `listings`-д «идэвхгүй» гэсэн төлөв/`status` БАГАНА БАЙХГҮЙ
                        — `0001_schema.sql`: бүх мөр нь нийтлэгдсэн, ИДЭВХТЭЙ зар ⇒ тоо нь
                        ЯГ зөв ✓)
@@ -687,7 +690,7 @@ export default function ListingDetailClient({ id }) {
                        энэ мөр ✓ (`hover:bg-primary-light` нь хүрээ дээр үлдсэн)
                     ⚠️ HTML-д `<a>` дотор `<a>` ХОРИОТОЙ тул дээрх толгойн линкээс
                     ГАДНА (ах дүү элемент) байрлана — тиймээс хүрээ нь `<div>` болов ✓
-                    🔍 Хайх үг: sellerStatsLink, Зарын тоо */}
+                    🔍 Хайх үг: sellerStatsLink, идэвхтэй зар */}
                 <Link
                   href={`/sellers/${listing.user_id}`}
                   title="Энэ хүний БҮХ идэвхтэй зарыг харах"
@@ -695,12 +698,12 @@ export default function ListingDetailClient({ id }) {
                 >
                   {sellerStats && sellerStats.total > 0 ? (
                     <>
-                      <span>📋 Зарын тоо: {sellerStats.total} идэвхтэй зар</span>
+                      <span>📋 {sellerStats.total} идэвхтэй зар</span>
                       {sellerStats.sell > 0 && <span className="font-semibold text-primary">🏷️ {sellerStats.sell}</span>}
                       {sellerStats.rent > 0 && <span className="font-semibold text-secondary-dark">🔑 {sellerStats.rent}</span>}
                     </>
                   ) : (
-                    <span>📋 Зарын тоо: идэвхтэй зар</span>
+                    <span>📋 идэвхтэй зар</span>
                   )}
                 </Link>
                 </div>

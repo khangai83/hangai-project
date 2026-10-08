@@ -1,12 +1,12 @@
 /**
- * 🔗 CDP ШАЛГАЛТ — «Зарын тоо: N идэвхтэй зар» нь ТУСДАА ЛИНК (2026-10-08 (62))
+ * 🔗 CDP ШАЛГАЛТ — «📋 N идэвхтэй зар» нь ТУСДАА ЛИНК (2026-10-08 (62)(63))
  *
  * ⚠️ ЮУГ ХАМГААЛАХ ВЭ:
- *   ① Бодит DOM дээр «📋 Зарын тоо …» нь `<a href="/sellers/<user_id>">` —
+ *   ① Бодит DOM дээр «📋 N идэвхтэй зар» нь `<a href="/sellers/<user_id>">` —
  *      линк шиг ХАРАГДАНА (`text-primary` + `underline`), линк ДОТОР линк БАЙХГҮЙ
  *      (`closest('a') === өөрөө`) ✓
  *   ② КАРТ (толгой мөр) нь линк шиг ХАРАГДАХГҮЙ — хүрээ нь `<div>`, доогуур
- *      зураасгүй, харин дотроо 2 линк (толгой + «Зарын тоо») ✓
+ *      зураасгүй, харин дотроо 2 линк (толгой + «идэвхтэй зар») ✓
  *   ③ Хэмжээ: картаас гадагш гарсан элемент 0 · хуудасны хэвтээ гүйлт 0 ✓
  *   ④ БОДИТ ХУЛГАНААР дарахад `/sellers/<user_id>` руу шилжинэ ✓
  *   ⑤ 📱 390px мобайл: линк харагдана, overflow 0 ✓ · консол дээр JS exception 0 ✓
@@ -105,9 +105,9 @@ const goto = async (url, w = 1280, h = 900) => {
   await new Promise((r) => setTimeout(r, 3500));
 };
 
-/** «Зарын тоо» линк + түүний карт — нэг илэрхийллээр хэмжинэ */
+/** «📋 N идэвхтэй зар» линк + түүний карт — нэг илэрхийллээр хэмжинэ */
 const PROBE = `(() => {
-  const stats = [...document.querySelectorAll('a')].find((a) => a.textContent.includes('Зарын тоо'));
+  const stats = [...document.querySelectorAll('a')].find((a) => a.textContent.includes('идэвхтэй зар'));
   if (!stats) return { found: false };
   const box = stats.parentElement;
   const header = [...box.querySelectorAll('a')].find((a) => a !== stats) || null;
@@ -150,17 +150,18 @@ const PROBE = `(() => {
 await rpc('Page.bringToFront');
 await goto(BASE + PATH);
 
-console.log(`\n🔗 CDP — «Зарын тоо … идэвхтэй зар» ТУСДАА ЛИНК (${PATH})\n`);
+console.log(`\n🔗 CDP — «📋 N идэвхтэй зар» ТУСДАА ЛИНК (${PATH})\n`);
 
 // ---------- ① 🖥 1280px ----------
 const p = await evalJs(PROBE);
-check('① «📋 Зарын тоо» мөр DOM-д олдлоо', p.found === true);
+check('① «📋 N идэвхтэй зар» мөр DOM-д олдлоо', p.found === true);
 if (!p.found) { console.log('\n  ⚠️ цааш шалгах боломжгүй\n'); await hardExit(1); }
 console.log(`     ℹ️ текст: «${p.statsText}»`);
 check('① энэ нь ЖИНХЭНЭ линк (`<a>`)', p.statsTag === 'A', `tag=${p.statsTag}`);
 check("① линк дотор линк БАЙХГҮЙ (`closest('a')` = өөрөө)", p.statsSelfClosest === true);
 check('① `href` нь нийтлэгчийн зарууд руу', p.statsHref === `/sellers/${UID}`, `href=${p.statsHref}`);
-check('① текст нь «📋 Зарын тоо: N идэвхтэй зар»', /📋 Зарын тоо: \d+ идэвхтэй зар/.test(p.statsText));
+check('① текст нь «📋 N идэвхтэй зар» (УГТВАРГҮЙ — (63))',
+  /📋 \d+ идэвхтэй зар/.test(p.statsText) && !/Зарын тоо/.test(p.statsText));
 check('① линк шиг ХАРАГДАНА (primary өнгө)', p.statsColor === 'rgb(37, 99, 235)', p.statsColor);
 check('① линк шиг ХАРАГДАНА (доогуур зураастай)', p.statsDecoration.includes('underline'), p.statsDecoration);
 check('① cursor: pointer', p.statsCursor === 'pointer', p.statsCursor);
@@ -169,7 +170,7 @@ check('① cursor: pointer', p.statsCursor === 'pointer', p.statsCursor);
 check('② картын хүрээ нь `<div>` (линк БИШ)', p.boxTag === 'DIV', `tag=${p.boxTag}`);
 check('② картын хүрээ доогуур зураасгүй', p.boxDecoration === 'none', p.boxDecoration);
 check('② хүрээ нь хуучин фонт/хүрээний классаа хадгалсан', /rounded-lg bg-gray-50 p-3/.test(p.boxClass) && /hover:bg-primary-light/.test(p.boxClass));
-check('② карт дотор ЯГ 2 линк (толгой + «Зарын тоо»)', p.anchorsInBox === 2, `${p.anchorsInBox}`);
+check('② карт дотор ЯГ 2 линк (толгой + «идэвхтэй зар»)', p.anchorsInBox === 2, `${p.anchorsInBox}`);
 check('② толгойн линк мөн `/sellers/<user_id>` руу', p.headerHref === `/sellers/${UID}`, `header=${p.headerHref}`);
 check('② толгойн линк линк шиг ХАРАГДАХГҮЙ (зураасгүй)', p.headerDecoration === 'none', p.headerDecoration);
 
@@ -180,7 +181,7 @@ check('③ хуудасны хэвтээ гүйлт 0', p.pageScrollX <= 0, `scr
 check('③ дэлгэцээс хальсан элемент 0', p.wideEls.length === 0, p.wideEls.join(', ') || '0');
 
 // ---------- ④ БОДИТ ХУЛГАНААР ДАРНА ----------
-const pt = await evalJs(`(() => { const a = [...document.querySelectorAll('a')].find((x) => x.textContent.includes('Зарын тоо')); a.scrollIntoView({ block: 'center' }); const r = a.getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; })()`);
+const pt = await evalJs(`(() => { const a = [...document.querySelectorAll('a')].find((x) => x.textContent.includes('идэвхтэй зар')); a.scrollIntoView({ block: 'center' }); const r = a.getBoundingClientRect(); return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; })()`);
 await new Promise((r) => setTimeout(r, 400));
 await rpc('Input.dispatchMouseEvent', { type: 'mousePressed', x: pt.x, y: pt.y, button: 'left', clickCount: 1 });
 await rpc('Input.dispatchMouseEvent', { type: 'mouseReleased', x: pt.x, y: pt.y, button: 'left', clickCount: 1 });
@@ -210,11 +211,11 @@ check('⑥ консол дээр hydration/линк nesting алдаа 0', nesti
 
 // ---------- 📸 ЗУРАГ (нийтлэгчийн карт дээр төвлөрсөн) ----------
 await goto(BASE + PATH);
-const clip = await evalJs(`(() => { const a = [...document.querySelectorAll('a')].find((x) => x.textContent.includes('Зарын тоо')); a.scrollIntoView({ block: 'center' }); const r = a.parentElement.getBoundingClientRect(); return { x: Math.max(0, Math.round(r.left) - 60), y: Math.max(0, Math.round(r.top) - 60), width: Math.round(r.width) + 120, height: Math.round(r.height) + 120 }; })()`);
+const clip = await evalJs(`(() => { const a = [...document.querySelectorAll('a')].find((x) => x.textContent.includes('идэвхтэй зар')); a.scrollIntoView({ block: 'center' }); const r = a.parentElement.getBoundingClientRect(); return { x: Math.max(0, Math.round(r.left) - 60), y: Math.max(0, Math.round(r.top) - 60), width: Math.round(r.width) + 120, height: Math.round(r.height) + 120 }; })()`);
 const shot = await rpc('Page.captureScreenshot', { format: 'png', clip: { ...clip, scale: 2 } });
 const fsmod = await import('node:fs');
-fsmod.writeFileSync('/tmp/zar-62-seller-card.png', Buffer.from(shot.data, 'base64'));
-console.log('  📸 зураг: /tmp/zar-62-seller-card.png');
+fsmod.writeFileSync('/tmp/zar-63-seller-card.png', Buffer.from(shot.data, 'base64'));
+console.log('  📸 зураг: /tmp/zar-63-seller-card.png');
 
 console.log(`\n${fail === 0 ? '✅' : '❌'} РЕЗУЛЬТАТ: ${ok} OK / ${fail} FAIL\n`);
 await hardExit(fail === 0 ? 0 : 1);
