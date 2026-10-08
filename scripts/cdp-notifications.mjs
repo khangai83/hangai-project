@@ -31,6 +31,12 @@
 //    бүрд 🏠 зарын гарчиг ба 📞 `tel:` линк байгааг шалгана ✓
 //    ⇒ 0041 ажиллуулах: `npm run migration:copy 0041_notification_phone_title.sql`
 //
+// 📌 2026-10-08 (69b) — хэрэглэгчийн хүсэлт: «таны зарыг таалагдлав, зарыг
+//    таалагдав гэсэн текстүүдийг байхгүй болго» ⇒ өгүүлбэр БҮРЭН ХАСАГДАВ;
+//    нэмэлт ⑥i/⑥j нь хуудас ба хонхны самбарын текстэд «зарыг таалагд…»
+//    буцаж ороогүйг шалгана ✓ (бүлгийн «❤️ N хүн таалагдлав» тоо ХЭВЭЭР —
+//    хэрэглэгч түүнийг дурдаагүй ✓)
+//
 // АЖИЛЛУУЛАХ:
 //   1) `npm run build && npm run start` — сервер http://localhost:3000
 //   2) Google Chrome-ыг CDP-ээр нээнэ:
@@ -331,6 +337,12 @@ if (!PHONE || !PASS) {
         check('⑥f Бүлэг бүр ЗАРЫН НЭРТЭЙ + тоо нь мөрүүдтэй таарна',
           rows === 0 || (titles.length === groups && titles.every((t) => t.length > 0) && new RegExp(`^${rows} мэдэгдэл`).test(countText)),
           `бүлэг=${groups}, гарчиг=${titles.length}, тоо="${countText}"`);
+        // 🚫 (69b) «… зарыг таалагдлав» гэсэн ӨГҮҮЛБЭР хуудсан дээр БАЙХГҮЙ
+        //   (хэрэглэгчийн хүсэлт: «таны зарыг таалагдлав, зарыг таалагдав гэсэн
+        //   текстүүдийг байхгүй болго») — мөр бүр НЭР + 🏠 гарчиг + 📞/🕒 л
+        //   харуулна ✓ (бүлгийн «❤️ N хүн таалагдлав» тоо ХЭВЭЭР ✓)
+        check('⑥i Хуудсан дээр «зарыг таалагдлав» өгүүлбэр БАЙХГҮЙ (зөвхөн 🏠 + 📞 + 🕒 ✓)',
+          !txt.includes('зарыг таалагд'), txt.slice(0, 100));
         // 🏠 + 📞 ХОНХНЫ САМБАР (2026-10-08 (69) — хэрэглэгчийн хүсэлт):
         //   мөр бүрд ТУСДАА товдсон зарын гарчиг + 📞 дугаар харагдах ёстой.
         //   ⚠️ Самбар нээгдэхэд уншаагүй мөрүүд «уншсан» болно — зохиомжоор
@@ -343,6 +355,7 @@ if (!PHONE || !PASS) {
           const panelRows = await evalJs(`document.querySelectorAll('[data-notification-panel] [data-notification-row]').length`);
           const panelTitles = await evalJs(`[...document.querySelectorAll('[data-notification-panel] [data-notification-listing]')].map((e) => e.innerText.trim())`);
           const panelPhones = await evalJs(`document.querySelectorAll('[data-notification-panel] [data-notification-phone]').length`);
+          const panelText = await evalJs(`document.querySelector('[data-notification-panel]').innerText.replace(/\\s+/g, ' ')`);
           console.log(`   ℹ️ самбар: мөр=${panelRows}, 🏠 гарчиг=${panelTitles.length}, 📞=${panelPhones}`);
           if (panelRows === 0) {
             skips('хонхны самбарт мөр алга (мэдэгдэл байхгүй) — 🏠/📞 шалгалт хийгдэхгүй');
@@ -352,6 +365,9 @@ if (!PHONE || !PASS) {
               panelTitles.slice(0, 3).join(' | ') || '(гарчиг алга)');
             check('⑥h Самбарын мөр БҮРД 📞 ДУГААР (`tel:` линк — нэргүй бол нэр нь өөрөө линк ✓)',
               panelPhones === panelRows, `мөр=${panelRows}, 📞=${panelPhones}`);
+            // 🚫 (69b) Самбарт ч «… зарыг таалагдлав» гэсэн өгүүлбэр БАЙХГҮЙ ✓
+            check('⑥j Самбарын текстэд «зарыг таалагдлав» өгүүлбэр БАЙХГҮЙ (69b ✓)',
+              !panelText.includes('зарыг таалагд'), panelText.slice(0, 100));
           }
           await evalJs(`document.body.click()`); // самбарыг хаана
         }

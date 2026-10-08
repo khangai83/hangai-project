@@ -23,9 +23,9 @@ import {
   NOTIFICATIONS_EVENT, NOTIFICATIONS_LIMIT, NOTIFICATION_PANEL_LIMIT,
   NOTIFICATION_TYPE_LIKE, NOTIFICATION_TYPE_META, UNKNOWN_ACTOR,
   actorInitial, actorLabel, badgeLabel, formatPhone, groupByListing,
-  groupCountLabel, groupTitleLabel, listingLabel, listingTitleLabel,
+  groupCountLabel, groupTitleLabel, listingTitleLabel,
   normalizeNotificationRow,
-  notificationEmoji, notificationText, notificationTimeAgo, notificationTypeMeta,
+  notificationEmoji, notificationTimeAgo, notificationTypeMeta,
   panelRows, phoneHref, sortNotifications, unreadCount,
 } from '../lib/notifications.mjs';
 import phoneEmail from '../lib/phoneEmail.js';
@@ -135,22 +135,33 @@ t('🔄 Төрөл дутуу бол `like`; танихгүй төрөлд ❤�
   assert.equal(notificationTypeMeta(undefined).label, 'Таалагдсан');
 });
 
-// ---------- ④ Текст ----------
-t('🏷 Зарын нэр «»-тэй; хоосон гарчиг → «Зар» ✓', () => {
-  assert.equal(listingLabel(uiRow()), '«3 өрөө байр»');
-  assert.equal(listingLabel(uiRow({ listing_title: '   ' })), '«Зар»');
-});
-
-t('💬 Мөрний текст: «таны «3 өрөө байр» зарыг таалагдлав» (нэр ОРОХГҮЙ ✓)', () => {
-  const text = notificationText(uiRow());
-  assert.equal(text, 'таны «3 өрөө байр» зарыг таалагдлав');
-  assert.ok(!text.includes('Бат'), 'хүний нэр текст дотор орсон ✗ (товч/мөрөнд тусдаа гарна)');
-  assert.equal(notificationText(uiRow({ type: 'weird' })), 'таны «3 өрөө байр» зар дээр шинэ үйлдэл хийв');
-  // ⚠️ Гарчиг нь ТУСДАА (товдсон 🏠) мөрөнд гардаг газарт давхардуулахгүй ✓
-  assert.equal(notificationText(uiRow(), { withListing: false }), 'таны зарыг таалагдлав');
-  assert.equal(
-    notificationText(uiRow({ type: 'weird' }), { withListing: false }),
-    'таны зар дээр шинэ үйлдэл хийв'
+// ---------- ④ ӨГҮҮЛБЭР БАЙХГҮЙ (регресс хориг) ----------
+t('🚫 «… зарыг таалагдлав» өгүүлбэр UI/lib-д ОГТ БАЙХГҮЙ (хэрэглэгчийн хүсэлт (69b) ✓)', () => {
+  // ⚠️ (69b): «таны зарыг таалагдлав, зарыг таалагдав гэсэн текстүүдийг
+  //    байхгүй болго» ⇒ функц нь УСТСАН, дуудалт нь ч үлдээгүй байх ёстой —
+  //    эс бөгөөс дараагийн засварт өгүүлбэр буцаж орж ирнэ ✗
+  for (const rel of [
+    'lib/notifications.mjs',
+    'components/NotificationBell.jsx',
+    'components/NotificationsClient.jsx',
+  ]) {
+    const code = codeOnly(readSrc(rel));
+    assert.ok(
+      !/notificationText|listingLabel\(/.test(code),
+      `${rel}: мөрний өгүүлбэр ДУУДАГДАЖ байна ✗ (функц нь устсан)`
+    );
+    assert.ok(!/зарыг таалагд/.test(code), `${rel}: «таны … зарыг таалагдлав» өгүүлбэр байна ✗`);
+    assert.ok(!/зар дээр шинэ үйлдэл/.test(code), `${rel}: нөөц өгүүлбэр байна ✗`);
+  }
+  const lib = readSrc('lib/notifications.mjs');
+  assert.ok(!/export function notificationText|export function listingLabel\b/.test(lib),
+    'lib-д хуучин функц үлдсэн ✗');
+  // ⚠️ Гарчгийн ЦОР ГАНЦ эх сурвалж хэвээр үлдэнэ ✓
+  assert.ok(lib.includes('export function listingTitleLabel'), '🏠 гарчгийн функц алга ✗');
+  // ⚠️ Мэдээлэл нь зөвхөн 3 хэсгээр хүрнэ: 🏠 гарчиг + 📞 дугаар + 🕒 цаг
+  assert.ok(
+    codeOnly(readSrc('components/NotificationBell.jsx')).includes('🏠 {title}'),
+    'хонхны самбарт 🏠 гарчиг алга ✗ (мөр ямар зар болохыг мэдэгдэхгүй)'
   );
 });
 
@@ -324,6 +335,7 @@ t('🧱 Миграц нь idempotent (дахин ажиллуулж болно �
   assert.ok(/drop policy if exists/.test(sql), 'policy-г дахин үүсгэхгүй ✗');
   assert.ok(/insert into public\.notifications/.test(sql), 'хуучин ❤️-ийн backfill алга ✗');
   assert.ok(/on conflict \(user_id, actor_id, type, listing_id\) do nothing/.test(sql), 'backfill давхардаж болно ✗');
+});
 
 // ---------- ⑧b 0041 — 📞 ДУГААР + 🏠 ГАРЧИГ (2026-10-08 (69)) ----------
 const sql41 = codeOnly(readSrc('supabase/migrations/0041_notification_phone_title.sql'));
@@ -450,10 +462,9 @@ t('🧩 NotificationBell: badge + самбар + дугаар + 🏠 ГАРЧИ�
     /data-notification-listing[\s\S]{0,200}🏠 \{title\}/.test(bell),
     'гарчиг нь 🏠 тэмдэгтэй товдсон мөрөнд гарахгүй байна ✗'
   );
-  assert.ok(
-    /notificationText\(row, \{ withListing: false \}\)/.test(bell),
-    'гарчиг нь өгүүлбэр дотор ДАВХАРДАЖ байна ✗ (мөр бүр 1 л гарчигтай байх ёстой)'
-  );
+  // 🚫 (69b) «… зарыг таалагдлав» гэсэн өгүүлбэр БАЙХГҮЙ (дээрх ④ тестээр ч
+  //    батлагдана — энд самбарын мөрөнд ДАХИН ороогүйг товч шалгана ✓)
+  assert.ok(!/зарыг таалагд/.test(codeOnly(bell)), 'самбарт «зарыг таалагдлав» өгүүлбэр байна ✗');
   // 📞 Нэргүй хүний дугаар нь ч `tel:` линк (дан дарах → залгана ✓)
   assert.ok(/nameIsPhone && tel/.test(bell), 'нэргүй хүний дугаар линк биш байна ✗ (залгаж чадахгүй)');
 });
@@ -506,5 +517,3 @@ t('🧩 app/notifications/page.jsx нь client компонентийг хару
 });
 
 console.log(`\n✅ БҮГД ТЭНЦСЭН — ${passed} тест (мэдэгдэл)\n`);
-
-});

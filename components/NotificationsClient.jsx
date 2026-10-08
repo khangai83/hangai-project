@@ -12,6 +12,10 @@
 //      «Зар бүр дээр ХЭН ХЭН ❤️ дарсан бэ» — картын гарчигт зарын нэр ба
 //      «N хүн таалагдлав», доор нь хүмүүсийн жагсаалт ✓
 //   ② Мөр бүрд — НЭР (байвал) + 📞 ДУГААР (үргэлж, `tel:` линктэй ✓) + 🕒 ЦАГ
+//   🚫 (69b) «таны «…» зарыг таалагдлав» гэсэн өгүүлбэр БАЙХГҮЙ (хэрэглэгчийн
+//      хүсэлт: «таны зарыг таалагдлав, зарыг таалагдав гэсэн текстүүдийг
+//      байхгүй болго») — ❤️ төрлийн тэмдэг, бүлгийн «❤️ N хүн таалагдлав»
+//      тоо, 🏠 гарчиг гурвуулаа хангалттай ✓
 //   ⚠️ Цаг нь `historyTimeAgo` («5 минутын өмнө / Өчигдөр / 2026.10.07») —
 //      «Хайлтын түүх»-тэй ЯГ ИЖИЛ формат (нэг эх сурвалж ✓)
 //
@@ -33,7 +37,7 @@ import { BellIcon } from './HeaderIcons';
 import { useNotifications } from '../lib/notificationsClient';
 import {
   actorLabel, formatPhone, groupByListing, groupCountLabel, groupTitleLabel,
-  notificationEmoji, notificationText, notificationTimeAgo, phoneHref,
+  notificationEmoji, notificationTimeAgo, phoneHref,
 } from '../lib/notifications.mjs';
 
 export default function NotificationsClient() {
@@ -261,9 +265,8 @@ function GroupRow({ row, onRemove }) {
           )}
         </p>
         <p className="mt-0.5 text-[12.5px] text-gray-500">
-          {notificationText(row)}
           {row.createdAt ? (
-            <span className="text-gray-400"> · 🕒 {notificationTimeAgo(row.createdAt)}</span>
+            <span className="text-gray-400">🕒 {notificationTimeAgo(row.createdAt)}</span>
           ) : null}
         </p>
       </div>

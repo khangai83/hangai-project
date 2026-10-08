@@ -35,6 +35,11 @@
 //   оруулж өгөөрэй. бас like дарсан хүний дугаарыг харуулвал ямар вэ» ⇒ мөр
 //   бүр ТУСДАА товдсон 🏠 гарчгийн мөртэй болж, 📞 дугаар нь нэргүй хүнд ч
 //   `tel:` линк (дан дарах → залгана) боллоо ✓
+//
+// 🚫 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-08 (69b)): «таны зарыг таалагдлав, зарыг
+//   таалагдав гэсэн текстүүдийг байхгүй болго» ⇒ өгүүлбэр БҮРЭН ХАСАГДАВ —
+//   мөр нь НЭР (нэргүй бол дугаар, `tel:` линк) + 🏠 ГАРЧИГ + 📞/🕒 гэсэн
+//   гурван мэдээллээр л хүрнэ ✓
 // ============================================================
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -42,7 +47,7 @@ import { BellIcon } from './HeaderIcons';
 import { useNotifications } from '../lib/notificationsClient';
 import {
   actorLabel, badgeLabel, formatPhone, listingTitleLabel, notificationEmoji,
-  notificationText, notificationTimeAgo, panelRows, phoneHref,
+  notificationTimeAgo, panelRows, phoneHref,
 } from '../lib/notifications.mjs';
 
 /**
@@ -171,9 +176,12 @@ function BellNotice({ children }) {
 
 /**
  * 🔔 Самбарын НЭГ мөр: ① дугуй avatar (хүний эхний үсэг + ❤️ төрлийн тэмдэг),
- * ② «<b>нэр/дугаар</b> таны зарыг таалагдлав» + ③ **🏠 ЗАРЫН ГАРЧИГ**
+ * ② «<b>нэр</b>» (нэргүй бол дугаар нь өөрөө `tel:` линк), ③ **🏠 ЗАРЫН ГАРЧИГ**
  * (товдсон, ТУСДАА мөр — «аль зар вэ» нь ШУУД мэдэгдэнэ ✓), ④ 📞 дугаар/🕒 цаг,
  * ⑤ ✕ устгах товч. Мөр БҮХЭЛДЭЭ дарагдаж зар руу шилжинэ (`listingId` байвал ✓)
+ * ⚠️ (69b) «… зарыг таалагдлав» гэсэн ӨГҮҮЛБЭР БАЙХГҮЙ (хэрэглэгчийн хүсэлт:
+ *    «таны зарыг таалагдлав, зарыг таалагдав гэсэн текстүүдийг байхгүй болго»)
+ *    — ❤️ төрлийн тэмдэг (avatar-ийн булан) ба 🏠 гарчиг нь хангалттай ✓
  */
 function BellRow({ row, fresh, onNavigate, onRemove }) {
   const name = actorLabel(row);
@@ -216,7 +224,9 @@ function BellRow({ row, fresh, onNavigate, onRemove }) {
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className={`text-[13px] leading-snug text-gray-700 ${fresh ? 'font-semibold' : ''}`}>
+        {/* ⚠️ (69b) «… зарыг таалагдлав» гэсэн өгүүлбэр БАЙХГҮЙ — зөвхөн НЭР
+            (эсвэл нэргүй бол дугаар) + доор 🏠 ГАРЧИГ + 📞/🕒 ✓ */}
+        <p className={`text-[13px] leading-snug text-gray-900 ${fresh ? 'font-semibold' : ''}`}>
           {nameIsPhone && tel ? (
             <a
               href={tel}
@@ -228,9 +238,7 @@ function BellRow({ row, fresh, onNavigate, onRemove }) {
             </a>
           ) : (
             <b className="font-bold text-gray-900">{name}</b>
-          )}{' '}
-          {/* ⚠️ Гарчиг нь ДООР тусдаа мөрөнд гардаг тул энд давхардуулахгүй ✓ */}
-          {notificationText(row, { withListing: false })}
+          )}
         </p>
         {/* 🏠 АЛЬ ЗАР ВЭ — товдсон ТУСДАА мөр (хэрэглэгчийн хүсэлт (69) ✓) */}
         <p
