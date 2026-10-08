@@ -191,7 +191,9 @@ t('⑭ ГЭРЭЭ: HeaderIcons нь ClockIcon (цагийн) экспортол�
 
 t('⑮ ГЭРЭЭ: AppProviders нь Мессежийн ДАРАА цагийн товч + цэс + footer', () => {
   const app = codeOnly(readSrc('components/AppProviders.jsx'));
-  assert.match(app, /import \{ HeartIcon, ChatIcon, ClockIcon \} from '\.\/HeaderIcons'/);
+  // ⚠️ 2026-10-08 (67): хонхны `BellIcon` нэмэгдсэн тул зөвхөн 3 иконыг
+  //    ШААРДАЖ, нэмэлт икон байхыг ЗӨВШӨӨРНӨ (дараалал Heart→Chat→Clock ХЭВЭЭР ✓)
+  assert.match(app, /import \{ [^}]*\bHeartIcon\b[^}]*\bChatIcon\b[^}]*\bClockIcon\b[^}]*\} from '\.\/HeaderIcons'/);
   const mi = app.indexOf('href="/messages"');
   const hi = app.indexOf('href="/history"');
   assert.ok(mi >= 0 && hi > mi, 'цагийн товч Мессежийн дараа БИШ ✗');

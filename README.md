@@ -1236,6 +1236,57 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   хүснэгт) · `docs/IMPROVEMENTS.md` (энэ мөр)
   🔍 Хайх үг: `max-w-[480px]`, `mx-auto`, `isHeader`, `HeaderSearchBar`,
   `test-search-bar-width`
+- 🔔 **«МЭДЭГДЭЛ» ХОНХ — ХЭН МИНИЙ ЗАРТ ❤️ ДАРСАН НЬ ХАРАГДАНА (2026-10-08 (67))** —
+  хэрэглэгчийн хүсэлт: «facebook шиг notification тэй болгоё. Өөрөөр хэлбэл ямар
+  ямар хэрэглэгч ямар зар дээр нь like дараад байгаа нь зар оруулсан хэрэглэгчид
+  харагдаг байх. Хэзээ ямар дугаартай хэрэглэгч like дарсан нь харагддаг байх.
+  хавсралтаар явуулсан хонхны icon ийг хайлтын түүх icon ний дараа оруул».
+  🆕 `supabase/migrations/0040_notifications.sql` — `public.notifications`
+  (хүлээн авагч `user_id` · `actor_id`/`actor_name`/`actor_phone` · `type` ·
+  `listing_id` · **хуулбар** `listing_title` · `read_at` · `created_at`) +
+  триггер `notify_listing_like()` (`after insert on listing_likes`, `security
+  definer`) ⇒ ❤️ ба мэдэгдэл НЭГ ТРАНЗАКЦАД бичигдэнэ (сүлжээ тасрах =
+  алдагдах гэдэг эрсдэл 0 ✓) · `unique (user_id, actor_id, type, listing_id)` ⇒
+  нэг хүн нэг зард хэдэн ч удаа дарсан НЭГ мөр (`on conflict do update` —
+  `created_at`/`read_at` шинэчлэгдэж «дахин шинэ» болно) ✓ · миграц нь ӨМНӨ нь
+  дарсан ❤️-үүдийг ч хөрвүүлнэ ✓ · RLS: select/delete нь зөвхөн
+  `auth.uid() = user_id`, UPDATE нь ЗӨВХӨН `read_at` (`grant update (read_at)`),
+  **INSERT policy БАЙХГҮЙ** (клиент мэдэгдэл ЗОХИОЖ чадахгүй — зөвхөн триггер
+  бичнэ ✓) + `revoke all … from anon, authenticated` ✓ · ⚠️ ЗОЧИН
+  (`user_id is null`) ба ӨӨРИЙН зарын ❤️-д мэдэгдэл ҮҮСЭХГҮЙ (зориуд) ✓
+  🆕 `lib/notifications.mjs` (**цэвэр** логик, 20 экспорт — `formatPhone`
+  `+976 8811 2233` · `phoneHref` → `tel:` · `actorLabel` нэр→дугаар ·
+  `notificationText` · `unreadCount`/`badgeLabel` «99+» · `panelRows` 6 ·
+  `groupByListing` · `notificationTimeAgo` нь 🕐 хайлтын түүхтэй ЯГ ИЖИЛ цаг) ·
+  `lib/notificationsClient.js` (`useNotifications` + `useUnreadNotifications`,
+  60 сек poll + `zarmn:notifications-changed`) · `lib/queries.js` 5 функц —
+  ⚠️ миграц ороогүй бол `[]` БИШ ойлгомжтой монгол алдаа + заавар
+  (`npm run migration:copy 0040_notifications.sql`) буцаана ✓
+  🆕 `components/HeaderIcons.jsx → BellIcon` (SVG, `currentColor` — OS бүрд ижил) ·
+  `components/NotificationBell.jsx` — 🔔 товч нь **🕐 ХАЙЛТЫН ТҮҮХ-ийн ЯГ
+  ДАРАА** (`AppProviders`: 🖥 толгой + 📱 мобайл цэс + 👤 хэрэглэгчийн цэс) ·
+  дарахад dropdown (340px) — сүүлийн 6 мөр (нэр · «таны “зар”ыг таалагдлав» ·
+  📞 `tel:` линк · 🕒 цаг · ✕) + «Бүгдийг харах» → `/notifications`;
+  ⚠️ нээх мөчид `freshIds` мөрүүд `bg-primary/5`-ээр тодорч, badge ДАРУЙ
+  цэвэрлэгдэнэ (нээсэн = уншсан ✓) · гадна дарах/`Escape` → хаагдана ·
+  зочин дарахад `AuthModal` нээгдэнэ (хуудас СОЛИГДОХГҮЙ — Facebook-ийн хэв) ✓
+  🆕 `app/notifications/page.jsx` + `components/NotificationsClient.jsx` —
+  ЗАРААР БҮЛЭГЛЭСЭН карт («🏠 <зарын гарчиг>» + «❤️ N хүн таалагдлав» +
+  «N шинэ»), мөр бүрд нэр + **📞 ДУГААР ҮРГЭЛЖ** (`tel:` линк — хэрэглэгчийн
+  гол хүсэлт ✓) + 🕒 цаг + ✕; «Бүгдийг уншсан»/«Цэвэрлэх» товч ✓
+  🧪 🆕 `scripts/test-notifications.mjs` (`npm run test:notifications`)
+  **30/30 ✓** (DB/React-гүй, зөвхөн Node) · 🐍 🆕 `scripts/cdp-notifications.mjs`
+  (`npm run cdp:notifications`) **13 OK / 0 FAIL / 1 SKIP ✓** (зочин хэсэг:
+  хонх түүхийн ЯГ ДАРАА x=1089 > 1077 · 36×36px · зочинд нэвтрэх цонх ·
+  📱390px баруун дээд + хэвтээ гүйлт 0) · `npm run lint:migrations` **39/39 ✓** ·
+  `npm run build` EXIT=0 ✓ · `npm run test:*` **34/34 ✓** (⚠️ `test:search-history` ⑮
+  дэх `AppProviders`-ийн `HeaderIcons` импортын гэрээг 🔔 `BellIcon`
+  ЗӨВШӨӨРӨХ болгож шинэчив — «Heart→Chat→Clock» дараалал ХЭВЭЭР шаардагдана,
+  21/21 ✓)
+  📄 DOC: `README.md` (энэ bullet + «🔔 МЭДЭГДЭЛ» хэсэг + миграцын хүснэгт 34 +
+  тестийн 2 мөр + Түргэн командууд) · `docs/IMPROVEMENTS.md` (энэ мөр)
+  🔍 Хайх үг: `notifications`, `notify_listing_like`, `BellIcon`,
+  `NotificationBell`, `test-notifications`, `cdp-notifications`
 - 👤 **ЗАРЫН ЭЗЭНИЙ ПРОФАЙЛ ЗУРАГ 64 → 96px БОЛОВ (2026-10-08 (66))** —
   хэрэглэгчийн хүсэлт: «профайл зургийг жаахан томруулаад өгөөч»
   (⏳ (64)-т `size={64}` байв).
@@ -5151,6 +5202,7 @@ Dashboard → SQL Editor-т дараах файлуудын агуулгыг о�
 | 31 | `supabase/migrations/0036_services_subtypes_v2.sql` | 🛠️ **«АЖИЛ, ҮЙЛЧИЛГЭЭ» → «ҮЙЛДВЭР & ҮЙЛЧИЛГЭЭ, БИЗНЕС»: бүтэц ДАХИН зохион байгуулагдав — 8 бүлэг → 10, 55 → 81 дэд төрөл (2026-10-07 (61))** (хэрэглэгчийн хүсэлт: «Ажил, Үйлчилгээг → Үйлдвэр & Үйлчилгээ, Бизнес гэж нэрлэ» + бүлгүүдийг дараах байдлаар шинэчлэх). ⚠️ **CHECK constraint ХӨНДӨӨГДӨХГҮЙ** (шинэ ХЭСЭГ нэмэгдээгүй — `section` нь `'services'` хэвээр ✓) ба **ХЭСЭГ/БҮЛГИЙН НЭР нь DB-д ХАДГАЛАГДАХГҮЙ** (зөвхөн `lib/locationData.js → SECTIONS`/`SERVICE_SUBTYPE_GROUPS`-ийн UI шошго) → нэр солиход SQL ШААРДЛАГАГҮЙ ✓. ✏️ ХУУЧИН 10 нэрийг шинэ утга руу `UPDATE`: **«Гагнуурын үйлчилгээ» → «Гагнуур»**, **«Үсчин гоо сайхан» → «Үсчин, гоо сайхан»**, **«Мөнгө санхүү ба зээл» → «Зээл, Санхүү»**, **«Өмгөөлөгч» → «Өмгөөлөл»**, **«Авто засвар үйлчилгээ» → «Авто засвар»**, **«Уул уурхай» → «Хүнд машин механизм, уул уурхай»**, **«Хоол захиалга» → «Хоол хүргэлт»**, **«Хэвлэл, реклам, медиа» → «Хэвлэл»**, **«Барилгын бүх ажил» → «Зам барилгын ажил гүйцэтгэх»**, **«Тавилга ба мужаан» → «Мужаан»** ⇒ 🛠️ `services` нийт **55 → 81** дэд төрөл (**10 бүлэг**). ⚠️ «Үсчин, гоо сайхан» · «Авто засвар» · «Орчуулга» нь 2 бүлэгт ДАВХАРДСАН тул `SERVICE_SUBTYPES` нь `new Set`-ээр давхардлыг ХАСНА (💻/⚡-ийн ижил) ✓. Зар **УСТГАХГҮЙ** ✓ — зөвхөн `property_type` солигдоно (0018/0022/…/0035-ын зарчим) + модноос гадуур утгыг «Бусад» болгох **СҮЛЖЭЭ** `UPDATE` мөн багтсан ✓. ⚠️ Мөр `UPDATE` хийдэг тул **`0014`-ийн ӨМНӨ** ажиллуулна (эс бөгөөс `23505`) · ℹ️ дараа нь `npm run seed:sections -- <uid> --section=services` (81 × 10 = **810** demo зар) |
 | 32 | `supabase/migrations/0037_services_courses_subtypes.sql` | 🎓 **«АЖИЛ, ҮЙЛЧИЛГЭЭ»/«ҮЙЛДВЭР & ҮЙЛЧИЛГЭЭ, БИЗНЕС»: «Сургалт, курс» бүлэг 23 → 22 дэд төрөл (2026-10-07 (62))** (хэрэглэгчийн хүсэлт: «Сургалт, курс -ийн доторхыг ингэж өөрчил»). ⚠️ **CHECK constraint ХӨНДӨӨГДӨХГҮЙ** (шинэ ХЭСЭГ нэмэгдээгүй — `section` нь `'services'` хэвээр ✓) ба **БҮЛГИЙН НЭР нь DB-д ХАДГАЛАГДАХГҮЙ** (зөвхөн `lib/locationData.js → SERVICE_SUBTYPE_GROUPS`-ийн UI шошго) → групп нэр солиход SQL ШААРДЛАГАГҮЙ ✓ (0030/0033/0034/0035/0036-ын ЯГ ИЖИЛ зарчим). ✏️ Модноос ГАРСАН 4 хуучин нэрийг шинэ утга руу `UPDATE`: **«Компьютер ба интернэт» → «IT Программ хангамж»**, **«Мужаан, гагнуурчин» → «Мужаан»** (2 болж САЛСАВ — «Мужаан» + 🆕 «Гагнуурчин»), **«Тоо, ерөнхий боловсрол» → «Ерөнхий боловсрол»**, **«Барилга, засал чимэглэл» → «Бусад»** ⇒ бүлэг **23 → 22**, 🛠️ `services` нийт **81 → 79 УНИКАЛЬ** дэд төрөл (**10 бүлэг** ХЭВЭЭР). ⚠️ «Үсчин, гоо сайхан» · «Авто засвар» · «IT Программ хангамж» · «Мужаан» нь өөр бүлэгтэй ДАВХАРДСАН тул `SERVICE_SUBTYPES` нь `new Set`-ээр давхардлыг ХАСНА ✓. Зар **УСТГАХГҮЙ** ✓ — зөвхөн `property_type` солигдоно (0018/…/0036-ын зарчим) + модноос гадуур утгыг «Бусад» болгох **СҮЛЖЭЭ** `UPDATE` мөн багтсан ✓. ⚠️ `0036`-ЫН ДАРАА ба мөр `UPDATE` хийдэг тул **`0014`-ийн ӨМНӨ** ажиллуулна (эс бөгөөс `23505`) · ℹ️ дараа нь `npm run seed:sections -- <uid> --section=services` (79 × 10 = **790** demo зар) |
 | 33 | `supabase/migrations/0038_user_blocks.sql` | 🚫 **ХЭРЭГЛЭГЧ БЛОКЛОХ (админ) — `profiles.blocked` + `listings_select` RLS (2026-10-07 (50))** (хэрэглэгчийн хүсэлт: «admin хэрэглэгч тухайн хэрэглэгчийг block хийх боломжтой байх. Ингэснээр түүний зар нийтэд харагдахгүй болох ба системд нэвтрэх боломжгүй болох юм»). 🆕 багана `public.profiles.blocked` (`boolean`, default `false`) + `blocked_at` (`timestamptz`). 🆕 функц `public.is_user_blocked(uid uuid)` — **`security definer`** (RLS-ээс ангид, тогтвортой, хурдан). 🔑 **`listings_select` RLS бодлого СОЛИГДОВ**: `using (true)` → `using (not public.is_user_blocked(user_id))` ⇒ блоклогдсон эзний зар нь ЯМАР Ч нийтийн query-д (нүүр, хайлт, дэлгэрэнгүй, `/sellers/[id]`, санал API …) ГАРАХГҮЙ; ⚠️ админ (`service_role`) RLS-ыг тойрдог тул `/admin/listings`-д ХАРАГДАХ/УСТГАХ боломжтой хэвээр ✓. ⚠️ Системд НЭВТРЭХГҮЙ болгох нь SQL БИШ — Supabase-ийн БАН (`setUserBlocked` → `ban_duration`), хоёулаа `lib/adminAuth.js → setUserBlocked()`-д ХАМТ бичигдэнэ. Ажиллуулах: `npm run migration:copy 0038_user_blocks.sql` |
+| 34 | `supabase/migrations/0040_notifications.sql` | 🔔 **«МЭДЭГДЭЛ» — FACEBOOK МАЯГИЙН ХОНХ (2026-10-08 (67))** (хэрэглэгчийн хүсэлт: «facebook шиг notification тэй болгоё… ямар ямар хэрэглэгч ямар зар дээр нь like дараад байгаа нь зар оруулсан хэрэглэгчид харагдаг байх. Хэзээ ямар дугаартай хэрэглэгч like дарсан нь харагддаг байх»). 🆕 хүснэгт `public.notifications` (`user_id` хүлээн авагч · `actor_id` · `type` CHECK `in ('like')` · `listing_id` · **хуулбар** `listing_title`/`actor_name`/`actor_phone` · `read_at` · `created_at` · `unique (user_id, actor_id, type, listing_id)`). 🆕 триггер `notify_listing_like()` — **`security definer`**, `after insert on public.listing_likes` ⇒ мэдэгдэл нь ❤️-тэй **НЭГ ТРАНЗАКЦАД** бичигдэнэ (JS дээр тусад нь дуудах нь сүлжээ тасрахад алдагдана ✗); `on conflict … do update` нь `created_at`/`read_at`-ыг шинэчилнэ (re-like = «дахин шинэ») ✓. ⚠️ Зочин (`actor.user_id is null`) ба өөрийн зарын ❤️-д мэдэгдэл **ҮҮСЭХГҮЙ** ✓. 🔑 RLS: `select`/`delete` зөвхөн `auth.uid() = user_id` · `update` policy `with check`-тэй + **`grant update (read_at)`** (0020_messages.sql-ийн ЯГ ИЖИЛ хатууруулалт — текст/дугаарыг дарж бичих боломжгүй ✓) · **INSERT policy ЗОРИУДААР БАЙХГҮЙ** (зөвхөн триггер бичнэ) · `revoke all … from anon, authenticated` + `grant select, delete … to authenticated`. ➕ 2-р хэсэг нь миграцаас ӨМНӨХ ❤️-үүдийг мэдэгдэл болгож бөглөнө (`on conflict do nothing` — idempotent ✓). ⚠️ Миграц **ороогүй ч** апп эвдрэхгүй: хонх `0` харуулж, `/notifications` дээр ойлгомжтой заавар гарна ✓. Ажиллуулах: `npm run migration:copy 0040_notifications.sql` |
 
 
 
@@ -5508,6 +5560,9 @@ npm run test:draft       # 📝 НООРОГ — `localStorage` (refresh-ээс 
 npm run test:prefill     # 🎯 АНГИЛАЛ УРЬДЧИЛАН БӨГЛӨХ — «Зар нэмэх» товч (`?section=…&type=…` → форм сонгогдсон нээгдэнэ) (28 тест, 0₮)
 npm run test:location    # 📍 «Байршил сонгохгүй» чекбокс — round-trip/шалгалт/гэрээ/байрлал/DB-д 0 migration (36 тест, 0₮)
 npm run test:location-map # 🗺 ГАЗРЫН ЗУРАГ ДЭЭРХ БАЙРШИЛ — төвд тогтмол пин + хорооны ойролцоо төв + geo-хайлт + Google Maps «Copy link» (солбицлын цэвэр дүрэм · 9 дүүрэг/22 хотын төв · хорооны ойролцоо төв · Nominatim geocoder · чекбокс round-trip · Nominatim reverse-хаяг · дүүргийн бодит хил · линк задлах (богино линк серверээр) · гэрээ; 70 тест, 0₮)
+npm run test:notifications # 🔔 МЭДЭГДЭЛ — хонхны уншаагүй тоо/badge («99+»)/зараар бүлэглэлт/📞 `+976 8811 2233` + `tel:` линк + migration 0040-ийн гэрээ (30 тест, 0₮) ✓
+npm run cdp:notifications # 🐍 БОДИТ Chrome (:9222) дээр 🔔 хонх нь «Хайлтын түүх»-ийн ЯГ ДАРАА + зочинд нэвтрэх цонх + `/notifications` (13 OK / 1 SKIP ✓)
+                         #   ⏳ нэвтэрсэн хэсэг (badge · dropdown · 📞) — `ZAR_PHONE=… ZAR_PASS=… npm run cdp:notifications`
 npm run cdp:picker       # 🐍 БОДИТ Chrome (:9222) — пикер/форм/📱wizard/📝 ноорог refresh (183/183 ✓)
 npm run cdp:wheel        # 🐍 БОДИТ Chrome (:9222) дээр 📱 ГАРААС БИЧИЛТ (он/давхар) + дугуй (НЭМЭЛТ боломж) — 51/51 шалгалт
                          #   ⚠️ Форм нь НЭВТЭРСЭН хэрэглэгчид харагддаг тул профайл нь
@@ -5857,9 +5912,11 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 | `scripts/test-jobs.mjs` | **20 тест** — `npm run test:jobs` (🆕 2026-10-03 (9), 🆕 **2026-10-05 (42)**: 💼 АЖЛЫН ЗАРЫН ГЭРЭЭ — `lib/locationData.js` ШУУД + `codeOnly()` эх кодоор ① форм талбарууд ЯГ 5 — `['jobType','experience','advertiser','jobLevel','salaryType']` (🆕 (10): 🏢 `company` / 💼 `position` ХАСАГДАВ) ② 🕒 «Ажлын цаг» 5 сонголт + **`chips` + `multi` + `filterBar`** (🆕 (42)) ③ 📊 Туршлага/🏷️ Зарлагч/📈 Мэргэжлийн түвшин/💰 Цалингийн төрөл (📊/📈 ч **`chips` + `multi` + `filterBar`** — 🆕 (42)) ④ 🗑 salary/education/workMode/expiry ХАСАГДАВ ⑤ **хайлтын 3 шүүлт — ГУРВУУЛАА `chips` + `multi` + `filterBar`** (`jobType` · `experience` · `jobLevel`; 🆕 (42)) ба 🆕 `HomeClient`-ийн `attrFilters.filter((f) => f.chips && f.multi && f.filterBar)` / `.filter((f) => !f.filterBar)` хоёр мөр + `data-filter-pill`/`data-filter-panel` дэгээ (хатуу жагсаалт `FILTER_BAR_ATTR_KEYS` БАЙХГҮЙ ✓) ⑥ `priceWord`/`isJobsSection` ⑦ `format.js` `NEGOTIABLE_SALARY_LABEL`+`negotiableLabel` ⑧ форм «Цалингийн хэмжээ»+«Цалин тохиролцоно» ⑨ `f.chips` салбар (`chip-toggle`/`data-attr-value`) ⑩ `priceSideBlock` + ажилд attr шүүлтүүдийн ӨМНӨ дараалал (regex + `indexOf`) ⑪ картын мөр ⑫ `getAttrRows` `salary`/`company`/`position` МӨР БАЙХГҮЙ ⑬ seed шинэ утгууд · 🆕 **(51) 2026-10-07: ①–④ форм талбар `formChips === undefined`** (форм нь 💰 `salaryType`-тай ЯГ ИЖИЛ `<select>`/📱 2 баганат жагсаалт — ⏳ (11)-ийн форм чип ХАСАГДАВ, `f.formChips` салбарын гэрээ ХЭВЭЭР ✓) |
 | `scripts/test-search.mjs` | **53 тест** — `npm run test:search` (2026-09-30: 🔢 `lib/rangeFilter.mjs` (`groupDigits`/`parseNum`/`formatGroupedInput`/`clampNum`/`snapNum`/`toFilterPair`/`isRangeActive`/`rangeLabel`/`yearBounds`; 🆕 2026-10-04 (41): `FLOOR_BOUNDS`/`buildYearBounds`/`BUILD_YEAR_START`) + 🔀 `lib/sortOptions.mjs` (`SORT_OPTIONS`/`normalizeSort`/`sortOrders`/`sortLabel`) — `order=price.asc.nullslast,id.desc` ба HomeClient/queries-ийн гэрээ ✓; 📌 регресс: ① слайдер (`RangeSlider`/`rangeSlider.mjs`/`role="slider"`/pointer handler) ХААНА Ч БАЙХГҮЙ ② он БҮЛЭГЛЭГДЭХГҮЙ («2.026» ✗) ③ «1.234,5» → `1234.5` ✓ ④ хил дээрх `0` → «₮0 – ₮5 тэрбум» (өмнө нь «₮ – …» хоосон ✗) ⑤ **2026-09-30 (3): `priceQuickPicks()` эскпорт БАЙХГҮЙ, `quickPicks`/`data-quick-pick`/`aria-pressed` КОДОД БАЙХГҮЙ (комментыг `codeOnly()`-оор хасч шалгана), `snapNum` ЦЭВЭР туслах хэвээр, шошго нь `placeholder="Доод"`/`"Дээд"` + `(доод хязгаар)`/`(дээд хязгаар)` — «Эхлэх / Дуусах» кодод БАЙХГҮЙ** ✓) |
 | `scripts/test-saved-searches.mjs` | 🆕 **24 тест** — `npm run test:saved-searches` (2026-10-06 (13): 🔖 хадгалсан хайлтын ЦЭВЭР логик `lib/savedSearch.mjs` — ① URL → шошго: «Категори» нь unegui.mn-ийн мөр («Үл хөдлөх — Үл хөдлөх зарна — Орон сууц зарна — 3 өрөө») ба «Байршил» («Хан-Уул, Нүхтийн ам») ② 🛠 services-ийн 3-р түвшний БҮЛЭГ замад багтана ③ давхардсан шошго 1 л удаа («Автомашин — Автомашин» → «Автомашин — Суудлын машин») ④ хэсэг сонгоогүй → «Бүх зар» ⑤ хайлтын үг (`q`) гарчигт + хэт урт таслагдана ⑥ state (rooms/district массив) ⑦ давхардлын түлхүүр `page`/`view`/`sort`-ыг ТООЦОХГҮЙ ⑧ параметрийн дараалал хамаарахгүй ⑨ `isSaveableSearch` («Бүх зар» → false) ⑩–⑬ `parseSavedSearchList` (давхардал/хог/хязгаар/тойрог) ⑭–⑯ мөрийн хэлбэр (`created_at`↔`createdAt`)/trim/дээд урт/query string ⑰ id · **ГЭРЭЭ (⑱–㉔, `codeOnly()`)**: HomeClient «Хайлтыг хадгалах» товч (`data-save-search`, `aria-pressed`) + `currentUrl` толь · SavedSearchesClient («Категори/Байршил», «Илэрц харуулах»/«устгах») · `/favorites` 2 таб (`data-fav-tab`) · `lib/savedSearches.js` hybrid (DB + localStorage + миграц) · migration 0031 (RLS + `unique (user_id, url)` + UPDATE policy БАЙХГҮЙ) · `package.json` script — ⚠️ DB/React ХОЛБОГДОХГҮЙ ✓) |
-| `scripts/test-search-history.mjs` | 🆕 **21 тест** — `npm run test:search-history` (2026-10-07: 🕐 хайлтын түүхийн ЦЭВЭР логик `lib/searchHistory.mjs` — ①–④ URL → карт: категорийн **СҮҮЛИЙН нэр** (`leaf` — «Цахилгаан бараа → Угаалгын машин»), бүтэн зам, байршил, түлхүүр үг, өрөө/үнэ; «Бүх зар» → хоосон ⑤ `historyKey`/`isHistoryUrl` ⑥ `historyTimeAgo` («Саяхан»/минут/цаг/«Өчигдөр»/өдөр/огноо) ⑦–⑨ `recordHistory` (давхардал нэгтгэж ЭХЭНД, id хэвээр; утгагүй → `ok:false`; дээд тоо 60) ⑩–⑬ `normalizeHistoryRow` (`last_seen_at`) · `parseHistoryList` (давхардал/хог/хязгаар/тойрог) · `newHistoryId` · **ГЭРЭЭ (⑭–㉑, `codeOnly()`)**: `HeaderIcons` `ClockIcon` · `AppProviders` (Мессежийн ДАРАА товч + цэс + footer) · `SearchHistoryClient` (карт + `data-search-history-*` дэгээ) · `/history` хуудас · `lib/searchHistory.js` hybrid (upsert) · `HomeClient` авто-бүртгэл (debounce) · migration 0032 (RLS + UPDATE policy БАЙНА + `unique (user_id, key)`) · `package.json` script — ⚠️ DB/React ХОЛБОГДОХГҮЙ ✓) |
+| `scripts/test-search-history.mjs` | 🆕 **21 тест** — `npm run test:search-history` (2026-10-07: 🕐 хайлтын түүхийн ЦЭВЭР логик `lib/searchHistory.mjs` — ①–④ URL → карт: категорийн **СҮҮЛИЙН нэр** (`leaf` — «Цахилгаан бараа → Угаалгын машин»), бүтэн зам, байршил, түлхүүр үг, өрөө/үнэ; «Бүх зар» → хоосон ⑤ `historyKey`/`isHistoryUrl` ⑥ `historyTimeAgo` («Саяхан»/минут/цаг/«Өчигдөр»/өдөр/огноо) ⑦–⑨ `recordHistory` (давхардал нэгтгэж ЭХЭНД, id хэвээр; утгагүй → `ok:false`; дээд тоо 60) ⑩–⑬ `normalizeHistoryRow` (`last_seen_at`) · `parseHistoryList` (давхардал/хог/хязгаар/тойрог) · `newHistoryId` · **ГЭРЭЭ (⑭–㉑, `codeOnly()`)**: `HeaderIcons` `ClockIcon` · `AppProviders` (Мессежийн ДАРАА товч + цэс + footer) · `SearchHistoryClient` (карт + `data-search-history-*` дэгээ) · `/history` хуудас · `lib/searchHistory.js` hybrid (upsert) · `HomeClient` авто-бүртгэл (debounce) · migration 0032 (RLS + UPDATE policy БАЙНА + `unique (user_id, key)`) · `package.json` script — ⚠️ DB/React ХОЛБОГДОХГҮЙ ✓ · ⚠️ **2026-10-08 (67) засвар:** ⑮ дэх `AppProviders`-ийн `HeaderIcons` импортын гэрээ нь 🔔 `BellIcon` нэмэгдсэн тул «`HeartIcon` → `ChatIcon` → `ClockIcon` ДАРААЛАЛТАЙ байх» гэж ШААРДАХ болсон (нэмэлт икон зөвшөөрөгдөнө — хатуу жагсаалт БИШ ✓) |
 | `scripts/cdp-saved-searches.mjs` | 🆕 🐍 **CDP (бодит Chrome)** — `npm run cdp:saved-searches` (**15 OK / 0 FAIL ✓** — 2026-10-06 (13), ✅ БОДИТ headless Chrome 154 + сервер :3000), зочин (localStorage) горим: ① хадгалах утгатай хайлт дээр «Хайлтыг хадгалах» товч (`aria-pressed=false`) ② дарахад «✓ Хадгалагдсан» + `aria-pressed=true` + `disabled` + localStorage-д линк бичигдэв ③ `/favorites` дээр 2 таб (ads + searches) ④ хадгалсан хайлтын мөр ЯГ 1 — «Категори: Үл хөдлөх — … — 3 өрөө» + «Байршил: Хан-Уул» + «Илэрц харуулах» линк нь хадгалсан URL руу + «устгах» ⑤ «устгах» → мөр арилж хоосон төлөв ⑥ дахин тэр хайлт дээр товч «Хайлтыг хадгалах» болж буцаана ⑦ «Бүх зар» (хадгалах утгагүй) дээр товч ОГТ ГАРАХГҮЙ ⑧ JS exception 0 — ⚠️ сервер :3000 ба Chrome :9222 шаардна; байхгүй бол SKIP → exit 0 ✓) |
 | `scripts/cdp-search-history.mjs` | 🆕 🕐 **CDP (бодит Chrome)** — `npm run cdp:search-history` (**12 OK / 0 FAIL ✓** — 2026-10-07, ✅ БОДИТ headless Chrome 155 + сервер), зочин (localStorage) горим: ① хайлт АВТОМАТААР бүртгэгдэв ② `/history` дээр ЯГ 2 карт (шинэ нь ЭХЭНД) — категорийн СҮҮЛИЙН нэр + байршил + түлхүүр үг ③ **карт БҮХЭЛДЭЭ бүрхсэн `absolute` ЛИНК** (геометр ЯГ ТААРНА, href = хайлтын URL) ④ **КАРТ ДЭЭР (товч БИШ) дарахад хайлтын үр дүн рүү ОРНО** ⑤ «Хасах» товч байна · «Дахин хайх» ГАРАХГҮЙ ⑥ «Хасах» → карт арилна · navigation БОЛОХГҮЙ ⑦ JS exception 0 — ⚠️ сервер (:3000) ба Chrome :9222 шаардна; байхгүй бол SKIP → exit 0 ✓) |
+| `scripts/test-notifications.mjs` | 🆕 **30 тест** — `npm run test:notifications` (2026-10-08 (67): 🔔 мэдэгдлийн ЦЭВЭР логик `lib/notifications.mjs` — ①–③ 📞 `formatPhone` («+976 8811 2233»; гадаад дугаар ХУЙВАРГҮЙ) + `phoneHref` → `tel:` (зөвхөн цифр) ④–⑤ `actorLabel` (хоч нэр → байхгүй бол ДУГААР — хэрэглэгчийн гол хүсэлт ✓) + `actorInitial` ⑥–⑨ `normalizeNotificationRow` (id дутуу → `null` — эвдэрхий мөр UI-д ГАРАХГҮЙ) / `notificationTypeMeta` (танихгүй төрөлд ❤️ нөөц) / `listingLabel` («Зар» нөөц) / `notificationText` («таны «3 өрөө байр» зарыг таалагдлав» — нэр ОРОХГҮЙ) ⑩ `notificationTimeAgo` нь 🕐 хайлтын түүхтэй ЯГ ИЖИЛ (нэг эх сурвалж) ⑪ `sortNotifications` (шинэ нь ЭХЭНД; оролт ХӨНДӨӨГДӨХГҮЙ) ⑫–⑬ `unreadCount` / `badgeLabel` (0/сөрөг → хоосон · 99+ → «99+») ⑭–⑰ `groupByListing`/`groupCountLabel`/`groupTitleLabel` (зараар бүлэглэлт; `listing_id` дутуу мөрүүд НЭГ бүлэгт — зар устсан ч мэдэгдэл алга болохгүй ✓) · **ГЭРЭЭ (⑱–㉚, `codeOnly()`)**: migration 0040 (хуулбар баганууд · CHECK нь `NOTIFICATION_TYPE_META`-той ИЖИЛ · **INSERT policy БАЙХГҮЙ** · триггер `after insert` `security definer` · `grant update (read_at)` БА «текст дарж бичих» эрх БАЙХГҮЙ · idempotent + хуучин ❤️ бөглөлт) · `queries.js` 5 функц · `notificationsClient.js` (2 hook + event) · `NotificationBell` · `NotificationsClient` · хонх нь «Хайлтын түүх»-ийн ДАРАА · `BellIcon` `currentColor` SVG (emoji БИШ) · `/notifications` хуудас — ⚠️ DB/React ХОЛБОГДОХГҮЙ ✓) |
+| `scripts/cdp-notifications.mjs` | 🆕 🔔 **CDP (бодит Chrome)** — `npm run cdp:notifications` (**13 OK / 0 FAIL / 1 SKIP ✓** — 2026-10-08 (67), ✅ БОДИТ headless Chrome 155 + сервер :3000), зочин горим: ① толгойн мөрөнд 🔔 хонх байна — **36×36px** ①b **хонх нь 🕐 «Хайлтын түүх»-ийн ЯГ ДАРАА** (x тэнхлэгээр: түүх 1041–1077 < хонх 1089–1125 ✓ — хэрэглэгчийн хүсэлт) ①c икон нь SVG + `currentColor` (emoji БИШ) ② зочин хонх дарвал 🔑 нэвтрэх цонх нээгдэв ②b хуудас СОЛИГДООГҮЙ (хонх нь `<Link>` БИШ — Facebook-ийн хэв ✓) ③ «✕» → цонх хаагдлав ④ `/notifications` нээгдэв (унасан/хоосон дэлгэц БИШ) ④b гарчиг 🔔 + тайлбар ④c «🔑 Нэвтрэх» товч ④d цонх нээгдэв ⑤ 📱 390px-д хонх харагдана (x=338–374) ⑤b баруун дээд (`right=374`, `scrollWidth=390` ⇒ хэвтээ гүйлт **0**) ⑦ JS exception **0** — ⏳ **SKIP:** нэвтэрсэн хэсэг ⑥ (`ZAR_PHONE`/`ZAR_PASS` өгөөгүй тул; ⑥ нь badge → dropdown → 📞 формат `+976 NNNN NNNN` + `tel:` → бүлгийн гарчиг/мөрийн тоо ТААРНА ✓) — ⚠️ сервер (:3000) + Chrome `--remote-debugging-port=9222` шаардна; байхгүй бол SKIP → exit 0 ✓; ⚠️ миграц 0040 ороогүй бол `npm run migration:copy 0040_notifications.sql` гэсэн заавартай SKIP ✓) |
 
 | `scripts/test-filters.mjs` | 🆕 **122 тест** (🆕 2026-10-07 (52): 121 → 122 — 💻 «Иж бүрэн компьютер» `PC_SPEC_SUBTYPES`-ээс ХАСАГДАВ, T1–T5 урт 23 → 22; 🆕 2026-10-07 (61): 120 → 121 — 🛠️ «Үйлдвэр & Үйлчилгээ, Бизнес» 10 бүлэг/81 дэд төрөл + 0036 migration-ийн гэрээ; 2026-10-06 (16): 107 → 110 — `FilterPill` HOVER-ийн гэрээ: ЯГ `hover:bg-gray-200` ба `hover:bg-primary/25` байх БА ⏳ `hover:bg-gray-50`/`hover:border-gray-300` БУЦАЖ ОРОХГҮЙ) — `npm run test:filters` (🆕 🗑 **2026-10-06 (5): 🛠 services-ийн 4 талбар (🏢 Нэр/компани · 📍 Хамрах хүрээ · 📊 Туршлага · 🕒 Ажиллах цаг) БҮГД ХАСАГДАВ** — форм `attrFields` **0** ба sidebar `attrFilters` **0** (⚽ `hobby`/🏠 `real-estate`-ийн ижил), картын мөр `formatAttrsLine('services', …)` **''**, `getAttrRows('services', …)` **0 мөр**, demo seed ч ҮҮСГЭХГҮЙ (`SERVICE_NAMES` ч УСТСАН ✓), ⚠️ ХАМГААЛАЛТ: 💼 `jobs`-ийн 🕒 `jobType`/📊 `experience`/🏷️ `advertiser`/📈 `jobLevel`/💰 `salaryType` + шүүлт 3 ХӨНДӨӨГДӨӨГҮЙ ✓; 🆕 2026-10-04 (31): 🏠 «хэсгийн панель — 2 алхамт drill»: `showsSectionSubtypes` 2×3 хүснэгт (үл хөдлөх `all`→хаалттай, `sell`/`rent`→нээлттэй; бусад 11 хэсэгт дангааруу) + HomeClient-ийн `showSubtypes`/`data-section-panel` гэрээ (🆕 2026-10-03 (17): 🚗 «Жолооны хүрд» (`steering`) — форм БА карт («🚗 Зөв хүрд»), `Зөв`/`Буруу`, ⚙️ «Хурдны хайрцаг»-ийн ЯГ дараа, шүүлтэд ОРООГҮЙ, `getAttrRows(auto)` → **10 мөр**; 🆕 2026-10-01 (13): 🎨 өнгө **12** сонголт — `assert.deepEqual`-ээр ЯГ дараалал (Цагаан … Бусад), давхардал 0 (`new Set().size === 12`), сүүлийнх нь «Бусад»; 2026-09-28: attrFilters-ийн гэрээ — 🚙 Загвар текст, 📅/📥 оны хүрээ, `parseAttrRangeKey`, `formatAttrsLine`; 2026-09-29: ⚽ hobby — `attrFilters`/`attrFields` зөвхөн `condition`, `hasSimpleForm`; ✅ «Шинэ / Хуучин» — attrFields ба attrFilters ХОЁУЛАА 2 сонголттой байв (2026-09-29; ⚠️ 2026-10-02-д **3** болов), хуучин 4 утга (Хэрэглэсэн — сайн/хэвийн, Засвар шаардлагатай, Хэвийн) БҮРЭН ХАСАГДСАН; 🆕 **2026-10-02: «Шинэ / Шинэвтэр / Хуучин» — attrFields ба attrFilters ХОЁУЛАА ЯГ 3 сонголттой** (ЯГ дараалал `Шинэ → Шинэвтэр → Хуучин` бүх 8 хэсэгт, `new Set().size === 3` давхардал 0, картын мөр `✅ Шинэвтэр` нэг л удаа, ⚠️ DB migration ШААРДЛАГАГҮЙ) → **87 тест** ✓; 2026-09-30: ⚡ electric — 8 бүлэг/26 дэд төрөл, 3 бүлэг `collapsed`, 4 дэх түвшин БАЙХГҮЙ, 🛋️ home-оос ХАСАГДСАН; 2026-09-30: 🛋️ home — 2 бүлэг (**«Тавилга» ЭХЭНД**)/22 дэд төрөл, хоёулаа `collapsed`, хуучин 9 хавтгай нэр ХАСАГДСАН, breadcrumb, картын мөр/шүүлт ХЭВЭЭР — ⚠️ 2026-09-30 (5)-д энэ мод ХУВААГДАВ; 2026-09-30 (5): **12 хэсэг ба ЯГ дараалал** (`SECTIONS.length === 12`), 🛋️ `furniture` 13 / 🧳 `travel` 12 / 🧺 `home` 9 / ⚽ `hobby` 6 дэд төрөл ЯГ таарах, дөрвүүлээ **ХАВТГАЙ** (`getSubtypeGroups` → `[]`), `hasSimpleForm` нь ⚽/🧺/⚡/🛋️/🧳 дээр `true` ба real-estate/auto/jobs/computers/services дээр `false` (тестээр түгжсэн 10 хэсэг), «Бусад» нь furniture/travel/electric/construction-д байгаа ба home/hobby-д **БАЙХГҮЙ**, ба `0026_furniture_travel_sections.sql`-ийн гэрээ (CHECK 12 утга, `home`→`furniture` 13, `hobby`→`travel` 12, «Аяллын хэрэгсэл» → «Бусад»/`travel`, `delete`/`truncate` БАЙХГҮЙ ✓); 🆕 **2026-09-30 (6): 💻 Notebook-ийн 📺/⚙️/🧠/💾 — 4 талбар `txt` → `sel`** (дараалал `brand·model·screen·cpu·ram·storage·condition·warranty`, сонголт 7/19/13/6, давхардал 0, `required` БАЙХГҮЙ, `attrFilters` нь `brand·condition` (🛡️ `warranty` 2026-10-01 (18)-д ХАСАГДСАН); талбар нь **ЗӨВХӨН** `PC_SPEC_SUBTYPES` = 21 Notebook брэнд (⚠️ «Бусад»-ГҮЙ) + «Процессор, сервер» = **22** дэд төрөлд (🆕 (52): «Иж бүрэн компьютер» ХАСАГДАВ), харин «Бусад»/Mouse/Keyboard/Xbox/Чихэвч/тонер/Проектор/Дэлгэц/хоосон дэд төрөлд **ХАРАГДАХГҮЙ**; `getAttrField` нь `onlySubtypes`-аас ХАМААРАХГҮЙ (картын мөр/шүүлтэд хуучин утга харагдана ✓) ба бусад 11 хэсэгт талбар ХАСАГДАХГҮЙ; картын мөр `Lenovo ThinkPad T14 · ⚙️ Intel Core i5 · 16 GB · 512 GB · ✅ Шинэ` (📺 ОРООГҮЙ); хуучин/demo cpu (`Intel Core i5`…`Apple M2`) ба ram утга бүр шинэ сонголтод БАГТСАН, «512 GB SSD + 1 TB HDD» нь БАГТААГҮЙ (`legacy`-ээр хамгаалагдана); `AddListingModal.jsx`/`seed-sections.mjs`-ийн гэрээ; 🆕 **2026-10-01: 🔧 «Хөдөлгүүр» `txt` → `sel` (`ENGINE_OPTIONS` — ЯГ 7 утга: `1.5л хүртэл` … `Цахилгаан (EV)`, label нь зөвхөн «Хөдөлгүүр», ⚠️ шүүлтэд ОРООГҮЙ) ба 🎨 «Өнгө» НЭМЭГДЭВ (`AUTO_COLOR_OPTIONS` — 12 сонголт, форм **ба** sidebar); 🔀 «Хөтлөгч» (`drive`) форм/`attrFilters`/`CARD_ATTR_ORDER` **ГУРВААС** ХАСАГДАВ (хуучин `attrs.drive` карт дээр ГАРАХГҮЙ ✓); `formatAttrsLine` нь хүрээний утгад «л» **ДАВХАР залгахгүй** («1.5л - 2.0л»), зөвхөн ХУУЧИН тоон «2.5»-д залгана → 68 → **72 тест**; 🆕 **2026-10-01 (2): 🎨 «Өнгө» нь 🚙 «Загвар»-ын ЯГ ДАРАА — 3 газарт** (`attrFields` форм · `attrFilters` sidebar · `CARD_ATTR_ORDER.auto` картын мөр; ⚠️ дараалал нь массивын дараалал тул компонент дээр код засахгүй; карт дээр толгой нь «брэнд + загвар + он» нэг хэсэг тул «Өнгө» нь толгойн дараах ЭХНИЙ үзүүлэлт — `Toyota Prius, 2021 · 🎨 Цагаан · 95,200 км · …`; форм + sidebar дарааллын шинэ тест + картын мөрийн ЯГ тэнцэл → **80 тест** ✓; 🆕 **2026-10-01 (16): 📋 `getAttrRows` — зарын дэлгэрэнгүй хуудсанд `attrs` нь хэсгийн `attrFields`-ийн шошго/icon/дарааллаар 2 БАГАНАТ хүснэгт болж гарна** (4 тест: 🚗 `auto` → ЯГ 9 мөр `brand·model·color·year·importYear·mileage·transmission·engine·fuel`, 🛣️ гүйлт `146000` → **`146,000`** («км» шошгонд тул ДАВХАРДСАНГҮЙ), 🔧 «2.1л - 2.7л» давхар нэгжгүй ба хуучин тоон «2.5» → «2.5 л», `negotiable` ба **ХАСАГДСАН `drive`** ХАРАГДАХГҮЙ, `0` нь ХООСОН БИШ = `formatAttrsLine`-тэй ижил, `null`/`undefined`/`{}`/`'Toyota'` дээр КРАШГҮЙ, 💻 `onlySubtypes` → 📺/⚙️/🧠/💾 Notebook дээр л гарах ба Mouse-д ГАРАХГҮЙ, 🏠 `real-estate` (`attrFields: []`) → **0 мөр** ба 12 хэсэг бүгд крашгүй; 🆕 **2026-10-01 (18): 🛡️ 💻 «Баталгаа» (`warranty`) БҮРЭН ХАСАГДАВ** — форм · `attrFilters` · карт · `getAttrRows` ГУРВААС (💻 шүүлт 3 → **2**, форм талбар 8 → **7**; Notebook 8 → **7**, Mouse 4 → **3** мөр; ХУУЧИН `attrs.warranty`-тай зар карт/дэлгэрэнгүй дээр ГАРАХГҮЙ ✓; seed нь `warranty` ҮҮСГЭХГҮЙ; `getAttrField` → `null`) → 85 → 87 тест; 🆕 **2026-10-03 (7): 💻 Notebook-ийн 📺/⚙️/🧠/💾 ШҮҮЛТ — 6 тест** (① `getAttrFilters('computers','Apple')` → `brand·screen·cpu·ram·storage·condition` (формтой ижил дараалал, `model` шүүлтэд ОРООГҮЙ) ② сонголт нь либын экспорттой ИЖИЛ объект — 7/19/13/6, `type: select` ба `searchable` БИШ ③ 23 `PC_SPEC_SUBTYPES` дээр 4 шүүлт, холдуу дэд төрөл (Mouse/Keyboard/тонер/чихэвч) ба `''` дээр 0 ④ бусад 11 хэсэг дэд төрөл дамжуулахад ХӨНДӨГДӨӨГҮЙ ⑤ HomeClient-ийн ЭХ ФАЙЛЫН ГЭРЭЭ: `getAttrFilters(section, filters.propertyType)`, `pruneGatedAttrs` 2 зам, `data-attr-filter` ⑥ 🆕 **`pruneGatedAttrs` цэвэр функц** — Notebook үзүүлэлт Mouse/`''` дээр хасагдана, ⚠️ хүрээний түлхүүр (`year_from`)/формойн `model`/`null`/массив ХӨНДӨГДӨХГҮЙ, 12 хэсэг бүгд крашгүй; мөн 💻 «Баталгаа» тестэд `getAttrFilters('computers','HP')` нэмэгдэв) → **94 тест**; 🆕 **2026-10-03 (20): 🏷️ 💻 «Брэнд» нь `filterSubtypes: PC_SPEC_SUBTYPES`-тай** (① талбар нь `filterSubtypes`-тай, `onlySubtypes`/`searchable` нь хэвээр ② ХАЙЛТАД 23 PC_SPEC дэд төрөл дээр БАЙНА, Mouse/Keyboard/Дэлгэц/iPad/принтер/тонер/чихэвч/`''` дээр БАЙХГҮЙ ③ ФОРМ бүх дэд төрөлд ХЭВЭЭР ④ `getAttrField` ХӨНДӨГДӨӨГҮЙ ⑤ `filterSubtypes` туг нь ЗӨВХӨН `computers.brand`-д ⑥ бусад 12 хэсэг хөндөгдөөгүй; `computers` тоо 2 → **1**, `pruneGatedAttrs` Mouse/`''` дээр `{brand:…}` → `{}`; 🏷️ ⑥-з тест → 101 ✓; 🆕 **2026-10-04 (23): 🖥📱 хэсгийн панелийн «Зарах / Түрээслэх» нь `segmented` ба `getSectionCategoryChoices`** (② тест — туслахын гэрээ: дараалал `sell→rent→all`, БҮТЭН шошго «Үл хөдлөх зарна / Үл хөдлөх түрээслүүлнэ» ба 📱 «Зарна / Түрээслүүлнэ», бусад 11 хэсэгт `[]`, `CATEGORIES` ХӨНДӨӨГДӨӨГҮЙ; HomeClient-ийн гэрээ: `getSectionCategoryChoices(section)` дуудах + `getSectionCategories` БАЙХГҮЙ + `data-category-value`/`segmented`/`segmented-item-active`/`aria-pressed`/`hidden sm:inline`+`sm:hidden` ба хуучин `💰 Зарах`/`🔑 Түрээслэх` нүүр хуудсанд БАЙХГҮЙ) → **101 тест** ✓) |
 | `scripts/test-format.mjs` | **32 тест** — `npm run test:format` (🆕 **2026-10-06: 📉 `shortPriceLabel()` — 2 тест** (КАРТ + ДЭЛГЭРЭНГҮЙ дээрх ТОВЧ үнэ: `760 сая ₮` · `44.8 сая ₮` · `2 тэрбум ₮` · `1.5 сая ₮` · `900 мянга ₮` · үнэгүй → «Үнэ тохирно» / ажил → «Цалин тохиролцоно» · «₮» ТӨГСГӨЛД байх; ⚠️ `priceLabel` ХӨНДӨӨГДӨӨГҮЙ → `₮760,000,000`); 🆕 **2026-10-02: 🏷️ `listingTitle()` — 5 тест** (`MAX_LISTING_TITLE_LENGTH` = **120**: гарчигтай → текстээ · `null`/`''`/зай → `''` (**мөр ГАРАХГҮЙ**) · олон зай/мөр таслалт → **НЭГ зай** · 120-аас урт → таслагдана (DB CHECK-тай ИЖИЛ) · тоон/бусад төрөл → текст (крашгүй)); 2026-09-29: 🤝 `hasRealPrice` / `priceLabel` (үнэ БИЧСЭН бол «₮…» — ДАРАХГҮЙ) / `negotiableNote` (зөвхөн үнэтэй + тэмдэглэсэн үед) + `toNumber('250,000,000') → 0` регресс); 🆕 **2026-10-07: 🔖 `shortListingId()` — 5 тест** (uuid → эхний 8 hex ТОМ үсэг · урт 8 + `-` таслалт · хоосон/`null` → `''` · богино утга/тоо · бүтэн uuid ХЭВЭЭР (зөвхөн харагдац)) |
@@ -6102,6 +6159,179 @@ npm run stats:check     # ② ажилласан эсэхийг шалгана
   устгавал шинэ хүнээр тоологдоно (жижиг алдаа, практикт хамаагүй).
 
 
+
+## 🔔 «МЭДЭГДЭЛ» — ХЭН МИНИЙ ЗАРТ ❤️ ДАРСАН НЬ ХАРАГДАНА (хонх)
+
+ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-08): «facebook шиг notification тэй болгоё. Өөрөөр
+хэлбэл ямар ямар хэрэглэгч ямар зар дээр нь like дараад байгаа нь зар оруулсан
+хэрэглэгчид харагдаг байх. Хэзээ ямар дугаартай хэрэглэгч like дарсан нь
+харагддаг байх. хавсралтаар явуулсан хонхны icon ийг хайлтын түүх icon ний
+дараа оруул»
+
+Хэн нэгэн **таны** зарыг ❤️ дарахад:
+
+```
+① 🔔 толгойн мөрний хонх дээр уншаагүйн тоо (badge — 99-өөс олон бол «99+») гарна
+② хонх дарахад dropdown — сүүлийн 6 мэдэгдэл (хэн · аль зар · 📞 дугаар · хэзээ)
+③ «Бүгдийг харах» → /notifications — ЗАРААР БҮЛЭГЛЭСЭН бүрэн жагсаалт
+```
+
+### 🧩 Хонхны байрлал (хэрэглэгчийн хүсэлт: «хайлтын түүх icon ний дараа»)
+
+```
+[🔍 хайлт] … [📨 Мессеж] [🕐 Хайлтын түүх] [🔔 Мэдэгдэл] [👤]
+```
+
+- 🖥 Толгойн мөр · 📱 мобайл цэс · 👤 хэрэглэгчийн цэс — **3 газарт** нэг
+  компонент (`NotificationBell`) ✓
+- ⚠️ Хонх нь `<Link>` БИШ, `<button>` — Facebook-ийн хэв: дарахад хуудас
+  СОЛИГДОХГҮЙ, зөвхөн dropdown нээгдэнэ ✓ (CDP ②b шалгалтаар батлагдсан)
+- ⚠️ Нээх МӨЧИД уншаагүй мөрүүд `bg-primary/5`-ээр тодорч (`freshIds`), badge
+  ДАРУЙ цэвэрлэгдэнэ — «нээсэн = уншсан» ✓ · гадна дарах / `Escape` → хаагдана ·
+  зочин хонх дарвал `AuthModal` нээгдэнэ ✓
+
+### 📐 Хэрхэн хадгалдаг вэ — `supabase/migrations/0040_notifications.sql`
+
+```
+public.notifications
+  user_id       ← ХҮЛЭЭН АВАГЧ (зарын эзэн)  ← auth.users(id)  on delete cascade
+  actor_id      ← ❤️ ДАРСАН хүн              ← auth.users(id)  on delete set null
+  type          ← 'like' (CHECK in ('like'))
+  listing_id    ← аль зар                   ← listings(id)     on delete cascade
+  listing_title ┐
+  actor_name    ├ ХУУЛБАР (snapshot) — «тэр үед хэн, юу»
+  actor_phone   ┘
+  read_at       ← уншсан мөч (null = ШИНЭ)
+  created_at    ← ❤️ дарсан мөч
+  unique (user_id, actor_id, type, listing_id)
+```
+
+⚠️ Яагаад ХУУЛБАР гэж: зар устсан / гарчиг нь засагдсан / хэрэглэгч хоч нэрээ
+сольсон ч **«тэр үед хэн, ямар зарыг»** дарсан нь үнэнээр харагдах ёстой ✓
+(зар уствал мэдэгдэл ч cascade-аар арилна — устсан зарын мэдэгдэл утгагүй ✗)
+
+### ⚙️ Триггер — ❤️ ба мэдэгдэл НЭГ ТРАНЗАКЦАД
+
+```
+listing_likes ← insert (❤️)
+      └─ trigger after insert → notify_listing_like()   (security definer)
+              └─ insert into notifications … on conflict (…) do update
+```
+
+- ⚠️ Яагаад JS БИШ: клиент дээр «❤️-ийн дараа мэдэгдэл» гэж тусад нь дуудах нь
+  сүлжээ тасрах / таб хаагдах үед **АЛДАГДАНА** ✗ — триггер нь ❤️-тэй НЭГ
+  транзакцад бичигдэх тул «❤️ байгаа ч мэдэгдэл байхгүй» гэсэн төлөв ГАРАХГҮЙ ✓
+- `lib/listingStats.js` (service_role-оор ❤️/👁 бичдэг) **ХӨНДӨӨГДӨӨГҮЙ** ✓
+- 🔁 `like → unlike → like`: `unique` + `on conflict do update` ⇒ мөр НЭГ л
+  (давхардахгүй), харин `created_at`/`read_at` шинэчлэгдэж «дахин шинэ» болно ✓
+- ➕ Миграц нь ӨМНӨ нь дарсан ❤️-үүдийг ч мэдэгдэл болгож бөглөнө
+  (`on conflict do nothing` ⇒ дахин ажиллуулж болно — idempotent ✓)
+
+### ⚠️ Хэнд мэдэгдэл ҮҮСЭХГҮЙ ВЭ (зориуд)
+
+| Тохиолдол | Яагаад |
+|---|---|
+| ЗОЧИН (`listing_likes.user_id is null`) | хэн болохыг (дугаарыг) мэдэх боломжгүй ✗ |
+| ӨӨРИЙН зард дарсан ❤️ | өөртөө мэдэгдэл утгагүй ✗ |
+
+⇒ Зөвхөн **нэвтэрсэн хэрэглэгч БУСДЫН зард** дарсан ❤️ л мэдэгдэнэ ✓
+
+### 🔒 Аюулгүй байдал (RLS)
+
+| Үйлдэл | Дүрэм |
+|---|---|
+| `select` | зөвхөн `auth.uid() = user_id` (хүлээн авагч өөрөө) |
+| `update` | policy `with check` + **`grant update (read_at)`** ⇒ зөвхөн «уншсан» |
+| `delete` | зөвхөн өөрийн мөр |
+| `insert` | **POLICY БАЙХГҮЙ** ⇒ клиент мэдэгдэл ЗОХИОЖ чадахгүй (зөвхөн триггер) |
+
+`revoke all … from anon, authenticated` + `grant select, delete … to authenticated`
+— 0020_messages.sql-ийн ЯГ ИЖИЛ хатууруулалт ✓
+
+### 🧱 Модулиуд (нэг чиглэлээр)
+
+| Файл | Үүрэг |
+|---|---|
+| `supabase/migrations/0040_notifications.sql` | хүснэгт + триггер + RLS + эрхүүд + хуучин ❤️ бөглөлт |
+| `lib/notifications.mjs` | **цэвэр** логик (20 экспорт) — DB/React ХҮРЭХГҮЙ ⇒ Node дээр шууд тестлэгдэнэ ✓ |
+| `lib/queries.js` | 5 DB функц (`fetchNotifications` 200 · `countUnreadNotifications` · `markNotificationsRead` · `deleteNotification` · `clearNotifications`) |
+| `lib/notificationsClient.js` | `useNotifications` (бүрэн) ба `useUnreadNotifications` (badge) — 60 сек poll + `zarmn:notifications-changed` event |
+| `components/HeaderIcons.jsx` | `BellIcon` (SVG · `currentColor` — OS бүрд ижил зурагдана) |
+| `components/NotificationBell.jsx` | 🔔 товч + dropdown (сүүлийн 6 мэдэгдэл) |
+| `components/NotificationsClient.jsx` | `/notifications` — зараар бүлэглэсэн карт |
+| `app/notifications/page.jsx` | хуудас (+ `metadata.title`) |
+| `components/AppProviders.jsx` | хонхыг 3 газарт байрлуулна (🖥 толгой / 📱 цэс / 👤 профайл цэс) |
+
+### 📞 Дугаар — хэрэглэгчийн ГОЛ хүсэлт
+
+- `formatPhone('+97688112233')` → **`+976 8811 2233`** (уншигдах хэлбэр) ✓
+- `phoneHref()` → `tel:+97688112233` ⇒ **📞 дарж ШУУД ЗАЛГАНА** ✓
+- `actorLabel()`: хоч нэр байвал НЭР, байхгүй бол ДУГААР (хоосон хэзээ ч
+  харагдахгүй ✓); нэр байгаа үед л 📞 нь тусдаа давхарлаж гарна ✓
+- ⚠️ Танихгүй формат (гадаад дугаар) ХУЙВАРЛАХГҮЙ — «утга нь үнэн» зарчим ✓
+
+### 📄 `/notifications` хуудас
+
+```
+🔔 Мэдэгдэл                              [Бүгдийг уншсан] [Цэвэрлэх]
+2 мэдэгдэл · 2 зар · 1 уншаагүй
+┌─ 🏠 3 өрөө байр                          🕒 5 минутын өмнө ─┐
+│   ❤️ 2 хүн таалагдлав   [1 шинэ]                         │
+│   (Б) Бат  таны «3 өрөө байр» зарыг таалагдлав        ✕  │
+│        📞 +976 8811 2233             🕒 5 минутын өмнө   │
+└──────────────────────────────────────────────────────────┘
+```
+
+- ⚠️ Бүлэглэлт нь хэрэглэгчийн үндсэн асуулт — «энэ ЗАР дээр хэн хэн ❤️ дарсан бэ»
+  — шууд хариулна (`groupByListing`; хамгийн сүүлд ❤️ дарсан зар ЭХЭНД ✓)
+- Хоосон үед: «Одоогоор мэдэгдэл алга… Таны зар дээр хэн нэгэн ❤️ дарвал энд
+  хэзээ, ямар дугаартай хэрэглэгч дарсан нь харагдана» + 📋 «Миний зарууд» линк ✓
+- Зочинд: 🔑 «Нэвтрэх» (AuthModal — `SearchHistoryClient`-ийн ЯГ ИЖИЛ хэв) ✓
+- Картын дэгээнүүд (CDP/тест): `data-notifications*`, `data-notification-bell`,
+  `data-notification-panel`, `data-notification-row`, `data-notification-phone` ✓
+
+### 🧪 Хэрхэн шалгасан
+
+- 🧪 `npm run test:notifications` — **30/30 ✓** (DB/React-гүй, зөвхөн Node):
+  17 логик тест (`formatPhone`/`phoneHref`/`actorLabel`/`badgeLabel`/бүлэглэлт/
+  `notificationTimeAgo` …) + 13 **ГЭРЭЭ** тест (`codeOnly()`-оор эх файлуудыг
+  шалгана — migration 0040-ийн RLS/триггер/CHECK нь `lib/notifications.mjs`-тэй
+  ЗОХИЦОЖ байгаа эсэх ✓)
+- 🐍 `npm run cdp:notifications` — **13 OK / 0 FAIL / 1 SKIP ✓** (бодит headless
+  Chrome 155 + сервер :3000): хонх нь 🕐 түүхийн ЯГ ДАРАА (түүх x=1041–1077 <
+  хонх x=1089–1125) · 36×36px · зочинд нэвтрэх цонх нээгдэж хуудас СОЛИГДООГҮЙ ·
+  📱 390px баруун дээд + хэвтээ гүйлт 0 · exception 0
+- 🧪 `npm run lint:migrations` — **39/39 файл ✓** (365 statement) · `npm run build`
+  EXIT=0 ✓
+
+### ⚙️ НЭГ УДАА хийх тохиргоо (30 секунд)
+
+```bash
+npm run migration:copy 0040_notifications.sql
+```
+
+→ SQL нь clipboard-д орж, Supabase **SQL Editor** нээгдэнэ → **⌘A ⌫ → ⌘V → Run** ✓
+
+> ⚠️ DDL-ийг Supabase зөвхөн SQL Editor-оор гүйцэтгэдэг: `service_role` түлхүүр,
+> Management API, `psql` (pooler) — аль нь ч DDL хийж ЧАДАХГҮЙ нь дахин батлагдсан ✗
+
+### ⚠️ Миграц ОРООГҮЙ үед
+
+- 🔔 хонх нь badge-гүй (0) харагдана, dropdown «Одоогоор мэдэгдэл алга» ✓
+- `/notifications` дээр **шар өнгийн ойлгомжтой заавар** (миграцын нэр +
+  `npm run migration:copy …` командтай) гарна — уналт / хоосон дэлгэц БАЙХГҮЙ ✓
+- ℹ️ Зар ❤️ дарах нь хэвийн ажилласаар байна (миграц нь зөвхөн мэдэгдэл нэмнэ ✓)
+
+### ⚠️ Хязгаарлалт (одоогийн)
+
+- Мэдэгдлийн төрөл нь одоогоор **зөвхөн `like`** (UI мета + 0040-ийн CHECK) —
+  ирээдүйд `message`/`price` г.м. нэмэхэд эдгээр хоёр л солигдоно ✓
+- Жагсаалт нь `NOTIFICATIONS_LIMIT = 200` (хуудаслалт БАЙХГҮЙ — олон болсон үед
+  нэмнэ)
+- 🔔 хонх зөвхөн **нэвтэрсэн** хэрэглэгчид тоо харуулна (зочин ❤️ мэдэгдэл
+  үүсгэхгүй тул зочинд харах зүйл байхгүй ✓)
+- 🔍 Хайх үг: `notifications`, `notify_listing_like`, `BellIcon`,
+  `NotificationBell`, `test-notifications`, `cdp-notifications`
 
 ## 📈 «Миний зарууд → Статистик» (хандалтын шинжилгээ)
 

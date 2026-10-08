@@ -9,6 +9,9 @@ import { normalizePhone } from '../lib/format';
 import { fetchAdminMe } from '../lib/adminApi';
 import { useFavorites } from '../lib/favorites';
 import { useUnreadMessages } from '../lib/messagesClient';
+// 🔔 МЭДЭГДЭЛ (2026-10-08) — хонхны badge (уншаагүйн тоо). `NotificationBell`
+//    нь өөрөө `user`-ийг prop-оор авдаг (модулийн циклээс зайлсхийх ✓)
+import { useUnreadNotifications } from '../lib/notificationsClient';
 import phoneEmail from '../lib/phoneEmail';
 // 🎯 АНГИЛАЛ УРЬДЧИЛАН БӨГЛӨХ (2026-10-06) — хэрэглэгч аль ангилалд явж
 //    байсныг URL-ээс уншиж `/listings/new?section=…&type=…` руу шилжүүлнэ ✓
@@ -16,7 +19,8 @@ import { listingPrefillFromSearch, newListingHref } from '../lib/listingPrefill.
 import AuthModal from './AuthModal';
 import ProfileModal from './ProfileModal';
 import MessageIcon from './MessageIcon';
-import { HeartIcon, ChatIcon, ClockIcon } from './HeaderIcons';
+import { HeartIcon, ChatIcon, ClockIcon, BellIcon } from './HeaderIcons';
+import NotificationBell from './NotificationBell';
 
 /** Supabase-ийн user → '+976XXXXXXXX' (эсвэл null).
  *  Гурван эх сурвалжаас дарааллаар нь хайна:
@@ -85,6 +89,10 @@ export default function AppProviders({ children }) {
   // ✉️ Уншаагүй мессежийн тоо — nav-ийн badge (60с тутам + focus/event дээр ✓)
   //    ⚠️ Миграц (0020) ороогүй бол `0` — апп эвдрэхгүй ✓ (queries.js-ийн graceful)
   const unreadMessages = useUnreadMessages(user ? user.id : null);
+  // 🔔 Уншаагүй МЭДЭГДЛИЙН тоо — хонхны badge (60с тутам + focus/event дээр ✓)
+  //    ⚠️ Миграц (0040) ороогүй бол `0` — апп эвдрэхгүй ✓
+  //    (`lib/queries.js → fetchUnreadNotificationCount` нь чимээгүй 0 ✓)
+  const unreadNotifications = useUnreadNotifications(user ? user.id : null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   // 📱 2026-09-27 (хэрэглэгчийн хүсэлт): мобайл доод навигацийн «👤 Профайл»
   //    товч нь доод хуудас (bottom sheet) нээнэ — desktop dropdown-той ИЖИЛ зүйлс ✓
@@ -267,6 +275,15 @@ export default function AppProviders({ children }) {
         href: '/history',
         icon: <ClockIcon className="h-[15px] w-[15px]" />,
       },
+      // 🔔 Мэдэгдэл (`/notifications`) — 2026-10-08. Уншаагүй байвал тоог нь
+      //    хаалтанд (Мессеж-тэй ИЖИЛ ✓) — хонх нь толгойн мөрөнд байгаа ч
+      //    энэ цэс нь мобайл доод sheet-тэй ХОЁУЛАА ижил зүйлсээ харуулна ✓
+      {
+        key: 'notifications',
+        label: unreadNotifications > 0 ? `Мэдэгдэл (${unreadNotifications})` : 'Мэдэгдэл',
+        href: '/notifications',
+        icon: <BellIcon className="h-[15px] w-[15px]" />,
+      },
     ];
     if (isAdmin) {
       items.push(
@@ -286,7 +303,7 @@ export default function AppProviders({ children }) {
       { key: 'logout', label: '🚪 Гарах', onClick: () => { closeUserMenus(); logout(); } }
     );
     return items;
-  }, [isAdmin, logout, closeUserMenus, unreadMessages]);
+  }, [isAdmin, logout, closeUserMenus, unreadMessages, unreadNotifications]);
 
   const authValue = useMemo(() => ({ user, profileName, authLoading, signIn, saveName, logout }),
     [user, profileName, authLoading, signIn, saveName, logout]);
@@ -325,7 +342,7 @@ export default function AppProviders({ children }) {
                  оронд нь доод навигац (`<nav>` доор) гарна ✓
                  → Ингэснээр мобайлд header нь ЗӨВХӨН лого (төвд) ✓ */} 
           <header className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-card">
-            <div className="mx-auto flex h-16 max-w-[1536px] items-center justify-center px-4 sm:px-6 lg:justify-between">
+            <div className="relative mx-auto flex h-16 max-w-[1536px] items-center justify-center px-4 sm:px-6 lg:justify-between">
               <Link
                 href="/"
                 /* ⚠️ `gap-2` ХАСАГДСАН (2026-09-27, хэрэглэгчийн гомдол: «zarlaa.mn
@@ -467,6 +484,22 @@ export default function AppProviders({ children }) {
                   <ClockIcon className="h-6 w-6 transition-transform duration-200 ease-out group-hover:scale-110" />
                 </Link>
 
+                {/* ---- ⑤ 🔔 Мэдэгдэл (icon-only — 2026-10-08) ----
+                    ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «facebook шиг notification тэй
+                       болгоё… хавсралтаар явуулсан хонхны icon ийг ХАЙЛТЫН
+                       ТҮҮХ icon ний ДАРАА оруул» ✓ → `ClockIcon`-ий ЯГ ДАРАА.
+                    ⚠️ `NotificationBell` нь ЗӨВХӨН икон БИШ — дарахад dropdown
+                       самбар ангаж сүүлийн мэдэгдлүүдийг харуулна (Facebook-ийн
+                       хэв ✓); бүрэн жагсаалт нь `/notifications` хуудас.
+                    ⚠️ ❤️/💬/🕐-тай ЯГ ИЖИЛ хэв — `h-6 w-6`, hover-т
+                       `group-hover:scale-110`, badge нь icon-ий баруун дээд
+                       буланд наалдсан (`absolute -right-0.5 -top-0.5` ✓)
+                    ⚠️ Зочин хонх дарвал `onRequireAuth` → нэвтрэх цонх ✓ */}
+                <NotificationBell
+                  user={user}
+                  onRequireAuth={() => { closeUserMenus(); openAuth(); }}
+                />
+
                 {/* ---- ① Нэвтрэх / Хэрэглэгчийн цэс ----
                     ⚠️ БАЙР СОЛИСОН: өмнө нь ЗҮҮН талд (хамгийн эхэнд) байсан.
                     Одоо баруун захад — Zillow шиг «хэрэглэгчийн цэс хамгийн
@@ -500,6 +533,19 @@ export default function AppProviders({ children }) {
                   <button className="btn btn-outline btn-sm" onClick={openAuth} disabled={authLoading}>🔑 Нэвтрэх</button>
                 )}
               </div>
+
+              {/* ---- 📱 МОБАЙЛ ХОНХ — баруун ДЭЭД булан (2026-10-08) ----
+                  ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: хонх нь «Хайлтын түүх» icon-ий дараа
+                     байрлана — мобайлд толгойн мөрөнд зөвхөн лого (төвд)
+                     харагддаг тул хонхыг БАРУУН ДЭЭД буланд `absolute`-аар
+                     байрлуулав ✓ (Facebook-ийн аппын баруун дээд хонхтой ижил)
+                  ⚠️ `lg:hidden` — desktop дээр хонх нь хайлтын түүхийн дараа
+                     аль хэдийн байгаа тул ДАВХАРДАХГҮЙ ✓
+                  ⚠️ Мөн «👤 Профайл» доод sheet болон footer-т холбоос байгаа
+                     тул мэдэгдэл нь мобайлд ГУРВАН замаар хүртээмжтэй ✓ */}
+              <div className="absolute right-4 top-0 flex h-16 items-center sm:right-6 lg:hidden">
+                <NotificationBell user={user} onRequireAuth={() => { closeUserMenus(); openAuth(); }} />
+              </div>
             </div>
           </header>
 
@@ -526,6 +572,11 @@ export default function AppProviders({ children }) {
                 <Link href="/history" className="inline-flex items-center gap-1.5 transition hover:text-white">
                   <ClockIcon className="h-[14px] w-[14px]" />
                   Хайлтын түүх
+                </Link>
+                {/* 🔔 Мэдэгдэл (2026-10-08) — `BellIcon` SVG (emoji биш ✓) */}
+                <Link href="/notifications" className="inline-flex items-center gap-1.5 transition hover:text-white">
+                  <BellIcon className="h-[14px] w-[14px]" />
+                  Мэдэгдэл
                 </Link>
               </nav>
               <p className="text-[13.5px]">🏠 ZARLAA.MN — Үл хөдлөх хөрөнгийн зар. Next.js + Supabase хувилбар.</p>
