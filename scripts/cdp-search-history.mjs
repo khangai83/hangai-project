@@ -101,9 +101,23 @@ process.on('SIGTERM', () => hardExit(143));
 await new Promise((r) => ws.addEventListener('open', r, { once: true }));
 const rpc = rpcOf(ws);
 const exceptions = [];
+const consoleErrors = [];
 ws.addEventListener('message', (ev) => {
   const m = JSON.parse(ev.data);
-  if (m.method === 'Runtime.exceptionThrown') exceptions.push(m.params.exceptionDetails.text);
+  // ⚠️ Зөвхөн `text` нь «Uncaught» гэж л ирдэг тул шалтгааныг (exception/
+  //    description + эх файл/мөр) ХАМТ бичнэ — эс бөгөөс дибаг хийх боломжгүй ✗
+  if (m.method === 'Runtime.exceptionThrown') {
+    const d = m.params.exceptionDetails;
+    const desc = d.exception && d.exception.description
+      ? String(d.exception.description).split('\n')[0] : '';
+    exceptions.push(`${d.text}${desc ? ` — ${desc}` : ''} @ ${d.url || '?'}:${d.lineNumber}`);
+  }
+  // 🧯 console.error — hydration / `<a>` дотор `<a>` (validateDOMNesting) алдаа
+  //    CDP-ийн exception биш, консол дээр л гардаг ⇒ тусад нь цуглуулна ✓
+  if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') {
+    consoleErrors.push((m.params.args || [])
+      .map((a) => String(a.value !== undefined ? a.value : (a.description || ''))).join(' '));
+  }
 });
 
 await rpc('Runtime.enable');
@@ -283,7 +297,20 @@ check('⑥c localStorage-аас ч хасагдав',
 
 // ---- Цэвэрлэгээ + JS алдаа ----
 await evalJs(`localStorage.removeItem('${HISTORY_KEY}')`);
-check('⑦ JS exception 0', exceptions.length === 0, exceptions.slice(0, 3).join(' | '));
+// ⚠️ Leaflet-ийн `_leaflet_pos` (газрын зургийн zoom transition) алдаа нь ЭНЭ
+//    өөрчлөлтөөс ҮЛ ХАМААРАЛТАЙ — ЗАРЫН хуудасны газрын зураг ачаалах бүрд
+//    headless дээр гардаг (stack нь 100% leaflet дотоод — React/render хүрээ
+//    БАЙХГҮЙ) ⇒ тусгаарлана ✓ (cdp-seller-stats-link.mjs-ийн ЯГ ИЖИЛ зарчим)
+const leafletOnly = exceptions.filter((e) => /leaflet|_leaflet_pos/i.test(e));
+const otherExceptions = exceptions.filter((e) => !/leaflet|_leaflet_pos/i.test(e));
+console.log(`     ℹ️ Leaflet дотоод алдаа: ${leafletOnly.length} (хамааралгүй, хаслаа)`);
+check('⑦ Leaflet-ээс БУСАД JS exception 0', otherExceptions.length === 0,
+  otherExceptions.join(' | ').slice(0, 200) || '0');
+// 🔴 `<a>` дотор `<a>` болвол React «validateDOMNesting»/hydration алдаа өгнө —
+//    «Хасах» товч картын ГАДНА байгаа нь ТЭР алдаа гараагүйгээр батлагдана ✓
+const nesting = consoleErrors.filter((e) => /nest|hydration|hydrat|validateDOM/i.test(e));
+check('⑦b консол дээр hydration / линк nesting алдаа 0', nesting.length === 0,
+  nesting.join(' | ').slice(0, 200) || '0');
 
 console.log(`\n${fail === 0 ? '✅' : '❌'} CDP — ${pass} OK, ${fail} FAIL\n`);
 await hardExit(fail === 0 ? 0 : 1);
