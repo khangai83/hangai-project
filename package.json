@@ -59,6 +59,7 @@
     "cdp:saved-searches": "node scripts/cdp-saved-searches.mjs",
     "cdp:search-history": "node scripts/cdp-search-history.mjs",
     "cdp:search": "node scripts/cdp-search.mjs",
+    "cdp:seller-stats-link": "node scripts/cdp-seller-stats-link.mjs",
     "test:messages": "node scripts/test-messages.mjs",
     "test:youtube": "node scripts/test-youtube.mjs",
     "migration:copy": "node scripts/setup-migration.js",

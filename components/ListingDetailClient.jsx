@@ -40,7 +40,7 @@ export default function ListingDetailClient({ id }) {
   const [active, setActive] = useState(0);
   const [phoneShown, setPhoneShown] = useState(false);
   const [views, setViews] = useState(null); // 👁 серверээс ирсэн «үзсэн» тоо (null = миграцгүй)
-  const [sellerStats, setSellerStats] = useState(null); // 📋 зар нийтлэгчийн зарын тоо (Зарах/Түрээслэх)
+  const [sellerStats, setSellerStats] = useState(null); // 📋 нийтлэгчийн зарын тоо (Зарах/Түрээслэх) — (62) «Зарын тоо: N идэвхтэй зар» линк
   const [author, setAuthor] = useState(null); // 👤 нийтлэгчийн профайл (нэр + зураг)
   const favoriteIds = useFavorites(); // ❤️ (дээрх hook-уудтай хамт дуудагдах ёстой)
   const likes = useLikeCount(id, listing ? listing.likes : 0); // ❤️ нийт хэдэн хүн дарсан
@@ -99,10 +99,15 @@ export default function ListingDetailClient({ id }) {
   }, [listing]);
 
 
- /**
-   * 📋 «Зар нийтлэгч» карт дээр харагдах тоо — тухайн хэрэглэгчийн
-   * Зарах / Түрээслэх зарын тоо. Карт нь `/sellers/[id]` хуудас руу шилжүүлнэ.
-   * ⚠️ Алдаа гарвал зүгээр л «Зар нийтэлсэн» гэж харуулна (үндсэн агуулгад нөлөөлөхгүй).
+  /**
+   * 📋 «Зар нийтлэгч» карт дээрх «Зарын тоо: N идэвхтэй зар» — тухайн хэрэглэгчийн
+   * Зарах / Түрээслэх зарын тоо.
+   * 🆕 2026-10-08 (62): «Зарын тоо …» мөр нь ТУСДАА ЛИНК (`/sellers/[id]`) —
+   * линк шиг ХАРАГДАНА (`text-primary` + `underline`) ✓
+   * ⚠️ `listings` хүснэгтэд «идэвхгүй» гэсэн төлөв (`status`) БАГАНА БАЙХГҮЙ —
+   * бүх мөр нь нийтлэгдсэн, ИДЭВХТЭЙ зар ⇒ тоо нь ЯГ зөв ✓
+   * ⚠️ Алдаа гарвал зүгээр л «📋 Зарын тоо: идэвхтэй зар» гэж харуулна
+   * (үндсэн агуулгад нөлөөлөхгүй) ✓
    */
   useEffect(() => {
     if (!listing || !listing.user_id) {
@@ -622,52 +627,83 @@ export default function ListingDetailClient({ id }) {
               {listing.user_id ? (
  /* ===== ЗАР НИЙТЛЭГЧ РҮҮ ОРОХ (линк) =====
                    Дарвал `/sellers/<user_id>` — түүний БУСАД зарууд
-                   «🏷️ Зарах» / «🔑 Түрээслэх» гэж ЯЛГАГДАН харагдана. */
+                   «🏷️ Зарах» / «🔑 Түрээслэх» гэж ЯЛГАГДАН харагдана.
+                   ⚠️ 2026-10-08 (62): хүрээ нь ОДОО `<div>` — дотор нь 2 ЛИНК
+                   байна (HTML-д `<a>` дотор `<a>` ХОРИОТОЙ): ① толгой мөр
+                   (аватар + нэр → `/sellers/<id>`) ② «Зарын тоо … идэвхтэй зар».
+                   ⚠️ `group` + `hover:bg-primary-light` нь ХҮРЭЭ (`<div>`) дээр
+                   үлдсэн тул КАРТЫН харагдац ХӨНДӨӨГДӨӨГҮЙ ✓ */
+                <div className="group rounded-lg bg-gray-50 p-3 transition hover:bg-primary-light">
+                  <Link
+                    href={`/sellers/${listing.user_id}`}
+                    title="Энэ хүний бусад зарыг харах"
+                    className="flex items-center gap-3"
+                  >
+                    {/* 🆕 2026-10-08 (61) — ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «Зар нийтлэгчийн
+                        мэдээлэл карт дотроо бүрэн харагдахгүй байна» ⇒ ⏳ `size={120}`
+                        (2026-09-27-ны андуу орсон утга — тухайн commit нь КАРТЫН
+                        өндрийн тухай байв) нь 350px-ийн баганад багтахгүй, баруун
+                        талын мэдээллийг 3-4 мөрөөр эвдэж байв ✗ (CDP: аватар 120px,
+                        мөр 144px өндөр, «✅ Утсаар баталгаажсан»/«Элссэн огноо» 2 мөр
+                        болж тасарч байв) ⇒ `size={44}` — доорх (user_id-гүй) салбар ба
+                        `MessagesClient`-тай ИЖИЛ хэмжээ болов ✓
+                        ⚠️ Нэр нь `truncate` БИШ `break-words` — урт нэр КАРТ ДОТРОО
+                        бүтнээрээ (2 мөр болж ч) харагдана ✓ */}
+                    <Avatar src={author && author.avatarUrl} name={sellerName} size={44} />
+                    <div className="min-w-0 flex-1">
+                      {/* ✅ БАТАЛГААЖСАН badge (Facebook-ийнх шиг) — ListingCard-тай
+                          ижил. ⚠️ Зөвхөн `listing.user_id` БАЙГАА үед (энэ салбар)
+                          — эс бөгөөс нийтлэгч тодорхойгүй тул badge ч байхгүй ✓ */}
+                      <div className="flex items-center gap-1.5 text-base font-semibold text-gray-800 transition group-hover:text-primary">
+                        <span className="min-w-0 break-words">{sellerName}</span>
+                        <VerifiedBadge size={16} className="text-primary" />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
+                      {/* ✅ Утсаар баталгаажсан — БҮРТГЭЛ нь verify.mn-ийн SMS-ээр
+                            л болдог тул бүх хэрэглэгч баталгаажсан  (олон сонголттой
+                            «Verified account»-тай ижил утга). */}
+                        <span className="font-semibold text-secondary-dark">✅ Утсаар баталгаажсан</span>
+                        {joinedText && <span>· Элссэн огноо: {joinedText}</span>}
+                      </div>
+                      {/* ⏳ 2026-10-08 (62): «📋 {N} зар нийтэлсэн» мөр ЭНД БАЙСАН —
+                          одоо толгойн линкээс ГАДНА, ТУСДАА ЛИНК болж (доор) ✓ */}
+                    </div>
+                    <span aria-hidden="true" className="shrink-0 text-lg text-gray-300 transition group-hover:text-primary">›</span>
+                  </Link>
+                {/* 🆕 2026-10-08 (62) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «…“Зарын тоо зар нийтэлсэн”
+                    гэж харагдаж байгаа. Энэ хэсгийг нь Link болгож харагдуул. Гэхдээ
+                    текстийг нь “Зарын тоо идвэхтэй зар” гэж зас. Карыг нь тэр чигээр нь
+                    link болгож харагдуулахгүй» ⇒
+                    ① «Зарын тоо» мөр нь ТУСДАА ЛИНК болов — линк шиг ХАРАГДАНА
+                       (⏳ өмнө нь саарал энгийн текст байсан тул линк гэдэг нь
+                       мэдэгддэггүй байв ✗): `text-primary` + `underline
+                       underline-offset-2` — репогийн бусад текст линктэй ЯГ ИЖИЛ хэв
+                       (`FavoritesClient`/`SavedSearchesClient`/`SearchHistoryClient`) ✓
+                    ② текст: «📋 {N} зар нийтэлсэн» → «📋 Зарын тоо: {N} идэвхтэй зар»
+                       (⚠️ `listings`-д «идэвхгүй» гэсэн төлөв/`status` БАГАНА БАЙХГҮЙ
+                       — `0001_schema.sql`: бүх мөр нь нийтлэгдсэн, ИДЭВХТЭЙ зар ⇒ тоо нь
+                       ЯГ зөв ✓)
+                    ③ КАРТ (толгой мөр) ХӨНДӨӨГДӨӨГҮЙ — линк шиг харагдах нь ЗӨВХӨН
+                       энэ мөр ✓ (`hover:bg-primary-light` нь хүрээ дээр үлдсэн)
+                    ⚠️ HTML-д `<a>` дотор `<a>` ХОРИОТОЙ тул дээрх толгойн линкээс
+                    ГАДНА (ах дүү элемент) байрлана — тиймээс хүрээ нь `<div>` болов ✓
+                    🔍 Хайх үг: sellerStatsLink, Зарын тоо */}
                 <Link
                   href={`/sellers/${listing.user_id}`}
-                  title="Энэ хүний бусад зарыг харах"
-                  className="group flex items-center gap-3 rounded-lg bg-gray-50 p-3 transition hover:bg-primary-light"
+                  title="Энэ хүний БҮХ идэвхтэй зарыг харах"
+                  className="mt-2 inline-flex max-w-full flex-wrap items-center gap-x-2 text-xs font-semibold text-primary underline underline-offset-2 hover:text-primary"
                 >
-                  {/* 🆕 2026-10-08 (61) — ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «Зар нийтлэгчийн
-                      мэдээлэл карт дотроо бүрэн харагдахгүй байна» ⇒ ⏳ `size={120}`
-                      (2026-09-27-ны андуу орсон утга — тухайн commit нь КАРТЫН
-                      өндрийн тухай байв) нь 350px-ийн баганад багтахгүй, баруун
-                      талын мэдээллийг 3-4 мөрөөр эвдэж байв ✗ (CDP: аватар 120px,
-                      мөр 144px өндөр, «✅ Утсаар баталгаажсан»/«Элссэн огноо» 2 мөр
-                      болж тасарч байв) ⇒ `size={44}` — доорх (user_id-гүй) салбар ба
-                      `MessagesClient`-тай ИЖИЛ хэмжээ болов ✓
-                      ⚠️ Нэр нь `truncate` БИШ `break-words` — урт нэр КАРТ ДОТРОО
-                      бүтнээрээ (2 мөр болж ч) харагдана ✓ */}
-                  <Avatar src={author && author.avatarUrl} name={sellerName} size={44} />
-                  <div className="min-w-0 flex-1">
-                    {/* ✅ БАТАЛГААЖСАН badge (Facebook-ийнх шиг) — ListingCard-тай
-                        ижил. ⚠️ Зөвхөн `listing.user_id` БАЙГАА үед (энэ салбар)
-                        — эс бөгөөс нийтлэгч тодорхойгүй тул badge ч байхгүй ✓ */}
-                    <div className="flex items-center gap-1.5 text-base font-semibold text-gray-800 transition group-hover:text-primary">
-                      <span className="min-w-0 break-words">{sellerName}</span>
-                      <VerifiedBadge size={16} className="text-primary" />
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
-                    {/* ✅ Утсаар баталгаажсан — БҮРТГЭЛ нь verify.mn-ийн SMS-ээр
-                          л болдог тул бүх хэрэглэгч баталгаажсан  (олон сонголттой
-                          «Verified account»-тай ижил утга). */}
-                      <span className="font-semibold text-secondary-dark">✅ Утсаар баталгаажсан</span>
-                      {joinedText && <span>· Элссэн огноо: {joinedText}</span>}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
-                      {sellerStats && sellerStats.total > 0 ? (
-                        <>
-                          <span>📋 {sellerStats.total} зар нийтэлсэн</span>
-                          {sellerStats.sell > 0 && <span className="font-semibold text-primary">🏷️ {sellerStats.sell}</span>}
-                          {sellerStats.rent > 0 && <span className="font-semibold text-secondary-dark">🔑 {sellerStats.rent}</span>}
-                        </>
-                      ) : (
-                        <span>Зар нийтэлсэн</span>
-                      )}
-                    </div>
-                  </div>
-                  <span aria-hidden="true" className="shrink-0 text-lg text-gray-300 transition group-hover:text-primary">›</span>
+                  {sellerStats && sellerStats.total > 0 ? (
+                    <>
+                      <span>📋 Зарын тоо: {sellerStats.total} идэвхтэй зар</span>
+                      {sellerStats.sell > 0 && <span className="font-semibold text-primary">🏷️ {sellerStats.sell}</span>}
+                      {sellerStats.rent > 0 && <span className="font-semibold text-secondary-dark">🔑 {sellerStats.rent}</span>}
+                    </>
+                  ) : (
+                    <span>📋 Зарын тоо: идэвхтэй зар</span>
+                  )}
                 </Link>
+                </div>
               ) : (
                 <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
                   <Avatar src={author && author.avatarUrl} name={sellerName} size={44} />

@@ -12,6 +12,8 @@
 //      ⇒ `Avatar` нь `rounded-full` БИШ `rounded-lg`
 //   ④ «газрын зургийг байж Unegui.mn шиг харуулдаг байя, Бүх зар дээр»
 //      ⇒ дэлгэрэнгүйд «Байршил» гарчигтай газрын зураг ҮРГЭЛЖ
+//   ⑤ 2026-10-08 (61)(62): «Тайлбар» урт текст, нийтлэгчийн карт (44px аватар,
+//      бүтэн нэр), «📋 Зарын тоо: N идэвхтэй зар» — ТУСДАА ЛИНК (⑥⑦ хэсэг)
 //
 // ⚠️ Эдгээр нь БҮГД ХАРАГДАЦ/UI-ийн гэрээ — DB/query/migration 0 ✓
 //
@@ -165,6 +167,45 @@ t('⑥ 👤 Нийтлэгчийн НЭР `truncate` БИШ `break-words` — к
     '`user_id`-гүй салбарын нэр `break-words` болоогүй ✗');
 });
 
+// ---------- ⑦ 🔗 «Зарын тоо … идэвхтэй зар» — ТУСДАА ЛИНК (2026-10-08 (62)) ----------
+t('⑦ 🔗 «📋 Зарын тоо: N идэвхтэй зар» — ТУСДАА ЛИНК (линк шиг ХАРАГДАНА) ✓', () => {
+  /** ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Зар дээр нийтлэгчийн мэдээллийн карт дээр “Зарын тоо зар
+   *  нийтэлсэн” гэж харагдаж байгаа. Энэ хэсгийг нь Link болгож харагдуул. Гэхдээ
+   *  текстийг нь “Зарын тоо идвэхтэй зар” гэж зас. Карыг нь тэр чигээр нь link болгож
+   *  харагдуулахгүй».
+   *  ⏳ Өмнө нь саарал энгийн текст байв (`text-xs text-gray-500`) ⇒ линк гэдэг нь
+   *  мэдэгддэггүй байв ✗ → одоо `text-primary underline underline-offset-2` ✓ */
+  assert.ok(DET_CODE.includes('<span>📋 Зарын тоо: {sellerStats.total} идэвхтэй зар</span>'),
+    '«📋 Зарын тоо: N идэвхтэй зар» текст алга ✗');
+  assert.ok(DET_CODE.includes('<span>📋 Зарын тоо: идэвхтэй зар</span>'),
+    'тоо тодорхойгүй үеийн «📋 Зарын тоо: идэвхтэй зар» нөөц текст алга ✗');
+  assert.ok(!DET_CODE.includes('зар нийтэлсэн'),
+    '⏳ «{N} зар нийтэлсэн» хуучин текст үлдсэн ✗ (шинэ нь «Зарын тоо: N идэвхтэй зар»)');
+  assert.match(DET_CODE,
+    /className="mt-2 inline-flex max-w-full flex-wrap items-center gap-x-2 text-xs font-semibold text-primary underline underline-offset-2 hover:text-primary"/,
+    '«Зарын тоо» мөр нь ЛИНК ШИГ харагдахгүй (`text-primary`/`underline` алга) ✗');
+  assert.equal((DET_CODE.match(/href=\{`\/sellers\/\$\{listing\.user_id\}`\}/g) || []).length, 2,
+    'нийтлэгчийн карт дээр `/sellers/<user_id>` руу 2 ЛИНК (толгой + «Зарын тоо») байх ёстой ✗');
+});
+
+t('⑦ 🔗 «Зарын тоо» линк нь толгойн линкээс ГАДНА (линк дотор линк БАЙХГҮЙ) ✓', () => {
+  /** ⚠️ HTML-д `<a>` дотор `<a>` ХОРИОТОЙ ⇒ нийтлэгчийн картын хүрээ нь ОДОО `<div>`
+   *  (`group` + `hover:bg-primary-light` тэндээ үлдсэн ⇒ КАРТЫН харагдац хэвээр), 2
+   *  линк нь ЗЭРЭГЦЭЭ (ах дүү) элемент болно ✓ */
+  const i = DET_CODE.indexOf('📋 Зарын тоо:');
+  assert.ok(i > 0, '«Зарын тоо» мөр олдсонгүй ✗');
+  // ⚠️ «Зарын тоо» линкний өөрийнх нь `<Link` нээлтийг хасч, ТҮҮНЭЭС ӨМНӨХ кодонд
+  //    линк нээгдээгүй (буюу сүүлийн `<Link` аль хэдийн `</Link>`-ээр хаагдсан) эсэхийг шалгана ✓
+  const frag = DET_CODE.slice(0, i);
+  const prev = frag.slice(0, frag.lastIndexOf('<Link'));
+  assert.ok(prev.lastIndexOf('</Link>') > prev.lastIndexOf('<Link'),
+    '«Зарын тоо» линк нь өөр ЛИНК ДОТОР байна (nesting) ✗');
+  assert.ok(DET_CODE.includes('className="group rounded-lg bg-gray-50 p-3 transition hover:bg-primary-light"'),
+    'нийтлэгчийн картын хүрээ `<div>` (линк БИШ) болоогүй ✗');
+  assert.ok(DET_CODE.includes('className="flex items-center gap-3"'),
+    'толгойн линк нь картын фонт/хүрээний классаа авч үлдсэн ✗');
+});
+
 // ---------- ⑤ README + package.json ----------
 t('⑤ 📦 `package.json`-д `test:detail-ui` скрипт + README-д бүртгэл ✓', () => {
   const pkg = JSON.parse(readSrc('package.json'));
@@ -175,5 +216,5 @@ t('⑤ 📦 `package.json`-д `test:detail-ui` скрипт + README-д бүрт
   assert.ok(README.includes('scripts/test-detail-ui.mjs'), 'README-д файлын нэр алга ✗');
 });
 
-console.log(`\n✅ БҮГД ОК: ${passed} тест — jobs зураггүй · Нэр талбар · тэгш өнцөгт Avatar · бүх зарт газрын зураг · урт текст 'break-words' · нийтлэгчийн карт (44px аватар) ✓\n`);
+console.log(`\n✅ БҮГД ОК: ${passed} тест — jobs зураггүй · Нэр талбар · тэгш өнцөгт Avatar · бүх зарт газрын зураг · урт текст 'break-words' · нийтлэгчийн карт (44px аватар) · «Зарын тоо» ТУСДАА ЛИНК ✓\n`);
 
