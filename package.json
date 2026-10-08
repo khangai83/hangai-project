@@ -32,6 +32,8 @@
     "test:share-btn": "node scripts/test-share-btn.mjs",
     "test:detail-ui": "node scripts/test-detail-ui.mjs",
     "test:seller-avatar": "node scripts/test-seller-avatar.mjs",
+    "test:showname": "node scripts/test-listing-showname.mjs",
+    "test:sofa": "node scripts/test-furniture-sofa.mjs",
     "test:jobs": "node scripts/test-jobs.mjs",
     "test:payments": "node scripts/test-payments.mjs",
     "test:attrMulti": "node scripts/test-attr-multi.mjs",

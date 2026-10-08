@@ -38,6 +38,11 @@ import VerifiedBadge from './VerifiedBadge';
  *      доод мөр нь `max-sm:pr-20` (80px) хоосон зай үлдээнэ
  * ⚠️ `author.displayName` хоосон бол нийтлэгчийн band ОГТ ХАРАГДАХГҮЙ
  *    (`0017_profile_identity.sql` → `show_identity = false`) ✓
+ * 🆕 2026-10-08 (71): 👤 ЗАР ТУС БҮРИЙН «НЭР ГАРГАХ УУ?» — хэрэглэгч форм дээр
+ *    «Үгүй» гэсэн бол (`listings.show_name = false`, `0042_listing_show_name.sql`)
+ *    ЭНЭ карт дээр ч нэр/профайл зураг ГАРАХГҮЙ (0017-тай ИЖИЛ үр дүн —
+ *    band бүхэлдээ нуугдана ✓). ⚠️ `!== false` дүрэм: `null` (хуучин зар) →
+ *    ХАРАГДАНА ✓
  * 🗑 2026-10-06: 📝 ТАЙЛБАР (`listing.description`) карт дээр ХАСАГДАВ —
  *    хэрэглэгчийн хүсэлт («Нүүр хуудас дээрх зарын карт дээрээс Тайлбарыг
  *    байхгүй болго»). ⚠️ Дэлгэрэнгүй хуудас (`ListingDetailClient`) ХӨНДӨӨГДӨӨГҮЙ.
@@ -45,6 +50,16 @@ import VerifiedBadge from './VerifiedBadge';
  */
 export default function ListingCard({ listing, author, attrsLine }) {
   const img = firstImage(listing);
+  /**
+   * 👤 НИЙТЛЭГЧИЙН НЭР/ЗУРАГ (картын дээд band) — 🆕 2026-10-08 (71):
+   *    «Профайл нэрээ зар дээр гаргах уу? → Үгүй» (`show_name === false`) үед
+   *    нэр нь ХООСОН болно ⇒ band бүхэлдээ ГАРАХГҮЙ ✓
+   *    ⚠️ `!== false` (БИШ `=== true`): багана байхгүй/`null` үед ХАРАГДАНА —
+   *       хуучин заруудын хэв ХӨНДӨӨГДӨХГҮЙ ✓
+   */
+  const authorVisible = listing.show_name !== false;
+  const authorName = authorVisible ? (author?.displayName || '') : '';
+  const authorAvatar = authorVisible ? (author?.avatarUrl || null) : null;
   const images = Array.isArray(listing.images) ? listing.images : [];
   const imageCount = images.length;
   const favoriteIds = useFavorites();
@@ -128,11 +143,11 @@ export default function ListingCard({ listing, author, attrsLine }) {
         {/* 👤 ЗАР НИЙТЛЭГЧ — мэдээллийн хэсгийн дээд band (unegui-ийн хэв)
             ⚠️ `show_identity = false` (0017) бол `displayName` ХООСОН буцах тул
                энэ band ОГТ ХАРАГДАХГҮЙ ✓ */}
-        {author?.displayName && (
+        {authorName && (
           <div className="mb-3 flex items-center gap-2 border-b border-gray-100 pb-2.5">
-            <Avatar src={author.avatarUrl} name={author.displayName} size={28} />
-            <span className="truncate text-[13.5px] font-semibold text-gray-800" title={author.displayName}>
-              {author.displayName}
+            <Avatar src={authorAvatar} name={authorName} size={28} />
+            <span className="truncate text-[13.5px] font-semibold text-gray-800" title={authorName}>
+              {authorName}
             </span>
             <VerifiedBadge size={13} className="text-primary" />
           </div>

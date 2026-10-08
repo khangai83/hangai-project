@@ -1914,6 +1914,71 @@ ok('🌈 «Машиныг хэрэглэх» → `attr_brand=Nissan`, `attr_mode
   JSON.stringify({ brand: brandAfter, model: modelAfterBrand }));
 
 
+console.log('\n── ⑦′ 🆕 (71) 👤 «Профайл нэрээ зар дээр гаргах уу?» — ФОРМ (Нэр талбарын доор) ──');
+/**
+ * 🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-08 (71)): «Зар нийтлэх үед Профайл нэрээ зар
+ *    дээрээ гаргах үгүйг асуудаг болох. Үүнийг НЭР ОРУУЛАХ ХЭСГИЙН ДООР оруулах»
+ * ⚠️ БОДИТ DOM дээр: ① `#listing-show-name` <select> НЭР талбарын ЯГ ДООР
+ *    ② Тийм/Үгүй 2 сонголт, анхдагч «Тийм» ③ «Үгүй» сонгоход НООРОГТ
+ *    (`localStorage`, `zar:listing-draft…`) `"showName":false` бичигдэнэ ✓
+ *    (форм нь зөвхөн НЭВТЭРСЭН үед — Chrome профайлд сесс байна ✓)
+ */
+await clearDrafts();
+await evaluate('location.href = ' + JSON.stringify(`${BASE}/listings/new`));
+await wait(4500);
+const hasForm = await evaluate('!!document.querySelector("form")');
+if (!hasForm) {
+  console.log('  ⏭ SKIP — нэвтрэх сесс БАЙХГҮЙ (форм харагдахгүй) ⇒');
+  console.log('     ⚠️ Chrome профайлд нэвтэрсэн байх ёстой: ' +
+    '`ZAR_PHONE=… ZAR_PASS=…` (эсвэл гараар нэвтэрсэн таб)');
+} else {
+const nameProbe = await evaluate(`(() => {
+  const sel = document.getElementById('listing-show-name');
+  const form = document.querySelector('form');
+  if (!sel) return { found: false, form: !!form };
+  const group = sel.closest('.form-group');
+  const input = group ? group.querySelector('input') : null;
+  const label = group ? group.querySelector('label[for="listing-show-name"]') : null;
+  const r = sel.getBoundingClientRect();
+  const ri = input ? input.getBoundingClientRect() : null;
+  return {
+    found: true,
+    tag: sel.tagName,
+    value: sel.value,
+    opts: [...sel.options].map((o) => o.value),
+    labelText: label ? (label.textContent || '').trim() : '',
+    belowName: !!ri && r.top >= ri.bottom - 1,
+    namePh: input ? (input.getAttribute('placeholder') || '') : '',
+  };
+})()`);
+ok('🆕 (71) `#listing-show-name` <select> формд ГАРНА (Тийм/Үгүй · анхдагч «Тийм» ✓)',
+  nameProbe.found === true && nameProbe.tag === 'SELECT' && nameProbe.value === 'Тийм'
+    && JSON.stringify(nameProbe.opts) === JSON.stringify(['Тийм', 'Үгүй']),
+  JSON.stringify(nameProbe));
+ok('🆕 (71) Байрлал: 👤 «Нэр» талбарын ЯГ ДООР (нэг `.form-group` дотор ✓)',
+  nameProbe.belowName === true && nameProbe.namePh.includes('байгууллагын'),
+  JSON.stringify({ below: nameProbe.belowName, ph: nameProbe.namePh }));
+ok('🆕 (71) Шошго нь хэрэглэгчийн хүсэлтийн ЯГ үг (`htmlFor` холбоо ✓)',
+  nameProbe.labelText.includes('Профайл нэрээ зар дээр гаргах уу?'), nameProbe.labelText);
+const nameToggle = await evaluate(`(() => {
+  const el = document.getElementById('listing-show-name');
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
+  setter.call(el, 'Үгүй');
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+  return el.value;
+})()`);
+await wait(2200);
+const draftProbe = await evaluate(`(() => {
+  const keys = Object.keys(window.localStorage).filter((k) => k.indexOf('zar:listing-draft') === 0);
+  const raw = keys.length ? (window.localStorage.getItem(keys[0]) || '') : '';
+  return { keys: keys.length, starTym: /"showName":true/.test(raw), off: /"showName":false/.test(raw) };
+})()`);
+ok('🆕 (71) «Үгүй» сонгоход НООРОГТ `"showName":false` бичигдэв (localStorage ✓)',
+  nameToggle === 'Үгүй' && draftProbe.keys > 0 && draftProbe.off === true,
+  JSON.stringify({ value: nameToggle, ...draftProbe }));
+}
+await clearDrafts();
+
 console.log('\n── ⑧ CONSOLE / EXCEPTION ──');
 ok('JS exception / console.error БАЙХГҮЙ (picker + Үйлдвэрлэгч форм)',
   pickerProblems.length === 0, JSON.stringify(pickerProblems.slice(0, 5)));

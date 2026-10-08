@@ -1046,7 +1046,77 @@ check('🆕 (16) 💻 HOVER: хулганыг зайлуулахад фон БУ
   !!backPill && backPill.bg === 'rgb(255, 255, 255)' && backPill.hover === false,
   backPill ? `${backPill.bg} hover=${backPill.hover}` : 'NO_PILL');
 
+// ═══════ ⑨′ 🆕 (71) 🛏 «БУЙДАН БОЛДОГ» — ЗӨВХӨН «Буйдан, кресло» ДЭД ТӨРӨЛД ═══════
+/**
+ * 🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-08 (71)): «Зөвхөн Буйдан, кресло -ийн зар
+ *    оруулах болон хайх үед Буйдан болдог → Тийм/Үгүй гэсэн хэсэг нэмэх.
+ *    Үүнийг Төлөв -ийн доор оруулах»
+ * ⚠️ БОДИТ DOM дээр: ① дэд төрөл СОНГОСОН үед гарна ② ✅ «Төлөв»-ийн ЯГ ДООР
+ *    ③ сонгоход URL `?attr_sofaBed=Тийм` ④ DB `attrs->>sofaBed=eq.Тийм`
+ *    ⑤ холдуу дэд төрөл/дэд төрөлгүй үед ГАРАХГҮЙ (нэг л дүрэм ✓)
+ * ⚠️ Тайлбар дотор BACKTICK БИЧИХГҮЙ — evalJs нь ТЕМПЛЭЙТ ЛИТЕРАЛ ✓
+ */
+console.log('\n⑨′ 🛏 (2026-10-08 (71)) «Буйдан болдог» — зөвхөн «Буйдан, кресло» дэд төрөлд');
+const sofaProbe = () => evalJs(`(() => {
+  const aside = document.getElementById('advanced-filters');
+  const el = aside ? aside.querySelector('[data-attr-filter="sofaBed"]') : null;
+  const cond = aside ? aside.querySelector('[data-attr-filter="condition"]') : null;
+  if (!el) return { found: false, cond: !!cond };
+  const opts = [...el.options].map((o) => (o.value || '-') + ':' + (o.textContent || '').trim());
+  const r = el.getBoundingClientRect();
+  const rc = cond ? cond.getBoundingClientRect() : null;
+  return {
+    found: true, tag: el.tagName, opts, label: el.getAttribute('aria-label'),
+    visible: r.width > 0 && r.height > 0,
+    afterCond: rc ? r.top >= rc.bottom - 2 : null,
+    asideCount: aside.querySelectorAll('[data-attr-filter]').length,
+  };
+})()`);
+listingReqs.length = 0;
+await go(`${BASE}/?section=furniture&type=${encodeURIComponent('Буйдан, кресло')}`);
+const sofaSel = await sofaProbe();
+check('🛏 (71) «Буйдан, кресло» дээр 🛏 <select> ГАРНА (Бүгд/Тийм/Үгүй) ✓',
+  sofaSel.found && sofaSel.tag === 'SELECT' && sofaSel.opts.length === 3
+    && sofaSel.opts[0] === '-:Бүгд' && sofaSel.opts[1] === 'Тийм:Тийм' && sofaSel.opts[2] === 'Үгүй:Үгүй',
+  JSON.stringify(sofaSel));
+check('🛏 (71) Байрлал: ✅ «Төлөв»-ийн ЯГ ДООР (sidebar) + ДЭЛГЭЦ дээр харагдана ✓',
+  sofaSel.afterCond === true && sofaSel.visible === true && sofaSel.label === 'Буйдан болдог',
+  `afterCond=${sofaSel.afterCond} visible=${sofaSel.visible} label=${sofaSel.label}`);
+check('🛏 (71) Sidebar-д ЯГ 2 attr шүүлт (✅ Төлөв + 🛏 Буйдан болдог) ✓',
+  sofaSel.asideCount === 2, `count=${sofaSel.asideCount}`);
+listingReqs.length = 0;
+const sofaPicked = await evalJs(`(() => {
+  const el = document.querySelector('#advanced-filters [data-attr-filter="sofaBed"]');
+  if (!el) return 'NO_EL';
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
+  setter.call(el, 'Тийм');
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+  return 'OK';
+})()`);
+check('🛏 (71) «Тийм» сонголт хийгдэв (native setter + change ✓)', sofaPicked === 'OK', sofaPicked);
+await waitFor(`/attr_sofaBed/.test(location.search)`);
+await sleep(1200);
+check('🔗 (71) URL-д `?attr_sofaBed=Тийм` нэмэгдэв ✓',
+  /attr_sofaBed=Тийм/.test(decodeURIComponent(await url())), decodeURIComponent(await url()));
+check('🔎 (71) DB: `attrs->>sofaBed=eq.Тийм` (энгийн <select> тул eq ✓)', dbQ('attrs->>sofaBed'), lastQ());
+const sofaBack = await sofaProbe();
+const sofaVal = await evalJs(`(() => {
+  const el = document.querySelector('#advanced-filters [data-attr-filter="sofaBed"]');
+  return el ? el.value : 'NO_EL';
+})()`);
+check('🛏 (71) Сонгосон утга <select> дээр ХЭВЭЭР (Тийм) ✓',
+  sofaBack.found === true && sofaVal === 'Тийм', `found=${sofaBack.found} value=${sofaVal}`);
+await go(`${BASE}/?section=furniture&type=${encodeURIComponent('Зочны өрөөний')}`);
+check('🚫 (71) ХОЛДУУ дэд төрөлд 🛏 ГАРАХГҮЙ (зөвхөн ✅ Төлөв ✓)',
+  (await sofaProbe()).found === false, JSON.stringify(await sofaProbe()));
+await go(`${BASE}/?section=furniture`);
+check('🚫 (71) Дэд төрөл СОНГООГҮЙ үед 🛏 ГАРАХГҮЙ ✓', (await sofaProbe()).found === false);
+await go(`${BASE}/?section=home`);
+check('🚫 (71) 🧺 «Гэр ахуйн бараа» (холдуу ХЭСЭГ) дээр 🛏 БАЙХГҮЙ ✓', (await sofaProbe()).found === false);
 // ═══════ ⑨ ДҮГНЭЛТ ═══════
+
+
+
 check('🧯 Консол дээр exception ГАРАГҮЙ', exceptions.length === 0, exceptions.slice(0, 2).join(' | ') || '—');
 console.log(`\n${fail === 0 ? '✅' : '❌'} CDP — ${pass} OK, ${fail} FAIL\n`);
 ws.close();

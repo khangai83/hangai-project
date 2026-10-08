@@ -307,9 +307,25 @@ export default function ListingDetailClient({ id }) {
    *      гардаг байв ✗ (яг зассан асуудал).
    * ⚠️ Жинхэнэ нэр (`profiles.name`) нь НИЙТЭД ХАРАГДАХГҮЙ (0015) — `author`
    *    нь `show_identity = false` үед хоосон ирдэг тул `contact_name` үлдэнэ ✓
+   *
+   * 🆕 2026-10-08 (71) — 👤 ЗАР ТУС БҮРИЙН «НЭР ГАРГАХ УУ?» (`show_name`, 0042):
+   *    хэрэглэгч форм дээр («Нэр» талбарын доор) «Үгүй» гэсэн бол ЭНЭ зар дээр
+   *    нэр ба профайл зураг ОГТ ХАРАГДАХГҮЙ — зөвхөн «Холбоо барих хүн»
+   *    (⚠️ утас/мессеж ХЭВЭЭР ✓ — хэрэглэгчийн сонголт).
+   *    ⚠️ Дүрэм нь `!== false` (БИШ `=== true`): багана нь `null` (0042
+   *       ороогүй/хуучин зар) үед нэр ХАРАГДАХ ёстой — өмнөх зан төлөв ✓
+   *    ⚠️ `contact_name` нь DB-д ХЭВЭЭР байна (зөвхөн ХАРАГДАЦ өөрчлөгдөнө ✓)
+   * 🔍 Хайх үг: showName, sellerAvatar, show_name, 0042
    */
-  const sellerName =
-    listing.contact_name || (author && author.displayName) || 'Холбоо барих хүн';
+  const showName = listing.show_name !== false;
+  const sellerName = showName
+    ? (listing.contact_name || (author && author.displayName) || 'Холбоо барих хүн')
+    : 'Холбоо барих хүн';
+  /**
+   * 👤 Профайл ЗУРАГ — «Үгүй» үед `src={null}` тул `Avatar` нь профайл зургийг
+   *    БИШ, нэрийн эхний үсгийг (placeholder) л харуулна ✓
+   */
+  const sellerAvatar = showName ? ((author && author.avatarUrl) || null) : null;
 
   /**
    * 🗺 ГАЗРЫН ЗУРГИЙН ГАНЦ ПИН (2026-10-07).
@@ -686,8 +702,11 @@ export default function ListingDetailClient({ id }) {
                         мөр 144px өндөр, «✅ Утсаар баталгаажсан»/«Элссэн огноо» 2 мөр
                         болж тасарч байв) ⇒ `size={44}` болов ✓
                         ⚠️ Нэр нь `truncate` БИШ `break-words` — урт нэр КАРТ ДОТРОО
-                        бүтнээрээ (2 мөр болж ч) харагдана ✓ */}
-                    <Avatar src={author && author.avatarUrl} name={sellerName} size={96} />
+                        бүтнээрээ (2 мөр болж ч) харагдана ✓
+                        🆕 2026-10-08 (71): `src={sellerAvatar}` — «Профайл нэрээ
+                        зар дээр гаргах уу? → Үгүй» үед `null` тул профайл зураг
+                        ГАРАХГҮЙ (зөвхөн үсэг-орлуулга ✓) */}
+                    <Avatar src={sellerAvatar} name={sellerName} size={96} />
                     <div className="w-full min-w-0">
                       {/* ✅ БАТАЛГААЖСАН badge (Facebook-ийнх шиг) — ListingCard-тай
                           ижил. ⚠️ Зөвхөн `listing.user_id` БАЙГАА үед (энэ салбар)
@@ -750,7 +769,7 @@ export default function ListingDetailClient({ id }) {
                 </div>
               ) : (
                 <div className="flex flex-col items-center gap-2 rounded-lg bg-gray-50 p-3 text-center">
-                  <Avatar src={author && author.avatarUrl} name={sellerName} size={96} />
+                  <Avatar src={sellerAvatar} name={sellerName} size={96} />
                   <div className="w-full min-w-0">
                     {/* 🆕 2026-10-08 (61): нэр `truncate` БИШ `break-words` —
                         дээрх (`user_id`-тай) салбартай ИЖИЛ: урт нэр карт дотроо

@@ -93,7 +93,12 @@ t('🗑 📝 Тайлбар (`listing.description`) карт дээр БАЙХГ
 
 t('👤 Нийтлэгчийн band нь 28px Avatar + нэр + ✅ VerifiedBadge', () => {
   assert.match(CARD_CODE, /author\?\.displayName/, '`author.displayName` шалгахгүй ✗');
-  assert.match(CARD_CODE, /<Avatar src=\{author\.avatarUrl\} name=\{author\.displayName\} size=\{28\}/,
+  // 🆕 2026-10-08 (71): нэр/зураг нь `authorName`/`authorAvatar` хувьсагчаар дамжина
+  //    — зар тус бүрийн «Профайл нэрээ зар дээр гаргах уу? → Үгүй»
+  //    (`listing.show_name === false`) үед band БҮХЭЛДЭЭ ГАРАХГҮЙ ✓
+  assert.match(CARD_CODE, /const\s+authorVisible\s*=\s*listing\.show_name\s*!==\s*false/,
+    '`show_name` шалгалт алга ✗ (нэр нуух тохиргоо ажиллахгүй)');
+  assert.match(CARD_CODE, /<Avatar src=\{authorAvatar\} name=\{authorName\} size=\{28\}/,
     'band-ий 28px Avatar алга ✗');
   assert.match(CARD_CODE, /<VerifiedBadge size=\{13\}/, 'band-ий ✅ badge алга ✗');
 });

@@ -3247,6 +3247,13 @@ export default function HomeClient() {
                        харагдана — `getAttrFilters(section, filters.propertyType)`
                        нь формойн `getAttrFields`-тэй ЯГ ИЖИЛ `onlySubtypes` дүрмийг
                        хэрэглэнэ ✓ (Mouse/Keyboard/тонер дээр ГАРАХГҮЙ)
+                       🆕 2026-10-08 (71): 🛋️ «Тавилга» → 🛏 «Буйдан болдог»
+                       (`sofaBed`) мөн ЯГ ЭНЭ дүрмээр — зөвхөн «Буйдан, кресло»
+                       дэд төрөл сонгосон үед «✅ Төлөв»-ийн ЯГ ДООР гарна;
+                       ⚠️ ЭНД ШИНЭ КОД БАЙХГҮЙ (доорх генерацлагдсан салбарууд
+                       `f.options`-той энгийн `<select>` болно ✓), URL нь
+                       `?attr_sofaBed=Тийм` → DB `attrs->>sofaBed` (`lib/queries.js`,
+                       талбар нь `filterable`/`searchable` БИШ тул `eq` ✓)
                     🕒 ⑥ ОЛОН СОНГОЛТТОЙ ЧИП ШҮҮЛТ (`f.chips` + `f.multi`,
                        2026-10-03 (9) · 🆕 2026-10-05 (42) · 🆕 2026-10-06 (17),
                        хэрэглэгчийн хүсэлт: «ажлын зар хайх хэсгийн Design ийг …

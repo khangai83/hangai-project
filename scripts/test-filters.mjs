@@ -379,6 +379,9 @@ t("Бусад хэсгийн шүүлт (jobs: 3, computers: 1, furniture/home/t
   assert.equal(count('equipment'), 1);
   // 🛋️/🧳 2026-09-30 (5): 2 ШИНЭ 1-Р ТҮВШНИЙ хэсэг — мөн 1 л шүүлт
   //    (дэд төрөл нь ХАВТГАЙ: 13 ба 12 — 🧱/🏭-ийн ЯГ ИЖИЛ хялбар форм ✓)
+  // 🆕 2026-10-08 (71): 🛏 «Буйдан болдог» (`sofaBed`) нэмэгдсэн ч энэ дуудлага
+  //    нь ДЭД ТӨРӨЛГҮЙ ⇒ `onlySubtypes` («Буйдан, кресло»)-аар шүүгдэж
+  //    ХАРАГДАХГҮЙ тул тоо ХӨНДӨӨГДӨХГҮЙ (1 ✓); «Буйдан, кресло» дээр 2 (§⑧г ✓)
   assert.equal(count('furniture'), 1);
   assert.equal(count('travel'), 1);
   // 🛠 2026-10-05 (45): `services` — 🧭 `workMode` («Үйлчилгээний хэлбэр») ба
@@ -929,22 +932,43 @@ t('⚠️ `getAttrField` (картын мөр/шүүлт) нь `onlySubtypes`-а
   assert.equal(getAttrField('computers', 'cpu').label, 'Процессор (CPU)');
   // ⚠️ Зөвхөн 💻 хэсгийн 6 талбарт `onlySubtypes` байна — 🆕 (56): `brand`
   //    ба `model` ч нэмэгдэв (brand · model · screen · cpu · ram · storage) —
-  //    бусад 11 хэсэгт ямар ч талбар ХАСАГДАХГҮЙ (форм нь хэвээр бүгдийг
-  //    харуулна ✓). ⚠️ `condition` нь `onlySubtypes`-ГҮЙ тул 💻-ийн БҮХ дэд
-  //    төрөлд харагдана ✓
+  //    🆕 2026-10-08 (71): 🛋️ `furniture` дээр 🛏 «Буйдан болдог» (`sofaBed`)
+  //    нэмэгдэв (ЗӨВХӨН «Буйдан, кресло») — бусад 10 хэсэгт ямар ч талбар
+  //    ХАСАГДАХГҮЙ (форм нь хэвээр бүгдийг харуулна ✓).
+  //    ⚠️ `condition` нь `onlySubtypes`-ГҮЙ тул 💻/🛋️-ийн БҮХ дэд төрөлд ✓
   let flagged = 0;
+  let sofaGated = 0;
   for (const s of SECTIONS) {
     const fields = s.attrFields || [];
-    const shown = getAttrFields(s.value, getSubtypes(s.value)[0] || '');
+    const gated = fields.filter((f) => Array.isArray(f.onlySubtypes));
     if (s.value === 'computers') {
-      flagged = fields.filter((f) => Array.isArray(f.onlySubtypes)).length;
+      flagged = gated.length;
       assert.equal(flagged, 6);
       continue;
     }
-    assert.equal(shown.length, fields.length, `${s.value}: талбар хасагдаж байна ✗`);
+    if (s.value === 'furniture') {
+      // 🆕 2026-10-08 (71): 🛏 `sofaBed` — ① зөвхөн «Буйдан, кресло»-д,
+      //    ② дэд төрөл сонгоогүй/холдуу дэд төрөлд ГАРАХГҮЙ (форм + шүүлт)
+      sofaGated = gated.length;
+      assert.equal(sofaGated, 1, `🛋️ furniture: \`onlySubtypes\`-тай талбар 1 байх ёстой ✗`);
+      assert.deepEqual(gated.map((f) => f.key), ['sofaBed']);
+      assert.deepEqual(gated[0].onlySubtypes, ['Буйдан, кресло']);
+      const only = (sub) => getAttrFields('furniture', sub).map((f) => f.key);
+      assert.deepEqual(only(''), ['condition'], 'дэд төрөлгүй үед 🛏 ГАРАХГҮЙ ✗');
+      assert.deepEqual(only('Зочны өрөөний'), ['condition'], 'холдуу дэд төрөлд 🛏 ГАРАХГҮЙ ✗');
+      assert.deepEqual(only('Ор, матрас'), ['condition'], 'холдуу дэд төрөлд 🛏 ГАРАХГҮЙ ✗');
+      assert.deepEqual(only('Бойдан, кресло'), ['condition'], 'бичлэгийн зөрүүгээр ГАРАХ ЁСГҮЙ ✗');
+      assert.deepEqual(only('Буйдан, кресло'), ['condition', 'sofaBed'], '«Буйдан, кресло» дээр 🛏 ГАРАХ ЁСТОЙ ✗');
+      // ⚠️ Sidebar (шүүлт) нь формтой ЯГ ИЖИЛ дүрмээр шүүгдэнэ ✓
+      assert.deepEqual(getAttrFilters('furniture').map((f) => f.key), ['condition']);
+      assert.deepEqual(getAttrFilters('furniture', 'Буйдан, кресло').map((f) => f.key), ['condition', 'sofaBed']);
+      continue;
+    }
+    assert.equal(getAttrFields(s.value, getSubtypes(s.value)[0] || '').length, fields.length, `${s.value}: талбар хасагдаж байна ✗`);
     fields.forEach((f) => assert.equal(f.onlySubtypes, undefined, `${s.value}.${f.key}`));
   }
   assert.equal(flagged, 6);
+  assert.equal(sofaGated, 1);
 });
 
 // ---------- 🖥 2026-10-03 (7): 💻 NOTEBOOK-ИЙН ШҮҮЛТ SIDEBAR-д ----------
@@ -1351,15 +1375,21 @@ t('🏷️ 💻 «Брэнд» — ХАЙЛТ + ФОРМ ХОЁУЛАНД Notebo
   assert.equal(getAttrFilters('auto').length, 7);
 });
 
-t('🖥 Бусад 11 хэсгийн шүүлт ХӨНДӨГДӨӨГҮЙ (subtype дамжуулсан ч ЯГ ижил)', () => {
+t('🖥 Бусад 10 хэсгийн шүүлт ХӨНДӨГДӨӨГҮЙ (subtype дамжуулсан ч ЯГ ижил)', () => {
   for (const s of SECTIONS) {
-    if (s.value === 'computers') continue;
+    // ⚠️ 💻 (`onlySubtypes`/`filterSubtypes`) ба 🆕 2026-10-08 (71) 🛋️ (`sofaBed`
+    //    нь ЗӨВХӨН «Буйдан, кресло»-д) — эдгээр нь ДЭД ТӨРЛӨӨС хамаардаг тул
+    //    тусдаа шалгалттай (дээрх 💻 тестүүд ба §⑧г ✓)
+    if (s.value === 'computers' || s.value === 'furniture') continue;
     const sub = getSubtypes(s.value)[0] || '';
     assert.deepEqual(getAttrFilters(s.value, sub).map((f) => f.key),
       getAttrFilters(s.value).map((f) => f.key),
       `${s.value}: дэд төрөл дамжуулахад шүүлт өөрчлөгдөж байна ✗`);
     assert.ok(!(s.attrFields || []).some((f) => Array.isArray(f.onlySubtypes)), `${s.value}`);
   }
+  // 🆕 2026-10-08 (71): 🛋️ — шүүлт нь ДЭД ТӨРЛӨӨС хамаарна (зөвхөн «Буйдан, кресло»)
+  assert.deepEqual(getAttrFilters('furniture', 'Буйдан, кресло').map((f) => f.key), ['condition', 'sofaBed']);
+  assert.deepEqual(getAttrFilters('furniture', 'Зочны өрөөний').map((f) => f.key), ['condition']);
 });
 
 t('🖥 ГЭРЭЭ: HomeClient нь дэд төрлийг дамжуулна + хүчингүй attr цэвэрлэнэ + `data-attr-filter` дэгээтэй', () => {
@@ -1786,7 +1816,11 @@ t('🛋️ furniture: нэр «Тавилга», icon 🛋️, value `furniture`
   //    ЁСТОЙ → `0026_furniture_travel_sections.sql` (доор шалгана ✓)
   assert.equal(hasSimpleForm('furniture'), true);
   assert.deepEqual(getAttrFilters('furniture').map((f) => f.key), ['condition']);
-  assert.deepEqual(getSection('furniture').attrFields.map((f) => f.key), ['condition']);
+  // 🆕 2026-10-08 (71): 🛏 «Буйдан болдог» (`sofaBed`) нэмэгдэв — ⚠️ `attrFields`
+  //    нь БҮТЭН жагсаалт (`onlySubtypes` шүүлт `getAttrFields(section, subtype)`
+  //    дээр л ажиллана; энд `getSection().attrFields` нь ТҮҮХИЙ массив ✓)
+  assert.deepEqual(getSection('furniture').attrFields.map((f) => f.key), ['condition', 'sofaBed']);
+  assert.deepEqual(getAttrFilters('furniture', 'Буйдан, кресло').map((f) => f.key), ['condition', 'sofaBed']);
   // ⚠️ ХЭСГИЙН НЭР «Тавилга» нь дэд төрөл БИШ (DB-д тийм `property_type`
   //    хэзээ ч үүсэхгүй — 2026-09-30 (2)-ын дүрэм ХЭВЭЭР ✓)
   assert.ok(!getSubtypes('furniture').includes('Тавилга'));

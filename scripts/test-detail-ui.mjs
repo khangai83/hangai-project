@@ -93,7 +93,13 @@ t('② 👤 `emptyForm()` нь нэвтэрсэн хэрэглэгчийн нэ�
 });
 
 t('② 🏢 Дэлгэрэнгүйд `contact_name` ТҮРҮҮЛНЭ (формд бичсэн нэр → профайлын нэр) ✓', () => {
-  assert.match(DET_CODE, /const sellerName =\s*\n\s*listing\.contact_name \|\| \(author && author\.displayName\) \|\| 'Холбоо барих хүн'/,
+  // 🆕 2026-10-08 (71): «Профайл нэрээ зар дээр гаргах уу? → Үгүй»
+  //    (`listing.show_name === false`) үед нэр нь «Холбоо барих хүн» болно ⇒
+  //    `sellerName` нь ОДОО `showName ? (contact_name || displayName) : …` —
+  //    ⚠️ Дараалал (contact_name → displayName) ХӨНДӨӨГДӨӨГҮЙ ✓
+  assert.match(DET_CODE, /const showName = listing\.show_name !== false/,
+    '`show_name` шалгалт алга ✗');
+  assert.match(DET_CODE, /const sellerName = showName\s*\n\s*\? \(listing\.contact_name \|\| \(author && author\.displayName\) \|\| 'Холбоо барих хүн'\)\s*\n\s*: 'Холбоо барих хүн'/,
     '`sellerName` дараалал нь `contact_name → displayName` БИШ ✗');
   assert.ok(!DET_CODE.includes('(author && author.displayName) || listing.contact_name'),
     'хуучин `displayName || contact_name` дараалал буцсан ✗');
