@@ -22,7 +22,9 @@
  *      ⓐ харагдаж байна (🖥) ба ЖИНХЭНЭ SVG (`viewBox="0 0 24 24"` + `stroke="currentColor"`, 3 зам)
  *      ⓑ **24×24px** — баруун талын ❤️ `h-6 w-6` icon-only товчтой ТЭНЦҮҮ
  *      ⓒ ЛОГОНЫ ДАРАА (лого.right ≤ иконы left), ХАЙЛТЫН мөрийн ЯГ ӨМНӨ
- *        (иконы right ≤ `#home-search`-ийн left, зай нь 4–24px)
+ *        (иконы right ≤ `#home-search` формын left; 🆕 (70): форм нь слатын ЗҮҮН
+ *        захад наалдсан тул зай нь ЗӨВХӨН `xl:px-3` = 12px — 4–32px ✓,
+ *        ⏳ (69e) хүртэл `mx-auto` төвлөрүүлэлтээс болж ~67px байв ✗)
  *   ③ 🖱 ЛОГО дээр БА **🏠 ИКОН дээр** БОДИТ хулганы даралт (`Input.dispatchMouseEvent`,
  *      `/terms` дээрээс эхэлж) → ХОЁУЛАА НҮҮР ХУУДАС руу (`pathname === '/'` ✓)
  *   ④ 🏷️ Брэнд: `document.title` ба footer нь `ZARBOOK.MN` (хуучин нэр 0 ✓)
@@ -143,6 +145,10 @@ const PROBE = `(() => {
   const iconLink = document.querySelector('header a[data-home-icon-link]');
   const icon = iconLink ? iconLink.querySelector('svg[data-home-icon]') : null;
   const search = document.querySelector('#home-search');
+  // 🆕 (70): хайлтын форм (input-ийн эцэг form[role=search]) ба түүний слат —
+  //    форм нь слатын ЗҮҮН захад наалдсаныг ЯГ хэмжихэд хэрэгтэй ✓
+  const searchForm = search ? search.closest('form') : null;
+  const searchSlot = searchForm ? searchForm.parentElement : null;
   const sibling = document.querySelector('header a[href="/favorites"] svg');
   if (!logo) return { found: false };
   const span = logo.querySelector('span');
@@ -171,6 +177,8 @@ const PROBE = `(() => {
     iconPathCount: icon ? icon.querySelectorAll('path').length : 0,
     siblingIconH: sibling ? Math.round(sibling.getBoundingClientRect().height) : null,
     search: shown(search) ? R(search) : null,
+    searchForm: searchForm && shown(searchForm) ? R(searchForm) : null,
+    searchSlot: searchSlot && shown(searchSlot) ? R(searchSlot) : null,
     text,
     span: span ? R(span) : null,
     pageScroll: document.documentElement.scrollWidth - window.innerWidth,
@@ -205,12 +213,18 @@ check('① иконы хэмжээ нь эгч иконтой (❤️ `h-6 w-6`)
 check('① икон нь ЛОГОНЫ ДАРАА (логоны right ≤ иконы left)',
   a.logoRect && a.iconLinkRect && a.logoRect.r <= a.iconLinkRect.l,
   a.logoRect && a.iconLinkRect ? `лого right=${a.logoRect.r} ≤ икон left=${a.iconLinkRect.l}` : '—');
-check('① икон нь ХАЙЛТЫН мөрийн ЗҮҮН талд, ЯГ ӨМНӨ (иконы right ≤ хайлтын left)',
-  a.search && a.iconLinkRect && a.iconLinkRect.r <= a.search.l,
-  a.search && a.iconLinkRect ? `икон right=${a.iconLinkRect.r} ≤ хайлт left=${a.search.l}` : `хайлт харагдахгүй (${!!a.search})`);
-check('① икон ↔ хайлтын мөр зай 4–140px (хайлтын форм `mx-auto max-w-[480px]` тул слат дотроо ТӨВЛӨРНӨ — хэт хол биш ✓)',
-  a.search && a.iconLinkRect && (a.search.l - a.iconLinkRect.r) >= 4 && (a.search.l - a.iconLinkRect.r) <= 140,
-  `${a.search && a.iconLinkRect ? a.search.l - a.iconLinkRect.r : '—'}px`);
+check('① икон нь ХАЙЛТЫН мөрийн ЗҮҮН талд, ЯГ ӨМНӨ (иконы right ≤ хайлтын формын left)',
+  a.searchForm && a.iconLinkRect && a.iconLinkRect.r <= a.searchForm.l,
+  a.searchForm && a.iconLinkRect ? `икон right=${a.iconLinkRect.r} ≤ форм left=${a.searchForm.l}` : `хайлт харагдахгүй (${!!a.search})`);
+check('① икон ↔ хайлтын мөр зай 4–32px (🆕 (70): форм нь слатын ЗҮҮН захад наалдана — зай нь ЗӨВХӨН `xl:px-3` = 12px ✓)',
+  a.searchForm && a.iconLinkRect && (a.searchForm.l - a.iconLinkRect.r) >= 4 && (a.searchForm.l - a.iconLinkRect.r) <= 32,
+  `${a.searchForm && a.iconLinkRect ? a.searchForm.l - a.iconLinkRect.r : '—'}px`);
+check('① хайлтын форм нь слатын ЗҮҮН захад наалдсан (`form.left − slot.left` = `xl:px-3` = 12px ±2)',
+  a.searchForm && a.searchSlot && Math.abs((a.searchForm.l - a.searchSlot.l) - 12) <= 2,
+  a.searchForm && a.searchSlot ? `форм left=${a.searchForm.l} − слат left=${a.searchSlot.l} = ${a.searchForm.l - a.searchSlot.l}px` : 'слат олдсонгүй');
+check('① хайлтын форм өргөн нь `max-w-[480px]` ХЭВЭЭР (⏳ төвлөрөөгүй, хэт урт ч болоогүй ✓)',
+  a.searchForm && a.searchForm.w <= 482 && a.searchForm.w >= 300,
+  a.searchForm ? `өргөн=${a.searchForm.w}px (≤482)` : 'хайлт харагдахгүй');
 check('① «ZARBOOK» ↔ «.MN» ХИЙМЭЛ ЗАЙГҮЙ (2026-09-27-ийн алдаа буцаж ороогүй ✓)',
   a.text && a.span && (a.span.l - a.text.r) <= 1, `${a.text && a.span ? a.span.l - a.text.r : '—'}px`);
 check('① 🖥 хэвтээ гүйлт 0', a.pageScroll <= 0, `scrollWidth-innerWidth=${a.pageScroll}`);
@@ -299,6 +313,24 @@ check('④b 🖥 1024px (`lg` босго) — 🏠 икон ХАРАГДАЖ б�
 check('④b 🖥 1024px — баруун цэсэн товчнууд (`lg:flex`) харагдаж, иконтой ЗӨРЧИЛДӨХГҮЙ (иконы right ≤ «➕ Зар нэмэх» left)',
   lg.addShown && lg.iconRight <= lg.addLeft, `икон right=${lg.iconRight} ≤ товч left=${lg.addLeft}`);
 check('④b 🖥 1024px — хэвтээ гүйлт 0', lg.scroll <= 0, `scroll=${lg.scroll}`);
+
+// ---------- ④c 🖥 (70) — хайлтын форм нь ЗҮҮЛЭЭ НААЛДСАН: зай нь слатын өргөнөөс ХАМААРАЛГҮЙ (1280 · 1440 · 1680) ----------
+for (const w of [1280, 1440, 1680]) {
+  await goto(`${BASE}/`, w, 900);
+  const s = await evalJs(PROBE);
+  const gap = s.searchForm && s.iconLinkRect ? s.searchForm.l - s.iconLinkRect.r : null;
+  check(`④c 🖥 ${w}px — 🏠 икон ↔ хайлтын мөр зай 10–14px (форм нь слатын ЗҮҮЛЭЭ наалдсан; ⏳ (69e) хүртэл төвлөрч ~67px+ байв ✗)`,
+    gap !== null && gap >= 10 && gap <= 14, `${gap ?? '—'}px · форм өргөн=${s.searchForm && s.searchForm.w}`);
+  check(`④c 🖥 ${w}px — форм нь слатын зүүн захаас 12px (` + '`xl:px-3`' + `)`,
+    !!(s.searchForm && s.searchSlot) && Math.abs((s.searchForm.l - s.searchSlot.l) - 12) <= 2,
+    s.searchForm && s.searchSlot ? `${s.searchForm.l - s.searchSlot.l}px` : 'слат олдсонгүй');
+}
+await goto(`${BASE}/`, 1280, 900);
+const gapClip = await evalJs(`(() => { const a = [...document.querySelectorAll('header a[href=\"/\"]')].find((x) => /ZARBOOK/.test(x.textContent || '')); const f = document.querySelector('#home-search').closest('form'); const r1 = a.getBoundingClientRect(); const r2 = f.getBoundingClientRect(); const left = Math.max(0, Math.round(r1.left) - 12); const right = Math.min(window.innerWidth, Math.round(r2.left + 200)); return { x: left, y: Math.max(0, Math.round(r1.top) + 2), width: right - left, height: Math.round(r1.height) + 6 }; })()`);
+const gapShot = await rpc('Page.captureScreenshot', { format: 'png', clip: { ...gapClip, scale: 3 } });
+const fsGap = await import('node:fs');
+fsGap.writeFileSync('/tmp/zar-70-search-gap-desktop.png', Buffer.from(gapShot.data, 'base64'));
+console.log('  📸 зураг (🖥 1280px — лого → 🏠 икон → хайлт, зай 12px): /tmp/zar-70-search-gap-desktop.png');
 
 // ---------- ⑤ JS алдаа ----------
 const leafletOnly = exceptions.filter((e) => /leaflet|_leaflet_pos/i.test(e));
