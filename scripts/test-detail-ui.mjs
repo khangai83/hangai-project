@@ -12,8 +12,10 @@
 //      ⇒ `Avatar` нь `rounded-full` БИШ `rounded-lg`
 //   ④ «газрын зургийг байж Unegui.mn шиг харуулдаг байя, Бүх зар дээр»
 //      ⇒ дэлгэрэнгүйд «Байршил» гарчигтай газрын зураг ҮРГЭЛЖ
-//   ⑤ 2026-10-08 (61)(62): «Тайлбар» урт текст, нийтлэгчийн карт (44px аватар,
-//      бүтэн нэр), «📋 N идэвхтэй зар» — ТУСДАА ЛИНК (⑥⑦ хэсэг)
+//   ⑤ 2026-10-08 (61)(62): «Тайлбар» урт текст, нийтлэгчийн карт (бүтэн нэр),
+//      «📋 N идэвхтэй зар» — ТУСДАА ЛИНК (⑥⑦ хэсэг)
+//   ⑥ 2026-10-08 (64): зарын эзэний PROFILE ЗУРАГ нь картын ХАМГИЙН ДЭЭД
+//      талд, ТУСДАА мөрөнд, ГОЛЛУУЛЖ + `size={44}` → `size={64}` (⑧ хэсэг)
 //
 // ⚠️ Эдгээр нь БҮГД ХАРАГДАЦ/UI-ийн гэрээ — DB/query/migration 0 ✓
 //
@@ -149,13 +151,17 @@ t('⑥ 📝 «Тайлбар» нь `break-words` — ЗАЙГҮЙ урт үг �
     'Тайлбарын `<p>`-д `break-words` алга ✗ (урт үг хайрцгаас хэтэрнэ)');
 });
 
-t('⑥ 👤 Нийтлэгч: аватар `size={120}` БАЙХГҮЙ → `size={44}` (карт дотроо бүрэн багтана) ✓', () => {
+t('⑥ 👤 Нийтлэгч: аватар `size={120}` БАЙХГҮЙ → `size={64}` (карт дотроо бүрэн багтана) ✓', () => {
   /** ⚠️ 120px аватар нь 350px-ийн баганын картыг хагас эзэлж, «✅ Утсаар
    *  баталгаажсан»/«Элссэн огноо» мөрүүдийг 2 мөр болгон эвдэж байв ✗
-   *  (CDP: мөр 144px → 96px, карт 409px → 361px) */
+   *  (CDP: мөр 144px → 96px, карт 409px → 361px)
+   *  ⏳ (61): `size={44}` байв ⇒ 🆕 (64) хэрэглэгч: «…жаахан томруулаад» ⇒
+   *  `size={64}` (жаахан том — ⚠️ 120px шиг хэт том БИШ) ✓ */
   assert.ok(!DET_CODE.includes('size={120}'), '`size={120}` (хэт том аватар) үлдсэн ✗');
-  assert.equal((DET_CODE.match(/name=\{sellerName\} size=\{44\}/g) || []).length, 2,
-    'нийтлэгчийн 2 салбарт (user_id-тай / user_id-гүй) `size={44}` байх ёстой ✗');
+  assert.equal((DET_CODE.match(/name=\{sellerName\} size=\{64\}/g) || []).length, 2,
+    'нийтлэгчийн 2 салбарт (user_id-тай / user_id-гүй) `size={64}` байх ёстой ✗');
+  assert.ok(!DET_CODE.includes('size={44}'),
+    '⏳ (61)-ийн `size={44}` үлдсэн ✗ (64: картын дээд талд ГОЛЛУУЛЖ, 64px)');
 });
 
 t('⑥ 👤 Нийтлэгчийн НЭР `truncate` БИШ `break-words` — карт дотроо бүтэн харагдана ✓', () => {
@@ -186,7 +192,7 @@ t('⑦ 🔗 «📋 N идэвхтэй зар» — ТУСДАА ЛИНК (лин
   assert.ok(!DET_CODE.includes('зар нийтэлсэн'),
     '⏳ «{N} зар нийтэлсэн» хуучин текст үлдсэн ✗ (шинэ нь «📋 N идэвхтэй зар»)');
   assert.match(DET_CODE,
-    /className="mt-2 inline-flex max-w-full flex-wrap items-center gap-x-2 text-xs font-semibold text-primary underline underline-offset-2 hover:text-primary"/,
+    /className="mt-2 flex max-w-full flex-wrap items-center justify-center gap-x-2 text-xs font-semibold text-primary underline underline-offset-2 hover:text-primary"/,
     '«Зарын тоо» мөр нь ЛИНК ШИГ харагдахгүй (`text-primary`/`underline` алга) ✗');
   assert.equal((DET_CODE.match(/href=\{`\/sellers\/\$\{listing\.user_id\}`\}/g) || []).length, 2,
     'нийтлэгчийн карт дээр `/sellers/<user_id>` руу 2 ЛИНК (толгой + «идэвхтэй зар») байх ёстой ✗');
@@ -206,8 +212,43 @@ t('⑦ 🔗 «идэвхтэй зар» линк нь толгойн линкэ�
     '«идэвхтэй зар» линк нь өөр ЛИНК ДОТОР байна (nesting) ✗');
   assert.ok(DET_CODE.includes('className="group rounded-lg bg-gray-50 p-3 transition hover:bg-primary-light"'),
     'нийтлэгчийн картын хүрээ `<div>` (линк БИШ) болоогүй ✗');
-  assert.ok(DET_CODE.includes('className="flex items-center gap-3"'),
-    'толгойн линк нь картын фонт/хүрээний классаа авч үлдсэн ✗');
+  assert.ok(DET_CODE.includes('className="relative flex flex-col items-center gap-2 text-center"'),
+    'толгойн линк нь (64)-ийн ГОЛЛУУЛСАН баганын класс БИШ ✗');
+});
+
+// ---------- ⑧ 👤 ЗАРЫН ЭЗЭН — АВАТАР КАРТЫН ДЭЭД ТАЛД, ГОЛЛУУЛЖ (2026-10-08 (64)) ----------
+t('⑧ 👤 Зарын эзэний зураг: картын ДЭЭД талд, ТУСДАА мөрөнд, ГОЛЛУУЛЖ (64px) ✓', () => {
+  /** ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Зарын эзэний Profile зургийг картых нь дээд талд,
+   *  жаахан томруулаад тавиад өгөөч» ⇒ толгойн линк нь БОСОО ГОЛЛУУЛСАН
+   *  багана болов (`flex flex-col items-center text-center`):
+   *  ① [Avatar 64px] → ② [нэр + ✅ badge] → ③ [✅ Утсаар баталгаажсан · Элссэн
+   *  огноо] ⇒ аватар нь картын ХАМГИЙН ДЭЭД талд, бусдын мэдээлэл ДООР нь ✓
+   *  ⚠️ Линк нь ХЭВЭЭР (аватар ч дарж болно) — дотоод блок `min-w-0 flex-1` →
+   *  `w-full min-w-0` (босоо баганад `flex-grow` утгагүй) ✓ */
+  assert.ok(DET_CODE.includes('className="relative flex flex-col items-center gap-2 text-center"'),
+    'толгойн линк нь босоо голлуулсан багана БИШ ✗');
+  // ⚠️ ДАРААЛАЛ: аватар (64px) нь НЭРийн мөрөөс ӨМНӨ (дээр) байх ёстой ✓
+  const av = DET_CODE.indexOf('name={sellerName} size={64} />');
+  const nm = DET_CODE.indexOf('justify-center gap-1.5 text-base font-semibold');
+  assert.ok(av > 0 && nm > av,
+    'аватар нь нэрийн мөрөөс ӨМНӨ (картын дээд талд) байх ёстой ✗');
+  // ⚠️ Аватар нь толгойн линкийн ЭХНИЙ элемент (`relative` линк дотор) ✓
+  assert.ok(DET_CODE.includes('name={sellerName} size={64} />\n                    <div className="w-full min-w-0">'),
+    'аватар нь толгойн линкийн эхний элемент (64px) БИШ ✗');
+  assert.ok(DET_CODE.includes('className="flex items-center justify-center gap-1.5 text-base font-semibold'),
+    'нэрийн мөр ГОЛЛУУЛСАН БИШ ✗');
+  assert.ok(DET_CODE.includes('justify-center gap-x-2 text-xs text-gray-500'),
+    '«✅ Утсаар баталгаажсан · Элссэн огноо» мөр ГОЛЛУУЛСАН БИШ ✗');
+  // ⚠️ `user_id`-гүй салбар ч ИЖИЛ хэв — картын харагдац нэгэн жигд ✓
+  assert.ok(DET_CODE.includes('className="flex flex-col items-center gap-2 rounded-lg bg-gray-50 p-3 text-center"'),
+    '`user_id`-гүй салбарын карт ИЖИЛ босоо голлуулсан хэв БИШ ✗');
+  // ⚠️ «📋 N идэвхтэй зар» линк ч КАРТЫН ГОЛД — задаргаа тэгш харагдана ✓
+  //    (линк өөрөө/өнгө/зураас/`href`/`title` ХЭВЭЭР — (62)(63)-ын гэрээ ✓)
+  assert.ok(DET_CODE.includes('className="mt-2 flex max-w-full flex-wrap items-center justify-center gap-x-2 text-xs font-semibold'),
+    '«📋 N идэвхтэй зар» линк ГОЛЛУУЛСАН БИШ ✗');
+  // ⚠️ «›» нь баруун дээд буланд (`absolute`) — мөрийн өндрийг уртасгахгүй ✓
+  assert.ok(DET_CODE.includes('className="absolute right-0 top-0 text-lg text-gray-300 transition group-hover:text-primary"'),
+    '«›» нь `absolute right-0 top-0` БИШ ✗');
 });
 
 // ---------- ⑤ README + package.json ----------
@@ -220,5 +261,5 @@ t('⑤ 📦 `package.json`-д `test:detail-ui` скрипт + README-д бүрт
   assert.ok(README.includes('scripts/test-detail-ui.mjs'), 'README-д файлын нэр алга ✗');
 });
 
-console.log(`\n✅ БҮГД ОК: ${passed} тест — jobs зураггүй · Нэр талбар · тэгш өнцөгт Avatar · бүх зарт газрын зураг · урт текст 'break-words' · нийтлэгчийн карт (44px аватар) · «📋 N идэвхтэй зар» ТУСДАА ЛИНК ✓\n`);
+console.log(`\n✅ БҮГД ОК: ${passed} тест — jobs зураггүй · Нэр талбар · тэгш өнцөгт Avatar · бүх зарт газрын зураг · урт текст 'break-words' · нийтлэгчийн карт (64px аватар картын ДЭЭД талд, ГОЛЛУУЛЖ) · «📋 N идэвхтэй зар» ТУСДАА ЛИНК ✓\n`);
 

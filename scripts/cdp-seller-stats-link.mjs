@@ -10,6 +10,12 @@
  *   ③ Хэмжээ: картаас гадагш гарсан элемент 0 · хуудасны хэвтээ гүйлт 0 ✓
  *   ④ БОДИТ ХУЛГАНААР дарахад `/sellers/<user_id>` руу шилжинэ ✓
  *   ⑤ 📱 390px мобайл: линк харагдана, overflow 0 ✓ · консол дээр JS exception 0 ✓
+ *   ⑥ 👤 🆕 (64) ЗАРЫН ЭЗЭНИЙ ПРОФАЙЛ ЗУРАГ: картын ХАМГИЙН ДЭЭД талд, ТУСДАА
+ *      мөрөнд, ГОЛЛУУЛЖ (`flex flex-col items-center`) + **64px** (⏳ (61): 44px) —
+ *      нэр/«✅ Утсаар баталгаажсан»/огноо нь ДООР нь; зураг нь толгойн линк
+ *      ДОТОР тул дарж ч `/sellers/<user_id>` руу орно ✓
+ *      ⏳ (64): «📋 N идэвхтэй зар» линк ч КАРТЫН ГОЛД болов (`justify-center`) —
+ *      задаргаа тэгш харагдана; линк өөрөө/өнгө/зураас/`href` ХӨНДӨӨГДӨӨГҮЙ ✓
  *
  * ⚙️ АЖИЛЛУУЛАХ:
  *   1) `npm run build && npm run start` (http://localhost:3000)
@@ -113,6 +119,9 @@ const PROBE = `(() => {
   const header = [...box.querySelectorAll('a')].find((a) => a !== stats) || null;
   const cs = getComputedStyle(stats);
   const br = box.getBoundingClientRect();
+  const av = header ? header.firstElementChild : null;          // 👤 аватар (эхний элемент)
+  const avr = av ? av.getBoundingClientRect() : null;
+  const nameEl = box.querySelector('.text-base');               // 👤 нэрийн мөр
   const out = [];
   box.querySelectorAll('*').forEach((el) => {
     const r = el.getBoundingClientRect();
@@ -139,6 +148,14 @@ const PROBE = `(() => {
     boxWidth: Math.round(br.width),
     headerHref: header && header.getAttribute('href'),
     headerDecoration: header ? getComputedStyle(header).textDecorationLine : null,
+    headerClass: header ? String(header.className) : null,
+    avatarInHeader: !!(header && av && header.contains(av)),
+    avatarSize: avr ? Math.round(avr.width) : 0,
+    avatarSquare: !!(avr && Math.abs(avr.width - avr.height) < 1),
+    avatarTopGap: avr ? Math.round(avr.top - br.top) : -1,
+    avatarCenterDeltaX: avr ? Math.round(Math.abs((avr.left + avr.width / 2) - (br.left + br.width / 2))) : -1,
+    avatarAboveName: !!(avr && nameEl && avr.bottom <= nameEl.getBoundingClientRect().top + 1),
+    nameTopGap: nameEl ? Math.round(nameEl.getBoundingClientRect().top - br.top) : -1,
     anchorsInBox: box.querySelectorAll('a').length,
     overflowInBox: out,
     wideEls: wide.slice(0, 5),
@@ -174,6 +191,20 @@ check('② карт дотор ЯГ 2 линк (толгой + «идэвхтэ�
 check('② толгойн линк мөн `/sellers/<user_id>` руу', p.headerHref === `/sellers/${UID}`, `header=${p.headerHref}`);
 check('② толгойн линк линк шиг ХАРАГДАХГҮЙ (зураасгүй)', p.headerDecoration === 'none', p.headerDecoration);
 
+// ---------- ②👤 АВАТАР — КАРТЫН ДЭЭД ТАЛД, ГОЛЛУУЛЖ, 64px (2026-10-08 (64)) ----------
+// ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Зарын эзэний Profile зургийг картых нь дээд талд,
+// жаахан томруулаад тавиад өгөөч» ⇒ [Avatar 64px] → [нэр + ✅] → [✅/огноо] ✓
+check('②👤 толгойн линк нь ГОЛЛУУЛСАН багана (`flex flex-col items-center` + `text-center`)',
+  /flex flex-col items-center/.test(p.headerClass || '') && /text-center/.test(p.headerClass || ''),
+  String(p.headerClass).slice(0, 60));
+check('②👤 аватар нь картын ХАМГИЙН ДЭЭД талд (нэр ДООР нь)',
+  p.avatarTopGap >= 0 && p.avatarTopGap <= 20 && p.avatarAboveName === true,
+  `дээд зай=${p.avatarTopGap}px · нэр=${p.nameTopGap}px · нэр доор нь=${p.avatarAboveName}`);
+check('②👤 аватар ГОЛЛУУЛЖ (картын төвөөс зөрүү ≤ 1px)', p.avatarCenterDeltaX <= 1, `${p.avatarCenterDeltaX}px`);
+check('②👤 аватар 64px (⏳ (61)-ийн 44px → 🆕 (64))', p.avatarSize === 64 && p.avatarSquare === true, `${p.avatarSize}px`);
+check('②👤 аватар нь толгойн линк ДОТОР (дарж `/sellers/<user_id>` руу орно)',
+  p.avatarInHeader === true && p.anchorsInBox === 2);
+
 // ---------- ③ БАГТАХ ----------
 console.log(`     📏 карт: ${p.boxWidth}×${p.boxHeight}px (1280px дэлгэц)`);
 check('③ картаас ГАДНА гарсан элемент 0', p.overflowInBox.length === 0, p.overflowInBox.join(', ') || '0');
@@ -194,6 +225,9 @@ await goto(BASE + PATH, 390, 780);
 const mob = await evalJs(PROBE);
 check('⑤ 📱 мобайл дээр ч линк хэвээр (`<a>` + зураас)', mob.found && mob.statsTag === 'A' && mob.statsDecoration.includes('underline'));
 check('⑤ 📱 мобайл дээр картаас гарсан элемент 0', mob.overflowInBox.length === 0, mob.overflowInBox.join(', ') || '0');
+check('⑤ 📱 мобайл дээр ч аватар 64px, ГОЛЛУУЛЖ, картын дээд талд',
+  mob.found && mob.avatarSize === 64 && mob.avatarCenterDeltaX <= 1 && mob.avatarAboveName === true,
+  `${mob.avatarSize}px · Δx=${mob.avatarCenterDeltaX}px`);
 check('⑤ 📱 мобайл дээр хэвтээ гүйлт 0', mob.pageScrollX <= 0 && mob.wideEls.length === 0, `scrollX=${mob.pageScrollX}`);
 console.log(`     📏 📱 карт: ${mob.boxWidth}×${mob.boxHeight}px (390px дэлгэц)`);
 
@@ -214,8 +248,8 @@ await goto(BASE + PATH);
 const clip = await evalJs(`(() => { const a = [...document.querySelectorAll('a')].find((x) => x.textContent.includes('идэвхтэй зар')); a.scrollIntoView({ block: 'center' }); const r = a.parentElement.getBoundingClientRect(); return { x: Math.max(0, Math.round(r.left) - 60), y: Math.max(0, Math.round(r.top) - 60), width: Math.round(r.width) + 120, height: Math.round(r.height) + 120 }; })()`);
 const shot = await rpc('Page.captureScreenshot', { format: 'png', clip: { ...clip, scale: 2 } });
 const fsmod = await import('node:fs');
-fsmod.writeFileSync('/tmp/zar-63-seller-card.png', Buffer.from(shot.data, 'base64'));
-console.log('  📸 зураг: /tmp/zar-63-seller-card.png');
+fsmod.writeFileSync('/tmp/zar-64-seller-card.png', Buffer.from(shot.data, 'base64'));
+console.log('  📸 зураг: /tmp/zar-64-seller-card.png');
 
 console.log(`\n${fail === 0 ? '✅' : '❌'} РЕЗУЛЬТАТ: ${ok} OK / ${fail} FAIL\n`);
 await hardExit(fail === 0 ? 0 : 1);
