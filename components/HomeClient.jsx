@@ -73,11 +73,11 @@ import { DEFAULT_SORT, SORT_OPTIONS, normalizeSort } from '../lib/sortOptions.mj
 //       дүрэм ДАХИН БИЧИХГҮЙ ✓
 import { useSavedSearches } from '../lib/savedSearches';
 import { isSaveableSearch } from '../lib/savedSearch.mjs';
-// 🕐 ХАЙЛТЫН ТҮҮХ (2026-10-07, хэрэглэгчийн хүсэлт: «цагийн icon ... ийш
-//    орход тухайн хэрэглэгчийн хайлтуудыг харуулдаг болгох») — хайх БҮРД
-//    автоматаар бүртгэгдэнэ. Хадгалалт нь нэвтэрсэн бол DB
-//    (`search_history` — 0032), зочин бол localStorage (hybrid ✓)
-import { useSearchHistory } from '../lib/searchHistory';
+// 🕐 2026-10-08 (68): ХАЙЛТЫН ТҮҮХ энд бүртгэгдэхээ БОЛИВ (хэрэглэгчийн хүсэлт:
+//    «хайлтын түүх дээр орж үзсэн заруудыг л зөвхөн гаргадаг болгоорой, одоо
+//    хайлтыг гаргаад байгаа») ⇒ `useSearchHistory()` (хайх БҮРД бичдэг байсан)
+//    ба debounce таймер ХАСАГДАВ. Одоо бүртгэл нь зөвхөн `ListingDetailClient`
+//    доторх `recordListingView()` — зар нээх бүрд 1 мөр (`/listings/<id>`) ✓
 // 🛏 ӨРӨӨНИЙ ТОО — ОЛОН СОНГОЛТ — цэвэр логик нь `lib/roomFilter.mjs`
 //    (URL, DB, breadcrumb бүгд тэр модулийг хэрэглэнэ) ✓
 // 🆕 2026-10-03 (4): ХЭРЭГЛЭГЧИЙН ХҮСЭЛТЭЭР UI ЭРГЭЖ ИРЭВ —
@@ -892,13 +892,10 @@ export default function HomeClient() {
   //       шийднэ) — `useAuth()` нь root provider-оос ирнэ ✓
   const { user } = useAuth();
   const savedSearches = useSavedSearches(user);
-  // 🕐 ХАЙЛТЫН ТҮҮХ (2026-10-07) — хайх БҮРД автоматаар бүртгэгдэнэ.
-  //    ⚠️ `record` нь эффект дотор ref-ээр дуудагдана (deps-д оруулбал
-  //       эффект дахин дахин ажиллах эрсдэл ✗); таймер нь debounce-ны төлөв ✓
-  const searchHistory = useSearchHistory(user);
-  const historyRecordRef = useRef(searchHistory.record);
-  historyRecordRef.current = searchHistory.record;
-  const historyTimer = useRef(null);
+  // 🕐 2026-10-08 (68): хайлт бүртгэх `useSearchHistory()`/debounce таймер
+  //    ХАСАГДАВ — түүх нь зөвхөн ҮЗСЭН ЗАРУУДААР дүүрнэ (`ListingDetailClient`
+  //    → `recordListingView()`). ⚠️ Энэ хуудсанд түүхийн hook ХЭРЭГГҮЙ:
+  //    хайлт бүртгэхгүй + жагсаалтыг татахгүй ⇒ илүүц query байхгүй ✓
   /**
    * 🔗 Одоогийн хайлтын URL — «Хайлтыг хадгалах» товч ЯГ ҮҮНИЙГ хадгална.
    * ⚠️ Доорх URL-шинэчлэх эффект нь адресны мөрийг бичдэг тул тэр `next`
@@ -1266,18 +1263,10 @@ export default function HomeClient() {
     //    бол зөвхөн харагдацын синк; энэ нь React-ийн төлөв ✓
     setCurrentUrl(next);
     if (next !== current) router.replace(next, { scroll: false });
-    // 🕐 ХАЙЛТЫН ТҮҮХ — линк СТОПОЛСНЫ дараа (900мс, debounce) нэг л удаа
-    //    бүртгэнэ. ⚠️ Шууд бүртгэвэл шүүлт бичих/солих БҮРД олон мөр үүснэ ✗
-    //    ⚠️ «Бүх зар» (`isSaveableSearch` false) бол ОГТ бүртгэхгүй ✓
-    if (isSaveableSearch(next)) {
-      if (historyTimer.current) clearTimeout(historyTimer.current);
-      historyTimer.current = setTimeout(() => {
-        if (historyRecordRef.current) historyRecordRef.current(next);
-      }, 900);
-    }
-    // ⚠️ Дараагийн өөрчлөлт эсвэл unmount дээр хуучин таймерыг цуцална —
-    //    энэ нь яг debounce-ны зан төлөв (зөвхөн СҮҮЛИЙН төлөвийг бүртгэнэ ✓)
-    return () => { if (historyTimer.current) clearTimeout(historyTimer.current); };
+    // 🕐 2026-10-08 (68): ХАЙЛТЫН ТҮҮХ энд БИЧИГДЭХГҮЙ (хэрэглэгчийн хүсэлт —
+    //    түүхэд зөвхөн ҮЗСЭН ЗАРУУД гарна) ⇒ `isSaveableSearch(next)` шалгалт
+    //    + 900мс debounce таймер + cleanup БҮГД хасагдав. Хайлтыг ДАХИН
+    //    сэргээх бол түүхийн оронд «🔖 Хадгалсан хайлт» (`saved_searches`) ✓
   }, [urlReady, category, section, query, filters, view, page, sort, router]);
 
   /**

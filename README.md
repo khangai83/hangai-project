@@ -1236,6 +1236,51 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   хүснэгт) · `docs/IMPROVEMENTS.md` (энэ мөр)
   🔍 Хайх үг: `max-w-[480px]`, `mx-auto`, `isHeader`, `HeaderSearchBar`,
   `test-search-bar-width`
+- 🕐 **«ХАЙЛТЫН ТҮҮХ» ОДОО ЗӨВХӨН ҮЗСЭН ЗАРУУДЫГ ХАРУУЛНА (2026-10-08 (68))** —
+  хэрэглэгчийн хүсэлт: «хайлтын түүх дээр орж үзсэн заруудыг л зөвхөн гаргадаг
+  болгоорой, одоо хайлтыг гаргаад байгаа, энэ нэрийг хэвээр үлдээ».
+  🚫 **Хайлт ОГТ бүртгэгдэхгүй болов:** `HomeClient`-ийн 900мс debounce
+  авто-бүртгэл (`historyRecordRef`/`historyTimer`) БҮРЭН ХАСАГДАВ; түүхэнд
+  зөвхөн **зар нээх бүрд** нэг мөр (`/listings/<uuid>`) бичигдэнэ —
+  `components/ListingDetailClient.jsx` доторх `recordListingView(userId, id)`
+  (effect `[id, user]`, алдааг чимээгүй дарна — миграцгүй ч localStorage-д
+  бичигдэнэ ✓)
+  🃏 **`/history` дээр зарын БҮРЭН карт** (`components/ListingCard` —
+  /favorites-тай ижил хэв: зураг · үнэ · гарчиг · байршил · 🛏/📐/🏢 · ❤️/👁);
+  дээр нь **«🕒 <хэзээ үзсэн>»** (харьцангуй цаг) + баруун дээд буланд
+  **«Хасах»** товч (карт нь өөрөө `<Link>` тул товч картын ГАДНА — nested
+  interactive хориотой ✗); карт БҮХЭЛДЭЭ дарагдаж зарын хуудас руу ШУУД орно ✓
+  ⚠️ **Гарчиг/хуудас/товчны нэр ХЭВЭЭР** («🕐 Хайлтын түүх») — зөвхөн агуулга
+  нь болов (хүсэлт ✓)
+  🗄 **Зөвхөн ЛИНК хадгална, мэдээлэл нь `listings`-ээс ШУУД** ⇒ үнэ/гарчиг
+  засагдсан ч ШИНЭ утга харагдана, **УСТСАН зар картаас автоматаар ГАРАХГҮЙ**
+  (`fetchListingsByIds` нь зөвхөн энэ хуудас нээгдэхэд, нэг query ✓); бүгд
+  устсан бол «Үзсэн зарууд олдсонгүй» төлөв; тоо нь «N зар үзсэн (M нь
+  олдсон)» ✓
+  🧹 **Хуучин хайлтын мөрүүд цэвэрлэгдэнэ:** `lib/searchHistory.mjs` бүхэлдээ
+  «линк → зарын id» логик болж шинэчлэгдэв — `historyListingId` (хайлтын линк →
+  `''`), `listingHistoryUrl` (каноник `/listings/<id>`), `historyKey`,
+  `mergeHistoryListings` (түүх + `listings` → карт; дараалал хадгална),
+  `historyDescriptor`/`historyCategoryLeaf` **ХАСАГДАВ**; `fetchDb` /
+  `parseHistoryList` / `normalizeHistoryRow` нь хайлтын мөрийг шүүж,
+  `fetchDb` нь best-effort устгана ✓
+  🧪 `scripts/test-search-history.mjs` **27/27 ✓** (DB/React-гүй; хуучин
+  21-ээс шинэчлэв — хайлтын линк ОРЖ БОЛОХГҮЙ, устсан зар карт БОЛОХГҮЙ гэсэн
+  РЕГРЕСС ХОРИГТОЙ) · 🐍 `scripts/cdp-search-history.mjs`
+  (`npm run cdp:search-history`) **18 OK / 0 FAIL ✓** — ✅ БОДИТ Chrome +
+  сервер :3000 дээр: зар нээхэд `/listings/<id>` бичигдэв · хайлт хийхэд
+  БИЧИГДЭХГҮЙ · /history дээр гарчиг ХЭВЭЭР + зарын карт + «🕒 … үзсэн» дээр
+  (геометрээр) · устсан/хуучин мөр карт БОЛОХГҮЙ · карт дарахад зарын хуудас ·
+  «Хасах» → мөр арилна + localStorage цэвэрлэгдэнэ + navigation БИШ · JS
+  exception 0 ✓ · ⚠️ скрипт нь БОДИТ зарын id-г `.env.local` → Supabase REST
+  (`/rest/v1/listings?limit=1`) -ээр, нөөцөөр нүүр хуудсны
+  `a[data-listing-card]`-аас авна (олдохгүй бол SKIP → exit 0 ✓)
+  · `npm run test:*` БҮГД ✓ · `npm run build` EXIT=0 ✓
+  📄 DOC: `README.md` (энэ bullet + §4.2 шинэчлэв + §4 файлын жагсаалт + тестийн
+  2 мөр) · `docs/IMPROVEMENTS.md` (энэ мөр)
+  🔍 Хайх үг: `historyListingId`, `listingHistoryUrl`, `mergeHistoryListings`,
+  `recordListingView`, `fetchListingsByIds`, `test-search-history`,
+  `cdp-search-history`
 - 🔔 **«МЭДЭГДЭЛ» ХОНХ — ХЭН МИНИЙ ЗАРТ ❤️ ДАРСАН НЬ ХАРАГДАНА (2026-10-08 (67))** —
   хэрэглэгчийн хүсэлт: «facebook шиг notification тэй болгоё. Өөрөөр хэлбэл ямар
   ямар хэрэглэгч ямар зар дээр нь like дараад байгаа нь зар оруулсан хэрэглэгчид
@@ -1279,10 +1324,10 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   (`npm run cdp:notifications`) **13 OK / 0 FAIL / 1 SKIP ✓** (зочин хэсэг:
   хонх түүхийн ЯГ ДАРАА x=1089 > 1077 · 36×36px · зочинд нэвтрэх цонх ·
   📱390px баруун дээд + хэвтээ гүйлт 0) · `npm run lint:migrations` **39/39 ✓** ·
-  `npm run build` EXIT=0 ✓ · `npm run test:*` **34/34 ✓** (⚠️ `test:search-history` ⑮
-  дэх `AppProviders`-ийн `HeaderIcons` импортын гэрээг 🔔 `BellIcon`
-  ЗӨВШӨӨРӨХ болгож шинэчив — «Heart→Chat→Clock» дараалал ХЭВЭЭР шаардагдана,
-  21/21 ✓)
+  `npm run build` EXIT=0 ✓ · `npm run test:*` **34/34 ✓** (тухайн үед: ⚠️
+  `test:search-history` ⑮ дэх `AppProviders`-ийн `HeaderIcons` импортын гэрээг
+  🔔 `BellIcon` ЗӨВШӨӨРӨХ болгож шинэчив — «Heart→Chat→Clock» дараалал ХЭВЭЭР
+  шаардагдана · ⏳ 2026-10-08 (68)-д тэр гэрээ ⑲ болж, тест 27 болж шинэчлэгдэв ✓)
   📄 DOC: `README.md` (энэ bullet + «🔔 МЭДЭГДЭЛ» хэсэг + миграцын хүснэгт 34 +
   тестийн 2 мөр + Түргэн командууд) · `docs/IMPROVEMENTS.md` (энэ мөр)
   🔍 Хайх үг: `notifications`, `notify_listing_like`, `BellIcon`,
@@ -5561,6 +5606,8 @@ npm run test:prefill     # 🎯 АНГИЛАЛ УРЬДЧИЛАН БӨГЛӨХ �
 npm run test:location    # 📍 «Байршил сонгохгүй» чекбокс — round-trip/шалгалт/гэрээ/байрлал/DB-д 0 migration (36 тест, 0₮)
 npm run test:location-map # 🗺 ГАЗРЫН ЗУРАГ ДЭЭРХ БАЙРШИЛ — төвд тогтмол пин + хорооны ойролцоо төв + geo-хайлт + Google Maps «Copy link» (солбицлын цэвэр дүрэм · 9 дүүрэг/22 хотын төв · хорооны ойролцоо төв · Nominatim geocoder · чекбокс round-trip · Nominatim reverse-хаяг · дүүргийн бодит хил · линк задлах (богино линк серверээр) · гэрээ; 70 тест, 0₮)
 npm run test:notifications # 🔔 МЭДЭГДЭЛ — хонхны уншаагүй тоо/badge («99+»)/зараар бүлэглэлт/📞 `+976 8811 2233` + `tel:` линк + migration 0040-ийн гэрээ (30 тест, 0₮) ✓
+npm run test:search-history # 🕐 ХАЙЛТЫН ТҮҮХ — ЗӨВХӨН үзсэн ЗАРУУД (`/listings/<id>`); хайлтын линк БИЧИГДЭХГҮЙ · устсан зар карт БОЛОХГҮЙ (27 тест, 0₮) ✓
+npm run cdp:search-history # 🐍 БОДИТ Chrome (:9222): зар нээхэд түүхэнд бичигдэнэ · хайлт бичигдэхгүй · `/history` зарын карт + «Хасах» (18 OK ✓)
 npm run cdp:notifications # 🐍 БОДИТ Chrome (:9222) дээр 🔔 хонх нь «Хайлтын түүх»-ийн ЯГ ДАРАА + зочинд нэвтрэх цонх + `/notifications` (13 OK / 1 SKIP ✓)
                          #   ⏳ нэвтэрсэн хэсэг (badge · dropdown · 📞) — `ZAR_PHONE=… ZAR_PASS=… npm run cdp:notifications`
 npm run cdp:picker       # 🐍 БОДИТ Chrome (:9222) — пикер/форм/📱wizard/📝 ноорог refresh (183/183 ✓)
@@ -5912,9 +5959,9 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 | `scripts/test-jobs.mjs` | **20 тест** — `npm run test:jobs` (🆕 2026-10-03 (9), 🆕 **2026-10-05 (42)**: 💼 АЖЛЫН ЗАРЫН ГЭРЭЭ — `lib/locationData.js` ШУУД + `codeOnly()` эх кодоор ① форм талбарууд ЯГ 5 — `['jobType','experience','advertiser','jobLevel','salaryType']` (🆕 (10): 🏢 `company` / 💼 `position` ХАСАГДАВ) ② 🕒 «Ажлын цаг» 5 сонголт + **`chips` + `multi` + `filterBar`** (🆕 (42)) ③ 📊 Туршлага/🏷️ Зарлагч/📈 Мэргэжлийн түвшин/💰 Цалингийн төрөл (📊/📈 ч **`chips` + `multi` + `filterBar`** — 🆕 (42)) ④ 🗑 salary/education/workMode/expiry ХАСАГДАВ ⑤ **хайлтын 3 шүүлт — ГУРВУУЛАА `chips` + `multi` + `filterBar`** (`jobType` · `experience` · `jobLevel`; 🆕 (42)) ба 🆕 `HomeClient`-ийн `attrFilters.filter((f) => f.chips && f.multi && f.filterBar)` / `.filter((f) => !f.filterBar)` хоёр мөр + `data-filter-pill`/`data-filter-panel` дэгээ (хатуу жагсаалт `FILTER_BAR_ATTR_KEYS` БАЙХГҮЙ ✓) ⑥ `priceWord`/`isJobsSection` ⑦ `format.js` `NEGOTIABLE_SALARY_LABEL`+`negotiableLabel` ⑧ форм «Цалингийн хэмжээ»+«Цалин тохиролцоно» ⑨ `f.chips` салбар (`chip-toggle`/`data-attr-value`) ⑩ `priceSideBlock` + ажилд attr шүүлтүүдийн ӨМНӨ дараалал (regex + `indexOf`) ⑪ картын мөр ⑫ `getAttrRows` `salary`/`company`/`position` МӨР БАЙХГҮЙ ⑬ seed шинэ утгууд · 🆕 **(51) 2026-10-07: ①–④ форм талбар `formChips === undefined`** (форм нь 💰 `salaryType`-тай ЯГ ИЖИЛ `<select>`/📱 2 баганат жагсаалт — ⏳ (11)-ийн форм чип ХАСАГДАВ, `f.formChips` салбарын гэрээ ХЭВЭЭР ✓) |
 | `scripts/test-search.mjs` | **53 тест** — `npm run test:search` (2026-09-30: 🔢 `lib/rangeFilter.mjs` (`groupDigits`/`parseNum`/`formatGroupedInput`/`clampNum`/`snapNum`/`toFilterPair`/`isRangeActive`/`rangeLabel`/`yearBounds`; 🆕 2026-10-04 (41): `FLOOR_BOUNDS`/`buildYearBounds`/`BUILD_YEAR_START`) + 🔀 `lib/sortOptions.mjs` (`SORT_OPTIONS`/`normalizeSort`/`sortOrders`/`sortLabel`) — `order=price.asc.nullslast,id.desc` ба HomeClient/queries-ийн гэрээ ✓; 📌 регресс: ① слайдер (`RangeSlider`/`rangeSlider.mjs`/`role="slider"`/pointer handler) ХААНА Ч БАЙХГҮЙ ② он БҮЛЭГЛЭГДЭХГҮЙ («2.026» ✗) ③ «1.234,5» → `1234.5` ✓ ④ хил дээрх `0` → «₮0 – ₮5 тэрбум» (өмнө нь «₮ – …» хоосон ✗) ⑤ **2026-09-30 (3): `priceQuickPicks()` эскпорт БАЙХГҮЙ, `quickPicks`/`data-quick-pick`/`aria-pressed` КОДОД БАЙХГҮЙ (комментыг `codeOnly()`-оор хасч шалгана), `snapNum` ЦЭВЭР туслах хэвээр, шошго нь `placeholder="Доод"`/`"Дээд"` + `(доод хязгаар)`/`(дээд хязгаар)` — «Эхлэх / Дуусах» кодод БАЙХГҮЙ** ✓) |
 | `scripts/test-saved-searches.mjs` | 🆕 **24 тест** — `npm run test:saved-searches` (2026-10-06 (13): 🔖 хадгалсан хайлтын ЦЭВЭР логик `lib/savedSearch.mjs` — ① URL → шошго: «Категори» нь unegui.mn-ийн мөр («Үл хөдлөх — Үл хөдлөх зарна — Орон сууц зарна — 3 өрөө») ба «Байршил» («Хан-Уул, Нүхтийн ам») ② 🛠 services-ийн 3-р түвшний БҮЛЭГ замад багтана ③ давхардсан шошго 1 л удаа («Автомашин — Автомашин» → «Автомашин — Суудлын машин») ④ хэсэг сонгоогүй → «Бүх зар» ⑤ хайлтын үг (`q`) гарчигт + хэт урт таслагдана ⑥ state (rooms/district массив) ⑦ давхардлын түлхүүр `page`/`view`/`sort`-ыг ТООЦОХГҮЙ ⑧ параметрийн дараалал хамаарахгүй ⑨ `isSaveableSearch` («Бүх зар» → false) ⑩–⑬ `parseSavedSearchList` (давхардал/хог/хязгаар/тойрог) ⑭–⑯ мөрийн хэлбэр (`created_at`↔`createdAt`)/trim/дээд урт/query string ⑰ id · **ГЭРЭЭ (⑱–㉔, `codeOnly()`)**: HomeClient «Хайлтыг хадгалах» товч (`data-save-search`, `aria-pressed`) + `currentUrl` толь · SavedSearchesClient («Категори/Байршил», «Илэрц харуулах»/«устгах») · `/favorites` 2 таб (`data-fav-tab`) · `lib/savedSearches.js` hybrid (DB + localStorage + миграц) · migration 0031 (RLS + `unique (user_id, url)` + UPDATE policy БАЙХГҮЙ) · `package.json` script — ⚠️ DB/React ХОЛБОГДОХГҮЙ ✓) |
-| `scripts/test-search-history.mjs` | 🆕 **21 тест** — `npm run test:search-history` (2026-10-07: 🕐 хайлтын түүхийн ЦЭВЭР логик `lib/searchHistory.mjs` — ①–④ URL → карт: категорийн **СҮҮЛИЙН нэр** (`leaf` — «Цахилгаан бараа → Угаалгын машин»), бүтэн зам, байршил, түлхүүр үг, өрөө/үнэ; «Бүх зар» → хоосон ⑤ `historyKey`/`isHistoryUrl` ⑥ `historyTimeAgo` («Саяхан»/минут/цаг/«Өчигдөр»/өдөр/огноо) ⑦–⑨ `recordHistory` (давхардал нэгтгэж ЭХЭНД, id хэвээр; утгагүй → `ok:false`; дээд тоо 60) ⑩–⑬ `normalizeHistoryRow` (`last_seen_at`) · `parseHistoryList` (давхардал/хог/хязгаар/тойрог) · `newHistoryId` · **ГЭРЭЭ (⑭–㉑, `codeOnly()`)**: `HeaderIcons` `ClockIcon` · `AppProviders` (Мессежийн ДАРАА товч + цэс + footer) · `SearchHistoryClient` (карт + `data-search-history-*` дэгээ) · `/history` хуудас · `lib/searchHistory.js` hybrid (upsert) · `HomeClient` авто-бүртгэл (debounce) · migration 0032 (RLS + UPDATE policy БАЙНА + `unique (user_id, key)`) · `package.json` script — ⚠️ DB/React ХОЛБОГДОХГҮЙ ✓ · ⚠️ **2026-10-08 (67) засвар:** ⑮ дэх `AppProviders`-ийн `HeaderIcons` импортын гэрээ нь 🔔 `BellIcon` нэмэгдсэн тул «`HeartIcon` → `ChatIcon` → `ClockIcon` ДАРААЛАЛТАЙ байх» гэж ШААРДАХ болсон (нэмэлт икон зөвшөөрөгдөнө — хатуу жагсаалт БИШ ✓) |
+| `scripts/test-search-history.mjs` | 🆕 **27 тест** — `npm run test:search-history` (⏳ **2026-10-08 (68): ТҮҮХЭД ЗӨВХӨН ҮЗСЭН ЗАРУУД** — ①–③ `historyListingId` (`/listings/<id>` → id; бүтэн линк/query/`/`-тай ч; **ХАЙЛТЫН линк → `''`**) · `listingHistoryUrl`/`historyKey`/`isHistoryUrl` (каноник линк; хайлтын линк түлхүүр БОЛОХГҮЙ) ④ `historyTimeAgo` ⑤–⑦ `recordHistory` (ижил ЗАР давхардахгүй + id хэвээр + ЭХЭНД; **хайлтын линк → `ok:false`**, жагсаалт ХӨНДӨӨГДӨХГҮЙ; дээд тоо 60) ⑧–⑩ `normalizeHistoryRow` (зарын мөр OK · **хуучин хайлтын мөр → `null`** · бүтэн линк каноник болов) ⑪–⑬ `parseHistoryList` (давхардал/хог/**хайлтын мөр** шүүнэ) · тойрог · `newHistoryId` ⑭–⑯ `mergeHistoryListings` (түүхийн дараалал хадгалагдана + **устсан зар ХАСАГДАНА**; `listingId` талбаргүй ч линкээс задална; хог оролтод алдаагүй) ⑰ **`historyDescriptor`/`historyCategoryLeaf` БАЙХГҮЙ** (РЕГРЕСС ХОРИГ) · **ГЭРЭЭ (⑱–㉗, `codeOnly()`)**: `HeaderIcons` `ClockIcon` · `AppProviders` (Мессежийн ДАРАА товч + цэс + footer) · **`ListingDetailClient` → `recordListingView()`** · **`HomeClient`-д `useSearchHistory`/`historyRecordRef`/`historyTimer` БАЙХГҮЙ** (хасагдсан ✓; `isSaveableSearch` нь 🔖 товчинд ХЭВЭЭР) · `SearchHistoryClient` (`ListingCard` + `fetchListingsByIds` + `mergeHistoryListings` + `data-search-history-*`; descriptor/leaf БАЙХГҮЙ) · `/history` хуудас + гарчиг ХЭВЭЭР · `lib/searchHistory.js` hybrid (`recordListingView` + upsert + `historyListingId(r.url)` шүүлт) · migration 0032 · `package.json` script — ⚠️ DB/React ХОЛБОГДОХГҮЙ ✓ · ⚠️ **2026-10-08 (67) засвар:** ⑲ дэх `AppProviders`-ийн `HeaderIcons` импортын гэрээ нь 🔔 `BellIcon` нэмэгдсэн тул «`HeartIcon` → `ChatIcon` → `ClockIcon` ДАРААЛАЛТАЙ байх» гэж ШААРДАХ болсон (нэмэлт икон зөвшөөрөгдөнө ✓) |
 | `scripts/cdp-saved-searches.mjs` | 🆕 🐍 **CDP (бодит Chrome)** — `npm run cdp:saved-searches` (**15 OK / 0 FAIL ✓** — 2026-10-06 (13), ✅ БОДИТ headless Chrome 154 + сервер :3000), зочин (localStorage) горим: ① хадгалах утгатай хайлт дээр «Хайлтыг хадгалах» товч (`aria-pressed=false`) ② дарахад «✓ Хадгалагдсан» + `aria-pressed=true` + `disabled` + localStorage-д линк бичигдэв ③ `/favorites` дээр 2 таб (ads + searches) ④ хадгалсан хайлтын мөр ЯГ 1 — «Категори: Үл хөдлөх — … — 3 өрөө» + «Байршил: Хан-Уул» + «Илэрц харуулах» линк нь хадгалсан URL руу + «устгах» ⑤ «устгах» → мөр арилж хоосон төлөв ⑥ дахин тэр хайлт дээр товч «Хайлтыг хадгалах» болж буцаана ⑦ «Бүх зар» (хадгалах утгагүй) дээр товч ОГТ ГАРАХГҮЙ ⑧ JS exception 0 — ⚠️ сервер :3000 ба Chrome :9222 шаардна; байхгүй бол SKIP → exit 0 ✓) |
-| `scripts/cdp-search-history.mjs` | 🆕 🕐 **CDP (бодит Chrome)** — `npm run cdp:search-history` (**12 OK / 0 FAIL ✓** — 2026-10-07, ✅ БОДИТ headless Chrome 155 + сервер), зочин (localStorage) горим: ① хайлт АВТОМАТААР бүртгэгдэв ② `/history` дээр ЯГ 2 карт (шинэ нь ЭХЭНД) — категорийн СҮҮЛИЙН нэр + байршил + түлхүүр үг ③ **карт БҮХЭЛДЭЭ бүрхсэн `absolute` ЛИНК** (геометр ЯГ ТААРНА, href = хайлтын URL) ④ **КАРТ ДЭЭР (товч БИШ) дарахад хайлтын үр дүн рүү ОРНО** ⑤ «Хасах» товч байна · «Дахин хайх» ГАРАХГҮЙ ⑥ «Хасах» → карт арилна · navigation БОЛОХГҮЙ ⑦ JS exception 0 — ⚠️ сервер (:3000) ба Chrome :9222 шаардна; байхгүй бол SKIP → exit 0 ✓) |
+| `scripts/cdp-search-history.mjs` | 🕐 **CDP (бодит Chrome)** — `npm run cdp:search-history` (**18 OK / 0 FAIL ✓** — 🆕 2026-10-08 (68), ✅ БОДИТ headless Chrome + сервер :3000), зочин (localStorage) горим: ① **ЗАР НЭЭХЭД** түүхэнд бичигдэв (утга нь `/listings/<id>` — хайлтын линк БИШ) ② **ХАЙЛТ хийхэд түүхэнд БИЧИГДЭХГҮЙ** (debounce 900мс-ээс хойш ч; мөрийн тоо ХЭВЭЭР) ③ `/history` дээр гарчиг **ХЭВЭЭР** («🕐 Хайлтын түүх») + `ListingCard` (зарын бүрэн карт) гарна; «🕒 … үзсэн» цаг картын **ДЭЭР** (геометрээр шалгана — халхлахгүй) ③e линк = `/listings/<id>` ③f «Хасах» ④ **УСТСАН зар** (түүхэнд байгаа ч `listings`-д байхгүй) карт БОЛОХГҮЙ + **ХУУЧИН хайлтын мөр** (`/?…`) карт БОЛОХГҮЙ + тоо нь «2 зар үзсэн (1 нь олдсон)» ⑤ **КАРТ ДЭЭР (товч БИШ) дарахад ЗАРЫН хуудас руу ОРНО** ⑥ «Хасах» → мөр арилна · navigation БОЛОХГҮЙ · localStorage-аас ч хасагдана ⑦ JS exception 0 — ⚠️ сервер (:3000) ба Chrome :9222 шаардна; байхгүй бол SKIP → exit 0 ✓; ⚠️ БОДИТ зарын id нь `.env.local` → Supabase REST (`/rest/v1/listings?limit=1`), нөөцөөр нүүр хуудасны `a[data-listing-card]`-аас авна; олдохгүй бол SKIP → exit 0 ✓) |
 | `scripts/test-notifications.mjs` | 🆕 **30 тест** — `npm run test:notifications` (2026-10-08 (67): 🔔 мэдэгдлийн ЦЭВЭР логик `lib/notifications.mjs` — ①–③ 📞 `formatPhone` («+976 8811 2233»; гадаад дугаар ХУЙВАРГҮЙ) + `phoneHref` → `tel:` (зөвхөн цифр) ④–⑤ `actorLabel` (хоч нэр → байхгүй бол ДУГААР — хэрэглэгчийн гол хүсэлт ✓) + `actorInitial` ⑥–⑨ `normalizeNotificationRow` (id дутуу → `null` — эвдэрхий мөр UI-д ГАРАХГҮЙ) / `notificationTypeMeta` (танихгүй төрөлд ❤️ нөөц) / `listingLabel` («Зар» нөөц) / `notificationText` («таны «3 өрөө байр» зарыг таалагдлав» — нэр ОРОХГҮЙ) ⑩ `notificationTimeAgo` нь 🕐 хайлтын түүхтэй ЯГ ИЖИЛ (нэг эх сурвалж) ⑪ `sortNotifications` (шинэ нь ЭХЭНД; оролт ХӨНДӨӨГДӨХГҮЙ) ⑫–⑬ `unreadCount` / `badgeLabel` (0/сөрөг → хоосон · 99+ → «99+») ⑭–⑰ `groupByListing`/`groupCountLabel`/`groupTitleLabel` (зараар бүлэглэлт; `listing_id` дутуу мөрүүд НЭГ бүлэгт — зар устсан ч мэдэгдэл алга болохгүй ✓) · **ГЭРЭЭ (⑱–㉚, `codeOnly()`)**: migration 0040 (хуулбар баганууд · CHECK нь `NOTIFICATION_TYPE_META`-той ИЖИЛ · **INSERT policy БАЙХГҮЙ** · триггер `after insert` `security definer` · `grant update (read_at)` БА «текст дарж бичих» эрх БАЙХГҮЙ · idempotent + хуучин ❤️ бөглөлт) · `queries.js` 5 функц · `notificationsClient.js` (2 hook + event) · `NotificationBell` · `NotificationsClient` · хонх нь «Хайлтын түүх»-ийн ДАРАА · `BellIcon` `currentColor` SVG (emoji БИШ) · `/notifications` хуудас — ⚠️ DB/React ХОЛБОГДОХГҮЙ ✓) |
 | `scripts/cdp-notifications.mjs` | 🆕 🔔 **CDP (бодит Chrome)** — `npm run cdp:notifications` (**13 OK / 0 FAIL / 1 SKIP ✓** — 2026-10-08 (67), ✅ БОДИТ headless Chrome 155 + сервер :3000), зочин горим: ① толгойн мөрөнд 🔔 хонх байна — **36×36px** ①b **хонх нь 🕐 «Хайлтын түүх»-ийн ЯГ ДАРАА** (x тэнхлэгээр: түүх 1041–1077 < хонх 1089–1125 ✓ — хэрэглэгчийн хүсэлт) ①c икон нь SVG + `currentColor` (emoji БИШ) ② зочин хонх дарвал 🔑 нэвтрэх цонх нээгдэв ②b хуудас СОЛИГДООГҮЙ (хонх нь `<Link>` БИШ — Facebook-ийн хэв ✓) ③ «✕» → цонх хаагдлав ④ `/notifications` нээгдэв (унасан/хоосон дэлгэц БИШ) ④b гарчиг 🔔 + тайлбар ④c «🔑 Нэвтрэх» товч ④d цонх нээгдэв ⑤ 📱 390px-д хонх харагдана (x=338–374) ⑤b баруун дээд (`right=374`, `scrollWidth=390` ⇒ хэвтээ гүйлт **0**) ⑦ JS exception **0** — ⏳ **SKIP:** нэвтэрсэн хэсэг ⑥ (`ZAR_PHONE`/`ZAR_PASS` өгөөгүй тул; ⑥ нь badge → dropdown → 📞 формат `+976 NNNN NNNN` + `tel:` → бүлгийн гарчиг/мөрийн тоо ТААРНА ✓) — ⚠️ сервер (:3000) + Chrome `--remote-debugging-port=9222` шаардна; байхгүй бол SKIP → exit 0 ✓; ⚠️ миграц 0040 ороогүй бол `npm run migration:copy 0040_notifications.sql` гэсэн заавартай SKIP ✓) |
 
@@ -6662,38 +6709,53 @@ npm run test:activity
   (`savedSearchKey`) тул ижил хайлт 2 удаа хадгалагдахгүй ✓.
 - Цэвэр логик (URL → шошго, давхардлын түлхүүр, жагсаалт): `lib/savedSearch.mjs`
 
-### 4.2 🕐 Хайлтын түүх (сүүлийн хайлтууд) — толгойн цагийн icon
+### 4.2 🕐 Хайлтын түүх (сүүлд ҮЗСЭН ЗАРУУД) — толгойн цагийн icon
 
 > 2026-10-07 · хэрэглэгчийн хүсэлт: «Мессеж icon-ий дараа цагийн icon оруулаад,
-> тэр рүү орход тухайн хэрэглэгчийн хайлтуудыг КАРТ хэлбэрээр харуул — карт
-> дээр категорийн сүүлийн нэр (ж: Цахилгаан бараа → «Угаалгын машин»), байршил,
-> хайсан түлхүүр үг гэх мэтийг оруул».
+> тэр рүү орход тухайн хэрэглэгчийн хайлтуудыг КАРТ хэлбэрээр харуул».
+> ✏️ 2026-10-08 (68) · «хайлтын түүх дээр орж үзсэн заруудыг л зөвхөн гаргадаг
+> болгоорой, одоо хайлтыг гаргаад байгаа, энэ нэрийг хэвээр үлдээ» ⇒ агуулга
+> нь **хайлтын шүүлтүүр БИШ, үзсэн зарууд** болов (нэр/хуудас/товч ХЭВЭЭР ✓).
 
 - Толгойн мөрийн **💬 Мессежийн ЯГ ДАРАА цагийн icon** (`ClockIcon` SVG —
   циферблат + 2 зүү, `h-6 w-6`) → дарахад **`/history`** хуудас нээгдэнэ.
   ⚠️ Зөвхөн icon (текстгүй), ❤️/💬-тай ЯГ ИЖИЛ хэв (`p-1.5`, hover `scale-110`);
   хэрэглэгчийн цэс (desktop dropdown + мобайл sheet) ба footer-т ч холбоос бий ✓
 - ⚠️ **🔖 Хадгалсан хайлт (§4.1)-аас ЯЛГААТАЙ:** 🔖 нь **гараар** хадгална
-  (цөөн, зориуд), 🕐 нь хайх **БҮРД АВТОМАТААР** бүртгэгдэнэ (олон,
-  санамсаргүй) → Chrome-ийн түүхтэй ижил зарчим: дээд тоо **60** + давхардлыг
-  нэгтгэж «хамгийн сүүлд хайснаар» эрэмбэлнэ ✓
-- Карт бүр дээр: ① категорийн **СҮҮЛИЙН нэр** (ГОЛ шошго — badge) ② бүтэн
-  категорийн зам ③ **🕒 хэзээ хайсан** (харьцангуй цаг: «Саяхан», «5 минутын
-  өмнө», «Өчигдөр»…) ④ 🔑 **хайсан түлхүүр үг** ⑤ 📍 **Байршил** ⑥ 🛏 өрөө ·
-  💰 үнэ (chip) — **КАРТ БҮХЭЛДЭЭ ДАРАГДАНА** (картыг бүрхсэн `absolute inset-0`
-  линк → хайлтын үр дүн рүү ШУУД) + доод баруун буланд **«Хасах»** товч
+  (цөөн, зориуд), 🕐 нь **АВТОМАТААР** бүртгэгдэнэ — гэхдээ **зөвхөн зар НЭЭЖ
+  ҮЗЭХ бүрд** (хайлт БИШ) → Chrome-ийн түүхтэй ижил зарчим: дээд тоо **60** +
+  давхардлыг нэгтгэж «хамгийн сүүлд үзсэнээр» эрэмбэлнэ ✓
+- 🃏 **Карт нь ЗАРЫН бүрэн карт** (`components/ListingCard` — §favorites-тэй ижил
+  хэв: зураг · үнэ · гарчиг · байршил · 🛏/📐/🏢 · ❤️/👁) + дээр нь
+  **«🕒 <хэзээ үзсэн>»** (харьцангуй: «Саяхан», «5 минутын өмнө», «Өчигдөр»…)
+  ба баруун дээд буланд **«Хасах»** товч. **КАРТ БҮХЭЛДЭЭ ДАРАГДАНА**
+  (`ListingCard` өөрөө `<Link href="/listings/<id>">`) → зарын хуудас ШУУД нээгдэнэ;
+  товч нь картын ГАДНА (дээр) — карт бүхэлдээ линк тул дотор нь товч хийх нь
+  HTML-д хориотой (nested interactive ✗) ✓
+- ⚠️ **Түүхэнд зөвхөн ЛИНК хадгална** (`/listings/<uuid>`), үнэ/гарчиг/зургийг
+  `listings`-ээс **шууд татна** (`fetchListingsByIds`, зөвхөн энэ хуудас
+  нээгдэхэд) ⇒ үнэ засагдсан ч ШИНЭ утга, **УСТСАН зар картаас ГАРАХГҮЙ**
+  (хуулбар хадгалах нь «хуучин үнэтэй» карт үүсгэх эрсдэлтэй ✗); хэрэв бүх
+  зар устсан бол «Үзсэн зарууд олдсонгүй» гэсэн тусдаа төлөв гарна ✓
 - 🗄 **Хадгалалт нь HYBRID** (§4.1-тэй ижил): зочин → `localStorage`
   (`zarmn_search_history_v1`); нэвтэрсэн → Supabase **`search_history`**
   хүснэгт (`supabase/migrations/0032_search_history.sql`). ⚠️ Миграц ороогүй ч
   чимээгүй localStorage руу буцна ✓
 - ⚠️ Давхардлын түлхүүр `unique (user_id, key)` + **upsert** (`onConflict`) —
-  ижил хайлт дахин хийгдвэл шинэ мөр үүсэхгүй, зөвхөн `last_seen_at`
-  шинэчлэгдэнэ. ⚠️ Тиймээс энэ хүснэгтэд **UPDATE policy БАЙНА** (0031-ээс
-  ялгаатай — тэнд UPDATE БАЙХГҮЙ ✓)
-- Бүртгэл нь `HomeClient`-ийн URL эффектэд **debounce (900мс)**-той — шүүлт
-  бичих/солих БҮРД олон мөр үүсэхгүй, линк СТОПОЛСНЫ дараа нэг л удаа
-  бүртгэгдэнэ (⚠️ «Бүх зар» — утгагүй хайлт → ОГТ бүртгэхгүй ✓)
-- Цэвэр логик: `lib/searchHistory.mjs` (URL → карт, харьцангуй цаг, бүртгэл)
+  ижил зар дахин нээгдвэл шинэ мөр үүсэхгүй, зөвхөн `last_seen_at` шинэчлэгдэж
+  жагсаалтын ЭХЭНД гарна. ⚠️ Тиймээс энэ хүснэгтэд **UPDATE policy БАЙНА**
+  (0031-ээс ялгаатай — тэнд UPDATE БАЙХГҮЙ ✓)
+- 🚫 **Хайлтын линк ОГТ бүртгэгдэхгүй** (68): `historyListingId()` нь
+  `/listings/<id>` биш бүх линкэд `''` буцаана; `HomeClient`-ийн хуучин
+  **debounce (900мс) авто-бүртгэл бүрэн ХАСАГДАВ** ⇒ `/?section=…` гэсэн мөр
+  үүсэх боломжгүй ✓. Хуучин хайлтын мөрүүд нь `parseHistoryList` /
+  `normalizeHistoryRow`-оор ШҮҮГДЭЖ, DB-ээс best-effort устгагдана ✓
+- 🔄 Хайлтаа ДАХИН сэргээх хэрэгцээ гарвал «🔖 Хадгалсан хайлт» (§4.1) байгаа ✓
+- Цэвэр логик: `lib/searchHistory.mjs` (линк → зарын id/каноник линк, харьцангуй
+  цаг, бүртгэл, түүх+зарын нэгтгэл `mergeHistoryListings`) · бүртгэл:
+  `lib/searchHistory.js → recordListingView()` (зар нээх бүрд,
+  `ListingDetailClient`)
+
 
 ### 5. Excel / PDF экспорт 📊🖨
 
@@ -6718,13 +6780,14 @@ npm run test:activity
 `supabase/migrations/0031_saved_searches.sql` · `scripts/test-saved-searches.mjs`
 (24 тест) · `scripts/cdp-saved-searches.mjs` (15 OK)
 
-🕐 **Хайлтын түүх** (§4.2): `lib/searchHistory.mjs` (цэвэр логик) ·
-`lib/searchHistory.js` (hybrid DB/localStorage hook + upsert) ·
-`components/SearchHistoryClient.jsx` · `app/history/page.jsx` ·
+🕐 **Хайлтын түүх** (§4.2 — ⏳ 2026-10-08 (68): зөвхөн **ҮЗСЭН ЗАРУУД**):
+`lib/searchHistory.mjs` (цэвэр логик) · `lib/searchHistory.js`
+(hybrid DB/localStorage hook + upsert + `recordListingView`) ·
+`components/SearchHistoryClient.jsx` (зарын карт) · `app/history/page.jsx` ·
 `components/HeaderIcons.jsx` (`ClockIcon`) · `components/AppProviders.jsx`
-(толгойн товч + цэс + footer) · `components/HomeClient.jsx` (авто-бүртгэл) ·
+(толгойн товч + цэс + footer) · `components/ListingDetailClient.jsx` (бүртгэл) ·
 `supabase/migrations/0032_search_history.sql` · `scripts/test-search-history.mjs`
-(21 тест) · `scripts/cdp-search-history.mjs` (12 OK)
+(27 тест) · `scripts/cdp-search-history.mjs` (18 OK)
 
 ## 📊 Админы ХЯНАЛТЫН САМБАР (`/admin`)
 

@@ -1,21 +1,21 @@
 // ============================================================
 // cdp-search-history.mjs — 🕐 «ХАЙЛТЫН ТҮҮХ»-ийг БОДИТ Chrome-д шалгана
 //
-// ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-07):
-//   «Мессеж icon-ий дараа цагийн icon оруулаад, тэр рүү орход тухайн
-//    хэрэглэгчийн хайлтуудыг карт хэлбэрээр харуул» + «карт руу орохдоо
-//    дахин хайх биш зүгээр л тухайн card дээрээ click хийхэд ордог байхаар
-//    хийж болох уу» + «устгах товчний нэрийг Хасах гэж нэрлээрэй» ✓
+// ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-08, 68):
+//   «хайлтын түүх дээр орж үзсэн заруудыг л зөвхөн гаргадаг болгоорой, одоо
+//    хайлтыг гаргаад байгаа, энэ нэрийг хэвээр үлдээ» ✓
+//   (өмнөх 2026-10-07-ны хүсэлт: «Мессеж icon-ий дараа цагийн icon оруулаад…»)
 //
 // ЮУ ШАЛГАНА (зочин = localStorage горим):
-//   ① Хайлт хийхэд АВТОМАТААР бүртгэгдэж localStorage-д бичигдэнэ
-//   ② `/history` дээр карт гарна (шинэ хайлт ЭХЭНД); категорийн СҮҮЛИЙН нэр +
-//      байршил + хайсан түлхүүр үг харагдана
-//   ③ Карт БҮХЭЛДЭЭ бүрхсэн линк (`absolute`, геометр ЯГ ТААРНА) — href нь
-//      хайлтын URL
-//   ④ КАРТ ДЭЭР (товч БИШ) дарахад хайлтын үр дүн рүү ОРНО
-//   ⑤ «Хасах» товч байна (мөн «Дахин хайх» ГАРАХГҮЙ)
-//   ⑥ «Хасах» дарахад карт арилна (мөн navigation БОЛОХГҮЙ)
+//   ① ЗАР НЭЭХЭД түүхэнд бичигдэнэ — утга нь `/listings/<id>` (хайлтын линк БИШ)
+//   ② ХАЙЛТ хийхэд түүхэнд БИЧИГДЭХГҮЙ (90мс биш, debounce 900мс хүлээж ч)
+//   ③ `/history` дээр гарчиг ХЭВЭЭР («🕐 Хайлтын түүх») + үзсэн ЗАРЫН карт
+//      (ListingCard — зураг/үнэ/гарчиг) гарна; «🕒 … үзсэн» цаг картын ДЭЭР
+//   ④ Картын линк нь `/listings/<id>`; карт БҮХЭЛДЭЭ дарагдана
+//   ⑤ УСТСАН зар (түүхэнд байгаа ч `listings`-д байхгүй) карт БОЛОХГҮЙ;
+//      ХУУЧИН хайлтын мөр (`/?…`) ч карт БОЛОХГҮЙ ✓
+//   ⑥ «Хасах» товч байна; дарахад мөр арилна (navigation БОЛОХГҮЙ, localStorage
+//      -аас ч хасагдана)
 //   ⑦ JS exception 0
 //
 // АЖИЛЛУУЛАХ:
@@ -27,9 +27,16 @@
 //
 // ⚠️ Сервер эсвэл Chrome байхгүй бол SKIP → exit 0 (бусад cdp скриптүүдийн
 //    адил — CI/local-д саад болохгүй ✓)
+// ⚠️ БОДИТ зарын id олдохгүй бол (`.env.local` ч, нүүр хуудас ч хоосон) мөн
+//    SKIP → exit 0 (картын шалгалт нь жинхэнэ заргүйгээр утгагүй ✓)
 // ============================================================
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 const BASE = process.argv[2] || 'http://localhost:3000';
 const HISTORY_KEY = 'zarmn_search_history_v1';
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 let cdpUp = true;
 try {
@@ -142,76 +149,142 @@ const check = (label, ok, extra = '') => {
   else { fail += 1; console.log(`  ✗ ${label}${extra ? ' — ' + extra : ''}`); }
 };
 
-console.log('\n🕐 CDP — Хайлтын түүх: авто-бүртгэл → /history карт → карт дарахад орох → «Хасах»\n');
+
+console.log('\n🕐 CDP — Хайлтын түүх: ЗАР ҮЗЭХ → /history дээр зарын карт → карт дарахад орох → «Хасах»\n');
 
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1280, height: 1400, deviceScaleFactor: 1, mobile: false });
 
-/** Шалгах 2 хайлт — ① Үл хөдлөх (+Хан-Уул+3 өрөө+түлхүүр үг), ② Цахилгаан */
-const SEARCH_A = `${BASE}/?category=sell&section=real-estate&type=${encodeURIComponent('Орон сууц')}`
-  + `&rooms=3&district=${encodeURIComponent('Хан-Уул')}&q=${encodeURIComponent('орон сууц')}`;
-const SEARCH_B = `${BASE}/?section=electric&type=${encodeURIComponent('Угаалгын машин')}`;
+/** ⚠️ ХАЙЛТЫН линк — түүхэнд БИЧИГДЭХ ЁСГҮЙ (2026-10-08 (68)-ийн гол шаардлага) */
+const SEARCH_URL = `${BASE}/?category=sell&section=real-estate&rooms=3&q=${encodeURIComponent('орон сууц')}`;
+/** ⚠️ Түүхэнд БАЙГАА ч `listings`-д БАЙХГҮЙ (устсан) зар — карт ГАРАХГҮЙ ✓ */
+const FAKE_ID = '11111111-2222-4333-8444-555555555555';
+
+/** Түүхийг localStorage-д ШУУД бичнэ (устсан/хуучин мөр үүсгэхэд) ✓ */
+const seedHistory = (rows) => evalJs(
+  `localStorage.setItem('${HISTORY_KEY}', JSON.stringify(${JSON.stringify(rows)}))`
+);
+const readHistory = () => evalJs(
+  `(() => { try { return JSON.parse(localStorage.getItem('${HISTORY_KEY}') || '[]'); } catch (e) { return []; } })()`
+);
+const nowIso = () => new Date().toISOString();
+
+// ---- ШАЛГАХ ЗАРЫН id — ① .env.local → Supabase REST, ② нөөц: нүүр хуудас ----
+let LISTING_ID = '';
+try {
+  const env = fs.readFileSync(path.join(ROOT, '.env.local'), 'utf8');
+  const getEnv = (k) => (env.match(new RegExp(`^\\s*${k}\\s*=\\s*(.*)$`, 'm')) || [])[1]?.trim();
+  const supaUrl = getEnv('NEXT_PUBLIC_SUPABASE_URL');
+  const anonKey = getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  if (supaUrl && anonKey) {
+    const r = await fetch(`${supaUrl}/rest/v1/listings?select=id&limit=1`, {
+      headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+    });
+    if (r.ok) LISTING_ID = String((await r.json())?.[0]?.id || '');
+  }
+} catch { /* .env.local байхгүй → доорх нөөц зам */ }
+
+await go(`${BASE}/`);
+if (!LISTING_ID) {
+  const href = await evalJs(`(document.querySelector('a[data-listing-card]') || {}).getAttribute?.('href') || ''`);
+  LISTING_ID = String(href).split('/').pop();
+}
+if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(LISTING_ID)) {
+  console.log('⚠️ SKIP — БОДИТ зарын id олдсонгүй (DB хоосон / .env.local дутуу) → exit 0\n');
+  await hardExit(0);
+}
 
 // ---- Цэвэр эхлэл ----
-await go(`${BASE}/`);
 await evalJs(`localStorage.removeItem('${HISTORY_KEY}')`);
 
-// ---- ① Авто-бүртгэл (2 хайлт, debounce 900мс) ----
-await go(SEARCH_A);
-await sleep(1400);
-await go(SEARCH_B);
-await sleep(1400);
-const stored = await evalJs(`localStorage.getItem('${HISTORY_KEY}')`);
-check('① хайлтууд АВТОМАТААР бүртгэгдэв (localStorage)',
-  !!stored && /section=real-estate/.test(stored) && /section=electric/.test(stored),
-  stored ? String(stored).slice(0, 110) : '(хоосон)');
+// ---- ① ЗАР НЭЭХ → түүхэнд ЗАРЫН линк бичигдэнэ (хайлтын линк БИШ) ----
+await go(`${BASE}/listings/${LISTING_ID}`);
+const recorded = await waitFor(
+  `(() => { try { return JSON.parse(localStorage.getItem('${HISTORY_KEY}') || '[]')
+    .some((x) => x.url === '/listings/${LISTING_ID}'); } catch (e) { return false; } })()`,
+  10000
+);
+check('① ЗАР НЭЭХЭД түүхэнд бичигдэв (localStorage)', recorded, LISTING_ID);
+const items1 = await readHistory();
+check('①b бичигдсэн утга нь `/listings/<id>` (хайлтын линк БИШ)',
+  Array.isArray(items1) && items1.length === 1 && items1[0].url === `/listings/${LISTING_ID}`,
+  JSON.stringify(items1).slice(0, 120));
 
-// ---- ② /history — 2 карт, шинэ нь ЭХЭНД, агуулга нь зөв ----
+// ---- ② ХАЙЛТ хийхэд түүхэнд БИЧИГДЭХГҮЙ (гол шаардлага ✓) ----
+await go(SEARCH_URL);
+await sleep(1800); // ⚠️ хуучин debounce 900мс байсан — түүнээс хойш ч бичигдэхгүй ✓
+const items2 = await readHistory();
+check('② ХАЙЛТ хийхэд түүхэнд БИЧИГДЭХГҮЙ (хайлтын линк 0)',
+  items2.every((x) => !/section=|category=|rooms=|\?/.test(String(x.url))),
+  JSON.stringify(items2).slice(0, 120));
+check('②b түүхийн мөрийн тоо ХЭВЭЭР (1)', items2.length === 1, String(items2.length));
+
+
+// ---- ③ /history — гарчиг ХЭВЭЭР + ҮЗСЭН ЗАРЫН карт (ListingCard) ----
 await go(`${BASE}/history`);
 await waitFor(`document.querySelector('[data-search-history-row]')`);
-const cards = await evalJs(`[...document.querySelectorAll('[data-search-history-row]')].map((r) => r.innerText.replace(/\\s+/g, ' ').trim())`);
-check('② /history дээр ЯГ 2 карт гарна', Array.isArray(cards) && cards.length === 2,
-  Array.isArray(cards) ? String(cards.length) : '(0)');
-check('②b шинэ хайлт (Угаалгын машин) ЭХЭНД байна',
-  !!cards?.[0] && /Угаалгын машин/.test(cards[0]), cards?.[0]?.slice(0, 90));
-check('②c карт дээр категорийн СҮҮЛИЙН нэр + байршил + түлхүүр үг',
-  !!cards?.[1] && /Орон сууц зарна/.test(cards[1]) && /Хан-Уул/.test(cards[1]) && /орон сууц/.test(cards[1]),
-  cards?.[1]?.slice(0, 130));
+check('③ гарчиг ХЭВЭЭР — «🕐 Хайлтын түүх»',
+  (await evalJs(`document.querySelector('[data-search-history] h2').innerText.trim()`)) === '🕐 Хайлтын түүх',
+  await evalJs(`document.querySelector('[data-search-history] h2').innerText.trim()`));
+check('③b ҮЗСЭН ЗАР карт хэлбэрээр гарна (1 мөр)',
+  (await evalJs(`document.querySelectorAll('[data-search-history-row]').length`)) === 1,
+  String(await evalJs(`document.querySelectorAll('[data-search-history-row]').length`)));
+check('③c карт нь зарын бүрэн карт (`data-listing-card`)',
+  await evalJs(`!!document.querySelector('[data-search-history-row] a[data-listing-card]')`));
+check('③d «🕒 … үзсэн» цаг картын ДЭЭР байна (картыг халхлахгүй ✓)',
+  await evalJs(`(() => { const row = document.querySelector('[data-search-history-row]');
+    const cap = row.firstElementChild, card = row.querySelector('a[data-listing-card]');
+    return /үзсэн/.test(cap.innerText)
+      && cap.getBoundingClientRect().bottom <= card.getBoundingClientRect().top + 2; })()`));
+check('③e картын линк нь ЗАРЫН хуудас (`/listings/<id>`)',
+  await evalJs(`document.querySelector('[data-search-history-row] a[data-listing-card]').getAttribute('href') === '/listings/${LISTING_ID}'`),
+  String(await evalJs(`document.querySelector('[data-search-history-row] a[data-listing-card]').getAttribute('href')`)));
+check('③f «Хасах» товч (текст нь яг «Хасах»)',
+  await evalJs(`document.querySelector('[data-search-history-row]').querySelector('[data-search-history-remove]').innerText.trim() === 'Хасах'`));
 
-// ---- ③ Картыг БҮРЭН бүрхсэн линк (геометр + href) ----
-check('③ карт БҮХЭЛДЭЭ бүрхсэн ЛИНК (absolute + геометр таарна)',
-  await evalJs(`(() => { const row = document.querySelectorAll('[data-search-history-row]')[0];
-    const a = row.querySelector('[data-search-history-open]'); if (!a) return false;
-    const r = row.getBoundingClientRect(), b = a.getBoundingClientRect();
-    return getComputedStyle(a).position === 'absolute'
-      && Math.abs(r.width - b.width) < 4 && Math.abs(r.height - b.height) < 4; })()`));
-check('③b линк нь хайлтын URL руу (`section=electric`)',
-  await evalJs(`/section=electric/.test(document.querySelectorAll('[data-search-history-row]')[0].querySelector('[data-search-history-open]').getAttribute('href'))`));
+// ---- ④ УСТСАН зар + ХУУЧИН хайлтын мөр → карт БОЛОХГҮЙ ✓ ----
+await seedHistory([
+  { id: 'r-real', url: `/listings/${LISTING_ID}`, listingId: LISTING_ID, createdAt: nowIso() },
+  { id: 'r-fake', url: `/listings/${FAKE_ID}`, listingId: FAKE_ID, createdAt: nowIso() },
+  { id: 'r-old', url: '/?category=sell&section=real-estate&rooms=3', createdAt: nowIso() },
+]);
+await go(`${BASE}/history`);
+await waitFor(`document.querySelector('[data-search-history-row]')`);
+const rows4 = await evalJs(`document.querySelectorAll('[data-search-history-row]').length`);
+check('④ УСТСАН/байхгүй зар (fake id) карт БОЛОХГҮЙ (1 л карт)', rows4 === 1, `${rows4} карт`);
+check('④b ХУУЧИН хайлтын мөр (`/?…`) карт БОЛОХГҮЙ',
+  await evalJs(`!/Үл хөдлөх|Орон сууц зарна|section=/.test(document.querySelector('[data-search-history-list]').innerText)`),
+  (await evalJs(`document.querySelector('[data-search-history-list]').innerText`)).replace(/\s+/g, ' ').slice(0, 90));
+check('④c тоо нь «2 зар үзсэн (1 нь олдсон)»',
+  /2 зар үзсэн \(1 нь олдсон\)/.test(await evalJs(`document.querySelector('[data-search-history-count]').innerText`)),
+  await evalJs(`document.querySelector('[data-search-history-count]').innerText`));
 
-// ---- ④ КАРТ ДЭЭР дарахад (товч БИШ) хайлтын үр дүн рүү ОРНО ----
-const box = await evalJs(`(() => { const r = document.querySelectorAll('[data-search-history-row]')[0].getBoundingClientRect();
-  return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + 42) }; })()`);
+// ---- ⑤ КАРТ ДЭЭР дарахад (товч БИШ) ЗАРЫН хуудас руу ОРНО ----
+const box = await evalJs(`(() => { const r = document.querySelector('[data-search-history-row] a[data-listing-card]').getBoundingClientRect();
+  return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) }; })()`);
 await rpc('Input.dispatchMouseEvent', { type: 'mousePressed', x: box.x, y: box.y, button: 'left', clickCount: 1 });
 await rpc('Input.dispatchMouseEvent', { type: 'mouseReleased', x: box.x, y: box.y, button: 'left', clickCount: 1 });
-const navigated = await waitFor(`location.search.includes('section=electric') && location.search.includes('type=')`, 8000);
-check('④ КАРТ дээр дарахад хайлтын үр дүн рүү ОРЛОО', navigated, await evalJs('location.pathname + location.search'));
+check('⑤ КАРТ дээр дарахад ЗАРЫН хуудас руу ОРЛОО',
+  await waitFor(`location.pathname === '/listings/${LISTING_ID}'`, 8000), await evalJs('location.pathname'));
 
-// ---- ⑤ /history — «Хасах» товч (мөн «Дахин хайх» байхгүй) ----
+
+// ---- ⑥ «Хасах» → мөр арилна, navigation БОЛОХГҮЙ, localStorage ч цэвэрлэгдэнэ ----
 await go(`${BASE}/history`);
 await waitFor(`document.querySelector('[data-search-history-row]')`);
-check('⑤ «Хасах» товч байна (текст нь яг «Хасах»)',
-  await evalJs(`document.querySelectorAll('[data-search-history-row]')[0].querySelector('[data-search-history-remove]').innerText.trim() === 'Хасах'`));
-check('⑤b «Дахин хайх» товч карт дээр ГАРАХГҮЙ',
-  await evalJs(`! /Дахин хайх/.test(document.querySelectorAll('[data-search-history-row]')[0].innerText)`));
-
-// ---- ⑥ «Хасах» → карт арилна, navigation БОЛОХГҮЙ ----
 const before = await evalJs(`document.querySelectorAll('[data-search-history-row]').length`);
 await evalJs(`document.querySelectorAll('[data-search-history-row]')[0].querySelector('[data-search-history-remove]').click()`);
 const removed = await waitFor(`document.querySelectorAll('[data-search-history-row]').length === ${before - 1}`, 6000);
-check('⑥ «Хасах» дарахад карт арилав', removed);
+check('⑥ «Хасах» дарахад мөр арилав', removed,
+  `${before} → ${await evalJs(`document.querySelectorAll('[data-search-history-row]').length`)}`);
 check('⑥b «Хасах» дарахад ХУУДАС СОЛИГДООГҮЙ (navigation БИШ)',
   (await evalJs(`location.pathname`)) === '/history', await evalJs('location.pathname'));
+check('⑥c localStorage-аас ч хасагдав',
+  await evalJs(`!JSON.parse(localStorage.getItem('${HISTORY_KEY}') || '[]')
+    .some((x) => String(x.url).includes('${LISTING_ID}'))`));
 
+// ---- Цэвэрлэгээ + JS алдаа ----
+await evalJs(`localStorage.removeItem('${HISTORY_KEY}')`);
 check('⑦ JS exception 0', exceptions.length === 0, exceptions.slice(0, 3).join(' | '));
 
 console.log(`\n${fail === 0 ? '✅' : '❌'} CDP — ${pass} OK, ${fail} FAIL\n`);
 await hardExit(fail === 0 ? 0 : 1);
+

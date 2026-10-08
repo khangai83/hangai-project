@@ -1,48 +1,50 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import ListingCard from './ListingCard';
 import { useAuth, useToast, useUI } from './AppProviders';
 import { useSearchHistory } from '../lib/searchHistory';
-import { historyDescriptor, historyTimeAgo } from '../lib/searchHistory.mjs';
-import { formatRoomsLabel } from '../lib/locationData';
-import { groupDigits } from '../lib/rangeFilter.mjs';
+import { mergeHistoryListings, historyTimeAgo } from '../lib/searchHistory.mjs';
+import { fetchListingsByIds } from '../lib/queries';
+import { normalizeError } from '../lib/errors';
 
 /**
- * 🕐 «ХАЙЛТЫН ТҮҮХ» — сүүлийн хайлтуудын КАРТ сүлжээ (2026-10-07).
+ * 🕐 «ХАЙЛТЫН ТҮҮХ» — сүүлд ҮЗСЭН ЗАРУУДЫН карт сүлжээ.
  *
- * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Мессеж icon-ий дараа цагийн icon оруулаад, тэр рүү
- *   орход тухайн хэрэглэгчийн хайлтуудыг карт хэлбэрээр харуул — карт дээр
- *   категорийн СҮҮЛИЙН нэр (ж: Цахилгаан бараа → «Угаалгын машин»),
- *   байршил, хайсан түлхүүр үг гэх мэтийг оруул» ✓
+ * ⏳ 2026-10-07 (анхны хүсэлт): «Мессеж icon-ий дараа цагийн icon оруулаад,
+ *    тэр рүү орход тухайн хэрэглэгчийн хайлтуудыг карт хэлбэрээр харуул»
+ *    → хайлтын ШҮҮЛТҮҮР (категори/байршил/түлхүүр үг) картууд гарч байв
+ * ✏️ 2026-10-08 (68, хэрэглэгчийн хүсэлт): «хайлтын түүх дээр орж үзсэн
+ *    заруудыг л зөвхөн гаргадаг болгоорой, одоо хайлтыг гаргаад байгаа, энэ
+ *    нэрийг хэвээр үлдээ» ⇒
+ *    ① Карт нь ХАЙЛТЫН ШҮҮЛТҮҮР БИШ, бодит ЗАР (`components/ListingCard`)
+ *    ② Цаг нь «🕒 хэзээ ҮЗСЭН» (зар хэзээ нийтлэгдсэн биш — тэр нь карт
+ *       дотор хэвээр байгаа)
+ *    ③ ХУУДАС/ТОВЧ/ГАРЧГИЙН НЭР «🕐 Хайлтын түүх» ХЭВЭЭР ✓ (хүсэлт)
  *
- * Карт бүр ЦАГААН (`rounded-2xl border border-gray-200 bg-white shadow-card`
- * + hover `-translate-y-1 shadow-card-hover`) — `SavedSearchesClient`-тэй
- * ЯГ ИЖИЛ хэв:
- *   ① ГОЛ шошго — категорийн сүүлийн нэр (`leaf`) + баруун дээд буланд 🕒 цаг
- *   ② Бүтэн категорийн зам («Цахилгаан бараа — Угаалгын машин»)
- *   ③ 📍 Байршил  ④ 🔑 хайсан түлхүүр үг  ⑤ 🛏 өрөө / 💰 үнэ (chip)
- *   Доод баруун буланд **«Хасах»** товч.
+ * ⚠️ ХАДГАЛАЛТ: нэвтэрсэн бол Supabase (`search_history` — 0032), зочин бол
+ *    localStorage. Бүртгэл нь `ListingDetailClient → recordListingView()`
+ *    (зар нээх бүрд `/listings/<id>`), унших/устгах нь `useSearchHistory()`
+ *    (нэг эх сурвалж) ✓ — энэ компонент зөвхөн ХАРАГДАЦ + устгал ✓
  *
- * ✏️ 2026-10-07 (2): КАРТ БҮХЭЛДЭЭ ДАРАГДАНА (хэрэглэгчийн хүсэлт — «карт руу
- *   орохдоо дахин хайх биш зүгээр л тухайн card дээрээ click хийхэд ордог
- *   байхаар»). Картыг бүрхсэн `absolute inset-0` линк (`<Link href={it.url}>`,
- *   дэгээ `data-search-history-open`) + түүнээс ДЭЭГҮҮР (`relative z-20`)
- *   «Хасах» товч ⇒ **«Дахин хайх» товч ХАСАГДАВ** ✓
+ * ⚠️ ЯАГААД ЗАРЫН МЭДЭЭЛЛИЙГ ТУСДАА ТАТАЖ БАЙНА ВЭ: түүхэнд зөвхөн ЛИНК
+ *    (`/listings/<uuid>`) хадгалагддаг ⇒ үнэ/гарчиг засагдсан ч ШИНЭ утга,
+ *    зураг харагдана, УСТСАН зар картаас ГАРАХГҮЙ ✓ (хуулбар хадгалах нь
+ *    «хуучин үнэтэй» карт үүсгэх эрсдэлтэй ✗). Татах нь ЗӨВХӨН энэ хуудас
+ *    нээгдэх үед (`fetchListingsByIds`) — зарын хуудас бүрд биш ✓
  *
- * ⚠️ Хадгалалт: нэвтэрсэн бол Supabase (`search_history` — 0032), зочин бол
- *    localStorage. Бүртгэл/устгалт нь `lib/searchHistory.js → useSearchHistory`
- *    дотор (нэг эх сурвалж) ✓ — энэ компонент зөвхөн ХАРАГДАЦ.
+ * ⚠️ CDP/тестийн дэгээ: `data-search-history` (бүх блок) / `-count` (тоо) /
+ *    `-clear` (бүгдийг устгах) / `-list` (картын сүлжээ) / `-row` (мөр) /
+ *    `-remove` (нэг мөрийг хасах). Картын линк нь `ListingCard`-ийн
+ *    `a[data-listing-card]` (`/listings/<id>`) ✓
  */
 
-/** Үнийн шошго — «₮1.000.000 – ₮3.000.000» (байхгүй тал → «...-аас»/«... хүртэл») */
-function priceText(minPrice, maxPrice) {
-  const min = groupDigits(minPrice);
-  const max = groupDigits(maxPrice);
-  if (min && max) return `₮${min} – ₮${max}`;
-  if (min) return `₮${min}-аас`;
-  if (max) return `₮${max} хүртэл`;
-  return '';
+/** '5 зар' / '5 зар үзсэн (4 нь олдсон)' — устсан зарыг нуухгүй мэдэгдэнэ ✓ */
+function countLabel(viewed, found) {
+  if (!viewed) return 'Хоосон байна';
+  if (viewed === found) return `${viewed} зар үзсэн`;
+  return `${viewed} зар үзсэн (${found} нь олдсон)`;
 }
 
 export default function SearchHistoryClient() {
@@ -51,12 +53,33 @@ export default function SearchHistoryClient() {
   const { openAuth } = useUI();
   const { items, loading, source, remove, clear } = useSearchHistory(user);
   const [notice, setNotice] = useState('');
+  // 🃏 Заруудын БОДИТ мэдээлэл (`listings` хүснэгт) — зөвхөн энэ хуудсанд
+  const [listings, setListings] = useState([]);
+  const [fetching, setFetching] = useState(false);
+  const [fetchError, setFetchError] = useState('');
 
-  // Шошгыг URL-ээс нэг л удаа бодно (render бүрд дахин бодохгүй ✓)
-  const rows = useMemo(
-    () => items.map((it) => ({ ...it, desc: historyDescriptor(it.url) })),
-    [items]
-  );
+  // Түүхэнд бичигдсэн заруудыг id-аар нь татна (`fetchListingsByIds` —
+  // оролтын дарааллаа хадгална, олдоогүйг нь ХАСНА ✓)
+  useEffect(() => {
+    const ids = items.map((it) => it.listingId).filter(Boolean);
+    let active = true;
+    if (!ids.length) {
+      setListings([]);
+      setFetching(false);
+      setFetchError('');
+      return () => { active = false; };
+    }
+    setFetching(true);
+    fetchListingsByIds(ids)
+      .then((rows) => { if (active) { setListings(rows); setFetchError(''); } })
+      .catch((err) => { if (active) { setListings([]); setFetchError(normalizeError(err).message); } })
+      .finally(() => { if (active) setFetching(false); });
+    return () => { active = false; };
+  }, [items]);
+
+  // 🃏 Түүхийн мөр + зарын мэдээлэл → карт (устсан зар автоматаар хасагдана ✓)
+  const rows = useMemo(() => mergeHistoryListings(items, listings), [items, listings]);
+  const busy = loading || fetching;
 
   const removeOne = async (it) => {
     await remove(it.id);
@@ -64,7 +87,7 @@ export default function SearchHistoryClient() {
   };
 
   const clearAll = async () => {
-    if (!window.confirm(`${items.length} хайлтын түүхийг бүгдийг нь устгах уу?`)) return;
+    if (!window.confirm(`${items.length} үзсэн зарыг түүхээс бүгдийг нь устгах уу?`)) return;
     await clear();
     setNotice('Хайлтын түүхийг цэвэрлэв');
   };
@@ -75,12 +98,10 @@ export default function SearchHistoryClient() {
         <div>
           <h2 className="text-xl font-bold">🕐 Хайлтын түүх</h2>
           <p className="text-sm text-gray-500" data-search-history-count>
-            {loading
-              ? 'Ачаалж байна…'
-              : (items.length ? `${items.length} сүүлийн хайлт` : 'Хоосон байна')}
+            {busy ? 'Ачаалж байна…' : countLabel(items.length, rows.length)}
           </p>
         </div>
-        {!loading && items.length > 0 && (
+        {!busy && items.length > 0 && (
           <button
             type="button"
             className="btn btn-outline btn-sm"
@@ -96,20 +117,25 @@ export default function SearchHistoryClient() {
         <p className="mb-3 rounded-lg bg-gray-50 px-3.5 py-2.5 text-[13px] text-gray-700">{notice}</p>
       )}
 
-      {loading ? (
+      {fetchError && (
+        <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700">
+          ⚠️ Заруудыг ачаалж чадсангүй: {fetchError}
+        </p>
+      )}
+
+      {busy ? (
         <div className="px-5 py-16 text-center">
           <div className="spinner"></div>
           <p>Ачаалж байна...</p>
         </div>
-      ) : !rows.length ? (
+      ) : !items.length ? (
         <HistoryEmpty openAuth={openAuth} />
+      ) : !rows.length ? (
+        <HistoryGone />
       ) : (
-        <div
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-          data-search-history-list
-        >
+        <div className="flex flex-col gap-4" data-search-history-list>
           {rows.map((it) => (
-            <HistoryCard key={it.id || it.url} it={it} onRemove={removeOne} />
+            <HistoryRow key={it.id || it.listingId} it={it} onRemove={removeOne} />
           ))}
         </div>
       )}
@@ -137,18 +163,52 @@ export default function SearchHistoryClient() {
   );
 }
 
-/** 🕐 Хоосон төлөв — «Хайлт хийгээгүй байна» + нүүр хуудасны уриалга */
+/**
+ * 🃏 НЭГ МӨР — «🕒 <хэзээ үзсэн>» + «Хасах» товч (дээд мөр), доор нь зарын
+ * карт (`ListingCard` — /favorites хуудастай ЯГ ИЖИЛ хэв: зураг, үнэ,
+ * гарчиг, байршил, ❤️/👁).
+ * ⚠️ «Хасах» товч нь картын ГАДНА (дээр) — карт бүхэлдээ `<Link>` тул дотор
+ *    нь товч хийх нь HTML-д хориотой (nested interactive) ✗
+ */
+function HistoryRow({ it, onRemove }) {
+  const ago = historyTimeAgo(it.createdAt);
+  return (
+    <div className="relative" data-search-history-row>
+      <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-[12px] text-gray-400" title="Таны сүүлд үзсэн цаг">
+          🕒 {ago ? `${ago} үзсэн` : 'Үзсэн'}
+        </span>
+        <button
+          type="button"
+          className="flex h-8 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 shadow-sm transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+          data-search-history-remove
+          title="Түүхээс хасах"
+          onClick={() => onRemove(it)}
+        >
+          Хасах
+        </button>
+      </div>
+      <ListingCard listing={it.listing} />
+    </div>
+  );
+}
+
+/**
+ * 🕐 Хоосон төлөв — «Одоогоор үзсэн зар байхгүй» + нүүр хуудасны уриалга.
+ * ⚠️ 2026-10-08 (68): өмнөх «хайлт бүртгэгдэнэ» гэсэн тайлбар БУРУУ болсон
+ *    (хайлт бүртгэгдэхээ болив) ⇒ одоо «зар НЭЭЖ ҮЗЭХ бүрд» гэж тайлбарлана ✓
+ */
 function HistoryEmpty({ openAuth }) {
   return (
     <div className="px-5 py-16 text-center">
       <div className="mb-4 text-6xl">🕐</div>
-      <h3 className="mb-2 text-xl font-semibold">Одоогоор хайлтын түүх байхгүй байна</h3>
+      <h3 className="mb-2 text-xl font-semibold">Одоогоор үзсэн зар байхгүй байна</h3>
       <p className="text-gray-500">
-        Нүүр хуудсанд зар хайх бүрд таны хайлт <b>автоматаар</b> энд бүртгэгдэж,
-        дараа нь нэг дарахад тэр үр дүн буцаж гарна.
+        Та зарыг <b>нээж үзэх бүрд</b> энд автоматаар бүртгэгдэж, дараа нь нэг
+        дарахад тэр зар буцаж нээгдэнэ.
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
-        <Link href="/" className="btn btn-primary">🔍 Зар хайх</Link>
+        <Link href="/" className="btn btn-primary">🔍 Зар үзэх</Link>
         {openAuth && (
           <button type="button" className="btn btn-outline" onClick={openAuth}>
             🔑 Нэвтэрч синк хийх
@@ -160,86 +220,20 @@ function HistoryEmpty({ openAuth }) {
 }
 
 /**
- * 🃏 Нэг хайлтын КАРТ — категорийн сүүлийн нэр, зам, байршил, түлхүүр үг,
- *    өрөө/үнэ (chip). КАРТ БҮХЭЛДЭЭ дарагдана (бүрхсэн `absolute inset-0`
- *    линк → хайлтын үр дүн); доод мөрөнд ЗӨВХӨН «Хасах» товч (overlay-с
- *    дээгүүр `relative z-20`).
- * ⚠️ CDP/тестийн тогтвортой дэгээ: `data-search-history-open` (картын линк) /
- *    `data-search-history-remove` («Хасах» товч) ✓
+ * 🗑 «Үзсэн боловч олдохгүй» төлөв — түүхэнд линк байгаа ч зар нь устсан/
+ *    архивлагдсан (эсвэл DB-д байхгүй) үед. ⚠️ Хуучин мөрүүд БАЙГАА хэвээр
+ *    (хэрэглэгч «Бүгдийг цэвэрлэх»-ээр л арилгана) тул хоосон төлөвөөс
+ *    ЯЛГААТАЙ мессеж харуулна ✓
  */
-function HistoryCard({ it, onRemove }) {
-  const { desc } = it;
-  const ago = historyTimeAgo(it.createdAt);
-  const price = priceText(desc.minPrice, desc.maxPrice);
-  const rooms = formatRoomsLabel(desc.rooms);
-  const hasChips = !!rooms || !!price;
+function HistoryGone() {
   return (
-    <div
-      data-search-history-row
-      title={desc.title}
-      className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-card transition-all duration-200 ease-out hover:-translate-y-1 hover:border-gray-300 hover:shadow-card-hover"
-    >
-      {/* ✏️ КАРТ БҮХЭЛДЭЭ дарагдана — бүрхсэн линк (агуулга нь доор, z-10-аар дээр) */}
-      <Link
-        href={it.url}
-        className="absolute inset-0 z-10 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        aria-label={`${desc.leaf || 'Бүх зар'} — хайлтын үр дүнг нээх`}
-        data-search-history-open
-        title="Энэ хайлтын үр дүнг нээх"
-      />
-
-      <div className="flex items-start justify-between gap-2">
-        <span className="inline-flex max-w-[75%] items-center break-words rounded-lg bg-primary/10 px-2.5 py-1 text-[14px] font-bold text-primary">
-          {desc.leaf || 'Бүх зар'}
-        </span>
-        {ago && <span className="shrink-0 pt-0.5 text-[12px] text-gray-400">🕒 {ago}</span>}
-      </div>
-
-      {desc.category && desc.category !== desc.leaf && (
-        <p className="mt-2 break-words text-[12.5px] leading-snug text-gray-500">{desc.category}</p>
-      )}
-
-      <div className="mt-2 flex-1 space-y-1 break-words">
-        {desc.keyword && (
-          <p className="text-[13px] text-gray-500">
-            🔑 <b className="font-semibold text-gray-900">«{desc.keyword}»</b>
-          </p>
-        )}
-        {desc.location && (
-          <p className="text-[13px] text-gray-500">
-            📍 <b className="font-semibold text-gray-900">{desc.location}</b>
-          </p>
-        )}
-        {hasChips && (
-          <div className="flex flex-wrap gap-1.5 pt-0.5">
-            {rooms && (
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] font-semibold text-gray-700">
-                🛏 {rooms}
-              </span>
-            )}
-            {price && (
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] font-semibold text-gray-700">
-                💰 {price}
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="mt-4 flex items-center justify-between gap-2 border-t border-gray-100 pt-3">
-        <span className="text-[12px] font-semibold text-primary opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-          Үр дүнг харах →
-        </span>
-        <button
-          type="button"
-          className="btn btn-outline btn-sm relative z-20 shrink-0"
-          data-search-history-remove
-          title="Түүхээс хасах"
-          onClick={() => onRemove(it)}
-        >
-          Хасах
-        </button>
-      </div>
+    <div className="px-5 py-12 text-center">
+      <div className="mb-3 text-5xl">🗑</div>
+      <h3 className="mb-2 text-lg font-semibold">Үзсэн зарууд олдсонгүй</h3>
+      <p className="text-gray-500">
+        Түүхэнд бүртгэгдсэн зарууд устсан эсвэл архивлагдсан байна. «🗑 Бүгдийг
+        цэвэрлэх» товчоор түүхээ цэвэрлэж болно.
+      </p>
     </div>
   );
 }

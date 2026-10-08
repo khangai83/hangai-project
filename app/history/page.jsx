@@ -3,8 +3,10 @@ import SearchHistoryClient from '../../components/SearchHistoryClient';
 export const metadata = { title: 'Хайлтын түүх — ZARLAA.MN' };
 
 /**
- * 🕐 `/history` — «Хайлтын түүх» (сүүлийн хайлтууд). Хэрэглэгч хайх бүрд
- * автоматаар бүртгэгддэг хайлтуудыг КАРТ хэлбэрээр харуулна (2026-10-07).
+ * 🕐 `/history` — «Хайлтын түүх» (сүүлд ҮЗСЭН ЗАРУУД).
+ * ⚠️ 2026-10-08 (68): нэр ХЭВЭЭР, агуулга нь өөрчлөгдөв — өмнө нь хайлтын
+ *    ШҮҮЛТҮҮР (хайх бүрд автомат бүртгэл) харагдаж байв; одоо зөвхөн зар
+ *    НЭЭЖ ҮЗСЭН зарууд (`search_history.url = '/listings/<id>'`) ✓
  */
 export default function HistoryPage() {
   return (

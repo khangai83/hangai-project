@@ -30,6 +30,8 @@ import { mapCenterFor } from '../lib/locationGeo.mjs';
  *    (мэдээллийн текст нь `lib/listingLocation.mjs` — нэг эх сурвалж ✓)
  */
 import { NO_LOCATION_LABEL } from '../lib/listingLocation.mjs';
+// 🕐 2026-10-08 (68): «Хайлтын түүх» рүү ҮЗСЭН ЗАРАА бичнэ (хайлт БИШ) ✓
+import { recordListingView } from '../lib/searchHistory';
 
 export default function ListingDetailClient({ id }) {
   const { showToast } = useToast();
@@ -124,6 +126,21 @@ export default function ListingDetailClient({ id }) {
 
   // ⚠️ 2026-09-29: 🕓 `recordRecentlyViewed(listing.id)` эффект ХАСАГДАВ
   //    («Саяхан үзсэн» боломж бүхэлдээ хасагдсан — линк, хуудас, lib).
+  // 🔄 2026-10-08 (68): «🕐 Хайлтын түүх» нэрээр БУЦАЖ ИРЭВ — гэхдээ ЗӨВХӨН
+  //    үзсэн ЗАРУУД (хайлт бүртгэгдэхгүй ✓, доорх эффектийг үзнэ үү)
+
+  /**
+   * 🕐 «Хайлтын түүх» рүү ҮЗСЭН ЗАРАА БҮРТГЭНЭ (2026-10-08, 68) — хайлтын
+   *    үр дүн/линк БИШ, зөвхөн энэ зарын `/listings/<id>` мөр ✓
+   * ⚠️ Нэг session-д дахин нээхэд ч БИЧНЭ (тоолуураас ялгаатай) — түүх нь
+   *    «хамгийн сүүлд үзсэн нь эхэнд» зарчмаар эрэмбэлэгддэг тул зөв ✓
+   * ⚠️ Алдааг ЧИМЭЭГҮЙ дарна — түүх нь туслах боломж, зарын агуулгад
+   *    нөлөөлөхгүй, миграцгүй ч localStorage-д бичигдэнэ ✓
+   */
+  useEffect(() => {
+    if (!id) return;
+    recordListingView((user && user.id) || null, id).catch(() => {});
+  }, [id, user]);
 
   /**
    * 👁 «Үзсэн» тоог +1.
