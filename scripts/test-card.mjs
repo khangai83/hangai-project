@@ -1,17 +1,21 @@
 // ============================================================
-// test-card.mjs — 📇 ЗАРЫН КАРТЫН ДИЗАЙНЫ ГЭРЭЭ (2026-10-03)
+// test-card.mjs — 📇 ЗАРЫН КАРТЫН ДИЗАЙНЫ ГЭРЭЭ (2026-10-09: БОСОО хэв)
 //
-// Хэрэглэгчийн хүсэлт: «зарын картын дизайн их зүгээр юмаа, ийм дизайнтай
-// болгоорой» + **жишиг сайт**-ийн жишээ картууд (ажил · орон сууц) —
-//   • зүүн талд ТОМ зураг (42%) + «🖼 1/16» зургийн тоо
-//   • мэдээллийн хэсгийн ДЭЭД талд нийтлэгчийн band (Avatar + нэр + ✅)
-//   • ТОМ bold ТОВЧ үнэ → 2 МӨРТ гарчиг → дэлгэрэнгүй мөр → доод мета мөр
-//   • доод мета мөр: 🕒 огноо | 📍 хаяг  …  👁 үзсэн  ❤️/🤍
+// Хэрэглэгчийн хүсэлт: «зарыг харуулж байгаа картын загварыг дуурааж
+// хийнэ үү» + **жишиг сайт**-ын нүүр ба зарын дэлгэрэнгүй дээрх картууд:
+//   • ЗУРАГ нь ДЭЭРЭЭ, БҮТЭН өргөн (`aspect-[4/3]`) + «🖼 1/16» (баруун доод)
+//   • доор нь мэдээллийн багана: нийтлэгчийн band (Avatar + нэр + ✅)
+//   • ҮНЭ (том bold) БА ❤️ НЭГ МӨРӨНД — үнэ зүүн, зүрхэн баруун
+//   • 2 МӨРТ гарчиг → дэлгэрэнгүй мөр → доод мета мөр (🕒 огноо | 📍 хаяг | 👁)
+//   • ЖАГСААЛТ нь БАГАНАТ GRID (нүүр · /favorites · /history · /sellers)
+//
+// ⏳ 2026-10-03 → 2026-10-09 ХЭВ СОЛИГДСОН: карт ХЭВТЭЭ байв (зураг зүүн
+//    `sm:w-[42%]` + `sm:h-[300px]`, үнэ/гарчиг баруун, ❤️ доод мета мөрөнд).
 //
 // ЯАГААД ХЭРЭГТЭЙ ВЭ:
-//   Карт нь 4 ГАЗАРТ харагддаг (нүүр · Таалагдсан · Зар нийтлэгч · газрын
-//   зураг) тул дизайны гол шинжүүд (өндөр, зургийн харьцаа, үнэ/гарчиг
-//   дараалал, ❤️ toggle) санамсаргүй өөрчлөгдвөл олон хуудас зэрэг эвдэрнэ ✗
+//   Карт нь 4 ГАЗАРТ харагддаг (нүүр · Таалагдсан · Үзсэн түүх · Нийтлэгч)
+//   тул дизайны гол шинжүүд (зургийн харьцаа, үнэ/гарчиг дараалал, ❤️-ийн
+//   байрлал, мета мөр) санамсаргүй өөрчлөгдвөл олон хуудас зэрэг эвдэрнэ ✗
 //   — энэ тест тэр гэрээг код дээр бариулна ✓
 //
 // ⚠️ ХАДГАЛАГДСАН ДҮРМҮҮД (регресс — өмнөх хэрэглэгчийн шийдвэрүүд):
@@ -55,16 +59,30 @@ const HOME = readSrc('components/HomeClient.jsx');
 console.log('\n🧪 Зарын карт — жишиг сайт хэв (components/ListingCard.jsx)\n');
 
 // ---------- ① БҮТЭЦ / ХЭМЖЭЭ ----------
-t('📐 Карт нь хэвтээ (`sm:flex-row`) + өндөр `sm:h-[300px]` + `data-listing-card`', () => {
-  assert.match(CARD_CODE, /sm:h-\[300px\]/, 'картын өндөр `sm:h-[300px]` алга ✗');
-  assert.match(CARD_CODE, /sm:flex-row/, 'хэвтээ layout (`sm:flex-row`) алга ✗');
+t('📐 Карт нь БОСОО (`flex-col`) + `data-listing-card` (🆕 2026-10-09: хэвтээ ХЭВ ХАСАГДАВ)', () => {
   assert.match(CARD_CODE, /data-listing-card/, 'CDP-ийн дэгээ (`data-listing-card`) алга ✗');
+  // ⚠️ ХЭВТЭЭ картын ул мөр БАЙХГҮЙ (регресс хориг) — карт одоо БОСОО ✓
+  assert.ok(!/sm:flex-row/.test(CARD_CODE), 'хуучин хэвтээ layout (`sm:flex-row`) буцаж орсон ✗');
+  assert.ok(!/sm:h-\[300px\]/.test(CARD_CODE), 'бэхлэгдсэн өндөр (`sm:h-[300px]`) буцаж орсон ✗');
 });
 
-t('🖼 Зураг нь зүүн талд `sm:w-[42%]` + `sm:h-full` (мобайлд `h-52` auto)', () => {
-  assert.match(CARD_CODE, /sm:w-\[42%\]/, 'зургийн өргөн `sm:w-[42%]` алга ✗');
-  assert.match(CARD_CODE, /sm:h-full/, 'зураг картын өндрийг дүүргэхгүй ✗');
-  assert.match(CARD_CODE, /h-52\b/, 'мобайл зургийн өндөр (`h-52`) алга ✗');
+t('🖼 Зураг нь ДЭЭРЭЭ бүтэн өргөн — `aspect-[4/3]` (`sm:w-[42%]`/`h-52` ХАСАГДСАН)', () => {
+  assert.match(CARD_CODE, /aspect-\[4\/3\]/, 'зургийн харьцаа (`aspect-[4/3]`) алга ✗');
+  assert.match(CARD_CODE, /aspect-\[4\/3\] w-full shrink-0/, 'зураг бүтэн өргөн (`w-full`) биш ✗');
+  assert.ok(!/sm:w-\[42%\]/.test(CARD_CODE), 'хуучин зүүн баганын өргөн (`sm:w-[42%]`) үлдсэн ✗');
+  assert.ok(!/h-52\b/.test(CARD_CODE), 'хуучин мобайл өндөр (`h-52`) үлдсэн ✗');
+});
+
+t('🧱 ЖАГСААЛТ нь БАГАНАТ GRID — нүүр · Таалагдсан · Түүх · Нийтлэгч (2026-10-09)', () => {
+  // ⚠️ Босоо карт нь 1 БАГАНАД тохирохгүй (хэт өргөн) ⇒ хуудас бүр GRID-тэй
+  assert.match(HOME, /className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"/,
+    'нүүр хуудасны картын GRID алга ✗');
+  assert.match(readSrc('components/FavoritesClient.jsx'), /grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3/,
+    '/favorites-ийн картын GRID алга ✗');
+  assert.match(readSrc('components/SearchHistoryClient.jsx'), /grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3/,
+    '/history-ийн картын GRID алга ✗');
+  assert.match(readSrc('components/SellerListingsClient.jsx'), /grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3/,
+    'нийтлэгчийн заруудын GRID алга ✗');
 });
 
 // ---------- ② МЭДЭЭЛЛИЙН ДАРААЛАЛ ----------
@@ -75,6 +93,17 @@ t('💰 Үнэ нь ТОМ bold (`text-[22px] font-extrabold`) + ТОВЧ фор
   assert.match(CARD_CODE, /shortPriceLabel\(listing\)/, 'үнэ товч шошгоор (`shortPriceLabel`) гарахгүй ✗');
   // ⚠️ Урт хэлбэр (`priceLabel`) карт дээр БУЦАЖ ОРОХ ЁСГҮЙ (export/админ ХӨНДӨӨГДӨӨГҮЙ ✓)
   assert.ok(!/\bpriceLabel\b/.test(CARD_CODE), 'карт дээр урт `priceLabel` буцаж орсон ✗');
+});
+
+t('❤️/🤍 нь ҮНИЙ МӨРӨНД (`ml-auto`) — ⏳ доод мета мөрөнд БАЙХГҮЙ (2026-10-09)', () => {
+  // 🆕 Хэрэглэгчийн хүсэлт: жишиг сайт шиг — үнэ зүүн, зүрхэн БАРУУН
+  assert.match(CARD_CODE, /<div className="flex items-start gap-2">/,
+    'үнэ + ❤️-ийн НЭГ мөр (`flex items-start gap-2`) алга ✗');
+  assert.match(CARD_CODE, /ml-auto inline-flex shrink-0 items-center gap-1 rounded-full/,
+    '❤️ товчны `ml-auto` (баруун захад тогтоох) алга ✗');
+  // ⚠️ Доод мета мөрөнд `toggleFavorite` БУЦАЖ ОРОХ ЁСГҮЙ (1 л удаа дуудагдана ✓)
+  assert.equal((CARD_CODE.match(/toggleFavorite\(listing\.id\)/g) || []).length, 1,
+    '`toggleFavorite` нь 1-ээс олон газар дуудагдаж байна ✗');
 });
 
 t('🏷️ Гарчиг нь 2 МӨР (`line-clamp-2`) — `listingTitle` (0027)', () => {
@@ -104,10 +133,13 @@ t('👤 Нийтлэгчийн band нь 28px Avatar + нэр + ✅ VerifiedBadg
 });
 
 // ---------- ③ ЗУРАГ ДЭЭРХ ТЭМДЭГҮҮД ----------
-t('🖼 Зургийн тоо «1/N» — `imageCount > 1` үед л', () => {
+t('🖼 Зургийн тоо «1/N» — `imageCount > 1` үед л + БАРУУН ДООД буланд (2026-10-09)', () => {
   assert.match(CARD_CODE, /imageCount > 1/, 'зургийн тооны хаалт (`imageCount > 1`) алга ✗');
   assert.match(CARD_CODE, /🖼 1\/\{imageCount\}/, '«🖼 1/N» текст алга ✗');
   assert.match(CARD_CODE, /images\.length/, '`images.length` уншихгүй ✗');
+  // ⚠️ Баруун ДЭЭД булан нь /favorites-ийн «Хасах» товчинд чөлөөтэй байх ёстой ✓
+  assert.match(CARD_CODE, /absolute bottom-2 right-2 flex h-6/, 'тоо нь баруун доод буланд БИШ ✗');
+  assert.ok(!/absolute right-2 top-2 flex h-6/.test(CARD_CODE), 'тоо баруун дээд буланд буцаж орсон ✗');
 });
 
 t('🎥 Видео badge — зөвхөн `listing.video_url` үед', () => {
@@ -123,7 +155,7 @@ t('🏷️ «Зарах / Түрээслэх» badge — ЗӨВХӨН үл хө�
 
 
 // ---------- ④ ДООД МЕТА МӨР ----------
-t('📅 Доод мета мөр: 🕒 `timeAgo` | 📍 `formatAddress` + 👁 views + ❤️ toggle', () => {
+t('📅 Доод мета мөр: 🕒 `timeAgo` | 📍 `formatAddress` + 👁 views (❤️ ГАРАХГҮЙ)', () => {
   assert.match(CARD_CODE, /timeAgo\(listing\.created_at\)/, 'огноо (`timeAgo`) алга ✗');
   assert.match(CARD_CODE, /address &&/, 'хаягийн хаалт алга ✗');
   assert.match(CARD_CODE, /formatAddress\(listing\)/, 'хаяг (`formatAddress`) алга ✗');

@@ -133,7 +133,10 @@ export default function SearchHistoryClient() {
       ) : !rows.length ? (
         <HistoryGone />
       ) : (
-        <div className="flex flex-col gap-4" data-search-history-list>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4" data-search-history-list>
+          {/* 🃏 БАГАНАТ GRID (2026-10-09) — карт нь БОСОО болов; мөр бүр
+              өөрийн толгой (`🕒 … үзсэн` + «Хасах») дээрээ үлдэнэ ✓
+              (📱 1 · 📲 sm 2 · 🖥 lg 3 · 🖥 2xl 4) */}
           {rows.map((it) => (
             <HistoryRow key={it.id || it.listingId} it={it} onRemove={removeOne} />
           ))}

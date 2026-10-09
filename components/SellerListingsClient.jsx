@@ -280,7 +280,9 @@ export default function SellerListingsClient({ sellerId }) {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {/* 🃏 БАГАНАТ GRID (2026-10-09) — карт нь БОСОО болов
+              (📱 1 · 📲 sm 2 · 🖥 xl 3) ✓ */}
           {visible.map((l) => <ListingCard key={l.id} listing={l} />)}
         </div>
       )}

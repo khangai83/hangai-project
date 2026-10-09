@@ -3934,7 +3934,13 @@ export default function HomeClient() {
             <p className="text-gray-500">Хайлтаа өөрчилж үзнэ үү. {query && `«${query}»`} {getCategoryLabel(category)}</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {/* 🃏 ЗАРЫН КАРТУУД — БАГАНАТ GRID (2026-10-09, жишиг сайт хэв)
+                ⚠️ Карт нь БОСОО болов (`ListingCard` — зураг дээрээ, мэдээлэл доор)
+                   тул бүтэн өргөнтэй НЭГ багана биш, GRID шаардна ✓
+                · 📱 мобайл 1 · 📲 sm(≥640) 2 · 🖥 xl(≥1280, сайдбартай) 3 · 2xl 4
+                   (⚠️ xl-д сайдбар 280px тул үр дүнгийн багана ~928px:
+                    3 карт ≈ 296px ✓ — 4 болвол ~220px, карт хэт нарийн ✗) */}
             {listings.map((l) => (
               <ListingCard
                 key={l.id}

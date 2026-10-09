@@ -66,6 +66,7 @@
     "cdp:search": "node scripts/cdp-search.mjs",
     "cdp:seller-stats-link": "node scripts/cdp-seller-stats-link.mjs",
     "cdp:seller-avatar": "node scripts/cdp-seller-avatar.mjs",
+    "cdp:card-grid": "node scripts/cdp-card-grid.mjs",
     "test:messages": "node scripts/test-messages.mjs",
     "test:notifications": "node scripts/test-notifications.mjs",
     "cdp:notifications": "node scripts/cdp-notifications.mjs",
