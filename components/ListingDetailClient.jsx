@@ -15,7 +15,7 @@ import Avatar from './Avatar';
 import VerifiedBadge from './VerifiedBadge';
 import { trackListingView } from '../lib/statsClient';
 import { normalizeError } from '../lib/errors';
-import { formatPrice, shortPriceLabel, negotiableNote, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress, shortListingId } from '../lib/format';
+import { formatPrice, shortPriceLabel, negotiableNote, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress, shortListingId, listingTitle } from '../lib/format';
 // 🔄 «СОЛИНО» (2026-10-09) — үнийн доорх мөр («🤝 Үнэ тохирно»-гийн ЯГ ДООР).
 //    ⚠️ Дүрэм нь `lib/swapFilter.mjs` (цэвэр) — форм ☑ ба хайлтын чиптэй
 //    нэг эх сурвалж ✓
@@ -222,6 +222,13 @@ export default function ListingDetailClient({ id }) {
   //    (хэрэглэгчийн хүсэлт: «зарын id … богино болгож хэрэглэгчдэд харуулах»)
   const shortId = shortListingId(listing.id);
   const typeLabel = getPropertyTypeLabel(listing.property_type, listing.category);
+  // 🏷️ ЗАРЫН ГАРЧИГ (🆕 2026-10-09 (88)) — зар оруулагчийн ӨӨРИЙН бичсэн гарчиг
+  //    (`listings.title` — 0027). ⚠️ НЭГ ЭХ СУРВАЛЖ: `lib/format.js →
+  //    listingTitle(listing)` — карт (`ListingCard` мөр 161) ЯГ ижил функцийг
+  //    дууддаг тул гарчиг 2 газар өөр харагдах боломжгүй ✓
+  //    ⚠️ `null` (0027-оос өмнөх 782 хуучин зар) эсвэл зөвхөн зай байвал `''`
+  //    буцаана ⇒ доорх H1 нь `sr-only` хэвээр үлдэнэ ✓
+  const adTitle = listingTitle(listing);
   const garageLabel = getGarageLabel(listing.has_garage);
   const isSell = listing.category === 'sell';
   // ⚠️ «Зарах / Түрээслэх» badge, ₮/м², ипотекийн тооцоолуур нь ЗӨВХӨН
@@ -376,18 +383,30 @@ export default function ListingDetailClient({ id }) {
             <span className={`badge ${isSell ? 'badge-sell' : 'badge-rent'}`}>{getCategoryLabel(listing.category)}</span>
           </div>
         )}
-        {/* ===== 🚫 ХАРАГДАХ ГАРЧИГ (H1) БАЙХГҮЙ (2026-10-01) =====
-            Хэрэглэгчийн хүсэлт: «Суудлын машин руу ороод тухайн зарын дэлгэрэнгүй
-            үзэхэд 🚗 Суудлын машин гэж … харуулмааргүй байна. Бүх зар › Автомашин ›
-            Суудлын машин гээд харагдаж байхад хангалттай».
-            ⚠️ ХАРАГДАХ H1 нь breadcrumb-ийн СҮҮЛИЙН мөртэй ЯГ давхарддаг байв
-               (`lib/breadcrumb.js` → ижил `getPropertyTypeLabel`) ✗ — тиймээс хасав.
-               ⚠️ Энэ давхардал нь БҮХ хэсэгт ижил (ж: «🏠 Орон сууц зарна») ✓
-            🔒 `sr-only` H1 ҮЛДЭВ — НҮДЭНД ХАРАГДАХГҮЙ ч дэлгэц уншигч (screen
-               reader) ба SEO-д хуудасны гарчиг ЗААВАЛ байх ёстой ✓ */}
-        <h1 className="sr-only">
-          {getPropertyIcon(listing.property_type, listing.section)} {typeLabel}
-          {address ? ` — ${address}` : ''}
+        {/* ===== 🏷️ ЗАРЫН ГАРЧИГ — ХАРАГДАХ H1 (🆕 2026-10-09 (88)) =====
+            ЖИШИГ САЙТЫН ХЭВ: breadcrumb-ийн ЯГ ДОР — ТОМ БОЛД гарчиг, доор нь
+            📍/🕒/🔖 мөрийн мэдээлэл ✓ (хэрэглэгчийн хүсэлт: «энэ явуулсан
+            зургийг дуурайж дизайныг сайжруул»)
+
+            ⚠️ (2026-10-01)-д ХАРАГДАХ H1 ХАСАГДСАН шалтгаан нь ТУХАЙН зарын
+               гарчиг БИШ — `getPropertyTypeLabel`-ийн УТГА (ж: «🚗 Суудлын
+               машин») нь breadcrumb-ийн СҮҮЛИЙН мөртэй ЯГ давхардаж байсан тул ✗.
+               Зар оруулагчийн өөрийн бичсэн гарчиг нь давхардал БИШ, ТУСДАА
+               мэдээлэл (breadcrumb нь зөвхөн ТӨРӨЛ/ӨРӨӨ/БАЙРШЛЫГ л заана) ⇒
+               түүнийг ГАРГАВАЛ зөв ✓ (`docs`-д баримтжуулсан 4 хүсэлтийн гэрээ)
+            ⚠️ Гарчиг БАЙХГҮЙ үед H1 нь ⏳ (2026-10-01)-ийн хэвээр `sr-only` —
+               текст (icon · төрөл · хаяг) ХӨНДӨӨГДӨӨГҮЙ ✓ ⇒ хуудас бүрд H1 нь
+               ЯГ НЭГ л байна (SEO/screen reader-ийн гэрээ хэвээр ✓)
+            ⚠️ `mb-2` нь ЗӨВХӨН харагдах үед — `sr-only` нь өөрөө
+               `position:absolute` тул зай эзлэхгүй (мета мөр нь толгойн badge-ийн
+               `mb-2`-оос шууд эхэлнэ ✓) */}
+        <h1
+          data-listing-title
+          className={adTitle
+            ? 'mb-2 text-xl font-bold leading-snug text-gray-900 sm:text-2xl'
+            : 'sr-only'}
+        >
+          {adTitle || `${getPropertyIcon(listing.property_type, listing.section)} ${typeLabel}${address ? ` — ${address}` : ''}`}
         </h1>
         {/* ===== 📍 БАЙРШИЛ · 🕒 НИЙТЭЛСЭН · 🔖 ЗАРЫН ДУГААР — НЭГ МӨРӨНД (жишиг сайт хэв) =====
             ⚠️ 2026-10-01 (14) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТЭЭР ГАЛЕРЕЙ КАРТЫН footer-оос

@@ -11,8 +11,14 @@
  *   ② `main` дотор СААРАЛ (крем) ДҮҮРГЭЛТТЭЙ элемент **0** —
  *      `getComputedStyle(el).backgroundColor` нь `gray-50/100/200`
  *      (#FAF8F5 · #F4F1EA · #E9E4D9 — tailwind.config.js) утга БАЙХГҮЙ ✓
- *      ⚠️ ЗӨВХӨН `main`-ыг шалгана: толгой ба мобайл доод цэс нь санаатай
- *      `bg-gray-100` хэвээр (тэдгээр нь хуудасны АГУУЛГА БИШ) ✓
+ *      ⚠️ ЗӨВХӨН `main`-ыг шалгана: `main` нь хуудасны АГУУЛГА ✓
+ *   ②b 🌍 **БҮТЭН ХУУДАС** (🆕 (88)) — толгой (`<header>`) ба мобайл доод цэс
+ *      (`<nav>`) нь `main`-ЫН ГАДНА байдаг тул тусдаа скан хийнэ: `body *`
+ *      дотор крем дүүргэлт **0** ✓ (⏳ (83)-д толгой/доод цэс нь `bg-gray-100`
+ *      байсан ⇒ энэ шалгалт унана ✗ — регресс барина)
+ *   ⑧ 🏷️ ЗАРЫН ГАРЧИГ (🆕 (88)) — `h1[data-listing-title]` нь хуудас бүрд ЯГ
+ *      НЭГ байх ба зар оруулагчийн гарчиг БАЙВАЛ ТОМ (≥18px) БАЛД (700)
+ *      харагдана ✓ (байхгүй бол `sr-only` — SEO нь хэвээр ✓)
  *   ③ 🎥 видео · 📋 шинж чанар · 📝 тайлбар · 🗺 газрын зураг — хэсэг бүр
  *      ХАЙРЦАГГҮЙ (`border-radius: 0px`) ба зөвхөн 1px дээд зураастай
  *      (`border-top-width: 1px`) · дотор нь ЦАГААН (саарал дүүргэлтгүй) ✓
@@ -182,11 +188,44 @@ const PROBE = `(() => {
       };
     });
   const asideCard = main.querySelector('aside > div');
+  // 🌍 БҮТЭН ХУУДАСНЫ СКАН (🆕 (88)) — зөвхөн main БИШ: толгой (header) ба
+  //    мобайл доод цэс (nav) нь main-ЫН ГАДНА байдаг тул ⏳ өмнөх шалгалт
+  //    тэднийг ОГТ хардаггүй байв ✗. Хэрэглэгчийн «бүх саарал өнгийг үгүй хий»
+  //    хүсэлт нь ХУУДАС БҮРИЙГ хамарна ⇒ бүх body-г шалгана ✓
+  //    ⚠️ Footer (bg-gray-900 = rgb(27,24,21)) ба Leaflet-ийн #ddd нь
+  //       крем ЖАГСААЛТАД БАЙХГҮЙ тул тоололцохгүй ✓
+  //    ⚠️ ЭНЭ БЛОК ДОТОР BACKTICK БОЛОН DOLLAR-BRACE (interpolation эхлэл)
+  //       ХЭРЭГЛЭХГҮЙ — утга нь өөрөө template literal дотор байгаа тул мөр
+  //       ТАСАЛЖ, скрипт унана ✗ (тиймээс мөр угсрахдаа + ашиглана ✓)
+  const pageGray = [...document.querySelectorAll('body *')]
+    .filter((el) => GRAY.includes(getComputedStyle(el).backgroundColor))
+    .map((el) => {
+      const cls = typeof el.className === 'string' ? el.className : '';
+      return el.tagName.toLowerCase() + (cls ? '[' + cls.slice(0, 55) + ']' : '');
+    })
+    .slice(0, 6);
+  // 🏷️ ЗАРЫН ГАРЧИГ (🆕 (88)) — жишиг сайтын хэвээр breadcrumb-ийн доор ТОМ БОЛД
+  //    гарчиг. ⚠️ Хуудас бүрд H1 нь ЯГ НЭГ (SEO) — гарчиггүй зар дээр sr-only ✓
+  const h1s = [...document.querySelectorAll('h1')];
+  const titleEl = document.querySelector('h1[data-listing-title]');
+  const tcs = titleEl ? getComputedStyle(titleEl) : null;
   return {
     vw: window.innerWidth,
     scrollW: document.documentElement.scrollWidth,
     grayCount: gray.length,
     graySample: gray,
+    pageGrayCount: pageGray.length,
+    pageGraySample: pageGray,
+    h1Count: h1s.length,
+    title: titleEl
+      ? {
+        text: (titleEl.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 40),
+        srOnly: titleEl.classList.contains('sr-only'),
+        size: tcs.fontSize,
+        weight: tcs.fontWeight,
+        h: R(titleEl).h,
+      }
+      : null,
     sections,
     contact: asideCard
       ? {
@@ -219,6 +258,8 @@ check('①b Зарын дэлгэрэнгүй хуудас нээгдэв (≥3 
   !d.noMain && d.sections.length >= 3, d.noMain ? '`main` алга' : `${d.sections.length} хэсэг`);
 check('② `main` дотор СААРАЛ (крем) дүүргэлттэй элемент 0',
   d.grayCount === 0, d.grayCount ? `${d.grayCount} → ${d.graySample.join(' | ')}` : '0 ✓');
+check('②b 🌍 БҮТЭН ХУУДАС (толгой + мобайл доод цэс оруулаад) СААРАЛГҮЙ — крем дүүргэлт 0',
+  d.pageGrayCount === 0, d.pageGrayCount ? `${d.pageGrayCount} → ${d.pageGraySample.join(' | ')}` : '0 ✓');
 check('③ Хэсгүүд ХАЙРЦАГГҮЙ (`border-radius: 0px`) — жишиг сайтын хэв',
   d.sections.every((s) => s.radius === '0px'),
   d.sections.map((s) => `${s.label || s.id}: ${s.radius}`).join(' · '));
@@ -231,6 +272,17 @@ check('④ 💰 Холбоо барих хайрцаг ЦАГААН ба СҮҮ�
   !!d.contact && d.contact.bg === 'rgb(255, 255, 255)' && d.contact.shadow === 'none',
   d.contact ? `bg ${d.contact.bg} · shadow ${d.contact.shadow}` : 'хайрцаг алга');
 check('⑤ Хэвтээ гүйлт 0 (1280px)', d.scrollW <= d.vw + 1, `scrollW ${d.scrollW} / vw ${d.vw}`);
+// ---------- ⑧ 🏷️ ЗАРЫН ГАРЧИГ (🆕 (88)) ----------
+check('⑧ 🏷️ Хуудас бүрд H1 нь ЯГ НЭГ (`h1[data-listing-title]`)',
+  d.h1Count === 1 && !!d.title, `h1 ${d.h1Count} · title ${d.title ? 'yes' : 'no'}`);
+if (d.title) {
+  // ⚠️ Гарчиг БАЙВАЛ (энэ зар дээр `Test`) тэр нь НҮДЭНД ХАРАГДАХ ёстой —
+  //    ТОМ (≥18px) БАЛД (700) ба өндөр > 0 (`sr-only` БИШ) ✓
+  const shown = !d.title.srOnly && d.title.h > 0;
+  check('⑧b 🏷️ Зар оруулагчийн гарчиг нь breadcrumb-ийн доор ХАРАГДАЖ байна (ТОМ БОЛД)',
+    shown && parseInt(d.title.size, 10) >= 18 && d.title.weight === '700',
+    `«${d.title.text}» · ${d.title.size}/${d.title.weight} · h ${d.title.h}${shown ? '' : ' ← ХАРАГДАХГҮЙ ✗'}`);
+}
 await shot('/tmp/detail-style-1280.png');
 
 // ---------- ③ 📱 390px (мобайл) ----------
@@ -239,6 +291,8 @@ await waitFor(`!!document.querySelector('main') && document.querySelectorAll('ma
 const m = await evalJs(PROBE);
 check('⑤b 📱 390px: саарал дүүргэлт 0', m.grayCount === 0,
   m.grayCount ? `${m.grayCount} → ${m.graySample.join(' | ')}` : '0 ✓');
+check('⑤b2 📱 390px: БҮТЭН ХУУДАС (доод цэс оруулаад) сааралгүй',
+  m.pageGrayCount === 0, m.pageGrayCount ? `${m.pageGrayCount} → ${m.pageGraySample.join(' | ')}` : '0 ✓');
 check('⑤c 📱 390px: хэвтээ гүйлт 0', m.scrollW <= m.vw + 1, `scrollW ${m.scrollW} / vw ${m.vw}`);
 check('⑤d 📱 390px: хэсгүүд ХАЙРЦАГГҮЙ (radius 0px)',
   m.sections.every((s) => s.radius === '0px'), m.sections.map((s) => s.radius).join(' · '));
