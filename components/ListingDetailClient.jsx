@@ -32,6 +32,9 @@ import { mapCenterFor } from '../lib/locationGeo.mjs';
 import { NO_LOCATION_LABEL } from '../lib/listingLocation.mjs';
 // 🕐 2026-10-08 (68): «Хайлтын түүх» рүү ҮЗСЭН ЗАРАА бичнэ (хайлт БИШ) ✓
 import { recordListingView } from '../lib/searchHistory';
+// 🔎 2026-10-09 (79): «Төстэй зарууд» — үндсэн агуулгын ДООР (жишиг сайтын хэв).
+//    Онооллын логик нь `lib/similarListings.mjs`, UI нь `SimilarListings` ✓
+import SimilarListings from './SimilarListings';
 
 export default function ListingDetailClient({ id }) {
   const { showToast } = useToast();
@@ -859,6 +862,13 @@ export default function ListingDetailClient({ id }) {
               ҮНДСЭН БАГАНАД («Зарын дэд байршил» гарчигтай), БҮХ зарт гарна ✓ */}
         </aside>
       </div>
+
+      {/* ===== 🔎 ТӨСТЭЙ ЗАРУУД (2026-10-09 (79)) =====
+          ⚠️ Хоёр баганын grid-ийн ГАДНА (page-container дотор) — ингэснээр
+             БҮТЭН ӨРГӨНТЭЙ, доор нь баганат grid-ээр харагдана ✓
+          ⚠️ Олдоогүй/ачаалж байгаа үед компонент нь `null` буцаана —
+             хоосон хайрцаг ГАРАХГҮЙ ✓ */}
+      <SimilarListings listing={listing} />
     </div>
   );
 }

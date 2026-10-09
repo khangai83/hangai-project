@@ -1252,6 +1252,37 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   хүснэгт) · `docs/IMPROVEMENTS.md` (энэ мөр)
   🔍 Хайх үг: `max-w-[480px]`, `mx-auto` ХОРИГ, `form.left − slot.left`, `isHeader`,
   `HeaderSearchBar`, `test-search-bar-width`, `zar-70-search-gap`
+- 🔎 **ТӨСТЭЙ ЗАРУУД — ЗАРЫН ДЭЛГЭРЭНГҮЙ ХУУДСАНД (2026-10-09 (79))** —
+  хэрэглэгчийн хүсэлт: «**зарын карт руу ороход төстэй заруудыг харуулах**»
+  (жишиг сайтын хэв — үндсэн агуулга ба нийтлэгчийн картын ДООР).
+  (1) 🧩 **ЦЭВЭР ЛОГИК:`lib/similarListings.mjs`** (DB/React-гүй, тестлэгддэг) —
+  `similarSection()` (хоосон → `real-estate`) · `similarCategoryFilter()`
+  (зөвхөн `sell`/`rent` үед шүүнэ) · `similarityScore()` (дүүрэг **+3** ·
+  төрөл **+2** · хороо **+1** · хот **+1**; ⚠️ ХООСОН утга ХЭЗЭЭ Ч тохирохгүй,
+  жижиг/том үсэг ба илүүдэл зайг үл хайхран) · `rankSimilarListings()`
+  (оноо буурахаар → `created_at` → `id`, ТОГТВОРТОЙ дараалал; өөрийгөө ХАСНА).
+  (2) 🗄 **`lib/queries.js → fetchSimilarListings(listing, { limit = 6 })`** —
+  DB дээр ижил `section` + `category` (Зарах/Түрээслэх) · `.neq('id', …)`
+  (өөрийгөө хасна) · сүүлийн `SIMILAR_CANDIDATE_POOL` (60) зарыг татаж,
+  онооллыг client талд хийнэ (⚠️ PostgREST нь «хэдэн талбар таарсан» гэж
+  эрэмбэлж ЧАДАХГҮЙ) ⇒ дээд **6** зар; UUID биш/хоосон үед query ИЛГЭЭХГҮЙ ✓.
+  (3) 🎨 **`components/SimilarListings.jsx`** — «🔎 Төстэй зарууд» гарчиг +
+  одоогийн БОСОО `ListingCard`-аар баганат grid (📱 1 · `sm` 2 · `lg` 3 ·
+  `2xl` 4) + нийтлэгчийн нэр/зураг 2 дахь query-ээр (`fetchProfilesByIds`).
+  🚫 ХООСОН/АЛДААТАЙ үед блок БҮХЭЛДЭЭ ГАРАХГҮЙ (`return null`) — үндсэн
+  агуулгад нөлөөлөхгүй ✓.
+  (4) 🖼 **`components/ListingDetailClient.jsx`** — хоёр баганын grid-ийн ГАДНА
+  (page-container дотор, БҮТЭН ӨРГӨНТЭЙ) render хийнэ ✓.
+  (5) 🧪 **ТЕСТ:** 🆕 `npm run test:similar` (`scripts/test-similar.mjs`)
+  **39/39 ✓** — ① цэвэр модуль (оноо/эрэмбэ/хязгаар/хоосон утга/тогтвортой
+  дараалал) ② эх кодын ГЭРЭЭ (query шүүлтүүд · UI · render-ийн байрлал);
+  🆕 `npm run cdp:similar` (`scripts/cdp-similar.mjs`) нь **бодит Chrome** дээр
+  **10 OK / 0 FAIL ✓** (блок 2 баганын grid-ийн ДООР · 6 карт · эхний мөрөнд
+  3 карт (400px, ИЖИЛ өргөн) · өөрийгөө хассан · гүйлт 0 · JS/hydration 0).
+  ⚠️ DB/SQL/migration ХӨНДӨӨГДӨӨГҮЙ ✓ · `npm run build` **EXIT=0 ✓**.
+  📸 `/tmp/similar-listings-1280.png`.
+  🔍 Хайх үг: `SimilarListings`, `fetchSimilarListings`, `similarityScore`,
+  `rankSimilarListings`, `data-similar-listings`, `cdp:similar`
 - 🎴 **ЗАРЫН КАРТ — БОСОО (зураг ДЭЭРЭЭ) + БАГАНАТ GRID (2026-10-09 (78))** —
   хэрэглэгчийн хүсэлт: «**зарыг харуулж байгаа картын загварыг жишиг сайт шиг
   болгоорой**». (1) 🎯 **КАРТ БОСОО БОЛОВ:** ⏳ хэвтээ байсан
@@ -6076,7 +6107,8 @@ npm run test:districts   # 🗺 ДҮҮРЭГ / СУМ — ОЛОН сонгол�
 npm run test:carpicker   # 🏷️🚙 АВТО «ҮЙДВЭРЛЭГЧ, ЗАГВАР» — Байршил шиг НЭГ пикер (CarPicker гэрээ + attr жагсаалтаас шүүх + applyCar/cascade + олон загвар + форм ХӨНДӨӨГДӨӨГҮЙ) (18 тест, 0₮) ✓
 npm run test:payments    # 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — хайлтад ЧИП (өрөөний тоотой ижил), формд ☑/URL/DB (jsonb `cs`) + ЗААВАЛ (36 тест, 0₮) ✓
 npm run test:attrMulti   # 🎨 🚗 «ӨНГӨ» + 🆕 (22) ⚙️ «Хурдны хайрцаг»/⛽ «Түлш» ба ✅ «Шинэ / Шинэвтэр / Хуучин» (8 хэсэг) — ОЛОН сонголттой ЧИП шүүлт (URL `attr_color=А,Б` / `attr_transmission=А,Б` / `attr_fuel=А,Б` / `attr_condition=Шинэ,Хуучин` → DB `attrs->>…=in.(…)`) (24 тест, 0₮) ✓
-npm run test:card        # 📇 ЗАРЫН КАРТ — жишиг сайт хэв (ТОМ зураг 42% · үнэ/гарчиг/тайлбар · нийтлэгчийн band · 🖼 1/N · ❤️) (16 тест, 0₮) ✓
+npm run test:card        # 📇 ЗАРЫН КАРТ — жишиг сайт хэв (БОСОО: зураг ДЭЭРЭЭ 4:3 · үнэ+❤️ нэг мөрөнд · гарчиг · нийтлэгчийн band · 🖼 1/N · 👁) (18 тест, 0₮) ✓
+npm run test:similar     # 🔎 ТӨСТЭЙ ЗАРУУД — оноо (дүүрэг+3·төрөл+2·хороо+1·хот+1) · эрэмбэ · хязгаар · query/UI/render гэрээ (39 тест, 0₮) ✓
 npm run test:showname    # 👤 ЗАР ТУС БҮРИЙН «ПРОФАЙЛ НЭРЭЭ ЗАР ДЭЭР ГАРГАХ УУ?» — форм (Нэр талбарын доор) · 0042 · хадгалалт · харагдац (12 тест, 0₮) ✓
 npm run test:sofa        # 🛏 «ОР БОЛДОГ ЭСЭХ» (Тийм/Үгүй) — ЗӨВХӨН 🛋️ «Буйдан, кресло» дэд төрөлд, Төлөвийн доор: форм/sidebar/дэлгэрэнгүй (13 тест, 0₮) ✓
 npm run test:jobs        # 💼 АЖЛЫН ЗАР — шинэ 5 талбар (🕒/📊/🏷️/📈/💰) + чип шүүлт + «Үнэ→Цалин» (17 тест, 0₮) ✓
@@ -6489,6 +6521,8 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 
 | `scripts/test-card.mjs` | 🆕 **16 → 🆕 (78) 18 тест** — `npm run test:card` (🆕 2026-10-03 (8): 📇 зарын картын ДИЗАЙНЫ гэрээ (**жишиг сайт** хэв); 🆕 **2026-10-09 (78): КАРТ БОСОО БОЛОВ**) — `codeOnly()`-оор ① ⏳ (8) `sm:h-[300px]` + `sm:flex-row` ⇒ 🆕 (78) **`flex flex-col`** + `data-listing-card`, ба **⛔ ХУУЧИН хэвтээ класс руу буцах хориг** (`sm:flex-row`, `sm:h-[300px]`, `sm:w-[42%]`, `h-52` БАЙХГҮЙ) ①b 🆕 (78) **❤️ нь ҮНИЙ мөрөнд** (`ml-auto`, үнэтэй нэг мөрт) бөгөөд доод мета мөрөнд ❤️ БАЙХГҮЙ (`toggleFavorite` ЯГ 1 удаа) ② зураг ⏳ `sm:w-[42%]` + `sm:h-full` (мобайл `h-52`) ⇒ 🆕 (78) **`aspect-[4/3] w-full`** (бэхлэгдсэн өндөргүй) ③ үнэ `text-[22px] font-extrabold` + ТОВЧ формат `shortPriceLabel` (🆕 2026-10-06: «760 сая ₮» · «44.8 сая ₮»; урт `priceLabel` карт дээр БАЙХГҮЙ) ④ гарчиг `line-clamp-2` ⑤ 🗑 тайлбар (`listing.description`) карт дээр БАЙХГҮЙ (🆕 2026-10-06 — хэрэглэгчийн хүсэлтээр ХАСАГДАВ) ⑥ нийтлэгчийн band (28px Avatar + ✅ 13) ⑦ 🖼 `1/N` (`imageCount > 1`) ⑧ 🎥 (`video_url`) ⑨ badge зөвхөн `isRealEstate` ⑩ мета: `timeAgo`/`formatAddress`/👁 ⑪ ❤️ toggle (`preventDefault`+`stopPropagation`) ⑫ `pr-20`/`sm:pr-0` нөөц ⑬ «Үнэ тохирно» ГАРАХГҮЙ (`hasRealPrice` хаалт, `negotiableNote` БАЙХГҮЙ) ⑭ НЭГ `<Link>` ⑮ `getPropertyIcon` placeholder ⑯ HomeClient `attrsLine`+`author` — БҮГД эх кодоор ✓) |
 | `scripts/cdp-card-grid.mjs` | 🎴 **CDP (бодит Chrome)** — `npm run cdp:card-grid` (🆕 **2026-10-09 (78): 21 OK / 0 FAIL ✓** — ✅ БОДИТ headless Chrome + сервер :3000; ⚠️ байхгүй бол SKIP → exit 0 ✓). Геометрээр батална: ① 🖥 1280px — эхний мөрөнд **≥3 карт** (баганат grid), бүх картын өргөн ИЖИЛ (±2px, хэмжсэн 294px) ①b хэвтээ гүйлт 0 ② зураг картын өргөнийг **ДҮҮРГЭНЭ**, харьцаа **4:3** (0.75; 292×219) ②c мэдээллийн блок зургийн **ДООР** (`img.bottom ≤ content.top`) ②d агуулга картын хүрээнээс гарахгүй ③ ❤️ нь **ҮНИЙ МӨРӨНД** (ижил өндөр ±6px) ба баруун захад (`ml-auto`) ③c товч «❤️ N»/«🤍 N» (⚠️ emoji-гийн variation selector `U+FE0F`-г цэвэрлэж шалгана) ③d гарчиг үнийн мөрөөс ДООР ④ 📱 390px — хэвтээ гүйлт 0, **НЭГ багана** (2 дахь карт 1-ийнхээ загинаа доор), зураг 4:3 бүтэн өргөн, ❤️ үнийн мөрөнд ⑤ `/favorites` (localStorage-д нүүр хуудасны эхний 4 зарыг seed хийнэ) — баганат grid + «Хасах» товч картын хүрээ ДОТОР ⑥ Leaflet-ээс БУСАД exception 0 (**Leaflet-ийн `_leaflet_pos` нь зарын газрын зургийн zoom transition-ы алдаа — өөрчлөлтөөс ҮЛ ХАМААРАЛТАЙ ⇒ тусад нь**, `cdp-search-history`-ийн ЯГ ИЖИЛ зарчим) ⑥b hydration/`validateDOMNesting` алдаа 0 · 📸 `/tmp/card-grid-home-1280.png` · `/tmp/card-grid-home-390.png` · `/tmp/card-grid-favorites-1280.png`) |
+| `scripts/test-similar.mjs` | 🆕 **39 тест** — `npm run test:similar` (🆕 **2026-10-09 (79): «ТӨСТЭЙ ЗАРУУД»** — хэрэглэгчийн хүсэлт: «зарын карт руу ороход төстэй заруудыг харуулах»). **① 🧩 ЦЭВЭР модуль (`lib/similarListings.mjs`, DB/React-гүй) функцээр:** `similarSection` (хоосон → `real-estate`) · `similarCategoryFilter` (зөвхөн `sell`/`rent`, бусад нь `null`) · `similarityScore` (дүүрэг **+3** ба төрөл **+2** ба хороо **+1** ба хот **+1** ⇒ дүүрэг+төрөл+хороо+хот = **7**; зөвхөн хот = 1; огт тохирохгүй = 0; ⚠️ ХООСОН утга ХЭЗЭЭ Ч тохирохгүй; жижиг/том үсэг ба илүүдэл зайг үл хайхна; `null` оролтод 0) · `rankSimilarListings` (өөрийгөө ХАСНА; оноо БУУРАХААР; оноо тэнцвэл `created_at` буурахаар; бүрэн тэнцвэл `id` буурахаар — ТОГТВОРТОЙ; анхдагч **6**; `limit`-ыг дагана; массив биш/`null`/`id`-гүй мөрд уналтгүй). **② 🧩 Эх кодын ГЭРЭЭ (`codeOnly()`):** `queries.js` → `fetchSimilarListings` (`.eq('section', similarSection(listing))` · `.neq('id', listing.id)` · `.eq('category', category)` · `.limit(SIMILAR_CANDIDATE_POOL)` · `return rankSimilarListings(listing, data \|\| [], size)` · `isUuid` хаалт · `./similarListings.mjs` импорт); `SimilarListings.jsx` → «🔎 Төстэй зарууд» · `data-similar-listings` · `<ListingCard>` · `return null` (хоосон үед) · `console.warn(normalizeError(err))` · `grid-cols-1 … sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4` · `fetchProfilesByIds(rows.map((l) => l.user_id))` · онооллыг ДАХИН БИЧЭЭГҮЙ; `ListingDetailClient.jsx` → `import SimilarListings` · `<SimilarListings listing={listing} />` · байрлал нь `</aside>` → `</div>` (grid) → `{}` (JSX коммент) → `<SimilarListings … />` → `</div>` (page-container) ✅ ⚠️ DB/React ХОЛБОГДОХГҮЙ) |
+| `scripts/cdp-similar.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:similar` (🆕 **2026-10-09 (79): 10 OK / 0 FAIL ✓** — ✅ БОДИТ headless Chrome + сервер :3000; ⚠️ байхгүй бол SKIP → exit 0 ✓). `/` дээрээс эхний зарын id-г олоод `/listings/<id>` руу орж геометрээр батална: ① зарын линк UUID ② блок нь **үндсэн 2 БАГАНЫН grid-ийн (агуулга + `aside`) ДООР** (`block.top ≥ grid.bottom`; `previousElementSibling` нь grid ба дотор нь `aside` байгааг ч шалгана) ③ гарчиг «🔎 Төстэй зарууд» ④ картууд ≥1 ④b эхний мөрөнд **≥2 карт** (1280px, хэмжсэн 3 карт) ④c бүх картын өргөн **ИЖИЛ** (±2px, хэмжсэн 400px) ⑤ одоогийн зар төстэй заруудын дотор **ДАВХАРДАХГҮЙ** ⑥ хэвтээ гүйлт 0 ⑦ Leaflet-ээс бусад exception 0 ⑦b hydration алдаа 0 · 📸 `/tmp/similar-listings-1280.png` (блок руу `scrollIntoView` хийж зурна). ⚠️ DB-д ижил хэсэг/ангиллын өөр зар байхгүй бол блок гарахгүй — тэр үед SKIP (exit 0), FAIL БИШ ✓) |
 | `scripts/cdp-job-chips.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:chips` (🆕 **2026-10-06 (18): 66 шалгалт · ✅ 66 OK / 0 FAIL** — ⏳ (16): 63 → (17): 54 → ОДОО **66**; 🆕 (18): **§⑥⓪ ХУРААГДАХ ЧИП БЛОК** — `[data-side-collapse]` нь jobType/experience/jobLevel, 🕒/📈 нь АНХДАГЧААР ХУРААСАН (`aria-expanded="false"`) ч чипүүд DOM-д (`[data-attr-value]` = 5) ба харагдах өндөр 0 ⇒ «Бүгдийг нээх» (`[data-side-toggle-all]`) дарахад 3 блок нээгдэж **sidebar-ийн өндөр нэмэгдэв** (товч «Хураах» + `aria-pressed=true`); **§⑥d** — `?attr_jobType=Бүтэн+цагийн` линкээр блок АВТОМАТААР НЭЭЛТТЭЙ (шүүлт ДАЛД БАЙХГҮЙ ✓) ба гарчиг дээр дарж хаахад чип DOM-д + URL/утга ХӨНДӨӨГДӨХГҮЙ ✓ — ⚠️ тиймээс ⑥/⑥b/⑥c шалгалтууд «Бүгдийг нээх»-ийн дараа л чип текстийг уншина; ⏳ 2026-10-05-д 54 байв; 🆕 (16): ⑥c HOVER (💼 📈 pill — БОДИТ хулганаар `Input.dispatchMouseEvent` ⇒ `:hover` ⇒ `rgb(233, 228, 217)` = `bg-gray-200`, зайлуулахад `rgb(255,255,255)` буцах; ИДЭВХТЭЙ pill ⇒ `bg-primary/25` = `rgba(37, 99, 235, 0.25)` ба гэрэлтэлт БАРААН ✓) · ⚠️ flake засвар: hover цэг нь ЭЭЛЖЛЭН эргэлддэг (`AWAY` — Chrome ижил цэг рүү дахин `mouseMoved` илгээхэд hit-test ДАХИН ХИЙГДДЭГГҮЙ) + `probeUntil` (6×250мс) + `matches(':hover')` · §⑤ мобайл тест нь хуучин ноорог (`localStorage`)-т өртөж байсныг `clearDraft()`-оор зассан ✓ · ⏳ ESC тест ⌄ панелийн чипийг дарж байсныг (тэдгээр нь `aria-expanded` БАЙХГҮЙ) `> button` ШУУД ХҮҮ-ээр зассан ✓ — 🆕 2026-10-03 (11): 💼 АЖЛЫН ЗАРЫН 4 ЧИП ТАЛБАР: ① демо хэрэглэгчээр нэвтэрч `/listings/new` → 💼 → 3-р алхам ② 4 блок `[data-attr-field]` (jobType 5 · experience 2 · advertiser 3 · jobLevel 5 чип) ЧИП ба 💰 `salaryType` `<select>` ХЭВЭЭР ③ чип дарах → `aria-pressed=true` + `chip-toggle-active` + блок бүрд ЯГ 1 (mutual exclusive) ④ идэвхтэй чип дээр дахин дарах → **ЦУЦЛАГДАНА** (бусад 3 чип + 💰 `<select>` хөндөгдөхгүй) ④b `?edit=<id>` (засах горим — чипүүд DB-ээс УРЬДЧИЛАН сонгогдсон эсэх; демо хэрэглэгчид ажлын зар байхгүй бол SKIP) ⑤ 📱 390px — 4 талбар БҮГД хүрэх (нэг дэлгэцэд НЭГ), `flex-wrap`, гүйлт 0 (`docW === vw`) ⑥ хайлтын хуудас `?section=jobs&type=…` — 🆕 **2026-10-05 (42): 🕒/📊/📈 нь САЙДБАРТ БИШ, `#filter-bar`-т 3 PILL** (`[data-filter-pill]` jobType · experience · jobLevel; ⌄ панель `[data-filter-panel]`; дотор нь `[data-attr-filter]` + `data-attr-multi="true"`; чип 12 = 5+2+5; `role="group"`; ⛔ панель дотор `<select>` БАЙХГҮЙ) ба **сайдбарт attr шүүлт 0** (`aside [data-attr-filter]` 0 — зөвхөн «Байршил» + «Цалин, ₮»), форм блок 0, байрлал нь `#listing-results` доторх «Эрэмбэлэх»-ийн ДООР (🆕 2026-10-03 (13): aside нь ХЭСГИЙН түвшинд ч гардаг болов — энэ шалгалт нь формтой жиших тул `&type=` ХЭВЭЭР ✓) ⑥b 🆕 (42): pill НЭЭЖ (⌄ панель `invisible` үед текст уншигдахгүй тул) чип дарж `?attr_jobType=Бүтэн цагийн,Цагийн` (**2 чип ЗЭРЭГ идэвхтэй** — ⛔ хуучин нэг сонголттой зан төлөв БАЙХГҮЙ), badge «2» + «2 сонгосон» + «✕ Цуцлах» → URL-ээс түлхүүр АРИЛНА; 📊 ч 2 утга ЗЭРЭГ (`?attr_experience=Шаардлагагүй,Шаардлагатай`), 📈 ХӨНДӨГДӨХГҮЙ ⑦ JS exception/console.error **0** · 🆕 **(51) 2026-10-07: ③④⑤ нь ЧИП БИШ — форм нь 💰 `salaryType`-тай ЯГ ИЖИЛ `<select>` (`[data-detail-field="attr-…"] select`, `hide-below-sm`) ба 📱 `[data-mobile-option]` 2 баганат жагсаалт (`[data-mobile-options-grid]` = 2 багана, `<select>` өргөн 0); §④ нь `select`-ийн `change`/poll, §④b (засах) `ed.selects`/`ed.values` ✓) |
 | `scripts/test-jobs.mjs` | **20 тест** — `npm run test:jobs` (🆕 2026-10-03 (9), 🆕 **2026-10-05 (42)**: 💼 АЖЛЫН ЗАРЫН ГЭРЭЭ — `lib/locationData.js` ШУУД + `codeOnly()` эх кодоор ① форм талбарууд ЯГ 5 — `['jobType','experience','advertiser','jobLevel','salaryType']` (🆕 (10): 🏢 `company` / 💼 `position` ХАСАГДАВ) ② 🕒 «Ажлын цаг» 5 сонголт + **`chips` + `multi` + `filterBar`** (🆕 (42)) ③ 📊 Туршлага/🏷️ Зарлагч/📈 Мэргэжлийн түвшин/💰 Цалингийн төрөл (📊/📈 ч **`chips` + `multi` + `filterBar`** — 🆕 (42)) ④ 🗑 salary/education/workMode/expiry ХАСАГДАВ ⑤ **хайлтын 3 шүүлт — ГУРВУУЛАА `chips` + `multi` + `filterBar`** (`jobType` · `experience` · `jobLevel`; 🆕 (42)) ба 🆕 `HomeClient`-ийн `attrFilters.filter((f) => f.chips && f.multi && f.filterBar)` / `.filter((f) => !f.filterBar)` хоёр мөр + `data-filter-pill`/`data-filter-panel` дэгээ (хатуу жагсаалт `FILTER_BAR_ATTR_KEYS` БАЙХГҮЙ ✓) ⑥ `priceWord`/`isJobsSection` ⑦ `format.js` `NEGOTIABLE_SALARY_LABEL`+`negotiableLabel` ⑧ форм «Цалингийн хэмжээ»+«Цалин тохиролцоно» ⑨ `f.chips` салбар (`chip-toggle`/`data-attr-value`) ⑩ `priceSideBlock` + ажилд attr шүүлтүүдийн ӨМНӨ дараалал (regex + `indexOf`) ⑪ картын мөр ⑫ `getAttrRows` `salary`/`company`/`position` МӨР БАЙХГҮЙ ⑬ seed шинэ утгууд · 🆕 **(51) 2026-10-07: ①–④ форм талбар `formChips === undefined`** (форм нь 💰 `salaryType`-тай ЯГ ИЖИЛ `<select>`/📱 2 баганат жагсаалт — ⏳ (11)-ийн форм чип ХАСАГДАВ, `f.formChips` салбарын гэрээ ХЭВЭЭР ✓) |
 | `scripts/test-search.mjs` | **53 тест** — `npm run test:search` (2026-09-30: 🔢 `lib/rangeFilter.mjs` (`groupDigits`/`parseNum`/`formatGroupedInput`/`clampNum`/`snapNum`/`toFilterPair`/`isRangeActive`/`rangeLabel`/`yearBounds`; 🆕 2026-10-04 (41): `FLOOR_BOUNDS`/`buildYearBounds`/`BUILD_YEAR_START`) + 🔀 `lib/sortOptions.mjs` (`SORT_OPTIONS`/`normalizeSort`/`sortOrders`/`sortLabel`) — `order=price.asc.nullslast,id.desc` ба HomeClient/queries-ийн гэрээ ✓; 📌 регресс: ① слайдер (`RangeSlider`/`rangeSlider.mjs`/`role="slider"`/pointer handler) ХААНА Ч БАЙХГҮЙ ② он БҮЛЭГЛЭГДЭХГҮЙ («2.026» ✗) ③ «1.234,5» → `1234.5` ✓ ④ хил дээрх `0` → «₮0 – ₮5 тэрбум» (өмнө нь «₮ – …» хоосон ✗) ⑤ **2026-09-30 (3): `priceQuickPicks()` эскпорт БАЙХГҮЙ, `quickPicks`/`data-quick-pick`/`aria-pressed` КОДОД БАЙХГҮЙ (комментыг `codeOnly()`-оор хасч шалгана), `snapNum` ЦЭВЭР туслах хэвээр, шошго нь `placeholder="Доод"`/`"Дээд"` + `(доод хязгаар)`/`(дээд хязгаар)` — «Эхлэх / Дуусах» кодод БАЙХГҮЙ** ✓) |
@@ -8418,6 +8452,56 @@ Breadcrumb      Бүх зар › Автомашин › Суудлын маши
   захад, гарчиг доор ④ 📱 390px — хэвтээ гүйлт 0, **НЭГ** багана ⑤ /favorites —
   баганат grid + «Хасах» товч хүрээ дотор ⑥ Leaflet-ээс бусад exception 0,
   hydration алдаа 0 ⇒ **21 OK / 0 FAIL ✓**
+
+### 🔎 Төстэй зарууд (`SimilarListings.jsx`, 2026-10-09 (79))
+
+Зарын дэлгэрэнгүй хуудас (`/listings/[id]`) руу ороход ҮНДСЭН агуулга ба
+нийтлэгчийн картын **ДООР**, бүтэн өргөнөөр «🔎 Төстэй зарууд» гарна
+(хэрэглэгчийн хүсэлт: «зарын карт руу ороход төстэй заруудыг харуулах»).
+
+```
+[ 🗺 газрын зураг + үндсэн агуулга ] [ 📞 холбоо барих карт ]
+──────────────────────────────────────────────────────────────
+🔎 Төстэй зарууд
+┌────────────┐ ┌────────────┐ ┌────────────┐
+│ ListingCard│ │ ListingCard│ │ ListingCard│   ← одоогийн БОСОО карт
+└────────────┘ └────────────┘ └────────────┘
+```
+
+- **📐 СОНГОХ ДҮРЭМ (2 шат)** — `lib/queries.js → fetchSimilarListings()`:
+  ① **DB дээр шүүнэ:** ижил `section` · ижил `category` (Зарах/Түрээслэх,
+  `similarCategoryFilter()` — зөвхөн `'sell'`/`'rent'` үед) · өөрийгөө ХАСНА
+  (`.neq('id', …)`) · сүүлийн `SIMILAR_CANDIDATE_POOL` (**60**) зарыг татна
+  ② **Client талд оноолно** (`rankSimilarListings()`): ижил **дүүрэг +3** ·
+  **төрөл +2** · **хороо +1** · **хот +1** → оноо буурахаар; тэнцвэл
+  `created_at` буурахаар, дараа нь `id` буурахаар (ТОГТВОРТОЙ) ⇒ дээд **6**.
+  ⚠️ PostgREST нь «хэдэн талбар таарсан» гэж ЭРЭМБЭЛЖ ЧАДАХГҮЙ тул оноолол
+  client талд (нэр дэвшигчийн сан 60 мөр ⇒ хурдан ✓).
+- **🧩 ЦЭВЭР ЛОГИК** — `lib/similarListings.mjs` (DB/React хамааралгүй,
+  тестлэгддэг): `SIMILAR_LISTINGS_LIMIT` (6) · `SIMILAR_CANDIDATE_POOL` (60) ·
+  `similarSection()` · `similarCategoryFilter()` · `similarityScore()` ·
+  `rankSimilarListings()`. ⚠️ **ХООСОН утга ХЭЗЭЭ Ч тохирохгүй** (`''`/`null`
+  ижил гэж тооцогдохгүй) · жижиг/том үсэг ба илүүдэл зайг үл хайхран харьцуулна.
+- **🎨 UI** — `components/SimilarListings.jsx`: гарчиг + **БАГАНАТ GRID**
+  (📱 мобайл 1 · `sm` 2 · `lg` 3 · `2xl` 4) бөгөөд карт нь одоогийн
+  `ListingCard` (мөн `author`/`attrsLine` нь `HomeClient`-ийн ЯГ ижил арга).
+  Нэмэлт query: нийтлэгчийн нэр/зураг (`fetchProfilesByIds`) — алдаа гарвал
+  зөвхөн нэр/зураггүй гарна ✓.
+  🚫 **ХООСОН/АЛДААТАЙ үед блок БҮХЭЛДЭЭ ГАРАХГҮЙ** (`return null`) —
+  «олдсонгүй» гэсэн хоосон хайрцаг ХАРУУЛАХГҮЙ, үндсэн агуулгад нөлөөлөхгүй ✓.
+- **🖼 БАЙРЛАЛ** — `components/ListingDetailClient.jsx` дэх хоёр баганын grid
+  (`lg:grid-cols-[minmax(0,1fr)_350px]`)-ийн **ГАДНА**, `page-container` дотор
+  ⇒ БҮТЭН ӨРГӨНТЭЙ, sidebar-аас доош гарна ✓.
+- 🧪 **ТЕСТ:** `npm run test:similar` → **39 тест ✓** (`scripts/test-similar.mjs`)
+  — ① цэвэр модуль функцээр (оноо/эрэмбэ/хязгаар/хоосон утга/тогтвортой
+  дараалал) ② эх кодын ГЭРЭЭ (`codeOnly()`: query шүүлтүүд · UI · render-ийн
+  байрлал) ✓
+- 🐍 **БОДИТ CHROME:** `npm run cdp:similar` (`scripts/cdp-similar.mjs`) —
+  блок 2 баганын grid-ийн ДООР · 6 карт · эхний мөрөнд ≥2 карт (400px, ИЖИЛ
+  өргөн) · одоогийн зар давхардаагүй · хэвтээ гүйлт 0 · JS/hydration алдаа 0
+  ⇒ **10 OK / 0 FAIL ✓** · 📸 `/tmp/similar-listings-1280.png`
+  ⚠️ DB-д ижил хэсэг/ангиллын өөр зар байхгүй бол блок гарахгүй ⇒ SKIP (0), FAIL БИШ ✓
+
 
 ### 💼 Ажлын зар — талбарууд ба хайлт (жишиг сайт хэв, 2026-10-03 (9)+(10)+(11))
 
