@@ -181,17 +181,16 @@ function FavoritesAdsPanel() {
               <ListingCard listing={l} />
               {/* ⚠️ Товчийг картын ГАДНА байрлуулав — карт бүхэлдээ `<Link>`
                   тул дотор нь товч хийх нь HTML-д хориотой (nested interactive ✗).
-                  📱 Утасны дэлгэцэд (max-sm) доош буулав: тэнд карт нь НЭГ
-                  баганад бүтэн өргөн байдаг тул товч нь доод мөрний баруун
-                  захад (`pr-20` нөөц) эвтэй сууна ✓
-                  🖥 ≥sm: зураг нь ДЭЭРЭЭ (2026-10-09, босоо карт) тул товч
-                  баруун ДЭЭД буланд — зургийн тоо (`🖼 1/N`) баруун ДООД
-                  буланд байгаа тул ХОЁР нь мөргөлдөхгүй ✓ */}
+                  🆕 2026-10-09 (86): БҮХ дэлгэцэд баруун ДОО буланд (⏳ ≥sm-д
+                  баруун ДЭЭД байв) — тэнд ❤️ товч (зургийн баруун дээд) ба
+                  🖼 тоолуур (зургийн баруун доод) байрладаг тул МӨРГӨЛДӨХГҮЙ ✓
+                  ⚠️ Картын мета мөр `pr-20` нөөцтэй, үний мөрийн баруун тал
+                  ХООСОН байдаг тул товч ямар ч ТЕКСТ дарахгүй ✓ */}
               <button
                 type="button"
                 onClick={() => removeOne(l)}
                 title="Таалагдсанаас хасах"
-                className="absolute right-3 top-3 z-10 flex h-8 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 shadow-sm transition hover:border-red-300 hover:bg-red-50 hover:text-red-600 max-sm:bottom-3 max-sm:right-2 max-sm:top-auto"
+                className="absolute bottom-2 right-2 z-10 flex h-8 items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-600 shadow-sm transition hover:border-red-300 hover:bg-red-50 hover:text-red-600"
               >
                 Хасах
               </button>

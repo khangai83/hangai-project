@@ -3,12 +3,20 @@
 //
 // Хэрэглэгчийн хүсэлт: «зарыг харуулж байгаа картын загварыг дуурааж
 // хийнэ үү» + **жишиг сайт**-ын нүүр ба зарын дэлгэрэнгүй дээрх картууд:
-//   • ЗУРАГ нь ДЭЭРЭЭ, БҮТЭН өргөн (`aspect-[4/3]`) + 🖼 КАРУСЕЛЬ (85: swipe +
-//     ‹ › товч + цэгүүд + амьд тоолуур) + «🖼 2/16» (баруун доод)
-//   • доор нь мэдээллийн багана: 💰 ҮНЭ (том bold) + ✅ + ❤️ НЭГ МӨРӨНД
+//   • ЗУРАГ нь ДЭЭРЭЭ, БҮТЭН өргөн (`aspect-[4/3] rounded-xl`) + 🖼 КАРУСЕЛЬ
+//     (85: swipe + ‹ › товч + цэгүүд + амьд тоолуур) + «🖼 2/16» (баруун доод)
+//   • ❤️/🤍 нь ЗУРГИЙН БАРУУН ДЭЭД буланд (🆕 (86) — цагаан товч)
+//   • ХАЙРЦАГГҮЙ (хүрээ/сүүдэр/саарал дэвсгэр БАЙХГҮЙ) ба ДАРААЛАЛ:
+//     🏷️ гарчиг → 📋 мэдээлэл → 🕒/📍 мета → 💰 ҮНЭ (хамгийн доор, том bold) + ✅
 //     (⏳ (78)-аас өмнө нийтлэгчийн band байв — 🆕 (85)-д ХАСАГДАВ)
-//   • 2 МӨРТ гарчиг → мэдээллийн мөр → доод мета мөр (🕒 огноо | 📍 хаяг | 👁)
 //   • ЖАГСААЛТ нь БАГАНАТ GRID (нүүр · /favorites · /history · /sellers)
+//
+// 🆕 2026-10-09 (86) — «жишиг сайтын design» 3 ДАХЬ засвар (хэрэглэгчийн хүсэлт:
+//    «like ийг картныхаа баруун дээд буланд гаргачих … картны design харагдах
+//     байдлыг жишиг сайт шиг болго»):
+//   ① ❤️ → зургийн БАРУУН ДЭЭД булан ② хүрээ/сүүдэр/саарал хайрцаг ХАСАГДАВ
+//   ③ гарчиг → мэдээлэл → үнэ дараалал ④ мөр хоорондын зураас ХАСАГДАВ
+//   ⑤ мета мөр БҮХ дэлгэцэд `pr-20` (/favorites-ийн «Хасах» баруун доод) ✓
 //
 // 🆕 2026-10-09 (85) — хэрэглэгчийн хүсэлт («Автомашины картыг … мэдээлэлтэй
 //    болго. Мөн дээрх зураг нь жишиг сайт шиг солих боломжтой болго. Мөн байрны
@@ -107,15 +115,41 @@ t('💰 Үнэ нь ТОМ bold (`text-[22px] font-extrabold`) + ТОВЧ фор
   assert.ok(!/\bpriceLabel\b/.test(CARD_CODE), 'карт дээр урт `priceLabel` буцаж орсон ✗');
 });
 
-t('❤️/🤍 нь ҮНИЙ МӨРӨНД (`ml-auto`) — ⏳ доод мета мөрөнд БАЙХГҮЙ (2026-10-09)', () => {
-  // 🆕 Хэрэглэгчийн хүсэлт: жишиг сайт шиг — үнэ зүүн, зүрхэн БАРУУН
-  assert.match(CARD_CODE, /<div className="flex items-start gap-2">/,
-    'үнэ + ❤️-ийн НЭГ мөр (`flex items-start gap-2`) алга ✗');
-  assert.match(CARD_CODE, /ml-auto inline-flex shrink-0 items-center gap-1 rounded-full/,
-    '❤️ товчны `ml-auto` (баруун захад тогтоох) алга ✗');
-  // ⚠️ Доод мета мөрөнд `toggleFavorite` БУЦАЖ ОРОХ ЁСГҮЙ (1 л удаа дуудагдана ✓)
+t('❤️/🤍 нь ЗУРГИЙН БАРУУН ДЭЭД буланд (`right-2 top-2`, цагаан товч) — 🆕 (86)', () => {
+  // Хэрэглэгчийн хүсэлт: «like ийг картныхаа баруун дээд буланд гаргачих»
+  assert.match(CARD_CODE, /absolute right-2 top-2 z-10 inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-white\/90/,
+    '❤️ товч нь зургийн БАРУУН ДЭЭД буланд (цагаан `bg-white/90` товч) БИШ ✗');
+  assert.match(CARD_CODE, /data-fav-toggle/, '❤️ товчны `data-fav-toggle` дэгээ алга ✗');
+  // ⚠️ ⏳ (78): үнийн мөрөнд, (85): үнийн хажууд байв ⇒ БУЦАЖ ОРОХ ЁСГҮЙ ✗
+  assert.ok(!/ml-auto inline-flex shrink-0 items-center gap-1 rounded-full/.test(CARD_CODE),
+    '❤️ товч үнийн мөрөнд (хуучин байрлал) буцаж орсон ✗');
+  // ⚠️ `toggleFavorite` ЗӨВХӨН 1 удаа дуудагдана (товч НЭГ л байна ✓)
   assert.equal((CARD_CODE.match(/toggleFavorite\(listing\.id\)/g) || []).length, 1,
     '`toggleFavorite` нь 1-ээс олон газар дуудагдаж байна ✗');
+});
+
+t('🎨 (86) Карт нь ХАЙРЦАГГҮЙ (хүрээ/сүүдэр/саарал) — зөвхөн зураг + текст', () => {
+  assert.match(CARD_CODE, /className="group flex flex-col"/,
+    'картын үндсэн класс (`group flex flex-col`) өөрчлөгдсөн ✗');
+  // ⏳ (83): `bg-gray-100` + `border border-gray-200` + `shadow-card` байв ⇒ ХАСАГДАВ
+  assert.ok(!/border border-gray-200 bg-gray-100/.test(CARD_CODE),
+    '⏳ (83)-ийн СААРАЛ хайрцаг буцаж орсон ✗');
+  assert.ok(!/hover:-translate-y-0.5/.test(CARD_CODE), 'картын hover «үсрэлт» буцаж орсон ✗');
+  assert.match(CARD_CODE, /overflow-hidden rounded-xl bg-gray-100/,
+    'зургийн дугуйрсан булан (`rounded-xl`) алга ✗');
+  assert.match(CARD_CODE, /flex flex-1 flex-col pt-2\.5/,
+    'мэдээллийн блок нь хайрцаггүй (`pt-2.5`, `p-3.5` БИШ) болоогүй ✗');
+  assert.ok(!/border-t border-gray-100/.test(CARD_CODE), 'мөрүүдийн хоорондох зураас буцаж орсон ✗');
+});
+
+t('🔀 (86) ДАРААЛАЛ: 🏷️ гарчиг → 📋 мэдээлэл → 🕒/📍 мета → 💰 үнэ (ХАМГИЙН ДООР)', () => {
+  const iTitle = CARD_CODE.indexOf('line-clamp-2 text-[15px]');
+  const iPrice = CARD_CODE.indexOf('text-[22px] font-extrabold');
+  assert.ok(iTitle > 0 && iPrice > 0 && iTitle < iPrice,
+    'гарчиг нь ҮНИЙ МӨРӨӨС ДЭЭР БИШ ✗ (жишиг сайтын дараалал: гарчиг → мэдээлэл → үнэ)');
+  // ⚠️ Үнэ нь `mt-auto` — бүх картын үнэ НЭГ ЗУРААСАНД эгнэнэ ✓
+  assert.match(CARD_CODE, /<div className="mt-auto flex items-center gap-2 pt-1\.5">/,
+    'үний мөр нь картын ёроолд тогтохгүй (`mt-auto`) ✗');
 });
 
 t('🏷️ Гарчиг нь 2 МӨР (`line-clamp-2`) — `listingTitle` (0027)', () => {
@@ -147,7 +181,7 @@ t('✅ (85) БАТАЛГААЖСАН нь ҮНИЙ хажууд — `authorVisib
   // 🆕 (85): ✅ нь band-ийн оронд ҮНИЙ МӨРӨНД — жишиг сайтын «68 сая ₮ ✓» ✓
   assert.match(CARD_CODE, /const\s+authorVisible\s*=\s*listing\.show_name\s*!==\s*false/,
     '`show_name` шалгалт алга ✗ (нэр нуух тохиргоо ✅-д нөлөөлөхгүй болно)');
-  assert.match(CARD_CODE, /\{authorVisible && <VerifiedBadge size=\{15\} className="mt-1 text-primary" \/>\}/,
+  assert.match(CARD_CODE, /\{authorVisible && <VerifiedBadge size=\{15\} className="text-primary" \/>\}/,
     'үнийн хажуугийн ✅ нь `authorVisible`-ээр хаагдсангүй ✗');
   // ⚠️ ❤️ товч нь CDP-ийн ТОГТВОРТОЙ дэгээтэй байх ЁСТОЙ: карт дээр ‹ › товч
   //    нэмэгдсэн тул `button[aria-label]` хайлт ЭХНИЙ ‹ товчийг олж, ❤️-г алдана ✗
@@ -242,9 +276,11 @@ t('❤️/🤍 нь favorite toggle — `preventDefault` + `stopPropagation` (Li
   assert.match(CARD_CODE, /isFav \? '❤️' : '🤍'/, '❤️/🤍 сэлгэхгүй ✗');
 });
 
-t('🛡 /favorites-ийн «Хасах» товчтой мөргөлдөхгүй — доод мөр `max-sm:pr-20`', () => {
-  assert.match(CARD_CODE, /pr-20/, 'доод мөрний `pr-20` нөөц алга ✗');
-  assert.match(CARD_CODE, /sm:pr-0/, 'desktop дээр `sm:pr-0` (нөөцийг арилгах) алга ✗');
+t('🛡 /favorites-ийн «Хасах» товчтой мөргөлдөхгүй — мета мөр БҮХ дэлгэцэд `pr-20` (🆕 (86))', () => {
+  assert.match(CARD_CODE, /pr-20 pt-0\.5 text-\[13px\] text-gray-500/, 'мета мөрний `pr-20` нөөц алга ✗');
+  // ⚠️ (86): «Хасах» товч БҮХ дэлгэцэд баруун ДОО буланд шилжсэн ⇒ `sm:pr-0`
+  //    (desktop-д нөөцийг арилгах) ХАСАГДАВ — эс бөгөөс товч ТЕКСТ дээр сууна ✗
+  assert.ok(!/sm:pr-0/.test(CARD_CODE), '`sm:pr-0` буцаж орсон ✗ (desktop-д товч текст дарах болно)');
 });
 
 // ---------- ⑤ ХАДГАЛАГДСАН ДҮРМҮҮД (регресс) ----------
