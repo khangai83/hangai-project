@@ -1503,6 +1503,57 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- 🎛🧹 **ШҮҮЛТИЙН МӨР — ЖИШИГ САЙТЫН ХЭВ: 6 PILL + «Шүүлт» (ЯГ 7 СОНГОЛТ), ЖИЖИГ ФОНТ, ДООР ШУГАМ, ХҮРЭЭГҮЙ «Эрэмбэлэх» (2026-10-10 (92))** —
+  хэрэглэгчийн хүсэлт: «…хайлтын хэсэгт 7 сонголтоос хэтрүүлмээргүй байна,
+  багтахгүй байгаа зүйлсээ Шүүлт рүүгээ хий. … муухай том фонттой юм байна,
+  жишиг сайт шиг жижиг фонттой болго. … хайлтын хэсгийн доор жишиг сайт шиг line
+  хий. … Эрэмбэлэх хэсгийн дизайныг дуурай, хүрээг нь байхгүй болго. Шүүлтийн
+  товчлуурын иконыг соль».
+  ⚠️ **DB/SQL/migration/URL/DB-шүүлт/logic ХӨНДӨӨГДӨӨГҮЙ** (зөвхөн JSX класс + 1 тогтмол).
+  <br>**(1) 🎛 ЯГ 7 СОНГОЛТ (6 pill + «Шүүлт»):** `components/HomeClient.jsx` →
+  🆕 `MAX_BAR_PILLS = 6` (модулийн тогтмол) · `barCoreCount` (📍 байршил · 🛏 өрөө ·
+  🏷️🚙 машин · 💳 төлбөр · 🔄 солино — ҮРГЭЛЖ мөрөнд) · `barAttrVisible` (багтах
+  хүртэл attr pill) · `barAttrOverflow` (үлдсэн нь «Шүүлт» панель доторх 🆕
+  **«Бусад шүүлт»** (`data-filter-overflow`) блок руу) ✓ · attr pill нь 🆕
+  `renderAttrPill(f)` — **НЭГ эх сурвалж** (мөр ба «Бусад шүүлт»-д 2 удаа
+  бичихгүй ⇒ 2 өөр UI үүсэхгүй ✓).
+  🎯 **БОДИТ үр дүн (CDP, бодит Chrome):** 🚗 авто — мөрөнд
+  `location,car,color,transmission,payments,swap` (6) + «Шүүлт» ⇒ **ЯГ 7, НЭГ МӨР**;
+  ⛽ «Түлш» нь «Бусад шүүлт»-д (6 чип БҮГД ХЭВЭЭР ✓); 💻 Notebook — 6 pill +
+  ✅ «Төлөв» панельд (3 чип ✓); 💼 jobs — 4 pill; 🏠 үл хөдлөх — 3 pill (бүгд 1 мөр ✓).
+  <br>**(2) 🔤 ЖИЖИГ ФОНТ (жишиг сайтын хэв):** `FilterPill` 14px `font-semibold`
+  → **13px `font-medium`** (`px-3.5 → px-3`, chevron `h-4 → h-3.5`, badge 12 → 11px) ·
+  `FilterOption` 14 → **13px** · 📍/🏷️🚙 pill доторх товч 14 → 13px · 🔄 мөр 14 → 13px ·
+  панелийн `SideBlock` гарчиг **16px bold → 13px semibold** · панелийн `<h2>`
+  15px bold → **13px semibold**, тайлбар 13 → 12px ✓.
+  <br>**(3) ➖ ДООРХ ШУГАМ:** `#filter-bar` дээр 🆕 `border-b border-gray-200 pb-3`
+  (жишиг сайтын шүүлтийн мөрийн доорх line) ✓.
+  <br>**(4) ⇅ «ЭРЭМБЭЛЭХ» — ХҮРЭЭ АРИЛЖ, ШУГАМЫН ДООР ГАРОВ:** ⏳ `rounded-full
+  border px-3.5 py-1.5` хайрцаг → 🆕 **хүрээгүй** мөр (`⇅` + «Эрэмбэлэх:» +
+  `<select>` + `▾`; 📱 <sm дээр «Эрэмбэлэх:» нуугдана) ба `#filter-bar`-ийн ГАДНА,
+  шугамын ДООР баруун тийшээ — жишиг сайтын «Sort: …» мөрийн хэв
+  (`id="listing-sort"` · `data-listing-sort` · `aria-label` · `data-view-toggle`
+  БҮГД ХЭВЭЭР ✓).
+  <br>**(5) 🎛 ШҮҮЛТИЙН ИКОН СОЛИГДОВ:** хуучин 3 богино зураас → 🆕 **«шүүлтүүр»
+  икон** (3 хэвтээ мөр + 3 бөмбөлөг, `strokeWidth 1.8`, 16×16) · товч 14px semibold
+  → 13px medium · badge 12 → 11px ✓.
+  <br>**(6) 🧪 ТЕСТ:** `npm run test:*` **42/42 ✓** (`test:filters` 126 · `test:rooms` 44 ·
+  `test:payments` 36 · `test:jobs` 20 · `test:brand` 20 · `test:search` 77 · `test:swap` 24 ·
+  `test:attrMulti` 31 …) · `npm run build` **EXIT=0 ✓** · 📐 CDP хэмжилт:
+  `#filter-bar` НЭГ мөр, `border-bottom` 1px, pill фонт **13px/500**, «Эрэмбэлэх»
+  фонт 13px ба `borderTopWidth 0px`, хэвтээ гүйлт 0 ✓; ⚠️ дэгээнүүд
+  (`data-filter-pill` · `data-filter-panel` · `data-filters-panel` · `data-attr-filter` ·
+  `data-attr-value` · `data-room-filter` · `data-payment-filter` · `data-all-filters` ·
+  `#advanced-filters` · `data-listing-sort` · `data-view-toggle`) БҮГД ХЭВЭЭР ✓.
+  📸 `/tmp/zar-92-panel.png` · `/tmp/zar-92-auto-390b.png` · `/tmp/zar-92-auto-1280.png`.
+  <br>**(7) ⚠️ МЭДЭГДЭХ үлдэгдэл:** `cdp:notebook-specs` нь (89)-ийн pill шилжилтээс
+  хойш **хуучирсан** (24 FAIL — сайдбар/`<select>`/«чип=товч» гэрээ) — ⏳ (89)-д
+  тэмдэглэсэн ажил ХЭВЭЭР; 92-т ✅ «Төлөв» нь «Бусад шүүлт» руу шилжсэнээр 2 шалгалт
+  нэмж хуучирсан (шинэ дэгээгээр шинэчлэх шаардлагатай) — функциональ шалгалтууд
+  (дарах → URL → DB) ХЭВЭЭР ✓.
+  <br>**(8) 📄 DOC:** `README.md` (энэ буллет) · `docs/IMPROVEMENTS.md` (энэ мөр).
+  🔍 Хайх үг: `MAX_BAR_PILLS`, `barAttrVisible`, `barAttrOverflow`, `renderAttrPill`,
+  `data-filter-overflow`, `border-b border-gray-200 pb-3`, `Эрэмбэлэх:`
 - 🗑🏷️ **ТОЛГОЙН ТУСДАА ИКОН («Z» БАДЖ) БҮРЭН ХАСАГДАВ — нүүр хуудасны ГАНЦ линк = ЛОГО (2026-10-10 (91))** —
   хэрэглэгчийн шийдвэр: «home deer baigaa ZarBook.mn nii ard baisan home icon bol
   yag home icon oo ashiglah zorilgotoi baisan yum … home icon nii trand buursan yum

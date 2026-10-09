@@ -197,6 +197,22 @@ const isFilterValueEmpty = (v) => {
   return !v;
 };
 
+/**
+ * 🎛 2026-10-10 (92): ШҮҮЛТИЙН МӨРӨНД ХАМГИЙН ИХДЭЭ 7 СОНГОЛТ.
+ *
+ * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «…хайлтын хэсэгт 7 сонголтоос хэтрүүлмээргүй байна,
+ * багтахгүй байгаа зүйлсээ Шүүлт рүүгээ хий» (жишиг сайтын хэв — 6 pill +
+ * «All Filters» = 7 сонголт).
+ *
+ * ⚠️ 7 дахь нь ҮРГЭЛЖ «Шүүлт» товч ⇒ pill-ийн ХЯЗГААР нь `MAX_BAR_PILLS` (6);
+ *    багтахгүй үлдсэн attr pill нь «Шүүлт» (`#advanced-filters`) панель доторх
+ *    «Бусад шүүлт» блок руу шилжинэ — утга/URL/DB/дэгээ (`data-filter-pill` ·
+ *    `data-attr-filter` · `data-attr-value`) БҮГД ХӨНДӨӨГДӨХГҮЙ ✓
+ * ⚠️ 📍 Байршил · 🛏 Өрөө · 🏷️🚙 Машин · 💳 Төлбөр · 🔄 Солино нь ҮРГЭЛЖ
+ *    мөрөнд (үндсэн pill) — зөвхөн attr pill-үүд багтах хүртэл харагдана ✓
+ */
+const MAX_BAR_PILLS = 6;
+
 /** URL-ийн таслалаар бичсэн жагсаалтыг массив болгох (хороо) */
 function parseListParam(raw) {
   return String(raw || '')
@@ -355,7 +371,7 @@ function SideBlock({
           onClick={onToggle}
           className={`flex w-full items-center gap-1.5 text-left ${open ? 'mb-2' : ''}`}
         >
-          <span className="text-[16px] font-bold text-gray-900">{label}</span>
+          <span className="text-[13px] font-semibold text-gray-900">{label}</span>
           {count > 0 && (
             <span className="rounded-full bg-primary px-1.5 py-px text-[11px] font-bold text-white">
               {count}
@@ -374,7 +390,7 @@ function SideBlock({
           </svg>
         </button>
       ) : (
-        <span className="mb-2 block text-[16px] font-bold text-gray-900">{label}</span>
+        <span className="mb-2 block text-[13px] font-semibold text-gray-900">{label}</span>
       )}
       <div className={open ? 'flex flex-col gap-2' : 'hidden'}>{children}</div>
     </div>
@@ -475,7 +491,7 @@ function FilterPill({ label, count, onClear, testKey, children }) {
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="true"
         aria-expanded={open}
-        className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[14px] font-semibold transition ${
+        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-[13px] font-medium transition ${
           active
             ? 'border-primary bg-primary-light text-primary hover:border-primary-dark hover:bg-primary/25 hover:text-primary-dark'
             : 'border-gray-200 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-200 hover:text-gray-900'
@@ -483,12 +499,12 @@ function FilterPill({ label, count, onClear, testKey, children }) {
       >
         {label}
         {active && (
-          <span className="rounded-full bg-primary px-1.5 text-[12px] font-bold text-white">
+          <span className="rounded-full bg-primary px-1.5 text-[11px] font-bold text-white">
             {count}
           </span>
         )}
         <ChevronDownIcon
-          className={`h-4 w-4 shrink-0 opacity-60 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`h-3.5 w-3.5 shrink-0 opacity-60 transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
       {/* ⚠️ Панель нь ҮРГЭЛЖ DOM-д (CDP дэгээ/хэмжилт ✓) — зөвхөн харагдац солигдоно */}
@@ -540,7 +556,7 @@ function FilterOption({ label, checked, onToggle, hook, value }) {
     <label
       {...{ [hook]: value }}
       aria-pressed={checked}
-      className={`chip-toggle w-full justify-start gap-2 rounded-lg border-0 bg-transparent px-2 py-1.5 text-left text-[14px] font-medium text-gray-700 hover:bg-gray-200 ${
+      className={`chip-toggle w-full justify-start gap-2 rounded-lg border-0 bg-transparent px-2 py-1.5 text-left text-[13px] font-medium text-gray-700 hover:bg-gray-200 ${
         checked ? 'chip-toggle-active bg-primary-light font-semibold text-primary hover:bg-primary-light' : ''
       }`}
     >
@@ -2414,6 +2430,93 @@ export default function HomeClient() {
     });
   };
 
+  /**
+   * 🎛 2026-10-10 (92): ШҮҮЛТИЙН МӨРӨНД БАГТАХ PILL-ҮҮД (жишиг сайтын хэв).
+   *
+   * ① `barAttrFilters` — мөрөнд ГАРАХ ёстой attr pill-үүд (хязгаар БИШ;
+   *    🏷️/🚙 нь тусдаа CarPicker pill-тэй тул ⚠️ авто дээр ХАСАГДАНА ✓)
+   * ② `barCoreCount` — ҮРГЭЛЖ мөрөнд байх үндсэн pill-үүд (📍 байршил ·
+   *    🛏 өрөө · 🏷️🚙 машин · 💳 төлбөр · 🔄 солино) — тэдгээрт ЗОРИУЛЖ
+   *    багтах хүртэл attr pill л ХАРАГДАНА ✓
+   * ③ `barAttrOverflow` — 7-д багтахгүй үлдсэн нь «Шүүлт» панель доторх
+   *    «Бусад шүүлт» блок руу шилжинэ (жишиг сайтын «All Filters» шиг) ✓
+   *
+   * ⚠️ Утга/URL/DB/дэгээ ХӨНДӨӨГДӨӨГҮЙ — зөвхөн ХААНА зурагдахыг л шийднэ
+   *    (`renderAttrPill` нь 2 газарт НЭГ Л ГАЗАР бичигдэнэ ✓).
+   */
+  const barAttrFilters = attrFilters
+    .filter((f) => !f.range)
+    .filter((f) => !(isAuto && (f.key === 'brand' || f.key === 'model')));
+  const barCoreCount = 1 + (showRooms ? 1 : 0) + (isAuto ? 1 : 0)
+    + (showPayments ? 1 : 0) + (showSwap ? 1 : 0);
+  const barAttrVisible = barAttrFilters.slice(0, Math.max(0, MAX_BAR_PILLS - barCoreCount));
+  const barAttrOverflow = barAttrFilters.slice(barAttrVisible.length);
+
+  /** 🔀 НЭГ attr pill-ийг зурах — мөр ба «Бусад шүүлт» блокт ХОЁР УДАА
+   *  бичихгүйн тулд (2 өөр UI үүсэхгүй ✓) */
+  const renderAttrPill = (f) => {
+    const depOptions = f.optionsFrom
+      ? lookupMap(f.optionsMap, attrValue(f.optionsFrom))
+      : [];
+    const activeCount = f.chips ? countAttrValues(attrArray(f.key)) : (attrValue(f.key) ? 1 : 0);
+    return (
+      <FilterPill
+        key={f.key}
+        testKey={f.key}
+        label={f.label}
+        count={activeCount}
+        onClear={() => (f.chips ? clearAttrMulti(f.key) : setAttr(f.key, ''))}
+      >
+        {f.chips ? (
+          <div
+            className="flex flex-col gap-0.5 rounded-lg border border-gray-200 bg-gray-50/70 p-2"
+            data-attr-filter={f.key}
+            data-attr-multi="true"
+            role="group"
+            aria-label={f.label}
+          >
+            {(f.options || []).map((o) => (
+              <FilterOption
+                key={o}
+                label={o}
+                checked={attrArray(f.key).includes(o)}
+                onToggle={() => toggleAttrMulti(f.key, o)}
+                hook="data-attr-value"
+                value={o}
+              />
+            ))}
+          </div>
+        ) : f.optionsFrom ? (
+          <SearchableSelect
+            value={attrValue(f.key)}
+            options={depOptions}
+            onChange={(v) => setAttr(f.key, v)}
+            placeholder={`${attrValue(f.optionsFrom)} загвар — хайна`}
+            ariaLabel={f.label}
+          />
+        ) : f.filterable ? (
+          <TextFilter
+            value={attrValue(f.key)}
+            onChange={(v) => setAttr(f.key, v)}
+            placeholder={f.placeholder || 'Бичиж хайна'}
+            ariaLabel={f.label}
+          />
+        ) : (
+          <select
+            className="form-select"
+            aria-label={f.label}
+            data-attr-filter={f.key}
+            value={attrValue(f.key)}
+            onChange={(e) => setAttr(f.key, e.target.value)}
+          >
+            <option value="">Бүгд</option>
+            {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
+          </select>
+        )}
+      </FilterPill>
+    );
+  };
+
   return (
     <>
       {/* 🖥🔍 ХАЙЛТЫН МӨР — ТОЛГОЙН мөрөнд (2026-10-04 (27)).
@@ -3129,7 +3232,7 @@ export default function HomeClient() {
                 ⚠️ Утга / URL / DB / CDP дэгээ БҮГД ХӨНДӨӨГДӨӨГҮЙ ✓ */}
             {showAdvancedFilters && (
               <>
-                <div id="filter-bar" data-filter-bar className="mb-3 flex flex-wrap items-center gap-2">
+                <div id="filter-bar" data-filter-bar className="flex flex-wrap items-center gap-2 border-b border-gray-200 pb-3">
                   {/* 📍 БАЙРШИЛ — pill (⌄ панель доторх товчоор пикер нээгдэнэ) */}
                   <FilterPill
                     label={locationLabel}
@@ -3142,7 +3245,7 @@ export default function HomeClient() {
                       data-sidebar-location
                       aria-haspopup="dialog"
                       onClick={() => setLocOpen(true)}
-                      className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-[14px] font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50"
+                      className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-[13px] font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50"
                     >
                       <PinIcon className="h-[18px] w-[18px] shrink-0" />
                       <span className="min-w-0 flex-1 truncate">{locationLabel}</span>
@@ -3216,7 +3319,7 @@ export default function HomeClient() {
                         data-sidebar-car
                         aria-haspopup="dialog"
                         onClick={() => setCarOpen(true)}
-                        className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-[14px] font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50"
+                        className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-[13px] font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50"
                       >
                         <span className="min-w-0 flex-1 truncate">{carLabel}</span>
                         <ChevronDownIcon className="h-4 w-4 shrink-0 opacity-60" />
@@ -3246,72 +3349,11 @@ export default function HomeClient() {
                     </FilterPill>
                   )}
 
-                  {/* 🔀 ATTR ШҮҮЛТҮҮД — хязгаар БИШ нь pill (⌄ дотор ☑ / select / текст) */}
-                  {attrFilters
-                    .filter((f) => !f.range)
-                    .filter((f) => !(isAuto && (f.key === 'brand' || f.key === 'model')))
-                    .map((f) => {
-                      const depOptions = f.optionsFrom
-                        ? lookupMap(f.optionsMap, attrValue(f.optionsFrom))
-                        : [];
-                      const activeCount = f.chips ? countAttrValues(attrArray(f.key)) : (attrValue(f.key) ? 1 : 0);
-                      return (
-                        <FilterPill
-                          key={f.key}
-                          testKey={f.key}
-                          label={f.label}
-                          count={activeCount}
-                          onClear={() => (f.chips ? clearAttrMulti(f.key) : setAttr(f.key, ''))}
-                        >
-                          {f.chips ? (
-                            <div
-                              className="flex flex-col gap-0.5 rounded-lg border border-gray-200 bg-gray-50/70 p-2"
-                              data-attr-filter={f.key}
-                              data-attr-multi="true"
-                              role="group"
-                              aria-label={f.label}
-                            >
-                              {(f.options || []).map((o) => (
-                                <FilterOption
-                                  key={o}
-                                  label={o}
-                                  checked={attrArray(f.key).includes(o)}
-                                  onToggle={() => toggleAttrMulti(f.key, o)}
-                                  hook="data-attr-value"
-                                  value={o}
-                                />
-                              ))}
-                            </div>
-                          ) : f.optionsFrom ? (
-                            <SearchableSelect
-                              value={attrValue(f.key)}
-                              options={depOptions}
-                              onChange={(v) => setAttr(f.key, v)}
-                              placeholder={`${attrValue(f.optionsFrom)} загвар — хайна`}
-                              ariaLabel={f.label}
-                            />
-                          ) : f.filterable ? (
-                            <TextFilter
-                              value={attrValue(f.key)}
-                              onChange={(v) => setAttr(f.key, v)}
-                              placeholder={f.placeholder || 'Бичиж хайна'}
-                              ariaLabel={f.label}
-                            />
-                          ) : (
-                            <select
-                              className="form-select"
-                              aria-label={f.label}
-                              data-attr-filter={f.key}
-                              value={attrValue(f.key)}
-                              onChange={(e) => setAttr(f.key, e.target.value)}
-                            >
-                              <option value="">Бүгд</option>
-                              {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
-                            </select>
-                          )}
-                        </FilterPill>
-                      );
-                    })}
+                  {/* 🔀 ATTR ШҮҮЛТҮҮД — хязгаар БИШ нь pill (⌄ дотор ☑ / select / текст)
+                      ⚠️ 2026-10-10 (92): мөрөнд ХАМГИЙН ИХДЭЭ 7 pill; илүү гарсан нь
+                      «Шүүлт» панель доторх «Бусад шүүлт» блок руу шилжинэ ✓
+                      (`renderAttrPill` — НЭГ эх сурвалж, 2 өөр UI БАЙХГҮЙ ✓) */}
+                  {barAttrVisible.map(renderAttrPill)}
 
 
                   {/* 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — ☑ checkbox (олон сонголт) */}
@@ -3351,7 +3393,7 @@ export default function HomeClient() {
                       testKey="swap"
                     >
                       <div data-swap-filter role="group" aria-label={SWAP_LABEL}>
-                        <label className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[14px] text-gray-700 hover:bg-gray-100">
+                        <label className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[13px] text-gray-700 hover:bg-gray-100">
                           <input
                             type="checkbox"
                             data-swap-value="1"
@@ -3365,62 +3407,77 @@ export default function HomeClient() {
                     </FilterPill>
                   )}
 
-                  {/* 🎛 ШҮҮЛТ (All Filters) — Дээд/Доод хязгаарын панелийг нээнэ */}
+                  {/* 🎛 ШҮҮЛТ (All Filters) — Дээд/Доод хязгаарын панелийг нээнэ
+                      🆕 2026-10-10 (92): икон нь жишиг сайтын «шүүлтүүр» (3 мөр +
+                      бөмбөлгүүд) ба фонт нь мөрийн бусад pill-тэй ИЖИЛ (13px) ✓ */}
                   <button
                     type="button"
                     data-all-filters
                     aria-pressed={advOpen}
                     aria-expanded={advOpen}
                     onClick={() => setAdvOpen((v) => !v)}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[14px] font-semibold transition ${
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition ${
                       advOpen
                         ? 'border-primary bg-primary-light text-primary'
                         : 'border-gray-300 bg-white text-gray-800 hover:border-gray-400 hover:bg-gray-100'
                     }`}
                   >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path
+                        d="M4 7h3M11 7h9M4 12h9M17 12h3M4 17h3M11 17h9"
+                        stroke="currentColor"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                      />
+                      <circle cx="9" cy="7" r="2" stroke="currentColor" strokeWidth="1.8" />
+                      <circle cx="15" cy="12" r="2" stroke="currentColor" strokeWidth="1.8" />
+                      <circle cx="9" cy="17" r="2" stroke="currentColor" strokeWidth="1.8" />
                     </svg>
                     Шүүлт
                     {activeFilterCount > 0 && (
-                      <span className="rounded-full bg-primary px-1.5 text-[12px] font-bold text-white">
+                      <span className="rounded-full bg-primary px-1.5 text-[11px] font-bold text-white">
                         {activeFilterCount}
                       </span>
                     )}
                   </button>
 
-                  {/* ⇅ ЭРЭМБЭЛЭХ + 🗺 ГАЗРЫН ЗУРАГ — баруун тийшээ */}
-                  <div className="ml-auto flex flex-wrap items-center gap-2">
-                    <label
-                      htmlFor="listing-sort"
-                      className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 transition-colors hover:border-primary/40"
-                    >
-                      <span aria-hidden="true" className="text-[15px] text-gray-400">⇅</span>
-                      <select
-                        id="listing-sort"
-                        data-listing-sort
-                        aria-label="Эрэмбэлэх"
-                        className="appearance-none bg-transparent text-[14px] font-semibold text-gray-800 focus:outline-none"
-                        value={sort}
-                        onChange={(e) => changeSort(e.target.value)}
-                      >
-                        {SORT_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
-                      </select>
-                      <span aria-hidden="true" className="text-[12px] text-gray-400">▾</span>
-                    </label>
+                </div>
 
-                    <button
-                      type="button"
-                      data-view-toggle
-                      aria-pressed={view === 'map'}
-                      onClick={() => setView(view === 'map' ? 'list' : 'map')}
-                      className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-[14px] font-semibold text-gray-700 transition-all duration-150 ease-out hover:border-primary/40 hover:text-primary"
+                {/* ⇅ ЭРЭМБЭЛЭХ + 🗺 ГАЗРЫН ЗУРАГ — ШУГАМЫН ДООР, БАРУУН тийшээ
+                    (жишиг сайтын «Sort: …» мөр шиг). 🆕 2026-10-10 (92):
+                    «⇅ Эрэмбэлэх» нь ХҮРЭЭГҮЙ — зөвхөн икон + тодруулга + сонголт
+                    + ▾ ✓ (`data-listing-sort`/`data-view-toggle` дэгээ ХЭВЭЭР) */}
+                <div className="mb-3 flex flex-wrap items-center justify-end gap-3 pt-2.5">
+                  <label
+                    htmlFor="listing-sort"
+                    className="inline-flex items-center gap-1.5 text-[13px] text-gray-600"
+                  >
+                    <span aria-hidden="true" className="text-[13px] text-gray-400">⇅</span>
+                    <span className="hidden sm:inline">Эрэмбэлэх:</span>
+                    <select
+                      id="listing-sort"
+                      data-listing-sort
+                      aria-label="Эрэмбэлэх"
+                      className="cursor-pointer appearance-none bg-transparent text-[13px] font-semibold text-gray-900 focus:outline-none"
+                      value={sort}
+                      onChange={(e) => changeSort(e.target.value)}
                     >
-                      {view === 'map' ? '☰ Жагсаалт руу буцах' : '🗺 Газрын зураг дээр харах'}
-                    </button>
-                  </div>
+                      {SORT_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                    <span aria-hidden="true" className="text-[11px] text-gray-400">▾</span>
+                  </label>
+
+                  <button
+                    type="button"
+                    data-view-toggle
+                    aria-pressed={view === 'map'}
+                    onClick={() => setView(view === 'map' ? 'list' : 'map')}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[13px] font-medium text-gray-700 transition-all duration-150 ease-out hover:border-primary/40 hover:text-primary"
+                  >
+                    {view === 'map' ? '☰ Жагсаалт руу буцах' : '🗺 Газрын зураг дээр харах'}
+                  </button>
                 </div>
 
 
@@ -3434,8 +3491,8 @@ export default function HomeClient() {
                     data-filters-panel
                     className="mb-3 rounded-xl border border-gray-200 bg-white p-4 shadow-card"
                   >
-                    <h2 className="text-[15px] font-bold text-gray-900">Дээд / Доод хязгаар</h2>
-                    <p className="mb-2 mt-0.5 text-[13px] text-gray-500">
+                    <h2 className="text-[13px] font-semibold text-gray-900">Дээд / Доод хязгаар</h2>
+                    <p className="mb-2 mt-0.5 text-[12px] text-gray-500">
                       Үнэ, талбай, давхар ба он — доод/дээд хязгаарыг бичнэ үү.
                     </p>
                     <div className="divide-y divide-gray-200">
@@ -3504,6 +3561,19 @@ export default function HomeClient() {
                         </>
                       )}
                     </div>
+
+                    {/* 🆕 2026-10-10 (92): «БУСАД ШҮҮЛТ» — мөрийн 7 pill-д
+                        багтаагүй attr pill-үүд ЭНД (жишиг сайтын «All Filters»
+                        панель шиг). ⚠️ Ижил `renderAttrPill` ⇒ утга/URL/DB/дэгээ
+                        (`data-attr-filter` · `data-attr-value`) БҮГД ХЭВЭЭР ✓ */}
+                    {barAttrOverflow.length > 0 && (
+                      <div data-filter-overflow className="mt-4 border-t border-gray-200 pt-3">
+                        <h2 className="mb-2 text-[13px] font-semibold text-gray-900">Бусад шүүлт</h2>
+                        <div className="flex flex-wrap gap-2">
+                          {barAttrOverflow.map(renderAttrPill)}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </>
