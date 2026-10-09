@@ -19,7 +19,7 @@ import { listingPrefillFromSearch, newListingHref } from '../lib/listingPrefill.
 import AuthModal from './AuthModal';
 import ProfileModal from './ProfileModal';
 import MessageIcon from './MessageIcon';
-import { HeartIcon, ChatIcon, ClockIcon, BellIcon, HomeIcon } from './HeaderIcons';
+import { HeartIcon, ChatIcon, ClockIcon, BellIcon, ZIcon } from './HeaderIcons';
 import NotificationBell from './NotificationBell';
 
 /** Supabase-ийн user → '+976XXXXXXXX' (эсвэл null).
@@ -353,11 +353,11 @@ export default function AppProviders({ children }) {
                  гүйлгэхэд агуулга зураасан доор «шургах» мэт харагдана ✓ */}
           <header className="sticky top-0 z-50 border-b border-gray-200 bg-white">
             <div className="relative mx-auto flex h-16 max-w-[1536px] items-center justify-center px-4 sm:px-6 lg:justify-between">
-              {/* 🏠 ЛОГО (2026-10-08 (69c): `🏠` emoji → `ZARBOOK.MN`;
+              {/* 🏠 ЛОГО (2026-10-08 (69c): `🏠` emoji → `ZarBook.mn`;
                    (69d): икон логоноос ГАРЧ хайлтын хэсгийн ӨМНӨ ТУСДАА болов):
                    ⚠️ ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-08 (69c)): «zarbook.mn гэсэн
                      domain хаяг авсан тул бүгдийг ийм нэртэй болго ZarBook.mn»
-                     ⇒ брэнд БҮХЭЛДЭЭ `ZARBOOK.MN` (footer · `<title>` · terms ·
+                     ⇒ брэнд БҮХЭЛДЭЭ `ZarBook.mn` (footer · `<title>` · terms ·
                      export · UA) — 🔒 `phone.zarmn.mn` (синтетик имэйл) ба
                      `zarmn_*` (localStorage/event) нь ХӨНДӨӨГДӨӨГҮЙ ✓
                    ⚠️ ХЭРЭГЛЭГЧИЙН ТОДРУУЛГА (2026-10-08 (69d)): «би уугийг нь
@@ -368,13 +368,13 @@ export default function AppProviders({ children }) {
                    ⚠️ `gap` ХАСАГДСАН хэвээр (2026-09-27, хэрэглэгчийн гомдол:
                      «лого нь zarlaa .mn гэж харагдаад байх юм»).
                      ШАЛТГААН: `display: flex` дотор `gap` нь ЗӨВХӨН flex item-үүдийн
-                     хооронд зай тавьдаг — «ZARBOOK» текстийн зангилаа ба
+                     хооронд зай тавьдаг — «ZarBook» текстийн зангилаа ба
                      `<span>.MN</span>` хоёр нь ТУСДАА flex item болж,
-                     «ZARBOOK» ба «.MN»-ийн хооронд ХИЙМЭЛ 8px зай үүсээд
-                     «ZARBOOK .MN» гэж уншигдана ✗
+                     «ZarBook» ба «.MN»-ийн хооронд ХИЙМЭЛ 8px зай үүсээд
+                     «ZarBook .mn» гэж уншигдана ✗
                      (CDP хэмжилт: textEnd 138.6 → spanStart 146.6 = 8px).
                      ✅ Одоо лого дээр икон огт байхгүй тул `mr-*` ч
-                     шаардлагагүй — «ZARBOOK.MN» НЭГ ҮГ мэт харагдана ✓
+                     шаардлагагүй — «ZarBook.mn» НЭГ ҮГ мэт харагдана ✓
                    ⚠️ `flex items-center` нь VERTICAL төвлөрүүлэлтэд ЗААВАЛ
                      хэрэгтэй (22px текстийн мөр дэх `<span>` нь өөр өндөртэй) — бүү хас.
                    ⚠️ `gap` буцааж нэмэх бол дотоод `<span>`-ыг бүхэлд нь
@@ -397,7 +397,7 @@ export default function AppProviders({ children }) {
                      8 = icon.left`) ✓; `/` дээрх байрлал ХӨНДӨГДӨӨГҮЙ ✓
                   ⚠️ `shrink-0` — хайлтын мөр (`flex-1`) уртсах үед бүлэг
                      БҮРЧЛЭГДЭХГҮЙ ✓; ⚠️ `gap` нэмэх ХОРИГ (2026-09-27-ийн
-                     «ZARBOOK .MN» алдаа буцаж гарна ✗) — зай нь ЗӨВХӨН иконы
+                     «ZarBook .mn» алдаа буцаж гарна ✗) — зай нь ЗӨВХӨН иконы
                      `ml-2`-оос ✓
                   ⚠️ 📱 мобайл (`justify-center`) бүлэг БҮХЭЛДЭЭ төвд — логоны
                      байрлал ⏳ (69e)-тэй ЯГ ИЖИЛ (CDP 390px: logo.left 99.2 =
@@ -408,17 +408,17 @@ export default function AppProviders({ children }) {
                 <Link
                   href="/"
                   title="Нүүр хуудас"
-                  aria-label="ZARBOOK.MN — нүүр хуудас"
+                  aria-label="ZarBook.mn — нүүр хуудас"
                   className="flex items-center text-[22px] font-bold text-primary"
                   onClick={closeUserMenus}
                 >
-                  ZARBOOK<span className="text-gray-900">.MN</span>
+                  ZarBook<span className="text-gray-900">.mn</span>
                 </Link>
                 {/* ===== 🏠 НҮҮР ХУУДАСНЫ ИКОН — ТУСДАА, ХАЙЛТЫН хэсгийн ӨМНӨ (2026-10-08 (69d)) =====
                     ⚠️ ХЭРЭГЛЭГЧИЙН ТОДРУУЛГА: «би уугийг нь тусдаа icon болгоод өгөөч
                        гэсэн юм… search хэсгийн өмнө тусдаа icon болгоод өгөөч» ✓
                     📐 DOM дараалал = харагдах дараалал (бүлгийн ДОТОР):
-                       [лого ZARBOOK.MN] → [🏠 икон], дараа нь [{headerSlot}
+                       [лого ZarBook.mn] → [🏠 икон], дараа нь [{headerSlot}
                        хайлтын мөр] → [➕ ❤️ 💬 🕐 🔔 👤] ⇒ икон нь ХАЙЛТЫН
                        хэсгийн ЯГ ӨМНӨ ✓
                     ⚠️ 🆕 (72) икон нь логотой НЭГ `flex shrink-0` бүлэгт орсон
@@ -459,7 +459,7 @@ export default function AppProviders({ children }) {
                   className="group ml-2 inline-flex shrink-0 items-center justify-center rounded-full p-1.5 text-gray-700 transition-colors hover:text-gray-900"
                   onClick={closeUserMenus}
                 >
-                  <HomeIcon
+                  <ZIcon
                     data-home-icon
                     className="h-6 w-6 transition-transform duration-200 ease-out group-hover:scale-110"
                   />
@@ -680,10 +680,10 @@ export default function AppProviders({ children }) {
                   Мэдэгдэл
                 </Link>
               </nav>
-              {/* 🏷️ БРЭНД (2026-10-08 (69c)): «ZARLAA.MN» → «ZARBOOK.MN» —
+              {/* 🏷️ БРЭНД (2026-10-08 (69c)): «ZARLAA.MN» → «ZarBook.mn» —
                   хэрэглэгч `zarbook.mn` домэйныг авсан ✓ (логоны ЯГ ИЖИЛ нэр;
                   зөвхөн ХАРАГДАЦ — линк/логик ХӨНДӨӨГДӨӨГҮЙ ✓) */}
-              <p className="text-[13.5px]">🏠 ZARBOOK.MN — Үл хөдлөх хөрөнгийн зар. Next.js + Supabase хувилбар.</p>
+              <p className="text-[13.5px]">ZarBook.mn — Үл хөдлөх хөрөнгийн зар. Next.js + Supabase хувилбар.</p>
               {/* ⚠️ КОНТРАСТ ЗАСВАР: bg-gray-900 дээр text-gray-500 нь 3.55:1
                   байсан (AA 4.5:1-д хүрэхгүй). text-gray-400 → 7.41:1 ✅ */}
               <p className="mx-auto mt-2 max-w-[760px] text-[12px] leading-relaxed text-gray-400">

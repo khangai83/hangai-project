@@ -1,7 +1,7 @@
 import AdminListingsClient from '../../../components/AdminListingsClient';
 import AdminNav from '../../../components/AdminNav';
 
-export const metadata = { title: 'Админ — Зар удирдлага (ZARBOOK.MN)' };
+export const metadata = { title: 'Админ — Зар удирдлага (ZarBook.mn)' };
 
 export default function AdminListingsPage() {
   return (

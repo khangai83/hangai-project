@@ -1,9 +1,11 @@
-# ZARBOOK.MN — Үл хөдлөх хөрөнгийн зар (Next.js + Supabase)
+# ZarBook.mn — Үл хөдлөх хөрөнгийн зар (Next.js + Supabase)
 
-> 🏷️ **БРЭНД (2026-10-08 (69c)/(69d)):** `zarbook.mn` домэйн ХУДАЛДАЖ АВСАН ⇒ төслийн
-> нэр БҮХЭЛДЭЭ **ZarBook.mn** (`ZARBOOK.MN`) болов — ⏳ урьд нь «ZARLAA.MN» байв.
-> Толгойн лого байсан `🏠 ZARLAA.MN` emoji-логог **`ZARBOOK.MN`** болгож сольсон;
-> 🆕 (69d) тэр **`HomeIcon` SVG нь логоноос ГАДНА, ТУСДАА icon-only товч** болов
+> 🏷️ **БРЭНД (2026-10-08 (69c)/(69d) → 🆕 2026-10-10 (90)):** `zarbook.mn` домэйн
+> ХУДАЛДАЖ АВСАН ⇒ төслийн нэр БҮХЭЛДЭЭ **ZarBook.mn** — ⏳ урьд нь «ZARLAA.MN» байв.
+> 🆕 **(90):** веб дээр харагдах брэнд БҮГДЭЭ **`ZarBook.mn`** (⏳ `ZARBOOK.MN` БИШ);
+> толгойн логоны **байшингийн icon → 🅉 «Z» БРЭНД-БАДЖ** (Файсбүүкийн хэв: `#2563eb`
+> дугуйлан дээр цагаан «Z») болов — `components/HeaderIcons.jsx → ZIcon` ✓.
+> 🆕 (69d) тэр икон нь **логоноос ГАДНА, ТУСДАА icon-only товч** хэвээр
 > (лого ↔ хайлтын хэсгийн хооронд; аль алинд нь дарахад НҮҮР ХУУДАС ✓).
 > 🔒 `phone.zarmn.mn` (синтетик имэйл) ба `zarmn_*` (localStorage/event) нь
 > ХӨНДӨӨГДӨӨГҮЙ — соливол хуучин хэрэглэгч нэвтрэхгүй, өгөгдөл нь алга болно ✗
@@ -1499,6 +1501,37 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- 🅉🏷️ **ЛОГОНЫ СИМВОЛ «Z» БАДЖ + БРЭНД БИЧИГ `ZarBook.mn` (2026-10-10 (90))** —
+  хэрэглэгчийн хүсэлт: «web deer haragdaj baigaa web iin ner maani **ZARBOOK.MN**
+  gej baigaag **ZarBook.mn** gesn brand bichigleltei bolgo. mun logo gehiimii
+  symbol odoo neg **baishin** haragdaad bna te, home shig. uuniig **facebook shig**
+  bolgoh ba **f usgiin orond Z useg eer** soli tegeed l boloo».
+  ⚠️ **DB/SQL/migration/URL/LOGIC ХӨНДӨӨГДӨӨГҮЙ** (зөвхөн UI текст + SVG).
+  <br>**(1) 🅉 ЛОГОНЫ СИМВОЛ — «Z» БРЭНД-БАДЖ:** ⏳ `HomeIcon` (3 зурсан замын
+  **байшин**) БҮРЭН ХАСАГДАЖ, `components/HeaderIcons.jsx` дээр 🆕 **`ZIcon`** болов —
+  ФАЙСБҮҮКИЙН хэвээр **дугуйлан дүүргэсэн брэнд өнгө (`#2563eb`) дээр ЦАГААН «Z»
+  үсэг** (1 `<rect rx="7">` + 1 хаалттай `<path>`); `data-home-icon` ба
+  `data-home-icon-link` (нүүр хуудас руу) дэгээнүүд ХЭВЭЭР ✓ (24×24px, hover
+  `scale-110`).
+  <br>**(2) 🏷️ БРЭНД БИЧИГ `ZarBook.mn`:** толгойн лого `ZARBOOK<span>.MN</span>` →
+  **`ZarBook<span>.mn</span>`** (лого нь ЗӨВХӨН ТЕКСТ хэвээр — 2026-09-27-ийн
+  «хиймэл зай» дүрэм ХЭВЭЭР ✓) · footer `🏠 ZARBOOK.MN` → **`ZarBook.mn`** (байшингийн
+  🏠 emoji ч ХАСАГДАВ) · БҮХ `<title>`/metadata (21 файл: `app/**/page.jsx`,
+  `app/layout.jsx`) · `/terms` (5 дурдалт) · `PriceStatsClient` · `FavoritesClient`
+  (хуваалцах текст) · `lib/exporters.js` (экспортын footer) — БҮГД `ZarBook.mn` ✓.
+  <br>**(3) 🖼 FAVICON:** `app/icon.svg` — цэнхэр дугуйлан дэвсгэр дээрх **байшингийн
+  зам → «Z»** болж солигдов (ижил `#2563eb`/`#ffffff`) ✓.
+  <br>**(4) 🔒 ХӨНДӨӨГДӨӨГҮЙ:** `zarbook.mn` домэйн · `ZarBookBot/1.0
+  (+https://zarbook.mn)` UA · `package.json` (`zarbook-mn`) · `phone.zarmn.mn` /
+  `zarmn_*` түлхүүрүүд ХЭВЭЭР ✓.
+  <br>**(5) 🧪 ТЕСТ:** `test:brand` **25 → 24 ✓** (2 байшингийн тест нэг «Z бадж»
+  тест болж нэгдэв: viewBox 24 · `#2563eb` дэвсгэр · цагаан «Z» зам · `...rest`;
+  ⏳ `currentColor`/байшингийн зам/🏠 ХОРИГ) · 🐍 `cdp:brand` **55 OK / 0 FAIL ✓**
+  (лого `ZarBook.mn`, бадж 1 зам, дараалал/зай/24px/бүх өргөн — ХЭВЭЭР) ·
+  `npm run test:*` **41/41 ✓** · `npm run build` **EXIT=0 ✓**.
+  <br>**(6) 📄 DOC:** `README.md` (энэ буллет) · `docs/IMPROVEMENTS.md` (энэ мөр).
+  🔍 Хайх үг: `ZIcon`, `ZarBook.mn`, `app/icon.svg`, `data-home-icon`
+
 - 🎛🧩 **ШҮҮЛТИЙН МӨР (PILL) + «Шүүлт» ПАНЕЛЬ — БАЙНГЫН САЙДБАР ХАСАГДАВ, СОНГОЛТУУД ☑ CHECKBOX (2026-10-10 (89))** —
   хэрэглэгчийн хүсэлт: «…хайлтыг хадгалах гэсэн байгаа **мөрөнд Шүүлт гэсэн товчлуур**
   оруулж өгнө үү (All Filter). Үүнийг дархад **Дэлгэрэнгүй хайлт** гарч ирнэ.

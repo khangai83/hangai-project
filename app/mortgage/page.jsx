@@ -3,7 +3,7 @@ import MortgageCalculator from '../../components/MortgageCalculator';
 import { BOM, MORTGAGE_DEFAULTS } from '../../lib/marketData';
 
 export const metadata = {
-  title: 'Ипотекийн тооцоолуур — орон сууцны зээлийн сарын төлбөр (ZARBOOK.MN)',
+  title: 'Ипотекийн тооцоолуур — орон сууцны зээлийн сарын төлбөр (ZarBook.mn)',
   description:
     'Орон сууцны зээлийн сарын төлбөр, урьдчилгаа, нийт хүүг онлайнаар тооцоол. Аннуитет схем, хүүгийн өөрчлөлтийн харьцуулалт, Монголбанкны бодлогын хүүний лавлагаа.',
 };

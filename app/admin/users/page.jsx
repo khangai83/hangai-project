@@ -1,7 +1,7 @@
 import AdminUsersClient from '../../../components/AdminUsersClient';
 import AdminNav from '../../../components/AdminNav';
 
-export const metadata = { title: 'Админ — Хэрэглэгчид (ZARBOOK.MN)' };
+export const metadata = { title: 'Админ — Хэрэглэгчид (ZarBook.mn)' };
 
 export default function AdminUsersPage() {
   return (

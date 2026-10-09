@@ -1,6 +1,6 @@
 import ListingDetailClient from '../../../components/ListingDetailClient';
 
-export const metadata = { title: 'Зарын дэлгэрэнгүй — ZARBOOK.MN' };
+export const metadata = { title: 'Зарын дэлгэрэнгүй — ZarBook.mn' };
 export const dynamic = 'force-dynamic';
 
 export default async function ListingDetailPage({ params }) {
