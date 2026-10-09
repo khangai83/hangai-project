@@ -320,10 +320,26 @@ await go(49, BASE);
 //    хасагдсан (хэрэглэгчийн хүсэлт) тул одоо DOM-д ОГТ БАЙХГҮЙ ✓
 const heroSel = await evalJs(50, `!!document.querySelector('[data-hero-section]')`);
 check('🗑 Хайлтын мөрөнд «Ангилал» pill БАЙХГҮЙ (2026-10-07-д хасагдсан)', heroSel === false);
-check('🔀 Эрэмбэлэх сонголт гарлаа (3 утга)',
-  (await evalJs(51, `document.querySelectorAll('[data-listing-sort] option').length`)) === 3);
+
+// 🆕 2026-10-09 (83b) ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «огноогоор, газрын зураг дээр харах
+//    2-ийг яагаад үлдээчвээ» ⇒ «Бүх зар» (нүүр хуудас) дээр хайлтын хэсгийн
+//    ГУРВАН зүйл (⇅ Эрэмбэлэх · 🗺 Харах горим · 🎛 панель) БАЙХГҮЙ ✓
+check('🚫 «Бүх зар» дээр ⇅ Эрэмбэлэх БАЙХГҮЙ (83b)',
+  (await evalJs(51, `!!document.querySelector('[data-listing-sort]')`)) === false);
+check('🚫 «Бүх зар» дээр 🗺 Харах горим БАЙХГҮЙ (83b)',
+  (await evalJs(52, `!!document.querySelector('[data-view-toggle]')`)) === false);
+check('🚫 «Бүх зар» дээр 🎛 Шүүлтийн панель БАЙХГҮЙ (83)',
+  (await evalJs(53, `!!document.querySelector('#advanced-filters')`)) === false);
+
+// ⚠️ Дээрх 3 нь ХЭСЭГ (2-р түвшин) сонгосон үед л гарна ⇒ «Бүх зар»-аас
+//    `?section=auto` руу шилжиж, эрэмбэлэлтийн гэрээг ТЭНД шалгана ✓
+await go(54, `${BASE}/?section=auto`);
+check('🔀 Хэсэг сонгоход Эрэмбэлэх сонголт гарлаа (3 утга)',
+  (await evalJs(55, `document.querySelectorAll('[data-listing-sort] option').length`)) === 3);
+check('🗺 Хэсэг сонгоход Газрын зураг дээр харах товч гарлаа',
+  (await evalJs(56, `!!document.querySelector('[data-view-toggle]')`)) === true);
 listingReqs.length = 0;
-await evalJs(52, `(() => {
+await evalJs(57, `(() => {
   const el = document.querySelector('[data-listing-sort]');
   const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
   setter.call(el, 'price_asc');
@@ -331,7 +347,7 @@ await evalJs(52, `(() => {
   return el.value;
 })()`);
 await sleep(3000);
-const qSort = await url(53);
+const qSort = await url(58);
 check('🔀 Сонгоход URL-д `?sort=price_asc` болов', /sort=price_asc/.test(qSort), qSort);
 check('🔀 DB query нь `order=price.asc` болсон', /order=price\.asc/.test(lastQuery()), lastQuery().slice(0, 110));
 
