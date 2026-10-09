@@ -16,6 +16,10 @@ import VerifiedBadge from './VerifiedBadge';
 import { trackListingView } from '../lib/statsClient';
 import { normalizeError } from '../lib/errors';
 import { formatPrice, shortPriceLabel, negotiableNote, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress, shortListingId } from '../lib/format';
+// 🔄 «СОЛИНО» (2026-10-09) — үнийн доорх мөр («🤝 Үнэ тохирно»-гийн ЯГ ДООР).
+//    ⚠️ Дүрэм нь `lib/swapFilter.mjs` (цэвэр) — форм ☑ ба хайлтын чиптэй
+//    нэг эх сурвалж ✓
+import { SWAP_ICON, swapLabel } from '../lib/swapFilter.mjs';
 import { buildListingBreadcrumb } from '../lib/breadcrumb';
 import { getAttrRows } from '../lib/locationData';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
@@ -655,6 +659,15 @@ export default function ListingDetailClient({ id }) {
             {negotiableNote(listing) && (
               <div className="mt-1 text-[13px] font-semibold text-amber-700">
                 🤝 {negotiableNote(listing)}
+              </div>
+            )}
+            {/* 🔄 «Солино» (2026-10-09) — 🤝 «Үнэ тохирно»-гийн ЯГ ДООР (ижил
+                хэв). Хэрэглэгчийн хүсэлт нь форм ☑ + хайлтын чип байсан ч
+                шүүлтээр олдсон зарын саналыг ЭНД харна — тэмдэглээгүй зарууд
+                дээр мөр ОГТ ГАРАХГҮЙ (`lib/swapFilter.mjs → swapLabel` ✓) */}
+            {swapLabel(listing) && (
+              <div className="mt-1 text-[13px] font-semibold text-emerald-700">
+                {SWAP_ICON} {swapLabel(listing)}
               </div>
             )}
             {/* ⚠️ `price_type` («нийт» / «сард» / «м²») ЭНД ХАРАГДАХГҮЙ —

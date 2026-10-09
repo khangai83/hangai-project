@@ -90,6 +90,12 @@ import {
   PAYMENT_OPTIONS, hasPaymentTerms, togglePaymentValue,
   countPayments, parsePaymentList, paymentTermsForAttrs, paymentOptionLabel,
 } from '../lib/paymentFilter.mjs';
+// 🔄 «СОЛИНО» (2026-10-09) — «🤝 Үнэ тохирно»-гийн ЯГ БАРУУН талд гарах ☑
+//    checkbox. Хэн хаана байх вэ (`supportsSwap`) ба хадгалах дүрэм
+//    (`swapForAttrs` — дэмжигдэхгүй бол түлхүүр УСТАНА) нь
+//    `lib/swapFilter.mjs` (цэвэр, тестлэгддэг) дотор байна — цорын ганц эх
+//    сурвалж тул хайлтын чиптэй (HomeClient) хэзээ ч зөрөхгүй ✓
+import { SWAP_LABEL, supportsSwap, isSwapListing, swapForAttrs } from '../lib/swapFilter.mjs';
 /**
  * 🔢🎡 СОНГОЛТТОЙ ТООН ТАЛБАР (2026-10-02) — хэрэглэгчийн хүсэлт: «…барилгийн
  *    давхар 1 2 3 4 … 26-аас сонгуулах … ашиглалтанд орсон он 1980-аас 2026 …
@@ -215,6 +221,11 @@ function listingToForm(l) {
     price: l.price ? String(l.price) : '',
     // 🤝 «Үнэ тохирно» — үнэ 0/хоосон бол чекбокс асаалттай нээгдэнэ (lib/format.js)
     negotiable: isNegotiablePrice(l),
+    // 🔄 «Солино» (2026-10-09) — `attrs.swap = 'yes'` бол чекбокс асаалттай
+    //    нээгдэнэ (`lib/swapFilter.mjs → isSwapListing`; ⚠️ `negotiable`-тэй
+    //    ЯГ ИЖИЛ хэв — зөвхөн дэмжигдэх хэсэг/дэд төрөлд checkbox харагдана,
+    //    бусад үед хадгалахдаа түлхүүр УСТАНА ✓)
+    swap: isSwapListing(l),
     priceType: l.price_type || 'total',
     phone: phoneEmail.toLocalPhone(l.phone),
     contactName: l.contact_name || '',
@@ -943,6 +954,11 @@ export default function AddListingClient() {
     // 🤝 «Үнэ тохирно» — үнэ нь ЗААВАЛ БИШ (2026-09-29). Шинэ зар дээр
     //    анхдагчаар УНТРААЛТТАЙ (хэрэглэгч үнэ бичих нь элбэг ✓).
     negotiable: false,
+    // 🔄 «Солино» (2026-10-09) — 🚗 «Автомашин» ба ⚽ «Спорт бараа → Дартс»
+    //    хэсэгт л харагдана (`supportsSwap`), шинэ зар дээр УНТРААЛТТАЙ ✓
+    //    ⚠️ Ноорогт автоматаар орно (`Object.keys(emptyForm())` — `noLocation`-той
+    //       ижил дүрэм; хуучин ноорогт түлхүүр байхгүй ⇒ `false` мэт уншигдана ✓)
+    swap: false,
     priceType: 'total',
     // ⚠️ ЗАСВАР: өмнө нь энд `displayName` (хэрэглэгчийн НЭР) орж байсан нь алдаа байв —
     // «Холбоо барих утас» талбарт нэр бөглөгдөж харагддаг байсан.
@@ -1646,6 +1662,17 @@ export default function AddListingClient() {
    *    хүсэлт: «бүр байхгүй болго, дахин ашиглахгүй») ✓
    */
   const simpleForm = hasSimpleForm(form.section || 'real-estate');
+
+  /**
+   * 🔄 «СОЛИНО» чекбокс ХАРАГДАХ эсэх (2026-10-09, хэрэглэгчийн хүсэлт:
+   *    «…автомашин болон Спорт бараа -> Дартс хэсэгт оруулж өгөө»).
+   * ⚠️ Дүрэм нь ЦЭВЭР модуль дээр (`lib/swapFilter.mjs → supportsSwap`) —
+   *    хайлтын чип (`HomeClient`) ЯГ ижил функцийг дуудна ⇒ форм ба хайлт
+   *    хэзээ ч зөрөхгүй ✓
+   * ⚠️ 💼 ажил/💻 компьютер/🧺 бараа гэх мэт бусад хэсэгт ОГТ ХАРАГДАХГҮЙ ✓
+   *    (дэд төрөл нь заавал сонгогддог тул ⚽ «Дартс» сонгомогц гарч ирнэ ✓)
+   */
+  const showSwap = supportsSwap(form.section || 'real-estate', form.propertyType);
 
   /**
    * 🔗 ХАМААРАЛТАЙ (cascading) attr утга тавих — 🚗 форм (2026-10-01).
@@ -2401,6 +2428,18 @@ export default function AddListingClient() {
           const a = { ...(form.attrs || {}) };
           if (form.negotiable) a.negotiable = 'yes';
           else delete a.negotiable;
+          /**
+           * 🔄 «СОЛИНО» (2026-10-09) — `attrs.swap = 'yes'` (`negotiable`-тэй
+           * ЯГ ижил хэв: утга нь скаляр ТЕКСТ 'yes', тусдаа багана БАЙХГҮЙ).
+           * ⚠️ Дүрэм нь `swapForAttrs(section, subtype, on)` (нэг эх сурвалж):
+           *    чекбокс унтраалттай БА эсвэл хэсэг/дэд төрөл дэмжихгүй (ж: 🚗 → 🏠,
+           *    эсвэл ⚽ «Дартс» → «Гольф») бол `null` ⇒ түлхүүр УСТАНА. Ингэснээр
+           *    «үхсэн» утга `attrs`-д үлдэхгүй ✓ (`payment_terms`-ийн ЯГ ижил
+           *    зарчим) — ⚠️ тусдаа багана НЭМЭХГҮЙ (migration 0 ✓)
+           */
+          const swap = swapForAttrs(form.section, form.propertyType, form.swap);
+          if (swap) a.swap = swap;
+          else delete a.swap;
           /**
            * 💳 ТӨЛБӨРИЙН НӨХЦӨЛ (2026-10-03) — `attrs.payment_terms` МАССИВ.
            * ⚠️ Дүрэм нь `paymentTermsForAttrs(section, payments)` (нэг эх
@@ -3778,18 +3817,45 @@ export default function AddListingClient() {
                     ⚠️ checkbox-ийн `w-full`-ийг globals.css дээр `:not([type="checkbox"])`
                        -оор зассан (эс бөгөөс чекбокс бүтэн өргөн болно) ✓
                     ⚠️ `price`-ыг ХӨНДӨХГҮЙ, input-ыг disabled БОЛГОХГҮЙ ✗ —
-                       хоёулаа зэрэг байж болно: «₮5,000,000» + «Үнэ тохирно» ✓ */}
-                <label className="mt-2 block w-fit cursor-pointer">
-                  <span className="flex w-fit items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={form.negotiable}
-                      onChange={(e) => setForm((f) => ({ ...f, negotiable: e.target.checked }))}
-                      className="h-4 w-4 shrink-0 accent-primary"
-                    />
-                    <span className="text-[13px] font-normal text-gray-700">{priceNegotiableText}</span>
-                  </span>
-                </label>
+                       хоёулаа зэрэг байж болно: «₮5,000,000» + «Үнэ тохирно» ✓
+                    🔄 2026-10-09 (хэрэглэгчийн хүсэлт): «Үнэ тохирно Гэсэн сонголтын
+                       баруун талд, Солино гээд "Үнэ тохирно" гэсэнтэй адилхан
+                       checkbox хийж өгөөч» ⇒ ХОЁР чекбокс нэг ХЭВТЭЭ мөрөнд
+                       (`flex items-center gap-5`) — ⚠️ ДОТООД бүтэц ХӨНДӨГДӨӨГҮЙ
+                       (label > span.flex > input + span.text) тул CDP-ийн
+                       чекбокс олдог код (`boxes[0]`) ХЭВЭЭР ажиллана ✓
+                       ⚠️ «Солино» нь ДАРАА нь (`boxes[1]`) — дараалал ЧУХАЛ:
+                          эхний чекбокс нь үргэлж «🤝 Үнэ тохирно» байх ЁСТОЙ ✓ */}
+                <div className="mt-2 flex w-fit flex-wrap items-center gap-x-5 gap-y-2">
+                  <label className="w-fit cursor-pointer">
+                    <span className="flex w-fit items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={form.negotiable}
+                        onChange={(e) => setForm((f) => ({ ...f, negotiable: e.target.checked }))}
+                        className="h-4 w-4 shrink-0 accent-primary"
+                      />
+                      <span className="text-[13px] font-normal text-gray-700">{priceNegotiableText}</span>
+                    </span>
+                  </label>
+                  {/* 🔄 «СОЛИНО» — 🚗 «Автомашин» ба ⚽ «Спорт бараа → Дартс»-д л
+                      харагдана (`showSwap` = `lib/swapFilter.mjs → supportsSwap`).
+                      ⚠️ `data-swap-check` нь CDP шалгалтын дэгээ (устгахгүй ✓);
+                      ⚠️ хадгалалт нь `attrs.swap = 'yes'` (jsonb — migration 0 ✓) */}
+                  {showSwap && (
+                    <label className="w-fit cursor-pointer" data-swap-check>
+                      <span className="flex w-fit items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={form.swap}
+                          onChange={(e) => setForm((f) => ({ ...f, swap: e.target.checked }))}
+                          className="h-4 w-4 shrink-0 accent-primary"
+                        />
+                        <span className="text-[13px] font-normal text-gray-700">{SWAP_LABEL}</span>
+                      </span>
+                    </label>
+                  )}
+                </div>
               </div>
               {/* <div className="form-group">
                 <label>Үнийн төрөл</label>

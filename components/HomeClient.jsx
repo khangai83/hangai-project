@@ -112,6 +112,17 @@ import {
   PAYMENT_OPTIONS, countPayments, hasPaymentTerms, parsePaymentList,
   paymentsFilterLabel, paymentsUrlValue, togglePaymentValue,
 } from '../lib/paymentFilter.mjs';
+// 🔄 «СОЛИНО» (2026-10-09, хэрэглэгчийн хүсэлт: «…автомашин болон Спорт бараа ->
+//    Дартс хэсэгт оруулж өгөө. Ингэхдээ … зөвхөн энэ 2-ийн хайлт дээр оруулж
+//    өгөөч») — 🚗 «Автомашин» (бүх дэд төрөл) ба ⚽ «Спорт бараа → Дартс»-ийн
+//    хайлтад ГАНЦ чиптэй шүүлт (`filters.swap` BOOLEAN).
+//    ⚠️ Утга/шошго/харах дүрэм/URL нь `lib/swapFilter.mjs` (цэвэр,
+//       тестлэгддэг) — форм (`AddListingClient`) ба DB (`lib/queries.js`)
+//       ХОЁУЛАА ЯГ тэр модулийг хэрэглэнэ ⇒ зөрүү гарах боломжгүй ✓
+import {
+  SWAP_LABEL, parseSwapParam, supportsSwap,
+  swapUrlValue, toggleSwapValue,
+} from '../lib/swapFilter.mjs';
 // 🎨⚙️⛽ ОЛОН СОНГОЛТТОЙ ATTR ШҮҮЛТ (2026-10-03 (19), 🆕 (22)) — хэрэглэгчийн
 //   хүсэлт: «Зар хайлт дээр Авто машин сонголт дээр Өнгө ийг Төлбөрийн нөхцөл
 //   шиг олон сонголттой болго» + «мөн автомашин хайлт дээр бас ⚙️ Хурдны
@@ -164,6 +175,10 @@ const EMPTY_FILTERS = {
   //    хэсэгт: ОЛОН СОНГОЛТТОЙ (`['lease','cash']`) — `lib/paymentFilter.mjs`.
   //    ⚠️ Хоосон утга нь `''` БИШ `[]` (өрөөний тоотой ижил шалтгаан ✓)
   payments: [],
+  // 🔄 «Солино» (2026-10-09) — 🚗 «Автомашин» ба ⚽ «Спорт бараа → Дартс»-ийн
+  //    хайлтад гарах ГАНЦ чиптэй шүүлт (`lib/swapFilter.mjs`).
+  //    ⚠️ Нэг л чип тул утга нь BOOLEAN (`false` = шүүлтгүй ✓) — массив БИШ
+  swap: false,
 };
 
 /** Массив талбаруудыг ХУВААЛЦАХГҮЙ шинэ хоосон хайлт буцаана */
@@ -1042,6 +1057,16 @@ export default function HomeClient() {
     //    `auto`) — бусад хэсэг рүү чиглэсэн ХУУЧИН/гараар бичсэн линк
     //    (`?section=jobs&payment=lease`) ирвэл ЧИМЭЭГҮЙ орхигдуулна ✓
     if (!hasPaymentTerms(secParam)) next.payments = [];
+    // 🔄 «СОЛИНО» (2026-10-09) — `?swap=1` (хэрэглэгчийн хүсэлт: «…зөвхөн
+    //    энэ 2-ийн хайлт дээр оруулж өгөөч»). ⚠️ Хүчингүй/танихгүй утга
+    //    (`?swap=abc`) ЧИМЭЭГҮЙ `false` болно (`parseSwapParam` ✓)
+    if (sp.get('swap')) next.swap = parseSwapParam(sp.get('swap'));
+    // ⚠️ Шүүлт нь ЗӨВХӨН 🚗 «Автомашин» ба ⚽ «Спорт бараа → Дартс»-д
+    //    (`supportsSwap`) — өөр хэсэг рүү чиглэсэн ХУУЧИН/гараар бичсэн линк
+    //    (`?section=computers&swap=1`) ирвэл ЧИМЭЭГҮЙ орхигдуулна ✓
+    //    (`hasPaymentTerms`-ийн дүрэмтэй ЯГ ижил хэв — «үл үзэгдэх шүүлт»
+    //     үүсгэхгүй ✓)
+    if (!supportsSwap(secParam, next.propertyType)) next.swap = false;
     // ---- ATTR шүүлтүүд — `?attr_brand=Toyota&attr_fuel=Хайбрид` ----
     // 🎨⚙️⛽ ОЛОН СОНГОЛТТОЙ ATTR (2026-10-03 (19), ✅ (21), ⚙️⛽ (22)):
     //    `multi: true` талбар (ж: 🎨 «Өнгө», ⚙️ «Хурдны хайрцаг», ⛽ «Түлш»,
@@ -1119,6 +1144,10 @@ export default function HomeClient() {
         //    бол `undefined` (шүүлт хийхгүй). `lib/queries.js` нь jsonb
         //    containment (`cs`) ба OR болгож хөрвүүлнэ ✓
         payments: filters.payments.length ? filters.payments : undefined,
+        // 🔄 «СОЛИНО» (2026-10-09) — BOOLEAN шүүлт; унтраалттай үед
+        //    `undefined` (шүүлт хийхгүй ✓). `lib/queries.js` нь
+        //    `attrs->>swap=eq.yes` болгож хөрвүүлнэ (`lib/swapFilter.mjs` ✓)
+        swap: filters.swap || undefined,
         city: filters.city || undefined,
         // 🗺 ОЛОН ДҮҮРЭГ/СУМ — `['Баянгол','Сүхбаатар']`; хоосон бол
         //    шүүлт хийхгүй (`undefined`) ⇒ бүх дүүрэг гарна ✓
@@ -1228,6 +1257,10 @@ export default function HomeClient() {
     //    ⚠️ Хоосон үед БИЧИХГҮЙ (цэвэр линк ✓); утга нь ASCII код тул
     //       линк богино, хуваалцахад ойлгомжтой ✓
     if (filters.payments.length) params.set('payment', paymentsUrlValue(filters.payments));
+    // 🔄 «СОЛИНО» (2026-10-09) — ГАНЦ чип тул утга нь `1` (`?swap=1`).
+    //    ⚠️ Унтраалттай үед БИЧИХГҮЙ (цэвэр линк ✓) — `swapUrlValue` нь
+    //       `false` дээр `''` буцаана (`lib/swapFilter.mjs` — нэг эх сурвалж)
+    if (filters.swap) params.set('swap', swapUrlValue(filters.swap));
     // ⚠️ ATTR шүүлтүүд — `attr_brand=Toyota` (jsonb)
     // 🎨⚙️⛽ ОЛОН СОНГОЛТТОЙ ATTR (2026-10-03 (19), ✅ (21), ⚙️⛽ (22)) — утга
     //    нь МАССИВ бол таслалаар нэгтгэнэ (`?attr_color=Хар,Цагаан` ·
@@ -1296,6 +1329,15 @@ export default function HomeClient() {
       if (k === 'districts' || k === 'district') { next.khoroos = []; }
       // «Өрөө» талбаргүй төрөл сонговол өрөөний хайлтыг цэвэрлэнэ (ж: Худалдаа…)
       if (k === 'propertyType' && v && !hasRoomsFields(v)) next.rooms = [];
+      /**
+       * 🔄 «СОЛИНО» (2026-10-09) — дэд төрөл солиход солилцооны шүүлт
+       *    дэмжигдэхгүй болбол ЦЭВЭРЛЭНЭ (ж: ⚽ «Дартс» → «Гольф», эсвэл
+       *    🚗 → 🏠). ⚠️ ЯАГААД: `?swap=1` нь URL/DB-д ҮЛДВЭЛ sidebar-д
+       *    харагдахгүй «үл үзэгдэх шүүлт» болж, хэрэглэгч «0 үр дүн» гэж
+       *    гайхана ✗ — дүрэм нь `lib/swapFilter.mjs → supportsSwap` (форм
+       *    дээрх чекбокс ч ЯГ ижил функцээр шалгадаг ✓)
+       */
+      if (k === 'propertyType' && !supportsSwap(section, v)) next.swap = false;
       // 🏢📅 «Орон сууц» БИШ төрөл сонговол давхар/оны хүрээг ЦЭВЭРЛЭНЭ (ж: Газар,
       //    Оффис …) — эс бөгөөс сайдбарт ХАРАГДАХГҮЙ «үл үзэгдэх шүүлт» үлдэж,
       //    хэрэглэгч «0 үр дүн» гэж гайхана ✗ (`rooms`-ийн дүрэмтэй ЯГ ижил ✓)
@@ -1358,6 +1400,21 @@ export default function HomeClient() {
 
   /** 💳 Сонгосон бүх нөхцөлийг арилгах («✕ Цуцлах») */
   const clearPayments = () => setF('payments', []);
+
+  /**
+   * 🔄 «СОЛИНО» (2026-10-09) — ГАНЦ чип тул утга нь BOOLEAN: нэг дарж
+   * асаах/унтраах (`toggleSwapValue` → `true`/`false`).
+   * ⚠️ Дүрэм нь `lib/swapFilter.mjs → toggleSwapValue()` (нэг эх сурвалж) —
+   *    форм дээрх ☑ checkbox ч ЯГ ижил «эргүүлэх» логиктой ✓
+   * ⚠️ 📄 1-р хуудас руу буцна (`toggleRooms`/`togglePayments`-тэй ижил ✓)
+   */
+  const toggleSwap = () => {
+    setPage(1);
+    setFilters((f) => ({ ...f, swap: toggleSwapValue(f.swap) }));
+  };
+
+  /** 🔄 «Солино» шүүлтийг арилгах («✕ Цуцлах») */
+  const clearSwap = () => setF('swap', false);
 
 
   /* 🗺 ДҮҮРЭГ/СУМ ба ХОРООНЫ сонголт (2026-10-04 (28)).
@@ -1422,6 +1479,9 @@ export default function HomeClient() {
       setCategory((c) => (hasCategoryChoice(nextSection) && c !== 'all' ? c : 'all'));
       setFilters((f) => ({
         ...f, propertyType: '', rooms: [], attrs: {}, payments: [],
+        // 🔄 2026-10-09: өөр хэсэг = солилцооны шүүлт ХҮЧИНГҮЙ (`false` —
+        //    BOOLEAN тул массив/текстийн хоосон утга БИШ ✓)
+        swap: false,
         // 🏢📅 2026-10-04: өөр хэсэг = давхар/оны хүрээ ХҮЧИНГҮЙ (ж: 🚗 авто
         //    руу шилжихэд үлдвэл «үл үзэгдэх шүүлт» болно ✗)
         minTotalFloors: '', maxTotalFloors: '',
@@ -1431,6 +1491,8 @@ export default function HomeClient() {
       // 💳 «Төлбөрийн нөхцөл» (2026-10-03) — шинэ хэсэгт ХҮЧИНГҮЙ (ж: «Ажил»
       //    хэсэгт лизинг гэж байхгүй) тул хэсэг солих БҮРД цэвэрлэнэ ✓
       //    ⚠️ `rooms` массив хоослохтой ЯГ ИЖИЛ хэв маяг (`[]`, `''` БИШ)
+      // 🔄 «Солино» (2026-10-09) — БАС: 🚗 «Автомашин»/⚽ «Дартс»-ээс өөр
+      //    хэсэгт солилцооны шүүлт утгагүй ⇒ `false` (BOOLEAN-ийн хоосон утга ✓)
       // 🗂 өөр хэсэг = өөр бүлгүүд → accordion анхдагчдаа (хаалттай) ✓
       setGroupOpen(null);
       // 🆕 2026-10-06 (12): хураангуй бүлгүүд («Сургалт, курс») ч анхдагчдаа
@@ -1667,6 +1729,24 @@ export default function HomeClient() {
    *    солих үед ч блок тэр даруй шинэчлэгдэнэ ✓
    */
   const showPayments = hasPaymentTerms(section);
+
+  /**
+   * 🔄 «СОЛИНО» блок ХАРАГДАХ эсэх (2026-10-09, хэрэглэгчийн хүсэлт:
+   *    «…автомашин болон Спорт бараа -> Дартс хэсэгт оруулж өгөө.
+   *    Ингэхдээ … зөвхөн энэ 2-ийн хайлт дээр оруулж өгөөч»).
+   *
+   *   🚗 `section === 'auto'` → БҮХ дэд төрөлд (дэд төрөл сонгоогүй ч) ✓
+   *   ⚽ `section === 'hobby'` → ЗӨВХӨН `?type=Дартс` үед ✓
+   *   бусад хэсэг / «Бүх зар» → ХАРАГДАХГҮЙ ✗
+   *
+   * ⚠️ Дүрэм нь `lib/swapFilter.mjs → supportsSwap` — ФОРМ дээрх ☑ checkbox
+   *    (`AddListingClient → showSwap`) ба DB-ийн хадгалалт ХОЁУЛАА ЯГ тэр
+   *    функцийг дуудна ⇒ «форм дээр байгаа ч хайлтад байхгүй» зөрүү гарахгүй ✓
+   * ⚠️ `section` нь UI-ийн төлөв (URL-ийн `?section=…`) — breadcrumb/хэсэг
+   *    солих үед ч блок тэр даруй шинэчлэгдэнэ ✓
+   * ⚠️ Дэд төрөл солиход `setF` нь шүүлтийг ЦЭВЭРЛЭНЭ (үл үзэгдэх шүүлт ✗)
+   */
+  const showSwap = supportsSwap(section, filters.propertyType);
 
   /**
    * ⚙️ «Дэлгэрэнгүй хайлт» панель ХАРАГДАХ эсэх — 2026-10-03 (13).
@@ -2061,6 +2141,9 @@ export default function HomeClient() {
     // 💳 Төлбөрийн нөхцөл (2026-10-03) — сонгосон нөхцөлүүдийг БҮТНЭЭР
     //    харуулна («Хувь лизингээр, Бэлэн төлөлтөөр») — чип дээрээс шууд харна ✓
     if (filters.payments.length) chips.push({ key: 'payments', label: paymentsFilterLabel(filters.payments) });
+    // 🔄 «Солино» (2026-10-09) — ГАНЦ чип тул шошго нь тогтмол
+    //    (`lib/swapFilter.mjs → SWAP_LABEL` — форм/хайлт нэг нэр ✓)
+    if (filters.swap) chips.push({ key: 'swap', label: SWAP_LABEL });
     if (filters.city) chips.push({ key: 'city', label: filters.city });
     // 🗺 ДҮҮРЭГ / СУМ — ОЛОН СОНГОЛТ (2026-10-03): 1 сонголт → нэрээр,
     //    олон → «N дүүрэг» (шошго нь `lib/districtFilter.mjs` — нэг эх
@@ -2097,7 +2180,10 @@ export default function HomeClient() {
   /** Нэг чипийг арилгах (`khoroos`/`rooms` нь массив; `attr_*` нь jsonb түлхүүр;
    *  📅 `attrRange_*` нь оны хүрээний ХОЁР түлхүүрийг хамт арилгана)
    *  ⚠️ `rooms` (2026-09-30) — ОЛОН СОНГОЛТТОЙ болсон тул хоослох утга нь
-   *     `''` БИШ `[]` (эс бөгөөс `filters.rooms.length` унана ✗) */
+   *     `''` БИШ `[]` (эс бөгөөс `filters.rooms.length` унана ✗)
+   *  🔄 `swap` (2026-10-09) — БАС тусгай: утга нь BOOLEAN тул хоослох нь
+   *     `''` БИШ **`false`** (эс бөгөөс `filters.swap` нь `''` болж, «үнэн»
+   *     эсэхийг шалгадаг бүх газар (чип, `?swap=1`, `applySwapFilter`) зөрнө ✗) */
   const removeFilterChip = (key) => {
     if (key.startsWith('attrRange_')) {
       const keys = getAttrRangeKeys(key.slice('attrRange_'.length));
@@ -2117,7 +2203,8 @@ export default function HomeClient() {
       setAttr(key.slice(5), Array.isArray(cur) ? [] : '');
       return;
     }
-    setF(key, key === 'khoroos' || key === 'districts' || key === 'rooms' || key === 'payments' ? [] : '');
+    setF(key, key === 'swap' ? false
+      : (key === 'khoroos' || key === 'districts' || key === 'rooms' || key === 'payments' ? [] : ''));
   };
 
   // ---- ⚙️ «Дэлгэрэнгүй хайлт» панель — МОБАЙЛ дээр АВТОМАТААР НЭЭГДЭХГҮЙ ----
@@ -3581,6 +3668,63 @@ export default function HomeClient() {
                         <button
                           type="button"
                           onClick={clearPayments}
+                          className="text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                        >
+                          ✕ Цуцлах
+                        </button>
+                      </div>
+                    )}
+                  </SideBlock>
+                )}
+
+                {/* ===== 🔄 СОЛИНО — ГАНЦ ЧИПТЭЙ ШҮҮЛТ (2026-10-09) =====
+                    🆕 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Үнэ тохирно Гэсэн сонголтын баруун
+                    талд, Солино гээд "Үнэ тохирно" гэсэнтэй адилхан checkbox хийж
+                    өгөөч. Үүнийг автомашин болон Спорт бараа -> Дартс хэсэгт
+                    оруулж өгөө. Ингэхдээ энэ 2-ийн зар нэмэх болон, зөвхөн
+                    энэ 2-ийн хайлт дээр оруулж өгөөч».
+                    ⚠️ ХЭВ нь сайдбарын бусад чиптэй ЯГ ИЖИЛ (`chip-toggle` +
+                       `aria-pressed` + идэвхтэй үед `✓`/`chip-toggle-active`) —
+                       ЗӨВХӨН НЭГ чип (солино ЭСВЭЛ үгүй) тул утга нь МАССИВ
+                       БИШ BOOLEAN ✓
+                    ⚠️ БАЙРЛАЛ: «💳 Төлбөрийн нөхцөл»-ийн ЯГ ДАРАА ⇒ 🚗 дээр
+                       «💰 Үнэ, ₮ → 💳 Төлбөрийн нөхцөл → 🔄 Солино → 🎨 Өнгө…»,
+                       ⚽ «Дартс» дээр «💰 Үнэ, ₮ → 🔄 Солино» ✓ (төлбөрийн
+                       нөхцөл тэнд байхгүй тул `showPayments` нь `false`)
+                    ⚠️ Утга (`filters.swap`), URL (`?swap=1`), DB
+                       (`lib/queries.js → applySwapFilter` → `attrs->>swap=eq.yes`)
+                       БҮГД нэг эх сурвалжтай (`lib/swapFilter.mjs` ✓)
+                    ⚠️ `data-swap-filter` / `data-swap-value` нь
+                       `scripts/cdp-swap.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓ */}
+                {showSwap && (
+                  <SideBlock label={SWAP_LABEL}>
+                    <div
+                      className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
+                      data-swap-filter
+                      role="group"
+                      aria-label={SWAP_LABEL}
+                    >
+                      <div className="flex flex-wrap gap-1.5">
+                        <button
+                          type="button"
+                          aria-pressed={filters.swap}
+                          data-swap-value="1"
+                          onClick={toggleSwap}
+                          className={`chip-toggle ${filters.swap ? 'chip-toggle-active' : ''}`}
+                        >
+                          {filters.swap && <span aria-hidden="true">✓</span>}
+                          {SWAP_LABEL}
+                        </button>
+                      </div>
+                    </div>
+                    {filters.swap && (
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[13px] font-semibold text-gray-600">
+                          Солилцооны зарууд
+                        </span>
+                        <button
+                          type="button"
+                          onClick={clearSwap}
                           className="text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
                         >
                           ✕ Цуцлах

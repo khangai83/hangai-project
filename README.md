@@ -1256,6 +1256,44 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   хүснэгт) · `docs/IMPROVEMENTS.md` (энэ мөр)
   🔍 Хайх үг: `max-w-[480px]`, `mx-auto` ХОРИГ, `form.left − slot.left`, `isHeader`,
   `HeaderSearchBar`, `test-search-bar-width`, `zar-70-search-gap`
+- 🔄 **«СОЛИНО» — ФОРМД ☑ ЧЕКБОКС, ХАЙЛТАД ЧИП (ЗӨВХӨН 🚗 АВТОМАШИН ба ⚽ «СПОРТ БАРАА → ДАРТС») (2026-10-09 (82))** —
+  хэрэглэгчийн хүсэлт: «Үнэ тохирно Гэсэн сонголтын баруун талд, Солино гээд
+  "Үнэ тохирно" гэсэнтэй адилхан checkbox хийж өгөөч. Үүнийг автомашин болон
+  Спорт бараа -> Дартс хэсэгт оруулж өгөө. Ингэхдээ энэ 2-ийн зар нэмэх болон,
+  зөвхөн энэ 2-ийн хайлт дээр оруулж өгөөч».
+  (1) 🧩 **НЭГ ЭХ СУРВАЛЖ — 🆕 `lib/swapFilter.mjs`** (импортгүй ЦЭВЭР модуль,
+  `lib/paymentFilter.mjs`-ийн ЯГ ИЖИЛ хэв): `SWAP_LABEL` («Солино») ·
+  `SWAP_VALUE` (`attrs.swap = 'yes'` — 🤝 «Үнэ тохирно»-гийн ЯГ ижил утга) ·
+  `SWAP_URL_VALUE` (`?swap=1`) · `supportsSwap(section, subtype)` (**🚗 бүх дэд
+  төрөл · ⚽ ЗӨВХӨН «Дартс» · бусад хэсэг ХЭЗЭЭ Ч ✗**) · `isSwapListing`/
+  `swapLabel` · `swapForAttrs` (унтраалттай/дэмжигдэхгүй бол `null` ⇒ түлхүүр
+  УСТАНА ✓) · `applySwapFilter` (`attrs->>swap=eq.yes`)
+  (2) ☑ **ФОРМ** (`components/AddListingClient.jsx`): чекбокс нь 🤝 «Үнэ
+  тохирно»-гийн ЯГ БАРУУН талд (`data-swap-check`, нэг `flex` мөрөнд) — зөвхөн
+  🚗/⚽ «Дартс» дээр (`showSwap`); ⚠️ DOM дараалал ХӨНДӨӨГДӨӨГҮЙ (эхний чекбокс
+  нь 🤝 — CDP-ийн `boxes[0]` ✓) · 🖥 ба 📱 хоёулаа НЭГ DOM
+  (3) 🔍 **ХАЙЛТ** (`components/HomeClient.jsx`): сайдбарт **ГАНЦ чиптэй**
+  `SideBlock` («💳 Төлбөрийн нөхцөл»-ийн ЯГ ДАРАА) — `data-swap-filter`/
+  `data-swap-value`, `chip-toggle` + `aria-pressed` (өрөөний тоотой ЯГ ИЖИЛ хэв ✓);
+  URL `?swap=1`, DB `attrs->>swap=eq.yes` (скаляр — `cs`/`or` ХЭРЭГГҮЙ ✓);
+  идэвхтэй шүүлтийн чип «Солино» + «✕ Цуцлах»
+  (4) 🛡 **«ҮЛ ҮЗЭГДЭХ ШҮҮЛТ» ХОРИГ:** хэсэг/дэд төрөл солиход шүүлт
+  ЦЭВЭРЛЭГДЭНЭ (`setF`/`changeSection`), гараар бичсэн линк
+  (`?section=computers&swap=1`) ИГНОРХИЙГДЭНЭ ✓ · зарын дэлгэрэнгүй ба «Миний
+  зарууд»-д үнийн доор «🔄 Солино» мөр (тэмдэглээгүй заруудад ГАРАХГҮЙ), ⛔
+  зарын КАРТ дээр ГАРАХГҮЙ (🤝-ийн 2026-10-02-ын дүрэм ХЭВЭЭР ✓)
+  (5) ⚠️ **MIGRATION 0 · DB/URL/форм-ын бусад логик ХӨНДӨӨГДӨӨГҮЙ** — `attrs`
+  (jsonb, 0016) + GIN индекс хэвээр, шинэ багана/`alter table` БАЙХГҮЙ ✓
+  🧪 🆕 `scripts/test-swap.mjs` (`npm run test:swap`) → **24/24 ✓** ·
+  🐍 🆕 `scripts/cdp-swap.mjs` (`npm run cdp:swap`) → **40 OK / 0 FAIL ✓**
+  (⚠️ профайл нэвтрээгүй бол форм-ын ☑ шалгалтууд **SKIP → exit 0** ✓) ·
+  `cdp:steps` **45/45 ✓** (форм-ын чекбоксын бүтэц хөндөгдсөн ч регресс 0 ✓) ·
+  `test:*` БҮГД ✓ · `npm run build` **EXIT=0 ✓**
+  📄 DOC: `README.md` (энэ bullet + «🔄 СОЛИНО» хэсэг + командын мөр + тестийн
+  хүснэгт) · `docs/IMPROVEMENTS.md` (энэ мөр)
+  🔍 Хайх үг: `lib/swapFilter.mjs`, `supportsSwap`, `data-swap-check`,
+  `data-swap-value`, `?swap=1`, `attrs->>swap`
+
 - 🗺 **2-Р АЛХМЫН ТУСЛАХ МӨР — НЭГ ӨГҮҮЛБЭР (2026-10-09 (81))** — хэрэглэгчийн
   хүсэлт: «… гэсэн text-ийг „Газрын зураг дээр пин ашиглан илүү нарийвчлалтай
   харуулна уу" гээд солиод өгөөч».
@@ -2982,6 +3020,81 @@ Sidebar нь `SideBlock` (дээрээ гарчиг + доор нь оролту
 > хэсэг солиход цэвэрлэгдэх · breadcrumb · мобайл 390px overflow 0 · exception 0
 > ⚠️ **Ажиллуулахын өмнө:** `npm run build && npm run start` + Chrome
 > `--remote-debugging-port=9222` (Chrome байхгүй бол зөвхөн `npm run test:payments` ✓)
+
+### 🔄 СОЛИНО — формд ☑ checkbox (🤝 «Үнэ тохирно»-гийн БАРУУН талд), хайлтад ЧИП + `attrs.swap` jsonb (🆕 2026-10-09 (82))
+
+> **ХҮСЭЛТ:** «Үнэ тохирно Гэсэн сонголтын баруун талд, **Солино** гээд "Үнэ
+> тохирно" гэсэнтэй адилхан checkbox хийж өгөөч. Үүнийг **автомашин** болон
+> **Спорт бараа -> Дартс** хэсэгт оруулж өгөө. Ингэхдээ энэ 2-ийн **зар нэмэх**
+> болон, **зөвхөн энэ 2-ийн хайлт** дээр оруулж өгөөч» ⇒ ① форм ☑ ② хайлтын
+> чип ③ зөвхөн 2 хэсэг/дэд төрөл ✓
+
+```
+🚗 Автомашин  болон  ⚽ Спорт бараа → Дартс   ← ЗӨВХӨН энэ 2 (бусад хэсэгт ✗)
+
+ФОРМ (4-р алхам · 💰 Үнэ):
+  ₮ [      250,000,000    ]
+  ☑ Үнэ тохирно   ☑ Солино        ← хоёулаа зэрэг байж болно (үнэ УСТАХГҮЙ ✓)
+
+ХАЙЛТ (сайдбар · «💳 Төлбөрийн нөхцөл»-ийн ЯГ ДАРАА):
+  🔄 Солино
+  [Солино]              ← chip-toggle (өрөөний тоотой ЯГ ИЖИЛ хэв ✓)
+  Солилцооны зарууд  ✕ Цуцлах
+```
+
+| | Дүрэм |
+|---|---|
+| Хэсэг | 🚗 `auto` — БҮХ дэд төрөлд (дэд төрөл сонгоогүй ч) ✓ · ⚽ `hobby` — ЗӨВХӨН `subtype === 'Дартс'` ✓ · бусад болон «Бүх зар» — ХАРАГДАХГҮЙ ✗ (`supportsSwap`) |
+| Хадгалалт | `listings.attrs.swap = 'yes'` (jsonb — 🤝 `negotiable`-тэй ЯГ ижил хэв) ✓ |
+| Хайлт | `?swap=1` → `attrs->>swap=eq.yes` (СКАЛЯР текст — `cs`/`or` ХЭРЭГГҮЙ ✓) |
+| DB migration | **ШААРДЛАГАГҮЙ** ✓ — `attrs` нь 0016-д аль хэдийн `jsonb` + GIN индекс |
+| Харагдац | Зарын **ДЭЛГЭРЭНГҮЙ** ба «Миний зарууд»-д үнийн доор «🔄 Солино» ✓ · ⛔ зарын КАРТ дээр БАЙХГҮЙ (🤝-ийн дүрэм ХЭВЭЭР) |
+
+> ✅ **НЭГ ЭХ СУРВАЛЖ (`lib/swapFilter.mjs` — импортгүй цэвэр модуль):**
+> `SWAP_ATTR_KEY` · `SWAP_VALUE` · `SWAP_LABEL` · `SWAP_ICON` · `SWAP_URL_VALUE` ·
+> `SWAP_SECTION`/`SWAP_SUBTYPE_SECTION`/`SWAP_SUBTYPES` · `supportsSwap` ·
+> `normalizeSwapValue` · `isSwapListing` · `swapLabel` · `parseSwapParam` ·
+> `swapUrlValue` · `toggleSwapValue` · `swapForAttrs` · `applySwapFilter`
+> ⇒ ФОРМ (`AddListingClient.jsx`) · ХАЙЛТ (`HomeClient.jsx`) · ДЭЛГЭРЭНГҮЙ
+> (`ListingDetailClient.jsx`/`MyListingsClient.jsx`) · DB (`lib/queries.js`) БҮГД
+> үүнийг дуудна — дүрэм НЭГ газар бичигдвэл нэг нь мартагдахгүй ✓
+>
+> ⚠️ **«ҮЛ ҮЗЭГДЭХ ШҮҮЛТ» ХОРИГ 2 зам:** ① хэсэг/дэд төрөл солиход
+> `changeSection`/`setF` нь `swap: false` болгоно ② гараар бичсэн/хуучин линк
+> (`?section=computers&swap=1`, `?section=hobby&type=Харваа&swap=1`) нь уншихад
+> ч ЦЭВЭРЛЭГДЭНЭ (`supportsSwap` шалгана) — эс бөгөөс хэрэглэгч «0 үр дүн» гэж
+> гайхана ✗
+>
+> ⚠️ **`swapForAttrs(section, subtype, on)`** нь `paymentTermsForAttrs`-ийн ЯГ
+> ижил зарчим: чекбокс унтраалттай БА эсвэл хэсэг/дэд төрөл дэмжихгүй бол `null`
+> ⇒ `attrs.swap` түлхүүр нь **УСТГАГДАНА** (ж: 🚗 «Солино» тэмдэглээд 🏠 руу
+> шилжсэн, эсвэл ⚽ «Дартс» → «Харваа» — «үхсэн» утга үлдэхгүй ✓)
+>
+> 🧪 **ТЕСТ:** `npm run test:swap` → **24/24 ✓** (`scripts/test-swap.mjs`) —
+> ① `supportsSwap` (🚗-ийн БҮХ дэд төрөл true · ⚽-д ЗӨВХӨН «Дартс» true ба
+> бусад 18 false · бусад 10 хэсэг false · `SECTIONS`-ээс зөвхөн 2 дэмжигдэх) ·
+> ② `normalizeSwapValue`/`parseSwapParam`/`swapUrlValue`/`toggleSwapValue` ·
+> ③ `isSwapListing`/`swapLabel` (эвдэрсэн `null`/текст өгөгдөлд унахгүй ✓) ·
+> ④ `swapForAttrs` (OFF/дэмжигдэхгүй → `null`) · ⑤ `applySwapFilter` (хуурамч
+> PostgREST builder: `false` → 0 дуудлага, `true` → `eq('attrs->>swap','yes')` —
+> ГАНЦ нөхцөл) · ⑥ `lib/queries.js`-ийн гинжин (`applyPaymentFilter`-ийн ДАРАА)
+> ба **MIGRATION 0** · ⑦ Дөрвөн компонентийн гэрээ (regex, `codeOnly()`): форм-д
+> ☑ нь 🤝-гийн ДАРАА · хайлтад `chip-toggle`/`aria-pressed`/`<button>` ба
+> `type="checkbox"` БАЙХГҮЙ · дэлгэрэнгүйд 🤝-гийн ДОР · ⛔ `ListingCard` дээр
+> ОГТ БАЙХГҮЙ ✓ · ⑧ CDP ба `package.json`-ы бүртгэл
+> 🐍 `npm run cdp:swap` → ✅ **40 OK / 0 FAIL** (БОДИТ Chrome :9222): 🚗 дээр блок 1
+> ба ГАНЦ чип (`chip-toggle`, 82×35, `aria-pressed=false`) · чип дарж `?swap=1` →
+> DB `attrs->>swap=eq.yes` (`payment_terms`/`or=` ХОЛОГДОХГҮЙ ✓) → дахин дарж
+> УНТРАНА · ⚽ «Дартс» дээр блок 1, ⛔ дэд төрөл сонгоогүй «Спорт бараа»/«Гольф»/
+> «Компьютер»/«Үл хөдлөх»/«Бүх зар» дээр 0 · 🧹 `?section=computers&swap=1`
+> ИГНОРХИЙГДЭНЭ · идэвхтэй чипийн ✕ → URL/DB цэвэр · ☑ форм (🖥 1440px:
+> `data-swap-check` 1, шошго «Солино», 16×16, ЯГ ӨМНӨХ чекбокс «Үнэ тохирно»,
+> НЭГ мөрөнд БАРУУН талд; 📱 390px: `price` блок дотор 2 чекбокс) · ⛔ 💻
+> «Компьютер» форм дээр 0 · exception 0
+> ⚠️ **Ажиллуулахын өмнө:** `npm run build && npm run start` + Chrome
+> `--remote-debugging-port=9222`; ⚠️ `/listings/new` нь НЭВТРЭЛТ шаарддаг тул
+> профайл нэвтрээгүй үед форм-ын шалгалтууд **SKIP** (exit 0 — хуурамч улаан
+> БАЙХГҮЙ ✓), зөвхөн хайлтын зам бүрэн шалгагдана ✓
 
 ### 🖥 💻 NOTEBOOK-ИЙН ШҮҮЛТ — 📺 Дэлгэц · ⚙️ CPU · 🧠 RAM · 💾 Хард (🆕 2026-10-03 (7) · ⏫ **PILL болов 2026-10-05 (43)**)
 
@@ -6173,6 +6286,7 @@ npm run test:rooms       # 🛏🗑 ӨРӨӨНИЙ ТОО — UI ХАСАГДС�
 npm run test:districts   # 🗺 ДҮҮРЭГ / СУМ — ОЛОН сонголттой чип (eq/in, нэгдэл, шошго) (40 тест, 0₮) ✓
 npm run test:carpicker   # 🏷️🚙 АВТО «ҮЙДВЭРЛЭГЧ, ЗАГВАР» — Байршил шиг НЭГ пикер (CarPicker гэрээ + attr жагсаалтаас шүүх + applyCar/cascade + олон загвар + форм ХӨНДӨӨГДӨӨГҮЙ) (18 тест, 0₮) ✓
 npm run test:payments    # 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — хайлтад ЧИП (өрөөний тоотой ижил), формд ☑/URL/DB (jsonb `cs`) + ЗААВАЛ (36 тест, 0₮) ✓
+npm run test:swap        # 🔄 СОЛИНО — 🚗 Автомашин ба ⚽ «Дартс»-д л: формд ☑ (🤝 «Үнэ тохирно»-гийн баруун талд), хайлтад чип, URL `?swap=1`, DB `attrs->>swap=eq.yes` (24 тест, 0₮) ✓
 npm run test:attrMulti   # 🎨 🚗 «ӨНГӨ» + 🆕 (22) ⚙️ «Хурдны хайрцаг»/⛽ «Түлш» ба ✅ «Шинэ / Шинэвтэр / Хуучин» (8 хэсэг) — ОЛОН сонголттой ЧИП шүүлт (URL `attr_color=А,Б` / `attr_transmission=А,Б` / `attr_fuel=А,Б` / `attr_condition=Шинэ,Хуучин` → DB `attrs->>…=in.(…)`) (24 тест, 0₮) ✓
 npm run test:card        # 📇 ЗАРЫН КАРТ — жишиг сайт хэв (БОСОО: зураг ДЭЭРЭЭ 4:3 · үнэ+❤️ нэг мөрөнд · гарчиг · нийтлэгчийн band · 🖼 1/N · 👁) (18 тест, 0₮) ✓
 npm run test:similar     # 🔎 ТӨСТЭЙ ЗАРУУД — оноо (дүүрэг+3·төрөл+2·хороо+1·хот+1) · эрэмбэ · хязгаар · query/UI/render гэрээ (39 тест, 0₮) ✓
@@ -6222,6 +6336,10 @@ npm run cdp:carpicker    # 🐍 БОДИТ Chrome (:9222) дээр 🏷️🚙 �
 npm run cdp:payments     # 🐍 БОДИТ Chrome (:9222) дээр 💳 төлбөрийн ЧИП (хайлт) + ☑ (форм) — UI + хэв + URL + DB — 60 шалгалт ✓
                          #   ⚠️ jsonb `attrs=cs.{"payment_terms":["lease"]}` ба OR-ийн
                          #   мөрөнд массив БҮР ЯГ 1 элементтэй (`22P02`-оос сэргийлнэ ✓)
+npm run cdp:swap         # 🐍 БОДИТ Chrome (:9222) дээр 🔄 «Солино» — сайдбарын чип (🚗/⚽ «Дартс»), URL `?swap=1`, DB `attrs->>swap=eq.yes` ба форм ☑ (🤝-гийн баруун талд) — 40 шалгалт ✓
+                         #   ⚠️ ⛔ «Компьютер»/«Үл хөдлөх»/«Ганц дэд төрөлгүй Спорт бараа» дээр блок 0
+                         #   ⚠️ `/listings/new` нь НЭВТРЭЛТ шаарддаг тул профайл нэвтрээгүй
+                         #   үед форм-ын ☑ шалгалтууд SKIP (FAIL БИШ ✓)
 npm run cdp:specs        # 🐍 БОДИТ Chrome (:9222) дээр 💻 Notebook-ийн 📺/⚙️/🧠/💾 ШҮҮЛТ + 🎨 АВТО «ӨНГӨ»-ний ОЛОН СОНГОЛТТОЙ ЧИП + 🆕 (22) 🚗 ⚙️ «Хурдны хайрцаг»/⛽ «Түлш»-ний ОЛОН СОНГОЛТТОЙ ЧИП + 🏷️ «Брэнд» нь Notebook-ийн гэр бүлд л + ✅ «Шинэ / Шинэвтэр / Хуучин»-ний ОЛОН СОНГОЛТТОЙ ЧИП — 123 шалгалт ✓ (🆕 2026-10-06 (16): + 💻 📺 pill-ийн HOVER — бодит хулганаар)
                          #   ⚠️ `?type=Mouse&attr_cpu=…` гэх мэт хүчингүй хослол
                          #   ЧИМЭЭГҮЙ хасагдана (`pruneGatedAttrs` — үл үзэгдэх шүүлт БАЙХГҮЙ ✓)
@@ -6576,6 +6694,8 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 | `scripts/cdp-sections.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:sections` (🆕 2026-10-04 (31): 🏠 **хэсгийн панелийн 2 алхамт drill** — **28 шалгалт ✓** — 🖥 1280px `?section=real-estate`: `[data-category-value]` **3** (sell→rent→all, анхдагч `all`) ба `[data-section-panel] button[role=tab]` (дэд төрөл) ОРОХ үед **0** + панелийн текстэд «Орон сууц»/«Газар» БАЙХГҮЙ → «Үл хөдлөх зарна» дарвал **8** («Орон сууц зарна» …) + `?category=sell` → «…түрээслүүлнэ» → **8** + `?category=rent` → «Бүгд» → **0** + `category` URL-аас арилав; 🚗 `?section=auto` сегмент **0** / дэд төрөл **10** (ШУУД); 🔗 `?category=rent` линк — дэд төрөл ШУУД **8**; 📱 390px богино шошго («Зарна / Түрээслүүлнэ / Бүгд») + орох үед **0** + «Зарна» → **8** + хэвтээ гүйлт **0**; 🧯 JS exception **0** — ⚠️ сервер :3000 ба Chrome :9222 шаардна) |
 | `scripts/cdp-range.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:range` (2026-09-30 (3): 🔢 тооны хүрээний **33 шалгалт** — бичих ЯВЦАД цэг (`3000000` → `3.000.000`), ⏎/blur = 1 query, Esc буцаалт, талбай `1.234,5`, **🗑 «санал болгосон тоо» товч DOM-д 0**, **🏷 `placeholder` = «Доод / Дээд»** ба **`aria-label` = «Үнэ (доод хязгаар)» / «Үнэ (дээд хязгаар)»**, «Эхлэх / Дуусах» гэсэн үг DOM-д БАЙХГҮЙ, ✕ арилгах, оны хүрээ `attrs->>year`, `?sort=` → `order`, hero 13 option, слайдер БАЙХГҮЙ — ⚠️ сервер :3000 ба Chrome :9222 шаардна) |
 | `lib/paymentFilter.mjs` | 💳 **«Төлбөрийн нөхцөл» (цэвэр функцууд, 🆕 2026-10-03 (5); дизайн (6))** — `PAYMENT_VALUES`/`PAYMENT_OPTIONS` (код + шошго + icon: `lease`/`cash`/`loan`/`barter`; ⚠️ шошго нь «Бартер **сонирхоно**», icon нь UI-д ХАРАГДАХГҮЙ — (6)) · `normalizePaymentValue`/`isPaymentValue` · `parsePaymentList`/`paymentsUrlValue`/`togglePaymentValue` · `countPayments`/`isPaymentsEmpty` · `paymentOptionLabel`/`paymentOptionIcon` · `paymentsFilterLabel`/`paymentsFilterDescriptor` · `paymentContainsJson`/`applyPaymentFilter` (⚠️ `.or()`-д нөхцөл бүр **ЯГ 1 ЭЛЕМЕНТТЭЙ** массив) · `hasPaymentTerms` (шүүлт/блок харагдах эсэх) · `paymentTermsForAttrs` (форм → `attrs.payment_terms`, хоосон/дэмжигдэхгүй → **`null`** ⇒ түлхүүр УСТГАГДАНА) — ⚠️ React/`window`-оос ХАМААРАЛГҮЙ тул `test-payments` нь рендэргүйгээр шалгана ✓ |
+| `lib/swapFilter.mjs` | 🔄 **«Солино» (цэвэр функцууд, 🆕 2026-10-09 (82))** — `SWAP_ATTR_KEY`/`SWAP_VALUE` (`attrs.swap = 'yes'`) · `SWAP_LABEL` («Солино»)/`SWAP_ICON`/`SWAP_URL_VALUE` (`1`) · `SWAP_SECTION`/`SWAP_SUBTYPE_SECTION`/`SWAP_SUBTYPES` (`['Дартс']`) · `supportsSwap(section, subtype)` (🚗 бүх дэд төрөл · ⚽ зөвхөн «Дартс» · бусад ✗) · `normalizeSwapValue`/`parseSwapParam`/`swapUrlValue`/`toggleSwapValue` · `isSwapListing`/`swapLabel` · `swapForAttrs` (дэмжигдэхгүй/унтраалттай → **`null`** ⇒ түлхүүр УСТГАГДАНА) · `applySwapFilter` (`attrs->>swap=eq.yes`) — ⚠️ React/`window`-оос ХАМААРАЛГҮЙ тул `test-swap` нь рендэргүйгээр шалгана ✓ |
+
 | `scripts/cdp-payments.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:payments` (🆕 2026-10-03 (5); дизайн (6), хайлтын чип (16): 💳 **төлбөрийн нөхцөлийн 60 шалгалт** — ① 🏠 Орон сууц дээр `[data-payment-filter]` **1** + `[data-payment-value]` **4** (`lease,cash,loan,barter`) ба шошго нь «Хувь лизингээр · Бэлэн төлөлтөөр · Банкны зээлээр · Бартер сонирхоно» ①b 🎛 **ЧИП (өрөөний тоотой ЯГ ИЖИЛ): жинхэнэ `<button>` 4 · НЭГ `<input>` Ч БАЙХГҮЙ · `.chip-toggle` + `flex-wrap` · хэмжээ 124x33** (⏳ (6)-ийн 2 баганат ☑ нь ЗӨВХӨН ФОРМД) ② блок нь **«💰 Үнэ, ₮»-ний ЯГ ДАРАА** (🆕 (15); ⏳ (16): «Өрөөний тоо»-ны дараа, «Үнэ, ₮»-ний өмнө; 🚗 АВТО дээр ч мөн шалгагдана — «📌 Үйлдвэрлэгч, загвар → Үйлдвэрлэсэн он → Орж ирсэн он → 💰 Үнэ, ₮ → 💳 Төлбөрийн нөхцөл» ✓) (`aside .divide-y > div` дарааллаар) ③ чип дарж `?payment=lease` → DB **`attrs=cs.{"payment_terms":["lease"]}`** (⚠️ `->>` БИШ) ④ 2 чип → `or=(attrs.cs.{…["lease"]},attrs.cs.{…["cash"]})` + «2 сонгосон» badge ба ⚠️ **нөхцөл бүр ЯГ 1 ЭЛЕМЕНТТЭЙ массив** (`22P02`-оос сэргийлнэ) ⑤ дахин дарж toggle · «✕ Цуцлах» · «✕» идэвхтэй чип ⑥ 🚗 Авто дээр чипүүд (🆕 2026-10-03 (13): ХЭСГИЙН түвшинд `?section=auto` (төрөл ГҮЙ) ч блок **1** — `hasPaymentTerms(section)` ✓, progressive ХАСАГДАВ) ба ⛔ Ажил/Компьютер дээр блок **0**, «Бүх зар» дээр блок **0** ч sidebar **БИЙ** (📍 Байршил · 💰 Үнэ ✓) ⑦ **хуучин линк** нормчлогдоно (`?payment=abc, LEASE` → зөвхөн `lease`) ⑧ хэсэг солиход `payment=` ИГНОРХИЙГДЭНЭ (URL/DB цэвэр) ⑨ breadcrumb «Үл хөдлөх» линк ⑩ 📱 мобайл 390px — чипүүд (139x33) харагдана, **overflow 0**, JS exception **0** — ⚠️ сервер :3000 ба Chrome :9222 шаардна; 🆕 **2026-10-04 (37): 💳 нь `#filter-bar` (pill dropdown) руу шилжсэн — ② шалгалт нь «сайдбарт БАЙХГҮЙ, `#filter-bar`-т 1» байв → 🆕 2026-10-06 (14): сайдбарт БУЦАЖ, 🆕 (15): 💳 нь «💰 Үнэ, ₮»-ний ЯГ ДАРАА болов ✓**) |
 | `scripts/cdp-services.mjs` | 🆕 🐍 **CDP (бодит Chrome)** — `npm run cdp:services` (**2026-10-05 (44) + ✏️🗑 (45) + 🗑 2026-10-06 (5) + 🎓✏️ (11) + 🎓 (12) + ✏️ (58)** — **47 OK / 0 FAIL ✓** (35 → 38 → 47; ✏️ (58): тоо 52→54 · 34→36 — ⚠️ CDP дахин ажиллуулах шаардлагатай; ✅ 2026-10-06 (12)-д БОДИТ Chrome-д (154, headless, `:9222` + сервер `:3000`) ажиллуулав): ⚠️ (5)-д sidebar-ийн attr шүүлт **1 → 0** — 🕒 «Ажиллах цаг» ч ХАСАГДАВ, 🗑 4 шошго (Нэр / компани · Хамрах хүрээ · Туршлага · Ажиллах цаг) хуудсан дээр ОГТ БАЙХГҮЙ): 🛠️ Ажил, Үйлчилгээний 3 түвшний мод — ① бүлгийн ГАРЧИГ **7** (`<p class="text-primary-dark">`) ба ДАРААЛАЛ ХЭВЭЭР + ХАМГИЙН СҮҮЛД 🆕 «Эмнэлэг» (leaf «Хэвлэл, реклам, медиа» нь гарчиг БИШ, өөрөө сонгогдох мөр ✓) ② блок (tablist) **10** = бүлэг 10 · дэд төрөл **81** (28 → 52 → 81 — 🎓 (11): эхний групп «Сургалт, курс» 32 → 52, ✏️ (58): «Бизнес, Санхүү & Хууль» бүлэг 5 → 7), гэхдээ 🆕 (12): панельд ХАРАГДАХ нь **36** (`54 − 23 + 5` — «Сургалт, курс» хураангуй, «Илүү +18» товчтой) ③ 🆕 «Гагнуурын үйлчилгээ» нь «Барилга & Засвар үйлчилгээ» бүлгийн **6 дахь** мөр (5 → 6 item) ④ 🆕 «Эмнэлэг» бүлэг ЯГ **3** дэд төрөлтэй ба бүлгийн НЭР нь сонгогдох мөр БИШ (`property_type` болохгүй ✓) ⑤ 🖱 дэд төрөл дарж `?section=services&type=Шүдний эмнэлэг` → breadcrumb **4 түвшин** («Бүх зар › Ажил, Үйлчилгээ › Эмнэлэг › Шүдний эмнэлэг» — ✏️ (45): хэсгийн нэр ШИНЭЭРЭЭ ✓) + `<h1>` ✓ ⑥ 🖱 «Гагнуурын үйлчилгээ» → breadcrumb-д «Барилга & Засвар үйлчилгээ» бүлэг зөв байрлав ⑦ 🔗 `?type=Эмэгтэйчүүдийн эмнэлэг` шууд линкээр ороход панель ХААЛТТАЙ (дэд төрөл сонгосон төлөв) ба breadcrumb/гарчиг зөв ⑧ 📱 390px: «Эмнэлэг» харагдана, **36** мөр (✏️ (12)/(58)), «Илүү» товч харагдана, overflow **0** · 🖥 1280px overflow **0** ⑨ 🧯 JS exception **0** · ✏️🗑 **(45) ⑩** нүүр хуудсны tile (тоо ХЭВЭЭР **12**) ба breadcrumb дээр «**Ажил, Үйлчилгээ**» харагдана, хуучин ганц «Үйлчилгээ» tile БАЙХГҮЙ · 🗑 **(45) ⑪ + (5) ⑫** `?section=services` дээр sidebar-д attr шүүлт ЯГ **0** (⚠️ (45)-д 1 байсан `availability` — 🕒 «Ажиллах цаг» — нь (5)-д ХАСАГДАВ) ба 4 шошго (Нэр / компани · Хамрах хүрээ · Туршлага · Ажиллах цаг) + «Үйлчилгээний хэлбэр»/«Үнийн хэлбэр» хуудсан дээр ОГТ БАЙХГҮЙ ✓ — ⚠️ (45)-д 2 CDP RACE засав: ① `waitHydrated()` — панель нь **SSR HTML** дээр ч байдаг тул hydrate-аас өмнөх `click()` нь React-д ХҮРЭХГҮЙ (алга болдог ✗), React-ийн `__reactProps$…` түлхүүрээр hydrate-ыг хүлээнэ (хэмжсэн: +24ms SSR_ONLY → +162ms HYDRATED) ② URL-ийн ЗАЙГ `URLSearchParams` нь `+` болгодог ⇒ шалгалт нь `dec()` шиг `.replace(/\+/g,' ')`-той байх ЁСТОЙ ✗→✓ · 🎓 **(12) ⑬** «Сургалт, курс» нь ХУРААНГУЙ — ЭХНИЙ **5** мөр л харагдана (үлдсэн 18 нь «Илүү» дор), бүлгийн нэр ч, хуучин «Сургалт ба курс» ч сонгогдох мөр БИШ ✓ · 🎓 **(12) ⑭** «Илүү» товч (`data-group-more`, «Илүү +18») дарж БҮХ **23** мөр (54) нээгдэж, «Хураах» + `aria-expanded="true"` болж, дахин дарвал 36 болж буцаана ✓ (хуучин «Тайлан ба төсөл»/«Орчуулга» ч нээгдэнэ — ⚠️ товч нь `role="tab"` БИШ тул `tabs` тоололд орохгүй ✓; hydrate-ыг `waitHydrated()`-ээр хүлээнэ) — ⚠️ сервер :3000 ба Chrome :9222 шаардна — ✏️ **(62): «Сургалт, курс» 23 → 22** (🛠️ 81 → 79; «Илүү +17», эхний 5 = Гадаад хэл · IT Программ хангамж · Ерөнхий боловсрол · Хүнд машин механизм · Сантехник, цахилгаанчин; панельд ХАРАГДАХ 66 ХЭВЭЭР) · ✏️ **(63): ➕ «Барилга & Зам» (14) ч `showFirst: 5`** › «Илүү» товч **2** болж (эхний нь «Сургалт, курс» +17, 2 дахь нь «Барилга & Зам» +9), панельд ХАРАГДАХ **57** (83 − 26), «Сургалт, курс» дарвал **74** («Барилга & Зам» хураангуй хэвээр; бүлгийн tablist нь эхний 5 = Зураг төсөл … Сантехник) |
 | `scripts/cdp-search.mjs` | 🆕 🐍 **CDP (бодит Chrome)** — `npm run cdp:search` (**2026-10-05 (46)(47)** — **23 OK / 0 FAIL ✓**): 🔎 ХАЙЛТЫН АВТОСАНАЛ + гарчиг/тайлбар хайлт — ① `#home-search` нь hydrate болсны ДАРАА гарна (толгойн хайлт `useHeaderSlot`-оор; мобайл `#home-search-mobile` нь SSR дээр ч бий ✓), `role="combobox"` + `aria-autocomplete="list"` + эхэндээ `aria-expanded="false"` ② бичихэд `[data-search-suggest]` (role=listbox) гарна ③ санал 1+ (`type` хэсэг/дэд төрөл + `listing` зарын гарчиг — DB `title.ilike`) ④ «Орон сууц» статик санал олдоно ⑤ 🖱 санал дарах → хайрцагт утга ОРЖ, панель ХААГДАЖ, URL-д `?q=…` ШУУД гарна ⑥ 1 тэмдэгтээс богино үгт санал ГАРАХГҮЙ ⑦ 🖥 1280px overflow **0** · 📱 390px мобайл хайрцагт ч санал гарна + overflow **0** ⑧ 🧯 JS exception **0** — 🆕 **(47)**: ⑨ фокус алдахад панель ХААГДАЖ, **ДАХИН фокус** (үг хөдлөөгүй ч) → санал ЭРГЭЖ ГАРНА (кэш ⇒ 0мс) ⑩ blur-ийн дараа хожуу ирсэн хариу панель НЭЭХГҮЙ (race) ⑪ ⌨️ ↓ → `aria-activedescendant` ⑫ ⌨️ Enter → идэвхтэй санал сонгогдож `?q=…` хайлт хийнэ — ⚠️ сервер :3000 ба Chrome :9222 шаардна (`node scripts/cdp-search.mjs [BASE]`; Chrome байхгүй бол зөвхөн `npm run test:search` ✓) |
@@ -6583,6 +6703,9 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 | `scripts/cdp-seller-avatar.mjs` | 🆕 🐍 **CDP (бодит Chrome)** — `npm run cdp:seller-avatar` (**2026-10-08 (65)**: 👤 НИЙТЛЭГЧИЙН ХУУДСАНЫ ПРОФАЙЛ ЗУРАГ — ① зурагтай нийтлэгч (`avatar_url ≠ NULL`, `show_identity = true`): толгойд БОДИТ `<img src="…/avatars/<uid>/….jpg">` (`naturalWidth=512`, 64×64, `rounded-lg`), ҮСЭГ-орлуулга 0 ✓ ② зураггүй нийтлэгч: 64×64 үсэг («K») — мөр хоосон харагдахгүй ✓ ③ нийтэд харагдах нэр нь `display_name` (хоч нэр) — жинхэнэ `profiles.name` БИШ ✓ ④ 📱 390px ч зураг харагдана, картаас гарсан элемент 0, хэвтээ гүйлт 0 ✓ ⑤ Leaflet-ээс бусад JS exception 0, hydration алдаа 0 (⚠️ сервер :3000 ба Chrome :9222 шаардна) — 🆕 **20 OK / 0 FAIL ✓** · 📸 `/tmp/zar-65-seller-page-avatar.png` |
 | `scripts/cdp-seller-stats-link.mjs` | 🆕 🐍 **CDP (бодит Chrome)** — `npm run cdp:seller-stats-link` (🆕 **2026-10-08 (62)(63)(64)**: «📋 N идэвхтэй зар» нь ТУСДАА ЛИНК — ① бодит DOM дээр `<a href="/sellers/<user_id>">`, `color: rgb(37, 99, 235)` + `text-decoration: underline` + `cursor: pointer`, линк дотор линк БАЙХГҮЙ (`closest('a')` = өөрөө) ② картын хүрээ `<div>` (`rounded-lg bg-gray-50 p-3` + `hover:bg-primary-light`) — доогуур зураасгүй, дотроо ЯГ 2 линк (толгой + «Зарын тоо») ③ карт **300×176px** (1280px) / **316×176px** (390px), гадагш гарсан элемент 0, хэвтээ гүйлт 0 · 🆕 **(64) 👤 АВАТАР: 64×64px, картын төвөөс зөрүү 0px, картын дээд зай 12px, нэр 84px-д (аватарын ДООР) — 📱 390px ч мөн адил** ④ БОДИТ ХУЛГАНААР (`Input.dispatchMouseEvent`) дарахад `/sellers/<user_id>` руу шилжинэ ⑤ 📱 390px мобайл дээр ч линк хэвээр, overflow 0 ⑥ Leaflet-ээс БУСАД exception 0, hydration/`validateDOMNesting` алдаа 0 (⚠️ Leaflet-ийн дотоод `_leaflet_pos` алдаа нь үл хамааралтай тул тусгаарлагдсан) — ⚠️ сервер :3000 ба Chrome :9222 шаардна) |
 | `scripts/test-attr-multi.mjs` | 🆕 **29 тест** — `npm run test:attrMulti` (2026-10-03 (19): 🎨 «Өнгө» · 🆕 (21): ✅ «Шинэ / Шинэвтэр / Хуучин» (8 хэсэг) · 🆕 (22): 🚗 ⚙️ «Хурдны хайрцаг» ба ⛽ «Түлш» · 🆕 **(36): 🚙 «Загвар» — ХАЙЛТТАЙ ТЕКСТ талбарын олон сонголт**: `likePattern` (`%`/`_`/`\` ESCAPE ✓, `null` → `%%`) · `orSafeAttrValue` (`,():"\` → ЗАЙ — `or()` мөр эвдрэхгүй ✓) · `attrLikeExpressions` · `applyAttrMultiLikeFilter` (**1 утга → `ilike` — ХУУЧИН скаляр замтай ЯГ ИЖИЛ ✓; 2+ → `or=(…)` ✓; `[]` → шүүлтгүй ✓**) · `auto.model` нь `multi` + `multiNoun: 'загвар'` ба `chips` БАЙХГҮЙ (пикер) · олон сонголттой талбаруудын ЯГ жагсаалт 12 болж (`.model` нэмэгдэв) · ⚠️ Энэ нь БҮХ ОЛОН СОНГОЛТТОЙ ШҮҮЛТИЙН гэрээг хамгаална — ① `lib/attrMultiFilter.mjs`-ийн цэвэр функцууд: `normalizeAttrValue` (trim; ⚠️ таслал → зай; ТОМ/ЖИЖИГ үсэг ХӨНДӨХГҮЙ) · `parseAttrList` (массив/текст; **массив ДОТОРХ таслалт ч хуваагдана** — `URLSearchParams.getAll()` нь `['Хар,Цагаан']` гэж буцаадаг тул ⚠️ энэ нь БОДИТ АЛДААНЫГ бариулсан шалгалт ✓; давхцал/эвдэрсэн утга хасна; ИРСЭН дараалал — URL тогтвортой) · `toggleAttrValue` · `attrListUrlValue` · `countAttrValues`/`isAttrListEmpty` · `attrListFilterLabel` (1 → нэрээр, 2+ → «3 өнгө» ✓) · `attrMultiFilterDescriptor` (`none`/`in`) ② `applyAttrMultiFilter` нь fake PostgREST builder-ээр **`in('attrs->>color', ['Хар','Цагаан'])` ЯГ нэг удаа** (`cs` containment БИШ — `attrs.color` нь скаляр ✓), хоосон дээр шүүлт ХИЙХГҮЙ ③ `lib/locationData.js`-ийн гэрээ: `getAttrField('auto','color')` нь `chips`/`multi`/`multiNoun` тугтай, `type: 'select'` ба `formChips` БАЙХГҮЙ (форм `<select>` ХЭВЭЭР ✓), 🚗 л `multi` (бусад 12 хэсэг ХӨНДӨГДӨӨГҮЙ), `getAttrFilters('auto')` нь 7 шүүлт + дараалал хэвээр (`color` 3 дахь) ④ `lib/queries.js`-ийн ЭХ ФАЙЛЫН ГЭРЭЭ: `applyAttrMultiFilter` import + массив шалгалт нь range/searchable-ийн **ӨМНӨ** (эс бөгөөс `String(v)` салаа руу орно ✗) ⑤ `HomeClient.jsx`: `toggleAttrMulti`/`clearAttrMulti` (`setAttr(key, [])`), `attrValue` нь массивыг `''` болгоно, URL-д `attrListUrlValue`, `data-attr-multi`, ба ⛔ `AddListingClient.jsx` дээр олон сонголтын код ОРООГҮЙ ✓ + 🆕 **(21):** ✅ нь ЯГ **8 хэсэгт** (`computers`·`furniture`·`home`·`electric`·`construction`·`equipment`·`travel`·`hobby`) `chips`+`multi`+`multiNoun: 'төлөв'` байна, `formChips` БАЙХГҮЙ (форм `<select>` ХЭВЭЭР), олон сонголттой талбаруудын ЯГ ТОДОРХОЙ жагсаалт (🚗 `auto.color` + 8 ✅ `condition`), `applyAttrMultiFilter` ✅-д ч ижил дүрэм (`attrs->>condition=in.(…)`), `pruneGatedAttrs` ✅-г ХЭЗЭЭ Ч хасахгүй (`attrFilters: ['condition']` бүх дэд төрөлд харагдана ✓); 🆕 **(22):** 🚗 ⚙️ «Хурдны хайрцаг» ба ⛽ «Түлш» нь ЯГ ижил тугтай (`chips`+`multi`+`multiNoun`, `formChips` БАЙХГҮЙ — форм `<select>` ХЭВЭЭР), олон сонголттой талбаруудын ЯГ ТОДОРХОЙ жагсаалт нь 🚗 3 (`color`·`transmission`·`fuel`) + 🆕 🚙 1 (`model` — (36)) + ✅ 8 = **12**, `applyAttrMultiFilter` нь `attrs->>transmission=in.(…)`/`attrs->>fuel=in.(…)` (⚠️ скаляр ТЕКСТ тул `->>`) ✓) |
+| `scripts/cdp-swap.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:swap` (🆕 2026-10-09 (82): 🔄 **«Солино»-гийн 40 шалгалт** — ① 🚗 `?section=auto` (дэд төрөл ГҮЙ ч) дээр `[data-swap-filter]` **1** + `[data-swap-value]` **1**, шошго «Солино», ЖИНХЭНЭ `<button class="chip-toggle">` (хайлтын блокт `<input>` **0**), харагдах хэмжээ **82x35** (≥60×24), `aria-pressed=false`, «✕ Цуцлах» **0** ② чип дарж `?swap=1` + `aria-pressed=true` + `chip-toggle-active` + `✓`, DB **`attrs->>swap=eq.yes`** (⚠️ `cs`/`or` ХОЛОГДОХГҮЙ), «✕ Цуцлах» **1** ③ дахин дарж toggle → URL/DB-ээс swap **АРИЛНА** (блок ХЭВЭЭР) ④ ⚽ `?section=hobby&type=Дартс` дээр **1** ба ⛔ дэд төрөл сонгоогүй «Спорт бараа»/«Гольф»/💻 «Компьютер»/🏠 «Үл хөдлөх»/«Бүх зар» дээр **0** ⑤ 🧹 `?section=computers&swap=1` → шүүлт **ИГНОРХИЙГДЭНЭ** (URL/DB цэвэр — «үл үзэгдэх шүүлт» ✗) ⑥ идэвхтэй шүүлтийн чип «Солино» (`aria-label="Солино хайлтыг хасах"`) → ✕ дарж URL/DB цэвэр ⑦ ☑ ФОРМ (🖥 1440px, `?step=3`): `[data-swap-check]` **1**, шошго ЯГ «Солино» + **16x16**, ЯГ ӨМНӨХ чекбокс нь «🤝 Үнэ тохирно» (CDP-ийн `boxes[0]` эвдрэхгүй ✓), хоёулаа **НЭГ мөрөнд** (баруун талд) · 📱 390px: `price` блок дотор 🤝-той НЭГ мөрөнд 2 чекбокс · ⛔ 💻 «Компьютер» форм дээр **0** ⑧ exception **0** — ⚠️ сервер :3000 ба Chrome :9222 шаардна; ⚠️ `/listings/new` НЭВТРЭЛТ шаарддаг тул профайл нэвтрээгүй бол ⑦ нь **SKIP** (FAIL БИШ, exit 0 ✓), ⚠️ хэсэг солих шалгалтын өмнө `zar:listing-draft:*` ноорог ЦЭВЭРЛЭГДЭНЭ) |
+| `scripts/test-swap.mjs` | 🆕 **24 тест** — `npm run test:swap` (2026-10-09 (82): 🔄 «Солино»-гийн гэрээг хамгаална — ① `supportsSwap`: 🚗 `auto` **бүх дэд төрөлд** (дэд төрөл сонгоогүй ч) `true`, ⚽ `hobby`-д **зөвхөн «Дартс»** `true` (бусад 18 дэд төрөл ба ёс бус утга `false` — «Дартс» нь hobby-гийн БОДИТ дэд төрөл мөн эсэхийг `getSubtypes`-ээр шалгана ✓), бусад 10 хэсэг ба «Бүх зар» `false`, `SECTIONS`-ээс зөвхөн 2 дэмжигдэх ② `SWAP_VALUE='yes'`/`SWAP_LABEL='Солино'`/`SWAP_URL_VALUE='1'` · `normalizeSwapValue` (`true`/`1`/`'YES'` → `'yes'`, `'no'` ХҮЧИНГҮЙ) · `parseSwapParam` · `swapUrlValue`/`toggleSwapValue` ③ `isSwapListing`/`swapLabel` (эвдэрсэн `null`/текст/тоо өгөгдөлд АЛДАА ШИДЭХГҮЙ; `negotiable` нь 🔄-д НӨЛӨӨЛӨХГҮЙ) ④ `swapForAttrs` (OFF/дэмжигдэхгүй хэсэг/дэд төрөл → `null` ⇒ түлхүүр УСТАНА ✓) ⑤ `applySwapFilter` fake PostgREST builder-ээр: `false`/`undefined`/`''`/`0` → **0 дуудлага**, `true` → **ГАНЦ** `eq('attrs->>swap','yes')` (`cs`/`or` БАЙХГҮЙ ✓) + гинжин буцаалт ⑥ `lib/queries.js`: импорт + `applyPaymentFilter`-ийн **ДАРАА** дуудагдах + шүүлтийн мөр ДАВХАР бичигдээгүй + **MIGRATION 0** (`alter table` ба swap нэртэй migration файл БАЙХГҮЙ ✓) + модуль нь ИМПОРТГҮЙ цэвэр ✓ ⑦ Дөрвөн компонентийн гэрээ (`codeOnly()` regex): ☑ нь 🤝-гийн **ДАРАА** ба `data-swap-check`/`checked={form.swap}`/`swapForAttrs(...)`/`else delete a.swap` · `showSwap = supportsSwap(form.section, form.propertyType)` · `AddListingClient`/`HomeClient`/`ListingDetailClient`/`MyListingsClient`-ийн дэгээнүүд ба ⛔ `ListingCard` дээр 🔄 ОГТ БАЙХГҮЙ ✓ ⑧ `scripts/cdp-swap.mjs`-ийн дэгээнүүд + `package.json`-ы бүртгэл ✓) |
+
 | `scripts/test-payments.mjs` | 🆕 **36 тест** — `npm run test:payments` (2026-10-03 (5): 💳 төлбөрийн нөхцөлийн гэрээг хамгаална — ① `lib/paymentFilter.mjs`-ийн цэвэр функцууд: `hasPaymentTerms` (зөвхөн `real-estate`/`auto` ✓) · `normalizePaymentValue`/`isPaymentValue` (trim + lowercase) · `parsePaymentList` (эвдэрсэн утга хасч, КАНОН дараалал) · `paymentsUrlValue` · `countPayments`/`isPaymentsEmpty` · `paymentOptionLabel`/`Icon` · `paymentsFilterLabel` · `togglePaymentValue` · `paymentsFilterDescriptor` ② `paymentContainsJson` ба `applyPaymentFilter` нь fake PostgREST builder-ээр: **1 утга → `attrs=cs.{"payment_terms":["x"]}`**, **2+ → `or=(…)`**, ⚠️ **`["a","b"]` гэсэн ХОЁР ЭЛЕМЕНТТЭЙ массив ХЭЗЭЭ Ч ЯВАХГҮЙ** (таслал `.or()`-ийг эвдэж `22P02` өгнө ✗) ③ `paymentTermsForAttrs` (дэмжигдэхгүй/хоосон → `null`) ④ `getAttrRows` — 💳 мөр зарын дэлгэрэнгүйд гарна (4 тохиолдол) ⑤ `lib/queries.js`/`HomeClient.jsx`/`AddListingClient.jsx`/`cdp-payments.mjs`/`package.json` дээрх ЭХ ФАЙЛЫН ГЭРЭЭ (regex) ✓ + 🆕 **(16) ХАЙЛТ нь ЧИП:** `HomeClient.jsx`-д `chip-toggle`/`aria-pressed`/`<button>` байна, `pay-grid`/`type="checkbox"` БАЙХГҮЙ, icon харагдахгүй ✓ + 🆕 **(18) ФОРМ Ч МӨН ЧИП:** `AddListingClient` нь `chip-toggle`/`aria-pressed`/`<button>` ба `pay-grid`/`pay-check`/`type="checkbox"`/`checked` **БАЙХГҮЙ** ✓, `globals.css`-ээс ☑-ийн дүрмүүд (`.pay-grid`/`.pay-check`/`appearance:none`/SVG) **УСТГАГДАВ** ба хайлт=форм нэг хэв (`.chip-toggle`) ✓) — ⚠️ `scripts/cdp-payments.mjs` нь БОДИТ DOM дээр чипийн хэмжээ (124x33), `aria-pressed`, `flex-wrap`-ыг хэмжинэ ✓) |
 | `scripts/test-districts.mjs` | **40 тест** — `npm run test:districts` (🆕 2026-10-03 (12): 🗺 дүүргийн **ОЛОН сонголтын** гэрээ — 🏷️ 2026-10-03 (14): `districtsFilterLabel` нь **«2 дүүрэг»** (өмнө «2 дүүрэг/сум») · `normalizeDistrict` (зай/таслалт/хүчингүй утга) · `parseDistrictList` (эвдэрсэн гишүүн хасаж, дараалал хадгална) · `isDistrictsEmpty`/`countDistricts` · `toggleDistrictValue` (checkbox мэт) · `districtsUrlValue` · `districtsFilterLabel` (**1 → нэрээр** «Баянгол» · 2+ → «2 дүүрэг») · `districtsFilterDescriptor`/`applyDistrictFilter` fake builder-ээр — **`['Баянгол']` → `eq`** (хуучин гэрээ ЯГ ижил ✓), 2+ → `in`; `getKhoroosForDistricts` (нэгдэл, хорооны нэрээр давхцалгүй, танихгүй хот → `[]`) · `lib/queries.js` ба `lib/breadcrumb.js` нь модулийг дуудна (`codeOnly()` эх кодын гэрээ) · `HomeClient.jsx`-д `<select>` БАЙХГҮЙ + `data-district-filter`/`data-district-value` БАЙНА, «Өрөө» илүүц текст БАЙХГҮЙ · `scripts/cdp-districts.mjs` нь чип дарах замыг шалгана ✓) |
 | `scripts/test-carpicker.mjs` | 🆕 **18 тест** — `npm run test:carpicker` (**2026-10-04 (35): 🏷️🚙 авто «Үйлдвэрлэгч, Загвар» нь 📍 Байршил шиг НЭГ ПИКЕР болов**; 🆕 **(36): 🚙 «Загвар» нь ОЛОН СОНГОЛТТОЙ** — ① РЕГРЕСС: `getAttrFilters('auto')` нь `brand`/`model`-ыг ХЭВЭЭР (форм/URL/DB нэг эх сурвалж) ба `model.optionsFrom='brand'`+`filterable` ② 🆕 `components/CarPicker.jsx`-ийн гэрээ: `CAR_BRANDS`/`getCarModels` импорт (`<select>` 0) · `#car-search` + каскад баганууд (`[data-car-brand-filter]`/`[data-car-model-filter]`) · хайлтын `match()` · брэнд солигдоход `setDraftModels([])` (🖥 ба 📱) · ноорог ЗӨВХӨН `onApply({brand, model: draftModels})` дээр · мобайл drill-down (`data-mobile-car`, `mStep`) · `modelOptions.length === 0` үед чөлөөт текст; 🆕 **(36) ОЛОН ЗАГВАР:** `model` нь `multi: true` + `multiNoun: 'загвар'` (⚠️ `chips` БАЙХГҮЙ — UI нь пикер) · `draftModels` МАССИВ + `pickModel` = `toggleAttrValue` · чип утга БҮРД тусдаа · `[data-car-model-count]` · `cascadeAttrs` нь МАССИВЫГ шүүнэ (өөр брэндийн загвар ХАСГАЖ, гараар бичсэн нь ҮЛДЭЖ, хоосон бол талбар УСТАНА — `[]` үлдэхгүй ✓) ③ `components/HomeClient.jsx`: `import CarPicker` + `<CarPicker open={carOpen} … models={carModels} onApply={applyCar}>` + `const isAuto = section === 'auto'` + `[data-sidebar-car]` + `attrFilters.filter(…)` нь brand/model-ыг шүүнэ + `applyCar` (нэг `setFilters`, `parseAttrList(model)`, хоосныг `delete`, `setPage(1)`) + `const carModels = attrArray('model')` + товчилсон шошго (`attrListFilterLabel` → «2 загвар») + pill/`[data-car-clear]` (`model: []`) ④ 🖥 `AddListingClient.jsx` ХӨНДӨӨГДӨӨГҮЙ (`<SearchableSelect`/`optionsFrom` хэвээр, `CarPicker` ОРООГҮЙ) ✓) |

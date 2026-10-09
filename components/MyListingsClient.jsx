@@ -6,6 +6,9 @@ import { useAuth, useToast, useUI } from './AppProviders';
 import { fetchMyListings, deleteListing } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
 import { priceLabel, negotiableNote, getPropertyIcon, timeAgo, getFloorLabel, getGarageLabel } from '../lib/format';
+// 🔄 «СОЛИНО» (2026-10-09) — 🤝 «Үнэ тохирно»-гийн ЯГ ДООР гарах мөр
+//    (нэг эх сурвалж: `lib/swapFilter.mjs` — форм ☑/хайлтын чиптэй ижил ✓)
+import { SWAP_ICON, swapLabel } from '../lib/swapFilter.mjs';
 import MyListingsStatsPanel from './MyListingsStatsPanel';
 /**
  * 📍 Байршилгүй зар («Байршил сонгохгүй» чекбокс) дээр «📍 » хоосон үлдэхгүйн
@@ -207,6 +210,11 @@ export default function MyListingsClient() {
                         {/* 🤝 «Үнэ тохирно» — үнийн ЯГ ДОР (2026-09-29) */}
                         {negotiableNote(l) && (
                           <p className="text-[12px] font-semibold text-amber-700">🤝 {negotiableNote(l)}</p>
+                        )}
+                        {/* 🔄 «Солино» (2026-10-09) — 🤝-гийн ЯГ ДООР; зөвхөн
+                            тэмдэглэсэн зарууд дээр гарна (`lib/swapFilter.mjs`) */}
+                        {swapLabel(l) && (
+                          <p className="text-[12px] font-semibold text-emerald-700">{SWAP_ICON} {swapLabel(l)}</p>
                         )}
                         {l.rooms > 0 && <p className="text-[13px] text-gray-500">🛏 {l.rooms} өрөө</p>}
                         {l.bathrooms > 0 && <p className="text-[13px] text-gray-500">🚿 {l.bathrooms} угаалгын өрөө</p>}
