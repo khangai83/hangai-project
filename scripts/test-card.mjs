@@ -3,11 +3,20 @@
 //
 // Хэрэглэгчийн хүсэлт: «зарыг харуулж байгаа картын загварыг дуурааж
 // хийнэ үү» + **жишиг сайт**-ын нүүр ба зарын дэлгэрэнгүй дээрх картууд:
-//   • ЗУРАГ нь ДЭЭРЭЭ, БҮТЭН өргөн (`aspect-[4/3]`) + «🖼 1/16» (баруун доод)
-//   • доор нь мэдээллийн багана: нийтлэгчийн band (Avatar + нэр + ✅)
-//   • ҮНЭ (том bold) БА ❤️ НЭГ МӨРӨНД — үнэ зүүн, зүрхэн баруун
-//   • 2 МӨРТ гарчиг → дэлгэрэнгүй мөр → доод мета мөр (🕒 огноо | 📍 хаяг | 👁)
+//   • ЗУРАГ нь ДЭЭРЭЭ, БҮТЭН өргөн (`aspect-[4/3]`) + 🖼 КАРУСЕЛЬ (85: swipe +
+//     ‹ › товч + цэгүүд + амьд тоолуур) + «🖼 2/16» (баруун доод)
+//   • доор нь мэдээллийн багана: 💰 ҮНЭ (том bold) + ✅ + ❤️ НЭГ МӨРӨНД
+//     (⏳ (78)-аас өмнө нийтлэгчийн band байв — 🆕 (85)-д ХАСАГДАВ)
+//   • 2 МӨРТ гарчиг → мэдээллийн мөр → доод мета мөр (🕒 огноо | 📍 хаяг | 👁)
 //   • ЖАГСААЛТ нь БАГАНАТ GRID (нүүр · /favorites · /history · /sellers)
+//
+// 🆕 2026-10-09 (85) — хэрэглэгчийн хүсэлт («Автомашины картыг … мэдээлэлтэй
+//    болго. Мөн дээрх зураг нь жишиг сайт шиг солих боломжтой болго. Мөн байрны
+//    зарын картыг ч жишиг сайт шиг болго, харин мэдээллийн хувьд Өрөөний тоо,
+//    угаалгын өрөөний тоо, талбайн хэмжээ, давхар гэх мэдээллийг хасна уу. Мөн
+//    зар оруулагчийн Profile зураг нэрийг ч хасна уу»):
+//   ① 🖼 ЗУРГИЙН КАРУСЕЛЬ (swipe/‹ ›/цэгүүд/амьд тоолуур) ② 🗑 👤 band ХАСАГДАВ
+//   ③ 🏠 байрны мөрөөс 🛏/🚿/📐/🏢 ХАСАГДАВ ④ 🚗 `carTitle` нөөц гарчиг ✓
 //
 // ⏳ 2026-10-03 → 2026-10-09 ХЭВ СОЛИГДСОН: карт ХЭВТЭЭ байв (зураг зүүн
 //    `sm:w-[42%]` + `sm:h-[300px]`, үнэ/гарчиг баруун, ❤️ доод мета мөрөнд).
@@ -123,22 +132,83 @@ t('🗑 📝 Тайлбар (`listing.description`) карт дээр БАЙХГ
   assert.ok(!/line-clamp-2 text-\[14px\] leading-relaxed/.test(CARD_CODE), 'тайлбарын `<p>` буцаж орсон ✗');
 });
 
-t('👤 Нийтлэгчийн band нь 28px Avatar + нэр + ✅ VerifiedBadge', () => {
-  assert.match(CARD_CODE, /author\?\.displayName/, '`author.displayName` шалгахгүй ✗');
-  // 🆕 2026-10-08 (71): нэр/зураг нь `authorName`/`authorAvatar` хувьсагчаар дамжина
-  //    — зар тус бүрийн «Профайл нэрээ зар дээр гаргах уу? → Үгүй»
-  //    (`listing.show_name === false`) үед band БҮХЭЛДЭЭ ГАРАХГҮЙ ✓
+t('🗑 (85) 👤 Нийтлэгчийн band (Avatar + нэр) КАРТ ДЭЭР ХАСАГДАВ', () => {
+  // Хэрэглэгчийн хүсэлт: «зар оруулагчийн Profile зураг нэрийг ч хасна уу» +
+  // **жишиг сайт**-ын машин/байрны карт дээр нэр/профайл зураг ОГТ БАЙХГҮЙ ✓
+  assert.ok(!/authorName/.test(CARD_CODE), '`authorName` (нийтлэгчийн нэр) буцаж орсон ✗');
+  assert.ok(!/authorAvatar/.test(CARD_CODE), '`authorAvatar` (профайл зураг) буцаж орсон ✗');
+  assert.ok(!/from '\.\/Avatar'/.test(CARD_CODE), '`Avatar` импорт буцаж орсон ✗');
+  assert.ok(!/size=\{28\}/.test(CARD_CODE), '28px Avatar (band) буцаж орсон ✗');
+  assert.ok(!/author\?\.displayName/.test(CARD_CODE), '`author.displayName` уншиж байна ✗');
+  assert.ok(!/author\?\.avatarUrl/.test(CARD_CODE), '`author.avatarUrl` уншиж байна ✗');
+});
+
+t('✅ (85) БАТАЛГААЖСАН нь ҮНИЙ хажууд — `authorVisible` (`show_name`) дүрэмтэй', () => {
+  // 🆕 (85): ✅ нь band-ийн оронд ҮНИЙ МӨРӨНД — жишиг сайтын «68 сая ₮ ✓» ✓
   assert.match(CARD_CODE, /const\s+authorVisible\s*=\s*listing\.show_name\s*!==\s*false/,
-    '`show_name` шалгалт алга ✗ (нэр нуух тохиргоо ажиллахгүй)');
-  assert.match(CARD_CODE, /<Avatar src=\{authorAvatar\} name=\{authorName\} size=\{28\}/,
-    'band-ий 28px Avatar алга ✗');
-  assert.match(CARD_CODE, /<VerifiedBadge size=\{13\}/, 'band-ий ✅ badge алга ✗');
+    '`show_name` шалгалт алга ✗ (нэр нуух тохиргоо ✅-д нөлөөлөхгүй болно)');
+  assert.match(CARD_CODE, /\{authorVisible && <VerifiedBadge size=\{15\} className="mt-1 text-primary" \/>\}/,
+    'үнийн хажуугийн ✅ нь `authorVisible`-ээр хаагдсангүй ✗');
+  // ⚠️ ❤️ товч нь CDP-ийн ТОГТВОРТОЙ дэгээтэй байх ЁСТОЙ: карт дээр ‹ › товч
+  //    нэмэгдсэн тул `button[aria-label]` хайлт ЭХНИЙ ‹ товчийг олж, ❤️-г алдана ✗
+  assert.match(CARD_CODE, /data-fav-toggle/, '❤️ товчны `data-fav-toggle` дэгээ алга ✗');
+  assert.equal((CARD_CODE.match(/data-fav-toggle/g) || []).length, 1,
+    '`data-fav-toggle` нь 1-ээс олон газар байна ✗');
+});
+
+t('🏠 (85) БАЙРНЫ мөр: 🛏 өрөө · 🚿 угаалгын өрөө · 📐 м² · 🏢 давхар ХАСАГДАВ', () => {
+  // Хэрэглэгчийн хүсэлт: «мэдээллийн хувьд, Өрөөний тоо, угаалгын өрөөний тоо,
+  // талбайн хэмжээ, давхар гэх мэдээллийг хасна уу» ⇒ зөвхөн 📅 он үлдэв ✓
+  assert.ok(!/өрөө/.test(CARD_CODE), '🛏 «… өрөө» мөр буцаж орсон ✗');
+  assert.ok(!/угаалгын өрөө/.test(CARD_CODE), '🚿 «угаалгын өрөө» мөр буцаж орсон ✗');
+  assert.ok(!/listing\.rooms|listing\.bathrooms|listing\.area\b/.test(CARD_CODE),
+    '`rooms`/`bathrooms`/`area` буцаж орсон ✗');
+  assert.ok(!/getFloorLabel|floorLabel/.test(CARD_CODE), '🏢 давхар (`getFloorLabel`) буцаж орсон ✗');
+  assert.ok(!/🏢/.test(CARD_CODE), '🏢 тэмдэг карт дээр буцаж орсон ✗');
+  // ✅ 📅 «ашиглалтанд орсон он» ХЭВЭЭР (хэрэглэгч хасахыг хүсээгүй ✓)
+  assert.match(CARD_CODE, /const buildYear = Number\(listing\.build_year\) > 0/,
+    '📅 `buildYear` шалгалт алга ✗');
+  assert.match(CARD_CODE, /📅 \{buildYear\} он/, '«📅 <он> он» мөр алга ✗');
+});
+
+t('🚗 (85) АВТО-ГАРЧИГ — зар оруулагч бичээгүй бол `attrs`-аас (`carTitle`)', () => {
+  assert.match(CARD_CODE, /listingTitle\(listing\) \|\| \(isAuto \? carTitle\(listing\.attrs\) : ''\)/,
+    '`carTitle` нөөц гарчиг алга ✗ («Toyota Vellfire, 2017/2026» гарахгүй)');
+  assert.match(CARD_CODE, /const isAuto = \(listing\.section \|\| 'real-estate'\) === 'auto'/,
+    '`isAuto` шалгалт алга ✗ (бусад хэсэгт авто-гарчиг орж болзошгүй)');
+  // ⚠️ `carTitle` нь `lib/format.js`-д ЦЭВЭР функц байх ёстой (тестлэгддэг ✓)
+  assert.match(readSrc('lib/format.js'), /export function carTitle\(attrs\)/,
+    '`lib/format.js`-д `carTitle` алга ✗');
 });
 
 // ---------- ③ ЗУРАГ ДЭЭРХ ТЭМДЭГҮҮД ----------
-t('🖼 Зургийн тоо «1/N» — `imageCount > 1` үед л + БАРУУН ДООД буланд (2026-10-09)', () => {
+t('🖼 (85) КАРУСЕЛЬ — 📱 swipe (`snap-x`) + 🖥 ‹ › товч + ЦЭГҮҮД', () => {
+  assert.match(CARD_CODE, /data-card-images/, 'scroller-ийн `data-card-images` дэгээ алга ✗');
+  assert.match(CARD_CODE, /snap-x snap-mandatory overflow-x-auto/,
+    '📱 хурууны гүйлгээ (`snap-x snap-mandatory overflow-x-auto`) алга ✗');
+  assert.match(CARD_CODE, /data-card-slide=\{i\}/, 'slide бүрийн `data-card-slide` дэгээ алга ✗');
+  assert.match(CARD_CODE, /w-full shrink-0 snap-center object-cover/,
+    'slide нь картын БҮТЭН өргөн (`w-full shrink-0`) биш ✗');
+  assert.match(CARD_CODE, /\[&::-webkit-scrollbar\]:hidden/,
+    'scrollbar НУУГААГҮЙ ✗ (эс бөгөөс зургийн 4:3 харьцаа зөрчигдөнө)');
+  // ‹ › — ЗӨВХӨН ≥sm ба ЗӨВХӨН hover/фокус дээр (📱 дээр хурууны гүйлгээ ✓)
+  assert.match(CARD_CODE, /data-card-prev/, '‹ товч (`data-card-prev`) алга ✗');
+  assert.match(CARD_CODE, /data-card-next/, '› товч (`data-card-next`) алга ✗');
+  assert.match(CARD_CODE, /hidden h-8 w-8 -translate-y-1\/2/, 'товч нь ≥sm-д л гарахгүй ✗');
+  assert.match(CARD_CODE, /group-hover:opacity-100/, 'товч hover/фокус дээр илрэхгүй ✗');
+  // • цэгүүд — зөвхөн 2…5 зурагтай үед (`MAX_CARD_DOTS`)
+  assert.match(CARD_CODE, /data-card-dots/, 'цэгүүдийн `data-card-dots` дэгээ алга ✗');
+  assert.match(CARD_CODE, /const MAX_CARD_DOTS = 5/, '`MAX_CARD_DOTS` хязгаар алга ✗');
+  assert.match(CARD_CODE, /imageCount <= MAX_CARD_DOTS/, 'цэгийн хязгаарын шалгалт алга ✗');
+  // ⚠️ Зургийн зум (`group-hover:scale-105`) ХАСАГДСАН (карусельд тохирохгүй ✗)
+  assert.ok(!/group-hover:scale-105/.test(CARD_CODE), 'зургийн зум буцаж орсон ✗');
+});
+
+t('🖼 (85) ТООЛУУР нь АМЬД (`🖼 2/16`) — `activeIdx`-ээр + БАРУУН ДООД буланд', () => {
   assert.match(CARD_CODE, /imageCount > 1/, 'зургийн тооны хаалт (`imageCount > 1`) алга ✗');
-  assert.match(CARD_CODE, /🖼 1\/\{imageCount\}/, '«🖼 1/N» текст алга ✗');
+  assert.match(CARD_CODE, /🖼 \{activeIdx \+ 1\}\/\{imageCount\}/,
+    'амьд тоолуур (`🖼 {activeIdx + 1}/{imageCount}`) алга ✗');
+  assert.match(CARD_CODE, /data-card-counter/, 'тоолуурын `data-card-counter` дэгээ алга ✗');
   assert.match(CARD_CODE, /images\.length/, '`images.length` уншихгүй ✗');
   // ⚠️ Баруун ДЭЭД булан нь /favorites-ийн «Хасах» товчинд чөлөөтэй байх ёстой ✓
   assert.match(CARD_CODE, /absolute bottom-2 right-2 flex h-6/, 'тоо нь баруун доод буланд БИШ ✗');

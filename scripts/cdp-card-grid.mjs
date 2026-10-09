@@ -14,6 +14,14 @@
  *      зургийн ДООР (зургийн доод ≤ агуулгын эхлэл +2px) ✓
  *   ③ ❤️ нь ҮНИЙ МӨРӨНД: зүрхний төв нь үнийн мөрийн өндөрт (±6px) ба
  *      картын БАРУУН ХАГАСТ (баруун захад тогтсон `ml-auto`) ✓
+ *      ⚠️ Товчийг `button[aria-label]`-аар БИШ **`button[data-fav-toggle]`**-оор
+ *      олно — 🆕 (85) каруселийн ‹ › товч МӨН `aria-label`-тай (эхний тохирол
+ *      нь ‹ товч болж, ❤️-г алдана ✗)
+ *   ③b 🖼 КАРУСЕЛЬ (🆕 2026-10-09 (85)): slide бүр картын өргөнтэй ИЖИЛ
+ *      (`scrollWidth ≈ slide × n` ⇒ нэг дор ЯГ 1 зураг), `›` товч дарахад
+ *      2 дахь зураг руу ШИЛЖИНЭ (`scrollLeft > 10`), тоолуур «🖼 2/n» болж,
+ *      ЗАР РУУ ШИЛЖИХГҮЙ (`/` дээрээ үлдэнэ) · ‹ › ба цэгүүд DOM-д байна ✓
+ *      ⚠️ 2+ зурагтай карт ОЛДОХГҮЙ бол (DB-ээс хамаарна) ℹ️ SKIP ✓
  *   ④ 📱 390px: НЭГ БАГАНА (2 дахь карт нь 1-ийнхээ ЗАГИНАА доор) ба
  *      хэвтээ гүйлт 0 (`scrollWidth ≤ innerWidth + 1`) ✓
  *   ⑤ 🗂 /favorites: картууд БАГАНАТ (≥2 нэг мөрөнд, 1280px), «Хасах»
@@ -149,6 +157,9 @@ const shot = async (file) => {
 /**
  * 🃏 КАРТЫН ГЕОМЕТР — нэг илэрхийллээр (хүснэгтэд буулгана)
  *   ⚠️ Зургийн блок = 1-р хүүхэд, мэдээлэл = 2-р хүүхэд (ListingCard-ийн бүтэц)
+ *   ⚠️ 🆕 (85): БҮХ картыг уншина (`slice(0,8)` БИШ) — каруселийн шалгалт
+ *      (③f…③k) нь 2+ ЗУРАГТАЙ карт хайдаг ба тэр нь эхний 8-д байхгүй байж
+ *      болно (seed зарууд 1 зурагтай ✗) ⇒ бүх картаас хайна ✓
  */
 const PROBE = `(() => {
   const R = (el) => { const b = el.getBoundingClientRect(); return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height), r: Math.round(b.right), b: Math.round(b.bottom) }; };
@@ -157,11 +168,13 @@ const PROBE = `(() => {
     vw: window.innerWidth,
     scrollW: document.documentElement.scrollWidth,
     count: cards.length,
-    cards: cards.slice(0, 8).map((c) => {
+    cards: cards.map((c) => {
       const imgWrap = c.children[0], content = c.children[1];
       const img = imgWrap ? imgWrap.querySelector('img') : null;
       const price = c.querySelector('[class*="text-[22px]"]');
-      const heart = c.querySelector('button[aria-label]');
+      const heart = c.querySelector('button[data-fav-toggle]');
+      const scroller = imgWrap ? imgWrap.querySelector('[data-card-images]') : null;
+      const slide0 = scroller ? scroller.firstElementChild : null;
       const title = c.querySelector('[class*="line-clamp-2"]');
       const badge = c.querySelector('[class*="bottom-2"][class*="right-2"]');
       return {
@@ -172,6 +185,14 @@ const PROBE = `(() => {
         price: price ? R(price) : null,
         heart: heart ? R(heart) : null,
         heartText: heart ? (heart.innerText || '').trim() : '',
+        // 🖼 🆕 (85) карусель: slide бүр картын өргөнтэй ИЖИЛ байх ёстой ✓
+        slides: scroller ? scroller.querySelectorAll('[data-card-slide]').length : 0,
+        slideW: slide0 ? R(slide0).w : 0,
+        scrollW: scroller ? scroller.scrollWidth : 0,
+        prev: !!c.querySelector('[data-card-prev]'),
+        next: !!c.querySelector('[data-card-next]'),
+        dots: c.querySelectorAll('[data-card-dots] button').length,
+        counter: (c.querySelector('[data-card-counter]') || {}).innerText || '',
         title: title ? R(title) : null,
         countBadge: badge ? R(badge) : null,
       };
@@ -230,7 +251,48 @@ if (c0.countBadge) {
     c0.countBadge.b <= c0.img.b + 2 && c0.countBadge.x > c0.img.x + c0.img.w / 2,
     `badge.x ${c0.countBadge.x}, badge.b ${c0.countBadge.b}`);
 } else {
-  console.log('  ℹ️ 🖼 зургийн тоо (1/N) — эхний карт 1 зурагтай тул badge байхгүй ✓');
+  console.log('  ℹ️ 🖼 тоолуур — эхний карт 1 зурагтай тул badge байхгүй ✓');
+}
+
+// ---------- ②c 🖼 КАРУСЕЛЬ (🆕 2026-10-09 (85)) ----------
+/**
+ * 🎯 Хэрэглэгчийн хүсэлт: «Мөн дээрх зураг нь жишиг сайт шиг солих боломжтой
+ *    болго» ⇒ 📱 swipe (`snap-x`) + 🖥 ‹ › товч + цэгүүд + амьд тоолуур ✓
+ * ⚠️ ГЕОМЕТР: slide бүр картын өргөнтэй ИЖИЛ байх ЁСТОЙ (`scrollWidth ≈
+ *    slide × n`) — эс бөгөөс нэг дор 2 зураг хэсэгчлэн харагдана ✗
+ */
+const multi = home.cards.filter((c) => c.slides > 1);
+if (!multi.length) {
+  console.log('  ℹ️ 🖼 карусель: эхний 8 карт дунд 2+ зурагтай нь алга — ③f…③k алгасна ✓');
+} else {
+  check('③f 🖼 (85) Олон зурагтай карт бүр ‹ › товчтой', multi.every((c) => c.prev && c.next),
+    `${multi.length}/${home.count} карт`);
+  check('③g 🖼 (85) slide бүр картын өргөнтэй ИЖИЛ (нэг дор ЯГ 1 зураг)',
+    multi.every((c) => Math.abs(c.slideW - c.box.w) <= 2 && Math.abs(c.scrollW - c.slideW * c.slides) <= 4),
+    `${multi[0].slides} slide × ${multi[0].slideW}px (card ${multi[0].box.w}, scrollW ${multi[0].scrollW})`);
+  check('③h 🖼 (85) ≤5 зурагтай картад ЦЭГИЙН тоо = ЗУРГИЙН тоо',
+    multi.filter((c) => c.slides <= 5).every((c) => c.dots === c.slides),
+    multi.filter((c) => c.slides <= 5).map((c) => `${c.slides}/${c.dots}`).join(' · ') || '—');
+  check('③i 🖼 (85) тоолуур эхний зураг дээр «🖼 1/n»',
+    multi.every((c) => /1\s*\//.test((c.counter || '').replace(/[\uFE0E\uFE0F]/g, ''))),
+    multi[0].counter);
+  // ‹ › товчны БОДИТ даралт (headless: JS `.click()`) ⇒ 2 дахь зураг руу
+  const pick = "[...document.querySelectorAll('a[data-listing-card]')].find((c) => c.querySelectorAll('[data-card-slide]').length > 1)";
+  await evalJs(`(() => { ${pick}.querySelector('[data-card-next]').click(); return true; })()`);
+  const moved = await waitFor(
+    `(() => { const c = ${pick}; return !!c && c.querySelector('[data-card-images]').scrollLeft > 10; })()`, 5000);
+  const after = await evalJs(`(() => {
+    const c = ${pick};
+    if (!c) return null;
+    const sc = c.querySelector('[data-card-images]');
+    const counter = c.querySelector('[data-card-counter]');
+    return { scrollLeft: Math.round(sc.scrollLeft), counter: counter ? (counter.innerText || '').trim() : '', path: location.pathname };
+  })()`);
+  check('③j 🖼 (85) › товч дарахад 2 дахь зураг руу ШИЛЖИНЭ', !!moved && !!after && after.scrollLeft > 10,
+    after ? `scrollLeft ${after.scrollLeft}px / slide ${multi[0].slideW}px` : '—');
+  check('③k 🖼 (85) тоолуур «🖼 2/n» болов + ЗАР РУУ ШИЛЖИХГҮЙ (navigation ✗)',
+    !!after && /2\s*\//.test(after.counter.replace(/[\uFE0E\uFE0F]/g, '')) && after.path === '/',
+    after ? `${after.counter} · path ${after.path}` : '—');
 }
 await shot('/tmp/card-grid-home-1280.png');
 /** ❤️ /favorites-ийг ч шалгахын тулд эхний 4 зарын id-г тэмдэглэж авна */

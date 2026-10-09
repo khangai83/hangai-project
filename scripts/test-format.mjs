@@ -28,7 +28,7 @@ assert(!/^import /m.test(stripped), 'бүх import хасагдсан байх �
 const tmp = path.join(here, '..', '.format.test.tmp.mjs');
 fs.writeFileSync(tmp, stripped);
 
-const { formatThousands, digitCount, shortPrice, isNegotiablePrice, priceLabel, shortPriceLabel, hasRealPrice, negotiableNote, NEGOTIABLE_PRICE_LABEL, listingTitle, MAX_LISTING_TITLE_LENGTH, shortListingId, SHORT_LISTING_ID_LENGTH } = await import(`${tmp}?t=${Date.now()}`);
+const { formatThousands, digitCount, shortPrice, isNegotiablePrice, priceLabel, shortPriceLabel, hasRealPrice, negotiableNote, NEGOTIABLE_PRICE_LABEL, listingTitle, carTitle, MAX_LISTING_TITLE_LENGTH, shortListingId, SHORT_LISTING_ID_LENGTH } = await import(`${tmp}?t=${Date.now()}`);
 fs.unlinkSync(tmp);
 
 let passed = 0;
@@ -307,6 +307,54 @@ t('🔖 shortListingId: бүтэн uuid ХЭВЭЭР (зөвхөн харагд�
   assert.equal(full.length, 36);
   assert.notEqual(shortListingId(full), full);
   assert.ok(full.startsWith(shortListingId(full).toLowerCase())); // админ хайлт нийцтэй ✓
+});
+
+// ============================================================
+// 🚗 АВТОМАШИНЫ АВТО-ГАРЧИГ (2026-10-09 (85)) — картын НӨӨЦ гарчиг
+// ============================================================
+// ⚠️ Хэрэглэгчийн хүсэлт: «Автомашины картыг … мэдээлэлтэй болго» +
+//    **жишиг сайт**-ын машин карт: гарчиг нь «Toyota Vellfire, 2017/2026» ✓
+// ⚠️ `ListingCard` нь `listingTitle(listing) || carTitle(listing.attrs)` —
+//    зар оруулагчийн бичсэн гарчиг БАЙВАЛ түрүүлнэ (энд ЗӨВХӨН нөөц зам ✓)
+t('🚗 carTitle: «брэнд + загвар, үйлдвэрлэсэн/орж ирсэн он»', () => {
+  assert.equal(
+    carTitle({ brand: 'Toyota', model: 'Vellfire', year: '2017', importYear: '2026' }),
+    'Toyota Vellfire, 2017/2026'
+  );
+  assert.equal(
+    carTitle({ brand: 'Toyota', model: 'Aqua', year: '2013', importYear: '2020' }),
+    'Toyota Aqua, 2013/2020'
+  );
+});
+
+t('🚗 carTitle: он нэг нь л байвал/огт байхгүй бол ДАВХАРЛАХГҮЙ', () => {
+  assert.equal(carTitle({ brand: 'Toyota', model: 'Prius', year: '2011' }), 'Toyota Prius, 2011');
+  assert.equal(carTitle({ brand: 'Toyota', model: 'Prius', importYear: '2018' }), 'Toyota Prius, 2018');
+  assert.equal(carTitle({ brand: 'Toyota', model: 'Prius' }), 'Toyota Prius');
+  // ⚠️ Хоёр он ИЖИЛ бол «2018/2018» гэж ГАРАХГҮЙ ✓
+  assert.equal(
+    carTitle({ brand: 'Toyota', model: 'Prius', year: '2018', importYear: '2018' }),
+    'Toyota Prius, 2018'
+  );
+});
+
+t("🚗 carTitle: брэнд ч, загвар ч хоосон → '' (карт дээр мөр ГАРАХГҮЙ)", () => {
+  assert.equal(carTitle(null), '');
+  assert.equal(carTitle(undefined), '');
+  assert.equal(carTitle({}), '');
+  assert.equal(carTitle({ year: '2017', importYear: '2026' }), ''); // он дангаараа гарчиг БОЛОХГҮЙ
+  assert.equal(carTitle('Toyota'), ''); // текст → крашгүй
+  assert.equal(carTitle(['Toyota']), ''); // массив → крашгүй
+  assert.equal(carTitle({ brand: '   ' }), ''); // зөвхөн зай → хоосон ✓
+  // ⚠️ НЭГ нь байвал гарчиг бүтнэ (брэнд эсвэл загвар дангаараа ч ✓)
+  assert.equal(carTitle({ model: 'Vellfire', year: '2017' }), 'Vellfire, 2017');
+  assert.equal(carTitle({ brand: 'Toyota' }), 'Toyota');
+});
+
+t('🚗 carTitle: олон зай НЭГ зай болов + тоон он ч ажиллана', () => {
+  assert.equal(carTitle({ brand: 'Toyota  ', model: ' Vellfire ', year: '2017' }), 'Toyota Vellfire, 2017');
+  assert.equal(carTitle({ brand: 'Toyota', model: 'Vellfire', year: 2017, importYear: 2026 }),
+    'Toyota Vellfire, 2017/2026');
 });
 
 console.log(`\n✅ БҮГД ТЭНЦСЭН — ${passed} тест\n`);

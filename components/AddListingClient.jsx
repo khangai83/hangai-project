@@ -3947,7 +3947,11 @@ export default function AddListingClient() {
                     рендэрлэхгүй ✓)
                     ⚠️ «Үгүй» (хэрэглэгчийн сонголт): зар дээр нэр ба профайл зураг
                        ОГТ гарахгүй — «Холбоо барих хүн» болж, ЗӨВХӨН утас/мессеж
-                       хэвээр (`ListingDetailClient` · `ListingCard` → `show_name`)
+                       хэвээр (`ListingDetailClient` → `show_name`)
+                    ⚠️ 🆕 2026-10-09 (85): `ListingCard` дээр 👤 band (Avatar +
+                       нэр) БҮХЭЛДЭЭ ХАСАГДСАН (хэрэглэгчийн хүсэлт: «зар
+                       оруулагчийн Profile зураг нэрийг ч хасна уу») ⇒ карт дээр
+                       `show_name` нь ЗӨВХӨН үнийн хажуугийн ✅ тэмдгийг удирдана ✓
                     ⚠️ DB: 🆕 `listings.show_name` (`0042_listing_show_name.sql`) —
                        анхдагч `true` (хуучин зарууд ХЭВЭЭР харагдана ✓)
                     ⚠️ Утга нь ЗААВАЛ `boolean` (`form.showName`) — сонголтын

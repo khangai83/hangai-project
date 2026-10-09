@@ -14,11 +14,15 @@
 //    ③ 🔁 ХАДГАЛАЛТ (`lib/queries.js` → `listingPayloadToRow`) —
 //       `show_name: payload.showName !== false` (⚠️ `Boolean(...)` БИШ:
 //       утга ИЛГЭЭГДЭЭГҮЙ (`undefined`) бол АНХДАГЧ «харагдана» ✓)
-//    ④ 👁 ХАРАГДАЦ (`ListingDetailClient` · `ListingCard`) —
-//       `show_name !== false` үед нэр (`contact_name → display_name →
-//       «Холбоо барих хүн»`) ба профайл зураг ГАРНА; `false` үед нэр
-//       «Холбоо барих хүн» болж, профайл зураг ГАРАХГҮЙ ✓
+//    ④ 👁 ХАРАГДАЦ — `ListingDetailClient`: `show_name !== false` үед нэр
+//       (`contact_name → display_name → «Холбоо барих хүн»`) ба профайл зураг
+//       ГАРНА; `false` үед нэр «Холбоо барих хүн» болж, профайл зураг
+//       ГАРАХГҮЙ ✓
 //       ⚠️ Утас / ✉️ Мессеж ХӨНДӨӨГДӨХГҮЙ (холбоо барих боломж ХЭВЭЭР ✓)
+//       🆕 2026-10-09 (85): `ListingCard` дээр 👤 band (Avatar + нэр)
+//       БҮХЭЛДЭЭ ХАСАГДАВ (хэрэглэгч: «зар оруулагчийн Profile зураг нэрийг
+//       ч хасна уу» ⇒ жишиг сайтын карт) — `show_name` нь карт дээр ЗӨВХӨН
+//       ҮНИЙ хажуугийн ✅ тэмдгийг удирдана ✓ (⑩ тест)
 //
 // ХАМРАХ ХҮРЭЭ (DB/React/CDP ХОЛБОГДОХГҮЙ — зөвхөн Node):
 //   `supabase/migrations/0042_listing_show_name.sql` · `lib/queries.js`
@@ -138,16 +142,16 @@ t('⑨ `ListingDetailClient`: `show_name !== false` үед л нэр/профа�
   assert.ok(/MessageButton/.test(DET_CODE), '`MessageButton` алга ✗');
 });
 
-t('⑩ `ListingCard`: `show_name === false` үед нийтлэгчийн band ГАРАХГҮЙ', () => {
+t('⑩ `ListingCard`: (85) band ХАСАГДСАН — `show_name` нь зөвхөн ✅-г удирдана', () => {
+  // 🆕 2026-10-09 (85): хэрэглэгчийн хүсэлт «зар оруулагчийн Profile зураг
+  //    нэрийг ч хасна уу» ⇒ карт дээр нэр/профайл зураг ОГТ ГАРАХГҮЙ
+  //    (жишиг сайтын машин/байрны карт) — `show_name` нь ✅-г л удирдана ✓
   assert.match(CARD_CODE, /const authorVisible = listing\.show_name !== false/, '`authorVisible` алга ✗');
-  assert.match(CARD_CODE, /const authorName = authorVisible \? \(author\?\.displayName \|\| ''\) : ''/,
-    '`authorName` нь `authorVisible`-оос хамаарахгүй ✗');
-  assert.match(CARD_CODE, /const authorAvatar = authorVisible \? \(author\?\.avatarUrl \|\| null\) : null/,
-    '`authorAvatar` нь `authorVisible`-оос хамаарахгүй байна ✗');
-  // ⚠️ Band нь НЭРЭЭРЭЭ хаалттай (зураг байхгүй ч нэр гарвал band гарна ✓)
-  assert.match(CARD_CODE, /\{authorName && \(/, 'band нь `authorName`-ээр хаалттай БИШ ✗');
-  assert.match(CARD_CODE, /<Avatar src=\{authorAvatar\} name=\{authorName\} size=\{28\}/,
-    'band-ий Avatar нь `authorAvatar`/`authorName` БИШ ✗');
+  assert.match(CARD_CODE, /\{authorVisible && <VerifiedBadge size=\{15\}/,
+    '✅ нь `authorVisible`-ээр хаалттай БИШ ✗ (нэр нуух тохиргоо ✅-д нөлөөлөхгүй)');
+  assert.ok(!/authorName|authorAvatar/.test(CARD_CODE), 'band (нэр/профайл зураг) буцаж орсон ✗');
+  assert.ok(!/from '\.\/Avatar'/.test(CARD_CODE), '`Avatar` импорт буцаж орсон ✗');
+  // ⚠️ Дэлгэрэнгүй хуудас ХӨНДӨӨГДӨӨГҮЙ — ⑨ тест `ListingDetailClient`-ийг шалгана ✓
 });
 
 // ---------- ⑤ 🔒 ХӨНДӨӨГДӨӨГҮЙ ЗҮЙЛС ----------

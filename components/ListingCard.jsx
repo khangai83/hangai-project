@@ -1,10 +1,16 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { shortPriceLabel, hasRealPrice, getPropertyIcon, firstImage, getFloorLabel, timeAgo, formatAddress, listingTitle } from '../lib/format';
+import { shortPriceLabel, hasRealPrice, getPropertyIcon, firstImage, carTitle, timeAgo, formatAddress, listingTitle } from '../lib/format';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
-import Avatar from './Avatar';
 import VerifiedBadge from './VerifiedBadge';
+
+/**
+ * 🖼 КАРТ ДЭЭРХ ЦЭГИЙН ДЭЭД ХЯЗГААР (🆕 (85)) — 5-аас олон зурагтай үед цэгүүд
+ *    нь хэт жижиг болж/нэгдэж харагдана ⇒ зөвхөн тоолуур (`🖼 2/16`) үлдэнэ ✓
+ */
+const MAX_CARD_DOTS = 5;
 
 /*
  * ══════════════════════════════════════════════════════════════════════
@@ -17,17 +23,35 @@ import VerifiedBadge from './VerifiedBadge';
  *    мэдээлэл ⇒ жагсаалт нь БАГАНАТ GRID болно (карт бүр ~290px өргөн) ✓
  *
  * 🎨 ЛАВЛАХ ЗАГВАР (жишиг сайт):
- *   ┌──────────────────────────┐
- *   │  🖼 ЗУРАГ — БҮТЭН өргөн  │  ← `aspect-[4/3]`, дээд булан rounded
- *   │  [Зарах]          🖼 1/16│
- *   │  🎥                      │
- *   ├──────────────────────────┤
- *   │  [Avatar] Нийтлэгч ✅    │  ← нимгэн band (1 мөр)
- *   │  340 сая ₮          ❤️ 5 │  ← үнэ (том, bold) · зүрхэн БАРУУН
- *   │  Бзд центр аппартмент-д 3 өрөө …   ← 2 мөр гарчиг
- *   │  🛏 3 өрөө · 📐 80 м² · 🏢 5/9
- *   │  🕒 27 минутын өмнө | 📍 Баянзүрх  👁 12 │
- *   └──────────────────────────┘
+ *   ┌─────────────────────────────────┐
+ *   │  🖼 ЗУРАГ — БҮТЭН өргөн + КАРУСЕЛЬ│ ← 🆕 (85) `aspect-[4/3]`
+ *   │  [Зарах]        ‹       ›        │ ← ‹/› зөвхөн HOVER-т (≥sm)
+ *   │         • • ○ • •                │ ← цэгүүд (2…5 зурагтай үед)
+ *   │  🎥                  🖼 2/16      │ ← АМЬД тоолуур (баруун ДООД)
+ *   ├─────────────────────────────────┤
+ *   │  340 сая ₮ ✅              ❤️ 5  │ ← үнэ (22px, bold) · ✅ бат · ❤️ БАРУУН
+ *   │  Toyota Vellfire, 2017/2026      │ ← 2 мөр гарчиг (🚗 АВТО-гарчиг)
+ *   │  135,500 км · Автомат · 2.5 л    │ ← 📋 мэдээллийн мөр
+ *   │  🕒 27 минутын өмнө | 📍 Баянзүрх │ ← 📅 доод мета мөр + 👁
+ *   └─────────────────────────────────┘
+ *
+ * 🆕 (85) 2026-10-09 — «жишиг сайт шиг» ХОЁР ДАХЬ ЗАСВАР (хэрэглэгчийн хүсэлт:
+ *    «Автомашины картыг … мэдээлэлтэй болго. Мөн дээрх зураг нь жишиг сайт шиг
+ *     солих боломжтой болго. Мөн байрны зарын картыг ч жишиг сайт шиг болго,
+ *     харин мэдээллийн хувьд Өрөөний тоо, угаалгын өрөөний тоо, талбайн хэмжээ,
+ *     давхар гэх мэдээллийг хасна уу. Мөн зар оруулагчийн Profile зураг нэрийг
+ *     ч хасна уу.»):
+ *   ① 🖼 ЗУРГИЙН КАРУСЕЛЬ (ШИНЭ) — карт дээрх зураг ОДОО СОЛИГДОНО:
+ *      📱 хуруугаар гүйлгэх (`overflow-x-auto` + `snap-x snap-mandatory`) ·
+ *      🖥 ≥sm-д зүүн/баруун ‹ › товч (зөвхөн hover/фокус дээр) · ≤5 зурагтай
+ *      үед доод ГОЛД ЦЭГҮҮД · баруун доод буланд АМЬД тоолуур (`🖼 2/6`) ✓
+ *   ② 👤 НИЙТЛЭГЧИЙН BAND (Avatar 28px + нэр) КАРТ ДЭЭР ХАСАГДАВ — жишиг
+ *      сайтын машин/байрны карт дээр нэр/профайл зураг ОГТ БАЙХГҮЙ ⇒ харин
+ *      ✅ `VerifiedBadge` нь ҮНИЙ ЯГ ХАЖУУД үлдэв (`authorVisible`) ✓
+ *   ③ 🚗 МАШИНЫ АВТО-ГАРЧИГ — зар оруулагч гарчиг БИЧЭЭГҮЙ бол `carTitle()`
+ *      нь `attrs`-аас «Toyota Vellfire, 2017/2026» гэж бүтээнэ ✓
+ *   ④ 🏠 БАЙРНЫ МӨР — 🛏 өрөө · 🚿 угаалгын өрөө · 📐 м² · 🏢 давхар ХАСАГДАВ
+ *      (хэрэглэгчийн хүсэлт); 📅 «ашиглалтанд орсон он» ХЭВЭЭР ✓
  *
  * 📐 ХЭМЖЭЭ: картын өргөнийг ЖАГСААЛТЫН GRID тодорхойлно (🆕 (84) `HomeClient` →
  *    нүүр (сайдбаргүй) `lg:grid-cols-3 xl:grid-cols-4` ⇒ 4 карт ≈296px;
@@ -48,33 +72,58 @@ import VerifiedBadge from './VerifiedBadge';
  *      байв; жишиг сайтын хэв: үнэ зүүн · зүрхэн баруун ✓
  *   ⑦ 🆕 Зургийн тоо (`🖼 1/N`) нь БАРУУН ДООД буланд — баруун ДЭЭД булан
  *      нь /favorites-ийн «Хасах» товчинд чөлөөтэй үлдэнэ ✓
- * ⚠️ `author.displayName` хоосон бол нийтлэгчийн band ОГТ ХАРАГДАХГҮЙ
- *    (`0017_profile_identity.sql` → `show_identity = false`) ✓
- * 🆕 2026-10-08 (71): 👤 ЗАР ТУС БҮРИЙН «НЭР ГАРГАХ УУ?» — хэрэглэгч форм дээр
- *    «Үгүй» гэсэн бол (`listings.show_name = false`, `0042_listing_show_name.sql`)
- *    ЭНЭ карт дээр ч нэр/профайл зураг ГАРАХГҮЙ (0017-тай ИЖИЛ үр дүн —
- *    band бүхэлдээ нуугдана ✓). ⚠️ `!== false` дүрэм: `null` (хуучин зар) →
- *    ХАРАГДАНА ✓
+ *      ⚠️ 🆕 (85): тоолуур нь АМЬД (`🖼 2/16`) — гүйлгэх/товч дарахад шинэчлэгдэнэ ✓
+ *      (⏳ (78) дээр «1/N» — зөвхөн ЭХНИЙ зураг байв)
+ *   ⑧ 🖼 ХҮРЭЭ нь `overflow-x-auto` — картын `overflow-hidden`-тай зохицно:
+ *      slide бүр `w-full shrink-0` тул нэг дор ЯГ 1 зураг харагдана ✓
+ *      ⚠️ Scrollbar-ыг НУУНА (`[&::-webkit-scrollbar]:hidden`) — эс бөгөөс
+ *      зургийн өндөр хэдэн px нэмэгдэж 4:3 харьцаа зөрчигдөнө ✗
+ *   ⑨ 🚫 Slide/товч/цэг нь `<Link>`-ийн ДОТОР тул БҮГД `goToImage()`-ээр
+ *      `preventDefault()` + `stopPropagation()` хийнэ (эс бөгөөс товч дарахад
+ *      ЗАР РУУ үсрэнэ ✗) — ❤️ товчны ИЖИЛ дүрэм ✓
+
+ * 🗑 (85): 👤 Band (Avatar + нэр) КАРТ ДЭЭР ХАСАГДАВ ⇒ `0017_profile_identity.sql`
+ *    (`show_identity`) ба 🆕 (71) `0042_listing_show_name.sql` (`show_name`) нь
+ *    карт дээр ЗӨВХӨН ✅ тэмдгийг удирдана. ⚠️ `!== false` дүрэм ХЭВЭЭР: `null`
+ *    (хуучин зар/баганагүй) → ✅ ХАРАГДАНА ✓
+ *    ⚠️ `author` проп ХӨНДӨӨГДӨӨГҮЙ (HomeClient · SimilarListings дамжуулсаар) —
+ *    band-ыг буцаах бол зөвхөн доорх блокыг сэргээнэ (revert хялбар ✓)
  * 🗑 2026-10-06: 📝 ТАЙЛБАР (`listing.description`) карт дээр ХАСАГДАВ —
  *    хэрэглэгчийн хүсэлт («Нүүр хуудас дээрх зарын карт дээрээс Тайлбарыг
  *    байхгүй болго»). ⚠️ Дэлгэрэнгүй хуудас (`ListingDetailClient`) ХӨНДӨӨГДӨӨГҮЙ.
  * 🔍 ХАЙХ ҮГ: ListingCard, aspect-[4/3], data-listing-card, line-clamp-2,
+ *    data-card-images, data-card-slide, data-card-prev, data-card-next,
+ *    data-card-counter, data-card-dots, data-fav-toggle, activeIdx, goToImage,
+ *    MAX_CARD_DOTS, carTitle, snap-x snap-mandatory
  *    grid-cols-1 sm:grid-cols-2 (жагсаалтын grid нь ХУУДАС бүр дээр)
  */
 export default function ListingCard({ listing, author, attrsLine }) {
   const img = firstImage(listing);
   /**
-   * 👤 НИЙТЛЭГЧИЙН НЭР/ЗУРАГ (картын дээд band) — 🆕 2026-10-08 (71):
-   *    «Профайл нэрээ зар дээр гаргах уу? → Үгүй» (`show_name === false`) үед
-   *    нэр нь ХООСОН болно ⇒ band бүхэлдээ ГАРАХГҮЙ ✓
+   * ✅ БАТАЛГААЖСАН тэмдэг — 🆕 2026-10-08 (71): «Профайл нэрээ зар дээр гаргах
+   *    уу? → Үгүй» (`show_name === false`) үед ✅ ГАРАХГҮЙ ✓
+   *    ⚠️ 2026-10-09 (85): ⏳ band (Avatar 28px + нэр) нь картаас ХАСАГДАВ —
+   *       тиймээс ✅ нь ҮНИЙ ЯГ ХАЖУУД л харагдана (жишиг сайтын машин карт дээр
+   *       «68 сая ₮ ✓» гэж яг ийм байрлалтай ✓)
    *    ⚠️ `!== false` (БИШ `=== true`): багана байхгүй/`null` үед ХАРАГДАНА —
    *       хуучин заруудын хэв ХӨНДӨӨГДӨХГҮЙ ✓
+   *    ⚠️ `author` проп ХЭВЭЭР (HomeClient · SimilarListings дамжуулсаар) — band-ыг
+   *       буцаахад дахин уншина; одоо карт дээр РЕНДЭРЛЭГДЭХГҮЙ ✓
    */
   const authorVisible = listing.show_name !== false;
-  const authorName = authorVisible ? (author?.displayName || '') : '';
-  const authorAvatar = authorVisible ? (author?.avatarUrl || null) : null;
   const images = Array.isArray(listing.images) ? listing.images : [];
   const imageCount = images.length;
+  // 🖼 КАРУСЕЛЬ (🆕 (85)) — `activeIdx` нь ХАРАГДАЖ буй зургийн дугаар: тоолуур
+  //    ба цэгүүд түүнээс уншина; `scrollerRef` нь `scrollTo()`-г хүлээнэ ✓
+  const scrollerRef = useRef(null);
+  const scrollRafRef = useRef(0);
+  const [activeIdx, setActiveIdx] = useState(0);
+  // ⚠️ `requestAnimationFrame` — `scroll` нь секундэд олон удаа ажилладаг тул
+  //    state-ийг НЭГ фрэймд 1 удаа л шинэчилнэ (мобайлд ч хөнгөн ✓);
+  //    unmount дээр хийгдээгүй фрэймийг цуцална ✓
+  useEffect(() => () => {
+    if (scrollRafRef.current) cancelAnimationFrame(scrollRafRef.current);
+  }, []);
   const favoriteIds = useFavorites();
   const isFav = favoriteIds.includes(listing.id);
   // ❤️ Нийт хэдэн хүн таалагдсан (listings.likes — supabase/migrations/0007)
@@ -85,18 +134,54 @@ export default function ListingCard({ listing, author, attrsLine }) {
   // ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд (хэрэглэгчийн хүсэлт) —
   //    бусад хэсэгт (авто/ажил/компьютер…) энэ badge ХАРАГДАХГҮЙ.
   const isRealEstate = (listing.section || 'real-estate') === 'real-estate';
-  const floorLabel = getFloorLabel(listing.floor, listing.total_floors);
+  // 🚗 Машин уу? — 🆕 (85) АВТО-гарчиг нь зөвхөн `auto` хэсэгт ✓
+  const isAuto = (listing.section || 'real-estate') === 'auto';
   // 🏷️ Зарын гарчиг (0027_listing_title.sql) — хоосон бол мөр ГАРАХГҮЙ
-  const title = listingTitle(listing);
+  //    🆕 (85): 🚗 машин дээр зар оруулагч гарчиг БИЧЭЭГҮЙ бол `attrs`-аас
+  //    «Toyota Vellfire, 2017/2026» гэж бүтээнэ (`carTitle`) — жишиг сайтын хэв;
+  //    ⚠️ бичсэн гарчиг БАЙВАЛ түрүүлнэ (хэрэглэгчийн үгийг дарж бичихгүй ✓)
+  const title = listingTitle(listing) || (isAuto ? carTitle(listing.attrs) : '');
   const address = formatAddress(listing);
   // ⚠️ 2026-10-06: 📝 ТАЙЛБАР карт дээр ХАСАГДАВ (хэрэглэгчийн хүсэлт:
   //    «Нүүр хуудас дээрх зарын карт дээрээс Тайлбарыг байхгүй болго»).
   //    `listing.description`-ыг унших/харуулах код БАЙХГҮЙ; карт нь НЭГ
   //    компонент тул нүүр · Таалагдсан · Нийтлэгч · газрын зураг БҮГДЭД хасагдана ✓.
   //    ⚠️ Дэлгэрэнгүй хуудсанд (`ListingDetailClient`) Тайлбар ХЭВЭЭР ✓.
-  // 🛏 Байрны мэдээлэл — 0 байж болох тул `> 0` шалгалттай; `floorLabel` '' байж болно
-  const hasPropertyLine =
-    listing.rooms > 0 || listing.bathrooms > 0 || listing.area > 0 || floorLabel || listing.build_year > 0;
+  // 🏠 Байрны мөр — 🆕 (85): 🛏 өрөө · 🚿 угаалгын өрөө · 📐 м² · 🏢 давхар
+  //    ХАСАГДАВ (хэрэглэгчийн хүсэлт) ⇒ үлдсэн нь 📅 ашиглалтанд орсон он ✓
+  const buildYear = Number(listing.build_year) > 0 ? Number(listing.build_year) : 0;
+
+  /**
+   * 🖼 КАРУСЕЛЬ — ‹ › товч, цэг, 📱 хурууны гүйлгээ БҮГД НЭГ МЕХАНИЗМТАЙ:
+   *    зөвхөн `scroller.scrollTo()`-г хөдөлгөнө (React state нь ХАРАГДАЦ) ✓
+   * ⚠️ `scrollLeft / clientWidth` — slide бүр `w-full` тул бүхэл тоо гарна;
+   *    `Math.round` нь хагас зайд зогссон үеийн хэлбэлзлийг дарна ✓
+   */
+  const handleScroll = () => {
+    if (scrollRafRef.current) return;
+    scrollRafRef.current = requestAnimationFrame(() => {
+      scrollRafRef.current = 0;
+      const el = scrollerRef.current;
+      if (!el || !el.clientWidth) return;
+      const next = Math.max(0, Math.min(imageCount - 1, Math.round(el.scrollLeft / el.clientWidth)));
+      setActiveIdx((prev) => (prev === next ? prev : next));
+    });
+  };
+
+  /**
+   * Товч/цэг дээр дарвал → тухайн зураг руу гүйлгэнэ (эсрэг зүгт тойрно ✓)
+   * ⚠️ Карт бүхэлдээ `<Link>` тул `preventDefault` + `stopPropagation` ЗААВАЛ —
+   *    эс бөгөөс товч дарахад ЗАР РУУ шилжинэ ✗ (❤️ товчны ИЖИЛ хамгаалалт ✓)
+   */
+  const goToImage = (e, i) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const el = scrollerRef.current;
+    if (!el || !el.clientWidth || imageCount < 2) return;
+    const next = ((i % imageCount) + imageCount) % imageCount;
+    el.scrollTo({ left: next * el.clientWidth, behavior: 'smooth' });
+    setActiveIdx(next);
+  };
 
   return (
     <Link
@@ -108,15 +193,83 @@ export default function ListingCard({ listing, author, attrsLine }) {
       className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover"
     >
       {/* ══════ 🖼 ЗУРАГ (дээд) — БҮТЭН өргөн, `aspect-[4/3]` ══════ */}
+      {/* ══════ 🖼 ЗУРАГ (дээд) — БҮТЭН өргөн, `aspect-[4/3]` + КАРУСЕЛЬ (85) ══════ */}
       <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-gray-100">
         {img ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={img}
-            alt={listing.property_type}
-            loading="lazy"
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-          />
+          <>
+            {/* 🖼 КАРУСЕЛЬ — slide бүр картын БҮТЭН өргөн (`w-full shrink-0`) тул
+                нэг дор ЯГ 1 зураг харагдана; 📱 хуруугаар гүйлгэхэд `snap-center`
+                голлуулж, `scroll` дээр `activeIdx` шинэчлэгдэнэ ✓
+                ⚠️ Scrollbar-ыг НУУНА (`[&::-webkit-scrollbar]:hidden`) — эс бөгөөс
+                   зургийн өндөр хэдэн px нэмэгдэж 4:3 харьцаа зөрчигдөнө ✗
+                ⚠️ `overscroll-x-contain` — мобайлд swipe нь хуудасны «буцах»
+                   дохио (back gesture) болохоос сэргийлнэ ✓
+                ⚠️ 🗑 `group-hover:scale-105` (зургийн зум) ХАСАГДАВ — жишиг сайтын
+                   карт дээр зураг ЗУМДАГГҮЙ (карусельд хэт «үсэргэлттэй» ✗) */}
+            <div
+              ref={scrollerRef}
+              data-card-images
+              onScroll={handleScroll}
+              className="flex h-full w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {images.map((src, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={i}
+                  src={src}
+                  alt={`${listing.property_type || 'Зар'} — ${i + 1}`}
+                  loading="lazy"
+                  draggable={false}
+                  data-card-slide={i}
+                  className="h-full w-full shrink-0 snap-center object-cover"
+                />
+              ))}
+            </div>
+
+            {imageCount > 1 && (
+              <>
+                {/* ‹ › — ЗӨВХӨН 🖥 (≥sm) ба ЗӨВХӨН hover/фокус дээр (жишиг сайтын
+                    хэв); 📱 дээр хурууны гүйлгээ хангалттай ⇒ товч ХЭРЭГГҮЙ ✓ */}
+                <button
+                  type="button"
+                  data-card-prev
+                  aria-label="Өмнөх зураг"
+                  onClick={(e) => goToImage(e, activeIdx - 1)}
+                  className="absolute left-2 top-1/2 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 pb-0.5 text-lg font-bold leading-none text-gray-700 shadow-card transition hover:bg-white sm:flex sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  data-card-next
+                  aria-label="Дараагийн зураг"
+                  onClick={(e) => goToImage(e, activeIdx + 1)}
+                  className="absolute right-2 top-1/2 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 pb-0.5 text-lg font-bold leading-none text-gray-700 shadow-card transition hover:bg-white sm:flex sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100"
+                >
+                  ›
+                </button>
+
+                {/* • ЦЭГҮҮД — доод ГОЛД (жишиг сайтын хэв); ⚠️ зөвхөн 2…5 зурагтай
+                    үед (`MAX_CARD_DOTS`) — 6+ бол «🖼 2/16» тоолуур л утгатай ✓ */}
+                {imageCount <= MAX_CARD_DOTS && (
+                  <div data-card-dots className="absolute inset-x-0 bottom-2 flex justify-center gap-1.5">
+                    {images.map((_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        aria-label={`${i + 1}-р зураг`}
+                        aria-current={i === activeIdx ? 'true' : undefined}
+                        onClick={(e) => goToImage(e, i)}
+                        className={`h-1.5 w-1.5 rounded-full bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.2)] transition ${
+                          i === activeIdx ? 'opacity-100' : 'opacity-60 hover:opacity-90'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </>
         ) : (
           <div className="flex h-full w-full items-center justify-center text-5xl">
             {getPropertyIcon(listing.property_type, listing.section)}
@@ -130,16 +283,19 @@ export default function ListingCard({ listing, author, attrsLine }) {
           </span>
         )}
 
-        {/* 🖼 ЗУРГИЙН ТОО — «🖼 1/16» (баруун ДООД булан)
+        {/* 🖼 ЗУРГИЙН ТООЛУУР — «🖼 2/16» (баруун ДООД булан) — 🆕 (85): АМЬД
+            (гүйлгэх эсвэл ‹ › товч дарахад `activeIdx`-ээр шинэчлэгдэнэ ✓)
             ⚠️ Баруун ДЭЭД булан нь /favorites-ийн «Хасах» товчинд чөлөөтэй
                (товч нь картын ГАДНА overlay) — тиймээс тоо нь доод буланд ✓
-            ⚠️ Зөвхөн 2+ зурагтай үед (1 зурагт «1/1» утгагүй) */}
+            ⚠️ Зөвхөн 2+ зурагтай үед (1 зурагт «1/1» утгагүй)
+            ⚠️ `data-card-counter` — CDP-ийн тогтвортой дэгээ (`bottom-2 right-2`) ✓ */}
         {imageCount > 1 && (
           <span
-            title={`Нийт ${imageCount} зураг`}
+            data-card-counter
+            title={`Нийт ${imageCount} зураг — ${activeIdx + 1}-д харагдаж байна`}
             className="absolute bottom-2 right-2 flex h-6 items-center gap-1 rounded-full bg-black/60 px-2 text-[11px] font-semibold tabular-nums text-white backdrop-blur-sm"
           >
-            🖼 1/{imageCount}
+            🖼 {activeIdx + 1}/{imageCount}
           </span>
         )}
 
@@ -158,18 +314,13 @@ export default function ListingCard({ listing, author, attrsLine }) {
 
       {/* ══════ 📋 МЭДЭЭЛЭЛ (доод) — ЗУРГИЙН ДООР ══════ */}
       <div className="flex flex-1 flex-col p-3.5">
-        {/* 👤 ЗАР НИЙТЛЭГЧ — мэдээллийн хэсгийн дээд band (жишиг сайтын хэв)
-            ⚠️ `show_identity = false` (0017) бол `displayName` ХООСОН буцах тул
-               энэ band ОГТ ХАРАГДАХГҮЙ ✓ */}
-        {authorName && (
-          <div className="mb-2 flex items-center gap-2 border-b border-gray-100 pb-2">
-            <Avatar src={authorAvatar} name={authorName} size={28} />
-            <span className="truncate text-[13.5px] font-semibold text-gray-800" title={authorName}>
-              {authorName}
-            </span>
-            <VerifiedBadge size={13} className="text-primary" />
-          </div>
-        )}
+        {/* 🗑 👤 НИЙТЛЭГЧИЙН BAND (Avatar 28px + нэр + ✅) ХАСАГДАВ — 2026-10-09 (85)
+            (хэрэглэгч: «зар оруулагчийн Profile зураг нэрийг ч хасна уу») ⇒
+            ✅ `VerifiedBadge` нь доорх ҮНИЙ МӨРӨНД шилжив — жишиг сайтын машин
+            карт дээр «68 сая ₮ ✓» гэж яг ийм байрлалтай ✓
+            ⚠️ `listing.show_name` (0042) ба `0017` нь карт дээр ЗӨВХӨН ✅ тэмдгийг
+               удирдана; `author` проп нь хуудсууд дээр ХЭВЭЭР дамжигдана
+               (band-ыг буцаах бол зөвхөн энэ блокыг сэргээнэ ✓) */}
 
         {/* 💰 ҮНЭ + ❤️ — НЭГ МӨРӨНД (жишиг сайтын хэв: үнэ зүүн · зүрхэн баруун)
             ⚠️ «Үнэ тохирно» карт дээр ГАРАХГҮЙ (`hasRealPrice` — 2026-10-02-ын
@@ -185,11 +336,17 @@ export default function ListingCard({ listing, author, attrsLine }) {
               {shortPriceLabel(listing)}
             </div>
           )}
+          {/* ✅ БАТАЛГААЖСАН — үнийн ЯГ ХАЖУУД (🆕 (85), жишиг сайтын хэв)
+              ⚠️ `show_name === false` (зар оруулагч нэрээ нуусан) бол ГАРАХГҮЙ ✓
+              ⚠️ `mt-1` — 22px үнэтэй нүдэн дээр голлуулна; `ml-auto` нь ЗӨВХӨН
+                 ❤️ товчид (товчийг баруун захад тогтооно) ✓ */}
+          {authorVisible && <VerifiedBadge size={15} className="mt-1 text-primary" />}
           {/* ❤️/🤍 — МИНИЙ favourite toggle БА нийт тоо (`listings.likes`)
               🆕 2026-10-09: үнийн мөрөнд шилжив (жишиг сайтын хэв)
               ⚠️ `ml-auto` — үнэ БАЙХГҮЙ зар дээр ч баруун захад тогтоно ✓ */}
           <button
             type="button"
+            data-fav-toggle
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -212,18 +369,20 @@ export default function ListingCard({ listing, author, attrsLine }) {
           </div>
         )}
 
-        {/* 📋 ДЭЛГЭРЭНГҮЙ МӨР
-            ① үл хөдлөх → 🛏 өрөө · 🚿 угаалгын өрөө · 📐 м² · 🏢 давхар · 📅 он
-            ② бусад хэсэг → `attrsLine` (HomeClient нь `formatAttrsLine`-ээр бэлдэнэ)
-            ⚠️ Хоёулаа хоосон бол мөр ОГТ ГАРАХГҮЙ (`false`/`''`) ✓ */}
+        {/* 📋 МЭДЭЭЛЛИЙН МӨР
+            ① 🏠 үл хөдлөх → ЗӨВХӨН 📅 «ашиглалтанд орсон он» (🆕 (85): 🛏 өрөө ·
+               🚿 угаалгын өрөө · 📐 м² · 🏢 давхар ХАСАГДАВ — хэрэглэгчийн хүсэлт:
+               «мэдээллийн хувьд, Өрөөний тоо, угаалгын өрөөний тоо, талбайн
+               хэмжээ, давхар гэх мэдээллийг хасна уу»)
+            ② бусад хэсэг → `attrsLine` (HomeClient нь `formatAttrsLine`-ээр бэлдэнэ;
+               🚗 машин: гүйлт · хурдны хайрцаг · хөдөлгүүр · түлш ✓)
+            ⚠️ Хоёулаа хоосон бол мөр ОГТ ГАРАХГҮЙ (`false`/`0`/`''`) ✓
+            ⚠️ 🗑 `getFloorLabel` импорт + `floorLabel` ХАСАГДАВ (карт дээр
+               хэрэггүй болов; Дэлгэрэнгүй хуудсанд ХЭВЭЭР ✓) */}
         {isRealEstate
-          ? hasPropertyLine && (
+          ? buildYear > 0 && (
               <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-gray-600">
-                {listing.rooms > 0 && <span>🛏 {listing.rooms} өрөө</span>}
-                {listing.bathrooms > 0 && <span>🚿 {listing.bathrooms} угаалгын өрөө</span>}
-                {listing.area > 0 && <span>📐 {listing.area} м²</span>}
-                {floorLabel && <span>🏢 {floorLabel}</span>}
-                {listing.build_year > 0 && <span>📅 {listing.build_year}</span>}
+                <span title="Ашиглалтанд орсон он">📅 {buildYear} он</span>
               </div>
             )
           : attrsLine && (
