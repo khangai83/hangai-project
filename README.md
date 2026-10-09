@@ -6172,6 +6172,14 @@ npm run cdp:range        # 🐍 БОДИТ Chrome (:9222) дээр тооны х
 npm run cdp:chips        # 🐍 БОДИТ Chrome (:9222) дээр 💼 АЖЛЫН ЗАРЫН ФОРМ (🆕 (51) 4 `<select>`/📱 2 баганат жагсаалт) + САЙДБАРЫН 3 ЧИП БЛОК + 🆕 (18) ХУРААГДАХ БЛОК (accordion) + 🆕 (16)/(17) ЧИП HOVER — 66 шалгалт ✓
                          #   (форм дээр 🕒/📊/🏷️/📈 чип · 💰 `<select>` ХЭВЭЭР · дарах/цуцлах ·
                          #   📱 390px (нэг дэлгэцэд нэг талбар, гүйлт 0) · sidebar ХӨНДӨӨГДӨӨГҮЙ)
+npm run cdp:brand        # 🐍 БОДИТ Chrome (:9222) — лого «ZARBOOK.MN» + 🏠 ТУСДАА home icon + брэнд (ZARLAA→ZARBOOK) — 56 OK / 0 FAIL ✓
+npm run cdp:card-grid    # 🐍 БОДИТ Chrome (:9222) дээр 📇 зарын карт БОСОО (зураг ДЭЭРЭЭ 4:3) + жагсаалтын БАГАНАТ GRID — 21 OK / 0 FAIL ✓
+npm run cdp:similar      # 🐍 БОДИТ Chrome (:9222) дээр 🔎 ТӨСТЭЙ ЗАРУУД — үндсэн grid-ийн ДООР · 6 карт · өөрийгөө хассан — 10 OK / 0 FAIL ✓
+npm run cdp:steps        # 🐍 БОДИТ Chrome (:9222) дээр 🪜 ЗАР НЭМЭХ 3 АЛХАМТ ФОРМ (③ = 📋 Дэлгэрэнгүй ба үнэ, зураг) — 40 OK / 0 FAIL ✓
+npm run cdp:sections     # 🐍 БОДИТ Chrome (:9222) дээр 🏠 ХЭСГИЙН ПАНЕЛИЙН 2 алхамт drill (🖥 1280 + 📱 390) — 28 OK / 0 FAIL ✓
+npm run cdp:saved-searches # 🐍 БОДИТ Chrome (:9222) дээр 🔖 ХАДГАЛСАН ХАЙЛТ (зочин/localStorage → `/favorites` 2 таб) — 15 OK / 0 FAIL ✓
+npm run cdp:seller-avatar  # 🐍 БОДИТ Chrome (:9222) дээр 👤 НИЙТЛЭГЧИЙН ХУУДСАНЫ ПРОФАЙЛ ЗУРАГ (натурал 512px → 64×64) — 20 OK / 0 FAIL ✓
+npm run cdp:seller-stats-link # 🐍 БОДИТ Chrome (:9222) дээр 📋 «N идэвхтэй зар» ЛИНК → `/sellers/<id>` — 29 OK / 0 FAIL ✓
                          #   ⚠️ `cdp:*` нь `npm run build && npm run start` (:3000) ба
                          #   Chrome-ыг `--remote-debugging-port=9222`-оор нээсэн байхыг шаардна
                          #   ⚠️ ХОЁР cdp скриптийг ЗЭРЭГ ажиллуулж БОЛОХГҮЙ (нэг Chrome таб)
