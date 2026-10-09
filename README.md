@@ -1252,6 +1252,25 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   хүснэгт) · `docs/IMPROVEMENTS.md` (энэ мөр)
   🔍 Хайх үг: `max-w-[480px]`, `mx-auto` ХОРИГ, `form.left − slot.left`, `isHeader`,
   `HeaderSearchBar`, `test-search-bar-width`, `zar-70-search-gap`
+- 🛠 **R2 CORS-ЫГ КОДООС УДИРДАНА — `npm run r2:cors` (2026-10-09 (75))** —
+  📱 iPhone-оос зураг оруулах үед «Зургийг R2 руу илгээж чадсангүй …
+  **[Load failed]**» гэж унаж байсныг зассан: `presign` нь **200 · `backend: r2`**
+  (сервер талдаа лог 0 ✓) боловч bucket-ийн `AllowedOrigins` нь **нэр солигдохоос
+  өмнөх, DNS-д ч байхгүй болсон домэйн** + localhost + LAN IP-г л агуулж,
+  **LIVE домэйн · `www` · 📱 mDNS нэр · Vercel preview ОГТ байхгүй** байв ⇒
+  browser-ийн R2 руу чиглэсэн PUT нь preflight-д блоклогдсон ✗
+  🧩 `lib/corsOrigins.mjs` — `RECOMMENDED_CORS_ORIGINS` (нэг эх сурвалж) ·
+  `mergeCorsOrigins()` (нэгтгэл) · `corsOriginsDiff()` (юу нэмэгдэх/**хасагдах**) ·
+  `lanCorsOrigins()` (📱 Mac-ийн LAN IP-г автоматаар — DHCP-ээс IP солигдсон ч ✓)
+  🛠 `scripts/r2-cors.mjs` — CORS-ыг S3 API-аар (`GetBucketCors`/`PutBucketCors`)
+  уншиж/бичнэ: анхдагч нь **DRY-RUN** ✓, `--apply` нь **НЭГТГЭнэ** (юу ч унахгүй ✓),
+  `--replace` үед л хасагдана (⚠️ `PutBucketCors` нь БҮХ дүрмийг дарж бичдэг) ·
+  бичихийн өмнө шалгаж, дараа нь **буцаж уншиж батална** ✓
+  ✅ Бодит bucket дээр **8 origin** бичигдэв (хуучирсныг хасч) → `check:r2` **8/8 ✅** ·
+  бодит e2e (`PUT 200 · ACAO=<origin>` → нийтийн URL `GET 200` → устгав `404`) ✓
+  🧪 `test:storage` **57 → 63/63 ✓** (🆕 6) · `test:brand` 24/24 ✓ · `build` EXIT=0 ✓
+  ⚠️ **DB/SQL/UI/migration ХӨНДӨӨГДӨӨГҮЙ** ✓
+  🔍 Хайх үг: `r2:cors`, `RECOMMENDED_CORS_ORIGINS`, `mergeCorsOrigins`, `lanCorsOrigins`
 - 🧹 **ГАДНЫ ЭХ СУРВАЛЖИЙН НЭР/ДОМЭЙН — 312 УЛ МӨР ЦЭВЭРЛЭВ (2026-10-08 (74))** —
   repo-д тархсан **312** дурдалт (42 файл: код тайлбар · тестийн нэр ба лог ·
   `app/globals.css` · 5 migration-ийн SQL коммент · `README` · `docs`) бүгд
@@ -6113,6 +6132,8 @@ egress ҮНЭГҮЙ** (С3-д нийцтэй) тул хязгаар тасрах
 ```bash
 npm run check:r2                            # env · bucket · домэйн · CORS шалгана
 npm run check:r2 -- --origin https://hangai-project.vercel.app   # CORS-ыг тухайн домэйноор (дутуу бол буулгах JSON хэвлэнэ)
+npm run r2:cors                             # 🔍 CORS-ыг S3 API-аар харах (DRY-RUN — юу ч бичихгүй)
+npm run r2:cors -- --apply                  # ✅ CORS бичих (одоогийнхтой НЭГТГЭнэ · 📱 LAN IP автоматаар)
 npm run storage:migrate                     # 🔍 DRY-RUN (юу ч бичихгүй)
 npm run storage:migrate -- --apply          # ✅ хуучин зургуудыг R2 руу + DB URL солино
 npm run storage:rebase                      # 🔍 нийтийн домэйн сольсон бол DB-ийн URL-ыг шинэчилнэ (DRY-RUN)
@@ -6148,17 +6169,24 @@ npm run report:usage                        # R2 ба Supabase-ийн хэмжэ
 > R2 URL-ыг сольж, Supabase/демо утгыг хөндөхгүй → дахин ажиллуулбал хөндөхгүй
 > → буцаах боломжтой ✓
 
-> ⚠️ CORS-ыг dashboard-аас гадна **S3 API-аар** (`PutBucketCors`) ч бичиж болно —
-> ⚠️ энэ нь дүрмүүдийг БҮХЭЛД НЬ дарж бичнэ; бодит тохиолдол ба жишээ код:
-> [`docs/R2_SETUP.md`](docs/R2_SETUP.md) §4 (төгсгөлийн `/` нь production-ыг
-> хэрхэн эвдсэн тухай).
+> 🛠 CORS-ыг dashboard-аас гадна **`npm run r2:cors`**-оор (S3 API: `Get/PutBucketCors`)
+> удирдана — анхдагч нь **DRY-RUN** (юу ч бичихгүй ✓), `--apply` нь одоогийнхтой
+> **НЭГТГЭнэ** (юу ч унахгүй ✓), `--replace` үед л хасагдана
+> (⚠️ `PutBucketCors` нь БҮХ дүрмийг ДАРЖ БИЧДЭГ); 📱 Mac-ийн **LAN IP-г
+> автоматаар** олж нэмнэ (DHCP-ээс IP солигдсон ч ✓). Бодит тохиолдлууд
+> (төгсгөлийн `/` production-ыг хэрхэн эвдсэн · **2026-10-09: домэйн солигдсоны
+> дараа хуучирсан CORS**): [`docs/R2_SETUP.md`](docs/R2_SETUP.md) §4.
 >
-> 📱 **Одоогийн `AllowedOrigins` (5):** `http://localhost:3000` · **`http://192.168.1.2:3000`**
-> (утаснаас LAN-аар нээх үед) · `https://hangai-project.vercel.app` · `https://zarbook.mn` ·
-> `https://www.zarbook.mn`. Шинэ хаяг (IP солигдсон, preview deploy, шинэ домэйн)
-> нэмэхгүй бол зураг оруулах нь «Зургийг R2 руу илгээж чадсангүй … **[Load failed]**»
-> гэж унана (⚠️ сервер талдаа лог үлдэхгүй, `presign` нь 200 буцаана) — шалгах:
-> `npm run check:r2 -- --origin <тэр хаяг>` → дэлгэрэнгүй: `docs/R2_SETUP.md` §4.
+> 📱 **Одоогийн `AllowedOrigins` (8):** `http://localhost:3000` · `http://127.0.0.1:3000` ·
+> **`http://192.168.1.2:3000`** (утаснаас LAN-аар нээх үед) · **`http://macbook-pro.local:3000`**
+> (📱 mDNS нэр) · `https://hangai-project.vercel.app` ·
+> **`https://hangai-project-*.vercel.app`** (preview) · `https://zarbook.mn` ·
+> `https://www.zarbook.mn`.
+> ⚠️ **2026-10-09-нд зассан:** домэйн солигдсоны дараа жагсаалт хуучирч, LIVE
+> домэйноос **ч**, 📱 LAN-аас **ч** зураг оруулах нь «Зургийг R2 руу илгээж чадсангүй …
+> **[Load failed]**» гэж унаж байв (⚠️ сервер талдаа лог үлдэхгүй, `presign` нь 200
+> буцаана) — одоо `npm run r2:cors -- --apply` бичээд
+> `npm run check:r2 -- --origin <тэр хаяг>` (8/8 ✅) → дэлгэрэнгүй: `docs/R2_SETUP.md` §4.
 
 → Алхам алхмын заавар: **[`docs/R2_SETUP.md`](docs/R2_SETUP.md)**
 
@@ -6344,6 +6372,7 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 
 | `scripts/cdp-wheel.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:wheel` (**51/51 шалгалт**): 📱 390px — 🆕 2026-10-05 (53): 📅 он · 🏢 нийт давхар · 🏠 давхар нь ГАРААС БИЧИГДЭНЭ (`input[type=number]` + `data-mobile-input`) бөгөөд түүний дор «🎡 Гүйлгээд сонгох» холбоос (2 БАГАНАТ ЖАГСААЛТ **0**, доод «Алгасах/Үргэлжлүүлэх» товч ✓) · дугуй нээгдэж 151 мөр («—»+1…150) · төвд «—» · мөр дээр дарах → гар бичилтийн оролтод «9» · `data-empty="false"` · `scrollTop=240` → «6» АВТОМАТААР бичигдэв · хэт гүйлгэхэд «150» · `Escape`/ард тал/«Болсон» 3 зам хаана · ОН-ыг гараас «2005» болгож засав · он 48 мөр («—»+2026…1980, буурах) · 🖥 1440px — дугуйн товч 0, гар бичилт xарагдаж утга ХЭВЭЭР · JS алдаа 0 (⚠️ сервер :3000 + Chrome :9222 нэвтэрсэн профайл шаардна; байхгүй бол SKIP → exit 0 ✓) |
 | `scripts/check-r2.mjs` | ☁️ **R2 тохиргооны шалгалт** — `npm run check:r2`: env (5) · `HeadBucket` · объектын тоо/хэмжээ (bucket тус бүрээр) · нийтийн домэйн (404 = зөв; 403 = bucket public БИШ) · **CORS preflight** (`PUT` зөвшөөрөгдсөн эсэх — эс бөгөөс browser-ээс upload хийгдэхгүй ✗; 🆕 **ДОМЭЙН ТУС БҮРЭЭР** — `npm run check:r2 -- --origin https://hangai-project.vercel.app` эсвэл `R2_CORS_ORIGIN=a,b` — дутуу домэйны хувьд Cloudflare-д **буулгах JSON-ыг шууд хэвлэнэ** ✓) · r2.dev-ийг production-д сануулна (⚠️ туршилтын хязгаартай) |
+| `scripts/r2-cors.mjs` | 🆕 🛠 **R2 CORS-ыг кодоос удирдана** — `npm run r2:cors` (2026-10-09 (75): «домэйн солигдсоны дараа хуучирсан CORS → 📱 iPhone-аас зураг оруулахгүй **[Load failed]**» гэсний дараа). S3 API-аар (`GetBucketCors`/`PutBucketCors`) уншиж/бичнэ — анхдагч нь **DRY-RUN** (юу ч бичихгүй ✓), `--apply` нь одоогийнхтой **НЭГТГЭнэ** (юу ч унахгүй ✓), `--replace` үед л хасагдана (⚠️ `PutBucketCors` нь БҮХ дүрмийг дарж бичдэг ✗) · 📱 `lanCorsOrigins()` нь Mac-ийн **ГАДААД IPv4-уудыг** олж `http://<ip>:3000` болгож нэмнэ (DHCP-ээс IP солигдсон ч ✓) · `--origin <url>`-аар гараар нэмнэ · бичихийн өмнө `lib/corsOrigins.mjs → corsOriginProblem()`-оор Cloudflare-ийн зөвшөөрөгдөх хэлбэрийг шалгаж, дараа нь **буцаж уншиж батална** ✓ (эх сурвалж: `lib/corsOrigins.mjs`, тест: `npm run test:storage`) |
 | `scripts/rebase-storage-urls.mjs` | 🔁 **R2 нийтийн домэйн rebase** — `npm run storage:rebase`: `R2_PUBLIC_BASE`-ыг сольсны дараа DB-д бичигдсэн хуучин домэйны URL-уудыг шинэ рүү шилжүүлнэ (`--apply` бичих үед л бичнэ; `--from`/`--to`). ⚠️ R2/Supabase дээрх **файл, түлхүүр хөндөхгүй** (буцаах боломжтой ✓), Supabase-ийн хуучин URL ба демо/youtube утгыг ХӨНДӨХГҮЙ (hybrid ✓), дахин ажиллуулбал idempotent ✓ — `listings.images[]` + `profiles.avatar_url`-ыг `range()`-ээр хуудаслан уншина |
 | `scripts/migrate-storage-to-r2.mjs` | ☁️ **Supabase Storage → R2 шилжилт** — `npm run storage:migrate`: анхдагч нь **DRY-RUN** (`--apply` бичих үед л бичнэ), объектуудыг ЯГ ИЖИЛ түлхүүрээр хуулж, `listings.images[]` ба `profiles.avatar_url`-ыг шинэ домэйн рүү сольж, дараа нь хуучин объектыг устгана (`--keep-old` байвал үлдээнэ; `--force`/`--limit N`/`--bucket avatars`). ⚠️ PostgREST-ийн 1000 мөрийн хязгаарыг `range()`-ээр хуудаслана |
 | `scripts/normalize-condition.mjs` | 🩹 **DRY RUN** (`npm run normalize:condition`) — хуучин `attrs.condition` утгуудыг «Хуучин» болгож нэгтгэнэ; `-- --apply` бичих үед **227/227** (390 = 163 «Шинэ» + 227 «Хуучин») ✓ |

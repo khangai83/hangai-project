@@ -249,31 +249,53 @@ R2_CORS_ORIGIN=https://a.mn,https://b.mn npm run check:r2     # ⚠️ `*` ба�
 > болохгүй** — localhost-ийн порт бүрийг ТУС ТУСД нь жагсаана.
 > ⚠️ Дүрэм **хар** байсан ч тархахад 30 секунд хүртэл хугацаа орж болно.
 
-### 🛠 Dashboard-гүйгээр: CORS-ыг S3 API-аар бичих (2026-10-02-нд БАТАЛСАН ✓)
+### 🛠 Dashboard-гүйгээр: `npm run r2:cors` (2026-10-02-нд S3 API-аар БАТАЛСАН ✓)
 
 R2 нь **`PutBucketCors` / `GetBucketCors` / `DeleteBucketCors`-ыг S3 API-аар
-дэмждэг** → `.env.local`-ийн S3 түлхүүрээр CORS-ыг **кодоос** тохируулж болно
+дэмждэг** → `.env.local`-ийн S3 түлхүүрээр CORS-ыг **кодоос** удирдаж болно
 (dashboard шаардлагагүй):
 
+```bash
+npm run r2:cors                            # 🔍 DRY-RUN — юу бичигдэхийг л харуулна
+npm run r2:cors -- --apply                 # ✅ бичнэ (одоогийнхтой НЭГТГЭнэ)
+npm run r2:cors -- --apply --replace       # ⚠️ ЗӨВХӨН санал болгосныг бичнэ (хуучныг ХАСНА)
+npm run r2:cors -- --origin https://x.mn   # нэмэлт домэйн (давтаж болно)
+```
+
+- 📱 **Mac-ийн LAN IP-г АВТОМАТААР олж нэмнэ** (`os.networkInterfaces()`) — DHCP-ээс
+  IP солигдсон ч дахин ажиллуулахад л хангалттай ✓
+- ⚠️ `--apply` нь анхдагчаараа **одоогийнхтой НЭГТГЭнэ** (юу ч унахгүй ✓) —
+  `--replace` үед л хасагдана; DRY-RUN нь **хасагдах домэйныг УРЬДЧИЛАН** харуулна ✓
+- 📄 Жагсаалт нь `lib/corsOrigins.mjs → RECOMMENDED_CORS_ORIGINS` (dev · 📱 LAN/mDNS ·
+  Vercel production+preview · өөрийн домэйн) — `npm run test:storage`-аар хамгаалагдсан ✓
+- ✅ Бичсэний дараа буцаж уншиж **батална**, дараа нь бодит preflight:
+  `npm run check:r2 -- --origin …`
+- ℹ️ Дараах JS нь скриптийн хийдэг ЯГ тэр зүйл (ойлголт өгөхөд):
+
 ```js
+import os from 'node:os';
 import { PutBucketCorsCommand, GetBucketCorsCommand } from '@aws-sdk/client-s3';
 import { r2Client, r2Config } from './lib/r2.mjs';
+import { RECOMMENDED_CORS_ORIGINS, CORS_ALLOWED_METHODS, CORS_ALLOWED_HEADERS,
+         CORS_EXPOSE_HEADERS, CORS_MAX_AGE_SECONDS, lanCorsOrigins } from './lib/corsOrigins.mjs';
 
 await r2Client().send(new PutBucketCorsCommand({
   Bucket: r2Config().bucket,
   CORSConfiguration: { CORSRules: [{
-    AllowedOrigins: ['http://localhost:3000', 'http://192.168.1.2:3000', 'https://hangai-project.vercel.app', 'https://zarbook.mn', 'https://www.zarbook.mn'],
-    AllowedMethods: ['PUT', 'GET', 'HEAD'],
-    AllowedHeaders: ['content-type'],
-    ExposeHeaders: ['etag'],
-    MaxAgeSeconds: 3600,
-  }] },
+    // ℹ️ Жагсаалт нь НЭГ эх сурвалжтай (＋ Mac-ийн одоогийн LAN IP)
+    AllowedOrigins: [...RECOMMENDED_CORS_ORIGINS, ...lanCorsOrigins(os.networkInterfaces())],
+    AllowedMethods: CORS_ALLOWED_METHODS,
+    AllowedHeaders: CORS_ALLOWED_HEADERS,
+    ExposeHeaders: CORS_EXPOSE_HEADERS,
+    MaxAgeSeconds: CORS_MAX_AGE_SECONDS,
+  }] } },
 }));
 // Одоогийнхыг харах: await r2Client().send(new GetBucketCorsCommand({ Bucket: r2Config().bucket }))
 ```
 
-⚠️ `PutBucketCors` нь дүрмүүдийг **БҮХЭЛД НЬ ДАРЖ БИЧНЭ** — хуучин домэйнуудаа
-жагсаалтад оруулахаа мартуузай ✗ (эс бөгөөс тэдгээрээс upload зогсоно).
+⚠️ `PutBucketCors` нь дүрмүүдийг **БҮХЭЛД НЬ ДАРЖ БИЧНЭ** (нэмэгдүүлэхгүй!) —
+тиймээс `npm run r2:cors` нь анхдагчаараа **одоогийнхтой НЭГТГЭнэ** ✓, `--replace`
+үед л хасагдана (DRY-RUN нь юу хасагдахыг УРЬДЧИЛАН харуулна).
 
 ### 🐛 БОДИТ тохиолдол (2026-10-02): төгсгөлийн `/` production-ыг эвдсэн
 
@@ -320,6 +342,39 @@ npm run check:r2 -- --origin http://localhost:3000 --origin http://192.168.1.2:3
 # → preflight 204 · ACAO = тухайн origin ✓  |  PUT 200 → publicUrl GET 200 → устгав 404 ✓
 ```
 
+### 🐛 БОДИТ тохиолдол (2026-10-09): домэйн солигдсоны дараа CORS ХУУЧИРСАН
+
+**Шинж тэмдэг:** 📱 iPhone-оос (LIVE домэйн **ба** LAN-аас) зураг оруулахад
+«Зургийг R2 руу илгээж чадсангүй … CORS Policy тохируулаагүй … [**Load failed**]».
+⚠️ `presign` нь **200 · `backend: r2`** (сервер талд ямар ч лог БАЙХГҮЙ) — алдаа
+ЗӨВХӨН R2 руу чиглэсэн PUT дээр ✗
+
+**Оношлогоо** (`npm run r2:cors` → DRY-RUN): bucket-ийн `AllowedOrigins` нь
+**нэр солигдохоос өмнөх, DNS-д ч байхгүй болсон домэйн** + `localhost:3000` +
+LAN IP-г л агуулж, **одоогийн LIVE домэйн, `www` хувилбар, mDNS нэр, Vercel
+preview ОГТ байхгүй** байв:
+
+| Origin | Дүн |
+|---|---|
+| `http://localhost:3000` · `http://192.168.1.2:3000` · `https://hangai-project.vercel.app` | ✅ |
+| **LIVE домэйн** · **`www.` хувилбар** | ❌ **ДУТУУ** ← ШАЛТГААН |
+| **`http://macbook-pro.local:3000`** (📱 iPhone-ийн ашигласан mDNS нэр) | ❌ ДУТУУ |
+| **`https://hangai-project-*.vercel.app`** (preview deploy) | ❌ ДУТУУ |
+| нэр солигдохоос өмнөх домэйн (DNS-д байхгүй) | ⚠️ ХУУЧИРСАН |
+
+**Засвар:** `npm run r2:cors -- --apply --replace` (эхлээд DRY-RUN-аар юу
+**хасагдахыг** хараад) → 8 домэйн бичигдэв.
+
+**Баталгаа:** `npm run check:r2 -- --origin …` → **8/8 ✅** · бодит e2e:
+`PUT 200 · ACAO=<тухайн origin>` → `publicUrl GET 200` → **устгав 404** ✓
+
+⚠️ **Хичээл:** домэйн (эсвэл LAN IP) солигдвол **`AllowedOrigins`-ыг ЗААВАЛ
+шинэчилнэ** — эс бөгөөс зөвхөн R2-руу чиглэсэн PUT унаж, хэрэглэгч ойлгомжгүй
+«Load failed» хараад, сервер талд ямар ч мөр үлдэхгүй ✗ Иймд `npm run r2:cors`
+нь **📱 LAN IP-г автоматаар олж** нэмдэг, жагсаалтыг `lib/corsOrigins.mjs`-ээс
+авдаг болсон (тестээр хамгаалагдсан ✓).
+
+
 ---
 
 ## 5. `.env.local` (5 мөр)
@@ -352,6 +407,7 @@ deploy эхлүүлнэ) — эсвэл Vercel → Settings → Environment Vari
 
 ```bash
 npm run check:r2        # env ✅ · bucket ✅ · объект ✅ · домэйн ✅ · CORS ✅
+npm run r2:cors         # 🔍 CORS-ыг бүрэн харах (DRY-RUN — юу ч бичихгүй)
 ```
 
 Бүгд ✅ болмогц **шинэ** зураг автоматаар R2 руу хадгалагдана ✓
@@ -420,7 +476,9 @@ npm run storage:migrate -- --apply         # ✅ хуулж, DB-ийн URL со�
 | `app/api/storage/presign/route.js` | Токен баталж, ~10 мин PUT линк олгоно (503 = R2 тохируулаагүй) |
 | `app/api/storage/delete/route.js` | Зөвхөн өөрийн түлхүүрийг устгана |
 | `lib/queries.js` | `uploadImages()` / `uploadAvatar()` — R2 (үндсэн) + Supabase (нөөц) |
+| `lib/corsOrigins.mjs` | ЦЭВЭР дүрэм: CORS-ийн домэйны жагсаалт (`RECOMMENDED_CORS_ORIGINS`), нэгтгэл/ялгаа, Cloudflare-ийн хязгаарын шалгалт. Тест: `npm run test:storage` |
 | `scripts/check-r2.mjs` | `npm run check:r2` |
+| `scripts/r2-cors.mjs` | `npm run r2:cors` — CORS-ыг S3 API-аар УНШИХ/БИЧИХ (📱 LAN IP автоматаар, DRY-RUN анхдагч) ← §4 |
 | `scripts/migrate-storage-to-r2.mjs` | `npm run storage:migrate` |
 | `scripts/rebase-storage-urls.mjs` | `npm run storage:rebase` — нийтийн домэйн солигдоход DB-ийн URL-уудыг шинэчилнэ (§3) |
 

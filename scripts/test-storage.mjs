@@ -62,7 +62,14 @@ const {
   corsPolicyJson,
   parseCorsOrigins,
   normalizeCorsOrigin,
+  mergeCorsOrigins,
+  corsOriginsDiff,
+  lanCorsOrigins,
   DEFAULT_CORS_ORIGINS,
+  LOCAL_CORS_ORIGINS,
+  VERCEL_CORS_ORIGINS,
+  BRAND_CORS_ORIGINS,
+  RECOMMENDED_CORS_ORIGINS,
 } = await import(`${path.join(here, '..', 'lib', 'corsOrigins.mjs')}?t=${Date.now()}`);
 
 const UID = '8f3c1a2b-4d5e-4f60-9a1b-2c3d4e5f6a7b';
@@ -688,6 +695,60 @@ t('corsPolicyJson: PUT/content-type ЗААВАЛ орсон + домэйнууд
 t('corsPolicyJson: хоосон жагсаалт → localhost анхдагч (хоосон AllowedOrigins БИШ)', () => {
   const policy = JSON.parse(corsPolicyJson([]));
   assert.deepEqual(policy[0].AllowedOrigins, ['http://localhost:3000']);
+});
+
+// ---------- 🧩 CORS жагсаалтыг НЭГТГЭх / ЯЛГАХ (`npm run r2:cors`) — 2026-10-09 ----------
+// ⚠️ `PutBucketCors` нь БҮХ дүрмийг ДАРЖ БИЧДЭГ тул бичихийн өмнө нэгтгэл/ялгаа
+//    нь ЗӨВ байх ёстой — эс бөгөөс LIVE домэйн санамсаргүй унана ✗
+t('mergeCorsOrigins: давхардлыг цэвэрлэж, дарааллыг хадгална', () => {
+  assert.deepEqual(mergeCorsOrigins(['https://b.mn', 'https://a.mn'], ['https://b.mn', 'https://c.mn']), [
+    'https://b.mn',
+    'https://a.mn',
+    'https://c.mn',
+  ]);
+});
+
+t('mergeCorsOrigins: төгсгөлийн `/` нормчлогдож, хоосон утга ХАСАГДАНА', () => {
+  assert.deepEqual(mergeCorsOrigins(['https://a.mn/', '  ', '', null, undefined], ['https://a.mn']), ['https://a.mn']);
+});
+
+t('corsOriginsDiff: юу нэмэгдэх/хасагдахыг зөв хэлнэ', () => {
+  const d = corsOriginsDiff(['https://old.mn', 'https://keep.mn'], ['https://keep.mn', 'https://new.mn']);
+  assert.deepEqual(d.added, ['https://new.mn']);
+  assert.deepEqual(d.removed, ['https://old.mn']);
+});
+
+t('lanCorsOrigins: зөвхөн ГАДААД IPv4 (internal/lo хасагдана), порт нэмэгдэнэ', () => {
+  const ifaces = {
+    lo0: [{ address: '127.0.0.1', family: 'IPv4', internal: true }],
+    en0: [{ address: '192.168.1.2', family: 'IPv4', internal: false }],
+    en1: [{ address: 'fe80::1', family: 'IPv6', internal: false }],
+    en2: [{ address: '10.0.0.5', family: 4, internal: false }],
+  };
+  assert.deepEqual(lanCorsOrigins(ifaces, 3000), ['http://192.168.1.2:3000', 'http://10.0.0.5:3000']);
+  assert.deepEqual(lanCorsOrigins({}, 3000), []);
+});
+
+t('RECOMMENDED_CORS_ORIGINS: БҮГД хүчинтэй + LIVE домэйн ба 📱 LAN/mDNS орсон', () => {
+  for (const o of RECOMMENDED_CORS_ORIGINS) {
+    assert.equal(corsOriginProblem(o), null, `буруу origin: ${o}`);
+  }
+  // 🏷 Нийтийн домэйн (LIVE) — байхгүй бол тэр сайтаас зураг оруулах ХИЙГДЭХГҮЙ ✗
+  assert.ok(BRAND_CORS_ORIGINS.includes('https://zarbook.mn'));
+  assert.ok(RECOMMENDED_CORS_ORIGINS.includes('https://zarbook.mn'));
+  assert.ok(RECOMMENDED_CORS_ORIGINS.includes('https://www.zarbook.mn'));
+  // 📱 Утаснаас нээхэд `localhost` БИШ — LAN IP ба mDNS нэр ЗААВАЛ байх ёстой
+  assert.ok(LOCAL_CORS_ORIGINS.includes('http://192.168.1.2:3000'));
+  assert.ok(LOCAL_CORS_ORIGINS.includes('http://macbook-pro.local:3000'));
+  // 🚀 Vercel — production ба preview (`*` нэг, цэг дамжина)
+  assert.ok(VERCEL_CORS_ORIGINS.includes('https://hangai-project.vercel.app'));
+  assert.ok(VERCEL_CORS_ORIGINS.includes('https://hangai-project-*.vercel.app'));
+  // ⚠️ Давхардал байхгүй (Cloudflare-д давхардсан origin утгагүй)
+  assert.equal(new Set(RECOMMENDED_CORS_ORIGINS).size, RECOMMENDED_CORS_ORIGINS.length);
+});
+
+t('RECOMMENDED_CORS_ORIGINS нь DEFAULT-ыг АГУУЛНА (dev хэзээ ч унахгүй)', () => {
+  for (const o of DEFAULT_CORS_ORIGINS) assert.ok(RECOMMENDED_CORS_ORIGINS.includes(o), `дутуу: ${o}`);
 });
 
 globalThis.fetch = realFetch;
