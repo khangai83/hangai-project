@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- 🚗 АВТОМАШИН — хажуу харагдац (кабин → их бие → шил → дугуй → гэрэл) -->
+  <path d="M64 106 L78 66 h44 l18 40 Z" fill="#1E293B"/>
+  <rect x="20" y="100" width="160" height="42" rx="18" fill="#1E293B"/>
+  <path d="M78 100 L86 76 h30 l14 24 Z" fill="#93C5FD"/>
+  <rect x="116" y="76" width="5" height="24" fill="#1E293B"/>
+  <circle cx="62" cy="142" r="17" fill="#0F172A"/>
+  <circle cx="62" cy="142" r="7" fill="#CBD5E1"/>
+  <circle cx="138" cy="142" r="17" fill="#0F172A"/>
+  <circle cx="138" cy="142" r="7" fill="#CBD5E1"/>
+  <rect x="162" y="110" width="14" height="11" rx="5" fill="#FBBF24"/>
+  <rect x="22" y="124" width="156" height="4" rx="2" fill="#334155"/>
+</svg>

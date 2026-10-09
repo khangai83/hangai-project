@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- 🛠️ ҮЙЛДВЭР & ҮЙЛЧИЛГЭЭ, БИЗНЕС — будаг буудаг (боолт → хүрд → бөгж → иш → будаг) -->
+  <rect x="30" y="42" width="100" height="44" rx="12" fill="#F97316"/>
+  <rect x="42" y="52" width="76" height="12" rx="6" fill="#FDBA74"/>
+  <path d="M130 64 h22 v40" fill="none" stroke="#94A3B8" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="140" y="104" width="24" height="58" rx="12" fill="#1E293B"/>
+  <rect x="30" y="152" width="88" height="14" rx="7" fill="#FB923C"/>
+  <path d="M40 112 h40 a8 8 0 0 1 8 8 v10 a8 8 0 0 1 -8 8 H40 a8 8 0 0 1 -8 -8 v-10 a8 8 0 0 1 8 -8 Z" fill="#EA580C"/>
+</svg>

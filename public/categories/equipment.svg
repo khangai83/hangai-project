@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- 🏭 ТОНОГ ТӨХӨӨРӨМЖ — өргөгч (маст → салаа → их бие → кабин → дугуй) -->
+  <rect x="104" y="34" width="13" height="104" rx="5" fill="#475569"/>
+  <rect x="104" y="126" width="64" height="13" rx="5" fill="#334155"/>
+  <rect x="30" y="102" width="12" height="34" rx="5" fill="#334155"/>
+  <rect x="34" y="86" width="68" height="50" rx="10" fill="#F59E0B"/>
+  <path d="M44 48 h46 a10 10 0 0 1 10 10 v28 H34 V58 a10 10 0 0 1 10 -10 Z" fill="#FBBF24"/>
+  <rect x="50" y="58" width="34" height="24" rx="5" fill="#93C5FD"/>
+  <circle cx="56" cy="142" r="17" fill="#1F2937"/>
+  <circle cx="56" cy="142" r="7" fill="#CBD5E1"/>
+  <circle cx="96" cy="142" r="13" fill="#1F2937"/>
+  <circle cx="96" cy="142" r="5" fill="#CBD5E1"/>
+</svg>

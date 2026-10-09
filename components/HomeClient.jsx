@@ -2812,6 +2812,11 @@ export default function HomeClient() {
              🎨 2026-10-07 (хэрэглэгчийн хүсэлт: «Үл хөдлөх, Автомашин, Ажлын
                 зар гэх мэт эдгээр картуудаа ийм болгоё» + жишээ зураг):
                 ХАВТГАЙ (flat, emoji + нэр) загвар → **КАРТ** болов —
+                ⏳ 2026-10-09-д энэ КАРТ загвар БҮРЭН СОЛИГДОВ (доорх 🆕 блок —
+                   хэрэглэгч «нүүр хуудсны category уудыг [дугуй зурагтай сүлжээ]
+                   шиг болгож өгөөч» гэсэн тул карт/хүрээ/emoji бүгд АРИЛАВ ✓)
+                   ℹ️ Доорх 3 дэд цэг нь ЗӨВХӨН ТҮҮХ (2026-10-07-ны төлөв) —
+                      ОДООГИЙН хэв нь доорх 2026-10-09-ны блокт ✓
                    • ✏️ 2 дахь хүсэлт (2026-10-07: «бүх 12 картын пастел
                      дэвсгэрийг аваад цагаан карт болгох»): `SECTION_TILE_TONE`
                      пастел өнгө БҮРЭН АРИЛАВ ⇒ карт бүр ЦАГААН (`bg-white` +
@@ -2828,13 +2833,34 @@ export default function HomeClient() {
                    • сонгосон → `ring-2 ring-primary/60` + `border-primary/40`
                      (цагираг тодорхойлно ✓)
              ⚠️ ХАМГААЛАГДСАН ГЭРЭЭ (тест): `.tile-grid button[role="tab"]` нь
-                ХЭВЭЭР 12 ширхэг (`cdp:services` ⑧), tile бүрийн TEXT нь
-                `<нэр> <emoji>` ХЭВЭЭР (`includes('Ажил, Үйлчилгээ')` ✓ — emoji
-                ба нэр хоёулаа DOM-д байгаа тул `innerText` шалгалт хэвээр ✓)
+                ХЭВЭЭР 12 ширхэг (`cdp:services` ⑧), tile бүрийн TEXT нь ЗӨВХӨН
+                НЭР (`includes('Ажил, Үйлчилгээ')` ✓) — ⏳ 2026-10-09-аас emoji
+                ДОМ-д БАЙХГҮЙ (зургаар солигдсон) тул `innerText` нь нэр л байна ✓
              ⚠️ ТОО (ad count) ГАРАХГҮЙ — хэсэг тус бүрийн тоо нь тусдаа query
                 (12 HEAD) шаарддаг тул (хэрэглэгчийн шийдвэр) ОРХИВ ✓
              🔗 `title={s.label}` — бүтэн нэрийг hover-т харуулна ✓ */
-          <div className="tile-grid grid auto-rows-fr grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" role="tablist" aria-label="Зарын хэсэг">
+          /* 🆕 2026-10-09 — ЖИШИГ САЙТЫН КАТЕГОРИЙН СҮЛЖЭЭ болов (хэрэглэгчийн
+              хүсэлт: «category-ийн доторх зургийг иймэрхүү зураг болгоод,
+              нүүр хуудсны category уудыг үүн шиг болгож өгөөч» + жишээ зураг):
+              tile бүр = **ДУГУЙ пастел дэвсгэр** (`s.tileBg` — `SECTIONS`-д,
+              нэг эх сурвалж) дотор АНГИЛЛЫН **ЗУРАГ**
+              (`public/categories/<value>.svg`) + **ДООР нь** BOLD нэр.
+              ⏳ Урьд нь ЦАГААН КАРТ (хүрээ + сүүдэр) дотор emoji, нэр нь
+                 картын ДЭЭД талд байв ✗ → ОДОО карт/хүрээ/сүүдэр БАЙХГҮЙ ✓
+              • 📐 БАГАНА 2 → 3 → 4 → 5 байсныг **3 → 4 → 6** болов — дугуй нь
+                картаас бага зай эзэлдэг тул нэг мөрөнд илүү олон багтана ✓
+                (`sm:grid-cols-4 lg:grid-cols-6`; ⚠️ `auto-rows-fr` ХЭВЭЭР —
+                 1/2 мөртэй мөрүүд ИЖИЛ өндөртэй ✓)
+              • 🖼 `<img alt="">` — нэр нь ЯГ доор ТЕКСТ хэлбэрээр байгаа тул
+                дэлгэц уншигчид ДАВХАРДАХГҮЙ ✓ (`aria-hidden` ч тавьсан ✓)
+              • ✅ СОНГОСОН → дугуй дээр `ring-2 ring-primary` + нэр нь ЦЭНХЭР
+                (картын хүрээ байхгүй болсон тул тэмдэглэл нь ДУГУЙ дээр ✓)
+              • 🐭 HOVER → дугуй `-translate-y-1`, зураг `scale-105`, нэр цэнхэр
+              • 🧯 ЗУРАГ АЧААЛАГДААГҮЙ бол (`naturalWidth === 0`) `cdp:tiles`
+                тестээр баригдана ✓
+              ⚠️ `role="tab"` + `title` ХЭВЭЭР — CDP (`cdp:sections`,
+                 `cdp:services`) ба дэлгэц уншигчийн гэрээ ХӨНДӨӨГДӨӨГҮЙ ✓ */
+          <div className="tile-grid grid auto-rows-fr grid-cols-3 items-start sm:grid-cols-4 lg:grid-cols-6" role="tablist" aria-label="Зарын хэсэг">
             {SECTIONS.map((s) => {
               const on = s.value === section;
               return (
@@ -2843,22 +2869,37 @@ export default function HomeClient() {
                   type="button"
                   role="tab"
                   aria-selected={on}
+                  data-section-value={s.value}
                   onClick={() => changeSection(s.value)}
                   title={s.label}
-                  className={`group flex h-full min-h-[104px] w-full flex-col gap-1 rounded-2xl border bg-white px-3.5 pb-3 pt-3 text-left shadow-card transition-all duration-200 ease-out ${
-                    on
-                      ? 'border-primary/40 ring-2 ring-primary/60'
-                      : 'border-gray-200 hover:-translate-y-1 hover:border-gray-300 hover:shadow-card-hover'
-                  }`}
+                  className="group flex h-full w-full flex-col items-center gap-2 rounded-xl px-1 py-1.5 text-center transition-transform duration-200 ease-out"
                 >
-                  <span className="min-w-0 text-[13px] font-bold leading-tight text-gray-900 line-clamp-2 sm:text-[14px]">
-                    {s.label}
+                  <span
+                    data-tile-badge
+                    style={{ backgroundColor: s.tileBg }}
+                    className={`flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-full transition-transform duration-200 ease-out group-hover:-translate-y-1 sm:h-[80px] sm:w-[80px] ${
+                      on ? 'ring-2 ring-primary ring-offset-2 ring-offset-gray-50' : ''
+                    }`}
+                  >
+                    {/* ⚠️ Зураг нь СҮЛЖЭЭНИЙ утгаар: `public/categories/<value>.svg` */}
+                    <img
+                      data-tile-img
+                      src={`/categories/${s.value}.svg`}
+                      alt=""
+                      aria-hidden="true"
+                      width="56"
+                      height="56"
+                      loading="lazy"
+                      decoding="async"
+                      className="h-[44px] w-[44px] object-contain transition-transform duration-200 ease-out group-hover:scale-105 sm:h-[56px] sm:w-[56px]"
+                    />
                   </span>
                   <span
-                    aria-hidden="true"
-                    className="mx-auto flex flex-1 items-center justify-center text-[34px] leading-none transition-transform duration-200 ease-out group-hover:scale-110 sm:text-[40px]"
+                    className={`min-w-0 break-words text-[12px] font-bold leading-snug transition-colors duration-200 sm:text-[13px] ${
+                      on ? 'text-primary' : 'text-gray-900 group-hover:text-primary'
+                    }`}
                   >
-                    {s.icon}
+                    {s.label}
                   </span>
                 </button>
               );

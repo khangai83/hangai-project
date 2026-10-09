@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- ⚽ СПОРТ БАРАА — хөлбөмбөг (бөмбөг → төв тавт → меридиан шугам) -->
+  <circle cx="100" cy="104" r="62" fill="#FFFFFF"/>
+  <circle cx="100" cy="104" r="62" fill="none" stroke="#E5E7EB" stroke-width="4"/>
+  <path d="M100 82 L121 97 L113 122 L87 122 L79 97 Z" fill="#1F2937"/>
+  <path d="M100 82 V42 M121 97 L159 85 M113 122 L137 156 M87 122 L63 156 M79 97 L41 85"
+        stroke="#1F2937" stroke-width="6" stroke-linecap="round" fill="none"/>
+</svg>

@@ -28,7 +28,8 @@
 //    DB дээр шалгана (`README.md` → «🔎 Хайлттай сонголт» хэсгийн тестийн лог).
 // ============================================================
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';   // 💼 0024 migration-ийг шалгах (2026-09-30)
+import { readFileSync, existsSync, readdirSync } from 'node:fs';   // 💼 0024 migration-ийг шалгах (2026-09-30)
+// 🎨 2026-10-09: нүүр хуудсны tile-ийн ЗУРГИЙН файлуудыг шалгах (`public/categories/*.svg`)
 import {
   SECTIONS, getSubtypes, getAttrFilters, getAttrField,
   parseAttrRangeKey, getAttrRangeKeys, formatAttrsLine, getSection, hasSimpleForm,
@@ -2783,7 +2784,85 @@ t('🛠 0037 migration: «Сургалт, курс» дэд төрлүүд ШИ�
   assert.ok(!/set section = /.test(sql), '`section` солигдох ЁСТОЙГҮЙ (нэр нь UI-д) ✗');
 });
 
+// ═══════════════ 🎨 НҮҮР ХУУДСНЫ КАТЕГОРИЙН TILE (2026-10-09) ═══════════════
+// 🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «category-ийн доторх зургийг иймэрхүү зураг болгоод,
+//    нүүр хуудсны category уудыг үүн шиг болгож өгөөч» + жишээ зураг
+//    ⇒ tile бүр = ДУГУЙ пастел дэвсгэр дотор АНГИЛЛЫН ЗУРАГ + ДООР нь BOLD нэр
+//    (⏳ урьд нь ЦАГААН КАРТ дотор emoji байв ✗ — карт/хүрээ/сүүдэр АРИЛАВ)
+// ⚠️ Эдгээр тест нь ЗУРАГ+ӨНГӨ+БҮТЦИЙН гэрээг барьдаг; бодит геометр/ачаалалтыг
+//    `npm run cdp:tiles` (жинхэнэ Chrome) шалгана ✓
+t('🎨 12 хэсэг бүрд tile-ийн ЗУРАГ байна (`public/categories/<value>.svg`)', () => {
+  assert.equal(SECTIONS.length, 12);
+  SECTIONS.forEach((s) => {
+    const p = new URL(`../public/categories/${s.value}.svg`, import.meta.url);
+    assert.ok(existsSync(p), `public/categories/${s.value}.svg АЛГА ✗ (tile дээр эвдэрсэн зураг харагдана)`);
+    const svg = readFileSync(p, 'utf8');
+    assert.ok(svg.startsWith('<svg '), `${s.value}.svg нь <svg>-ээр эхлээгүй ✗`);
+    // ⚠️ viewBox БАЙХ ЁСТОЙ — үгүй бол `img` нь 44/56px-д тэгш хуваагдахгүй ✓
+    assert.match(svg, /viewBox="0 0 200 200"/, `${s.value}.svg: viewBox 200×200 биш ✗`);
+    // ⚠️ ГАДНЫ файл дуудахгүй (offline / R2-гүй орчинд ч зурагдана ✓)
+    assert.ok(!/<image |xlink:href|<use /.test(svg), `${s.value}.svg гадны/дотоод линк ашиглаж байна ✗`);
+    // ⚠️ ТЕКСТ БИЧИХГҮЙ — нэр нь HTML-ийн label (i18n/фолбэк алдаа гарахгүй ✓)
+    assert.ok(!/<text/.test(svg), `${s.value}.svg дотор <text> байна ✗`);
+  });
+  // ⚠️ ЗӨВХӨН 12 — нэр солиход үлдсэн «өнчин» зураг баригдана ✓
+  const files = readdirSync(new URL('../public/categories/', import.meta.url)).filter((f) => f.endsWith('.svg'));
+  assert.equal(files.length, 12, `public/categories/ дотор ${files.length} svg байна (12 байх ёстой) ✗`);
+});
 
+t('🎨 `tileBg` — 12 хэсэгт БАЙНА, HEX формат, 12 нь ЯЛГААТАЙ пастел өнгө', () => {
+  const tones = SECTIONS.map((s) => s.tileBg);
+  SECTIONS.forEach((s, i) => assert.match(String(tones[i]), /^#[0-9A-F]{6}$/, `${s.value}: tileBg «${tones[i]}» HEX биш ✗`));
+  // ⚠️ Хөрш хэсгүүд ижил өнгөтэй бол сүлжээ нэгэн хэвийн харагдана ✗
+  assert.equal(new Set(tones).size, 12, 'tileBg давхардсан (2 хэсэг ижил өнгө) ✗');
+  // ⚠️ ПАСТЕЛ (цайвар) байх ёстой — ханасан өнгө дээр ЦАГААН зураг уусана ✗
+  tones.forEach((c, i) => {
+    const sum = parseInt(c.slice(1, 3), 16) + parseInt(c.slice(3, 5), 16) + parseInt(c.slice(5, 7), 16);
+    assert.ok(sum >= 500, `${SECTIONS[i].value}: tileBg «${c}» ХЭТ ХАНАСАН (≈пастел биш) ✗`);
+  });
+});
+
+t('🖼 HomeClient: tile нь `<img>` (emoji БИШ) + нэр нь ДООР + КАРТ АРИЛСАН', () => {
+  const home = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
+  // ⚠️ `className` нь `aria-label`-аас ӨМНӨ байдаг тул зүсэлт нь `tile-grid`-ээс ✓
+  const at = home.indexOf('className="tile-grid');
+  assert.ok(at > 0, 'tile-ийн сүлжээ (`className="tile-grid`) алга ✗');
+  const grid = home.slice(at, home.indexOf('</section>', at));
+  assert.match(grid, /aria-label="Зарын хэсэг"/, '`aria-label="Зарын хэсэг"` алга ✗');
+  assert.match(grid, /role="tablist"/, '`role="tablist"` алга ✗');
+  // ① ЗУРАГ: сүлжээний УТГААР зам тавина (12 хэсэг = 12 файл ✓)
+  assert.match(grid, /data-tile-img/, '`data-tile-img` тэмдэг алга (CDP барихгүй) ✗');
+  assert.match(grid, /<img\b/, 'tile нь `<img>` ашиглаагүй ✗');
+  assert.match(grid, /src=\{`\/categories\/\$\{s\.value\}\.svg`\}/, 'зургийн зам `/categories/<value>.svg` биш ✗');
+  // ② emoji БАЙХГҮЙ — tile нь зөвхөн ЗУРАГ + НЭР (⏳ `{s.icon}` байв ✗)
+  assert.ok(!/\{s\.icon\}/.test(grid), 'tile дотор emoji (`{s.icon}`) ҮЛДСЭН ✗');
+  // ③ ӨНГӨ: пастел дугуй — `tileBg` (нэг эх сурвалж) ✓
+  assert.match(grid, /data-tile-badge/, '`data-tile-badge` тэмдэг алга (CDP барихгүй) ✗');
+  assert.match(grid, /style=\{\{ backgroundColor: s\.tileBg \}\}/, 'дугуйн өнгө нь `s.tileBg` биш ✗');
+  assert.match(grid, /rounded-full/, 'дугуй (`rounded-full`) биш ✗');
+  // ④ КАРТ/ХҮРЭЭ/СҮҮДЭР БАЙХГҮЙ (хэрэглэгчийн жишээ зурагт карт байхгүй ✓)
+  assert.ok(!/shadow-card|shadow-sm|shadow-md|border-2|min-h-\[104px\]/.test(grid),
+    'хуучин КАРТ (сүүдэр/хүрээ) үлдсэн ✗');
+  // ⑤ ДАРААЛАЛ: зураг ЭХЭНД, нэр ДООР нь (⏳ зураг доор нь байх ёстой ✓)
+  const imgAt = grid.indexOf('<img');
+  const labelAt = grid.lastIndexOf('{s.label}');
+  assert.ok(imgAt > 0 && labelAt > imgAt, 'нэр нь зургийн ДООР биш ✗');
+  assert.match(grid, /<span\b[\s\S]*?>\s*\{s\.label\}\s*<\/span>/, 'нэрийн `<span>{s.label}</span>` олдсонгүй ✗');
+  // ⑥ СҮЛЖЭЭ: 3 (моб) → 4 (sm) → 6 (lg) багана
+  assert.match(grid, /grid-cols-3[^"]*sm:grid-cols-4[^"]*lg:grid-cols-6/, 'баганын тоо 3/4/6 биш ✗');
+  // ⑦ A11Y + CDP ГЭРЭЭ: `role="tab"` + `title` ХЭВЭЭР (cdp:sections/cdp:services ✓)
+  assert.match(grid, /role="tab"/, '`role="tab"` алга ✗');
+  assert.match(grid, /aria-selected=\{on\}/, '`aria-selected` алга ✗');
+  assert.match(grid, /title=\{s\.label\}/, '`title={s.label}` алга (CDP гэрээ) ✗');
+  assert.match(grid, /data-section-value=\{s\.value\}/, '`data-section-value` алга ✗');
+});
+
+t('🎨 `icon` (emoji) нь tile-ээс ГАДНА ХЭВЭЭР (форм/attr мөр) — 12 хэсэг бүрд', () => {
+  assert.equal(SECTIONS.filter((s) => !s.icon).length, 0, '`icon` нь заавал байх ёстой ✗');
+  const add = readFileSync(new URL('../components/AddListingClient.jsx', import.meta.url), 'utf8');
+  // ⚠️ Зарын форм нь `SECTIONS[].icon`-ыг ХЭВЭЭР уншина (emoji-г ХӨНДӨӨГҮЙ ✓)
+  assert.match(add, /icon: s\.icon/, 'форм нь `SECTIONS[].icon`-ыг ашиглахаа больсон ✗');
+});
 
 console.log(`\n✅ БҮГД ОК: ${passed} тест\n`);
 
