@@ -188,10 +188,23 @@ check('① Нүүр 1280px: карт олдлоо', home.count > 0, `${home.coun
 check('①b Хэвтээ гүйлт 0', home.scrollW <= home.vw + 1, `scrollW ${home.scrollW} / vw ${home.vw}`);
 const firstY = home.cards[0]?.box.y ?? 0;
 const row1 = home.cards.filter((c) => Math.abs(c.box.y - firstY) <= 4);
-check('①c Эхний мөрөнд ≥3 карт (баганат grid)', row1.length >= 3, `${row1.length} карт (y ${firstY})`);
+// 🆕 2026-10-09 (84) ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «нэг баганад 4н карт харуулъя. home дээр»
+//    ⚠️ (83b)-ээс хойш нүүр дээр сайдбар БАЙХГҮЙ ⇒ 1280px (xl) дээр бүтэн өргөн
+//    тул 4 карт ≈290px ✓ (хэсэг сонгосон үед 3 — доорх ①e ✓)
+check('①c Нүүр 1280px: эхний мөрөнд ЯГ 4 карт (`xl:grid-cols-4` — 🆕 (84))',
+  row1.length === 4, `${row1.length} карт (y ${firstY})`);
 const widths = home.cards.map((c) => c.box.w);
 check('①d Бүх картын өргөн ИЖИЛ (±2px)', Math.max(...widths) - Math.min(...widths) <= 2,
   `${Math.min(...widths)}…${Math.max(...widths)}px`);
+
+// ---------- ②b ХЭСЭГ (сайдбартай) — 1280px: 3 багана (🆕 (84) хоёр хэвийн нөгөө нь) ----------
+await goto(`${BASE}/?section=real-estate`, 1280, 900);
+await waitFor(`document.querySelectorAll('a[data-listing-card]').length > 0`);
+const sec = await evalJs(PROBE);
+const secFirstY = sec.cards[0]?.box.y ?? 0;
+const secRow1 = sec.cards.filter((c) => Math.abs(c.box.y - secFirstY) <= 4);
+check('①e Хэсэг (280px сайдбартай) 1280px: эхний мөрөнд 3 карт (`xl:grid-cols-3` ✓)',
+  secRow1.length === 3, `${secRow1.length} карт`);
 
 const c0 = home.cards[0] || {};
 const ratio = c0.img ? c0.img.h / c0.img.w : 0;

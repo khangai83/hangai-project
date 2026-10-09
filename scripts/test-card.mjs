@@ -73,10 +73,13 @@ t('🖼 Зураг нь ДЭЭРЭЭ бүтэн өргөн — `aspect-[4/3]` (`
   assert.ok(!/h-52\b/.test(CARD_CODE), 'хуучин мобайл өндөр (`h-52`) үлдсэн ✗');
 });
 
-t('🧱 ЖАГСААЛТ нь БАГАНАТ GRID — нүүр · Таалагдсан · Түүх · Нийтлэгч (2026-10-09)', () => {
+t('🧱 ЖАГСААЛТ нь БАГАНАТ GRID — нүүр · Таалагдсан · Түүх · Нийтлэгч (2026-10-09 · ✏️ (84))', () => {
   // ⚠️ Босоо карт нь 1 БАГАНАД тохирохгүй (хэт өргөн) ⇒ хуудас бүр GRID-тэй
-  assert.match(HOME, /className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"/,
+  // 🆕 2026-10-09 (84): нүүр (сайдбаргүй) 4 багана / хэсэг (сайдбартай) 3 багана
+  assert.match(HOME, /className=\{`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 \$\{/,
     'нүүр хуудасны картын GRID алга ✗');
+  assert.match(HOME, /noSection \? 'xl:grid-cols-4' : 'xl:grid-cols-3 2xl:grid-cols-4'/,
+    '🆕 (84) «сайдбаргүй → 4 багана / сайдбартай → 3 багана» ялгаа алга ✗');
   assert.match(readSrc('components/FavoritesClient.jsx'), /grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3/,
     '/favorites-ийн картын GRID алга ✗');
   assert.match(readSrc('components/SearchHistoryClient.jsx'), /grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3/,

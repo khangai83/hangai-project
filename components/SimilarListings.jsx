@@ -79,8 +79,12 @@ export default function SimilarListings({ listing }) {
     <section data-similar-listings className="mt-6">
       <h2 className="mb-3 text-lg font-bold text-gray-800">🔎 Төстэй зарууд</h2>
       {/* 🧱 Баганат grid — карт нь БОСОО (`ListingCard`) тул бүтэн өргөнтэй
-          нэг багана биш, grid шаардна ✓ */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+          нэг багана биш, grid шаардна ✓
+          🆕 2026-10-09 (84): 📱 1 → 📲 sm:2 → 🖥 lg:3 → 🖥 xl:4 — хэрэглэгчийн
+             хүсэлт: «bas zar luu orood tustei zar deer bas» (4 карт) ⇒ нүүр
+             хуудасны grid (`HomeClient.jsx`) — `lg:grid-cols-3 xl:grid-cols-4`
+             хэвтэй ЯГ ИЖИЛ болгов ✓ (⏳ урьд нь lg:3 · 2xl:4 байв) */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {items.map((l) => (
           <ListingCard
             key={l.id}

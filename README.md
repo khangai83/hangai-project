@@ -1430,8 +1430,9 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   **39/39 ✓** — ① цэвэр модуль (оноо/эрэмбэ/хязгаар/хоосон утга/тогтвортой
   дараалал) ② эх кодын ГЭРЭЭ (query шүүлтүүд · UI · render-ийн байрлал);
   🆕 `npm run cdp:similar` (`scripts/cdp-similar.mjs`) нь **бодит Chrome** дээр
-  **10 OK / 0 FAIL ✓** (блок 2 баганын grid-ийн ДООР · 6 карт · эхний мөрөнд
-  3 карт (400px, ИЖИЛ өргөн) · өөрийгөө хассан · гүйлт 0 · JS/hydration 0).
+  **11 OK / 0 FAIL ✓** (блок 2 баганын grid-ийн ДООР · 6 карт · ✏️ (84) grid нь
+  **4 БАГАНАТ** (`gridTemplateColumns`) + эхний мөрөнд 4 карт (296px, ИЖИЛ
+  өргөн) · өөрийгөө хассан · гүйлт 0 · JS/hydration 0).
   ⚠️ DB/SQL/migration ХӨНДӨӨГДӨӨГҮЙ ✓ · `npm run build` **EXIT=0 ✓**.
   📸 `/tmp/similar-listings-1280.png`.
   🔍 Хайх үг: `SimilarListings`, `fetchSimilarListings`, `similarityScore`,
@@ -1448,18 +1449,54 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   үлдэв (`pr-20` нь мобайлд /favorites-ийн «Хасах» товчноос сэргийлнэ ✓).
   (3) 🖼 зургийн тоо (`1/N`) баруун **ДООД** буланд — баруун ДЭЭД нь «Хасах»
   товчид чөлөөтэй үлдэнэ.
-  (4) 📐 **GRID:** нүүр `grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4`
-  (280px sidebar-тай үед ~928px ⇒ 3 карт ≈296px) · /favorites ба /history
+  (4) 📐 **GRID (🆕 2026-10-09 (84) — ХОЁР ХЭВ):** 🏠 **«Бүх зар» (нүүр,
+  сайдбаргүй ✓ (83b))** `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`
+  (`noSection` — 1280px дээр багана БҮТЭН ӨРГӨН ⇒ 4 карт ≈**296px** CDP-ээр
+  хэмжсэн ✓) · **хэсэг (280px сайдбар)** `xl:grid-cols-3 2xl:grid-cols-4` ХЭВЭЭР
+  (⚠️ тэнд 4 болвол ~220px = хэт нарийн ✗) ⇒ `noSection ? 'xl:grid-cols-4'
+  : 'xl:grid-cols-3 2xl:grid-cols-4'`; 🔎 **«Төстэй зарууд»**
+  (`SimilarListings.jsx`) `lg:grid-cols-3 xl:grid-cols-4`; /favorites ба /history
   `sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4` · нийтлэгчийн зарууд
-  `sm:grid-cols-2 xl:grid-cols-3`; 📱 мобайл **нэг** багана хэвээр ✓.
+  `sm:grid-cols-2 xl:grid-cols-3` (ХӨНДӨӨГДӨӨГҮЙ); 📱 мобайл **нэг** багана ✓.
   (5) 🧪 **ТЕСТ:** `npm run test:card` **18/18 ✓** — босоо гэрээ + ХУУЧИН
-  хэвтээ класс руу БУЦАХААС хамгаална; 🆕 `npm run cdp:card-grid`
+  хэвтээ класс руу БУЦАХААС хамгаална (✏️ (84): нүүр нь template литерал grid +
+  `noSection ? 'xl:grid-cols-4' : …` ялгааг шалгана ✓); 🆕 `npm run cdp:card-grid`
   (`scripts/cdp-card-grid.mjs`) нь бодит Chrome дээр геометрээр батална
-  (баганын тоо · зураг 4:3 = 0.75 · мэдээлэл зургийн ДООР · ❤️ үнийн мөрөнд ·
-  мобайл 1 багана · /favorites grid · JS/hydration алдаа 0) ⇒ **21 OK / 0 FAIL ✓**
+  (🖥 1280px нүүр **ЯГ 4 карт**, хэсэг (сайдбартай) **3 карт** · зураг 4:3 = 0.75 ·
+  мэдээлэл зургийн ДООР · ❤️ үнийн мөрөнд · мобайл 1 багана · /favorites grid ·
+  JS/hydration алдаа 0) ⇒ **22 OK / 0 FAIL ✓** (⏳ (78): 21)
   · `npm run build` **EXIT=0 ✓**. 📸 `/tmp/card-grid-home-1280.png`,
   `/tmp/card-grid-home-390.png`, `/tmp/card-grid-favorites-1280.png`.
   ⚠️ DB/SQL/migration ХӨНДӨӨГДӨӨГҮЙ ✓
+- 🧱 **КАРТЫН GRID — 4 КАРТ/МӨР: НҮҮР (/) ба «🔎 ТӨСТЭЙ ЗАРУУД» (2026-10-09 (84))** —
+  хэрэглэгчийн хүсэлт: «**нэг баганад 4н карт харуулъя. home дээр**» +
+  «bas zar luu orood tustei zar deer bas». 🔧 **ХИЙСЭН АРГА (2 газар, зөвхөн
+  Tailwind класс — DB/SQL/migration/URL ХӨНДӨӨГДӨӨГҮЙ ✓):**
+  (1) 🏠 **`components/HomeClient.jsx` — ХОЁР ХЭВ (`noSection`):** нүүр дээр
+  (83b)-ээс хойш сайдбар БАЙХГҮЙ ⇒ багана БҮТЭН ӨРГӨН (~1200px) ⇒
+  `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 **xl:grid-cols-4**` (4 карт ≈**296px**);
+  хэсэг сонгосон үед 280px сайдбартай тул **хуучин `xl:grid-cols-3
+  2xl:grid-cols-4` ХЭВЭЭР** (тэнд 4 болвол ~220px — карт хэт нарийн ✗) ⇒
+  `className=` template литерал: `grid … lg:grid-cols-3` + `noSection ?
+  'xl:grid-cols-4' : 'xl:grid-cols-3 2xl:grid-cols-4'` ✓.
+  (2) 🔎 **`components/SimilarListings.jsx` (зарын дэлгэрэнгүй):**
+  `lg:grid-cols-3 **xl:grid-cols-4**` — нүүр хуудасны (сайдбаргүй) хэвтэй ЯГ
+  ИЖИЛ ✓ (⏳ (79): `lg:3 · 2xl:4` ⇒ 1280px дээр 3 карт ≈400px хэт том ✗).
+  (3) ⚠️ **JSX-ийн ternary-гийн мөр дээр JSX коммент бичих БОЛОМЖГҮЙ ✗** —
+  build нь «Expected `</`, got `className`» гэж унана (коммент нь элементийн
+  **ДОТОР**, эхний хүүхэд байрлана ✓); JSX комментийн ДОТОР `*/` дараалал
+  давхарлаж бичих ч ХОРИГ ✗ (коммент эрт хаагдана).
+  (4) 🧪 **ТЕСТ (шинэ гэрээ):** `test:card` **18/18 ✓** (нүүр нь template литерал
+  grid + `noSection ? 'xl:grid-cols-4' : 'xl:grid-cols-3 2xl:grid-cols-4'`) ·
+  `test:similar` **39/39 ✓** (grid класс) · `cdp:card-grid` **22 OK / 0 FAIL ✓**
+  (①c 🖥 1280px нүүр — эхний мөрөнд **ЯГ 4 карт** (296px, ИЖИЛ өргөн); 🆕 ①e
+  🖥 1280px хэсэг (сайдбартай) — **3 карт** ✓ — хоёр хэвээ бодит Chrome-оор) ·
+  `cdp:similar` **11 OK / 0 FAIL ✓** (🆕 ④b grid нь **4 БАГАНАТ** —
+  `getComputedStyle(grid).gridTemplateColumns`-ээс хэмжинэ: ⚠️ «эхний мөрөнд
+  ЯГ 4 карт» гэж шаардах нь хэврэг ✗ — картын тоо DB-ээс хамаарч 6/2 болдог) ·
+  `cdp:range` **37 ✓** · `npm run build` **EXIT=0 ✓**.
+  📸 `/tmp/card-grid-home-1280.png` · `/tmp/similar-listings-1280.png`.
+  🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
 - 🖼 **ЗУРГИЙН ОЛОН ФОРМАТ — `npm run test:image` (2026-10-09 (76))** —
@@ -6838,10 +6875,10 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 
 
 | `scripts/test-card.mjs` | 🆕 **16 → 🆕 (78) 18 тест** — `npm run test:card` (🆕 2026-10-03 (8): 📇 зарын картын ДИЗАЙНЫ гэрээ (**жишиг сайт** хэв); 🆕 **2026-10-09 (78): КАРТ БОСОО БОЛОВ**) — `codeOnly()`-оор ① ⏳ (8) `sm:h-[300px]` + `sm:flex-row` ⇒ 🆕 (78) **`flex flex-col`** + `data-listing-card`, ба **⛔ ХУУЧИН хэвтээ класс руу буцах хориг** (`sm:flex-row`, `sm:h-[300px]`, `sm:w-[42%]`, `h-52` БАЙХГҮЙ) ①b 🆕 (78) **❤️ нь ҮНИЙ мөрөнд** (`ml-auto`, үнэтэй нэг мөрт) бөгөөд доод мета мөрөнд ❤️ БАЙХГҮЙ (`toggleFavorite` ЯГ 1 удаа) ② зураг ⏳ `sm:w-[42%]` + `sm:h-full` (мобайл `h-52`) ⇒ 🆕 (78) **`aspect-[4/3] w-full`** (бэхлэгдсэн өндөргүй) ③ үнэ `text-[22px] font-extrabold` + ТОВЧ формат `shortPriceLabel` (🆕 2026-10-06: «760 сая ₮» · «44.8 сая ₮»; урт `priceLabel` карт дээр БАЙХГҮЙ) ④ гарчиг `line-clamp-2` ⑤ 🗑 тайлбар (`listing.description`) карт дээр БАЙХГҮЙ (🆕 2026-10-06 — хэрэглэгчийн хүсэлтээр ХАСАГДАВ) ⑥ нийтлэгчийн band (28px Avatar + ✅ 13) ⑦ 🖼 `1/N` (`imageCount > 1`) ⑧ 🎥 (`video_url`) ⑨ badge зөвхөн `isRealEstate` ⑩ мета: `timeAgo`/`formatAddress`/👁 ⑪ ❤️ toggle (`preventDefault`+`stopPropagation`) ⑫ `pr-20`/`sm:pr-0` нөөц ⑬ «Үнэ тохирно» ГАРАХГҮЙ (`hasRealPrice` хаалт, `negotiableNote` БАЙХГҮЙ) ⑭ НЭГ `<Link>` ⑮ `getPropertyIcon` placeholder ⑯ HomeClient `attrsLine`+`author` — БҮГД эх кодоор ✓) |
-| `scripts/cdp-card-grid.mjs` | 🎴 **CDP (бодит Chrome)** — `npm run cdp:card-grid` (🆕 **2026-10-09 (78): 21 OK / 0 FAIL ✓** — ✅ БОДИТ headless Chrome + сервер :3000; ⚠️ байхгүй бол SKIP → exit 0 ✓). Геометрээр батална: ① 🖥 1280px — эхний мөрөнд **≥3 карт** (баганат grid), бүх картын өргөн ИЖИЛ (±2px, хэмжсэн 294px) ①b хэвтээ гүйлт 0 ② зураг картын өргөнийг **ДҮҮРГЭНЭ**, харьцаа **4:3** (0.75; 292×219) ②c мэдээллийн блок зургийн **ДООР** (`img.bottom ≤ content.top`) ②d агуулга картын хүрээнээс гарахгүй ③ ❤️ нь **ҮНИЙ МӨРӨНД** (ижил өндөр ±6px) ба баруун захад (`ml-auto`) ③c товч «❤️ N»/«🤍 N» (⚠️ emoji-гийн variation selector `U+FE0F`-г цэвэрлэж шалгана) ③d гарчиг үнийн мөрөөс ДООР ④ 📱 390px — хэвтээ гүйлт 0, **НЭГ багана** (2 дахь карт 1-ийнхээ загинаа доор), зураг 4:3 бүтэн өргөн, ❤️ үнийн мөрөнд ⑤ `/favorites` (localStorage-д нүүр хуудасны эхний 4 зарыг seed хийнэ) — баганат grid + «Хасах» товч картын хүрээ ДОТОР ⑥ Leaflet-ээс БУСАД exception 0 (**Leaflet-ийн `_leaflet_pos` нь зарын газрын зургийн zoom transition-ы алдаа — өөрчлөлтөөс ҮЛ ХАМААРАЛТАЙ ⇒ тусад нь**, `cdp-search-history`-ийн ЯГ ИЖИЛ зарчим) ⑥b hydration/`validateDOMNesting` алдаа 0 · 📸 `/tmp/card-grid-home-1280.png` · `/tmp/card-grid-home-390.png` · `/tmp/card-grid-favorites-1280.png`) |
+| `scripts/cdp-card-grid.mjs` | 🎴 **CDP (бодит Chrome)** — `npm run cdp:card-grid` (🆕 **2026-10-09 (78) · ✏️ (84): 22 OK / 0 FAIL ✓** — ✅ БОДИТ headless Chrome + сервер :3000; ⚠️ байхгүй бол SKIP → exit 0 ✓). Геометрээр батална: ① 🖥 1280px — эхний мөрөнд **ЯГ 4 карт** (✏️ (84) `xl:grid-cols-4`; ①e хэсэг (280px сайдбартай) дээр **3 карт** ✓), бүх картын өргөн ИЖИЛ (±2px, хэмжсэн 296px) ①b хэвтээ гүйлт 0 ② зураг картын өргөнийг **ДҮҮРГЭНЭ**, харьцаа **4:3** (0.75; 292×219) ②c мэдээллийн блок зургийн **ДООР** (`img.bottom ≤ content.top`) ②d агуулга картын хүрээнээс гарахгүй ③ ❤️ нь **ҮНИЙ МӨРӨНД** (ижил өндөр ±6px) ба баруун захад (`ml-auto`) ③c товч «❤️ N»/«🤍 N» (⚠️ emoji-гийн variation selector `U+FE0F`-г цэвэрлэж шалгана) ③d гарчиг үнийн мөрөөс ДООР ④ 📱 390px — хэвтээ гүйлт 0, **НЭГ багана** (2 дахь карт 1-ийнхээ загинаа доор), зураг 4:3 бүтэн өргөн, ❤️ үнийн мөрөнд ⑤ `/favorites` (localStorage-д нүүр хуудасны эхний 4 зарыг seed хийнэ) — баганат grid + «Хасах» товч картын хүрээ ДОТОР ⑥ Leaflet-ээс БУСАД exception 0 (**Leaflet-ийн `_leaflet_pos` нь зарын газрын зургийн zoom transition-ы алдаа — өөрчлөлтөөс ҮЛ ХАМААРАЛТАЙ ⇒ тусад нь**, `cdp-search-history`-ийн ЯГ ИЖИЛ зарчим) ⑥b hydration/`validateDOMNesting` алдаа 0 · 📸 `/tmp/card-grid-home-1280.png` · `/tmp/card-grid-home-390.png` · `/tmp/card-grid-favorites-1280.png`) |
 | `scripts/test-similar.mjs` | 🆕 **39 тест** — `npm run test:similar` (🆕 **2026-10-09 (79): «ТӨСТЭЙ ЗАРУУД»** — хэрэглэгчийн хүсэлт: «зарын карт руу ороход төстэй заруудыг харуулах»). **① 🧩 ЦЭВЭР модуль (`lib/similarListings.mjs`, DB/React-гүй) функцээр:** `similarSection` (хоосон → `real-estate`) · `similarCategoryFilter` (зөвхөн `sell`/`rent`, бусад нь `null`) · `similarityScore` (дүүрэг **+3** ба төрөл **+2** ба хороо **+1** ба хот **+1** ⇒ дүүрэг+төрөл+хороо+хот = **7**; зөвхөн хот = 1; огт тохирохгүй = 0; ⚠️ ХООСОН утга ХЭЗЭЭ Ч тохирохгүй; жижиг/том үсэг ба илүүдэл зайг үл хайхна; `null` оролтод 0) · `rankSimilarListings` (өөрийгөө ХАСНА; оноо БУУРАХААР; оноо тэнцвэл `created_at` буурахаар; бүрэн тэнцвэл `id` буурахаар — ТОГТВОРТОЙ; анхдагч **6**; `limit`-ыг дагана; массив биш/`null`/`id`-гүй мөрд уналтгүй). **② 🧩 Эх кодын ГЭРЭЭ (`codeOnly()`):** `queries.js` → `fetchSimilarListings` (`.eq('section', similarSection(listing))` · `.neq('id', listing.id)` · `.eq('category', category)` · `.limit(SIMILAR_CANDIDATE_POOL)` · `return rankSimilarListings(listing, data \|\| [], size)` · `isUuid` хаалт · `./similarListings.mjs` импорт); `SimilarListings.jsx` → «🔎 Төстэй зарууд» · `data-similar-listings` · `<ListingCard>` · `return null` (хоосон үед) · `console.warn(normalizeError(err))` · `grid-cols-1 … sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4` · `fetchProfilesByIds(rows.map((l) => l.user_id))` · онооллыг ДАХИН БИЧЭЭГҮЙ; `ListingDetailClient.jsx` → `import SimilarListings` · `<SimilarListings listing={listing} />` · байрлал нь `</aside>` → `</div>` (grid) → `{}` (JSX коммент) → `<SimilarListings … />` → `</div>` (page-container) ✅ ⚠️ DB/React ХОЛБОГДОХГҮЙ) |
 | `scripts/cdp-tiles.mjs` | 🎨 **CDP (бодит Chrome)** — `npm run cdp:tiles` (🆕 **2026-10-09 (80): 36 OK / 0 FAIL ✓** — ✅ БОДИТ headless Chrome + сервер :3000; ⚠️ байхгүй бол SKIP → exit 0 ✓). 🎯 Нүүр хуудсны **КАТЕГОРИЙН TILE**-ийг геометрээр батална: ① 🎨 **12 tile** (`.tile-grid button[role=tab]`) ба **12 зураг БҮГД** ачаалагдав (`img[data-tile-img]` → `naturalWidth > 0`; ⏳ зам буруу бол хоосон дугуй ✗) ② 🔗 зам нь `/categories/<value>.svg` · `object-fit: contain` · зураг 44-56px (хэмжсэн 56px) ③ ⭕ дугуй (`border-radius ≥ өргөн/2` — 9999px) ба 12 нь **12 ӨӨР** пастел өнгө, цагаан/`bg-gray-50`/тунгалаг БИШ (хэмжсэн 80px, 🎨 `tileBg`) ④ 🔤 нэр нь дугуйны **ДООР** (`label.top ≥ badge.bottom`), дугуйтай **ТӨВД** (|Δcx| ≤ 12px), BOLD (`≥ 600`) ба текстэд ⚠️ **emoji БАЙХГҮЙ** (`U+1F000-1FAFF`/`2190-2BFF`/`FE0F` сканер) ба текст = `title` ⑤ 🧱 карт/хүрээ/сүүдэр БАЙХГҮЙ (товчны дэвсгэр тунгалаг · `border 0px` · `box-shadow none`) ⑥ 📐 ⏳ 🖥 1280px → **6 багана × 2 мөр** · 📱 390px → **3 × 4** (дугуй 64px), хэвтээ гүйлт **0** ⑦ 🖱 **hover** (жинхэнэ `Input.dispatchMouseEvent`) — дугуй `−4px` (`-translate-y-1`) ба зураг `1.05` (`scale-105`), бусдын дугуй ХӨДЛӨӨГҮЙ ⑧ 🎯 **сонголт**: `?section=auto` → панелийн гарчиг дарж буцахад ЯГ 1 tile `aria-selected` + дугуй дээр `ring` (box-shadow ≠ none) + нэр `rgb(37, 99, 235)`, бусдын 11 дээр `ring` БАЙХГҮЙ (⚠️ `role="tab"`/`data-section-value`/`title` гэрээ хөндөгдөөгүй ✓) ⑨ 🐍 exception 0 (Leaflet/`favicon` шүүсэн) ба hydration/`validateDOMNesting` алдаа 0 · 📸 `/tmp/zar-tiles-1280.png` · `/tmp/zar-tiles-390.png`) |
-| `scripts/cdp-similar.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:similar` (🆕 **2026-10-09 (79): 10 OK / 0 FAIL ✓** — ✅ БОДИТ headless Chrome + сервер :3000; ⚠️ байхгүй бол SKIP → exit 0 ✓). `/` дээрээс эхний зарын id-г олоод `/listings/<id>` руу орж геометрээр батална: ① зарын линк UUID ② блок нь **үндсэн 2 БАГАНЫН grid-ийн (агуулга + `aside`) ДООР** (`block.top ≥ grid.bottom`; `previousElementSibling` нь grid ба дотор нь `aside` байгааг ч шалгана) ③ гарчиг «🔎 Төстэй зарууд» ④ картууд ≥1 ④b эхний мөрөнд **≥2 карт** (1280px, хэмжсэн 3 карт) ④c бүх картын өргөн **ИЖИЛ** (±2px, хэмжсэн 400px) ⑤ одоогийн зар төстэй заруудын дотор **ДАВХАРДАХГҮЙ** ⑥ хэвтээ гүйлт 0 ⑦ Leaflet-ээс бусад exception 0 ⑦b hydration алдаа 0 · 📸 `/tmp/similar-listings-1280.png` (блок руу `scrollIntoView` хийж зурна). ⚠️ DB-д ижил хэсэг/ангиллын өөр зар байхгүй бол блок гарахгүй — тэр үед SKIP (exit 0), FAIL БИШ ✓) |
+| `scripts/cdp-similar.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:similar` (🆕 **2026-10-09 (79) · ✏️ (84): 11 OK / 0 FAIL ✓** — ✅ БОДИТ headless Chrome + сервер :3000; ⚠️ байхгүй бол SKIP → exit 0 ✓). `/` дээрээс эхний зарын id-г олоод `/listings/<id>` руу орж геометрээр батална: ① зарын линк UUID ② блок нь **үндсэн 2 БАГАНЫН grid-ийн (агуулга + `aside`) ДООР** (`block.top ≥ grid.bottom`; `previousElementSibling` нь grid ба дотор нь `aside` байгааг ч шалгана) ③ гарчиг «🔎 Төстэй зарууд» ④ картууд ≥1 ④b ✏️ (84) grid нь **4 БАГАНАТ** (`getComputedStyle(grid).gridTemplateColumns` — 1280px `xl:grid-cols-4`) ④b2 эхний мөрөнд ≥2 карт (хэмжсэн 4) ④c бүх картын өргөн **ИЖИЛ** (±2px, хэмжсэн 296px) ⑤ одоогийн зар төстэй заруудын дотор **ДАВХАРДАХГҮЙ** ⑥ хэвтээ гүйлт 0 ⑦ Leaflet-ээс бусад exception 0 ⑦b hydration алдаа 0 · 📸 `/tmp/similar-listings-1280.png` (блок руу `scrollIntoView` хийж зурна). ⚠️ DB-д ижил хэсэг/ангиллын өөр зар байхгүй бол блок гарахгүй — тэр үед SKIP (exit 0), FAIL БИШ ✓) |
 | `scripts/cdp-job-chips.mjs` | 🐍 **CDP (бодит Chrome)** — `npm run cdp:chips` (🆕 **2026-10-06 (18): 66 шалгалт · ✅ 66 OK / 0 FAIL** — ⏳ (16): 63 → (17): 54 → ОДОО **66**; 🆕 (18): **§⑥⓪ ХУРААГДАХ ЧИП БЛОК** — `[data-side-collapse]` нь jobType/experience/jobLevel, 🕒/📈 нь АНХДАГЧААР ХУРААСАН (`aria-expanded="false"`) ч чипүүд DOM-д (`[data-attr-value]` = 5) ба харагдах өндөр 0 ⇒ «Бүгдийг нээх» (`[data-side-toggle-all]`) дарахад 3 блок нээгдэж **sidebar-ийн өндөр нэмэгдэв** (товч «Хураах» + `aria-pressed=true`); **§⑥d** — `?attr_jobType=Бүтэн+цагийн` линкээр блок АВТОМАТААР НЭЭЛТТЭЙ (шүүлт ДАЛД БАЙХГҮЙ ✓) ба гарчиг дээр дарж хаахад чип DOM-д + URL/утга ХӨНДӨӨГДӨХГҮЙ ✓ — ⚠️ тиймээс ⑥/⑥b/⑥c шалгалтууд «Бүгдийг нээх»-ийн дараа л чип текстийг уншина; ⏳ 2026-10-05-д 54 байв; 🆕 (16): ⑥c HOVER (💼 📈 pill — БОДИТ хулганаар `Input.dispatchMouseEvent` ⇒ `:hover` ⇒ `rgb(233, 228, 217)` = `bg-gray-200`, зайлуулахад `rgb(255,255,255)` буцах; ИДЭВХТЭЙ pill ⇒ `bg-primary/25` = `rgba(37, 99, 235, 0.25)` ба гэрэлтэлт БАРААН ✓) · ⚠️ flake засвар: hover цэг нь ЭЭЛЖЛЭН эргэлддэг (`AWAY` — Chrome ижил цэг рүү дахин `mouseMoved` илгээхэд hit-test ДАХИН ХИЙГДДЭГГҮЙ) + `probeUntil` (6×250мс) + `matches(':hover')` · §⑤ мобайл тест нь хуучин ноорог (`localStorage`)-т өртөж байсныг `clearDraft()`-оор зассан ✓ · ⏳ ESC тест ⌄ панелийн чипийг дарж байсныг (тэдгээр нь `aria-expanded` БАЙХГҮЙ) `> button` ШУУД ХҮҮ-ээр зассан ✓ — 🆕 2026-10-03 (11): 💼 АЖЛЫН ЗАРЫН 4 ЧИП ТАЛБАР: ① демо хэрэглэгчээр нэвтэрч `/listings/new` → 💼 → 3-р алхам ② 4 блок `[data-attr-field]` (jobType 5 · experience 2 · advertiser 3 · jobLevel 5 чип) ЧИП ба 💰 `salaryType` `<select>` ХЭВЭЭР ③ чип дарах → `aria-pressed=true` + `chip-toggle-active` + блок бүрд ЯГ 1 (mutual exclusive) ④ идэвхтэй чип дээр дахин дарах → **ЦУЦЛАГДАНА** (бусад 3 чип + 💰 `<select>` хөндөгдөхгүй) ④b `?edit=<id>` (засах горим — чипүүд DB-ээс УРЬДЧИЛАН сонгогдсон эсэх; демо хэрэглэгчид ажлын зар байхгүй бол SKIP) ⑤ 📱 390px — 4 талбар БҮГД хүрэх (нэг дэлгэцэд НЭГ), `flex-wrap`, гүйлт 0 (`docW === vw`) ⑥ хайлтын хуудас `?section=jobs&type=…` — 🆕 **2026-10-05 (42): 🕒/📊/📈 нь САЙДБАРТ БИШ, `#filter-bar`-т 3 PILL** (`[data-filter-pill]` jobType · experience · jobLevel; ⌄ панель `[data-filter-panel]`; дотор нь `[data-attr-filter]` + `data-attr-multi="true"`; чип 12 = 5+2+5; `role="group"`; ⛔ панель дотор `<select>` БАЙХГҮЙ) ба **сайдбарт attr шүүлт 0** (`aside [data-attr-filter]` 0 — зөвхөн «Байршил» + «Цалин, ₮»), форм блок 0, байрлал нь `#listing-results` доторх «Эрэмбэлэх»-ийн ДООР (🆕 2026-10-03 (13): aside нь ХЭСГИЙН түвшинд ч гардаг болов — энэ шалгалт нь формтой жиших тул `&type=` ХЭВЭЭР ✓) ⑥b 🆕 (42): pill НЭЭЖ (⌄ панель `invisible` үед текст уншигдахгүй тул) чип дарж `?attr_jobType=Бүтэн цагийн,Цагийн` (**2 чип ЗЭРЭГ идэвхтэй** — ⛔ хуучин нэг сонголттой зан төлөв БАЙХГҮЙ), badge «2» + «2 сонгосон» + «✕ Цуцлах» → URL-ээс түлхүүр АРИЛНА; 📊 ч 2 утга ЗЭРЭГ (`?attr_experience=Шаардлагагүй,Шаардлагатай`), 📈 ХӨНДӨГДӨХГҮЙ ⑦ JS exception/console.error **0** · 🆕 **(51) 2026-10-07: ③④⑤ нь ЧИП БИШ — форм нь 💰 `salaryType`-тай ЯГ ИЖИЛ `<select>` (`[data-detail-field="attr-…"] select`, `hide-below-sm`) ба 📱 `[data-mobile-option]` 2 баганат жагсаалт (`[data-mobile-options-grid]` = 2 багана, `<select>` өргөн 0); §④ нь `select`-ийн `change`/poll, §④b (засах) `ed.selects`/`ed.values` ✓) |
 | `scripts/test-jobs.mjs` | **20 тест** — `npm run test:jobs` (🆕 2026-10-03 (9), 🆕 **2026-10-05 (42)**: 💼 АЖЛЫН ЗАРЫН ГЭРЭЭ — `lib/locationData.js` ШУУД + `codeOnly()` эх кодоор ① форм талбарууд ЯГ 5 — `['jobType','experience','advertiser','jobLevel','salaryType']` (🆕 (10): 🏢 `company` / 💼 `position` ХАСАГДАВ) ② 🕒 «Ажлын цаг» 5 сонголт + **`chips` + `multi` + `filterBar`** (🆕 (42)) ③ 📊 Туршлага/🏷️ Зарлагч/📈 Мэргэжлийн түвшин/💰 Цалингийн төрөл (📊/📈 ч **`chips` + `multi` + `filterBar`** — 🆕 (42)) ④ 🗑 salary/education/workMode/expiry ХАСАГДАВ ⑤ **хайлтын 3 шүүлт — ГУРВУУЛАА `chips` + `multi` + `filterBar`** (`jobType` · `experience` · `jobLevel`; 🆕 (42)) ба 🆕 `HomeClient`-ийн `attrFilters.filter((f) => f.chips && f.multi && f.filterBar)` / `.filter((f) => !f.filterBar)` хоёр мөр + `data-filter-pill`/`data-filter-panel` дэгээ (хатуу жагсаалт `FILTER_BAR_ATTR_KEYS` БАЙХГҮЙ ✓) ⑥ `priceWord`/`isJobsSection` ⑦ `format.js` `NEGOTIABLE_SALARY_LABEL`+`negotiableLabel` ⑧ форм «Цалингийн хэмжээ»+«Цалин тохиролцоно» ⑨ `f.chips` салбар (`chip-toggle`/`data-attr-value`) ⑩ `priceSideBlock` + ажилд attr шүүлтүүдийн ӨМНӨ дараалал (regex + `indexOf`) ⑪ картын мөр ⑫ `getAttrRows` `salary`/`company`/`position` МӨР БАЙХГҮЙ ⑬ seed шинэ утгууд · 🆕 **(51) 2026-10-07: ①–④ форм талбар `formChips === undefined`** (форм нь 💰 `salaryType`-тай ЯГ ИЖИЛ `<select>`/📱 2 баганат жагсаалт — ⏳ (11)-ийн форм чип ХАСАГДАВ, `f.formChips` салбарын гэрээ ХЭВЭЭР ✓) |
 | `scripts/test-search.mjs` | **53 тест** — `npm run test:search` (2026-09-30: 🔢 `lib/rangeFilter.mjs` (`groupDigits`/`parseNum`/`formatGroupedInput`/`clampNum`/`snapNum`/`toFilterPair`/`isRangeActive`/`rangeLabel`/`yearBounds`; 🆕 2026-10-04 (41): `FLOOR_BOUNDS`/`buildYearBounds`/`BUILD_YEAR_START`) + 🔀 `lib/sortOptions.mjs` (`SORT_OPTIONS`/`normalizeSort`/`sortOrders`/`sortLabel`) — `order=price.asc.nullslast,id.desc` ба HomeClient/queries-ийн гэрээ ✓; 📌 регресс: ① слайдер (`RangeSlider`/`rangeSlider.mjs`/`role="slider"`/pointer handler) ХААНА Ч БАЙХГҮЙ ② он БҮЛЭГЛЭГДЭХГҮЙ («2.026» ✗) ③ «1.234,5» → `1234.5` ✓ ④ хил дээрх `0` → «₮0 – ₮5 тэрбум» (өмнө нь «₮ – …» хоосон ✗) ⑤ **2026-09-30 (3): `priceQuickPicks()` эскпорт БАЙХГҮЙ, `quickPicks`/`data-quick-pick`/`aria-pressed` КОДОД БАЙХГҮЙ (комментыг `codeOnly()`-оор хасч шалгана), `snapNum` ЦЭВЭР туслах хэвээр, шошго нь `placeholder="Доод"`/`"Дээд"` + `(доод хязгаар)`/`(дээд хязгаар)` — «Эхлэх / Дуусах» кодод БАЙХГҮЙ** ✓) |
@@ -8748,10 +8785,11 @@ Breadcrumb      Бүх зар › Автомашин › Суудлын маши
 - **📐 ХЭМЖЭЭ** — карт `flex flex-col` (⏳ `sm:h-[300px] sm:flex-row` ХАСАГДАВ);
   зураг `relative aspect-[4/3] w-full shrink-0` (`h-*` БАЙХГҮЙ — өндрийг
   өргөнөөс бодно), мэдээллийн хэсэг `p-3.5`. 📏 Картын өргөнийг ЖАГСААЛТЫН
-  GRID шийднэ: нүүр `grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4`
-  (280px sidebar-тай 1280px дээр ~928px ⇒ 3 карт ≈296px), /favorites ба
-  /history `sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4`, нийтлэгчийн зарууд
-  `sm:grid-cols-2 xl:grid-cols-3`; 📱 мобайл **нэг** багана ✓.
+  GRID шийднэ: ✏️ **(84)** нүүр (сайдбаргүй) `grid-cols-1 sm:grid-cols-2
+  lg:grid-cols-3 xl:grid-cols-4` (1280px дээр 4 карт ≈296px ✓), хэсэг сонгосон
+  үед (280px сайдбар) `xl:grid-cols-3 2xl:grid-cols-4` ХЭВЭЭР (⚠️ тэнд 4 бол
+  ~220px), /favorites ба /history `sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4`,
+  нийтлэгчийн зарууд `sm:grid-cols-2 xl:grid-cols-3`; 📱 мобайл **нэг** багана ✓.
   ⚠️ `overflow-hidden` нь хэтэрснийг ТАЙРНА → мөр нэмбэл карт өөрөө уртасна ✓
 - **🖼 Зургийн тоо** — «🖼 1/16» баруун **ДООД** буланд (`imageCount > 1` үед л;
   🆕 2026-10-09 (78): ⏳ баруун дээд байсныг доошлуулав — баруун ДЭЭД нь
@@ -8798,12 +8836,14 @@ Breadcrumb      Бүх зар › Автомашин › Суудлын маши
   мөрөнд ❤️ БАЙХГҮЙ) ба **хуучин хэвтээ класс руу буцах хамгаалалт**
   (`sm:flex-row`, `sm:h-[300px]`, `sm:w-[42%]`, `h-52`) ✓
 - 🐍 **БОДИТ CHROME:** `npm run cdp:card-grid` (`scripts/cdp-card-grid.mjs`) —
-  геометрээр батална: ① нүүр 1280px — эхний мөрөнд ≥3 карт, бүх карт ИЖИЛ өргөн
+  геометрээр батална: ✏️ **(84) ① нүүр 1280px — эхний мөрөнд ЯГ 4 карт**
+  (`xl:grid-cols-4`, 296px) ба **①e хэсэг (280px сайдбартай) 1280px — 3 карт**
+  (`xl:grid-cols-3`), бүх карт ИЖИЛ өргөн
   ② зураг картын өргөнийг дүүргэж, харьцаа **4:3 (0.75)**, мэдээлэл зургийн
   ДООР, агуулга хүрээнээс гарахгүй ③ ❤️ нь үнийн мөрөнд (ижил өндөр) ба баруун
   захад, гарчиг доор ④ 📱 390px — хэвтээ гүйлт 0, **НЭГ** багана ⑤ /favorites —
   баганат grid + «Хасах» товч хүрээ дотор ⑥ Leaflet-ээс бусад exception 0,
-  hydration алдаа 0 ⇒ **21 OK / 0 FAIL ✓**
+  hydration алдаа 0 ⇒ **22 OK / 0 FAIL ✓** (⏳ (78): 21)
 
 ### 🔎 Төстэй зарууд (`SimilarListings.jsx`, 2026-10-09 (79))
 
@@ -8849,9 +8889,10 @@ Breadcrumb      Бүх зар › Автомашин › Суудлын маши
   дараалал) ② эх кодын ГЭРЭЭ (`codeOnly()`: query шүүлтүүд · UI · render-ийн
   байрлал) ✓
 - 🐍 **БОДИТ CHROME:** `npm run cdp:similar` (`scripts/cdp-similar.mjs`) —
-  блок 2 баганын grid-ийн ДООР · 6 карт · эхний мөрөнд ≥2 карт (400px, ИЖИЛ
-  өргөн) · одоогийн зар давхардаагүй · хэвтээ гүйлт 0 · JS/hydration алдаа 0
-  ⇒ **10 OK / 0 FAIL ✓** · 📸 `/tmp/similar-listings-1280.png`
+  блок 2 баганын grid-ийн ДООР · 6 карт · ✏️ **(84) grid нь 4 БАГАНАТ**
+  (`gridTemplateColumns`; 1-р мөрөнд 4 карт, 296px, ИЖИЛ өргөн) · одоогийн зар
+  давхардаагүй · хэвтээ гүйлт 0 · JS/hydration алдаа 0
+  ⇒ **11 OK / 0 FAIL ✓** (⏳ (79): 10) · 📸 `/tmp/similar-listings-1280.png`
   ⚠️ DB-д ижил хэсэг/ангиллын өөр зар байхгүй бол блок гарахгүй ⇒ SKIP (0), FAIL БИШ ✓
 
 

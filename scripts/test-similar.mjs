@@ -229,8 +229,8 @@ t('UI: хоосон бол блок БҮХЭЛДЭЭ ГАРАХГҮЙ (`return n
 t('UI: алдаа гарвал зөвхөн warn хийнэ (үндсэн агуулгад нөлөөлөхгүй)', () => {
   assert.match(COMPONENT_CODE, /console\.warn\(normalizeError\(err\)\)/);
 });
-t('UI: баганат grid (мобайл 1 → sm 2 → lg 3 → 2xl 4)', () => {
-  assert.match(COMPONENT_CODE, /grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4/);
+t('UI: баганат grid (📱1 → sm 2 → lg 3 → xl 4 — 🆕 (84): төстэй зарууд 4 БАГАНА)', () => {
+  assert.match(COMPONENT_CODE, /grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4/);
 });
 t('UI: нийтлэгчийн нэр/зургийг 2 дахь query-ээр нэгтгэнэ (`fetchProfilesByIds`)', () => {
   assert.match(COMPONENT_CODE, /fetchProfilesByIds\(rows\.map\(\(l\) => l\.user_id\)\)/);

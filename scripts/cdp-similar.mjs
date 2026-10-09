@@ -170,6 +170,9 @@ const PROBE = `(() => {
   const R = (el) => { const b = el.getBoundingClientRect(); return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height), r: Math.round(b.right), b: Math.round(b.bottom) }; };
   const block = document.querySelector('[data-similar-listings]');
   const grid = block.previousElementSibling;
+  // ⚠️ дээрх grid нь блокийн ГАДНА (үндсэн 2 баганат) — картын grid нь блокийн
+  //    ДОТОР эхний div.grid (🆕 (84) баганын тоог ТҮҮНЭЭС хэмжинэ ✓)
+  const cardsGrid = block.querySelector(':scope > div.grid');
   const cards = [...block.querySelectorAll('a[data-listing-card]')];
   const heads = [...block.querySelectorAll('h1,h2,h3')].map((h) => (h.innerText || '').trim());
   return {
@@ -178,6 +181,8 @@ const PROBE = `(() => {
     block: R(block),
     grid: grid ? R(grid) : null,
     gridHasAside: grid ? !!grid.querySelector('aside') : false,
+    gridCols: cardsGrid ? getComputedStyle(cardsGrid).gridTemplateColumns.split(' ').filter(Boolean).length : 0,
+    gridCls: cardsGrid ? cardsGrid.className : '',
     heads,
     count: cards.length,
     hrefs: cards.map((c) => c.getAttribute('href')),
@@ -194,7 +199,13 @@ check('③ Гарчиг нь «🔎 Төстэй зарууд»', r.heads.some((
 check('④ Картууд байна (≥1)', r.count >= 1, `${r.count} карт`);
 const firstY = r.rowTop[0] ?? 0;
 const row1 = r.rowTop.filter((y) => Math.abs(y - firstY) <= 4);
-check('④b Эхний мөрөнд ≥2 карт (баганат grid, 1280px)', row1.length >= 2, `${row1.length} карт`);
+// 🆕 2026-10-09 (84) ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «bas zar luu orood tustei zar deer bas»
+//    ⇒ 1280px (xl) дээр төстэй зарууд 4 БАГАНА. ⚠️ Баганын тоог grid-ийн
+//    `gridTemplateColumns`-ээс хэмжинэ — картын тоо DB-ээс хамаардаг тул
+//    «эхний мөрөнд ЯГ 4 карт» гэж шаардах нь хэврэг ✗ (2 карттай ч 4 багана ✓)
+check('④b «Төстэй зарууд» grid нь 4 БАГАНАТ (1280px — 🆕 (84))', r.gridCols === 4,
+  `${r.gridCols} багана · 1-р мөр ${row1.length} карт · нийт ${r.count} · «${r.gridCls.slice(0, 62)}»`);
+check('④b2 Эхний мөрөнд ≥2 карт (баганат grid)', row1.length >= 2, `${row1.length} карт`);
 const wDiff = r.widths.length ? Math.max(...r.widths) - Math.min(...r.widths) : 0;
 check('④c Бүх картын өргөн ИЖИЛ (±2px)', r.widths.length === 0 || wDiff <= 2,
   `${Math.min(...r.widths)}…${Math.max(...r.widths)}px`);

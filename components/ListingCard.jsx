@@ -29,8 +29,10 @@ import VerifiedBadge from './VerifiedBadge';
  *   │  🕒 27 минутын өмнө | 📍 Баянзүрх  👁 12 │
  *   └──────────────────────────┘
  *
- * 📐 ХЭМЖЭЭ: картын өргөнийг ЖАГСААЛТЫН GRID тодорхойлно (`HomeClient` →
- *    `sm:grid-cols-2 xl:grid-cols-3`; /favorites · /history → `lg:grid-cols-3`).
+ * 📐 ХЭМЖЭЭ: картын өргөнийг ЖАГСААЛТЫН GRID тодорхойлно (🆕 (84) `HomeClient` →
+ *    нүүр (сайдбаргүй) `lg:grid-cols-3 xl:grid-cols-4` ⇒ 4 карт ≈296px;
+ *    хэсэг (280px сайдбартай) `xl:grid-cols-3`; /favorites · /history →
+ *    `lg:grid-cols-3`; «🔎 Төстэй зарууд» → `lg:grid-cols-3 xl:grid-cols-4`).
  *    Зураг нь `aspect-[4/3]` тул өндөр нь өргөнөөсөө 75% — бэхлэгдсэн өндөр
  *    (`h-*`) БАЙХГҮЙ, агуулга чөлөөтэй уртасна ✓
  *    🔧 Зургийн харьцааг солих бол доорх `aspect-[4/3]`-г л өөрчилнө.

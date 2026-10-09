@@ -4155,13 +4155,24 @@ export default function HomeClient() {
             <p className="text-gray-500">Хайлтаа өөрчилж үзнэ үү. {query && `«${query}»`} {getCategoryLabel(category)}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {/* 🃏 ЗАРЫН КАРТУУД — БАГАНАТ GRID (2026-10-09, жишиг сайт хэв)
-                ⚠️ Карт нь БОСОО болов (`ListingCard` — зураг дээрээ, мэдээлэл доор)
-                   тул бүтэн өргөнтэй НЭГ багана биш, GRID шаардна ✓
-                · 📱 мобайл 1 · 📲 sm(≥640) 2 · 🖥 xl(≥1280, сайдбартай) 3 · 2xl 4
-                   (⚠️ xl-д сайдбар 280px тул үр дүнгийн багана ~928px:
-                    3 карт ≈ 296px ✓ — 4 болвол ~220px, карт хэт нарийн ✗) */}
+          <div
+            className={`grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 ${
+              noSection ? 'xl:grid-cols-4' : 'xl:grid-cols-3 2xl:grid-cols-4'
+            }`}
+          >
+            {/* 🧱 КАРТЫН GRID — ХОЁР ХЭВ (🆕 2026-10-09 (84)) =
+                📱 grid-cols-1 → 📲 sm:2 → 🖥 lg:3 → 🖥 xl:4
+                ⚠️ «Бүх зар» (нүүр хуудас) дээр сайдбар БАЙХГҮЙ (83b) тул багана
+                   бүтэн өргөн (1440px дээр ~1200px) ⇒ 4 карт ≈ 290px ✓
+                   (хэрэглэгчийн хүсэлт: «нэг баганад 4н карт харуулъя. home дээр»)
+                ⚠️ Хэсэг сонгосон үед сайдбар 280px ЗҮҮН талд байна ⇒ xl дээр
+                   4 карт ≈ 220px болж ХЭТ НАРИЙН ✗ тул хуучин хэвээр (3), зөвхөн
+                   2xl (≥1536px) дээр 4 ✓
+                🔍 Түлхүүр: `noSection` (999) — `components/SimilarListings.jsx`
+                   (төстэй зарууд) нь мөн ижил 4-баганат хэвтэй ✓
+                ⚠️ Тэмдэглэл: JSX-ийн ternary мөр дотор JSX КОММЕНТ бичих
+                   БОЛОМЖГҮЙ ✗ (parse алдаа) — коммент нь элементийн ДОТОР
+                   (эхний хүүхэд) байх ЁСТОЙ ✓ */}
             {listings.map((l) => (
               <ListingCard
                 key={l.id}
