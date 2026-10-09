@@ -18,6 +18,13 @@
 //        хуудас ХАГАС ХООСОН болохгүй ✓ (5 блок хамт харагдана ✓)
 //     ④ `[data-step-back]` — 🖥 ?step=3 → ?step=2 «Байршил» ✓
 //     ⑤ JS алдаа: `exception` / `console.error` ГАРАГҮЙ ✓
+//     ⑥ 🆕 📝 2-р алхмын ТУСЛАХ МӨР (2026-10-09 — хэрэглэгчийн хүсэлт):
+//        нэг ТОГТМОЛ өгүүлбэр «Газрын зураг дээр пин ашиглан илүү нарийвчлалтай
+//        харуулна уу» · 🖥 1440px дээр ЯГ 1 МӨР · ⛔ хуучин 2 өгүүлбэр
+//        («ЗӨВ байрлалд…» / «нарийвчлах бол…») ГАРАХГҮЙ · солбицлын
+//        «(ойролцоо)» шошго ХЭВЭЭР (нарийвчлалын мэдээлэл алдагдаагүй ✓) ·
+//        📸 `/tmp/zar-steps2-hint-1440.png` · ⛔ профайл НЭВТРЭЭГҮЙ бол
+//        SKIP (FAIL БИШ — зөвхөн «… нэвтрэх шаардлагатай» нөхцөлд ✓)
 //
 // ⚙️ ХЭРХЭН АЖИЛЛУУЛАХ (2 урьдчилсан нөхцөл):
 //   1) сервер ажиллаж байх (`npm run build && npm start`)
@@ -34,8 +41,10 @@
 //    нэвтрэлт ХӨНДӨГДӨХГҮЙ ✓)
 // ⚠️ «✅ Зар нийтлэх»-ийг ДАРАХГҮЙ ✗ — DB-д туршилтын зар үүсэхээс сэргийлнэ ✓
 // 🔍 Хайх үг: cdp-form-steps, lastStepIndex, Дэлгэрэнгүй ба үнэ, зураг,
-//    data-step-submit
+//    data-step-submit, MAP_HINT_TEXT, data-map-picker-hint
 // ============================================================
+import fs from 'node:fs';
+
 const BASE = (process.argv[2] || 'http://localhost:3000').replace(/\/$/, '');
 const CDP = `http://127.0.0.1:${process.env.CDP_PORT || 9222}`;
 
@@ -47,6 +56,9 @@ const MOBILE_STEP3 = ['details'];
 const MOBILE_STEP4 = ['price', 'desc'];
 /** 📱 <640px · 5 дахь дэлгэц */
 const MOBILE_STEP5 = ['media', 'media-images'];
+/** 📝 2-р алхмын ТУСЛАХ МӨР — нэг ТОГТМОЛ өгүүлбэр (2026-10-09)
+ *  ⚠️ САЯХАН өөрчлөгдөж болохгүй ТЕКСТ тул тест дотор ТҮГЖИНЭ ✓ */
+const MAP_HINT_TEXT = 'Газрын зураг дээр пин ашиглан илүү нарийвчлалтай харуулна уу.';
 
 let pass = 0;
 let fail = 0;
@@ -132,6 +144,29 @@ await clearDrafts();
 await rpc('Page.navigate', { url: `${BASE}/listings/new` });
 await wait(4500);
 
+/** ⛔ НЭВТРЭЭГҮЙ профайл ⇒ SKIP (FAIL БИШ) — 2026-10-09
+ *  ⚠️ Форм нь ЗӨВХӨН нэвтэрсэн хэрэглэгчид харагдана; профайлын сесс
+ *     дуусахад хуудас «… нэвтрэх шаардлагатай» гэж гарч, 39 шалгалт
+ *     ХУУРАМЧ ✗ болж, `hint.coordText` уналт үүсгэдэг байв ⇒ ОДОО яг
+ *     «нэвтрэх шаардлагатай» нөхцөлд л SKIP хийнэ ✓
+ *  ⚠️ ЗӨВХӨН тэр текст байхгүй атлаа форм хоосон бол ⏳ адилхан FAIL хэвээр
+ *     (бодит алдааг SKIP-ээр нуухгүй ✓) */
+const pageState = await evaluate(`({
+  blocks: document.querySelectorAll('[data-step-block]').length,
+  needsLogin: (document.body.innerText || '').indexOf('нэвтрэх шаардлагатай') !== -1,
+})`);
+if (pageState.blocks === 0 && pageState.needsLogin) {
+  console.log('\n⏭  SKIP: Chrome профайл НЭВТРЭЭГҮЙ (форм зөвхөн нэвтэрсэн хэрэглэгчид харагдана) ✓');
+  console.log('   1) Chrome-ыг нэвтэрсэн профайлаар нээ:');
+  console.log('     /Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome \\');
+  console.log('       --headless=new --remote-debugging-port=9222 \\');
+  console.log(`       --user-data-dir=/tmp/zar-chrome-prof ${BASE}/`);
+  console.log('   2) Тэр цонхон дээр «🔑 Нэвтрэх» → утас + нууц үг (сесс профайлд үлдэнэ ✓)');
+  console.log('   3) Дараа нь:  npm run cdp:steps\n');
+  ws.close();
+  process.exit(0);
+}
+
 const click = async (sel) => {
   const res = await evaluate(`(() => { const el = document.querySelector(${JSON.stringify(sel)}); if (!el) return 'NOT_FOUND'; el.click(); return 'OK'; })()`);
   await wait(500);
@@ -189,6 +224,25 @@ const PROBE = `(() => {
   };
 })()`;
 const probe = () => evaluate(PROBE);
+
+/** 📝 2-р алхмын ТУСЛАХ МӨР — текст · харагдац · МӨРИЙН тоо (пингийн тайлбар)
+ *  ⚠️ Мөр нь НЭГ байх ёстой (⏳ хуучин 2 өгүүлбэр нь 2 мөр болж блокийг
+ *     өндөрсгөдөг байв) ⇒ `lineHeight`-аар хэмжинэ ✓ */
+const mapHint = () => evaluate(`(() => {
+  const el = document.querySelector('[data-map-picker-hint]');
+  if (!el) return { present: false, visible: false, text: '', lines: 0, coordText: '' };
+  const r = el.getBoundingClientRect();
+  const cs = window.getComputedStyle(el);
+  const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.4;
+  const coord = document.querySelector('[data-map-picker-value]');
+  return {
+    present: true,
+    visible: r.width > 0 && r.height > 0,
+    text: (el.innerText || '').trim(),
+    lines: Math.round(r.height / lh),
+    coordText: coord ? (coord.innerText || '').trim() : '',
+  };
+})()`);
 
 /** 🗂 1-р алхмын 3 баганын сонголт (`data-picker`) */
 const pick = async (picker, value) => {
@@ -255,6 +309,38 @@ let p = await probe();
 ok('② 2-Р АЛХАМ (breadcrumb «Байршил») ✓', p.step === 'Байршил', JSON.stringify(p.step));
 ok('② 2-р алхам: зөвхөн `location` блок харагдана ✓',
   JSON.stringify(p.visibleBlocks) === '["location"]', JSON.stringify(p.visibleBlocks));
+
+/** 📝 ТУСЛАХ МӨР (2026-10-09) — ⏳ «пин тавибал зар ЗӨВ байрлалд харагдана.
+ *  Одоогоор сонгосон хорооны/дүүргийн/хотын төвд ойролцоогоор байна —
+ *  нарийвчлах бол газрын зураг дээр дарна уу» (нөхцөлт, 2 өгүүлбэр) БИШ,
+ *  ОДОО нэг ТОГТМОЛ мөр ✓ */
+const hint = await mapHint();
+ok(`📝 2-р алхам: туслах мөр нэг өгүүлбэр — «${MAP_HINT_TEXT}» ✓`,
+  hint.present && hint.visible && hint.text === MAP_HINT_TEXT, JSON.stringify(hint));
+ok('📏 Туслах мөр 🖥 1440px дээр ЯГ 1 МӨР (хуучин 2 өгүүлбэр 2 мөр болж блокийг өндөрсгөдөг байв ✓)',
+  hint.lines === 1, `lines=${hint.lines}`);
+ok('⛔ ХУУЧИН 2 өгүүлбэр («ЗӨВ байрлалд…» / «нарийвчлах бол…») ГАРАХГҮЙ ✓',
+  hint.present && !hint.text.includes('ЗӨВ байрлалд') && !hint.text.includes('нарийвчлах бол'),
+  JSON.stringify(hint.text));
+ok('📍 Нарийвчлалын мэдээлэл АЛДАГДААГҮЙ — солбицлын мөрөнд «(ойролцоо)» шошго ХЭВЭЭР ✓',
+  hint.coordText.includes('(ойролцоо)'), JSON.stringify(hint.coordText));
+
+// 📸 Туслах мөрийн агшин зураг (зөвхөн «🗺 Газрын зураг дээр заах» блок)
+const pickerBox = await evaluate(`(() => {
+  const el = document.querySelector('[data-map-picker-block]');
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return { x: Math.max(0, Math.floor(r.x)), y: Math.max(0, Math.floor(r.y)), width: Math.ceil(r.width), height: Math.ceil(r.height) };
+})()`);
+if (pickerBox) {
+  const shot = await rpc('Page.captureScreenshot', {
+    format: 'png',
+    clip: { ...pickerBox, scale: 1 },
+    captureBeyondViewport: true,
+  });
+  fs.writeFileSync('/tmp/zar-steps2-hint-1440.png', Buffer.from(shot.data, 'base64'));
+  ok('📸 Агшин зураг хадгалагдав — `/tmp/zar-steps2-hint-1440.png` ✓', true);
+}
 
 await clickNext();
 p = await probe();

@@ -351,6 +351,26 @@ t('④ 2-р алхам — «🗺 байршлаа заах» товч ба пи
   assert.ok(src.includes('Газрын зураг дээр заах'), 'товчны текст алга');
 });
 
+t('④ ТУСЛАХ МӨР — «пин ашиглан илүү нарийвчлалтай» (нэг ТОГТМОЛ мөр)', () => {
+  const src = codeOnly('components/AddListingClient.jsx');
+  const m = src.match(/<p data-map-picker-hint[\s\S]*?<\/p>/);
+  assert.ok(m, 'туслах мөрийн дэгээ (`data-map-picker-hint`) эсвэл `<p>` алга');
+  const hint = m[0];
+  assert.ok(
+    hint.includes('Газрын зураг дээр пин ашиглан илүү нарийвчлалтай харуулна уу.'),
+    'туслах мөрийн шинэ текст алга',
+  );
+  // ⚠️ НӨХЦӨЛТ БАЙХГҮЙ — пин тавьсан ч/тавиагүй ч НЭГ ижил мөр ✓ (`{…}` 0)
+  assert.equal(hint.includes('{'), false, 'туслах мөр нөхцөлт илэрхийлэл (`{…}`) агуулж байна ✗');
+  // ⛔ ХУУЧИН 2 ӨГҮҮЛБЭР (нөхцөлт байсан) БУЦАЖ ОРОХГҮЙ — регресс барь
+  assert.equal(src.includes('нарийвчлах бол газрын зураг дээр дарна уу'), false, 'хуучин «нарийвчлах бол…» мөр буцаж орлоо ✗');
+  assert.equal(src.includes('зар ЗӨВ байрлалд харагдана'), false, 'хуучин «ЗӨВ байрлалд» мөр буцаж орлоо ✗');
+  assert.equal(src.includes('төвд ойролцоогоор байна'), false, 'хуучин «төвд ойролцоогоор байна» мөр буцаж орлоо ✗');
+  // ℹ️ НАРИЙВЧЛАЛЫН мэдээлэл АЛДАГДААГҮЙ — солбицлын «(ойролцоо)» шошго ХЭВЭЭР ✓
+  assert.ok(src.includes("{mapPickIsApprox ? ' (ойролцоо)' : ''}"), 'солбицлын «(ойролцоо)» шошго алга');
+  assert.ok(src.includes('const mapPickIsApprox ='), '`mapPickIsApprox` тодорхойлолт алга');
+});
+
 t('④ Модаль — `{mapPickerOpen && ( <LocationMapPicker … /> )}` form дотор', () => {
   const src = codeOnly('components/AddListingClient.jsx');
   assert.ok(src.includes('{mapPickerOpen && ('), 'модаль render нөхцөл алга');
@@ -465,7 +485,11 @@ t('⑦ README: «🗺 Газрын зураг дээрх байршил» хэс
   const README = readSrc('README.md');
   const at = README.indexOf('#### 🗺 Газрын зураг дээрх байршил');
   assert.ok(at > 0, 'README-д хэсэг БАЙХГҮЙ');
-  const block = README.slice(at, at + 4000);
+  /* ⚠️ Хэсгийн ТӨГСГӨЛИЙГ дараагийн `#### ` гарчгаас олно — ТОГТМОЛ тэмдэгт
+     цонхоор (хуучин 4000) таславал хэсэг бага зэрэг уртсахад л ХУУРАМЧ унана
+     (🆕 (81): файлын хүснэгтийн мөр + туслах мөрийн тэмдэглэл нэмэгдэв) ✗ */
+  const nextBox = README.indexOf('\n#### ', at + 1);
+  const block = README.slice(at, nextBox > at ? nextBox : at + 4000);
   assert.ok(block.includes('lib/locationGeo.mjs'), 'модулийн нэр алга');
   assert.ok(block.includes('LocationMapPicker'), 'компонентийн нэр алга');
   assert.ok(block.includes('migration'), 'DB-ийн тайлбар алга');
