@@ -182,7 +182,7 @@ export default function SellerListingsClient({ sellerId }) {
       <Breadcrumb items={[{ label: 'Бүх зар', href: '/' }, { label: seller.name }]} />
 
       {/* ===== ЗАР НИЙТЛЭГЧИЙН КАРТ ===== */}
-      <section className="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card">
+      <section className="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-card">
         <div className="flex flex-wrap items-center gap-4 p-5 sm:p-6">
           {/* 👤 ПРОФАЙЛ ЗУРАГ — 🆕 (65) өмнө нь ЗӨВХӨН үсэг (`h-16 w-16 rounded-full`)
               байсан; одоо зарын карт дээрхтэй ИЖИЛ `Avatar` (64px, `rounded-lg`,
@@ -230,7 +230,7 @@ export default function SellerListingsClient({ sellerId }) {
 
         {/* Зарах / Түрээслэх-ийн товч статистик —
             ⚠️ ЗӨВХӨН үл хөдлөх зартай нийтлэгчид (хэрэглэгчийн хүсэлт) */}
-        <div className="flex flex-wrap items-center gap-2 border-t border-gray-100 px-5 py-3.5 sm:px-6">
+        <div className="flex flex-wrap items-center gap-2 border-t border-gray-200 px-5 py-3.5 sm:px-6">
           <span className="text-[13px] font-semibold text-gray-600">📋 Нийт {counts.all} зар</span>
           {hasRealEstate && (
             <>
@@ -270,7 +270,7 @@ export default function SellerListingsClient({ sellerId }) {
       )}
 
       {visible.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white px-5 py-14 text-center">
+        <div className="rounded-xl border border-gray-200 bg-gray-100 px-5 py-14 text-center">
           <div className="mb-3 text-5xl">{tab === 'sell' ? '🏷️' : '🔑'}</div>
           <h3 className="mb-1 text-lg font-semibold">
             {tab === 'sell' ? 'Зарах зар байхгүй' : 'Түрээслэх зар байхгүй'}

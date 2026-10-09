@@ -198,7 +198,7 @@ export default function FeedbackClient() {
 
         {/* ===== МИНИЙ САНАЛУУД ===== */}
         <aside className="space-y-4">
-          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-card">
+          <div className="rounded-xl border border-gray-200 bg-gray-100 p-5 shadow-card">
             <h2 className="mb-3 text-base font-semibold text-gray-800">📋 Миний илгээсэн саналууд</h2>
 
             {listError && (
@@ -217,7 +217,7 @@ export default function FeedbackClient() {
                   const st = STATUS_MAP[f.status] || STATUS_MAP.new;
                   const cat = CATEGORY_MAP[f.category] || CATEGORY_MAP.other;
                   return (
-                    <li key={f.id} className="rounded-lg border border-gray-100 bg-gray-50 px-3.5 py-3">
+                    <li key={f.id} className="rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-3">
                       <div className="mb-1.5 flex flex-wrap items-center gap-2">
                         <span className="text-[12px] font-semibold text-gray-600">{cat.label}</span>
                         <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${st.className}`}>

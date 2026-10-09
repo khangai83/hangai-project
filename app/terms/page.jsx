@@ -375,7 +375,7 @@ export default function TermsPage() {
         </section>
 
         {/* ===== ТАЙЛБАР ===== */}
-        <p className="rounded-xl border border-gray-200 bg-white px-4 py-3 text-[12.5px] leading-relaxed text-gray-500">
+        <p className="rounded-xl border border-gray-200 bg-gray-100 px-4 py-3 text-[12.5px] leading-relaxed text-gray-500">
           ⚠️ Энэхүү баримт бичиг нь Монгол Улсын холбогдох хууль тогтоомжид үндэслэн
           боловсруулсан <b>загвар</b> юм. Нийтэд нээлттэй ашиглалтад оруулахын өмнө
           мэргэжлийн хуульч/өмгөөлөгчөөр эцсийн байдлаар хянуулж, байгууллагынхаа

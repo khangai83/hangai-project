@@ -170,7 +170,7 @@ export default function MyListingsClient() {
                 return (
                   <div
                     key={l.id}
-                    className="group flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-4 shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover"
+                    className="group flex flex-col gap-4 rounded-xl border border-gray-200 bg-gray-100 p-4 shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover"
                   >
                     {/* ⚠️ КАРТ БҮХЭЛДЭЭ линк — «👁 Харах» товч ХЭРЭГГҮЙ.
                         Үйлдлийн товчнууд (Засах/Устгах) нь линкээс ГАДНА —

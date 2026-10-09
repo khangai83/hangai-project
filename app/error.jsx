@@ -29,7 +29,7 @@ export default function AppError({ error, reset }) {
 
   return (
     <div className="page-container">
-      <div className="mx-auto mt-6 max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-card">
+      <div className="mx-auto mt-6 max-w-md rounded-2xl border border-gray-200 bg-gray-100 p-8 text-center shadow-card">
         <div className="mb-4 text-6xl">⚠️</div>
         <h1 className="text-xl font-semibold">Алдаа гарлаа</h1>
         <p className="mt-2 text-[13px] text-gray-500">

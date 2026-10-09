@@ -156,7 +156,7 @@ export default function AdminUsersClient() {
   if (loadError) {
     return (
       <div className="page-container">
-        <div className="mx-auto my-8 max-w-[640px] rounded-2xl border border-red-200 bg-white px-6 py-8 text-center">
+        <div className="mx-auto my-8 max-w-[640px] rounded-2xl border border-red-200 bg-gray-100 px-6 py-8 text-center">
           <div className="text-4xl">{loadError.status === 403 ? '🚫' : '⚠️'}</div>
           <h3 className="mb-2 mt-3 text-lg font-semibold text-red-800">
             {loadError.status === 403 ? 'Танд админ эрх байхгүй' : 'Алдаа гарлаа'}
@@ -222,7 +222,7 @@ export default function AdminUsersClient() {
           { label: 'Нийт зар', value: stats.listings, icon: '🏠' },
           { label: 'Зартай хэрэглэгч', value: stats.withListings, icon: '📋' },
         ].map((s) => (
-          <div key={s.label} className="rounded-xl border border-gray-200 bg-white px-4 py-3">
+          <div key={s.label} className="rounded-xl border border-gray-200 bg-gray-100 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               {s.icon} {s.label}
             </p>
@@ -244,7 +244,7 @@ export default function AdminUsersClient() {
       </div>
 
       {/* ===== Хүснэгт ===== */}
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-gray-100">
         <table className="w-full min-w-[1040px] text-left text-sm">
           <thead className="border-b border-gray-200 bg-gray-50 text-[12px] uppercase tracking-wide text-gray-500">
             <tr>

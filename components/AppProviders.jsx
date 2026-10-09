@@ -342,7 +342,9 @@ export default function AppProviders({ children }) {
                  оронд нь доод навигац (`<nav>` доор) гарна ✓
                  → Ингэснээр мобайлд header нь ЗӨВХӨН [лого + 🏠 икон] (ХАМТ
                    төвд) ✓ — 🆕 2026-10-08 (69e): икон бүх өргөнд харагдана */} 
-          <header className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-card">
+          {/* 🎨 2026-10-09 (83): `bg-white` → **`bg-gray-100`** — хуудсын дэвсгэр
+              ЦАГААН болсон тул толгой нь «дээр нь байгаа саарал зүйл» болов ✓ */}
+          <header className="sticky top-0 z-50 border-b border-gray-200 bg-gray-100 shadow-card">
             <div className="relative mx-auto flex h-16 max-w-[1536px] items-center justify-center px-4 sm:px-6 lg:justify-between">
               {/* 🏠 ЛОГО (2026-10-08 (69c): `🏠` emoji → `ZARBOOK.MN`;
                    (69d): икон логоноос ГАРЧ хайлтын хэсгийн ӨМНӨ ТУСДАА болов):
@@ -716,14 +718,16 @@ export default function AppProviders({ children }) {
               ⚠️ `z-40` — header (`z-50`) ба modal (`z-[1000]+`)-аас ДООР ✓
                  (модал нээгдэхэд навигац дээр гарах ёсгүй ✓)
               ⚠️ `bg-white` (өмнө нь `bg-white/95 backdrop-blur-sm` байв) —
-                 Facebook-ийн доод цэс тунгалаг БИШ, цул цагаан ✓
+                 Facebook-ийн доод цэс тунгалаг БИШ, цул өнгөтэй ✓
+                 🎨 2026-10-09 (83): `bg-white` → **`bg-gray-100`** — хуудсын дэвсгэр
+                 ЦАГААН болсон тул доод цэс нь «дээр нь байгаа саарал зүйл» болов ✓
               ⚠️ `lg:hidden` — desktop дээр header-ийн товчнууд хангалттай ✓ */}
           <nav
             aria-label="Мобайл доод цэс"
             /* ⚠️ `grid-cols-5` (2026-09-28): «✉️ Мессеж» нэмэгдсэн тул 4 → 5
                багана. Товчнууд нь `px-1` + `text-[10px] min-[360px]:text-[11px]`
                (+ 19px икон) тул нарийн дэлгэц (320px) дээр ч 5 нь бүтэн багтана ✓ */
-            className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-gray-200 bg-white shadow-[0_-1px_3px_rgba(0,0,0,0.08)] lg:hidden"
+            className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-gray-200 bg-gray-100 shadow-[0_-1px_3px_rgba(0,0,0,0.08)] lg:hidden"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
           >
             {/* ① ЗҮҮН ДООД — ➕ Зар нэмэх (ГОЛ үйлдэл → үргэлж брэнд өнгө ✓)

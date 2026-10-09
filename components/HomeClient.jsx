@@ -1402,19 +1402,19 @@ export default function HomeClient() {
   const clearPayments = () => setF('payments', []);
 
   /**
-   * 🔄 «СОЛИНО» (2026-10-09) — ГАНЦ чип тул утга нь BOOLEAN: нэг дарж
+   * 🔄 «СОЛИНО» (2026-10-09 (82) → ✏️ (83)) — ГАНЦ сонголт тул утга нь BOOLEAN:
    * асаах/унтраах (`toggleSwapValue` → `true`/`false`).
    * ⚠️ Дүрэм нь `lib/swapFilter.mjs → toggleSwapValue()` (нэг эх сурвалж) —
    *    форм дээрх ☑ checkbox ч ЯГ ижил «эргүүлэх» логиктой ✓
    * ⚠️ 📄 1-р хуудас руу буцна (`toggleRooms`/`togglePayments`-тэй ижил ✓)
+   * ✏️ (83): сайдбарын UI нь ЧИП → ☑ CHECKBOX болов (`onChange={toggleSwap}`) —
+   *    ☑-г ЭРГЭЖ тавихад л унтардаг тул тусад нь «✕ Цуцлах» функц БАЙХГҮЙ ✓
+   *    (идэвхтэй шүүлтийн чипийн ✕ нь хэвээр — `key === 'swap' ? false` ✓)
    */
   const toggleSwap = () => {
     setPage(1);
     setFilters((f) => ({ ...f, swap: toggleSwapValue(f.swap) }));
   };
-
-  /** 🔄 «Солино» шүүлтийг арилгах («✕ Цуцлах») */
-  const clearSwap = () => setF('swap', false);
 
 
   /* 🗺 ДҮҮРЭГ/СУМ ба ХОРООНЫ сонголт (2026-10-04 (28)).
@@ -1764,12 +1764,25 @@ export default function HomeClient() {
    *
    * ⚠️ Панель доторх блок нь хэсэг/төрлөөсөө хамаарч ӨӨРӨӨ шүүгдэнэ
    *    (`showRooms` / `showPayments` / `attrFilters` / «Талбай» — `isRealEstate`):
-   *    • «Бүх зар» дээр ЗӨВХӨН нийтлэг блок — 📍 Байршил · 💰 Үнэ (attr = [] ✓)
    *    • Хэсэг дээр (ж: 🚗 Автомашин) — attr шүүлтүүд (🏷️ Брэнд · 🚙 Загвар …) + 💳
    *    • Дэд төрөл дээр — `onlySubtypes`-тай шүүлтүүд ч нэмэгдэнэ (💻 Notebook)
    *    ⇒ нэмэлт нөхцөл ШААРДЛАГАГҮЙ: `lib/locationData.js` өөрөө шийднэ ✓
+   *
+   * 🆕 2026-10-09 (83) — ПАНЕЛЬ НҮҮР ХУУДАСНААС ГАРСАН (PROGRESSIVE):
+   *    ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «home page дээр байгаа хайлтын хэсгийг home page
+   *    дээр бүү харуул, ямар нэг зарын категори сонгоход гарч ирдэг байхаар
+   *    болгож өөрчил» ⇒ панель нь ЗӨВХӨН ХЭСЭГ (2-р түвшин) сонгосон үед
+   *    render болно — «Бүх зар» (нүүр хуудас, 1-р түвшин) дээр БАЙХГҮЙ ✓
+   *    (шкала нь: оршин суух газар ба ангилал сонгох нь нүүр хуудасны үүрэг).
+   *    ⏳ 2026-10-03 (13)-аас хойш панель «Бүх зар» дээр Ч ҮРГЭЛЖ байв ✗
+   *    ⏳ 2026-10-03 (13)-аас ӨМНӨ `filters.propertyType` (3-р түвшин)-д л байв
+   * ℹ️ Нүүр хуудсанд (хэсэг сонгоогүй) хайлтын зам ХААГДААГҮЙ — толгойн мөр
+   *    (`HeaderSearchBar`: 🔎 түлхүүр үг + 📍 байршил) ба идэвхтэй шүүлтийн
+   *    чипүүд (`#filter-bar`, `activeFilterChips`) ХЭВЭЭР ажиллана ✓
+   * ⚠️ 🔀 «Эрэмбэлэх» ба 🗺 «Газрын зураг дээр харах» нь энэ туганд ОРООГҮЙ —
+   *    тэдгээр нь ХАЙЛТ биш (эрэмбэ/харагдац) тул нүүр хуудсанд ч ХЭВЭЭР ✓
    */
-  const showAdvancedFilters = true;
+  const showAdvancedFilters = !noSection;
 
   /**
    * 🔢 ҮНИЙ хил (2026-09-30) — ХЭСГЭЭС хамаарна: 🏠 үл хөдлөх → 5 тэрбум,
@@ -2223,18 +2236,19 @@ export default function HomeClient() {
   // 🔴 АСУУДАЛ ② (2026-09-27, дараагийн хүсэлт): «Дэлгэрэнгүй хайлтыг
   //    үргэлж нээлттэй болгоё доо» → товч дарах шаардлага хэт их санагдсан ✗
   //
-  // ✅ ШИЙДЭЛ ② (ОДООГИЙН): `filtersOpen` ТӨЛӨВ БА «⚙️ Дэлгэрэнгүй хайлт»
-  //    ТОВЧ ХОЁУЛАА ХАСАГДСАН ✓ → панель МОБАЙЛ ДЭЭР Ч ҮРГЭЛЖ ХАРАГДАНА ✓
-  //    (desktop-той ЯГ ИЖИЛ зан төлөв — progressive disclosure нь зөвхөн
-  //    «төрөл сонгосон эсэх»-ээр л тодорхойлогдоно ✓)
+  // ✅ ШИЙДЭЛ ② (2026-09-27): `filtersOpen` ТӨЛӨВ БА «⚙️ Дэлгэрэнгүй хайлт»
+  //    ТОВЧ ХОЁУЛАА ХАСАГДСАН ✓ → desktop-той ЯГ ИЖИЛ зан төлөв болов
+  //    (⏳ (13)→(82) хооронд панель «Бүх зар» дээр Ч ҮРГЭЛЖ байв ✗)
   //
-  // 📱 МОБАЙЛ ДЭЭРХ УРСГАЛ (одоо):
-  //      [төрөл сонгосон] →
-  //      [Дэлгэрэнгүй хайлт панель — БҮРЭН НЭЭЛТТЭЙ ✓] →
-  //      [гарчиг + өрөөний тоо] → [чипүүд] → [картууд]
+  // ✅ ШИЙДЭЛ ③ (2026-10-09 (83) — ОДООГИЙН): гарцын нөхцөл нь `!noSection`
+  //    ⇒ «Бүх зар» (нүүр хуудас) дээр панель БАЙХГҮЙ ✗, хэсэг сонгосны
+  //    дараа гарна ✓ — мобайл ч, desktop ч НЭГ дүрэм ✓
+  //
+  // 📱 МОБАЙЛ ДЭЭРХ УРСГАЛ (одоо): [Дэлгэрэнгүй хайлт панель — хэсэг
+  //    сонгосон үед] → [гарчиг + өрөөний тоо] → [чипүүд] → [картууд]
   // ⚠️ `<aside>` нь DOM-д результатовын ӨМНӨ байрладаг тул мобайлд шүүлт
   //    ЭХЭНД гарна ✓ (хэрэглэгч эхлээд шүүлтээ тавиад доош гүйлгэнэ ✓)
-  // 🖥 DESKTOP дээр өөрчлөлт БАЙХГҮЙ ✓ (тэнд панель байнга нээлттэй байв)
+  // 🖥 DESKTOP дээр зөвхөн нэг ялгаа: `lg:sticky` — мобайлд sticky БАЙХГҮЙ ✓
   // ↺ БУЦААХ БОЛ: `filtersOpen` төлөв + `${filtersOpen ? '' : 'hidden'}`
   //    класс + «⚙️ Дэлгэрэнгүй хайлт» товчийг буцааж нэмнэ.
 
@@ -2374,8 +2388,10 @@ export default function HomeClient() {
           📱 `xl`-ээс доош — доорх наалдамхай (`sticky top-16`) мөрөнд; `xl`+ дээр
              мөр нь толгойд гардаг тул энэ нь `xl:hidden` ✓ */}
 
-      {/* 📱 ХАЙЛТЫН МӨР — толгойн (h-16) ЯГ ДООР наалдана (≥lg, <xl ба мобайл) */}
-      <div className="sticky top-16 z-30 border-b border-gray-200 bg-white px-4 py-2.5 xl:hidden">
+      {/* 📱 ХАЙЛТЫН МӨР — толгойн (h-16) ЯГ ДООР наалдана (≥lg, <xl ба мобайл)
+          🎨 2026-10-09 (83): `bg-white` → `bg-gray-100` — хуудсын дэвсгэр ЦАГААН
+             болсон тул мөр нь толгойтойгоо нэг «саарал» зурвас болно ✓ */}
+      <div className="sticky top-16 z-30 border-b border-gray-200 bg-gray-100 px-4 py-2.5 xl:hidden">
         {renderSearchBar('mobile')}
       </div>
 
@@ -2814,7 +2830,11 @@ export default function HomeClient() {
                         aria-expanded={more}
                         data-group-more={g.label}
                         title={more ? 'Дэд төрлүүдийг хураах' : `Үлдсэн ${g.items.length - g.showFirst} дэд төрлийг харах`}
-                        className="flex w-full items-start gap-1.5 rounded-md px-2 py-1.5 text-left text-[13px] font-bold text-primary-dark transition hover:bg-white sm:text-[14px]"
+                        /* 🎨 2026-10-09 (83): `hover:bg-white` → `hover:bg-gray-100`
+                           — хуудасны дэвсгэр ЦАГААН болсон тул цагаан hover
+                           ХАРАГДАХГҮЙ байв ✗ (панель нь дэвсгэргүй — хуудсан дээр
+                           ШУУД байрлана ✓) */
+                        className="flex w-full items-start gap-1.5 rounded-md px-2 py-1.5 text-left text-[13px] font-bold text-primary-dark transition hover:bg-gray-100 sm:text-[14px]"
                       >
                         {/* chevron — хаалттай үед ▼ (доош), нээлттэй үед ▲ (эргэлдэнэ) */}
                         <svg
@@ -2965,7 +2985,7 @@ export default function HomeClient() {
                     data-tile-badge
                     style={{ backgroundColor: s.tileBg }}
                     className={`flex h-[64px] w-[64px] shrink-0 items-center justify-center rounded-full transition-transform duration-200 ease-out group-hover:-translate-y-1 sm:h-[80px] sm:w-[80px] ${
-                      on ? 'ring-2 ring-primary ring-offset-2 ring-offset-gray-50' : ''
+                      on ? 'ring-2 ring-primary ring-offset-2 ring-offset-white' : ''
                     }`}
                   >
                     {/* ⚠️ Зураг нь СҮЛЖЭЭНИЙ утгаар: `public/categories/<value>.svg` */}
@@ -2998,33 +3018,39 @@ export default function HomeClient() {
         )}
 
         {/* ===== 2 БАГАНАТ БҮТЭЦ — жишиг сайт загвар =====
-            ✅ 2026-10-03 (13) (хэрэглэгчийн хүсэлт: «Дэлгэрэнгүй хайлт 3р
-               түвшний сонголт дээр орж ирж байна (Бүх зар › Автомашин ›
-               Суудлын машин) — 2р түвшин дээр гаргаж ирээд, бүх зар дээр шүү»):
-               sidebar нь ОДОО дэд төрөл (3-р түвшин) сонгосон үед л БИШ —
-               хэсэг (2-р түвшин) ба «Бүх зар» (1-р түвшин) дээр Ч харагдана
-               (`showAdvancedFilters` — ҮРГЭЛЖ ✓). ⏳ Урьд нь PROGRESSIVE байв ✗
+            ✅ 2026-10-09 (83) (хэрэглэгчийн хүсэлт: «home page дээр байгаа
+               хайлтын хэсгийг home page дээр бүү харуул, ямар нэг зарын
+               категори сонгоход гарч ирдэг байхаар болгож өөрчил»):
+               панель нь ЗӨВХӨН хэсэг (2-р түвшин) сонгосон үед render болно —
+               «Бүх зар» (нүүр хуудас, 1-р түвшин) дээр БАЙХГҮЙ ✓
+               ⇒ `showAdvancedFilters = !noSection` (⏳ 2026-10-03 (13) —
+               2026-10-09 (82) хооронд «БҮГД дээр Ч ҮРГЭЛЖ» байв ✗ — тэр үед
+               PROGRESSIVE disclosure ХАСАГДАВ байсан).
+               ⚠️ ХАЙЛТЫН ЗАМ хаагдсангүй: толгойн мөр (`HeaderSearchBar`) ·
+               идэвхтэй шүүлтийн чипүүд (`#filter-bar`) · 🔀 Эрэмбэлэх ·
+               🗺 Газрын зураг — БҮГД ХЭВЭЭР ✓ (сүүлийн хоёр нь хайлт БИШ ✓)
             ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «Дэлгэрэнгүй хайлтыг үргэлж
                нээлттэй болгоё» → МОБАЙЛ дээр ч панель ҮРГЭЛЖ ХАРАГДАХ болов ✓
-               Урьд нь мобайлд НУУГДАЖ, «⚙️ Дэлгэрэнгүй хайлт» товчоор
-               нээгддэг байв ✗ (товч одоо ХАСАГДСАН ✓).
+               (товч ХАСАГДСАН ✓) — 🆕 (83): мобайл нь desktop-той ЯГ ИЖИЛ
+               нөхцөлтэй болов (НЭГ дүрэм ✓)
             🗑 «💡 Төрөл сонгоход дэлгэрэнгүй хайлт харагдана» зөвлөмж
-               ХАСАГДАВ (панель үргэлж харагддаг болсон тул хэрэггүй ✓).
+               ХАСАГДСАН хэвээр (нүүр хуудас нь tile панельтай ✓).
             ⚠️ Sidebar нь `lg:sticky lg:top-4` — урт жагсаалт гүйлгэхэд шүүлт
                хамт гүйлгэхгүй, дэлгэц дээр барина (жишиг сайттай ижил). */}
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           {/* ============ SIDEBAR — ДЭЛГЭРЭНГҮЙ ХАЙЛТ (зүүн багана) ============
-              ✅ 2026-10-03 (13): ҮРГЭЛЖ render болно (`showAdvancedFilters`) —
-                 «Бүх зар» (1-р түвшин) ба хэсэг (2-р түвшин) дээр ч харагдана ✓
-                 (⏳ урьд нь зөвхөн дэд төрөл сонгосон үед — PROGRESSIVE байв ✗)
+              ✅ 2026-10-09 (83): `showAdvancedFilters` (= `!noSection`) үнэн
+                 үед л render болно — «Бүх зар» (нүүр хуудас) дээр БАЙХГҮЙ ✗,
+                 хэсэг (2-р түвшин) ба дэд төрөл (3-р түвшин) дээр харагдана ✓
+                 (⏳ (13)→(82) хооронд «БҮГД дээр Ч ҮРГЭЛЖ» байв ✗)
               ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «Дэлгэрэнгүй хайлтыг үргэлж
-                 нээлттэй болгоё» → панель МОБАЙЛ дээр ч ҮРГЭЛЖ ХАРАГДАНА ✓
-                 (товч дарах шаардлагагүй ✓ — desktop-той ижил зан төлөв).
+                 нээлттэй болгоё» → товч дарах шаардлагагүй болов ✓
+                 (🆕 (83): мобайл нь desktop-той ИЖИЛ нөхцөлтэй — НЭГ дүрэм ✓)
               ⚠️ Урьд нь `${filtersOpen ? '' : 'hidden'}` гэсэн төлөвтэй байсан
                  бөгөөд «⚙️ Дэлгэрэнгүй хайлт» товчоор нээгддэг байв ✗
                  → товч БА төлөв хоёулаа ХАСАГДСАН ✓
               📱 МОБАЙЛ дээрх дараалал (aside нь DOM-д результатовын ӨМНӨ):
-                 [төрөл] → [Дэлгэрэнгүй хайлт панель] → [гарчиг + өрөөний тоо]
+                 [Дэлгэрэнгүй хайлт панель] → [гарчиг + өрөөний тоо]
                  → [чипүүд] → [картууд]
               ⚠️ `lg:sticky lg:top-4` — desktop дээр гүйлгэхэд хамт гүйлгэхгүй ✓
               🔴 2026-10-04 (26) АСУУДАЛ: панелийн агуулга (10+ блок) нь
@@ -3037,7 +3063,6 @@ export default function HomeClient() {
                  → панель өөрөө дотроо гүйлгэгдэнэ (2rem = `top-4`-ийн 1rem +
                  доод 1rem); 🔍 Хайх нь доор `sticky bottom-0` тул ҮРГЭЛЖ
                  харагдана ✓ (мобайл `<lg` ХӨНДӨӨГДӨӨГҮЙ — sticky нь `lg:` ✓) */}
-          {showAdvancedFilters && (
           <div className="flex w-full shrink-0 flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:w-[280px] lg:overflow-y-auto">
             {/* 🔀 ЭРЭМБЭЛЭХ — 🆕 2026-10-06: жишиг сайт шиг сайдбарын ДЭЭД
                 хэсэгт (бүтэн өргөнтэй хайрцаг + ⇅ icon + ▾).
@@ -3086,14 +3111,23 @@ export default function HomeClient() {
               {view === 'map' ? '☰ Жагсаалт руу буцах' : '🗺 Газрын зураг дээр харах'}
             </button>
 
+            {/* 🆕 2026-10-09 (83): панель нь ЗӨВХӨН хэсэг (2-р түвшин) сонгосон
+                үед render болно — «Бүх зар» (нүүр хуудас) дээр БАЙХГҮЙ ✓
+                (`showAdvancedFilters` — тодорхойлолт нь дээрх комментарт).
+                ⚠️ 🔀 Эрэмбэлэх ба 🗺 Харах нь энэ хаалтаас ГАДНА — хайлт биш ✓ */}
+            {showAdvancedFilters && (
             <aside id="advanced-filters" className="w-full">
-            <div className="rounded-xl border border-gray-200 bg-white shadow-card">
+            {/* 🎨 2026-10-09 (83): `bg-white` → `bg-gray-100` — «дээр нь байгаа
+                зүйлс» саарал болов (хүрээ + `shadow-card` нь ялгана ✓;
+                ⚠️ доторх мөрүүдийн ялгагч зураас нь `divide-gray-200` болов —
+                `gray-100` карт дээр `gray-100` зураас ХАРАГДАХГҮЙ ✗) */}
+            <div className="rounded-xl border border-gray-200 bg-gray-100 shadow-card">
               {/* Толгой — жишиг сайтад тусдаа гарчиг байхгүй ч «N шүүлт» badge нь
                   хэрэглэгчид ямар нэг зүйл сонгосноо мэдэгдэхэд тустай.
                   🗑 2026-10-04 (39): гарчгийн өмнөх ⚙️ badge ХАСАГДАВ —
                   хэрэглэгчийн хүсэлт: «Дэлгэрэнгүй хайлт … бүх үгний өмнө байгаа
                   emoji-г байхгүй болго» ⇒ зөвхөн «Дэлгэрэнгүй хайлт» текст ✓ */}
-              <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3.5">
+              <div className="flex items-center justify-between gap-2 border-b border-gray-200 px-4 py-3.5">
                 <h2 className="flex items-center gap-2 text-[15px] font-bold text-gray-900">
                   Дэлгэрэнгүй хайлт
                   {activeFilterCount > 0 && (
@@ -3120,7 +3154,7 @@ export default function HomeClient() {
                 </button>
               </div>
 
-              <div className="divide-y divide-gray-100 px-4">
+              <div className="divide-y divide-gray-200 px-4">
                 {/* 🆕ℹ️ 2026-10-06: 🛏 «Өрөөний тоо» ба 💳 «Төлбөрийн нөхцөл»
                     нь үр дүнгийн дээрх `#filter-bar`-ийн PILL-ээс ЭРГЭЖ САЙДБАРТ
                     ИРЭВ (хэрэглэгчийн хүсэлт: «Үл хөдлөхийн хайлт дээр байгаа
@@ -3677,61 +3711,46 @@ export default function HomeClient() {
                   </SideBlock>
                 )}
 
-                {/* ===== 🔄 СОЛИНО — ГАНЦ ЧИПТЭЙ ШҮҮЛТ (2026-10-09) =====
-                    🆕 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Үнэ тохирно Гэсэн сонголтын баруун
+                {/* ===== 🔄 СОЛИНО — ☑ ЧЕКБОКС (2026-10-09 (82) → ✏️ (83)) =====
+                    🆕 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (82): «Үнэ тохирно Гэсэн сонголтын баруун
                     талд, Солино гээд "Үнэ тохирно" гэсэнтэй адилхан checkbox хийж
                     өгөөч. Үүнийг автомашин болон Спорт бараа -> Дартс хэсэгт
                     оруулж өгөө. Ингэхдээ энэ 2-ийн зар нэмэх болон, зөвхөн
                     энэ 2-ийн хайлт дээр оруулж өгөөч».
-                    ⚠️ ХЭВ нь сайдбарын бусад чиптэй ЯГ ИЖИЛ (`chip-toggle` +
-                       `aria-pressed` + идэвхтэй үед `✓`/`chip-toggle-active`) —
-                       ЗӨВХӨН НЭГ чип (солино ЭСВЭЛ үгүй) тул утга нь МАССИВ
-                       БИШ BOOLEAN ✓
+                    ✏️ (83) ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Солино хайлт ганц сонголт байгаа
+                    тул, зар оруулдаг хэсэгтэйгээ адилхан checkbox болго» ⇒
+                    ⏳ (82)-ын ЧИП (`<button class="chip-toggle">` + `aria-pressed`
+                    + «✕ Цуцлах» мөр) БҮРЭН ХАСАГДАВ — ОДОО форм дээрх ☑-тэй
+                    ЯГ ИЖИЛ `<input type="checkbox" class="h-4 w-4 accent-primary">`
+                    + шошго `SWAP_LABEL` (нэг эх сурвалж ✓)
+                    ⚠️ ШАЛТГААН: хайлт нь ГАНЦ л утгатай (солино ЭСВЭЛ үгүй) тул
+                       чип/«✕ Цуцлах» нь илүүц — checkbox өөрөө цуцална ✓
+                    ⚠️ Утга (`filters.swap`) ХӨНДӨӨГДӨӨГҮЙ: `toggleSwap` →
+                       `toggleSwapValue` (BOOLEAN, `lib/swapFilter.mjs`) ⇒ URL
+                       (`?swap=1`) ба DB (`attrs->>swap=eq.yes`) ЯГ ХЭВЭЭР ✓
                     ⚠️ БАЙРЛАЛ: «💳 Төлбөрийн нөхцөл»-ийн ЯГ ДАРАА ⇒ 🚗 дээр
                        «💰 Үнэ, ₮ → 💳 Төлбөрийн нөхцөл → 🔄 Солино → 🎨 Өнгө…»,
                        ⚽ «Дартс» дээр «💰 Үнэ, ₮ → 🔄 Солино» ✓ (төлбөрийн
                        нөхцөл тэнд байхгүй тул `showPayments` нь `false`)
-                    ⚠️ Утга (`filters.swap`), URL (`?swap=1`), DB
-                       (`lib/queries.js → applySwapFilter` → `attrs->>swap=eq.yes`)
-                       БҮГД нэг эх сурвалжтай (`lib/swapFilter.mjs` ✓)
-                    ⚠️ `data-swap-filter` / `data-swap-value` нь
+                    ⚠️ Мөр нь `.divide-y`-гийн ШУУД хүүхэд (`py-4` — `SideBlock`-ийн
+                       хэмнэлтэй ижил ✓) тул ялгагч зураасаа авна ✓
+                    ⚠️ `data-swap-filter` (мөр) / `data-swap-value` (☑) нь
                        `scripts/cdp-swap.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓ */}
                 {showSwap && (
-                  <SideBlock label={SWAP_LABEL}>
-                    <div
-                      className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
-                      data-swap-filter
-                      role="group"
-                      aria-label={SWAP_LABEL}
-                    >
-                      <div className="flex flex-wrap gap-1.5">
-                        <button
-                          type="button"
-                          aria-pressed={filters.swap}
+                  <div className="py-4" data-swap-filter role="group" aria-label={SWAP_LABEL}>
+                    <label className="flex w-fit cursor-pointer">
+                      <span className="flex w-fit items-center gap-2">
+                        <input
+                          type="checkbox"
                           data-swap-value="1"
-                          onClick={toggleSwap}
-                          className={`chip-toggle ${filters.swap ? 'chip-toggle-active' : ''}`}
-                        >
-                          {filters.swap && <span aria-hidden="true">✓</span>}
-                          {SWAP_LABEL}
-                        </button>
-                      </div>
-                    </div>
-                    {filters.swap && (
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[13px] font-semibold text-gray-600">
-                          Солилцооны зарууд
-                        </span>
-                        <button
-                          type="button"
-                          onClick={clearSwap}
-                          className="text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
-                        >
-                          ✕ Цуцлах
-                        </button>
-                      </div>
-                    )}
-                  </SideBlock>
+                          checked={!!filters.swap}
+                          onChange={toggleSwap}
+                          className="h-4 w-4 shrink-0 accent-primary"
+                        />
+                        <span className="text-[15px] font-normal text-gray-800">{SWAP_LABEL}</span>
+                      </span>
+                    </label>
+                  </div>
                 )}
 
                 {/* ===== 🔀 2026-10-06 (17): «💳 ТӨЛБӨРИЙН НӨХЦӨЛ»-ИЙН ДАРААХ ШҮҮЛТҮҮД =====
@@ -3856,7 +3875,7 @@ export default function HomeClient() {
                      дотроо гүйлгэгдэх үед (дээрх `lg:overflow-y-auto`) энэ мөр
                      (🔍 Хайх + «N зар харуулах» + «↺ Хайлтыг цэвэрлэх») ҮРГЭЛЖ
                      доор харагдана ✓ (товч хүрэхгүй байсан алдааг зассан) */}
-              <div className="sticky bottom-0 z-10 rounded-b-xl border-t border-gray-100 bg-white px-4 py-3.5">
+              <div className="sticky bottom-0 z-10 rounded-b-xl border-t border-gray-200 bg-gray-100 px-4 py-3.5">
                 {/* ⚠️ 2026-09-27: шүүлт нь АМЬД (real-time) ✓ — товч нь зөвхөн
                     ҮР ДҮН рүү гүйлгэж хүргэнэ (мобайлд хэрэгтэй ✓).
                     Урьд нь мобайл sheet-ийг ХААДАГ байсан ✗ — одоо панель
@@ -3891,8 +3910,8 @@ export default function HomeClient() {
               </div>
             </div>
           </aside>
-          </div>
           )}
+          </div>
 
           {/* ================= ҮР ДҮН (баруун багана) =================
               ⚠️ `id="listing-results"` — «🔍 Хайх» товч (панелийн доод хэсэг)

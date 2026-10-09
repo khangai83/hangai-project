@@ -115,7 +115,7 @@ export default function AdminListingsClient() {
     const forbidden = loadError.status === 403;
     return (
       <div className="page-container">
-        <div className="mx-auto my-6 max-w-[640px] rounded-2xl border border-red-200 bg-white px-6 py-8 text-center">
+        <div className="mx-auto my-6 max-w-[640px] rounded-2xl border border-red-200 bg-gray-100 px-6 py-8 text-center">
           <div className="text-4xl">{forbidden ? '⛔' : '🔌'}</div>
           <h3 className="mb-1.5 mt-2.5 text-lg font-semibold text-red-800">
             {forbidden ? 'Танд админ эрх байхгүй' : 'Заруудыг татаж чадсангүй'}
@@ -216,7 +216,7 @@ export default function AdminListingsClient() {
 
       {/* ===== ЖАГСААЛТ ===== */}
       {data.rows.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white px-5 py-14 text-center">
+        <div className="rounded-xl border border-gray-200 bg-gray-100 px-5 py-14 text-center">
           <div className="mb-3 text-5xl">🔎</div>
           <h3 className="mb-1 text-lg font-semibold">Зар олдсонгүй</h3>
           <p className="text-sm text-gray-500">
@@ -230,7 +230,7 @@ export default function AdminListingsClient() {
             const isSell = row.category === 'sell';
             const imgCount = Array.isArray(row.images) ? row.images.length : 0;
             return (
-              <div key={row.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-card">
+              <div key={row.id} className="rounded-xl border border-gray-200 bg-gray-100 p-4 shadow-card">
                 <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span className={`badge ${isSell ? 'badge-sell' : 'badge-rent'}`}>{isSell ? 'Зарах' : 'Түрээс'}</span>
                   <span className="text-[13px] font-semibold text-gray-800">

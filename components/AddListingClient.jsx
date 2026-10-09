@@ -421,7 +421,7 @@ function MobileQuestion({ title, items, value, onPick, onBack, emptyText = 'Со
           <li className="px-1 py-4 text-[13px] text-gray-400">{emptyText}</li>
         )}
         {shown.map((it) => (
-          <li key={it.value} className="border-b border-gray-100 last:border-b-0">
+          <li key={it.value} className="border-b border-gray-200 last:border-b-0">
             <button
               type="button"
               data-mobile-value={it.value}
@@ -550,7 +550,7 @@ function MobileAnswers({ rows = [], onEdit }) {
     <div data-mobile-answers className="sm:hidden">
       <ul className="mb-3">
         {rows.map((r) => (
-          <li key={r.key} className="border-b border-gray-100 last:border-b-0">
+          <li key={r.key} className="border-b border-gray-200 last:border-b-0">
             <button
               type="button"
               data-mobile-answer-edit={r.key}
@@ -2507,7 +2507,7 @@ export default function AddListingClient() {
   if (!userId) {
     return (
       <div className="page-container">
-        <div className="mx-auto mt-6 max-w-md rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-card">
+        <div className="mx-auto mt-6 max-w-md rounded-2xl border border-gray-200 bg-gray-100 p-8 text-center shadow-card">
           <div className="mb-4 text-6xl">🔑</div>
           <h1 className="text-xl font-semibold">Зар оруулахын тулд нэвтрэх шаардлагатай</h1>
           <p className="mt-2 text-[13px] text-gray-500">
@@ -4097,7 +4097,7 @@ export default function AddListingClient() {
                    📱 дээр 4 дэх дэлгэцээс 3 дахь руу буцаана ✓
                    (⚠️ `hide-below-sm` нь `step === 2` үед — 📱-ийн «асуулт бүр
                    нэг дэлгэц»-ийн товчийг давхцуулахгүйн тулд ХЭВЭЭР ✓) */}
-            <div className="mt-6 flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
+            <div className="mt-6 flex items-center justify-between gap-3 border-t border-gray-200 pt-4">
               <button
                 type="button"
                 data-step-back

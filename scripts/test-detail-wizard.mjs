@@ -809,7 +809,7 @@ t('🖥 Алхмын навигаци («← Буцах» / «Үргэлжлүү
   /** ⚠️ 2 дахь засвар: 🖥 дээр ч алхамт болсон тул навигацийн мөр нь 📱-д
    *  ТОГТСОНГҮЙ — БҮХ дэлгэцэд харагдана ✓ (товчнууд нь `data-step-*`
    *  стабил селектортой хэвээр — CDP тестүүд дээр тулгуурлана ✓) */
-  assert.match(FORM, /className="mt-6 flex items-center justify-between gap-3 border-t border-gray-100 pt-4"/);
+  assert.match(FORM, /className="mt-6 flex items-center justify-between gap-3 border-t border-gray-200 pt-4"/);
   assert.ok(!FORM.includes('border-gray-100 pt-4 sm:hidden'), 'навигаци 🖥 дээр нуугдах ёсгүй ✗');
 });
 

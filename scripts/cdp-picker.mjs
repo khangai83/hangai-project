@@ -290,7 +290,22 @@ const clearDrafts = () => evaluate(`(() => {
 const draftKeysAtStart = await clearDrafts();
 if (draftKeysAtStart) console.log(`  ℹ️ хуучин ноорог ${draftKeysAtStart} ширхэг ЦЭВЭРЛЭГДЭВ (форм шинэ байх ёстой ✓)`);
 await rpc('Page.navigate', { url: `${BASE}/listings/new?step=1` });
-await wait(4000);
+/**
+ * ⚠️ (83) Тогтмол хүлээлт ХҮРЭЛЦЭХГҮЙ байж болно — удаан ачаалалт дээр
+ *    `[data-picker]` = 0 болж, ① ба ②-ын БҮХ шалгалт хуурамч ✗ өгдөг байв ✗
+ *    (⏳ `wait(4000)` нь хуудас бүрэн ачаалагдсаныг БАТАЛДАГГҮЙ).
+ *    ⇒ одоо форм БОДИТООР бэлэн болтол хүлээнэ (12с — хүрэхгүй бол ✗ ХЭВЭЭР ✓)
+ */
+const waitPickerReady = async (expr, ms = 12000) => {
+  const until = Date.now() + ms;
+  for (;;) {
+    try { if (await evaluate(expr)) return true; } catch { /* ачаалж байна */ }
+    if (Date.now() > until) return false;
+    await wait(300);
+  }
+};
+const pickerReady = await waitPickerReady(`document.querySelectorAll('[data-picker]').length > 0`);
+if (!pickerReady) console.log('  ⚠️ 1-р алхмын picker DOM 12с дотор ГАРАГҮЙ (доорх шалгалтууд ✗ гарах боломжтой)');
 
 const PROBE = `(() => {
   const cols = {};

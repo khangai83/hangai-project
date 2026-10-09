@@ -159,9 +159,14 @@ const waitFor = async (expression, ms = 9000) => {
     await sleep(250);
   }
 };
+/** ⚠️ (83) `Page.navigate`-ыг дараа нь ШИНЭ документ ачаалагдсаныг
+ *  `performance.timeOrigin`-оор батална — эс бөгөөс шилжилт хүрэхээс өмнө
+ *  ХУУЧИН хуудны DOM дээр хэмжиж «хуурамч ❌» гарах race үүсдэг
+ *  (ялангуяа ШИНЭ build дээрх эхний ачаалалт удаан үед ✓) */
 const go = async (url) => {
+  const t0 = await evalJs('performance.timeOrigin').catch(() => 0);
   await rpc('Page.navigate', { url });
-  await waitFor(`document.readyState === 'complete'`);
+  await waitFor(`performance.timeOrigin !== ${t0} && document.readyState === 'complete'`, 30000);
   await sleep(700);
 };
 
@@ -298,9 +303,11 @@ check('🧭 Сайдбар дараалал: «Байршил» → «Өрөөн
   `өрөө=#${roomsIdx} үнэ=#${priceIdx} төлбөр=#${payIdx} — ${labels1.join(' → ')}`);
 
 // ═══════ ② 🚗 АВТО: БАЙНА · ⛔ АЖИЛ/КОМПЬЮТЕР/«БҮХ ЗАР»: БАЙХГҮЙ ═══════
-// 🆕 2026-10-03 (13): progressive disclosure ХАСАГДАВ — `<aside>` нь хэсэг
-//    (2-р түвшин) ба «Бүх зар» дээр Ч render болно (`showAdvancedFilters` ✓).
-//    ⏳ урьд нь зөвхөн `{filters.propertyType && (<aside …>)}` байв ✗
+// 🆕 2026-10-09 (83): ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ — панель нь ЗӨВХӨН хэсэг (2-р түвшин)
+//    сонгосон үед render болно, «Бүх зар» (1-р түвшин, нүүр хуудас) дээр БАЙХГҮЙ ✓
+//    (`HomeClient.jsx → showAdvancedFilters = !noSection`)
+//    ⏳ 2026-10-03 (13)–(82): progressive disclosure ХАСАГДАЖ, «Бүх зар» дээр Ч
+//       `<aside>` render болдог байв ✗ ⇒ энэ шалгалт ч шинэ зан төлөв рүү шинэчлэгдэв
 //    ⚠️ 💳 блок нь `hasPaymentTerms(section)` — зөвхөн 🏠 үл хөдлөх ба 🚗 авто
 //    дээр; төрөл сонгох ШААРДЛАГАГҮЙ тул `?section=auto` (type-ГҮЙ) дээр ч
 //    ГАРНА ✓ (эхлээд хэсгийн түвшинг шалгаад дараа нь төрөлтэй нь ✓)
@@ -330,16 +337,14 @@ await go(`${BASE}/?section=computers`);
 check('⛔ «Компьютер» дээр БАЙХГҮЙ', (await paymentUi()).blocks === 0);
 await go(`${BASE}/`);
 check('⛔ «Бүх зар» (хэсэг сонгоогүй) дээр БАЙХГҮЙ', (await paymentUi()).blocks === 0);
-// 🆕 2026-10-03 (13) — «бүх зар дээр шүү» гэсэн хүсэлтийн ГОЛ шалгалт:
-//    progressive disclosure ХАСАГДсан тул «Бүх зар» (1-р түвшин) дээр Ч
-//    панель БИЙ ба нийтлэг блок (📍 Байршил · 💰 Үнэ) шүүлт хийнэ ✓
-const rootAside = await evalJs(`(() => {
-  const a = document.getElementById('advanced-filters');
-  return a ? a.innerText : '';
-})()`);
-check('🆕 «Бүх зар» дээр sidebar БИЙ (📍 Байршил · 💰 Үнэ — шүүлт хийнэ ✓)',
-  /Байршил/.test(rootAside) && /Үнэ/.test(rootAside),
-  rootAside.split(String.fromCharCode(10)).join(' | ').slice(0, 140));
+// 🆕 2026-10-09 (83) — «нүүр хуудсанд шүүлт бүү харуул» гэсэн хүсэлтийн ГОЛ шалгалт:
+//    панель нь ЗӨВХӨН хэсэг сонгосон үед render болно ⇒ «Бүх зар» дээр `<aside>`
+//    DOM-д ОГТ БАЙХГҮЙ ✓ (⏳ (13)–(82) дээр Ч бий байв ✗ — эсрэг шалгалт байв)
+//    ℹ️ Хэсэг сонгосон үед панель БИЙ гэдгийг дээрх ② шалгалтууд (🚗 авто, 🏠 үл
+//       хөдлөх — `blocks === 1`) аль хэдийн батална ✓
+const rootAside = await evalJs(`!!document.getElementById('advanced-filters')`);
+check('🆕 «Бүх зар» (1-р түвшин) дээр sidebar БАЙХГҮЙ (⏳ (13)–(82) дээр БАЙВ ✗)',
+  rootAside === false, `#advanced-filters=${rootAside}`);
 
 // ═══════ ③ 🖱 ☑ ДАРАХ — ОЛОН СОНГОЛТ (хамгийн чухал; ШОШГО дээр дарна ✓) ═══════
 listingReqs.length = 0;

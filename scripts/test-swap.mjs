@@ -297,19 +297,22 @@ t('☑ AddListingClient.jsx: чекбокс нь «Үнэ тохирно»-ги�
   assert.match(ui, /else delete a\.swap;/, 'түлхүүрийг устгах дүрэм алга ✗ (үхсэн утга үлдэнэ)');
 });
 
-t('🔍 HomeClient.jsx: sidebar-ийн ГАНЦ чип + URL `?swap=1` + DB (нэг эх сурвалж)', () => {
+t('🔍 HomeClient.jsx: sidebar-ийн ГАНЦ ☑ чекбокс + URL `?swap=1` + DB (нэг эх сурвалж)', () => {
   const src = readSrc('components/HomeClient.jsx');
   const ui = codeOnly(src);
-  // ① Блок ба чипийн DOM дэгээ (CDP ✓)
+  // ① Блок ба ☑-ийн DOM дэгээ (CDP ✓)
   assert.match(ui, /data-swap-filter/, 'блокийн дэгээ алга ✗');
-  assert.match(ui, /data-swap-value="1"/, 'чипийн дэгээ алга ✗');
-  assert.match(ui, /aria-pressed=\{filters\.swap\}/, 'чипийн төлөв (`aria-pressed`) алга ✗');
+  assert.match(ui, /data-swap-value="1"/, '☑-ийн дэгээ алга ✗');
+  // ✏️ (83): хэв нь ЧИП БИШ — форм дээрхтэй ЯГ ИЖИЛ ☑ (тусдаа «✕ Цуцлах» БАЙХГҮЙ ✓)
+  assert.match(ui, /checked=\{!!filters\.swap\}/, '☑-ийн төлөв (`checked`) алга ✗');
+  assert.match(ui, /onChange=\{toggleSwap\}/, '☑ нь `toggleSwap`-д холбогдоогүй ✗');
   // ② НЭГ ЭХ СУРВАЛЖ (шошго/дүрэм/эргэлт нь модульд ✓)
   assert.match(ui, /SWAP_LABEL/, 'шошго (SWAP_LABEL) алга ✗');
   assert.match(ui, /supportsSwap\(section, filters\.propertyType\)/, '`showSwap` нөхцөл алга ✗');
   assert.match(ui, /toggleSwapValue/, '`toggleSwapValue` импорт алга ✗');
   assert.match(ui, /const toggleSwap = /, '`toggleSwap` функц алга ✗');
-  assert.match(ui, /const clearSwap = \(\) => setF\('swap', false\)/, '`clearSwap` алга ✗');
+  // ⏳ (82)-ын `clearSwap` («✕ Цуцлах») ХАСАГДАВ — ☑ өөрөө цуцална ✓
+  assert.ok(!/clearSwap/.test(ui), '`clearSwap` буцаж орсон ✗ (☑ өөрөө цуцална)');
   // ③ URL: унших · цэвэрлэх · бичих
   assert.match(ui, /parseSwapParam\(sp\.get\('swap'\)\)/, 'URL-аас унших ✗');
   assert.match(ui, /next\.swap = false;/, 'хэсэг/дэд төрөлд тохирохгүй бол орхих дүрэм алга ✗');
@@ -317,7 +320,7 @@ t('🔍 HomeClient.jsx: sidebar-ийн ГАНЦ чип + URL `?swap=1` + DB (н�
   assert.match(ui, /swap: filters\.swap \|\| undefined/, 'DB шүүлт рүү дамжуулах ✗');
 });
 
-t('🔍 HomeClient.jsx (үргэлжлэл): BOOLEAN-ийн хоосон утга ба ЧИП ХЭВ', () => {
+t('🔍 HomeClient.jsx (үргэлжлэл): BOOLEAN-ийн хоосон утга ба ☑ CHECKBOX ХЭВ', () => {
   const ui = codeOnly(readSrc('components/HomeClient.jsx'));
   // ④ BOOLEAN-ийн хоосон утга (`''`/`[]` БИШ — `false` ✓)
   assert.match(ui, /swap: false,/, '`EMPTY_FILTERS`-д `swap: false` алга ✗');
@@ -325,15 +328,20 @@ t('🔍 HomeClient.jsx (үргэлжлэл): BOOLEAN-ийн хоосон утг�
     'дэд төрөл солиход цэвэрлэх дүрэм алга ✗');
   assert.match(ui, /key === 'swap' \? false/, 'идэвхтэй чипийн ✕ дээр BOOLEAN цэвэрлэхгүй ✗');
   assert.match(ui, /chips\.push\(\{ key: 'swap', label: SWAP_LABEL \}\)/, 'идэвхтэй шүүлтийн чип алга ✗');
-  // ⑤ ЧИП ХЭВ: «🛏 Өрөөний тоо»/«💳 Төлбөрийн нөхцөл»-тэй ЯГ ИЖИЛ (☑ input БИШ ✓)
+  // ⑤ ✏️ (83) ☑ CHECKBOX ХЭВ — ФОРМ дээрхтэй (AddListingClient `data-swap-check`)
+  //    ЯГ ИЖИЛ: `<input type="checkbox">` + `h-4 w-4 shrink-0 accent-primary` +
+  //    шошго `SWAP_LABEL`; ⏳ (82)-ын чип/`aria-pressed`/«✕ Цуцлах» БАЙХГҮЙ ✓
   const at = ui.indexOf('data-swap-filter');
-  const region = ui.slice(Math.max(0, at - 400), at + 900);
-  assert.match(region, /className=\{`chip-toggle \$\{filters\.swap \? 'chip-toggle-active' : ''\}`\}/,
-    'чипийн класс (`.chip-toggle`) алга ✗');
-  assert.match(region, /<button/, 'чип нь ЖИНХЭНЭ `<button>` байх ёстой ✗');
-  assert.match(region, /\{filters\.swap && <span aria-hidden="true">✓<\/span>\}/,
-    'идэвхтэй чип дээр `✓` тэмдэг алга ✗');
-  assert.ok(!/type="checkbox"/.test(region), 'хайлтын блок дээр ☑ checkbox байна ✗');
+  const region = ui.slice(at, at + 1000);
+  assert.match(region, /<input/, '☑ нь ЖИНХЭНЭ `<input>` байх ёстой ✗');
+  assert.match(region, /type="checkbox"/, '`type="checkbox"` алга ✗');
+  assert.match(region, /className="h-4 w-4 shrink-0 accent-primary"/,
+    'формтой ижил класс (`h-4 w-4 shrink-0 accent-primary`) алга ✗');
+  assert.match(region, /\{SWAP_LABEL\}/, 'шошго (`SWAP_LABEL`) алга ✗');
+  assert.ok(!/chip-toggle/.test(region), 'хайлтын блок дээр ЧИП буцаж орсон ✗ (☑ байх ёстой)');
+  assert.ok(!/<button/.test(region), 'хайлтын блок дээр `<button>` байна ✗ (☑ байх ёстой)');
+  assert.ok(!/Цуцлах/.test(region), '☑ дээр «✕ Цуцлах» илүүц мөр байна ✗');
+  assert.ok(!/Солилцооны зарууд/.test(region), '☑ дээр «Солилцооны зарууд» илүүц мөр байна ✗');
 });
 
 t('📄 ListingDetailClient/MyListingsClient: үнийн доорх мөр (🤝-гийн ЯГ ДООР)', () => {
@@ -353,16 +361,24 @@ t('📄 ListingDetailClient/MyListingsClient: үнийн доорх мөр (🤝
 });
 
 // ---------- ⑧ CDP + бүртгэл ----------
-t('🐍 CDP скрипт нь БОДИТ DOM дээр чип/чекбоксыг шалгана (`scripts/cdp-swap.mjs`)', () => {
+t('🐍 CDP скрипт нь БОДИТ DOM дээр ☑ (чекбокс)-ыг шалгана (`scripts/cdp-swap.mjs`)', () => {
   const cdp = readSrc('scripts/cdp-swap.mjs');
   assert.match(cdp, /data-swap-value/, 'чипийг DOM-оос олдоггүй ✗');
   assert.match(cdp, /data-swap-filter/, 'блокийг олдогүй ✗');
   assert.match(cdp, /data-swap-check/, 'форм дээрх ☑-г олдоггүй ✗');
   assert.match(cdp, /swap=1/, 'URL-ийн `?swap=1`-ийг шалгахгүй ✗');
-  assert.match(cdp, /aria-pressed/, 'чипийн төлвийг шалгахгүй ✗');
-  assert.match(cdp, /chip-toggle/, 'чипийн классыг шалгахгүй ✗');
+  assert.match(cdp, /checked/, '☑-ийн төлвийг (`checked`) шалгахгүй ✗');
+  assert.match(cdp, /type="checkbox"/, '☑ нь ЖИНХЭНЭ checkbox эсэхийг шалгахгүй ✗');
+  assert.match(cdp, /accent-primary/, 'формтой ижил классыг шалгахгүй ✗');
   assert.match(cdp, /attrs->>swap/, 'DB шүүлтийн мөрийг шалгахгүй ✗');
-  assert.match(cdp, /chip-toggle-active/, 'идэвхтэй чипийн хэвийг шалгахгүй ✗');
+  // ✏️ (83) ФОРМ бэлэн болохыг 45с хүртэл хүлээж, БЭЛЭН БИШ бол SKIP —
+  //    ⏳ `waitFor(…, 15000)` чимээгүй буцаж ШИНЭ build-ийн эхний удаан
+  //    ачаалалт дээр 5 хуурамч ❌ өгдөг байв ✗ ⇒ одоо SKIP (дүрэм эндээс ✓)
+  assert.match(cdp, /const waitForm = async/, 'формыг хүлээх туслах (`waitForm`) алга ✗');
+  assert.match(cdp, /SKIP — 🚗 форм рендэрлэгдээгүй/, 'форм бэлэн биш үед SKIP болохгүй ✗');
+  assert.match(cdp, /SKIP — 💻 форм рендэрлэгдээгүй/, '💻 форм бэлэн биш үед SKIP болохгүй ✗');
+  //    ⚠️ Race-ийн хамгаалалт: шинэ документ ачаалагдсаныг `performance.timeOrigin`-оор
+  assert.match(cdp, /performance\.timeOrigin !== \$\{t0\}/, 'хуудас шилжилтийн race-ийн хамгаалалт алга ✗');
 });
 
 t('📦 package.json: `test:swap` ба `cdp:swap` бүртгэгдсэн', () => {

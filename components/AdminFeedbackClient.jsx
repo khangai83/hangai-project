@@ -145,7 +145,7 @@ export default function AdminFeedbackClient() {
     const forbidden = loadError.status === 403;
     return (
       <div className="page-container">
-        <div className="mx-auto my-6 max-w-[640px] rounded-2xl border border-red-200 bg-white px-6 py-8 text-center">
+        <div className="mx-auto my-6 max-w-[640px] rounded-2xl border border-red-200 bg-gray-100 px-6 py-8 text-center">
           <div className="text-4xl">{forbidden ? '⛔' : '🔌'}</div>
           <h3 className="mb-1.5 mt-2.5 text-lg font-semibold text-red-800">
             {forbidden ? 'Танд админ эрх байхгүй' : 'Санал хүсэлт татаж чадсангүй'}
@@ -195,7 +195,7 @@ export default function AdminFeedbackClient() {
 
       {/* ===== СТАТИСТИК ===== */}
       <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
+        <div className="rounded-xl border border-gray-200 bg-gray-100 px-4 py-3">
           <div className="text-[12px] uppercase tracking-wide text-gray-400">Нийт</div>
           <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
         </div>
@@ -242,7 +242,7 @@ export default function AdminFeedbackClient() {
 
       {/* ===== ЖАГСААЛТ ===== */}
       {rows.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white px-5 py-14 text-center">
+        <div className="rounded-xl border border-gray-200 bg-gray-100 px-5 py-14 text-center">
           <div className="mb-3 text-5xl">📭</div>
           <h3 className="mb-1 text-lg font-semibold">Санал хүсэлт байхгүй</h3>
           <p className="text-sm text-gray-500">
@@ -258,7 +258,7 @@ export default function AdminFeedbackClient() {
             const cat = CATEGORY_MAP[f.category] || CATEGORY_MAP.other;
             const noteValue = noteDraft[f.id] !== undefined ? noteDraft[f.id] : (f.admin_note || '');
             return (
-              <div key={f.id} className="rounded-xl border border-gray-200 bg-white p-4 shadow-card">
+              <div key={f.id} className="rounded-xl border border-gray-200 bg-gray-100 p-4 shadow-card">
                 <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-[12px] font-semibold text-gray-700">
                     {cat.label}

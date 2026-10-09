@@ -185,11 +185,11 @@ export default function ListingDetailClient({ id }) {
     if (loadError) {
       return (
         <div className="page-container">
-          <div className="mx-auto my-6 max-w-[720px] rounded-2xl border border-red-200 bg-white px-6 py-8 text-center">
+          <div className="mx-auto my-6 max-w-[720px] rounded-2xl border border-red-200 bg-gray-100 px-6 py-8 text-center">
             <div className="text-4xl">🔌</div>
             <h3 className="mb-1.5 mt-2.5 text-lg font-semibold text-red-800">Өгөгдлийн сантай холбогдож чадсангүй</h3>
             <p className="[word-break:break-word] rounded-lg border border-red-200 bg-red-50 p-3 text-left text-[13px] text-red-700">{loadError.message}</p>
-            <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50 px-4 py-3.5 text-left text-[13px] text-gray-700">
+            <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3.5 text-left text-[13px] text-gray-700">
               <p><b>Хэрхэн засах вэ:</b></p>
               <ol className="mt-2 list-decimal space-y-1.5 pl-5">
                 <li><code className="rounded bg-gray-100 px-1.5 py-px text-xs">.env.local</code> доторх <code className="rounded bg-gray-100 px-1.5 py-px text-xs">NEXT_PUBLIC_SUPABASE_URL</code>-г шалгана.</li>
@@ -420,7 +420,7 @@ export default function ListingDetailClient({ id }) {
         {/* ===== ЗҮҮН БАГАНА ===== */}
         <div className="min-w-0">
           {/* Gallery */}
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
             <div className="relative">
               {/* ⚠️ ЗУРАГ дээр «таалагдсан/үзсэн» тэмдэглээ БАЙХГҮЙ (карттай ижил).
                   👁/❤️ тоо ба ❤️/🤍 toggle нь доорх FB-style footer мөрөнд. */}
@@ -492,7 +492,7 @@ export default function ListingDetailClient({ id }) {
                    толгойн доорх (`<header>`) 📍 1-р мөр / 📅 2-р мөр рүү БУЦАЖ
                    байрлав ✓ — карт дотор ЗӨВХӨН энэ (👁/🤍) мөр үлдэв
                 ⚠️ Тоо нь серверээс (listings.views / listings.likes — 0007). */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-gray-100 px-4 py-3 text-[13px] text-gray-500">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-gray-200 px-4 py-3 text-[13px] text-gray-500">
               <span title="Энэ зарыг хэдэн хүн үзсэн" className="font-semibold tabular-nums">
                 👁 {viewCount} үзсэн
               </span>
@@ -522,8 +522,8 @@ export default function ListingDetailClient({ id }) {
                  • хурдан (эхэнд YouTube-ийн 1MB+ script татахгүй)
                  • нууцлал (дартал YouTube cookie тавихгүй) */}
           {video.ok && (
-            <section className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white">
-              <h2 className="border-b border-gray-100 px-5 py-4 text-base font-semibold text-gray-800">
+            <section className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+              <h2 className="border-b border-gray-200 px-5 py-4 text-base font-semibold text-gray-800">
                 🎥 Видео
               </h2>
               <div className="p-5 sm:p-6">
@@ -591,13 +591,13 @@ export default function ListingDetailClient({ id }) {
                  зөвхөн `:last-child`-д хүрээ үлдэхгүй байх ЁСТОЙ — эс бөгөөс
                  мөр дунд ганц 1px зураас үлдэнэ ✗ (2026-10-01 (16)-д зассан) */}    
           {features.length > 0 && (
-            <section data-component="AdvertFeaturesApp" className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white">
-              <h2 className="border-b border-gray-100 px-5 py-4 text-base font-semibold text-gray-800">Зарын дэлгэрэнгүй</h2>
+            <section data-component="AdvertFeaturesApp" className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+              <h2 className="border-b border-gray-200 px-5 py-4 text-base font-semibold text-gray-800">Зарын дэлгэрэнгүй</h2>
               <dl className="grid grid-cols-1 sm:grid-cols-2">
                 {features.map((f) => (
                   <div
                     key={f.key || f.label}
-                    className={`flex items-baseline gap-3 border-b border-gray-100 px-5 py-3 text-sm last:border-b-0 ${
+                    className={`flex items-baseline gap-3 border-b border-gray-200 px-5 py-3 text-sm last:border-b-0 ${
                       features.length % 2 === 0 ? 'sm:[&:nth-last-child(-n+2)]:border-b-0' : 'sm:[&:last-child]:border-b-0'
                     }`}
                   >
@@ -611,7 +611,7 @@ export default function ListingDetailClient({ id }) {
 
           {/* ===== ТАЙЛБАР ===== */}
           {listing.description && (
-            <section className="mt-6 rounded-xl border border-gray-200 bg-white p-5 sm:p-6">
+            <section className="mt-6 rounded-xl border border-gray-200 bg-gray-100 p-5 sm:p-6">
               <h2 className="mb-4 text-base font-semibold text-gray-800">Тайлбар</h2>
               {/* 🆕 2026-10-08 (61) — ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «Тайлбарын урт
                   текст хайрцгаас хэтэрч гардаг» ⇒ `break-words` (`overflow-wrap:
@@ -635,8 +635,8 @@ export default function ListingDetailClient({ id }) {
                  ХАСАГДАВ ✗ (одоо зөвхөн ЭНД, нэг л газар гаргана ✓)
               ⚠️ Төв нь `mapPoint` (`mapCenterFor` — солбицолгүй зар ч хороо/
                  дүүрэг/хотын төв рүү буулгана) ✓ */}
-          <section data-component="ListingMap" className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white">
-            <h2 className="border-b border-gray-100 px-5 py-4 text-base font-semibold text-gray-800">
+          <section data-component="ListingMap" className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-gray-100">
+            <h2 className="border-b border-gray-200 px-5 py-4 text-base font-semibold text-gray-800">
               Байршил:{' '}
               <span className="font-normal text-gray-500">{address || NO_LOCATION_LABEL}</span>
             </h2>
@@ -648,7 +648,7 @@ export default function ListingDetailClient({ id }) {
 
         {/* ===== БАРУУН БАГАНА (ХОЛБОО БАРИХ) ===== */}
         <aside className="space-y-4 lg:sticky lg:top-[88px] lg:self-start">
-          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-card sm:p-6">
+          <div className="rounded-xl border border-gray-200 bg-gray-100 p-5 shadow-card sm:p-6">
             {/* 🆕 2026-10-06 (хэрэглэгчийн хүсэлт): үнэ нь ТОВЧ форматтай —
                 «760 сая ₮», «44.8 сая ₮» (`shortPriceLabel`; «₮» нь ТӨГСГӨЛД).
                 ⚠️ `text-3xl font-bold text-primary` ХӨНДӨӨГДӨӨГҮЙ ✓ */}
@@ -858,14 +858,14 @@ export default function ListingDetailClient({ id }) {
                  ⚠️ Зээлийн тооцоолол зөвхөн үл хөдлөхийн «зарах» зарт утга
                     учиртай — машин/ажлын зарт ГАРАХГҮЙ (`isRealEstate` ✓). */}
           {isRealEstate && isSell && (
-            <details className="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card">
+            <details className="group overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-card">
               <summary className="flex cursor-pointer select-none list-none items-center justify-between gap-2 px-5 py-3.5 text-[14px] font-semibold text-gray-700 transition hover:bg-gray-50 hover:text-primary [&::-webkit-details-marker]:hidden">
                 <span>🏦 Ипотекийн тооцоолуур</span>
                 <span className="flex items-center gap-1.5 text-[12px] font-normal text-gray-400">
                   <span aria-hidden="true" className="transition-transform duration-200 group-open:rotate-180">▼</span>
                 </span>
               </summary>
-              <div className="border-t border-gray-100 p-4">
+              <div className="border-t border-gray-200 p-4">
                 <MortgageCalculator defaultPrice={Number(listing.price) || 0} compact />
               </div>
             </details>

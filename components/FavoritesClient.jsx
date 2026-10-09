@@ -151,7 +151,7 @@ function FavoritesAdsPanel() {
           <p>Ачаалж байна...</p>
         </div>
       ) : error ? (
-        <div className="mx-auto my-6 max-w-[640px] rounded-2xl border border-red-200 bg-white px-6 py-8 text-center">
+        <div className="mx-auto my-6 max-w-[640px] rounded-2xl border border-red-200 bg-gray-100 px-6 py-8 text-center">
           <div className="text-4xl">⚠️</div>
           <h3 className="mb-2 mt-3 text-lg font-semibold text-red-800">Алдаа гарлаа</h3>
           <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-left text-[13px] text-red-700">{error}</p>

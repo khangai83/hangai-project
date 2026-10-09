@@ -94,7 +94,7 @@ export default function SavedSearchesClient() {
               key={it.id || it.url}
               data-saved-search-row
               title={it.desc.title}
-              className="flex flex-col rounded-2xl border border-gray-200 bg-white p-4 shadow-card transition-all duration-200 ease-out hover:-translate-y-1 hover:border-gray-300 hover:shadow-card-hover"
+              className="flex flex-col rounded-2xl border border-gray-200 bg-gray-100 p-4 shadow-card transition-all duration-200 ease-out hover:-translate-y-1 hover:border-gray-300 hover:shadow-card-hover"
             >
               <div className="min-w-0 flex-1 break-words">
                 {it.desc.category ? (
@@ -113,7 +113,7 @@ export default function SavedSearchesClient() {
                   <p className="font-semibold text-gray-900">Бүх зар</p>
                 ) : null}
               </div>
-              <div className="mt-4 flex items-center gap-2 border-t border-gray-100 pt-3">
+              <div className="mt-4 flex items-center gap-2 border-t border-gray-200 pt-3">
                 <Link
                   href={it.url}
                   className="btn btn-primary btn-sm flex-1 justify-center"

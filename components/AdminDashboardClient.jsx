@@ -30,7 +30,7 @@ function Card({ icon, label, value, sub, tone = 'gray', href }) {
     blue: 'border-primary/20 bg-primary-light',
     green: 'border-secondary/20 bg-secondary/5',
     amber: 'border-amber-200 bg-amber-50',
-    gray: 'border-gray-200 bg-white',
+    gray: 'border-gray-200 bg-gray-100',
   };
   const body = (
     <>
@@ -95,7 +95,7 @@ export default function AdminDashboardClient() {
   if (!authLoading && !user) {
     return (
       <div className="page-container">
-        <div className="mx-auto max-w-[720px] rounded-xl border border-gray-200 bg-white px-6 py-10 text-center shadow-card">
+        <div className="mx-auto max-w-[720px] rounded-xl border border-gray-200 bg-gray-100 px-6 py-10 text-center shadow-card">
           <div className="text-4xl">🔒</div>
           <h1 className="mt-2 text-xl font-bold text-gray-900">Админ хэсэг</h1>
           <p className="mt-1.5 text-sm text-gray-500">
@@ -110,7 +110,7 @@ export default function AdminDashboardClient() {
   if (loadError) {
     return (
       <div className="page-container">
-        <div className="mx-auto max-w-[720px] rounded-xl border border-red-200 bg-white px-6 py-10 text-center shadow-card">
+        <div className="mx-auto max-w-[720px] rounded-xl border border-red-200 bg-gray-100 px-6 py-10 text-center shadow-card">
           <div className="text-4xl">⛔</div>
           <h1 className="mt-2 text-xl font-bold text-red-800">
             {loadError.status === 403 ? 'Танд админ эрх байхгүй' : 'Алдаа гарлаа'}
@@ -216,7 +216,7 @@ export default function AdminDashboardClient() {
         </div>
 
         {/* ===== ХУГАЦААГААР (хүснэгт) ===== */}
-        <div className="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card">
+        <div className="mb-6 overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-card">
           <h2 className="border-b border-gray-100 px-4 py-3 text-[15px] font-bold text-gray-900">
             📈 Хугацаагаар
           </h2>
@@ -249,7 +249,7 @@ export default function AdminDashboardClient() {
         </div>
 
         {/* ===== СҮҮЛИЙН 14 ХОНОГИЙН ГРАФИК ===== */}
-        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-card">
+        <div className="mb-6 rounded-xl border border-gray-200 bg-gray-100 p-4 shadow-card">
           <h2 className="mb-1 text-[15px] font-bold text-gray-900">📊 Сүүлийн 14 хоног</h2>
           <p className="mb-4 text-[12.5px] text-gray-500">
             Босоо багана = тухайн өдөр оруулсан <b>зар</b>, шугаман доод хэсэг = <b>хандалт</b>
@@ -285,7 +285,7 @@ export default function AdminDashboardClient() {
 
         {/* ===== ХАМГИЙН ИХ ҮЗСЭН ЗАРУУД + СҮҮЛИЙН БҮРТГЭЛ ===== */}
         <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card">
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-card">
             <h2 className="border-b border-gray-100 px-4 py-3 text-[15px] font-bold text-gray-900">
               🔥 Хамгийн их үзсэн зарууд
             </h2>
@@ -307,7 +307,7 @@ export default function AdminDashboardClient() {
             )}
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card">
+          <div className="overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-card">
             <h2 className="border-b border-gray-100 px-4 py-3 text-[15px] font-bold text-gray-900">
               👤 Хамгийн сүүлийн бүртгэлүүд
             </h2>
@@ -341,7 +341,7 @@ export default function AdminDashboardClient() {
             const entries = Object.entries(block.data).sort((a, b) => b[1] - a[1]).slice(0, 8);
             const max = Math.max(1, ...entries.map(([, n]) => n));
             return (
-              <div key={block.title} className="rounded-xl border border-gray-200 bg-white p-4 shadow-card">
+              <div key={block.title} className="rounded-xl border border-gray-200 bg-gray-100 p-4 shadow-card">
                 <h2 className="mb-3 text-[15px] font-bold text-gray-900">{block.title}</h2>
                 {entries.length === 0 ? (
                   <p className="text-sm text-gray-500">Мэдээлэл байхгүй.</p>

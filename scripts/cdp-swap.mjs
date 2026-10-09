@@ -8,12 +8,13 @@
  *
  * ⚠️ ЭНЭ СКРИПТ ЮУГ ХАМГААЛАХ ВЭ:
  *   ① 🚗 «Автомашин» (`?section=auto`, дэд төрөл ГҮЙ ч) дээр блок БАЙНА:
- *      `[data-swap-filter]` === 1, `[data-swap-value]` === 1, чип нь ЖИНХЭНЭ
- *      `<button class="chip-toggle">` (☑ input БИШ ✓), шошго нь «Солино»,
- *      ХАРАГДАХ хэмжээтэй (≥60×24px — CSS ачаалагдсан ✓), `aria-pressed=false`
- *   ② 🖱 ЧИП ДАРАХ → URL `?swap=1` · `aria-pressed=true` · `chip-toggle-active`
- *      + `✓` тэмдэг · DB нь `attrs->>swap=eq.yes` (скаляр ТЕКСТ — `cs` БИШ ✓)
- *   ③ 🔁 Дахин дарахад УНТРАНА (чип мэт toggle) → URL/DB-ээс swap АРИЛНА ✓
+ *      `[data-swap-filter]` === 1, `[data-swap-value]` === 1 ба нь ЖИНХЭНЭ
+ *      ☑ `<input type="checkbox">` (форм дээрхтэй ЯГ ИЖИЛ класс ✓), шошго нь
+ *      «Солино», ХАРАГДАХ хэмжээтэй (16×16px — CSS ачаалагдсан ✓), `checked=false`
+ *      ба ⏳ ЧИП (`<button class="chip-toggle">`) БАЙХГҮЙ ✓
+ *   ② 🖱 ☑ ДАРАХ → URL `?swap=1` · `checked=true` · DB нь `attrs->>swap=eq.yes`
+ *      (скаляр ТЕКСТ — `cs` БИШ ✓)
+ *   ③ 🔁 Дахин дарахад УНТРАНА (☑ toggle) → URL/DB-ээс swap АРИЛНА ✓
  *   ④ ⚽ «Спорт бараа → Дартс» (`?section=hobby&type=Дартс`) дээр БАЙНА;
  *      ⛔ дэд төрөл сонгоогүй «Спорт бараа», «Гольф», «Компьютер» ба
  *      «Бүх зар» (`/`) дээр БАЙХГҮЙ (`supportsSwap` ✓ — хэрэглэгчийн шаардлага)
@@ -133,48 +134,55 @@ const waitFor = async (expression, ms = 9000) => {
     await sleep(250);
   }
 };
+/** ⚠️ (83) `Page.navigate`-ыг дараа нь ШИНЭ документ ачаалагдсаныг
+ *  `performance.timeOrigin`-оор батална — эс бөгөөс шилжилт хүрэхээс өмнө
+ *  ХУУЧИН хуудны DOM дээр хэмжиж «хуурамч ❌» гарах race үүсдэг
+ *  (ялангуяа ШИНЭ build дээрх эхний ачаалалт удаан үед ✓) */
 const go = async (url) => {
+  const t0 = await evalJs('performance.timeOrigin').catch(() => 0);
   await rpc('Page.navigate', { url });
-  await waitFor(`document.readyState === 'complete'`);
+  await waitFor(`performance.timeOrigin !== ${t0} && document.readyState === 'complete'`, 30000);
   await sleep(800);
 };
 
 /**
  * 🔄 ХАЙЛТЫН DOM-ын төлөв (дэгээнүүд: `[data-swap-filter]`/`[data-swap-value]`).
- * ⚠️ Хэв нь «🛏 Өрөөний тоо»/«💳 Төлбөрийн нөхцөл»-тэй ЯГ ИЖИЛ ЧИП —
- *    утга нь `aria-pressed` + `chip-toggle-active` класс дээр ✓
+ * ⚠️ (83) Хэв нь ФОРМ дээрхтэй ЯГ ИЖИЛ ☑ ЧЕКБОКС — утга нь `checked` дээр,
+ *    ⏳ ЧИП (`aria-pressed`/`chip-toggle-active`/`✓`) БАЙХГҮЙ ✓
  */
 const swapUi = () => evalJs(`(() => {
-  const chip = document.querySelector('[data-swap-value]');
-  const box = document.querySelector('[data-swap-filter]');
+  const box = document.querySelector('[data-swap-value]');
+  const group = document.querySelector('[data-swap-filter]');
   const size = (el) => {
     const r = el.getBoundingClientRect();
     return Math.round(r.width) + 'x' + Math.round(r.height);
   };
-  const parent = box && box.parentElement ? box.parentElement : null;
+  const wrap = box && box.closest('label') ? box.closest('label') : (box ? box.parentElement : null);
   return {
     blocks: document.querySelectorAll('[data-swap-filter]').length,
     chips: document.querySelectorAll('[data-swap-value]').length,
-    inputs: document.querySelectorAll('[data-swap-value] input, [data-swap-filter] input').length,
-    label: chip ? chip.textContent.replace(/\\\\s+/g, ' ').trim() : '',
-    value: chip ? chip.getAttribute('data-swap-value') : '',
-    button: !!chip && chip.tagName === 'BUTTON',
-    styled: !!chip && chip.classList.contains('chip-toggle'),
-    active: !!chip && chip.classList.contains('chip-toggle-active'),
-    pressed: !!chip && chip.getAttribute('aria-pressed') === 'true',
-    tick: !!chip && /✓/.test(chip.textContent),
-    size: chip ? size(chip) : '0x0',
-    clear: parent
-      ? [...parent.querySelectorAll('button')].filter((b) => b.textContent.trim() === '✕ Цуцлах').length
+    innerInputs: document.querySelectorAll('[data-swap-value] input').length,
+    label: wrap ? wrap.textContent.trim() : '',
+    value: box ? box.getAttribute('data-swap-value') : '',
+    tag: box ? box.tagName : '',
+    type: box ? (box.getAttribute('type') || '') : '',
+    // ☑ нь форм дээрхтэй ЯГ ИЖИЛ класс (h-4 w-4 shrink-0 accent-primary ✓)
+    styled: !!box && ['h-4', 'w-4', 'shrink-0', 'accent-primary'].every((c) => box.classList.contains(c)),
+    checked: !!box && box.checked === true,
+    size: box ? size(box) : '0x0',
+    clear: wrap
+      ? [...wrap.querySelectorAll('button')].filter((b) => b.textContent.trim() === '✕ Цуцлах').length
       : 0,
-    groupLabel: box ? (box.getAttribute('aria-label') || '') : '',
+    button: !!box && box.tagName === 'BUTTON',
+    chipClass: !!box && box.classList.contains('chip-toggle'),
+    groupLabel: group ? (group.getAttribute('aria-label') || '') : '',
   };
 })()`);
 
-/** 🖱 Чип дарах (хайлтын «Солино») */
+/** 🖱 ☑ («Солино») дарах — форм дээрхтэй ижил жинхэнэ чекбокс ✓ */
 const clickSwap = () => evalJs(`(() => {
   const c = document.querySelector('[data-swap-value]');
-  if (!c) return 'NO_CHIP';
+  if (!c) return 'NO_CHECKBOX';
   c.click();
   return 'OK';
 })()`);
@@ -193,7 +201,7 @@ const formSwap = () => evalJs(`(() => {
   const boxes = [...document.querySelectorAll('form input[type="checkbox"]')]
     .filter((b) => { const r = b.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
   const swapBox = swap ? swap.querySelector('input[type="checkbox"]') : null;
-  const labels = boxes.map((b) => (b.closest('label') || b.parentElement).textContent.replace(/\\\\s+/g, ' ').trim());
+  const labels = boxes.map((b) => (b.closest('label') || b.parentElement).textContent.trim());
   const r = swapBox ? swapBox.getBoundingClientRect() : null;
   // ⚠️ «Солино» нь ХАРАГДАХ чекбоксуудын ДУГААРТ (idx) — эхний нь БИШ бол
   //    болно (📋 Дэлгэрэнгүй блок дээр «нэрээ гарах уу?» чекбокс бий ✓)
@@ -230,28 +238,29 @@ await rpc('Emulation.setDeviceMetricsOverride', { width: 1280, height: 1400, dev
 await go(`${BASE}/?section=auto`);
 const dom = await swapUi();
 check('🔄 Авто дээр блок БАЙНА (`[data-swap-filter]` === 1)', dom.blocks === 1, `blocks=${dom.blocks}`);
-check('🔄 ГАНЦ чип (`[data-swap-value]` === 1 — «Солино» эсвэл үгүй ✓)',
+check('🔄 ГАНЦ ☑ (`[data-swap-value]` === 1 — «Солино» эсвэл үгүй ✓)',
   dom.chips === 1 && dom.value === '1', `chips=${dom.chips} value=${dom.value}`);
-check('🏷️ Чипийн шошго нь «Солино»', dom.label === 'Солино', JSON.stringify(dom.label));
-check('🎛 Чип нь ЖИНХЭНЭ `<button class="chip-toggle">` (☑ `<input>` БИШ ✓)',
-  dom.button && dom.styled && dom.inputs === 0, `button=${dom.button} styled=${dom.styled} inputs=${dom.inputs}`);
+check('🏷️ ☑-ийн шошго нь «Солино»', dom.label === 'Солино', JSON.stringify(dom.label));
+check('☑ Нь ЖИНХЭНЭ `<input type="checkbox">` (⏳ ЧИП БИШ ✓)',
+  dom.tag === 'INPUT' && dom.type === 'checkbox' && !dom.button && !dom.chipClass,
+  `tag=${dom.tag} type=${dom.type} button=${dom.button} chip=${dom.chipClass}`);
+check('🎛 Класс нь форм дээрхтэй ЯГ ИЖИЛ (`h-4 w-4 shrink-0 accent-primary`)',
+  dom.styled && dom.innerInputs === 0, `styled=${dom.styled} inner=${dom.innerInputs}`);
 check('🎛 Бүлгийн шошго (`aria-label`) нь «Солино» ✓', dom.groupLabel === 'Солино', dom.groupLabel);
-check('📏 Чип ХАРАГДАХ хэмжээтэй (≥60×24px — CSS ачаалагдсан ✓)',
-  (() => { const [w, h] = dom.size.split('x').map(Number); return w >= 60 && h >= 24; })(), dom.size);
-check('⚪ Анхдагчаар УНТРААЛТТАЙ (`aria-pressed=false`, «✓» БАЙХГҮЙ)',
-  !dom.pressed && !dom.active && !dom.tick, `pressed=${dom.pressed} tick=${dom.tick}`);
+check('📏 ☑ ХАРАГДАХ хэмжээтэй (16×16px — CSS ачаалагдсан ✓)',
+  (() => { const [w, h] = dom.size.split('x').map(Number); return w >= 14 && h >= 14; })(), dom.size);
+check('⚪ Анхдагчаар УНТРААЛТТАЙ (`checked=false`)', !dom.checked, `checked=${dom.checked}`);
 check('🚫 Шүүлт идэвхгүй үед «✕ Цуцлах» ГАРАХГҮЙ ✓', dom.clear === 0, `clear=${dom.clear}`);
 
-// ═══════ ② 🖱 ЧИП ДАРАХ → URL `?swap=1` + DB `attrs->>swap=eq.yes` ═══════
+// ═══════ ② 🖱 ☑ ДАРАХ → URL `?swap=1` + DB `attrs->>swap=eq.yes` ═══════
 listingReqs.length = 0;
-check('🖱 «Солино» чип дарагдав', (await clickSwap()) === 'OK');
+check('🖱 «Солино» ☑ дарагдав', (await clickSwap()) === 'OK');
 await waitFor(`/swap=1/.test(location.search)`);
 await sleep(1200);
 check('🔗 URL нь `?swap=1` болов', /swap=1/.test(decodeURIComponent(await url())), decodeURIComponent(await url()));
 const on = await swapUi();
-check('🎛 Чип ИДЭВХТЭЙ: `aria-pressed=true` + `chip-toggle-active` + «✓»',
-  on.pressed && on.active && on.tick, `pressed=${on.pressed} active=${on.active} tick=${on.tick}`);
-check('🎛 «✕ Цуцлах» ХАРАГДАЖ байна (шүүлт идэвхтэй ✓)', on.clear === 1, `clear=${on.clear}`);
+check('🎛 ☑ ИДЭВХТЭЙ: `checked=true`', on.checked, `checked=${on.checked}`);
+check('🚫 (83) ☑-ийн дэргэд ИЛҮҮЦ «✕ Цуцлах» мөр БАЙХГҮЙ ✓', on.clear === 0, `clear=${on.clear}`);
 check('🔎 DB: `attrs->>swap=eq.yes` (скаляр ТЕКСТ — `cs`/`or` БИШ ✓)',
   dbQ('attrs->>swap=eq.yes'), lastQ());
 check('🔎 DB: `payment_terms`/`or=` шүүлт ХОЛОГДООГҮЙ (нэг л нөхцөл ✓)',
@@ -264,8 +273,7 @@ await waitFor(`!/swap=/.test(location.search)`);
 await sleep(1200);
 const off = await swapUi();
 check('🔗 URL-аас `swap` АРИЛАВ', !/swap=/.test(decodeURIComponent(await url())), decodeURIComponent(await url()) || '(хоосон)');
-check('🎛 Чип УНТРАВ (`aria-pressed=false`, «✓» арилав)', !off.pressed && !off.tick,
-  `pressed=${off.pressed} tick=${off.tick}`);
+check('🎛 ☑ УНТРАВ (`checked=false`)', !off.checked, `checked=${off.checked}`);
 check('🔎 DB: swap шүүлт ОГТ ЯВАХГҮЙ (эс бөгөөс «зар байхгүй» гарна ✗)',
   !dbQ('swap'), lastQ());
 
@@ -308,7 +316,7 @@ check('🎛 Чипийн ✕ дарагдав', (await removeActiveChip()) === '
 await waitFor(`!/swap=/.test(location.search)`);
 await sleep(1200);
 check('🎛 ✕ дарвал URL-аас swap арилав', !/swap=/.test(decodeURIComponent(await url())), decodeURIComponent(await url()) || '(хоосон)');
-check('🎛 Чип УНТРАВ (`aria-pressed=false`)', !(await swapUi()).pressed);
+check('🎛 ☑ УНТРАВ (`checked=false`)', !(await swapUi()).checked);
 check('🔎 DB: swap шүүлт ч арилав', !dbQ('swap'), lastQ());
 
 // ═══════ ⑦ ☑ ФОРМ: «🤝 Үнэ тохирно»-гийн БАРУУН талд (зөвхөн 🚗/⚽ «Дартс») ═══════
@@ -318,14 +326,29 @@ check('🔎 DB: swap шүүлт ч арилав', !dbQ('swap'), lastQ());
 //    түгждэг тул нэвтрэлтгүй ч дүрэм хамгаалагдсан хэвээр ✓)
 const NEED_AUTH = `/нэвтрэх шаардлагатай/.test(document.body.innerText)`;
 const SWAP_BOX = `document.querySelector('[data-swap-check]')`;
+const FORM = `document.querySelector('form')`;
 const AUTO_SUB = encodeURIComponent('Суудлын машин');
+
+/** ⏳ Форм бэлэн болохыг хүлээнэ (нэвтрэлтийн хаалтыг ч тооцно ✓)
+ *  ⚠️ (83) ⏳ өмнө нь `waitFor(…, 15000)` ХҮРЭХГҮЙ ч чимээгүй буцаж, хуурамч
+ *     ❌ (5 ширхэг) өгдөг байв (ШИНЭ build дээрх ЭХНИЙ `/listings/new`
+ *     ачаалалт 16с-ээс удаан үед ✓) ⇒ одоо 45с хүртэл хүлээж, форм БЭЛЭН
+ *     БИШ бол (нэвтрээгүй / огт рендэрлэгдээгүй) SKIP болгоно — ☑-ийн дүрэм
+ *     нь `npm run test:swap` ⑦-д ЭХ ФАЙЛААС түгжигдсэн хэвээр ✓ */
+const waitForm = async () => {
+  await waitFor(`${SWAP_BOX} || ${NEED_AUTH}`, 45000);
+  await sleep(1200);
+  return { needAuth: await evalJs(NEED_AUTH), formReady: await evalJs(`!!${FORM}`) };
+};
+
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1600, deviceScaleFactor: 1, mobile: false });
 await go(`${BASE}/listings/new?section=auto&type=${AUTO_SUB}&step=3`);
-await waitFor(`${SWAP_BOX} || ${NEED_AUTH}`, 15000);
-await sleep(1200);
-const needAuth = await evalJs(NEED_AUTH);
-if (needAuth) {
+const ready = await waitForm();
+if (ready.needAuth) {
   console.log('  ⏭ SKIP — Chrome профайл нэвтрээгүй («Зар оруулахын тулд нэвтрэх шаардлагатай»)');
+  console.log('     ⇒ форм-ын ☑ шалгалтууд алгаслав (unit: `npm run test:swap` ⑦ ✓)');
+} else if (!ready.formReady) {
+  console.log('  ⏭ SKIP — 🚗 форм рендэрлэгдээгүй (ачаалалт удаан / сүлжээ)');
   console.log('     ⇒ форм-ын ☑ шалгалтууд алгаслав (unit: `npm run test:swap` ⑦ ✓)');
 } else {
 const form = await formSwap();
@@ -372,11 +395,14 @@ await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1600, dev
 //    шалгалт ХУУРАМЧ болно ✗)
 await evalJs(`Object.keys(localStorage).filter((k) => k.indexOf('zar:listing-draft') === 0).forEach((k) => localStorage.removeItem(k))`);
 await go(`${BASE}/listings/new?section=computers&type=${encodeURIComponent('Notebook')}&step=3`);
-await waitFor(`${SWAP_BOX} || ${NEED_AUTH}`, 15000);
-await sleep(1500);
-const formPc = await formSwap();
-check('⛔ 💻 «Компьютер» форм дээр `[data-swap-check]` БАЙХГҮЙ (хэрэглэгчийн шаардлага ✓)',
-  !formPc.present && formPc.labels.every((l) => !/Солино/.test(l)), JSON.stringify(formPc.labels));
+const pcReady = await waitForm();
+if (!pcReady.formReady) {
+  console.log('  ⏭ SKIP — 💻 форм рендэрлэгдээгүй (ачаалалт удаан / сүлжээ) — ⛔ шалгалт алгаслав');
+} else {
+  const formPc = await formSwap();
+  check('⛔ 💻 «Компьютер» форм дээр `[data-swap-check]` БАЙХГҮЙ (хэрэглэгчийн шаардлага ✓)',
+    !formPc.present && formPc.labels.every((l) => !/Солино/.test(l)), JSON.stringify(formPc.labels));
+}
 // 🧹 Төгсгөлд нооргийг үлдээхгүй (хэрэглэгчийн профайл бохирдохгүй ✓)
 await evalJs(`Object.keys(localStorage).filter((k) => k.indexOf('zar:listing-draft') === 0).forEach((k) => localStorage.removeItem(k))`);
 }

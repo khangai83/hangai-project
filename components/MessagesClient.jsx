@@ -293,9 +293,9 @@ export default function MessagesClient() {
             ⚠️ Мобайлд чат нээлттэй үед жагсаалт НУУГДАЖ (`hidden`), desktop
                дээр (`lg:block`) үргэлж харагдана ✓ */}
         <section
-          className={`overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card ${activeId ? 'hidden lg:block' : ''}`}
+          className={`overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-card ${activeId ? 'hidden lg:block' : ''}`}
         >
-          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+          <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
             <h2 className="text-sm font-bold text-gray-900">Ярианы жагсаалт</h2>
             {conversations && conversations.length > 0 && (
               <span className="text-[12px] font-semibold text-gray-400">{conversations.length}</span>
@@ -335,7 +335,7 @@ export default function MessagesClient() {
                     key={c.id}
                     type="button"
                     onClick={() => selectConversation(c.id)}
-                    className={`flex w-full items-start gap-3 border-b border-gray-100 px-4 py-3 text-left transition last:border-b-0 hover:bg-gray-50 ${activeId === c.id ? 'bg-primary-light' : ''} ${unread > 0 ? 'bg-blue-50/40' : ''}`}
+                    className={`flex w-full items-start gap-3 border-b border-gray-200 px-4 py-3 text-left transition last:border-b-0 hover:bg-gray-50 ${activeId === c.id ? 'bg-primary-light' : ''} ${unread > 0 ? 'bg-blue-50/40' : ''}`}
                   >
                     <Avatar src={p.avatarUrl} name={titleFor(c)} size={44} />
                     <div className="min-w-0 flex-1">
@@ -368,7 +368,7 @@ export default function MessagesClient() {
             ⚠️ Мобайлд чат сонгоогүй бол НУУГДАЖ (`hidden`), desktop дээр
                `lg:flex` — «Яриа сонгоно уу» гэсэн хоосон төлөв харагдана ✓ */}
         <section
-          className={`flex h-[65vh] min-h-[420px] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card lg:h-[600px] ${activeId ? '' : 'hidden lg:flex'}`}
+          className={`flex h-[65vh] min-h-[420px] flex-col overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-card lg:h-[600px] ${activeId ? '' : 'hidden lg:flex'}`}
         >
           {!activeId ? (
             <div className="grid flex-1 place-items-center px-6 py-16 text-center">
@@ -383,7 +383,7 @@ export default function MessagesClient() {
           ) : (
             <>
               {/* ---- Толгой: нөгөө тал + зарын холбоос ---- */}
-              <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-3 sm:px-4">
+              <div className="flex items-center gap-2 border-b border-gray-200 px-3 py-3 sm:px-4">
                 <button
                   type="button"
                   onClick={backToList}
@@ -460,7 +460,7 @@ export default function MessagesClient() {
               </div>
 
               {/* ---- Бичих хэсэг ---- */}
-              <form onSubmit={handleSend} className="border-t border-gray-100 p-3 sm:p-4">
+              <form onSubmit={handleSend} className="border-t border-gray-200 p-3 sm:p-4">
                 <div className="flex items-end gap-2">
                   <textarea
                     value={text}

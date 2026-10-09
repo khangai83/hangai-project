@@ -213,7 +213,7 @@ function ActivityChart({ daily, days }) {
 /** Том тоон карт */
 function StatCard({ icon, label, value, sub, accent = 'text-gray-900' }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
+    <div className="rounded-xl border border-gray-200 bg-gray-100 p-4">
       <p className="text-[12px] font-semibold uppercase tracking-wide text-gray-400">
         {icon} {label}
       </p>
@@ -437,7 +437,7 @@ export default function MyListingsStatsPanel() {
       </div>
 
       {/* ===== Өдөр тутмын график ===== */}
-      <div className="mb-4 rounded-xl border border-gray-200 bg-white p-4">
+      <div className="mb-4 rounded-xl border border-gray-200 bg-gray-100 p-4">
         {isDaily ? (
           <ActivityChart daily={daily} days={days} />
         ) : (
@@ -514,7 +514,7 @@ export default function MyListingsStatsPanel() {
           return (
             <div
               key={l.id}
-              className={`rounded-xl border bg-white p-4 ${
+              className={`rounded-xl border bg-gray-100 p-4 ${
                 idx === 0 ? 'border-secondary/40' : 'border-gray-200'
               }`}
             >

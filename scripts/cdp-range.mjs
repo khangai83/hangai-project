@@ -123,9 +123,22 @@ const evalJs = async (id, expression) => {
     return evalOnce(id + 1000, expression);
   }
 };
+/** ⚠️ (83) `Page.navigate`-ыг дараа нь ШИНЭ документ ачаалагдсаныг
+ *  `performance.timeOrigin`-оор батална — эс бөгөөс шилжилт хүрэхээс өмнө
+ *  ХУУЧИН хуудны DOM дээр хэмжиж «хуурамч ❌» гарах race үүсдэг ✗
+ *  ⚠️ Тогтмол `sleep` нь ЗӨВХӨН доод хязгаар (хүйтэн эхлэлт дээр хүрэлцэхгүй ✓) */
 const go = async (id, url, wait = 6000) => {
+  const t0 = await evalJs(id, 'performance.timeOrigin').catch(() => 0);
   await rpc(ws, id, 'Page.navigate', { url });
   await sleep(wait);
+  const until = Date.now() + 20000;
+  for (;;) {
+    try {
+      if (await evalJs(id, `performance.timeOrigin !== ${t0} && document.readyState === 'complete'`)) return;
+    } catch { /* хуудас солигдож байна */ }
+    if (Date.now() > until) return;
+    await sleep(250);
+  }
 };
 
 let pass = 0; let fail = 0;
@@ -179,11 +192,21 @@ const gone = await evalJs(11, `JSON.stringify({
   handles: document.querySelectorAll('[data-handle]').length,
   roles: document.querySelectorAll('[role="slider"]').length,
   inputs: document.querySelectorAll('[data-range-input]').length,
+  // ⚠️ 2026-10-09 (83): хуучин шалгалт нь БҮХ [data-range-input]-ыг тоолж «4» гэж
+  //    шаарддаг байв — гэвч 2026-10-04 (35)-д 🏢 орон сууцны 3 нэмэлт хүрээ
+  //    («Барилгын давхар» · «Хэдэн давхарт» · «Ашиглалтанд орсон он») нэмэгдсэн тул
+  //    DOM-д 10 оролт гарч, шалгалт ХУУРАМЧ улаан болж байв ✗ (алдаа нь КОД дээр
+  //    БИШ, тестийн тоолол дээр байв) ⇒ одоо блок бүрээр ЯГ тоолно ✓
+  //    ⚠️ Энэ нь evalJs-ийн TEMPLATE LITERAL дотор байгаа тул backtick ХОРИГЛОГДОНО
+  priceArea: document.querySelectorAll('[data-range-filter="Үнэ"] [data-range-input], [data-range-filter="Талбай"] [data-range-input]').length,
+  apartment: document.querySelectorAll('[data-range-filter="Барилгын давхар"] [data-range-input], [data-range-filter="Хэдэн давхарт"] [data-range-input], [data-range-filter="Ашиглалтанд орсон он"] [data-range-input]').length,
 })`);
 const g = JSON.parse(gone);
 check('🚫 Чирдэг слайдер DOM-д БАЙХГҮЙ (data-slider/data-handle/role=slider = 0)',
   g.sliders === 0 && g.handles === 0 && g.roles === 0, gone);
-check('🔢 Үнэ + Талбайн 4 тоон оролт гарлаа (from/to × 2)', g.inputs === 4, `${g.inputs} input`);
+check('🔢 Үнэ + Талбайн 4 тоон оролт (from/to × 2) + орон сууцны 3 хүрээ (6)',
+  g.priceArea === 4 && g.apartment === 6,
+  `${g.inputs} input (үнэ/талбай ${g.priceArea} + орон сууц ${g.apartment})`);
 
 // ═══════ ② БИЧИХ ЯВЦАД ТОО ЦЭГЭЭР ТУСГААРЛАГДАВ ═══════
 listingReqs.length = 0;

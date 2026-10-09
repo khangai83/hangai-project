@@ -275,6 +275,10 @@ console.log('\n🎨 CDP — нүүр хуудсны КАТЕГОРИЙН TILE (1
 // ═══════════════════ 🖥 DESKTOP (1280px) ═══════════════════
 await goto(`${BASE}/`, 1280, 1000);
 await waitFor(`document.querySelectorAll('.tile-grid button[role=tab]').length === ${TILES}`);
+// ⚠️ (83) Зураг нь `loading="lazy"` ⇒ grid гарч ирсний ДАРАА л ачаалагдана.
+//    Тогтмол хүлээлт ХҮРЭЛЦЭХГҮЙ байж «natural=0» хуурамч ✗ өгдөг байв ✗ ⇒
+//    одоо БОДИТ ачаалалтыг хүлээнэ (8с — ачаалагдахгүй бол ✗ ХЭВЭЭР ✓)
+await waitFor(`[...document.querySelectorAll('.tile-grid img')].every((i) => i.complete && i.naturalWidth > 0)`, 8000);
 
 const d = await probe();
 check('🎨 12 tile байна (`.tile-grid button[role=tab]`)', d.count === TILES, `count=${d.count}`);
@@ -352,6 +356,10 @@ check('🖱 `Автомашин` tile дардагдав', (await clickTile('aut
 await waitFor(`document.querySelectorAll('.tile-grid button[role=tab]').length === 0`);
 const subs = await evalJs(`document.querySelectorAll('[data-section-panel] button[role=tab]').length`);
 check('📂 Хэсэг нээгдэв — tile АЛГА, дэд төрлүүд ГАРНА (>0)', subs > 0, `subs=${subs}`);
+// ⚠️ (83) URL (`?section=auto`) нь grid-ийн unmount-аас хэдхэн ms ХОЙШ
+//    шинэчлэгддэг ⇒ шууд уншвал хуурамч ✗ өгдөг байв ✗ ⇒ эхлээд хүлээнэ ✓
+//    (⛔ хэвээр `?type=…` болбол хүлээлт дуусаж, шалгалт ✗ ГАРСААР байна ✓)
+await waitFor(`location.search.includes('section=auto')`, 6000);
 const search = await evalJs('location.search');
 check('🔗 URL нь `?section=auto` ХЭВЭЭР (CDP гэрээ хөндөгдөөгүй ✓)', search.includes('section=auto'), search);
 check('⬅ Панелийн ГАРЧИГ дарж 12 tile руу буцав', (await backToTiles()) === 'OK');

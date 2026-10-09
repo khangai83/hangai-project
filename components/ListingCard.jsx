@@ -100,7 +100,10 @@ export default function ListingCard({ listing, author, attrsLine }) {
     <Link
       href={`/listings/${listing.id}`}
       data-listing-card
-      className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover"
+      /* 🎨 2026-10-09 (83): `bg-white` → `bg-gray-100` — хуудасны дэвсгэр ЦАГААН
+         болсон тул карт нь «дээр нь байгаа саарал зүйл» болов ✓ (хүрээ +
+         `shadow-card` нь цагаан дэвсгэрээс ялгана ✓) */
+      className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-gray-100 shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover"
     >
       {/* ══════ 🖼 ЗУРАГ (дээд) — БҮТЭН өргөн, `aspect-[4/3]` ══════ */}
       <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-gray-100">

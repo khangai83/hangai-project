@@ -96,7 +96,7 @@ t('✅ ФУНКЦИОНАЛ ХӨНДӨӨГДӨӨГҮЙ — `role="search"` · `o
 
 t('📱 Мобайл слат нь БҮТЭН өргөн ХЭВЭЭР (`renderSearchBar(\'mobile\')` + `xl:hidden`) ✓', () => {
   assert.match(HOME, /renderSearchBar\('mobile'\)/, 'мобайл слат дутуу ✗');
-  assert.match(HOME, /sticky top-16 z-30 border-b border-gray-200 bg-white px-4 py-2\.5 xl:hidden/,
+  assert.match(HOME, /sticky top-16 z-30 border-b border-gray-200 bg-gray-100 px-4 py-2\.5 xl:hidden/,
     'мобайл наалдамхай слатын класс дутуу/өөр ✗');
 });
 

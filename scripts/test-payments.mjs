@@ -462,6 +462,11 @@ t('🐍 CDP скрипт нь ЧИП БАЙГААГ, өрөөний тооны �
   // ⏳ (6) ☑ checkbox-ийн шалгалтууд ХАСАГДАВ — хайлт дээр ☑ байхгүй ✓
   assert.ok(!/type === 'checkbox'/.test(cdp), 'CDP нь ☑ checkbox хайж байна ✗ (чип байх ёстой)');
   assert.ok(!/gridTemplateColumns/.test(cdp), 'CDP нь 2 баганат grid хэмжиж байна ✗ (чип байх ёстой)');
+  // 🆕 2026-10-09 (83): «Бүх зар» (`/`) дээр панель БАЙХГҮЙ ба ⚠️ хэмжилт нь
+  //    ШИНЭ документ дээр хийгдэх ёстой (`performance.timeOrigin` — хуучин
+  //    хуудны DOM дээр хэмжвэл хуурамч ❌ «sidebar байна» гэж гардаг байв ✗)
+  assert.match(cdp, /advanced-filters/, 'панель (`#advanced-filters`) байгаа эсэхийг шалгахгүй ✗');
+  assert.match(cdp, /performance\.timeOrigin/, 'хуудас шилжилтийн race-ийн хамгаалалт алга ✗');
 });
 
 // ---------- ⑰ app/globals.css — ХАЙЛТ ба ФОРМ НЭГ ЭХ СУРВАЛЖ (чип) ----------
