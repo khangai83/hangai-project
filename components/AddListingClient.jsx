@@ -13,7 +13,7 @@ import SearchableSelect from './SearchableSelect';
 // 🗺 ГАЗРЫН ЗУРАГ ДЭЭРХ ПИН-ПИКЕР (2026-10-06) — `жишиг сайт` мэт modal
 import LocationMapPicker from './LocationMapPicker';
 import { parseYouTube } from '../lib/youtube.mjs';
-import { compressImages, formatBytes } from '../lib/imageUtils';
+import { compressImages, formatBytes, UNREADABLE_IMAGE_HINT } from '../lib/imageUtils.mjs';
 /**
  * 📝 НООРОГ (2026-10-05, 54) — хэрэглэгчийн гомдол: «зар нэмж байх үедээ гар
  *    утасны browser санамсаргүй refresh хийхэд оруулж байсан мэдээлэл байхгүй
@@ -2149,6 +2149,16 @@ export default function AddListingClient() {
     setMobileDetailStep(key);
   };
 
+  /**
+   * 📷 ЗУРАГ СОНГОХ (🖼 ОЛОН ФОРМАТ, 2026-10-09)
+   *
+   * ⚠️ ЯАГААД ШАЛГАДАГ ВЭ: `compressImage()` нь зөвхөн browser-ийн УНШИЖ
+   *    ЧАДДАГ форматыг JPEG болгож чадна (jpeg/png/webp/avif/gif/svg/heic
+   *    (Safari) …). Уншиж чадаагүй файл (ж: Chrome дээрх heic/tiff/RAW) нь
+   *    ХЭВЭЭРЭЭ илгээгдэж, сервер дээр «төрөл буруу» гэж унадаг байв —
+   *    хэрэглэгч шалтгааныг ойлгохгүй байв ✗ Тиймээс ийм зургийг ЭНД
+   *    ЯЛгаж хасаад, ойлгомжтой монгол мессеж өгнө ✓
+   */
   const onPickFiles = async (e) => {
     const files = Array.from(e.target.files || []);
     e.target.value = '';
@@ -2160,9 +2170,11 @@ export default function AddListingClient() {
     setError('');
     setCompressing(true);
     try {
-      // 🗜 Storage хэмнэх: илгээхээс өмнө resize + JPEG шахалт (lib/imageUtils.js)
+      // 🗜 Storage хэмнэх: илгээхээс өмнө resize + JPEG шахалт (lib/imageUtils.mjs)
       const report = await compressImages(files);
-      const mapped = report.items.map((it) => ({
+      // ⚠️ Уншигдсан зургуудыг л оруулна (failed нь сервер дээр ХЭЗЭЭ Ч гарахгүй)
+      const okItems = report.items.filter((it) => !it.failed);
+      const mapped = okItems.map((it) => ({
         file: it.file,
         url: URL.createObjectURL(it.file),
         originalSize: it.originalSize,
@@ -2170,9 +2182,14 @@ export default function AddListingClient() {
         savedPercent: it.savedPercent,
         skipped: !!it.skipped,
       }));
-      setPending((p) => [...p, ...mapped]);
+      if (mapped.length) setPending((p) => [...p, ...mapped]);
+      if (report.failed) {
+        setError(
+          `⚠️ ${report.failed} зураг оруулагдсангүй (${report.failedNames.join(', ')}). ${UNREADABLE_IMAGE_HINT}`
+        );
+      }
       setLastReport({
-        count: report.items.length,
+        count: mapped.length,
         totalOriginal: report.totalOriginal,
         totalNew: report.totalNew,
         savedPercent: report.savedPercent,
@@ -3923,7 +3940,8 @@ export default function AddListingClient() {
                 <div className="text-[40px]">{compressing ? '⏳' : '📷'}</div>
                 <p>{compressing ? 'Зургуудыг шахаж байна...' : 'Зураг оруулахын тулд дарна уу'}</p>
                 <p className="form-hint">
-                  Дээд тал нь 10 зураг (jpg, png, webp) · 🗜 автоматаар <b>1600px / 82%</b> болж шахагдана
+                  Дээд тал нь 10 зураг — jpg · png · webp · avif · gif · svg · heic
+                  (iPhone-ийн heic нь автоматаар jpg болно) · 🗜 автоматаар <b>1600px / 82%</b> болж шахагдана
                 </p>
               </div>
               <input

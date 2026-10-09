@@ -1252,6 +1252,33 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   хүснэгт) · `docs/IMPROVEMENTS.md` (энэ мөр)
   🔍 Хайх үг: `max-w-[480px]`, `mx-auto` ХОРИГ, `form.left − slot.left`, `isHeader`,
   `HeaderSearchBar`, `test-search-bar-width`, `zar-70-search-gap`
+- 🖼 **ЗУРГИЙН ОЛОН ФОРМАТ — `npm run test:image` (2026-10-09 (76))** —
+  хэрэглэгч: «**зургийн олон формат дэмжье**». (1) 🎯 **ШИЙДВЭР — форматын
+  БОДЛОГЫГ нэг газар төвлөрүүлэв:** шинэ ЦЭВЭР `imageCompressionPlan(file)` нь
+  `gif`/`svg` → **шахдаггүй** (хөдөлгөөн/вектор алдана) · `maxBytes`-ээс бага
+  `webp`/`avif` → **шахдаггүй** (аль хэдийн шахагдсан) · бусад
+  (`jpeg·png·heic·tiff·bmp`…) → **1600px JPEG** гэж шийднэ; ⚠️ уншиж ЧАДААГҮЙ
+  формат (ж: Chrome дээрх `heic`) нь `failed: true` буцаж, UI дээр ойлгомжтой
+  зөвлөгөө гарна (⏳ өмнө нь чимээгүй өнгөрч, серверээс «төрөл буруу» гэх
+  ойлгомжгүй алдаа ирдэг байв ✗).
+  (2) 🧩 **СЕРВЕР:** `lib/storageKeys.mjs` → `LISTING_IMAGE_TYPES` ба
+  `AVATAR_IMAGE_TYPES`-д **`image/avif` · `image/jpg` (alias)** нэмэгдэж,
+  `imageTypeFromName()` + `safeImageType(bucket, type, fileName)` нь browser
+  MIME-г ОГТ илгээгээгүй үед (`''`, `application/octet-stream` — Android/Windows,
+  сүлжээний диск) төрлийг **өргөтгөлөөс** нөхнө ✓; `allowedExtensionsForBucket()`
+  нь алдааны мессежийг ойлгомжтой болгов (`jpg, png, webp, avif, gif, svg`).
+  (3) ⚠️ **`heic`/`heif`/`tiff` ЗОРИУДААР зөвшөөрөгдөөгүй:** Chrome/Firefox/Android
+  тэдгээрийг ХАРУУЛЖ ЧАДАХГҮЙ тул хадгалагдсан зураг эвдэрсэн харагдана ✗ —
+  гэвч хэрэглэгч алдагдахгүй (Safari/iPhone тэдгээрийг `createImageBitmap`-аар
+  уншиж **JPEG болгочихдог** ⇒ iPhone-ийн heic зураг хэвийн орно ✓).
+  (4) 📦 `lib/imageUtils.js` → **`lib/imageUtils.mjs`** (ЦЭВЭР модуль —
+  `storageClient.mjs`-ийн адил) ⇒ Node тестэд шууд орно ✓
+  🧪 `test:image` **🆕 15/15 ✓** (canvas-ыг fake-аар: 1600px, чанар 0.82 → 0.74,
+  эх файл хэвээр, `failed: true`, SSR) · `test:storage` **63 → 68/68 ✓** ·
+  `test:brand` 24/24 ✓ · `build` EXIT=0 ✓
+  ⚠️ **DB/SQL/migration ХӨНДӨӨГДӨӨГҮЙ; хуучин зургийн URL/түлхүүр ХЭВЭЭР** ✓
+  🔍 Хайх үг: `imageCompressionPlan`, `UNREADABLE_IMAGE_HINT`, `imageTypeFromName`,
+  `allowedExtensionsForBucket`, `test:image`
 - 🛠 **R2 CORS-ЫГ КОДООС УДИРДАНА — `npm run r2:cors` (2026-10-09 (75))** —
   📱 iPhone-оос зураг оруулах үед «Зургийг R2 руу илгээж чадсангүй …
   **[Load failed]**» гэж унаж байсныг зассан: `presign` нь **200 · `backend: r2`**
@@ -6114,14 +6141,28 @@ egress ҮНЭГҮЙ** (С3-д нийцтэй) тул хязгаар тасрах
   (`(storage.foldername(name))[1] = auth.uid()::text`) дүрмийг
   `app/api/storage/{presign,delete}` **хүсэлт бүрд** хэрэгжүүлнэ — түлхүүрийн
   эхний фолдер нь ЗААВАЛ хэрэглэгчийн id (`lib/storageKeys.mjs`) ✓
+- 🖼 **Зургийн ФОРМАТ (2026-10-09, (76)):** хэрэглэгч **олон форматын** зураг
+  оруулна — `lib/storageKeys.mjs` нь зөвхөн browser ШУУД ХАРУУЛЖ ЧАДАХ төрлийг
+  л хадгална (`jpg · png · webp · avif · gif · svg`; ⚠️ `heic/heif/tiff` нь
+  Chrome/Firefox/Android дээр ХАРАГДАХГҮЙ тул ЗОРИУДААР байхгүй — гэвч client
+  талд JPEG болж хөрвөнө ✓). Browser MIME-г ОГТ илгэээгүй бол (`''`,
+  `application/octet-stream`) төрөл нь **өргөтгөлөөс** нөхөгдөнө ✓
 - 🧪 Дүрэм нь 3 талд нэг эх сурвалжаас (`lib/storageKeys.mjs`) — тест `npm run test:storage`
-  (**57 тест**: түлхүүр/эзэн/bucket шалгалт, хуучин+шинэ URL задалж чадах эсэх,
+  (**68 тест**: түлхүүр/эзэн/bucket шалгалт, хуучин+шинэ URL задалж чадах эсэх,
   `evil.php` → `jpg` хөрвөлт, round-trip + 🔟 browser тал нь `fetch`-ийг дуурайж
   шалгана — `PUT` header, `NO_SESSION`, 503 код, сүлжээний алдаа, устгалт шидэхгүй байх
   + `isR2UploadReady()` — `R2_PUBLIC_BASE` дутуу бол upload ХИЙГДЭХГҮЙ,
   эс бөгөөс DB-д «тохируулаагүй» ХОГ URL бичигдэж зураг харагдахгүй болно ✗
   + 🆕 `rebaseStorageUrl()`/`publicBaseOf()` — нийтийн домэйн солиход URL-ыг зөв
-  шилжүүлэх ба Supabase/демо утгыг ХӨНДӨХГҮЙ ✓)
+  шилжүүлэх ба Supabase/демо утгыг ХӨНДӨХГҮЙ
+  + 🆕 **(76)** `imageTypeFromName()`/`safeImageType(…, fileName)`/`allowedExtensionsForBucket()`
+  ба өргөтгөл↔MIME ТОЛЬ — формат нэмэгдэхэд түлхүүр/`Content-Type` зөрөхгүй ✓)
+- 🖼 **Шахалт/формполитик:** `lib/imageUtils.mjs` → тест `npm run test:image`
+  (**15 тест** — 🆕 (76): gif/svg ШАХДАГГҮЙ · жижиг webp/avif хэвээр ✓ ·
+  jpeg/png/heic/tiff/bmp → 1600px JPEG · **уншиж чадаагүй формат → `failed: true`**
+  (серверээс «төрөл буруу» гэх ойлгомжгүй мессеж ирэхээс өмнө client дээр
+  ойлгомжтой монгол зөвлөгөө өгнө ✓) · canvas-ыг fake-аар дуурайж чанар/өргөн/нэрийг
+  шалгана) ✓
 - ⚠️ **`R2_PUBLIC_BASE` дутуу үед upload → 503** (`isR2UploadReady()`): `r2Config()`
   нь тэр утгыг шаарддаггүй (устгах/list-д хэрэггүй) тул 5 утгын 4-ийг бөглөсөн
   хэрэглэгч хог URL бичих эрсдэлтэй байв — одоо presign 503 болж, browser
@@ -6216,7 +6257,7 @@ R2 URL-ууд нь R2-ийн нийтийн домэйноор хэвээр аж
 - 10 зурагтай зар = **30–120 MB**
 - Bucket-д `file_size_limit = null` (хязгааргүй), `allowed_mime_types = null` → хэдэн ч MB, ямар ч төрөл
 
-### ✅ Шийдэл 1: Browser дээр автомат шахалт (`lib/imageUtils.js`)
+### ✅ Шийдэл 1: Browser дээр автомат шахалт (`lib/imageUtils.mjs`)
 
 Зураг **илгээхээс өмнө** browser дээр (Canvas API, нэмэлт сан **шаардахгүй**):
 1. Хамгийн урт талыг **1600px** болгож жижигрүүлнэ
@@ -6224,6 +6265,20 @@ R2 URL-ууд нь R2-ийн нийтийн домэйноор хэвээр аж
 3. 1.5 MB-ээс том бол чанарыг 50% хүртэл аажмаар бууруулна
 4. Шахаасан нь илүү том болвол (жижиг зураг, PNG) эхийг хэвээр үлдээнэ
 5. EXIF эргэлтийг хүндэтгэнэ (`createImageBitmap({ imageOrientation: 'from-image' })`)
+
+**🖼 ОЛОН ФОРМАТ (2026-10-09 (76))** — хэрэглэгч ямар ч форматын зураг сонгож
+болно; шийдвэрийг цэвэр `imageCompressionPlan()` функц гаргана:
+
+| Оролт | Юу болох вэ | Яагаад |
+|---|---|---|
+| `jpeg` · `png` · `bmp` · `heic`\* · `tiff`\* · том `webp`/`avif` | **1600px JPEG** болно | нэг л формат хадгалагдана ✓ |
+| `gif` (хөдөлгөөнт) · `svg` (вектор) | **ХӨНДӨӨГДӨХГҮЙ** | шахвал хөдөлгөөн/вектор алдагдана ✗ |
+| 1.5 MB-ээс бага `webp` · `avif` | **ХӨНДӨӨГДӨХГҮЙ** | аль хэдийн шахагдсан — дахин JPEG болгох нь чанар алдаж, заримдаа хэмжээ нэмнэ ✗ |
+| `MIME` хоосон (`''` · `application/octet-stream`) | **нэрээр нь танина** (`photo.jpg` → `image/jpeg`) | Android/Windows-ийн зарим хөтөч, сүлжээний диск MIME илгээдэггүй ✗ |
+| Уншиж ЧАДААГҮЙ формат (ж: Chrome дээрх `heic`) | **`failed: true`** → ойлгомжтой мессеж | ⏳ өмнө нь чимээгүй өнгөрч, серверээс «төрөл буруу» гэх ойлгомжгүй алдаа ирдэг байв ✗ |
+
+\* `heic`/`tiff`/`bmp` нь ЗӨВХӨН түүнийг уншиж чаддаг browser (Safari — iPhone/Mac)
+дээр хөрвөнө; тиймд **iPhone-ийн зураг хэвийн орно** ✓
 
 **Хэмжигдсэн үр дүн** (бодит туршилт, 3200×2400 шуугиантай JPEG):
 
@@ -6240,7 +6295,7 @@ UI дээр хэрэглэгчид шууд харагдана:
 Зураг бүрийн буланд мөн «845 KB · −91%» гэсэн шошго гарна.
 
 Тохиргоог солих: `components/AddListingModal.jsx` → `compressImages(files, { maxDim, quality })`
-(эсвэл `lib/imageUtils.js` доторх default утгууд).
+(эсвэл `lib/imageUtils.mjs` доторх default утгууд).
 
 ### ✅ Шийдэл 2: Сервер талын хатуу хязгаар (bucket тохиргоо)
 
@@ -6249,16 +6304,23 @@ UI дээр хэрэглэгчид шууд харагдана:
 | Тохиргоо | Утга | Үр дүн |
 |---|---|---|
 | `file_size_limit` | **5 MB** | 9.2MB файл → `The object exceeded the maximum allowed size` ❌ |
-| `allowed_mime_types` | `image/jpeg, png, webp, gif, svg+xml, avif` | `video/mp4` → `mime type video/mp4 is not supported` ❌ |
+| `allowed_mime_types` | `image/jpeg, png, webp, avif, gif, svg+xml` | `video/mp4` → `mime type video/mp4 is not supported` ❌ |
 
 Шалгасан: 9.2MB → блоклогдлоо ✅ · video/mp4 → блоклогдлоо ✅ · 20KB JPEG → орлоо ✅
+
+> ⚠️ **2026-10-09 (76):** `allowed_mime_types` нь зөвхөн НӨӨЦ (Supabase) замд
+> хамаарна; жинхэнэ шалгалт нь `app/api/storage/presign` дотор
+> `lib/storageKeys.mjs → allowedTypesForBucket()`-ээс **нэг эх сурвалжаар** явна —
+> тэнд `avif` ба `image/jpg` (alias) нэмэгдэж, `heic`/`heif`/`tiff`
+> **ЗОРИУДААР** хасагдсан (Chrome/Firefox/Android тэдгээрийг шууд харуулж
+> чадахгүй ⇒ хадгалагдсан зураг эвдэрсэн харагдана ✗) ✓
 
 Солих (service_role шаардана):
 ```js
 await admin.storage.updateBucket('listing-images', {
   public: true,
   fileSizeLimit: 5 * 1024 * 1024,          // эсвэл null (хязгааргүй)
-  allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'image/avif'],
+  allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif', 'image/gif', 'image/svg+xml'],
 });
 ```
 
@@ -6358,7 +6420,8 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 
 | `scripts/test-filters.mjs` | 🆕 **122 тест** (🆕 2026-10-07 (52): 121 → 122 — 💻 «Иж бүрэн компьютер» `PC_SPEC_SUBTYPES`-ээс ХАСАГДАВ, T1–T5 урт 23 → 22; 🆕 2026-10-07 (61): 120 → 121 — 🛠️ «Үйлдвэр & Үйлчилгээ, Бизнес» 10 бүлэг/81 дэд төрөл + 0036 migration-ийн гэрээ; 2026-10-06 (16): 107 → 110 — `FilterPill` HOVER-ийн гэрээ: ЯГ `hover:bg-gray-200` ба `hover:bg-primary/25` байх БА ⏳ `hover:bg-gray-50`/`hover:border-gray-300` БУЦАЖ ОРОХГҮЙ) — `npm run test:filters` (🆕 🗑 **2026-10-06 (5): 🛠 services-ийн 4 талбар (🏢 Нэр/компани · 📍 Хамрах хүрээ · 📊 Туршлага · 🕒 Ажиллах цаг) БҮГД ХАСАГДАВ** — форм `attrFields` **0** ба sidebar `attrFilters` **0** (⚽ `hobby`/🏠 `real-estate`-ийн ижил), картын мөр `formatAttrsLine('services', …)` **''**, `getAttrRows('services', …)` **0 мөр**, demo seed ч ҮҮСГЭХГҮЙ (`SERVICE_NAMES` ч УСТСАН ✓), ⚠️ ХАМГААЛАЛТ: 💼 `jobs`-ийн 🕒 `jobType`/📊 `experience`/🏷️ `advertiser`/📈 `jobLevel`/💰 `salaryType` + шүүлт 3 ХӨНДӨӨГДӨӨГҮЙ ✓; 🆕 2026-10-04 (31): 🏠 «хэсгийн панель — 2 алхамт drill»: `showsSectionSubtypes` 2×3 хүснэгт (үл хөдлөх `all`→хаалттай, `sell`/`rent`→нээлттэй; бусад 11 хэсэгт дангааруу) + HomeClient-ийн `showSubtypes`/`data-section-panel` гэрээ (🆕 2026-10-03 (17): 🚗 «Жолооны хүрд» (`steering`) — форм БА карт («🚗 Зөв хүрд»), `Зөв`/`Буруу`, ⚙️ «Хурдны хайрцаг»-ийн ЯГ дараа, шүүлтэд ОРООГҮЙ, `getAttrRows(auto)` → **10 мөр**; 🆕 2026-10-01 (13): 🎨 өнгө **12** сонголт — `assert.deepEqual`-ээр ЯГ дараалал (Цагаан … Бусад), давхардал 0 (`new Set().size === 12`), сүүлийнх нь «Бусад»; 2026-09-28: attrFilters-ийн гэрээ — 🚙 Загвар текст, 📅/📥 оны хүрээ, `parseAttrRangeKey`, `formatAttrsLine`; 2026-09-29: ⚽ hobby — `attrFilters`/`attrFields` зөвхөн `condition`, `hasSimpleForm`; ✅ «Шинэ / Хуучин» — attrFields ба attrFilters ХОЁУЛАА 2 сонголттой байв (2026-09-29; ⚠️ 2026-10-02-д **3** болов), хуучин 4 утга (Хэрэглэсэн — сайн/хэвийн, Засвар шаардлагатай, Хэвийн) БҮРЭН ХАСАГДСАН; 🆕 **2026-10-02: «Шинэ / Шинэвтэр / Хуучин» — attrFields ба attrFilters ХОЁУЛАА ЯГ 3 сонголттой** (ЯГ дараалал `Шинэ → Шинэвтэр → Хуучин` бүх 8 хэсэгт, `new Set().size === 3` давхардал 0, картын мөр `✅ Шинэвтэр` нэг л удаа, ⚠️ DB migration ШААРДЛАГАГҮЙ) → **87 тест** ✓; 2026-09-30: ⚡ electric — 8 бүлэг/26 дэд төрөл, 3 бүлэг `collapsed`, 4 дэх түвшин БАЙХГҮЙ, 🛋️ home-оос ХАСАГДСАН; 2026-09-30: 🛋️ home — 2 бүлэг (**«Тавилга» ЭХЭНД**)/22 дэд төрөл, хоёулаа `collapsed`, хуучин 9 хавтгай нэр ХАСАГДСАН, breadcrumb, картын мөр/шүүлт ХЭВЭЭР — ⚠️ 2026-09-30 (5)-д энэ мод ХУВААГДАВ; 2026-09-30 (5): **12 хэсэг ба ЯГ дараалал** (`SECTIONS.length === 12`), 🛋️ `furniture` 13 / 🧳 `travel` 12 / 🧺 `home` 9 / ⚽ `hobby` 6 дэд төрөл ЯГ таарах, дөрвүүлээ **ХАВТГАЙ** (`getSubtypeGroups` → `[]`), `hasSimpleForm` нь ⚽/🧺/⚡/🛋️/🧳 дээр `true` ба real-estate/auto/jobs/computers/services дээр `false` (тестээр түгжсэн 10 хэсэг), «Бусад» нь furniture/travel/electric/construction-д байгаа ба home/hobby-д **БАЙХГҮЙ**, ба `0026_furniture_travel_sections.sql`-ийн гэрээ (CHECK 12 утга, `home`→`furniture` 13, `hobby`→`travel` 12, «Аяллын хэрэгсэл» → «Бусад»/`travel`, `delete`/`truncate` БАЙХГҮЙ ✓); 🆕 **2026-09-30 (6): 💻 Notebook-ийн 📺/⚙️/🧠/💾 — 4 талбар `txt` → `sel`** (дараалал `brand·model·screen·cpu·ram·storage·condition·warranty`, сонголт 7/19/13/6, давхардал 0, `required` БАЙХГҮЙ, `attrFilters` нь `brand·condition` (🛡️ `warranty` 2026-10-01 (18)-д ХАСАГДСАН); талбар нь **ЗӨВХӨН** `PC_SPEC_SUBTYPES` = 21 Notebook брэнд (⚠️ «Бусад»-ГҮЙ) + «Процессор, сервер» = **22** дэд төрөлд (🆕 (52): «Иж бүрэн компьютер» ХАСАГДАВ), харин «Бусад»/Mouse/Keyboard/Xbox/Чихэвч/тонер/Проектор/Дэлгэц/хоосон дэд төрөлд **ХАРАГДАХГҮЙ**; `getAttrField` нь `onlySubtypes`-аас ХАМААРАХГҮЙ (картын мөр/шүүлтэд хуучин утга харагдана ✓) ба бусад 11 хэсэгт талбар ХАСАГДАХГҮЙ; картын мөр `Lenovo ThinkPad T14 · ⚙️ Intel Core i5 · 16 GB · 512 GB · ✅ Шинэ` (📺 ОРООГҮЙ); хуучин/demo cpu (`Intel Core i5`…`Apple M2`) ба ram утга бүр шинэ сонголтод БАГТСАН, «512 GB SSD + 1 TB HDD» нь БАГТААГҮЙ (`legacy`-ээр хамгаалагдана); `AddListingModal.jsx`/`seed-sections.mjs`-ийн гэрээ; 🆕 **2026-10-01: 🔧 «Хөдөлгүүр» `txt` → `sel` (`ENGINE_OPTIONS` — ЯГ 7 утга: `1.5л хүртэл` … `Цахилгаан (EV)`, label нь зөвхөн «Хөдөлгүүр», ⚠️ шүүлтэд ОРООГҮЙ) ба 🎨 «Өнгө» НЭМЭГДЭВ (`AUTO_COLOR_OPTIONS` — 12 сонголт, форм **ба** sidebar); 🔀 «Хөтлөгч» (`drive`) форм/`attrFilters`/`CARD_ATTR_ORDER` **ГУРВААС** ХАСАГДАВ (хуучин `attrs.drive` карт дээр ГАРАХГҮЙ ✓); `formatAttrsLine` нь хүрээний утгад «л» **ДАВХАР залгахгүй** («1.5л - 2.0л»), зөвхөн ХУУЧИН тоон «2.5»-д залгана → 68 → **72 тест**; 🆕 **2026-10-01 (2): 🎨 «Өнгө» нь 🚙 «Загвар»-ын ЯГ ДАРАА — 3 газарт** (`attrFields` форм · `attrFilters` sidebar · `CARD_ATTR_ORDER.auto` картын мөр; ⚠️ дараалал нь массивын дараалал тул компонент дээр код засахгүй; карт дээр толгой нь «брэнд + загвар + он» нэг хэсэг тул «Өнгө» нь толгойн дараах ЭХНИЙ үзүүлэлт — `Toyota Prius, 2021 · 🎨 Цагаан · 95,200 км · …`; форм + sidebar дарааллын шинэ тест + картын мөрийн ЯГ тэнцэл → **80 тест** ✓; 🆕 **2026-10-01 (16): 📋 `getAttrRows` — зарын дэлгэрэнгүй хуудсанд `attrs` нь хэсгийн `attrFields`-ийн шошго/icon/дарааллаар 2 БАГАНАТ хүснэгт болж гарна** (4 тест: 🚗 `auto` → ЯГ 9 мөр `brand·model·color·year·importYear·mileage·transmission·engine·fuel`, 🛣️ гүйлт `146000` → **`146,000`** («км» шошгонд тул ДАВХАРДСАНГҮЙ), 🔧 «2.1л - 2.7л» давхар нэгжгүй ба хуучин тоон «2.5» → «2.5 л», `negotiable` ба **ХАСАГДСАН `drive`** ХАРАГДАХГҮЙ, `0` нь ХООСОН БИШ = `formatAttrsLine`-тэй ижил, `null`/`undefined`/`{}`/`'Toyota'` дээр КРАШГҮЙ, 💻 `onlySubtypes` → 📺/⚙️/🧠/💾 Notebook дээр л гарах ба Mouse-д ГАРАХГҮЙ, 🏠 `real-estate` (`attrFields: []`) → **0 мөр** ба 12 хэсэг бүгд крашгүй; 🆕 **2026-10-01 (18): 🛡️ 💻 «Баталгаа» (`warranty`) БҮРЭН ХАСАГДАВ** — форм · `attrFilters` · карт · `getAttrRows` ГУРВААС (💻 шүүлт 3 → **2**, форм талбар 8 → **7**; Notebook 8 → **7**, Mouse 4 → **3** мөр; ХУУЧИН `attrs.warranty`-тай зар карт/дэлгэрэнгүй дээр ГАРАХГҮЙ ✓; seed нь `warranty` ҮҮСГЭХГҮЙ; `getAttrField` → `null`) → 85 → 87 тест; 🆕 **2026-10-03 (7): 💻 Notebook-ийн 📺/⚙️/🧠/💾 ШҮҮЛТ — 6 тест** (① `getAttrFilters('computers','Apple')` → `brand·screen·cpu·ram·storage·condition` (формтой ижил дараалал, `model` шүүлтэд ОРООГҮЙ) ② сонголт нь либын экспорттой ИЖИЛ объект — 7/19/13/6, `type: select` ба `searchable` БИШ ③ 23 `PC_SPEC_SUBTYPES` дээр 4 шүүлт, холдуу дэд төрөл (Mouse/Keyboard/тонер/чихэвч) ба `''` дээр 0 ④ бусад 11 хэсэг дэд төрөл дамжуулахад ХӨНДӨГДӨӨГҮЙ ⑤ HomeClient-ийн ЭХ ФАЙЛЫН ГЭРЭЭ: `getAttrFilters(section, filters.propertyType)`, `pruneGatedAttrs` 2 зам, `data-attr-filter` ⑥ 🆕 **`pruneGatedAttrs` цэвэр функц** — Notebook үзүүлэлт Mouse/`''` дээр хасагдана, ⚠️ хүрээний түлхүүр (`year_from`)/формойн `model`/`null`/массив ХӨНДӨГДӨХГҮЙ, 12 хэсэг бүгд крашгүй; мөн 💻 «Баталгаа» тестэд `getAttrFilters('computers','HP')` нэмэгдэв) → **94 тест**; 🆕 **2026-10-03 (20): 🏷️ 💻 «Брэнд» нь `filterSubtypes: PC_SPEC_SUBTYPES`-тай** (① талбар нь `filterSubtypes`-тай, `onlySubtypes`/`searchable` нь хэвээр ② ХАЙЛТАД 23 PC_SPEC дэд төрөл дээр БАЙНА, Mouse/Keyboard/Дэлгэц/iPad/принтер/тонер/чихэвч/`''` дээр БАЙХГҮЙ ③ ФОРМ бүх дэд төрөлд ХЭВЭЭР ④ `getAttrField` ХӨНДӨГДӨӨГҮЙ ⑤ `filterSubtypes` туг нь ЗӨВХӨН `computers.brand`-д ⑥ бусад 12 хэсэг хөндөгдөөгүй; `computers` тоо 2 → **1**, `pruneGatedAttrs` Mouse/`''` дээр `{brand:…}` → `{}`; 🏷️ ⑥-з тест → 101 ✓; 🆕 **2026-10-04 (23): 🖥📱 хэсгийн панелийн «Зарах / Түрээслэх» нь `segmented` ба `getSectionCategoryChoices`** (② тест — туслахын гэрээ: дараалал `sell→rent→all`, БҮТЭН шошго «Үл хөдлөх зарна / Үл хөдлөх түрээслүүлнэ» ба 📱 «Зарна / Түрээслүүлнэ», бусад 11 хэсэгт `[]`, `CATEGORIES` ХӨНДӨӨГДӨӨГҮЙ; HomeClient-ийн гэрээ: `getSectionCategoryChoices(section)` дуудах + `getSectionCategories` БАЙХГҮЙ + `data-category-value`/`segmented`/`segmented-item-active`/`aria-pressed`/`hidden sm:inline`+`sm:hidden` ба хуучин `💰 Зарах`/`🔑 Түрээслэх` нүүр хуудсанд БАЙХГҮЙ) → **101 тест** ✓) |
 | `scripts/test-format.mjs` | **32 тест** — `npm run test:format` (🆕 **2026-10-06: 📉 `shortPriceLabel()` — 2 тест** (КАРТ + ДЭЛГЭРЭНГҮЙ дээрх ТОВЧ үнэ: `760 сая ₮` · `44.8 сая ₮` · `2 тэрбум ₮` · `1.5 сая ₮` · `900 мянга ₮` · үнэгүй → «Үнэ тохирно» / ажил → «Цалин тохиролцоно» · «₮» ТӨГСГӨЛД байх; ⚠️ `priceLabel` ХӨНДӨӨГДӨӨГҮЙ → `₮760,000,000`); 🆕 **2026-10-02: 🏷️ `listingTitle()` — 5 тест** (`MAX_LISTING_TITLE_LENGTH` = **120**: гарчигтай → текстээ · `null`/`''`/зай → `''` (**мөр ГАРАХГҮЙ**) · олон зай/мөр таслалт → **НЭГ зай** · 120-аас урт → таслагдана (DB CHECK-тай ИЖИЛ) · тоон/бусад төрөл → текст (крашгүй)); 2026-09-29: 🤝 `hasRealPrice` / `priceLabel` (үнэ БИЧСЭН бол «₮…» — ДАРАХГҮЙ) / `negotiableNote` (зөвхөн үнэтэй + тэмдэглэсэн үед) + `toNumber('250,000,000') → 0` регресс); 🆕 **2026-10-07: 🔖 `shortListingId()` — 5 тест** (uuid → эхний 8 hex ТОМ үсэг · урт 8 + `-` таслалт · хоосон/`null` → `''` · богино утга/тоо · бүтэн uuid ХЭВЭЭР (зөвхөн харагдац)) |
-| `scripts/test-storage.mjs` | 🆕 **57 тест** — `npm run test:storage` (**2026-10-02: ☁️ Supabase Storage → Cloudflare R2 шилжилт** — `lib/storageKeys.mjs`-ийн ЦЭВЭР дүрэм: ① файл нь import/require-ГҮЙ эсэх ② `isStorageBucket` (2 bucket л) ③ хязгаар (зар 5 MB / аватар 2 MB / 10 зураг — формтой ИЖИЛ) ④ төрөл (аватар gif-ГҮЙ) ⑤ `buildStorageKey` = `<bucket>/<uid>/<ts>-<rand>.<ext>` ба **эхний фолдер = uid** (RLS-ийн орлуулга) ⑥ буруу bucket/uid → алдаа ⑦ `evil.php` → MIME-ээр `jpg` ⑧ `isOwnedStorageKey` бүтэц+эзэн (аюулгүй байдал) ⑨ `storageKeyFromUrl` нь ХУУЧИН Supabase ба ШИНЭ R2 URL-ыг ХОЁУЛАНГИЙН задална ⑩ 🔁 round-trip ⑪ `splitStorageUrls` шилжилтийн үед зөв ялгах; 🆕 **14 async тест — BROWSER тал** (`lib/storageClient.mjs`, `fetch`-ийг дуурайв): `putToR2` нь `PUT`+`Content-Type`+`File` илгээж publicUrl буцаана · 403 үед CORS сануулсан монгол алдаа · `NO_SESSION` (fetch хийгдэхгүй) · 503 код хадгалагдана · сүлжээний алдаа крашгүй · устгалт ШИДЭХГҮЙ (зар устгалт сүйтгэхгүй) · 🆕 **`isR2UploadReady()` — `R2_PUBLIC_BASE`-гүй (5-ын 4) бол `false`** → presign 503 → browser Supabase руу буцаж, DB-д «https://R2_PUBLIC_BASE-тохируулаагүй/…» ХОГ URL бичигдэхээс ХАМГААЛНА (эс бөгөөс зураг ХЭЗЭЭ Ч харагдахгүй байв ✗) ✓); 🆕 **2026-10-02 (2): 🌍 `lib/corsOrigins.mjs` + 8 тест —** presigned PUT-ийг BROWSER илгээдэг тул САЙТЫН домэйн R2-ийн `AllowedOrigins`-д БАЙХ ЁСТОЙ: ① төгсгөлийн `/` ХАСАГДАНА (Cloudflare: «Invalid AllowedOrigins value: `https://x.com/`» ✗) ② `--origin`/`--origin=`/`R2_CORS_ORIGIN=…, …`-ийг нэгтгэж, давхардлыг цэвэрлэнэ ③ утга өгвөл анхдагч (`localhost:3000`) СОЛИГДОНО (production домэйн шалгахад localhost-ийн ❌ саад болохгүй ✓) ④ `corsOriginProblem()` — зам/`*` 2+/портын `*`-ыг барина, `https://*.mn` ба `https://hangai-project-*.vercel.app` (цэг дамжсан `*`) зөвийг хүлээнэ ⑤ `corsPolicyJson()` — `PUT`+`GET`+`HEAD` ба `content-type` ЗААВАЛ орсон (эс бөгөөс browser-ээс upload ХИЙГДЭХГҮЙ ✗); 🆕 `putToR2`-д +1 тест: CORS унасан үед `fetch` нь response-ГҮЙГЭЭР шиддэг тул `!res.ok` салбарт ХҮРЭХГҮЙ байсныг барьж, ойлгомжтой монгол мессеж (`{ cause }` хамт) шидэх болсон ✓; 🆕 **2026-10-02 (4): 🔁 домэйн солих +5 тест —** `publicBaseOf()` (URL-ийн угтвар, `?query` хамт ч), `rebaseStorageUrl()` (түлхүүр ЯГ хэвээр ✓ / Supabase-ийн хуучин URL хэвээр ✓ / `--from` таарахгүй эсвэл хоосон бол бичихгүй ✓ / демо+youtube утга хэвээр ✓), `rebaseStorageUrls()` (эх массив хөндөгдөхгүй ✓) ✓) |
+| `scripts/test-image.mjs` | 🆕 **15 тест** (🆕 2026-10-09 (76): 🖼 **ЗУРГИЙН ОЛОН ФОРМАТ** — `lib/imageUtils.mjs` нь `.mjs` ЦЭВЭР модуль болсон тул Node тестэд шууд орно ✓) — `npm run test:image` (① `formatBytes` ② `imageTypeOf()` — MIME хоосон/`octet-stream` бол НЭРЭЭС ③ `imageCompressionPlan()` (DOM-ГҮЙ цэвэр функц): gif/svg → шахдаггүй (**хөдөлгөөн/вектор алдана**) · `maxBytes`-ээс бага webp/avif → шахдаггүй, ТОМ бол шахна · jpeg/png/heic/tiff/bmp/нэрээр-танигдсан → JPEG болгоно · `video/mp4`/`evil.exe` → «зураг биш» ④ BROWSER тал (fake canvas): ямар ч формат → **1600px** (3200×2400 → 1600×1200) · **JPEG** · `<нэр>.jpg`, `maxBytes`-ээс том бол чанар **0.82 → 0.74** аажмаар буурна, шахаасан нь илүү том бол эхийг хэвээр үлдээнэ, gif/svg/webp/avif дээр canvas ОГТ хүрэгдэхгүй, **уншиж чадаагүй формат → `failed: true`** (⏳ өмнө нь чимээгүй өнгөрч, серверээс «төрөл буруу» гэх ойлгомжгүй алдаа ирдэг байв ✗), `compressImages` — `failed` тоо/нэр ба индекс тааралт, `document`-гүй (SSR) орчинд хөндөхгүй ✓) |
+| `scripts/test-storage.mjs` | 🆕 **68 тест** (🆕 2026-10-09 (76): 63 → 68 — 🖼 **ОЛОН ФОРМАТ** — `avif`/`image/jpg` зөвшөөрөгдөж, `heic`/`heif`/`tiff` ЗОРИУДААР хасагдсан (**Chrome/Firefox/Android шууд харуулж чадахгүй** ⇒ хадгалагдсан зураг эвдэрсэн харагдана ✗) ч ӨРГӨТГӨЛӨӨР нь түлхүүрт бичигдэнэ ✓; `imageTypeFromName()` — `IMG_1234.HEIC` → `image/heic`, `evil.exe`/`noext`/`''` → `''`; `safeImageType(bucket, type, fileName)` — MIME ХООСОН/`application/octet-stream` үед өргөтгөлөөс нөхнө (Android/Windows-ийн зарим хөтөч, сүлжээний диск MIME илгээдэггүй ✗) ХАРИН тодорхой төрөл ирвэл (`image/heic`, `application/pdf`) нэрийг ХӨНДӨХГҮЙ ✓; `allowedExtensionsForBucket()` — `['jpg','png','webp','avif','gif','svg']` (давхардалгүй); өргөтгөл↔MIME **ТОЛЬ** — `IMAGE_EXTENSIONS` бүр буцаж MIME болж, түлхүүрийн өргөтгөл `Content-Type`-тай таарна ✓) — `npm run test:storage` (**2026-10-02: ☁️ Supabase Storage → Cloudflare R2 шилжилт** — `lib/storageKeys.mjs`-ийн ЦЭВЭР дүрэм: ① файл нь import/require-ГҮЙ эсэх ② `isStorageBucket` (2 bucket л) ③ хязгаар (зар 5 MB / аватар 2 MB / 10 зураг — формтой ИЖИЛ) ④ төрөл (аватар gif-ГҮЙ) ⑤ `buildStorageKey` = `<bucket>/<uid>/<ts>-<rand>.<ext>` ба **эхний фолдер = uid** (RLS-ийн орлуулга) ⑥ буруу bucket/uid → алдаа ⑦ `evil.php` → MIME-ээр `jpg` ⑧ `isOwnedStorageKey` бүтэц+эзэн (аюулгүй байдал) ⑨ `storageKeyFromUrl` нь ХУУЧИН Supabase ба ШИНЭ R2 URL-ыг ХОЁУЛАНГИЙН задална ⑩ 🔁 round-trip ⑪ `splitStorageUrls` шилжилтийн үед зөв ялгах; 🆕 **14 async тест — BROWSER тал** (`lib/storageClient.mjs`, `fetch`-ийг дуурайв): `putToR2` нь `PUT`+`Content-Type`+`File` илгээж publicUrl буцаана · 403 үед CORS сануулсан монгол алдаа · `NO_SESSION` (fetch хийгдэхгүй) · 503 код хадгалагдана · сүлжээний алдаа крашгүй · устгалт ШИДЭХГҮЙ (зар устгалт сүйтгэхгүй) · 🆕 **`isR2UploadReady()` — `R2_PUBLIC_BASE`-гүй (5-ын 4) бол `false`** → presign 503 → browser Supabase руу буцаж, DB-д «https://R2_PUBLIC_BASE-тохируулаагүй/…» ХОГ URL бичигдэхээс ХАМГААЛНА (эс бөгөөс зураг ХЭЗЭЭ Ч харагдахгүй байв ✗) ✓); 🆕 **2026-10-02 (2): 🌍 `lib/corsOrigins.mjs` + 8 тест —** presigned PUT-ийг BROWSER илгээдэг тул САЙТЫН домэйн R2-ийн `AllowedOrigins`-д БАЙХ ЁСТОЙ: ① төгсгөлийн `/` ХАСАГДАНА (Cloudflare: «Invalid AllowedOrigins value: `https://x.com/`» ✗) ② `--origin`/`--origin=`/`R2_CORS_ORIGIN=…, …`-ийг нэгтгэж, давхардлыг цэвэрлэнэ ③ утга өгвөл анхдагч (`localhost:3000`) СОЛИГДОНО (production домэйн шалгахад localhost-ийн ❌ саад болохгүй ✓) ④ `corsOriginProblem()` — зам/`*` 2+/портын `*`-ыг барина, `https://*.mn` ба `https://hangai-project-*.vercel.app` (цэг дамжсан `*`) зөвийг хүлээнэ ⑤ `corsPolicyJson()` — `PUT`+`GET`+`HEAD` ба `content-type` ЗААВАЛ орсон (эс бөгөөс browser-ээс upload ХИЙГДЭХГҮЙ ✗); 🆕 `putToR2`-д +1 тест: CORS унасан үед `fetch` нь response-ГҮЙГЭЭР шиддэг тул `!res.ok` салбарт ХҮРЭХГҮЙ байсныг барьж, ойлгомжтой монгол мессеж (`{ cause }` хамт) шидэх болсон ✓; 🆕 **2026-10-02 (4): 🔁 домэйн солих +5 тест —** `publicBaseOf()` (URL-ийн угтвар, `?query` хамт ч), `rebaseStorageUrl()` (түлхүүр ЯГ хэвээр ✓ / Supabase-ийн хуучин URL хэвээр ✓ / `--from` таарахгүй эсвэл хоосон бол бичихгүй ✓ / демо+youtube утга хэвээр ✓), `rebaseStorageUrls()` (эх массив хөндөгдөхгүй ✓) ✓) |
 | `lib/numberChoices.mjs` | 🎡 **Тоон сонголтын жагсаалт (цэвэр функцууд)** — `countChoices(from,to)` (`1…150`) · `yearChoices(from,to,includeValue?)` (**буурах** эрэмбэ — шинэ он эхэнд) · `floorChoices(total,value?)` (нийт давхраас ХЭТРЭХГҮЙ) · `toChoiceItems(list,{emptyLabel,unit})` (утга нь **текст** ⇒ DB-д `''` vs `0` зөрчил гарахгүй ✓; `unit: 'давхар'` → «9 давхар» гэх мэт шошго) · `nearestIndex(scrollTop,itemH,count)` · `labelFor`/`isChoice`/`choiceText`/`scrollTopFor` — ⚠️ React/`window`-оос ХАМААРАЛГҮЙ тул `test-choices` нь рендэргүйгээр шалгана ✓ |
 | `components/WheelPicker.jsx` | 📱 **iOS Timer маягийн дугуй** (`[data-wheel]`): төвийн заагч + мөр бүр **40px** + `scroll-snap-type: y mandatory` + хоёр үзүүрийн зай · мөр дээр дарахад ШУУД бичнэ (дугуй НЭЭТЭЙ хэвээр — iOS-ийн зан) · гүйлгээ зогсоход төвд байгаа мөр автоматаар бичигдэнэ (`scroll` debounce + `nearestIndex`) · хаах 3 зам (`Escape` · ард тал · «Болсон») · `role="dialog"` + `aria-selected` + `role="option"` · тогтвортой selector-ууд: `[data-wheel-title]` · `[data-wheel-scroll]` · `[data-wheel-value]` · `[data-wheel-marker]` · `[data-wheel-done]` · `[data-wheel-backdrop]` |
 | `scripts/test-number-choices.mjs` | **36 тест** — `npm run test:choices` (🎡 `numberChoices`-ийн гэрээ: ① `countChoices` 1…150/хязгаар/хоосон ② `yearChoices` буурах ба **47 → 48** (`includeValue` хүрээнээс гадуур «1965»-ыг хамгаална) ③ `floorChoices` нийт давхраас хэтрэхгүй, `total` хоосон → 150, **«150» нь жагсаалтад БАЙНА** ④ `toChoiceItems` утга ТЕКСТ + «—» эхний мөр + нэгж + 🆕 **«+5» хүрээ** (`plusValue`, угаалгын өрөө = `1,2,3,4,+5` ба тагт = `1…4,+5`) ба `choiceText`-ийн «+5 тагт» ✓ ⑤ `nearestIndex` дугуйлалт/хязгаар ⑥ CSS гэрээ — 🆕 2026-10-03 (17): `.mob-options` (2 БАГАНАТ grid) · `.mob-option`/`.mob-option-on`/`.mob-skip`/`.mob-wheel-link` ба форм нь `MobileOptions`-ийг ХЭРЭГЛЭНЭ («Сонгох» товч БАЙХГҮЙ, `WHEEL_LINK_MIN` босго), `.hide-below-sm` (📱 <640px-д гар бичилт/`<select>` нуугдана), дугуйн scrollbar НУУГДСАН) |
@@ -6502,7 +6565,7 @@ npm run report:usage     # node scripts/db-usage.js
 **Бодит хязгаарыг DB БИШ, эдгээр тодорхойлно:**
 
 1. **Storage (1 GB)** — нэг зар ~3.5 зураг × ~249 KB ≈ **~1,200 зар** л багтана.
-   Шахалтыг (`lib/imageUtils.js`, maxDim 1600 / quality 0.82) хүчтэй болговол
+   Шахалтыг (`lib/imageUtils.mjs`, maxDim 1600 / quality 0.82) хүчтэй болговол
    (жишээ нь `maxDim: 1400, quality: 0.75` → ~120 KB) 1 GB-д ~2,400 зар багтана.
 2. **Egress (5 GB/сар)** — зургийн файлууд Storage-аас татагддаг тул гол зарцуулалт
    энэ. Нэг зочин ~10 зураг (≈2.5 MB) үзвэл **~2,000 зочны session/сар**.

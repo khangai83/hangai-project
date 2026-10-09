@@ -41,7 +41,10 @@ const {
   isStorageBucket,
   maxBytesForBucket,
   allowedTypesForBucket,
+  allowedExtensionsForBucket,
   normalizeImageType,
+  imageTypeFromName,
+  IMAGE_EXTENSIONS,
   safeImageType,
   isAllowedImageType,
   buildStorageKey,
@@ -109,12 +112,48 @@ t('хязгаар: зар 5 MB / аватар 2 MB / нэг зарын зура�
   assert.equal(MAX_AVATAR_BYTES, 2 * 1024 * 1024); // 0015-ийн file_size_limit
 });
 
-t('төрөл: зар gif/svg зөвшөөрнө, аватар ЗӨВХӨН jpeg/png/webp', () => {
+t('төрөл: зар gif/svg зөвшөөрнө, аватар jpeg/png/webp/avif (gif-ГҮЙ)', () => {
   assert.equal(isAllowedImageType(IMAGE_BUCKET, 'image/gif'), true);
   assert.equal(isAllowedImageType(IMAGE_BUCKET, 'image/svg+xml'), true);
   assert.equal(isAllowedImageType(AVATAR_BUCKET, 'image/webp'), true);
   assert.equal(isAllowedImageType(AVATAR_BUCKET, 'image/gif'), false);
-  assert.equal(allowedTypesForBucket(AVATAR_BUCKET).length, 3);
+  assert.equal(allowedTypesForBucket(AVATAR_BUCKET).length, 5);
+});
+
+t('🖼 ОЛОН ФОРМАТ: avif/jpg нэмэгдэв, heic/tiff ЗОРИУДААР ороогүй', () => {
+  // ⚠️ ЯАГААД avif ВЭ: Chrome · Safari · Firefox · Android бүгд ШУУД харуулна ✓
+  assert.equal(isAllowedImageType(IMAGE_BUCKET, 'image/avif'), true);
+  assert.equal(isAllowedImageType(AVATAR_BUCKET, 'image/avif'), true);
+  assert.equal(isAllowedImageType(IMAGE_BUCKET, 'image/jpg'), true, '`image/jpg` alias ✓');
+  // ⚠️ ЯАГААД heic/tiff БАЙХГҮЙ ВЭ: Chrome/Firefox/Android ХАРУУЛЖ ЧАДАХГҮЙ ⇒
+  //    хадгалагдсан зураг ихэнх хэрэглэгчид ЭВДЭРСЭН харагдана ✗ Гэхдээ
+  //    client нь тэдгээрийг (уншиж чадсан browser дээр) JPEG болгож хөрвүүлнэ ✓
+  assert.equal(isAllowedImageType(IMAGE_BUCKET, 'image/heic'), false);
+  assert.equal(isAllowedImageType(IMAGE_BUCKET, 'image/heif'), false);
+  assert.equal(isAllowedImageType(IMAGE_BUCKET, 'image/tiff'), false);
+  // ...гэвч ӨРГӨТГӨЛИЙН whitelist-д бий (түлхүүрийн `<ts>-<rand>.<ext>` ✓)
+  assert.ok(IMAGE_EXTENSIONS.has('heic') && IMAGE_EXTENSIONS.has('tiff'));
+});
+
+t('imageTypeFromName: өргөтгөлөөс MIME (whitelist-ээс гадуур → \'\')', () => {
+  assert.equal(imageTypeFromName('IMG_1234.HEIC'), 'image/heic');
+  assert.equal(imageTypeFromName('photo.avif'), 'image/avif');
+  assert.equal(imageTypeFromName('a.JPG'), 'image/jpeg');
+  assert.equal(imageTypeFromName('a.jfif'), 'image/jpeg');
+  assert.equal(imageTypeFromName('logo.svg'), 'image/svg+xml');
+  assert.equal(imageTypeFromName('scan.TIFF'), 'image/tiff');
+  assert.equal(imageTypeFromName('evil.exe'), '');
+  assert.equal(imageTypeFromName('video.mp4'), '');
+  assert.equal(imageTypeFromName('noext'), '');
+  assert.equal(imageTypeFromName('trailing.'), '');
+  assert.equal(imageTypeFromName(''), '');
+  assert.equal(imageTypeFromName(null), '');
+});
+
+t('allowedExtensionsForBucket: жагсаалт (давхардал/хоосонгүй, `jpg` нэг л удаа)', () => {
+  assert.deepEqual(allowedExtensionsForBucket(IMAGE_BUCKET), ['jpg', 'png', 'webp', 'avif', 'gif', 'svg']);
+  assert.deepEqual(allowedExtensionsForBucket(AVATAR_BUCKET), ['jpg', 'png', 'webp', 'avif']);
+  assert.equal(new Set(allowedExtensionsForBucket(IMAGE_BUCKET)).size, allowedExtensionsForBucket(IMAGE_BUCKET).length);
 });
 
 t("normalizeImageType: 'IMAGE/JPEG; charset=utf-8' → 'image/jpeg'", () => {
@@ -128,6 +167,25 @@ t("safeImageType: зөвшөөрөхгүй төрөл → '' (алдаа өгө�
   assert.equal(safeImageType(AVATAR_BUCKET, 'application/pdf'), '');
   assert.equal(safeImageType(IMAGE_BUCKET, ''), '');
   assert.equal(safeImageType(IMAGE_BUCKET, 'text/html'), '');
+});
+
+t('🖼 safeImageType(…, fileName): MIME ХООСОН үед өргөтгөлөөс нөхнө', () => {
+  // ⚠️ Android/Windows-ийн зарим хөтөч, сүлжээний диск MIME-г ОГТ
+  //    илгээдэггүй — тэгвэл хүчинтэй JPEG ч «төрөл буруу» гэж унадаг байв ✗
+  assert.equal(safeImageType(IMAGE_BUCKET, '', 'photo.jpg'), 'image/jpeg');
+  assert.equal(safeImageType(IMAGE_BUCKET, 'application/octet-stream', 'photo.AVIF'), 'image/avif');
+  assert.equal(safeImageType(AVATAR_BUCKET, '', 'me.webp'), 'image/webp');
+  assert.equal(safeImageType(IMAGE_BUCKET, undefined, 'anim.gif'), 'image/gif');
+  // ⚠️ Харин ТОДОРХОЙ төрөл ирсэн бол нэрийг ХӨНДӨХГҮЙ (bucket шийднэ)
+  assert.equal(safeImageType(IMAGE_BUCKET, 'application/pdf', 'a.jpg'), '');
+  assert.equal(safeImageType(IMAGE_BUCKET, 'text/html', 'a.png'), '');
+  // ⚠️ Уншиж чаддаггүй формат: нэр нь heic байсан ч ЗӨВШӨӨРӨХГҮЙ ✓
+  assert.equal(safeImageType(IMAGE_BUCKET, '', 'IMG.HEIC'), '');
+  assert.equal(safeImageType(IMAGE_BUCKET, 'application/octet-stream', 'scan.tiff'), '');
+  // Танихгүй өргөтгөл/нэргүй → зөвшөөрөхгүй ✓
+  assert.equal(safeImageType(IMAGE_BUCKET, '', 'evil.exe'), '');
+  assert.equal(safeImageType(IMAGE_BUCKET, '', 'noext'), '');
+  assert.equal(safeImageType(IMAGE_BUCKET, '', ''), '');
 });
 
 
@@ -159,6 +217,19 @@ t('extForFile: зөвхөн зургийн өргөтгөл; `evil.php` → MIME
   assert.equal(extForFile('noext', 'image/png'), 'png');
   assert.equal(extForFile('weird', 'image/x-unknown'), 'jpg');
   assert.equal(extForFile('', ''), 'jpg');
+});
+
+t('🖼 өргөтгөл ↔ MIME ТОЛЬ: `IMAGE_EXTENSIONS` бүр буцаж MIME болно', () => {
+  // ⚠️ `TYPE_BY_EXT` ба `EXT_BY_TYPE` зөрвөл түлхүүр (`…<ext>`) нь
+  //    `Content-Type`-тай таарахгүй болж, зураг худал харагдана ✗
+  for (const ext of IMAGE_EXTENSIONS) {
+    assert.ok(imageTypeFromName(`x.${ext}`), `${ext} → MIME олдсонгүй`);
+    assert.equal(extForFile(`x.${ext}`, ''), ext, `${ext} → ${extForFile(`x.${ext}`, '')}`);
+  }
+  assert.equal(extForFile('a', 'image/avif'), 'avif');
+  assert.equal(extForFile('a', 'image/jpg'), 'jpg', 'alias ч гэсэн `jpg` ✓');
+  assert.equal(extForFile('a', 'image/bmp'), 'bmp');
+  assert.equal(extForFile('a', 'image/tiff'), 'tiff');
 });
 
 t('isOwnedStorageKey: бүтэц ба эзнийг ШАЛГАНА (аюулгүй байдал)', () => {

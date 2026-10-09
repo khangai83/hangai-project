@@ -15,6 +15,7 @@
     "test:activity": "node scripts/test-activity.mjs",
     "test:format": "node scripts/test-format.mjs",
     "test:storage": "node scripts/test-storage.mjs",
+    "test:image": "node scripts/test-image.mjs",
     "check:r2": "node scripts/check-r2.mjs",
     "r2:cors": "node scripts/r2-cors.mjs",
     "storage:migrate": "node scripts/migrate-storage-to-r2.mjs",

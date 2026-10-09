@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth, useToast } from './AppProviders';
 import { fetchProfile, updateProfile, uploadAvatar } from '../lib/queries';
-import { compressImage } from '../lib/imageUtils';
+import { compressImage, UNREADABLE_IMAGE_HINT } from '../lib/imageUtils.mjs';
 import { normalizeError } from '../lib/errors';
 import Avatar from './Avatar';
 
@@ -90,11 +90,15 @@ export default function ProfileModal({ open, onClose }) {
       let nextAvatar = avatarUrl;
 
       if (file) {
-        const { file: small } = await compressImage(file, {
+        // 🖼 ОЛОН ФОРМАТ: `failed` нь «format нь УНШИГДСАНГҮЙ» гэсэн үг —
+        //    тэр файлыг илгээх нь утгагүй (сервер хүлээж авахгүй) тул
+        //    ойлгомжтой мессежээр зогсооно ✓
+        const { file: small, failed } = await compressImage(file, {
           maxDim: 512,
           quality: 0.82,
           maxBytes: 300 * 1024,
         });
+        if (failed) throw new Error(UNREADABLE_IMAGE_HINT);
         nextAvatar = await uploadAvatar(user.id, small);
       }
 
@@ -168,7 +172,7 @@ export default function ProfileModal({ open, onClose }) {
                     </button>
                   )}
                   <p className="text-[11.5px] text-gray-400">
-                    Автоматаар жижигрүүлж хадгална (≤300KB).
+                    Автоматаар жижигрүүлж хадгална (≤300KB). jpg · png · webp · avif · heic — бүгд болно ✓
                   </p>
                 </div>
               </div>

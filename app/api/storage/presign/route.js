@@ -36,6 +36,7 @@ import { getAdminClient } from '../../../../lib/authServer';
 import {
   AVATAR_BUCKET,
   MAX_LISTING_IMAGES,
+  allowedExtensionsForBucket,
   allowedTypesForBucket,
   buildStorageKey,
   isStorageBucket,
@@ -93,14 +94,23 @@ export async function POST(req) {
   }
 
   const allowed = allowedTypesForBucket(bucket);
+  const allowedExt = allowedExtensionsForBucket(bucket).join(', ');
   const maxBytes = maxBytesForBucket(bucket);
   const planned = [];
   for (const f of files) {
     const name = String((f && f.name) || '').trim();
-    const contentType = safeImageType(bucket, f && f.type);
+    // 🖼 ОЛОН ФОРМАТ (2026-10-09): төрөл нь ХООСОН/хэлбэргүй (`''`,
+    //    `application/octet-stream`) ирвэл өргөтгөлөөс нөхнө — зарим
+    //    хөтөч/сүлжээний диск MIME-г огт илгээдэггүй ✗
+    const contentType = safeImageType(bucket, f && f.type, name);
     if (!contentType) {
+      // ⚠️ heic/heif/tiff нь browser-уудад ШУУД харагддаггүй тул зориуд
+      //    зөвшөөрөгдөхгүй — client талд JPEG болж хөрвөх ёстой ✓
       return bad(
-        `Зөвхөн ${allowed.join(', ')} төрлийн зураг зөвшөөрөгдөнө (ирсэн: «${(f && f.type) || 'тодорхойгүй'}»).`
+        `«${name || 'файл'}» — зөвхөн ${allowedExt} формат зөвшөөрөгдөнө ` +
+          `(ирсэн төрөл: «${(f && f.type) || 'тодорхойгүй'}»). ` +
+          'HEIC/TIFF/RAW бол JPEG болгож хөрвүүлээд дахин оруулна уу ' +
+          `(зөвшөөрөгдөх MIME: ${allowed.join(', ')}).`
       );
     }
     const size = Number(f && f.size);
