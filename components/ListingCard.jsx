@@ -212,8 +212,12 @@ export default function ListingCard({ listing, author, attrsLine }) {
          «картны design харагдах байдлыг жишиг сайт шиг болго»)  */
       className="group flex flex-col"
     >
-      {/* ══════ 🖼 ЗУРАГ (дээд) — БҮТЭН өргөн, `aspect-[4/3]` + КАРУСЕЛЬ (85) ══════ */}
-      <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-gray-100">
+      {/* ══════ 🖼 ЗУРАГ (дээд) — БҮТЭН өргөн, `aspect-[4/3]` + КАРУСЕЛЬ (85) ══════
+          🎨 2026-10-09 (87): дүүргэлт `bg-gray-100` ХАСАГДАВ (хэрэглэгчийн хүсэлт:
+          «бүх саарал өнгийг үгүй хий») — зургийн хайрцаг нь ЦАГААН дэвсгэртэй
+          болов; зураг ачаалагдах хүртэл ч, зураггүй зарын icon ч цагаан дээр
+          харагдана (жишиг сайтын хэв) ✓ */}
+      <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl">
         {img ? (
           <>
             {/* 🖼 КАРУСЕЛЬ — slide бүр картын БҮТЭН өргөн (`w-full shrink-0`) тул

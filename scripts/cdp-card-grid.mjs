@@ -24,7 +24,8 @@
  *      ⚠️ 2+ зурагтай карт ОЛДОХГҮЙ бол (DB-ээс хамаарна) ℹ️ SKIP ✓
  *   ③d 🔀 ГАРЧИГ нь ҮНИЙ МӨРӨӨС ДЭЭР (🆕 (86) дараалал: гарчиг → мэдээлэл → үнэ)
  *      · ③l карт нь ХАЙРЦАГГҮЙ (`border-top-width: 0px` ба дэвсгэр
- *      `rgba(0, 0, 0, 0)` — жишиг сайтын хэв) ✓
+ *      `rgba(0, 0, 0, 0)` — жишиг сайтын хэв) ✓ · 🆕 ③m (87) ЗУРГИЙН ХАЙРЦАГ
+ *      ч СААРАЛГҮЙ (`bg-gray-100` арилав — «бүх саарал өнгийг үгүй хий») ✓
  *   ④ 📱 390px: НЭГ БАГАНА (2 дахь карт нь 1-ийнхээ ЗАГИНАА доор) ба
  *      хэвтээ гүйлт 0 (`scrollWidth ≤ innerWidth + 1`) ✓
  *   ⑤ 🗂 /favorites: картууд БАГАНАТ (≥2 нэг мөрөнд, 1280px), «Хасах»
@@ -184,6 +185,8 @@ const PROBE = `(() => {
         box: R(c),
         img: imgWrap ? R(imgWrap) : null,
         imgTag: !!img,
+        // 🎨 (87): зургийн хайрцаг ч СААРАЛГҮЙ байх ёстой (⏳ bg-gray-100 байв)
+        imgBg: imgWrap ? getComputedStyle(imgWrap).backgroundColor : null,
         content: content ? R(content) : null,
         price: price ? R(price) : null,
         heart: heart ? R(heart) : null,
@@ -256,6 +259,8 @@ check('③d Гарчиг нь ҮНИЙ мөрөөс ДЭЭР (🆕 (86) дара
   !!c0.title && !!c0.price && c0.title.y < c0.price.y, `title.y ${c0.title?.y} < price.y ${c0.price?.y}`);
 check('③l 🎨 (86) Карт нь ХАЙРЦАГГҮЙ (хүрээ/сүүдэр/саарал БАЙХГҮЙ)',
   c0.border === '0px' && c0.bg === 'rgba(0, 0, 0, 0)', `border ${c0.border} · bg ${c0.bg}`);
+check('③m 🎨 (87) ЗУРГИЙН хайрцаг ч СААРАЛГҮЙ (`bg-gray-100` арилав)',
+  c0.imgBg === 'rgba(0, 0, 0, 0)', `img bg ${c0.imgBg}`);
 if (c0.countBadge) {
   check('③e 🖼 зургийн тоо нь БАРУУН ДООД буланд',
     c0.countBadge.b <= c0.img.b + 2 && c0.countBadge.x > c0.img.x + c0.img.w / 2,

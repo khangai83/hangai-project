@@ -19,6 +19,10 @@
 //   ⑦ 2026-10-08 (66): аватар `size={64}` → **`size={96}`** (хэрэглэгчийн
 //      хүсэлт: «жаахан томруулаад өгөөч») ⇒ `size={64}` (мөн 44/120)
 //      РЕГРЕСС ХОРИГ (⑥⑧ хэсэг)
+//   ⑧ 2026-10-09 (87): «зарын detail буюу зар луу ороход бас иим болгож, бүх
+//      саарал өнгийг үгүй хиймээр байна» ⇒ ⏳ (83)-ийн `bg-gray-100`/`bg-gray-50`
+//      дүүргэлт БҮГД ХАСАГДАВ, хэсгүүд нь 1px дээд зураастай ХАЙРЦАГГҮЙ хэв
+//      болов; холбоо барих/ипотекийн хайрцаг ЦАГААН (⑨ хэсэг)
 //
 // ⚠️ Эдгээр нь БҮГД ХАРАГДАЦ/UI-ийн гэрээ — DB/query/migration 0 ✓
 //
@@ -222,8 +226,10 @@ t('⑦ 🔗 «идэвхтэй зар» линк нь толгойн линкэ�
   const prev = frag.slice(0, frag.lastIndexOf('<Link'));
   assert.ok(prev.lastIndexOf('</Link>') > prev.lastIndexOf('<Link'),
     '«идэвхтэй зар» линк нь өөр ЛИНК ДОТОР байна (nesting) ✗');
-  assert.ok(DET_CODE.includes('className="group rounded-lg bg-gray-50 p-3 transition hover:bg-primary-light"'),
+  assert.ok(DET_CODE.includes('className="group rounded-lg p-3 transition hover:bg-primary-light"'),
     'нийтлэгчийн картын хүрээ `<div>` (линк БИШ) болоогүй ✗');
+  assert.ok(!DET_CODE.includes('bg-gray-50 p-3 transition hover:bg-primary-light'),
+    '⏳ (83)-ийн `bg-gray-50` дүүргэлт буцаж орсон ✗ ((87): хайрцаг ХАЙРЦАГГҮЙ)');
   assert.ok(DET_CODE.includes('className="relative flex flex-col items-center gap-2 text-center"'),
     'толгойн линк нь (64)-ийн ГОЛЛУУЛСАН баганын класс БИШ ✗');
 });
@@ -252,7 +258,7 @@ t('⑧ 👤 Зарын эзэний зураг: картын ДЭЭД талд, 
   assert.ok(DET_CODE.includes('justify-center gap-x-2 text-xs text-gray-500'),
     '«✅ Утсаар баталгаажсан · Элссэн огноо» мөр ГОЛЛУУЛСАН БИШ ✗');
   // ⚠️ `user_id`-гүй салбар ч ИЖИЛ хэв — картын харагдац нэгэн жигд ✓
-  assert.ok(DET_CODE.includes('className="flex flex-col items-center gap-2 rounded-lg bg-gray-50 p-3 text-center"'),
+  assert.ok(DET_CODE.includes('className="flex flex-col items-center gap-2 rounded-lg p-3 text-center"'),
     '`user_id`-гүй салбарын карт ИЖИЛ босоо голлуулсан хэв БИШ ✗');
   // ⚠️ «📋 N идэвхтэй зар» линк ч КАРТЫН ГОЛД — задаргаа тэгш харагдана ✓
   //    (линк өөрөө/өнгө/зураас/`href`/`title` ХЭВЭЭР — (62)(63)-ын гэрээ ✓)
@@ -261,6 +267,32 @@ t('⑧ 👤 Зарын эзэний зураг: картын ДЭЭД талд, 
   // ⚠️ «›» нь баруун дээд буланд (`absolute`) — мөрийн өндрийг уртасгахгүй ✓
   assert.ok(DET_CODE.includes('className="absolute right-0 top-0 text-lg text-gray-300 transition group-hover:text-primary"'),
     '«›» нь `absolute right-0 top-0` БИШ ✗');
+});
+
+// ---------- ⑨ 🎨 «БҮХ СААРАЛ ӨНГИЙГ ҮГҮЙ ХИЙ» (2026-10-09 (87)) ----------
+t('⑨ 🎨 Дэлгэрэнгүй хуудсанд СААРАЛ (крем) ДҮҮРГЭЛТ огт байхгүй ✓', () => {
+  /** ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «зарын detail буюу зар луу ороход бас иим болгож,
+   *  бүх саарал өнгийг үгүй хиймээр байна».
+   *  ⇒ ⏳ (83)-ийн `bg-gray-100` (крем #F4F1EA — цагаан дэвсгэрээс бараг
+   *  ялгагдахгүй «саарал») дүүргэлт нь галерей · 🎥 видео · 📋 шинж чанар ·
+   *  📝 тайлбар · 🗺 газрын зураг · 💰 холбоо барих хайрцаг · 🏦 ипотек ·
+   *  👤 нийтлэгчийн хайрцаг · 📱 утасны мөрийн хайрцгуудаас БҮГД ХАСАГДАВ ✓
+   *  ⚠️ `bg-red-50` (алдааны мөр) · `bg-primary-light` (hover) · `bg-black`
+   *     ба `bg-white/85`/`bg-white/90` (зургийн ‹ › товч ба ▶️ тоглуулагч) нь
+   *     СААРАЛ БИШ (семантик/hover/контрол) тул ХӨНДӨӨГДӨӨГҮЙ ✓ */
+  const grays = DET_CODE.match(/bg-gray-\d+/g) || [];
+  assert.deepEqual(grays, [], `саарал дүүргэлт үлдсэн: ${grays.join(', ')} ✗`);
+  // ⚠️ Хэсгүүд нь ХАЙРЦАГГҮЙ — оронд нь 1px дээд зураас + `pt-6` (жишиг сайт хэв):
+  //    🎥 видео · 📋 шинж чанар · 📝 тайлбар · 🗺 газрын зураг — ЯГ 4 хэсэг ✓
+  assert.equal((DET_CODE.match(/mt-6 border-t border-gray-200 pt-6/g) || []).length, 4,
+    'дэлгэрэнгүй хуудасны 4 хэсэг нь «хайрцаггүй + 1px дээд зураас» хэв БИШ ✗');
+  // ⚠️ Структурын хайрцаг 2 нь ЦАГААН болов (саарал дүүргэлт + сүүдэр арилав)
+  assert.ok(DET_CODE.includes('className="rounded-xl border border-gray-200 bg-white p-5 sm:p-6"'),
+    'холбоо барих хайрцаг `bg-white` БИШ ✗');
+  assert.ok(DET_CODE.includes('className="group overflow-hidden rounded-xl border border-gray-200 bg-white"'),
+    '🏦 ипотекийн хайрцаг `bg-white` БИШ ✗');
+  assert.ok(!DET_CODE.includes('shadow-card sm:p-6'),
+    '⏳ (83)-ийн `shadow-card` буцаж орсон ✗ ((87): хайрцаг нь сүүдэргүй)');
 });
 
 // ---------- ⑤ README + package.json ----------
@@ -273,5 +305,5 @@ t('⑤ 📦 `package.json`-д `test:detail-ui` скрипт + README-д бүрт
   assert.ok(README.includes('scripts/test-detail-ui.mjs'), 'README-д файлын нэр алга ✗');
 });
 
-console.log(`\n✅ БҮГД ОК: ${passed} тест — jobs зураггүй · Нэр талбар · тэгш өнцөгт Avatar · бүх зарт газрын зураг · урт текст 'break-words' · нийтлэгчийн карт (96px аватар картын ДЭЭД талд, ГОЛЛУУЛЖ) · «📋 N идэвхтэй зар» ТУСДАА ЛИНК ✓\n`);
+console.log(`\n✅ БҮГД ОК: ${passed} тест — jobs зураггүй · Нэр талбар · тэгш өнцөгт Avatar · бүх зарт газрын зураг · урт текст 'break-words' · нийтлэгчийн карт (96px аватар картын ДЭЭД талд, ГОЛЛУУЛЖ) · «📋 N идэвхтэй зар» ТУСДАА ЛИНК · 🎨 саарал дүүргэлт 0 ✓\n`);
 

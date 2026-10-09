@@ -135,8 +135,13 @@ t('🎨 (86) Карт нь ХАЙРЦАГГҮЙ (хүрээ/сүүдэр/саа�
   assert.ok(!/border border-gray-200 bg-gray-100/.test(CARD_CODE),
     '⏳ (83)-ийн СААРАЛ хайрцаг буцаж орсон ✗');
   assert.ok(!/hover:-translate-y-0.5/.test(CARD_CODE), 'картын hover «үсрэлт» буцаж орсон ✗');
-  assert.match(CARD_CODE, /overflow-hidden rounded-xl bg-gray-100/,
+  assert.match(CARD_CODE, /overflow-hidden rounded-xl/,
     'зургийн дугуйрсан булан (`rounded-xl`) алга ✗');
+  // 🎨 (87): зургийн хайрцаг ч СААРАЛГҮЙ — ⏳ (83)-ийн `bg-gray-100` ХАСАГДАВ
+  //    (хэрэглэгчийн хүсэлт: «бүх саарал өнгийг үгүй хий») ⇒ карт дээр ЯМАР Ч
+  //    `bg-gray-*` дүүргэлт байх ЁСГҮЙ ✓
+  assert.ok(!/bg-gray-\d+/.test(CARD_CODE),
+    'карт дээр саарал (`bg-gray-*`) дүүргэлт буцаж орсон ✗');
   assert.match(CARD_CODE, /flex flex-1 flex-col pt-2\.5/,
     'мэдээллийн блок нь хайрцаггүй (`pt-2.5`, `p-3.5` БИШ) болоогүй ✗');
   assert.ok(!/border-t border-gray-100/.test(CARD_CODE), 'мөрүүдийн хоорондох зураас буцаж орсон ✗');

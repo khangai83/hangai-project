@@ -72,6 +72,7 @@
     "cdp:card-grid": "node scripts/cdp-card-grid.mjs",
     "cdp:tiles": "node scripts/cdp-tiles.mjs",
     "cdp:similar": "node scripts/cdp-similar.mjs",
+    "cdp:detail": "node scripts/cdp-detail-style.mjs",
     "test:messages": "node scripts/test-messages.mjs",
     "test:notifications": "node scripts/test-notifications.mjs",
     "cdp:notifications": "node scripts/cdp-notifications.mjs",
