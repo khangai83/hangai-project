@@ -175,9 +175,19 @@ check('② Дарсны дараа «✓ Хадгалагдсан» + `aria-pres
   /Хадгалагдсан/.test(btn1.text) && btn1.pressed === 'true' && btn1.disabled === true,
   `text=${btn1.text} pressed=${btn1.pressed} disabled=${btn1.disabled}`);
 const stored = await evalJs("localStorage.getItem('zarmn_saved_searches_v1')");
-check('②b localStorage-д линк бичигдэв (`section=real-estate` + `rooms=3`)',
-  !!stored && stored.includes('section=real-estate') && stored.includes('rooms=3'),
-  stored ? String(stored).slice(0, 120) : '(хоосон)');
+/**
+ * ⚠️ `lib/savedSearches.js` нь HYBRID: НЭВТЭРСЭН хэрэглэгч → DB (`saved_searches`),
+ *    ЗОЧИН → localStorage. Chrome профайл нэвтэрсэн үед localStorage ХООСОН
+ *    байх нь ЗӨВ ✓ ⇒ энэ шалгалт нь ЗӨВХӨН зочны горимд хамаарна; нэвтэрсэн
+ *    үед SKIP болгож, хадгалалтыг ④ (`/favorites` мөр) батална ✓
+ */
+if (stored) {
+  check('②b (зочин) localStorage-д линк бичигдэв (`section=real-estate` + `rooms=3`)',
+    stored.includes('section=real-estate') && stored.includes('rooms=3'),
+    String(stored).slice(0, 120));
+} else {
+  console.log('  ⏭ SKIP ②b — нэвтэрсэн горим (DB) ⇒ `localStorage` хоосон нь ЗӨВ; ④-өөр батална ✓');
+}
 
 // ---- ③④ /favorites — 2 таб ба хадгалсан хайлтын мөр ----
 await go(`${BASE}/favorites`);

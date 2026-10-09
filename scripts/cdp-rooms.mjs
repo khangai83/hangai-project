@@ -173,12 +173,15 @@ const roomUi = () => evalJs(`(() => {
   const btns = [...document.querySelectorAll('button')];
   const labelOnly = /^(\\+\\d|\\d) өрөө$/;
   const chips = [...document.querySelectorAll('[data-room-value]')];
+  const lbl = (i) => { const l = i.closest('label'); return l ? l.textContent.trim() : ''; };
   return {
     blocks: document.querySelectorAll('[data-room-filter]').length,
     chips: chips.length,
-    labels: chips.map((b) => b.textContent.trim()),
-    selected: chips.filter((b) => b.getAttribute('aria-pressed') === 'true')
-      .map((b) => b.getAttribute('data-room-value')),
+    labels: chips.map(lbl),
+    // 🆕 (89): ☑ мөр нь <label> (hook/aria-pressed тэнд), дотор нь жинхэнэ <input>
+    inputs: chips.filter((i) => i.querySelector('input[type="checkbox"]')).length,
+    selected: chips.filter((i) => i.getAttribute('aria-pressed') === 'true')
+      .map((i) => i.getAttribute('data-room-value')),
     labelBtns: btns.filter((b) => labelOnly.test(b.textContent.trim())).map((b) => b.textContent.trim()),
     // ⚠️ aria-label="Өрөөний тоо" нь бүлэг (role=group div) дээр байдаг —
     //    зөвхөн button дундаас хайвал 0 гарч ХУУРАМЧ улаан өгнө ✗
@@ -195,9 +198,10 @@ const clickRoom = (value) => evalJs(`(() => {
   return 'OK';
 })()`);
 
-/** 🧭 Sidebar блокүүдийн гарчгууд (дарааллаар — байрлал шалгахад) */
-const sideLabels = () => evalJs(`[...document.querySelectorAll('aside .divide-y > div')]
-  .map((b) => (b.firstElementChild?.textContent || '').trim())`);
+/** 🧭 `#filter-bar`-ийн PILL-үүдийн түлхүүрүүд (дараалал — байрлал шалгахад)
+ *  🆕 2026-10-10 (89): сайдбар ХАСАГДАВ ⇒ бүх шүүлт нь pill (`data-filter-pill`) ✓ */
+const pillKeys = () => evalJs(`[...document.querySelectorAll('#filter-bar [data-filter-pill]')]
+  .map((p) => p.getAttribute('data-filter-pill'))`);
 
 let pass = 0; let fail = 0;
 const check = (label, ok, extra = '') => {
@@ -223,30 +227,24 @@ check('🛏 Шошгууд нь «1 өрөө» … «+5 өрөө»',
   dom.labels.join(' · '));
 check('🛏 `aria-label="Өрөөний тоо"` бүлэг ТААРЛАА (хороотой ижил хэв маяг)',
   dom.toggles === 1, `toggles=${dom.toggles}`);
-const labels1 = await sideLabels();
-check('🧭 Sidebar-ийн ЭХНИЙ блок «Байршил» (өрөөний блок ЭХНИЙ биш ✓)',
-  /Байршил/.test(labels1[0] || ''), labels1.join(' → '));
 /**
- * 🆕 2026-10-06: 🛏 «Өрөөний тоо» ба 💳 «Төлбөрийн нөхцөл» нь `#filter-bar`-ийн
- *    pill БАЙХАА БОЛЬЖ, сайдбарт ЭРГЭЖ ОРОВ (хэрэглэгчийн хүсэлт: «Үл хөдлөхийн
- *    хайлт дээр байгаа Өрөөний тоо, Төлбөрийн нөхцөлийг Дэлгэрэнгүй хайлтын
- *    Байршил-ийн доор оруул») ⇒ «📍 Байршил» ЭХНИЙ, дараа нь «Өрөөний тоо» ✓
- *    🆕 (15): 💳 нь «💰 Үнэ, ₮»-ний ДАРАА болов (хэрэглэгчийн хүсэлт:
- *    «Автомашин дээр Үнийн дараа оруулах») ⇒ дараалал:
- *    «📍 Байршил» → «🛏 Өрөөний тоо» → «💰 Үнэ, ₮» → «💳 Төлбөрийн нөхцөл» ✓
+ * 🆕 2026-10-10 (89): САЙДБАР ХАСАГДАВ ⇒ БҮХ шүүлт нь `#filter-bar`-ийн PILL.
+ *    Дараалал: 📍 location → 🛏 rooms → (🚙 car) → … attr … → 💳 payments → 🔄 swap
+ *    ⚠️ «Үнэ, ₮» (хязгаар) нь pill БИШ — «Шүүлт» (`#advanced-filters`) панельд ✓
  */
-check('🧭 Sidebar: «Байршил» ЭХНИЙ, «Өрөөний тоо» нь ЯГ 2 ДАХЬ блок ✓',
-  /Байршил/.test(labels1[0] || '') && /Өрөөний тоо/.test(labels1[1] || ''),
-  labels1.join(' → '));
-/** 🆕 (15): 💳 нь «💰 Үнэ, ₮»-ний ДАРАА — дарааллыг эндээс ч түгжинэ ✓ */
-const priceIdx1 = labels1.findIndex((l) => /Үнэ/.test(l));
-const payIdx1 = labels1.indexOf('Төлбөрийн нөхцөл');
-check('🧭 Sidebar (15): «Өрөөний тоо» → «Үнэ, ₮» → «Төлбөрийн нөхцөл» дараалал ✓',
-  priceIdx1 > 1 && payIdx1 === priceIdx1 + 1,
-  `үнэ=#${priceIdx1} төлбөр=#${payIdx1} — ${labels1.join(' → ')}`);
-const barOrder1 = await evalJs(`[...document.querySelectorAll('#filter-bar [data-filter-pill]')].map((p) => p.getAttribute('data-filter-pill'))`);
-check('🧭 `#filter-bar`-т 🛏 «Өрөөний тоо» pill БАЙХГҮЙ (2 ӨӨР UI БАЙХГҮЙ ✓)',
-  !barOrder1.includes('rooms'), `bar=[${barOrder1.join(',')}]`);
+const keys1 = await pillKeys();
+check('🧭 (89) Pill #1 «location» (өрөөний pill ЭХНИЙ биш ✓)',
+  keys1[0] === 'location', keys1.join(' → '));
+check('🧭 (89) Pill #2 нь «rooms» (📍-ийн ЯГ ДАРАА) ✓',
+  keys1[0] === 'location' && keys1[1] === 'rooms', keys1.join(' → '));
+const roomIdx1 = keys1.indexOf('rooms');
+const payIdx1 = keys1.indexOf('payments');
+check('🧭 (89) «rooms» → … → «payments» дараалал ✓',
+  roomIdx1 > 0 && payIdx1 > roomIdx1, keys1.join(' → '));
+check('🧭 (89) «Үнэ» (хязгаар) нь PILL БИШ — панельд ✓',
+  !keys1.includes('price'), `bar=[${keys1.join(',')}]`);
+check('🧭 (89) хязгаарын панель (`#advanced-filters`) анхдагчаар НУУГДМАЛ ✓',
+  (await evalJs(`!document.getElementById('advanced-filters')`)) === true);
 check('📊 Зарын тоо татдаг `rooms=` HEAD query ОГТ ЯВАХГҮЙ (хэвээр ✓)',
   roomCountReqs.filter((u) => u.includes('rooms=')).length === 0,
   `${roomCountReqs.filter((u) => u.includes('rooms=')).length} rooms-query (нийт ${roomCountReqs.length} HEAD)`);
@@ -283,12 +281,11 @@ const domNoType = await roomUi();
 check('🆕 Хэсгийн түвшинд (төрөл ГҮЙ) ч «Өрөөний тоо» блок ХАРАГДАНА (`showRooms` ✓)',
   domNoType.blocks === 1 && domNoType.chips === 5,
   `blocks=${domNoType.blocks} chips=${domNoType.chips}`);
-const noTypeLabels = await sideLabels();
-check('🆕 Хэсгийн түвшинд (төрөл ГҮЙ) ч «Өрөөний тоо» блок САЙДБАРТ БИЙ (`showRooms` ✓)',
-  noTypeLabels.includes('Өрөөний тоо'), noTypeLabels.join(' → '));
-check('🆕 Sidebar нь ч БИЙ — «Байршил» ЭХНИЙ, «Өрөөний тоо» 2 ДАХЬ ✓',
-  /Байршил/.test(noTypeLabels[0] || '') && /Өрөөний тоо/.test(noTypeLabels[1] || ''),
-  noTypeLabels.join(' → '));
+const noTypeKeys = await pillKeys();
+check('🆕 Хэсгийн түвшинд (төрөл ГҮЙ) ч «rooms» PILL БИЙ (`showRooms` ✓)',
+  noTypeKeys.includes('rooms'), noTypeKeys.join(' → '));
+check('🆕 Pill дараалал «location» → «rooms» ✓',
+  noTypeKeys[0] === 'location' && noTypeKeys[1] === 'rooms', noTypeKeys.join(' → '));
 await go(`${BASE}/?section=auto`);
 check('🚗 Үл хөдлөх БИШ хэсэгт «Өрөөний тоо» блок БАЙХГҮЙ (`isRealEstate` ✗)',
   (await roomUi()).blocks === 0, `blocks=${(await roomUi()).blocks}`);

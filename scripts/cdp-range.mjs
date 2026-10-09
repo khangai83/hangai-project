@@ -134,11 +134,22 @@ const go = async (id, url, wait = 6000) => {
   const until = Date.now() + 20000;
   for (;;) {
     try {
-      if (await evalJs(id, `performance.timeOrigin !== ${t0} && document.readyState === 'complete'`)) return;
+      if (await evalJs(id, `performance.timeOrigin !== ${t0} && document.readyState === 'complete'`)) break;
     } catch { /* хуудас солигдож байна */ }
-    if (Date.now() > until) return;
+    if (Date.now() > until) break;
     await sleep(250);
   }
+  /**
+   * 🆕 2026-10-10 (89): Дээд/Доод ХЯЗГААРЫН шүүлтүүд нь «Шүүлт» (`data-all-filters`)
+   *    товчоор нээгдэх `#advanced-filters` панельд орсон ⇒ RangeInput-үүд DOM-д
+   *    гарахын тулд панелийг НЭЭНЭ ✓ (нүүр хуудсан дээр товч байхгүй — алгасна ✓)
+   */
+  await evalJs(id, `(() => {
+    const b = document.querySelector('[data-all-filters]');
+    if (b && !document.getElementById('advanced-filters')) b.click();
+    return 'OK';
+  })()`).catch(() => {});
+  await sleep(400);
 };
 
 let pass = 0; let fail = 0;

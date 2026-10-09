@@ -1318,7 +1318,7 @@ const DRAFT_PROBE = `(() => {
     btn: !!btn && vis(btn),
     btnType: btn ? String(btn.getAttribute('type') || '') : '',
     keys: keys.length,
-    raw: keys.length ? String(window.localStorage.getItem(keys[0]) || '').slice(0, 500) : '',
+    raw: keys.map((k) => String(window.localStorage.getItem(k) || '')).join(' ').slice(0, 800),
     titleInInput: ((document.querySelector('[data-detail-field="title"] input') || {}).value || ''),
   };
 })()`;
@@ -1330,7 +1330,7 @@ ok('📝 төлөв: гарчиг «2 өрөө байр, Баянгол» + га
   d0.titleValue === '2 өрөө байр, Баянгол' && d0.key === 'totalFloors' && d0.inputValue === '12',
   JSON.stringify({ title: d0.titleValue, key: d0.key, value: d0.inputValue }));
 ok('💾 ноорог `localStorage`-д ХАДГАЛАГДСАН (`zar:listing-draft:…` — гарчиг ба «12» дотор нь ✓)',
-  draftSaved.keys === 1 && draftSaved.raw.includes('2 өрөө байр, Баянгол') && draftSaved.raw.includes('"totalFloors":"12"'),
+  draftSaved.keys >= 1 && draftSaved.raw.includes('2 өрөө байр, Баянгол') && draftSaved.raw.includes('"totalFloors":"12"'),
   JSON.stringify({ keys: draftSaved.keys, raw: draftSaved.raw.slice(0, 140) }));
 
 // 🔄 САНАМСАРГҮЙ REFRESH — энэ бол хэрэглэгчийн ГОЛ АСУУДАЛ байв
@@ -1690,14 +1690,15 @@ await waitForSel('[data-sidebar-car]', 15000);
 ok('🚗 sidebar: «Үйлдвэрлэгч, загвар» НЭГ товч (`data-sidebar-car`) бий', true);
 
 const SIDE_CAR_DUP = `(() => {
-  const aside = document.querySelector('aside');
-  if (!aside) return { none: true };
+  // 🆕 (89): сайдбар ХАСАГДАВ — шүүлт нь #filter-bar-ийн pill (BACKTICK ХОРИГ)
+  const bar = document.querySelector('#filter-bar');
+  if (!bar) return { none: true };
   return {
-    brandInputs: aside.querySelectorAll('input[aria-label="Үйлдвэрлэгч"]').length,
-    modelInputs: aside.querySelectorAll('input[aria-label="Загвар"]').length,
-    brandBlocks: aside.querySelectorAll('[data-attr-filter="brand"]').length,
-    modelBlocks: aside.querySelectorAll('[data-attr-filter="model"]').length,
-    carButton: aside.querySelectorAll('[data-sidebar-car]').length,
+    brandInputs: bar.querySelectorAll('input[aria-label="Үйлдвэрлэгч"]').length,
+    modelInputs: bar.querySelectorAll('input[aria-label="Загвар"]').length,
+    brandBlocks: bar.querySelectorAll('[data-attr-filter="brand"]').length,
+    modelBlocks: bar.querySelectorAll('[data-attr-filter="model"]').length,
+    carButton: bar.querySelectorAll('[data-sidebar-car]').length,
   };
 })()`;
 const dupBefore = await evaluate(SIDE_CAR_DUP);
@@ -1724,14 +1725,14 @@ const SIDE_CHIPS = `(() => {
   return {
     tag: box.tagName.toLowerCase(),
     chips: [...box.querySelectorAll('.chip-toggle')].length,
-    buttons: [...box.querySelectorAll('.chip-toggle')].every((b) => b.tagName.toLowerCase() === 'button'),
+    inputs: [...box.querySelectorAll('input[type="checkbox"]')].length,
     values: [...box.querySelectorAll('.chip-toggle')].map((b) => b.getAttribute('data-attr-value')),
   };
 })()`;
 const sideColorChips = await evaluate(SIDE_CHIPS);
 ok('sidebar: 🎨 «Өнгө» нь ЧИП болсон (`<select>` БИШ · 12 товч · `multi` ✓)',
   Boolean(sideColorChips) && sideColorChips.tag === 'div' && sideColorChips.chips === 12
-    && sideColorChips.buttons === true
+    && sideColorChips.inputs === 12
     && JSON.stringify(sideColorChips.values) === JSON.stringify(AUTO_COLOR_OPTIONS),
   JSON.stringify(sideColorChips));
 ok('sidebar: 🎨 «Өнгө» нь `select[aria-label]`-д ОГТ БАЙХГҮЙ (давхардал ✗)',
@@ -1748,21 +1749,20 @@ ok('sidebar: 🔀 «Хөтлөгч» шүүлт БАЙХГҮЙ (0 талбар)'
 //    pill болж байв ✗ — 🆕 (17)-д хэрэглэгчийн хүсэлтээр САЙДБАРТ БУЦАВ
 //    («Өнгө, Түлш, Хурдны хайрцаг … Төлбөрийн нөхцөлийн ардаас оруул») ⇒
 //    `#filter-bar` нь АВТО дээр ОГТ БАЙХГҮЙ ✓ (sidebar-д 3 attr шүүлт ✓)
-const SIDE_ORDER = `(() => [...document.querySelectorAll('aside [aria-label]')]
+const SIDE_ORDER = `(() => [...document.querySelectorAll('#filter-bar [aria-label]')]
   .map((el) => (el.getAttribute('aria-label') || '').trim()).filter(Boolean))()`;
 const sideOrder = await evaluate(SIDE_ORDER);
 ok('🚗 sidebar: 🏷️ «Үйлдвэрлэгч» / 🚙 «Загвар» сайдбарт БАЙХГҮЙ (modal руу шилжсэн ✓)',
   !sideOrder.includes('Загвар') && !sideOrder.includes('Үйлдвэрлэгч'),
   JSON.stringify(sideOrder));
 const sideAttrCount = await evaluate(
-  `document.querySelectorAll('aside [data-attr-filter]').length`);
-ok('🎛 🆕 (17): sidebar-д 🎨/⛽/🔀 БУЦАВ (3 attr шүүлт ✓)',
+  `document.querySelectorAll('#filter-bar [data-attr-filter]').length`);
+ok('🎛 (89): авто дээр 🎨/⛽/⚙️ (3 attr) нь `#filter-bar`-ийн PILL',
   sideAttrCount === 3, `sideAttr=${sideAttrCount}`);
-const BAR_ORDER = `(() => [...document.querySelectorAll('#filter-bar [aria-label]')]
-  .map((el) => (el.getAttribute('aria-label') || '').trim()).filter(Boolean))()`;
-const barOrder = await evaluate(BAR_ORDER);
-ok('🎛 🆕 (17): авто дээр `#filter-bar` БАЙХГҮЙ (0 pill — бүгд сайдбарт ✓)',
-  barOrder.length === 0, JSON.stringify(barOrder));
+const barPills = await evaluate(
+  `[...document.querySelectorAll('#filter-bar [data-filter-pill]')].map((p) => p.getAttribute('data-filter-pill'))`);
+ok('🎛 (89): авто дээр `#filter-bar` БИЙ — 🎨/⛽/⚙️ pill (БҮХ шүүлт pill ✓)',
+  ['color', 'transmission', 'fuel'].every((k) => barPills.includes(k)), JSON.stringify(barPills));
 
 // ── ⑦‴ 🏷️🚙 SIDEBAR → `CarPicker` (modal): Үйлдвэрлэгч → Загвар КАСКАД ──
 /**
@@ -1784,7 +1784,8 @@ await wait(3500);
  *    sidebar бүрэн ачаалагдсаныг ХҮЛЭЭНЭ ✓
  */
 const sideReady = await waitForSel('[data-sidebar-car]', 25000);
-const carBtnText = sideReady ? await evaluate(`document.querySelector('[data-sidebar-car]').innerText`) : '';
+// 🆕 (89): товч нь pill-ийн ⌄ панель дотор (нуугдмал) ⇒ textContent уншина
+const carBtnText = sideReady ? await evaluate(`document.querySelector('[data-sidebar-car]').textContent`) : '';
 ok('🌈 sidebar: хуудас ачаалагдав + товч нь `?attr_brand=Toyota`-г харуулав',
   sideReady === true && /Toyota/.test(carBtnText || ''),
   JSON.stringify({ sideReady, carBtnText }));

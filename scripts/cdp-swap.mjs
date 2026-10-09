@@ -342,6 +342,10 @@ const waitForm = async () => {
 };
 
 await rpc('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1600, deviceScaleFactor: 1, mobile: false });
+// ⚠️ Өмнөх тестүүд (🎨/🚗) үлдээсэн НООРОГ (`zar:listing-draft:*`) нь форм-ын
+//    ХЭСГИЙГ дарж бичдэг тул «Солино» ☑ ГАРАХГҮЙ болдог ✗ ⇒ форм руу орохоос
+//    ӨМНӨ цэвэрлэнэ ✓ (⏳ доор 💻-ийн өмнө ч цэвэрлэдэг байв — ОДОО ЭНД ч)
+await evalJs(`Object.keys(localStorage).filter((k) => k.indexOf('zar:listing-draft') === 0).forEach((k) => localStorage.removeItem(k))`);
 await go(`${BASE}/listings/new?section=auto&type=${AUTO_SUB}&step=3`);
 const ready = await waitForm();
 if (ready.needAuth) {

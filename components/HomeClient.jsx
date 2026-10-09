@@ -521,6 +521,41 @@ function FilterPill({ label, count, onClear, testKey, children }) {
 }
 
 /**
+ * ☑ 2026-10-10 (89): PILL-ийн ⌄ ПАНЕЛЬ ДОТОРХ НЭГ СОНГОЛТ — CHECKBOX.
+ *
+ * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «…сонголттой хэсгүүдыг нь checkbox болгоорой»
+ * (жишиг сайтын шүүлтийн ⌄ панель шиг) ⇒ ⏳ чип (`<button>` + `✓`) нь
+ * ОДОО ЖИНХЭНЭ `<input type="checkbox">` болов ✓
+ *
+ * ⚠️ Дэгээ/класс ХЭВЭЭР (тест/CDP):
+ *   • `data-room-value` / `data-payment-value` / `data-attr-value` нь `<label>` дээр
+ *     (`.click()` → label доторх ☑-г toggle хийнэ ✓)
+ *   • `chip-toggle` (+`chip-toggle-active`) класс ч `<label>` дээр — CSS/шалгалт
+ *     хэвээр (`globals.css` нь `@layer components` тул utility-үүд дарж бичнэ ✓)
+ *   • `aria-pressed` ч `<label>` дээр — CDP/тестүүд `getAttribute`-аар уншина ✓
+ * ⚠️ Утга/URL/DB ХӨНДӨӨГДӨӨГҮЙ (зөвхөн ХАРАГДАЦ) ✓
+ */
+function FilterOption({ label, checked, onToggle, hook, value }) {
+  return (
+    <label
+      {...{ [hook]: value }}
+      aria-pressed={checked}
+      className={`chip-toggle w-full justify-start gap-2 rounded-lg border-0 bg-transparent px-2 py-1.5 text-left text-[14px] font-medium text-gray-700 hover:bg-gray-200 ${
+        checked ? 'chip-toggle-active bg-primary-light font-semibold text-primary hover:bg-primary-light' : ''
+      }`}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onToggle}
+        className="h-4 w-4 shrink-0 accent-primary"
+      />
+      <span className="min-w-0 flex-1">{label}</span>
+    </label>
+  );
+}
+
+/**
  * 🖥🔍 ХАЙЛТЫН МӨР — толгойн мөр (2026-10-04 (27)).
  *
  * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (жишээ зурагтай): «хайлт хэсгийн вэб дээд хэсэгт болгож
@@ -931,6 +966,10 @@ export default function HomeClient() {
   // 🏷️🚙 Машины пикерийн нээлттэй төлөв (2026-10-04 (35)) — 📍 `locOpen`-ийн
   //    ЯГ ИЖИЛ зарчим (HomeClient-ийн `filters.attrs.brand/model`-ыг удирдана ✓)
   const [carOpen, setCarOpen] = useState(false);
+  // 🎛 2026-10-10 (89): «Шүүлт» (All Filters) панель нээлттэй эсэх — Дээд/Доод
+  //    хязгаарын шүүлтүүд (Үнэ · Талбай · он · давхар) ЭНД байна; бусад бүх
+  //    шүүлт нь үр дүнгийн дээрх мөрөнд PILL болно (хэрэглэгчийн хүсэлт ✓)
+  const [advOpen, setAdvOpen] = useState(false);
 
   const [category, setCategory] = useState('all');
   const [search, setSearch] = useState('');
@@ -3037,903 +3076,16 @@ export default function HomeClient() {
                ХАСАГДСАН хэвээр (нүүр хуудас нь tile панельтай ✓).
             ⚠️ Sidebar нь `lg:sticky lg:top-4` — урт жагсаалт гүйлгэхэд шүүлт
                хамт гүйлгэхгүй, дэлгэц дээр барина (жишиг сайттай ижил). */}
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-          {/* ============ SIDEBAR — ДЭЛГЭРЭНГҮЙ ХАЙЛТ (зүүн багана) ============
-              ✅ 2026-10-09 (83): `showAdvancedFilters` (= `!noSection`) үнэн
-                 үед л render болно — «Бүх зар» (нүүр хуудас) дээр БАЙХГҮЙ ✗,
-                 хэсэг (2-р түвшин) ба дэд төрөл (3-р түвшин) дээр харагдана ✓
-                 (⏳ (13)→(82) хооронд «БҮГД дээр Ч ҮРГЭЛЖ» байв ✗)
-              ⚠️ 2026-09-27 (хэрэглэгчийн хүсэлт): «Дэлгэрэнгүй хайлтыг үргэлж
-                 нээлттэй болгоё» → товч дарах шаардлагагүй болов ✓
-                 (🆕 (83): мобайл нь desktop-той ИЖИЛ нөхцөлтэй — НЭГ дүрэм ✓)
-              ⚠️ Урьд нь `${filtersOpen ? '' : 'hidden'}` гэсэн төлөвтэй байсан
-                 бөгөөд «⚙️ Дэлгэрэнгүй хайлт» товчоор нээгддэг байв ✗
-                 → товч БА төлөв хоёулаа ХАСАГДСАН ✓
-              📱 МОБАЙЛ дээрх дараалал (aside нь DOM-д результатовын ӨМНӨ):
-                 [Дэлгэрэнгүй хайлт панель] → [гарчиг + өрөөний тоо]
-                 → [чипүүд] → [картууд]
-              ⚠️ `lg:sticky lg:top-4` — desktop дээр гүйлгэхэд хамт гүйлгэхгүй ✓
-              🔴 2026-10-04 (26) АСУУДАЛ: панелийн агуулга (10+ блок) нь
-                 дэлгэцээс ӨНДӨР (бодит хэмжилт 1440×800 дээр **1732px**) тул
-                 `sticky` нь дээрээ наалдаж, доод хэсэг (🔍 Хайх товч) нь
-                 гүйлгэхэд ХҮРЭХГҮЙ байв ✗ (зөвхөн хуудасны хамгийн төгсгөлд
-                 хүрсэн үед л гарч ирнэ) — хэрэглэгч «хайлтын товч гарч
-                 ирэхгүй» гэж мэдэгдэв.
-              ✅ ШИЙДЭЛ: `lg:max-h-[calc(100vh-2rem)]` + `lg:overflow-y-auto`
-                 → панель өөрөө дотроо гүйлгэгдэнэ (2rem = `top-4`-ийн 1rem +
-                 доод 1rem); 🔍 Хайх нь доор `sticky bottom-0` тул ҮРГЭЛЖ
-                 харагдана ✓ (мобайл `<lg` ХӨНДӨӨГДӨӨГҮЙ — sticky нь `lg:` ✓) */}
-          {/* ============ ЗҮҮН БАГАНА (хайлтын хэсэг) ============
-              🆕 2026-10-09 (83b) ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «огноогоор, газрын зураг
-                 дээр харах 2-ийг яагаад үлдээчвээ» ⇒ хаалт нь ОДОО бүх
-                 баганыг хамарна: «Бүх зар» (нүүр хуудас) дээр
-                 ⇅ «Огноогоор» · 🗺 «Газрын зураг дээр харах» · панель
-                 ГУРВУУЛАА БАЙХГҮЙ ✓
-              ⏳ (83)-д зөвхөн `<aside>` хаагдсан байв — эхний 2 нь хаалтаас
-                 ГАДНА (нэг баганын дотор) үлдсэн тул нүүр хуудсан дээр
-                 ХАРАГДАЖ байв ✗ ⇒ зассан ✓
-              ⚠️ Байрлал СӨХӨГДӨӨГҮЙ: багана нь DOM-д «Үр дүн»-ээс ӨМНӨ тул
-                 хэсэгт орсон үед desktop/flex болон мобайл дараалал нь
-                 ХУУЧИН хэвээрээ ✓
-              ⚠️ Хайлтын ГОЛ зам (толгойн мөр · `#filter-bar` чипүүд) нь энэ
-                 баганаас ГАДНА ⇒ ХӨНДӨӨГДӨӨГҮЙ ✓; багана байхгүй үед үр дүн
-                 (`flex-1`) нь бүтэн өргөнийг эзэлнэ ✓ */}
-          {showAdvancedFilters && (
-          <div className="flex w-full shrink-0 flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:w-[280px] lg:overflow-y-auto">
-            {/* 🔀 ЭРЭМБЭЛЭХ — 🆕 2026-10-06: жишиг сайт шиг сайдбарын ДЭЭД
-                хэсэгт (бүтэн өргөнтэй хайрцаг + ⇅ icon + ▾).
-                ⚠️ Сонголт солиход `?page=1` руу буцна (`changeSort`) — эс
-                   бөгөөс 3-р хуудсан дээр дараалал солиход «дунд» байрлалд
-                   орж, хэрэглэгч төөрнө ✗
-                ⚠️ Утга нь `normalizeSort()`-оор шүүгдэнэ (`?sort=xxx` →
-                   анхдагч) — PostgREST руу танихгүй багана явахгүй ✓
-                ⚠️ Энэ нь ШҮҮЛТ БИШ (үр дүнгийн тоо өөрчлөгдөхгүй) тул
-                   чипүүдийн тоонд ОРОХГҮЙ — зөвхөн дараалал солино ✓
-                ⚠️ `[data-listing-sort]` — CDP дэгээ (`scripts/cdp-range.mjs`);
-                   `<select>` нь `data-listing-sort` тул `data-attr-filter`-ГҮЙ
-                   (CDP «сайдбарт select 0» шалгалт эвдрэхгүй ✓) */}
-            <label
-              htmlFor="listing-sort"
-              className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 shadow-btn transition-colors hover:border-primary/40"
-            >
-              <span aria-hidden="true" className="text-[15px] text-gray-400">⇅</span>
-              <select
-                id="listing-sort"
-                data-listing-sort
-                className="w-full appearance-none bg-transparent text-[14px] font-semibold text-gray-800 focus:outline-none"
-                value={sort}
-                onChange={(e) => changeSort(e.target.value)}
-              >
-                {SORT_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-              <span aria-hidden="true" className="text-[12px] text-gray-400">▾</span>
-            </label>
-
-            {/* 🗺 ГАЗРЫН ЗУРАГ ДЭЭР ХАРАХ — 🆕 2026-10-06: жишиг сайт шиг
-                сайдбарын хайрцаг (⏳ урьд нь толгойд `.segmented`
-                «☰ Жагсаалт | 🗺 Газрын зураг» байв — «Жагсаалт» нь илүүц
-                байсан тул НЭГ товч болов ✓).
-                ⚠️ `view` state / `?view=map` URL / `MapView` / DB БҮГД
-                   ХӨНДӨӨГДӨӨГҮЙ — зөвхөн контролын байрлал/хэлбэр солигдов */}
-            <button
-              type="button"
-              data-view-toggle
-              aria-pressed={view === 'map'}
-              onClick={() => setView(view === 'map' ? 'list' : 'map')}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-[14px] font-semibold text-gray-700 shadow-btn transition-all duration-150 ease-out hover:border-primary/40 hover:text-primary"
-            >
-              {view === 'map' ? '☰ Жагсаалт руу буцах' : '🗺 Газрын зураг дээр харах'}
-            </button>
-
-            {/* ===== 🎛 ШҮҮЛТИЙН ПАНЕЛЬ =====
-                ⚠️ Хаалт (`showAdvancedFilters`) нь ДЭЭР — бүх зүүн баганыг
-                   хамарна (⇅ Эрэмбэлэх · 🗺 Харах · энэ панель) ✓
-                ⚠️ (83) → (83b): панель нь (13)-аас хойш «БҮГД дээр Ч
-                   ҮРГЭЛЖ» байсныг болиулж, хэсэг (2-р түвшин) сонгосон
-                   үед л гардаг болов ✓ */}
-            <aside id="advanced-filters" className="w-full">
-            {/* 🎨 2026-10-09 (83): `bg-white` → `bg-gray-100` — «дээр нь байгаа
-                зүйлс» саарал болов (хүрээ + `shadow-card` нь ялгана ✓;
-                ⚠️ доторх мөрүүдийн ялгагч зураас нь `divide-gray-200` болов —
-                `gray-100` карт дээр `gray-100` зураас ХАРАГДАХГҮЙ ✗) */}
-            <div className="rounded-xl border border-gray-200 bg-gray-100 shadow-card">
-              {/* Толгой — жишиг сайтад тусдаа гарчиг байхгүй ч «N шүүлт» badge нь
-                  хэрэглэгчид ямар нэг зүйл сонгосноо мэдэгдэхэд тустай.
-                  🗑 2026-10-04 (39): гарчгийн өмнөх ⚙️ badge ХАСАГДАВ —
-                  хэрэглэгчийн хүсэлт: «Дэлгэрэнгүй хайлт … бүх үгний өмнө байгаа
-                  emoji-г байхгүй болго» ⇒ зөвхөн «Дэлгэрэнгүй хайлт» текст ✓ */}
-              <div className="flex items-center justify-between gap-2 border-b border-gray-200 px-4 py-3.5">
-                <h2 className="flex items-center gap-2 text-[15px] font-bold text-gray-900">
-                  Дэлгэрэнгүй хайлт
-                  {activeFilterCount > 0 && (
-                    <span className="rounded-full bg-primary px-2 py-0.5 text-[12px] font-bold text-white">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                </h2>
-                {/* ⚠️ 2026-09-27: «✕ Хаах» товч ХАСАГДСАН — панель үргэлж
-                    нээлттэй тул «хаах» ойлголт байхгүй ✓
-                    (товч нь зөвхөн мобайл sheet-ийг хаадаг байсан ✗)
-                    🆕 2026-10-06 (18): ОРОНД нь «Бүгдийг нээх / Хураах»
-                    товч — БҮХ эвхэгддэг чип блокийг нэг даралтаар нээх/хаах ✓
-                    (тусдаа блок бүр өөрийн гарчгаараа ч нээгдэнэ ✓;
-                     дэгээ: `data-side-toggle-all` — CDP `cdp:job-chips` §⑥⓪) */}
-                <button
-                  type="button"
-                  data-side-toggle-all
-                  aria-pressed={allBlocksOpen === true}
-                  onClick={toggleAllSideBlocks}
-                  className="shrink-0 whitespace-nowrap text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
-                >
-                  {allBlocksOpen === true ? 'Хураах' : 'Бүгдийг нээх'}
-                </button>
-              </div>
-
-              <div className="divide-y divide-gray-200 px-4">
-                {/* 🆕ℹ️ 2026-10-06: 🛏 «Өрөөний тоо» ба 💳 «Төлбөрийн нөхцөл»
-                    нь үр дүнгийн дээрх `#filter-bar`-ийн PILL-ээс ЭРГЭЖ САЙДБАРТ
-                    ИРЭВ (хэрэглэгчийн хүсэлт: «Үл хөдлөхийн хайлт дээр байгаа
-                    Өрөөний тоо, Төлбөрийн нөхцөлийг Дэлгэрэнгүй хайлтын
-                    Байршил-ийн доор оруул») ⇒ 2 ӨӨР UI БАЙХГҮЙ ✓
-                    🆕 (15): 💳 нь «💰 Үнэ, ₮»-ний ДАРАА болов (хэрэглэгчийн
-                    хүсэлт: «Автомашин дээр Үнийн дараа оруулах») ⇒
-                    Sidebar-ийн дараалал (🆕 2026-10-06 (17)-ийн дараа):
-                    «📍 Байршил» → «🛏 Өрөөний тоо» → [attr шүүлтүүд] →
-                    «💰 Үнэ, ₮» → «💳 Төлбөрийн нөхцөл» →
-                    🔀 🆕 «🎨 Өнгө» → «⛽ Түлш» → «⚙️ Хурдны хайрцаг»
-                    (`afterPaymentAttrs` — хэрэглэгчийн хүсэлт:
-                    «Өнгө, Түлш, Хурдны хайрцаг … Төлбөрийн нөхцөлийн ардаас
-                    оруул») → «📐 Талбай, м²» ✓
-                    (⏳ 2026-10-03 (4): «Үнэ, ₮»-ний өмнө сайдбарт; 2026-10-04 (38):
-                       өрөө нь `#filter-bar` pill; (37): төлбөр ч мөн pill — ОДОО
-                       хоёулаа сайдбарт буцав ✓) */}
-
-                {/* ===== 📍 БАЙРШИЛ — НЭГ ТОВЧ → `LocationPicker` (modal) =====
-                    ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-04 (28)): «Дэлгэрэнгүй хайлт-ийн
-                    Байршил сонголтыг толгойн «📍 Бүх байршил» шиг сонгодог
-                    болго» ⇒ сайдбарын 3 шатлалт (Хот/Аймаг `<select>` → Дүүрэг
-                    чип → Хороо чип) блок БҮХЭРЛЭЭ ХАСАГДАВ.
-                    🆕 ОРОНД нь толгойн мөртэй ЯГ ИЖИЛ НЭГ товч — дарахад
-                       `LocationPicker` нээгдэж, Хот → Дүүрэг → Хороог НЭГ
-                       цонхонд каскадаар сонгоно ✓ (component дахин
-                       хэрэглэгдэнэ — 2 газар 2 өөр UI БАЙХГҮЙ ✓)
-                    ⚠️ Урсгалын утга ХЭВЭЭР: `filters.city` / `.districts` /
-                       `.khoroos` → URL (`?city=…&district=…&khoroo=…`),
-                       DB (`district=in.(…)`), breadcrumb (`📍 …`), «Гүйцэтгэсэн
-                       шүүлт» чипүүд, `activeFilterCount` БҮГД өөрчлөгдөхгүй ✓
-                    ⚠️ 2026-10-03 (10)-ын «Дүүрэг/Сум олон сонголттой» хүсэлт
-                       ХАНГАГДСАН ХЭВЭЭР — пикер дотор ч олон сонголт (`✓`) ✓
-                    ⚠️ `data-sidebar-location` — CDP дэгээ (`cdp-districts.mjs`);
-                       толгойн `data-header-location`-той НЭГ `onOpenLocation` ✓ */}
-                <SideBlock label="Байршил">
-                  <button
-                    type="button"
-                    data-sidebar-location
-                    aria-haspopup="dialog"
-                    onClick={() => setLocOpen(true)}
-                    className={`flex h-11 w-full items-center gap-2 rounded-xl border px-3 text-left text-[14px] font-semibold transition ${
-                      filters.city
-                        ? 'border-primary bg-primary-light text-primary'
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
-                  >
-                    <PinIcon className="h-[18px] w-[18px] shrink-0" />
-                    <span className="min-w-0 flex-1 truncate">{locationLabel}</span>
-                    <ChevronDownIcon className="h-4 w-4 shrink-0 opacity-60" />
-                  </button>
-
-                  {/* Сонгосон байршлын жижиг шошгууд + «✕ Цэвэрлэх» — пикер
-                      нээлгүй ч юу сонгосон нь харагдана; цэвэрлэх нь БҮХ
-                      гурвыг (хот+дүүрэг+хороо) нэг дор арилгана ✓
-                      ⚠️ Хот сонгоогүй үед `districts`/`khoroos` хоосон байх
-                         ЁСТОЙ (`setF('city')` дүрэм) тул зөвхөн шалгана */}
-                  {filters.city && (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] font-semibold text-gray-700">
-                        {filters.city}
-                      </span>
-                      {filters.districts.map((d) => (
-                        <span
-                          key={`d-${d}`}
-                          data-location-pill="district"
-                          className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] text-gray-600"
-                        >
-                          {d}
-                        </span>
-                      ))}
-                      {filters.khoroos.map((k) => (
-                        <span
-                          key={`k-${k}`}
-                          data-location-pill="khoroo"
-                          className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] text-gray-600"
-                        >
-                          {k}
-                        </span>
-                      ))}
-                      <button
-                        type="button"
-                        data-location-clear
-                        onClick={() => applyLocation({ city: '', districts: [], khoroos: [] })}
-                        className="text-[13px] font-semibold text-gray-500 underline-offset-2 hover:text-primary hover:underline"
-                      >
-                        ✕ Цэвэрлэх
-                      </button>
-                    </div>
-                  )}
-                </SideBlock>
-
-                {/* ===== 🛏 ӨРӨӨНИЙ ТОО — НЭГ ДАРЖ ОЛОН СОНГОЛТ (2026-10-03) =====
-                    🆕 2026-10-06: «Үл хөдлөх» хайлт дээр `#filter-bar` pill байсныг
-                    ЭРГЭЖ «📍 Байршил»-ийн ЯГ ДООР сайдбарт оруулав (хэрэглэгчийн
-                    хүсэлт) ⇒ 2 ӨӨР UI БАЙХГҮЙ ✓
-                    ⚠️ Хэв нь ХӨНДӨГДӨӨГҮЙ: `chip-toggle` чипүүд (flex-wrap) +
-                       `aria-pressed` + идэвхтэй үед `✓` ба `chip-toggle-active`
-                    ⚠️ Утга (`filters.rooms` МАССИВ), URL (`?rooms=1,3`), DB
-                       (`lib/queries.js → applyRoomFilter`) БҮГД ХЭВЭЭР ✓
-                    ⚠️ `data-room-filter` / `data-room-value` нь `scripts/cdp-rooms.mjs`-ийн
-                       дэгээ — УСТГАХГҮЙ ✓; «N сонгосон» ба «✕ Цуцлах» ХЭВЭЭР ✓
-                    🆕 2026-10-06 (18): блок нь ЭВХЭГДДЭГ (`collapsible`) — 5 чип нь
-                       босго (`SIDEBAR_CHIP_COLLAPSE_MIN`) хүрсэн тул анхдагчаар
-                       ХУРААСАН (сонгосон утга байвал АВТОМАТААР НЭЭЛТТЭЙ ✓) */}
-                {showRooms && (
-                  <SideBlock
-                    label="Өрөөний тоо"
-                    collapseKey="rooms"
-                    collapsible
-                    open={blockOpen('rooms', ROOM_OPTIONS.length, filters.rooms.length)}
-                    onToggle={() => toggleSideBlock('rooms', ROOM_OPTIONS.length, filters.rooms.length)}
-                    count={filters.rooms.length}
-                  >
-                    <div
-                      className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
-                      data-room-filter
-                      role="group"
-                      aria-label="Өрөөний тоо"
-                    >
-                      <div className="flex flex-wrap gap-1.5">
-                        {ROOM_OPTIONS.map((r) => {
-                          const on = filters.rooms.includes(r.value);
-                          return (
-                            <button
-                              key={r.value}
-                              type="button"
-                              aria-pressed={on}
-                              data-room-value={r.value}
-                              onClick={() => toggleRooms(r.value)}
-                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
-                            >
-                              {on && <span aria-hidden="true">✓</span>}
-                              {r.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    {filters.rooms.length > 0 && (
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[13px] font-semibold text-gray-600">
-                          {filters.rooms.length} сонгосон
-                        </span>
-                        <button
-                          type="button"
-                          onClick={clearRooms}
-                          className="text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
-                        >
-                          ✕ Цуцлах
-                        </button>
-                      </div>
-                    )}
-                  </SideBlock>
-                )}
-
-                {/* 💰💼 2026-10-03 (9): «Үнэ, ₮» / «Цалин, ₮» блок — АЖЛЫН ЗАРТ
-                    энд (attr шүүлтүүдийн ӨМНӨ) байрлана (жишиг сайтын ажлын
-                    хайлтын зурагтай ИЖИЛ); бусад хэсэгт доор (хуучин байрлал) ✓ */}
-                {isJobs && priceSideBlock}
-
-                {/* ===== 🏷️🚙 ҮЙЛДВЭРЛЭГЧ, ЗАГВАР — НЭГ ТОВЧ → `CarPicker` (modal) =====
-                    ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-04 (35)): «Автомашины хайлтын
-                    Үйлдвэрлэгч, Загварыг Байршил шиг хайдаг болгоод өг».
-                    ⇒ сайдбарын ХОЁР тусдаа талбар (🏷️ `SearchableSelect` 95
-                    брэнд + 🚙 combo/TextFilter) БҮРЭН ХАСАГДАВ.
-                    🆕 ОРОНД нь 📍 Байршилтай ЯГ ИЖИЛ НЭГ товч — дарахад
-                       `CarPicker` нээгдэж, Үйлдвэрлэгч → Загварыг НЭГ цонхонд
-                       ХАЙЛТТАЙ каскадаар сонгоно ✓
-                    ⚠️ Урсгалын утга ХЭВЭЭР: `filters.attrs.brand` / `.model`
-                       → URL (`?attr_brand=…&attr_model=…`), DB (`attrs->>… ilike`),
-                       «Гүйцэтгэсэн шүүлт» чипүүд, `activeFilterCount`,
-                       breadcrumb БҮГД өөрчлөгдөхгүй ✓
-                    ⚠️ `data-sidebar-car` — CDP дэгээ (`scripts/cdp-picker.mjs` §7)
-                    🔍 Хайх үг: data-sidebar-car, CarPicker, applyCar, carLabel */}
-                {isAuto && (
-                  <SideBlock label="Үйлдвэрлэгч, загвар">
-                    <button
-                      type="button"
-                      data-sidebar-car
-                      aria-haspopup="dialog"
-                      onClick={() => setCarOpen(true)}
-                      className={`flex h-11 w-full items-center gap-2 rounded-xl border px-3 text-left text-[14px] font-semibold transition ${
-                        carBrand || carModels.length
-                          ? 'border-primary bg-primary-light text-primary'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span className="min-w-0 flex-1 truncate">{carLabel}</span>
-                      <ChevronDownIcon className="h-4 w-4 shrink-0 opacity-60" />
-                    </button>
-
-                    {/* Сонгосон машины жижиг шошгууд + «✕ Цэвэрлэх» — пикер
-                        нээлгүй ч юу сонгосон нь харагдана (📍 Байршлын ИЖИЛ)
-                        ⚠️ 🚙 Загвар нь ОЛОН сонголттой (2026-10-04 (36)) тул
-                           нэг pill нь ТОВЧЛОСОН шошго — «Prius 30» (1) /
-                           «2 загвар» (2+); бүтэн жагсаалтыг пикер дотор
-                           чипээр харна ✓ (`data-car-model-count` — CDP дэгээ) */}
-                    {(carBrand || carModels.length > 0) && (
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {carBrand && (
-                          <span data-car-pill="brand" className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] font-semibold text-gray-700">
-                            {carBrand}
-                          </span>
-                        )}
-                        {carModels.length > 0 && (
-                          <span
-                            data-car-pill="model"
-                            data-car-model-count={carModels.length}
-                            className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] text-gray-600"
-                          >
-                            {attrListFilterLabel(carModels, 'загвар')}
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          data-car-clear
-                          onClick={() => applyCar({ brand: '', model: [] })}
-                          className="text-[13px] font-semibold text-gray-500 underline-offset-2 hover:text-primary hover:underline"
-                        >
-                          ✕ Цэвэрлэх
-                        </button>
-                      </div>
-                    )}
-                  </SideBlock>
-                )}
-
-                {/* ===== ХЭСГИЙН ATTR ШҮҮЛТҮҮД (0016, өргөтгөсөн 2026-09-28) =====
-                    ⚠️ Хэсэг тус бүрийн `attrFilters` — оролтын төрөл 3:
-                      ① энгийн `<select>` (цөөн сонголт: Түлш, Өнгө)
-                      ② 🔎 ХАЙЛТТАЙ COMBOBOX (`f.searchable`, ж: 🏷️ Үйлдвэрлэгч — 95)
-                         хэрэглэгчийн хүсэлт (2026-09-27): «Суудлын машин
-                         сонгоод брэндээс хайж олох төвөгтэй… гараас хайх»
-                         ⚠️ 2026-09-28: label нь «Үйлдвэрлэгч» болов (key: `brand`)
-                      ③ ✍️/📅 ГАРААР БИЧИХ ТЕКСТ (`f.filterable`) ба
-                         ОНЫ ХҮРЭЭ (`f.range`, «Доод / Дээд») —
-                         хэрэглэгчийн хүсэлт (2026-09-28): «хайлт дээр ЗАГВАР
-                         оруул; ҮЙЛДВЭРЛЭСЭН ОН, ОРЖ ИРСЭН ОНООР шүүдэг байх»
-                      ④ 🌈 БРЭНДЭЭС ХАМААРАХ СОНГОЛТ (`f.optionsFrom`, 2026-10-01,
-                         хэрэглэгчийн хүсэлт): брэнд сонгосон үед 🚙 «Загвар» нь
-                         тухайн брэндийн загваруудтай ХАЙЛТТАЙ combo болно
-                         (брэнд сонгоогүй бол ③ — чөлөөт текст хэвээр ✓)
-                    ⚠️ Утга нь `listings.attrs` (jsonb) дотор → `?attr_brand=Toyota`,
-                       оны хүрээ нь `?attr_year_from=2015&attr_year_to=2020`
-                    ⚠️ Гараар бичих талбар нь ⏎/blur үед л хүчинтэй болно —
-                       үсэг бүрт query явахгүй ✓ (`TextFilter`, `SearchableSelect`)
-                    🖥 ⑤ ДЭД ТӨРЛӨӨС ХАМААРАХ ШҮҮЛТ (2026-10-03 (7), хэрэглэгчийн
-                       хүсэлт: «notebook хайх дээр Дэлгэцийн хэмжээ · CPU · RAM ·
-                       SSD Hard шүүлтүүд гардаг байх»): 💻 Notebook-ийн 📺/⚙️/🧠/💾
-                       нь ЗӨВХӨН Notebook-ийн брэнд («Apple», «Lenovo» …) эсвэл
-                       «Иж бүрэн компьютер»/«Процессор, сервер» сонгосон үед
-                       харагдана — `getAttrFilters(section, filters.propertyType)`
-                       нь формойн `getAttrFields`-тэй ЯГ ИЖИЛ `onlySubtypes` дүрмийг
-                       хэрэглэнэ ✓ (Mouse/Keyboard/тонер дээр ГАРАХГҮЙ)
-                       🆕 2026-10-08 (71) · ✏️ шошго (73): 🛋️ «Тавилга» → 🛏 «Ор болдог
-                       эсэх» (`sofaBed`) мөн ЯГ ЭНЭ дүрмээр — зөвхөн «Буйдан, кресло»
-                       дэд төрөл сонгосон үед «✅ Төлөв»-ийн ЯГ ДООР гарна;
-                       ⚠️ ЭНД ШИНЭ КОД БАЙХГҮЙ (доорх генерацлагдсан салбарууд
-                       `f.options`-той энгийн `<select>` болно ✓), URL нь
-                       `?attr_sofaBed=Тийм` → DB `attrs->>sofaBed` (`lib/queries.js`,
-                       талбар нь `filterable`/`searchable` БИШ тул `eq` ✓)
-                    🕒 ⑥ ОЛОН СОНГОЛТТОЙ ЧИП ШҮҮЛТ (`f.chips` + `f.multi`,
-                       2026-10-03 (9) · 🆕 2026-10-05 (42) · 🆕 2026-10-06 (17),
-                       хэрэглэгчийн хүсэлт: «ажлын зар хайх хэсгийн Design ийг …
-                       хийгээрэй», «Ажлын цаг, Туршлага, Мэргэжлийн түвшиныг
-                       Өрөөний тоо шиг болго»): 🆕 (17)-д 💼-ийн 🕒/📊/📈 нь
-                       САЙДБАРТ БУЦАВ (⏳ (42) `filterBar` pill байв ✗) — ЭНЭ
-                       салбараар генерацлагдана ✓ (💼-д 💰 Цалин нь attr-ийн
-                       ӨМНӨ гардаг тул 3 чип цалингийн ДАРАА ✓); 🚗-ийн
-                       🎨/⛽/⚙️ нь `afterPayment` тул ТУСДАА (доор) ✓
-                       ⚠️ Утга нь МАССИВ
-                       (`?attr_jobType=Бүтэн цагийн,Цагийн`),
-                    ⚠️ 🚗 АВТО-гийн 🏷️ `brand` / 🚙 `model` нь ЭНД ИРЭХГҮЙ — тэдгээр
-                       нь дээрх `CarPicker` (modal) руу шилжсэн тул `isAuto`
-                       үед жагсаалтаас ШҮҮГДЭНЭ (2 өөр UI БАЙХГҮЙ ✓)
-                    ⚠️ `lib/locationData.js → getAttrFilters('auto')` нь `brand`/
-                       `model`-ыг ХЭВЭЭР буцаана (форм, URL, DB нэг эх сурвалж ✓) —
-                       зөвхөн сайдбарын ДҮРСЛЭЛ энд шүүгдэнэ */}
-                {attrFilters
-                  // 🎛 2026-10-04 (37) · 🆕 2026-10-05 (42) · 🆕 2026-10-06 (17):
-                  //    `filterBar: true` талбар (💻 📺/⚙️/🧠/💾) нь үр дүнгийн
-                  //    дээрх ХЭВТЭЭ мөр (pill dropdown) руу явдаг тул сайдбарт
-                  //    ДАВХАРДАХГҮЙ ✓; 🔀 `afterPayment` талбар (🚗 🎨/⛽/⚙️) нь
-                  //    💳 «Төлбөрийн нөхцөл»-ийн ЯГ АРАА ТУСДАА render болдог
-                  //    (`afterPaymentAttrs` — доор) ⇒ энэ үндсэн жагсаалтад ч
-                  //    ДАВХАРДАХГҮЙ ✓ (`lib/locationData.js` — нэг эх сурвалж)
-                  .filter((f) => !f.filterBar)
-                  .filter((f) => !f.afterPayment)
-                  .filter((f) => !(isAuto && (f.key === 'brand' || f.key === 'model')))
-                  .map((f) => {
-                  /**
-                   * 🌈 БРЭНДЭЭС ХАМААРАХ СОНГОЛТУУД (`f.optionsFrom` = 'brand') —
-                   *    СОНГОСОН брэндийн загварууд; хоосон бол ③ (TextFilter) ✓
-                   *    ⚠️ Формтой ЯГ ИЖИЛ туслах (`lib/carModels.mjs → lookupMap`)
-                   */
-                  const depOptions = f.optionsFrom
-                    ? lookupMap(f.optionsMap, attrValue(f.optionsFrom))
-                    : [];
-                  /**
-                   * 🆕 2026-10-06 (18): ЗӨВХӨН ЧИП талбар (`f.chips`) нь ХУРААГДДАГ
-                   *    (`<select>`/текст/combobox/хүрээ нь жижиг тул хэвээр ✓) —
-                   *    5+ сонголттой чип блок анхдагчаар хаалттай, сонгосон утга
-                   *    байвал нээлттэй (`blockOpen` — нэг дүрэм ✓)
-                   */
-                  const chipActive = f.chips ? countAttrValues(attrArray(f.key)) : 0;
-                  const chipOptions = (f.options || []).length;
-                  return (
-                  <SideBlock
-                    key={f.key}
-                    label={f.label}
-                    collapseKey={f.key}
-                    collapsible={!!f.chips}
-                    open={!f.chips || blockOpen(f.key, chipOptions, chipActive)}
-                    onToggle={f.chips
-                      ? () => toggleSideBlock(f.key, chipOptions, chipActive)
-                      : undefined}
-                    count={chipActive}
-                  >
-                    {f.chips ? (
-                      f.multi ? (
-                        /* 🎨 ОЛОН СОНГОЛТТОЙ ЧИП (2026-10-03 (19); ✅ «Шинэ /
-                           Шинэвтэр / Хуучин» ч мөн адил — 2026-10-03 (21)) —
-                           хэрэглэгчийн хүсэлт: «Зар хайлт дээр Авто машин сонголт
-                           дээр Өнгө ийг Төлбөрийн нөхцөл шиг олон сонголттой
-                           болго» ба «хайлт дээр Шинэ / Шинэвтэр / Хуучин ийг бас
-                           💳 Төлбөрийн нөхцөл шиг олон сонголт хийх боломжтой болго».
-                           ⇒ ХЭВ нь «🛏 Өрөөний тоо» / «💳 Төлбөрийн нөхцөл»-тэй
-                           ЯГ ИЖИЛ: «N сонгосон» badge + хүрээтэй хайрцаг дотор
-                           `chip-toggle` чипүүд + «✕ Цуцлах» товч ✓
-                           ⚠️ Утга нь `attrs[f.key]` дотор МАССИВ (`['Хар',
-                           'Цагаан']` · `['Шинэ','Хуучин']`) → URL
-                           `?attr_color=Хар,Цагаан` / `?attr_condition=Шинэ,Хуучин`,
-                           DB `attrs->>color=in.(…)` (`lib/attrMultiFilter.mjs`) ✓
-                           ⚠️ `data-attr-filter` (CDP-ийн дэгээ) нь хайрцаг дээр
-                           — `scripts/cdp-notebook-specs.mjs`-ийн `[data-attr-filter]`
-                           тоо ХЭВЭЭР (1 талбар = 1 дэгээ ✓); нэмэлт
-                           `data-attr-multi="true"` нь олон сонголтыг илтгэнэ ✓ */
-                        attrChipsBlock(f)
-                      ) : (
-                      /* 🕒 НЭГ СОНГОЛТТОЙ ЧИП шүүлт (`f.chips` бий, `f.multi` БАЙХГҮЙ)
-                         — утга нь НЭГ (`?attr_jobType=Бүтэн цагийн`), идэвхтэй чип дээр
-                         дахин дарвал ЦУЦЛАГДАНА (`chip-toggle` хэв = «Хороо»/«Өрөө»)
-                         ⏳ 2026-10-03 (9)-д 💼 «Ажлын цаг» ЭНЭ салбараар явдаг байв —
-                            🆕 2026-10-05 (42)-д `multi: true` + `filterBar: true`
-                            нэмэгдэж үр дүнгийн дээрх `#filter-bar` pill болов ⇒
-                            бүх `chips` талбар `multi`-тай болсон (энэ салбар
-                            одоогоор хэрэглэгдэхгүй ч нэг сонголттой чип талбар
-                            нэмэгдвэл generically ажиллана ✓)
-                         ⚠️ `data-attr-filter` / `data-attr-value` нь CDP тестийн дэгээ ✓ */
-                      <div
-                        className="flex flex-wrap gap-1.5"
-                        data-attr-filter={f.key}
-                        role="group"
-                        aria-label={f.label}
-                      >
-                        {(f.options || []).map((o) => {
-                          const on = attrValue(f.key) === o;
-                          return (
-                            <button
-                              key={o}
-                              type="button"
-                              aria-pressed={on}
-                              data-attr-value={o}
-                              onClick={() => setAttr(f.key, on ? '' : o)}
-                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
-                            >
-                              {on && <span aria-hidden="true">✓</span>}
-                              {o}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      )
-                    ) : f.searchable ? (
-                      <SearchableSelect
-                        value={attrValue(f.key)}
-                        options={f.options}
-                        onChange={(v) => setAttr(f.key, v)}
-                        placeholder="Бүгд — бичиж хайна"
-                        ariaLabel={f.label}
-                      />
-                    ) : depOptions.length > 0 ? (
-                      // 🌈 Брэндийн загварууд (шүүлт горим — ⏎/сонголт/blur үед л
-                      //    хүчинтэй болно: `commitOnType` анхдагчаар `false` ✓)
-                      <SearchableSelect
-                        value={attrValue(f.key)}
-                        options={depOptions}
-                        onChange={(v) => setAttr(f.key, v)}
-                        placeholder={`${attrValue(f.optionsFrom)} загвар — хайна`}
-                        ariaLabel={f.label}
-                      />
-                    ) : f.range ? (
-                      // 📅 ОНЫ ХҮРЭЭ — 2026-09-30: чирдэг хүрээ ХАСАГДАВ (хэрэглэгчийн
-                      //    хүсэлт), одоо зөвхөн «Доод / Дээд» тоон оролт
-                      //    ⚠️ Утга нь `<key>_from` / `<key>_to` хэвээр
-                      //       (ж: `?attr_year_from=2015&attr_year_to=2020`)
-                      //    ⚠️ `mode="year"` — он нь цэгээр БҮЛЭГЛЭГДЭХГҮЙ
-                      //       («2.026» гэж харагдвал он биш, бутархай мэт ✗)
-                      <RangeInput
-                        label={f.label}
-                        unit="он"
-                        mode="year"
-                        bounds={yearBounds()}
-                        from={attrValue(`${f.key}_from`)}
-                        to={attrValue(`${f.key}_to`)}
-                        onChange={(a, b) => setAttrPair(f.key, a, b)}
-                      />
-                    ) : f.filterable ? (
-                      // ✍️ ЧӨЛӨӨТ ТЕКСТ шүүлт — ⚠️ 2026-10-01: 🚙 «Загвар» нь
-                      //    брэнд сонгосон үед дээшээ (🌈 combo) явдаг тул энд
-                      //    зөвхөн брэнд сонгоогүй/жагсаалтгүй үед үлдэнэ ✓
-                      <TextFilter
-                        value={attrValue(f.key)}
-                        onChange={(v) => setAttr(f.key, v)}
-                        placeholder={f.placeholder || 'Бичиж хайна'}
-                        ariaLabel={f.label}
-                      />
-                    ) : (
-                      <select
-                        className="form-select"
-                        aria-label={f.label}
-                        // 🖥 CDP тестийн ТОГТВОРТОЙ дэгээ (`scripts/cdp-notebook-specs.mjs`)
-                        //    — `data-room-filter`/`data-payment-value`-тэй ижил зарчим ✓
-                        data-attr-filter={f.key}
-                        value={attrValue(f.key)}
-                        onChange={(e) => setAttr(f.key, e.target.value)}
-                      >
-                        <option value="">Бүгд</option>
-                        {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                    )}
-                  </SideBlock>
-                  );
-                })}
-
-                {/* ⏳ ИСТОРИ: 🛏 «ӨРӨӨНИЙ ТОО» нь 2026-10-03 (4)-д ЭНД (сайдбарт,
-                    «Үнэ, ₮»-ний өмнө) байв → 2026-10-04 (38)-д сайдбараас ГАРЧ
-                    `#filter-bar` pill болов → 🆕 2026-10-06-д ЭРГЭЖ сайдбарт
-                    («📍 Байршил»-ийн ЯГ ДООР) орлоо (хэрэглэгчийн хүсэлт) ⇒
-                    UI нь ЭНД БИШ, ДЭЭР (Байршлын дараа) — 1 Л ГАЗАР ✓
-                    🔍 Хайх үг: data-room-filter, toggleRooms, ROOM_OPTIONS
-                    ⚠️ Утга/URL/DB/breadcrumb ХӨНДӨГДӨӨГҮЙ: `?rooms=1,3` →
-                       `lib/queries.js → applyRoomFilter`, «N сонгосон» +
-                       «✕ Цуцлах» ХЭВЭЭР (CDP: `scripts/cdp-rooms.mjs` ✓)
-                    ⚠️ `showRooms` — үл хөдлөх БА (төрөл сонгоогүй эсвэл өрөөтэй
-                       төрөл). Газар/Оффис/Үйлдвэрт өрөө гэж байхгүй ✗
-                    🗑 2026-10-03 (10): «Өрөөний тоо»-гийн ДООРХ «Өрөө» гэсэн
-                       ИЛҮҮЦЭЛ шошго ХАСАГДАВ (хэрэглэгчийн хүсэлт) ✓ */}
-
-                {/* ===== 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — UI нь ДООР (💰 Үнэ, ₮-ний дараа) =====
-                    ⏳ ИСТОРИ: 2026-10-03 (16)-д ЭНД сайдбарт ЧИП байв →
-                    2026-10-04 (37)-д `#filter-bar` pill болов → 🆕 2026-10-06-д
-                    ЭРГЭЖ сайдбарт (14: «📍 Байршил»-ийн доор; 15: «💰 Үнэ, ₮»-ний
-                       ДАРАА) орлоо (хэрэглэгчийн хүсэлт: «…Төлбөрийн нөхцөлийг
-                       Дэлгэрэнгүй хайлтын Байршил-ийн доор оруул») ⇒ 1 Л ГАЗАР ✓
-                    🔍 Хайх үг: data-payment-filter, togglePayments, PAYMENT_OPTIONS
-                    ⚠️ ЗӨВХӨН `real-estate` ба `auto` хэсэгт (`showPayments`)
-                       — ажил/компьютер/бараа/үйлчилгээнд лизинг гэж байхгүй ✓
-                    ⚠️ Утга (`filters.payments`), URL (`?payment=lease,cash`), DB
-                       (`lib/queries.js → applyPaymentFilter`, jsonb `cs` + OR)
-                       БҮГД ХӨНДӨГДӨӨГҮЙ ✓ («N сонгосон» + «✕ Цуцлах» ХЭВЭЭР) */}
-
-                {/* ===== ҮНЭ, ₮ — 2026-09-30: ЧИРДЭГ ХҮРЭЭ БА ТҮРГЭН ХҮРЭЭ ХАСАГДАВ =====
-                    ⚠️ Хэрэглэгчийн хүсэлт (1): «дээд доод үнэ, талбай дээр чирдэгээ
-                       больё, харин оруул байгаа тоог цэгээр тусгаарладаг
-                       болгоод өгчих» → слайдер/толгой/зам БҮГД хасагдав ✓
-                    ⚠️ Хэрэглэгчийн хүсэлт (2, 2026-09-30 (3)): «Орон сууц
-                       хайлтын Үнэ дээр эхлэх дуусах биш Дээд Доод гэе. Бас
-                       тэр доор нь санал болгоод байгаа тоог байхгүй болго»
-                       → ① шошго нь «Доод / Дээд» ② доорх 4 «түргэн хүрээ»
-                       товч (₮25 сая хүртэл …) БҮРЭН ХАСАГДАВ ✓
-                    ⚠️ Оруулж байгаа тоо нь ЦЭГЭЭР тусгаарлагдана:
-                       «3000000» → «3.000.000» (`lib/rangeFilter.mjs →
-                       formatGroupedInput`) — бичиж байхдаа ШУУД ✓
-                    ⚠️ Шүүлт нь ⏎ (Enter) эсвэл талбараас ГАРАХ үед л хүчинтэй
-                       болно (`components/RangeInput.jsx`) — эс бөгөөс
-                       «250000000» бичихэд 9 query явж DB дэмий ачаалагдана ✗
-                    ⚠️ ХИЛ нь ХЭСГЭЭС хамаарна: 🏠 үл хөдлөх 5 тэрбум, бусад
-                       500 сая (`priceBounds(isRealEstate)`) — энэ нь зөвхөн
-                       «хязгааргүй тал»-ыг тодорхойлоход хэрэглэгдэнэ,
-                       хэрэглэгчийн бичсэн утгыг ХЯЗГААРЛАХГҮЙ ✓ */}
-                {/* ⚠️ 2026-10-03 (9): ажлын зарт энэ блок ДЭЭР (attr шүүлтүүдийн
-                    өмнө) гарсан тул энд `!isJobs` үед л дүрслэгдэнэ ✓ */}
-                {!isJobs && priceSideBlock}
-
-                {/* ===== 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — НЭГ ДАРЖ ОЛОН СОНГОЛТ (2026-10-03) =====
-                    🆕 (15): «💰 Үнэ, ₮»-ний ЯГ ДАРАА (хэрэглэгчийн хүсэлт:
-                    «Автомашин дээр Үнийн дараа оруулах») ⇒ сайдбарын дараалал:
-                    «📍 Байршил» → «🛏 Өрөөний тоо» → [attr шүүлтүүд] →
-                    «💰 Үнэ, ₮» → «💳 Төлбөрийн нөхцөл» → «📐 Талбай, м²» ✓
-                    (⏳ (16): «Өрөөний тоо»-ны дараа сайдбарт; (37): `#filter-bar`
-                       pill; 2026-10-06 (14): «📍 Байршил»-ийн доор байв — ОДОО
-                       «💰 Үнэ, ₮»-ний дараа ✓)
-                    ⚠️ ЗӨВХӨН `real-estate` ба `auto` хэсэгт (`showPayments`) —
-                       ажил/компьютер/бараа/үйлчилгээнд лизинг гэж байхгүй ✓
-                    ⚠️ Шүүлт нь `?payment=lease,cash` → `lib/queries.js` →
-                       `applyPaymentFilter()` (jsonb `cs` + OR) — UI-ийн өөрчлөлт
-                       нь URL/DB-д ОГТ хүрэхгүй ✓
-                    ⚠️ `data-payment-filter` / `data-payment-value` нь
-                       `scripts/cdp-payments.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓
-                    🆕 2026-10-06 (17): ЭНЭ блокийн ЯГ АРАА 🚗 🎨 Өнгө · ⛽ Түлш ·
-                       ⚙️ Хурдны хайрцаг гарна (`afterPaymentAttrs`) — доор ✓
-                    🆕 2026-10-06 (18): 💳 нь 4 сонголттой (босгоос ЦӨӨН) тул
-                       анхдагчаар НЭЭЛТТЭЙ ч, «Дэлгэрэнгүй хайлт»-ийн товчоор
-                       (эсвэл гарчиг дээр дарж) хураагдаж болно ✓ */}
-                {showPayments && (
-                  <SideBlock
-                    label="Төлбөрийн нөхцөл"
-                    collapseKey="payments"
-                    collapsible
-                    open={blockOpen('payments', PAYMENT_OPTIONS.length, countPayments(filters.payments))}
-                    onToggle={() => toggleSideBlock('payments', PAYMENT_OPTIONS.length, countPayments(filters.payments))}
-                    count={countPayments(filters.payments)}
-                  >
-                    <div
-                      className="rounded-lg border border-gray-200 bg-gray-50/70 p-2"
-                      data-payment-filter
-                      role="group"
-                      aria-label="Төлбөрийн нөхцөл"
-                    >
-                      <div className="flex flex-wrap gap-1.5">
-                        {PAYMENT_OPTIONS.map((o) => {
-                          const on = filters.payments.includes(o.value);
-                          return (
-                            <button
-                              key={o.value}
-                              type="button"
-                              aria-pressed={on}
-                              data-payment-value={o.value}
-                              onClick={() => togglePayments(o.value)}
-                              className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
-                            >
-                              {on && <span aria-hidden="true">✓</span>}
-                              {o.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    {countPayments(filters.payments) > 0 && (
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[13px] font-semibold text-gray-600">
-                          {countPayments(filters.payments)} сонгосон
-                        </span>
-                        <button
-                          type="button"
-                          onClick={clearPayments}
-                          className="text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
-                        >
-                          ✕ Цуцлах
-                        </button>
-                      </div>
-                    )}
-                  </SideBlock>
-                )}
-
-                {/* ===== 🔄 СОЛИНО — ☑ ЧЕКБОКС (2026-10-09 (82) → ✏️ (83)) =====
-                    🆕 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (82): «Үнэ тохирно Гэсэн сонголтын баруун
-                    талд, Солино гээд "Үнэ тохирно" гэсэнтэй адилхан checkbox хийж
-                    өгөөч. Үүнийг автомашин болон Спорт бараа -> Дартс хэсэгт
-                    оруулж өгөө. Ингэхдээ энэ 2-ийн зар нэмэх болон, зөвхөн
-                    энэ 2-ийн хайлт дээр оруулж өгөөч».
-                    ✏️ (83) ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Солино хайлт ганц сонголт байгаа
-                    тул, зар оруулдаг хэсэгтэйгээ адилхан checkbox болго» ⇒
-                    ⏳ (82)-ын ЧИП (`<button class="chip-toggle">` + `aria-pressed`
-                    + «✕ Цуцлах» мөр) БҮРЭН ХАСАГДАВ — ОДОО форм дээрх ☑-тэй
-                    ЯГ ИЖИЛ `<input type="checkbox" class="h-4 w-4 accent-primary">`
-                    + шошго `SWAP_LABEL` (нэг эх сурвалж ✓)
-                    ⚠️ ШАЛТГААН: хайлт нь ГАНЦ л утгатай (солино ЭСВЭЛ үгүй) тул
-                       чип/«✕ Цуцлах» нь илүүц — checkbox өөрөө цуцална ✓
-                    ⚠️ Утга (`filters.swap`) ХӨНДӨӨГДӨӨГҮЙ: `toggleSwap` →
-                       `toggleSwapValue` (BOOLEAN, `lib/swapFilter.mjs`) ⇒ URL
-                       (`?swap=1`) ба DB (`attrs->>swap=eq.yes`) ЯГ ХЭВЭЭР ✓
-                    ⚠️ БАЙРЛАЛ: «💳 Төлбөрийн нөхцөл»-ийн ЯГ ДАРАА ⇒ 🚗 дээр
-                       «💰 Үнэ, ₮ → 💳 Төлбөрийн нөхцөл → 🔄 Солино → 🎨 Өнгө…»,
-                       ⚽ «Дартс» дээр «💰 Үнэ, ₮ → 🔄 Солино» ✓ (төлбөрийн
-                       нөхцөл тэнд байхгүй тул `showPayments` нь `false`)
-                    ⚠️ Мөр нь `.divide-y`-гийн ШУУД хүүхэд (`py-4` — `SideBlock`-ийн
-                       хэмнэлтэй ижил ✓) тул ялгагч зураасаа авна ✓
-                    ⚠️ `data-swap-filter` (мөр) / `data-swap-value` (☑) нь
-                       `scripts/cdp-swap.mjs`-ийн дэгээ — УСТГАХГҮЙ ✓ */}
-                {showSwap && (
-                  <div className="py-4" data-swap-filter role="group" aria-label={SWAP_LABEL}>
-                    <label className="flex w-fit cursor-pointer">
-                      <span className="flex w-fit items-center gap-2">
-                        <input
-                          type="checkbox"
-                          data-swap-value="1"
-                          checked={!!filters.swap}
-                          onChange={toggleSwap}
-                          className="h-4 w-4 shrink-0 accent-primary"
-                        />
-                        <span className="text-[15px] font-normal text-gray-800">{SWAP_LABEL}</span>
-                      </span>
-                    </label>
-                  </div>
-                )}
-
-                {/* ===== 🔀 2026-10-06 (17): «💳 ТӨЛБӨРИЙН НӨХЦӨЛ»-ИЙН ДАРААХ ШҮҮЛТҮҮД =====
-                    🆕 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Өнгө, Түлш, Хурдны хайрцаг
-                    Дэлгэрэнгүй хайлтын хэсэгт Төлбөрийн нөхцөлийн ардаас оруул».
-                    ⚠️ Аль талбар энд гарахыг `lib/locationData.js`-ийн
-                       `afterPayment: <эрэмбэ>` туг л шийднэ (хатуу жагсаалт
-                       БАЙХГҮЙ ✓) — ОДОО 🚗 🎨 Өнгө (1) → ⛽ Түлш (2) →
-                       ⚙️ Хурдны хайрцаг (3) ✓
-                    ⚠️ ХЭВ нь сайдбарын бусад чип блоктой ЯГ ИЖИЛ
-                       (`attrChipsBlock` — нэг газар бичигдэнэ ✓): хүрээтэй
-                       хайрцаг + `chip-toggle` чипүүд + «N сонгосон» badge +
-                       «✕ Цуцлах»; дэгээ (`data-attr-filter` / `data-attr-multi` /
-                       `data-attr-value`) ХЭВЭЭР (CDP ✓)
-                    ⚠️ Утга/URL/DB ХӨНДӨГДӨӨГҮЙ: `?attr_color=Хар,Цагаан` →
-                       `attrs->>color=in.(…)` (`lib/attrMultiFilter.mjs` ✓);
-                       🏠 үл хөдлөх · 💼 ажил · 💻 компьютер зэрэгт `afterPayment`
-                       талбар БАЙХГҮЙ тул энэ блок тэнд ОГТ ГАРАХГҮЙ ✓ */}
-                {afterPaymentAttrs.map((f) => (
-                  <SideBlock
-                    key={f.key}
-                    label={f.label}
-                    collapseKey={f.key}
-                    collapsible
-                    open={blockOpen(f.key, (f.options || []).length, countAttrValues(attrArray(f.key)))}
-                    onToggle={() => toggleSideBlock(
-                      f.key, (f.options || []).length, countAttrValues(attrArray(f.key)),
-                    )}
-                    count={countAttrValues(attrArray(f.key))}
-                  >
-                    {attrChipsBlock(f)}
-                  </SideBlock>
-                ))}
-
-                {/* ===== ТАЛБАЙ, м² — 2026-09-30: ЧИРДЭГ ХҮРЭЭ ХАСАГДАВ =====
-                    ⚠️ «Талбай» нь ЗӨВХӨН үл хөдлөх хэсэгт (0016) — автомашин/
-                       ажил/компьютер/бараа/үйлчилгээнд талбай гэдэг ойлголт байхгүй.
-                    ⚠️ Хил (0–600 м²) нь зөвхөн «хязгааргүй тал»-ыг
-                       тодорхойлоход — хэрэглэгч түүнээс ТОМ утга бичихэд
-                       ЯМАР Ч саад байхгүй ✓
-                    ⚠️ `mode="decimal"` — «75,5» монгол бутархайг зөвшөөрнө
-                       (`lib/queries.js → toNumber`-тай ижил дүрэм ✓); мөнгөн
-                       бүлэглэлт нь ЦЭГЭЭР: «1.234,5» ✓ */}
-                {isRealEstate && (
-                <SideBlock label="Талбай, м²">
-                  <RangeInput
-                    label="Талбай"
-                    unit="м²"
-                    mode="decimal"
-                    bounds={AREA_BOUNDS}
-                    from={filters.minArea}
-                    to={filters.maxArea}
-                    onChange={(a, b) => { setF('minArea', a); setF('maxArea', b); }}
-                  />
-                </SideBlock>
-                )}
-
-                {/* ===== 🏢📅 ОРОН СУУЦНЫ НЭМЭЛТ ХҮРЭЭ (2026-10-04) =====
-                    Хэрэглэгчийн хүсэлт: «орон сууц дээр эдгээр шүүлтийг
-                    оруулаарай» (зурагт: Барилгын давхар · Хэдэн давхарт ·
-                    Ашиглалтанд орсон он).
-                    ⚠️ Хэв нь ҮНЭ/ТАЛБАЙТАЙ ЯГ ИЖИЛ — `RangeInput` («Доод /
-                       Дээд» хоёр тоон оролт, ⏎/blur-д л commit). ⚠️ Зурган дээрх
-                       «Эхлэх / Дуусах» DROPDOWN БИШ — хэрэглэгч текст оролтыг
-                       сонгосон ✓ (`scripts/test-search.mjs` нь RangeInput дотор
-                       «Эхлэх/Дуусах» үгийг ХОРИГЛОДОГ).
-                    ⚠️ Утгууд нь `attrs` (jsonb) БИШ, `0003`-ийн ЖИНХЭНЭ багана →
-                       URL `?minTotalFloors=3&maxFloor=20&minBuildYear=2010`,
-                       DB `total_floors` / `floor` / `build_year` `.gte()/.lte()`
-                       (`lib/queries.js`) — DB MIGRATION ШААРДЛАГАГҮЙ ✓
-                    ⚠️ Хил: давхар 1…150 (`FLOOR_BOUNDS`), он 1980…одоо
-                       (`buildYearLimit`) — зөвхөн «хязгааргүй тал» ба уншигдах
-                       шошгыг бодоход, бичсэн утгыг ХЯЗГААРЛАХГҮЙ ✓
-                    ⚠️ `data-range-filter` дэгээ нь label-аас үүснэ (гурвуулаа
-                       ЯЛГААТАЙ нэр — CDP/тестэд тогтвортой ✓)
-                    ⚠️ Харагдац нь `showApartmentRanges` — 🏠 үл хөдлөх БА төрөл
-                       сонгоогүй/«Орон сууц» үед л (`showRooms`-той ижил) ✓ */}
-                {showApartmentRanges && (
-                  <>
-                    <SideBlock label="Барилгын давхар">
-                      <RangeInput
-                        label="Барилгын давхар"
-                        unit="давхар"
-                        mode="int"
-                        bounds={FLOOR_BOUNDS}
-                        from={filters.minTotalFloors}
-                        to={filters.maxTotalFloors}
-                        onChange={(a, b) => { setF('minTotalFloors', a); setF('maxTotalFloors', b); }}
-                      />
-                    </SideBlock>
-                    <SideBlock label="Хэдэн давхарт">
-                      <RangeInput
-                        label="Хэдэн давхарт"
-                        unit="давхар"
-                        mode="int"
-                        bounds={FLOOR_BOUNDS}
-                        from={filters.minFloor}
-                        to={filters.maxFloor}
-                        onChange={(a, b) => { setF('minFloor', a); setF('maxFloor', b); }}
-                      />
-                    </SideBlock>
-                    <SideBlock label="Ашиглалтанд орсон он">
-                      <RangeInput
-                        label="Ашиглалтанд орсон он"
-                        unit="он"
-                        mode="year"
-                        bounds={buildYearLimit}
-                        from={filters.minBuildYear}
-                        to={filters.maxBuildYear}
-                        onChange={(a, b) => { setF('minBuildYear', a); setF('maxBuildYear', b); }}
-                      />
-                    </SideBlock>
-                  </>
-                )}
-
-              </div>
-
-              {/* Доод хэсэг — жишиг сайтын «N зар харуулах» хэсэг.
-                  ⚠️ Шүүлт нь амьд (real-time) хэрэгждэг тул энэ товч нь зөвхөн
-                     мобайл дээрх sheet-ийг хаана — жишиг сайттай ижил байрлал.
-                  🆕 2026-10-04 (26): `sticky bottom-0` (+`bg-white`) — панель
-                     дотроо гүйлгэгдэх үед (дээрх `lg:overflow-y-auto`) энэ мөр
-                     (🔍 Хайх + «N зар харуулах» + «↺ Хайлтыг цэвэрлэх») ҮРГЭЛЖ
-                     доор харагдана ✓ (товч хүрэхгүй байсан алдааг зассан) */}
-              <div className="sticky bottom-0 z-10 rounded-b-xl border-t border-gray-200 bg-gray-100 px-4 py-3.5">
-                {/* ⚠️ 2026-09-27: шүүлт нь АМЬД (real-time) ✓ — товч нь зөвхөн
-                    ҮР ДҮН рүү гүйлгэж хүргэнэ (мобайлд хэрэгтэй ✓).
-                    Урьд нь мобайл sheet-ийг ХААДАГ байсан ✗ — одоо панель
-                    үргэлж нээлттэй тул хаах шаардлагагүй ✓ */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const el = document.getElementById('listing-results');
-                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }}
-                  className="btn btn-primary btn-sm w-full"
-                >
-                  Хайх
-                </button>
-                <p className="mt-2 text-center text-[13px] text-gray-500">
-                  {loadError
-                    ? 'холболтын алдаа'
-                    : listings !== null
-                      // 📄 НИЙТ тоо (бүх хуудасны) — зөвхөн энэ хуудны биш ✓
-                      ? `${formatCount(total ?? listings.length)} зар харуулах`
-                      : 'ачаалж байна…'}
-                </p>
-                {hasFilters && (
-                  <button
-                    type="button"
-                    onClick={resetAll}
-                    className="mt-1.5 w-full text-center text-[13px] font-semibold text-primary hover:underline"
-                  >
-                    ↺ Хайлтыг цэвэрлэх
-                  </button>
-                )}
-              </div>
-            </div>
-          </aside>
-          </div>
-          )}
-
-          {/* ================= ҮР ДҮН (баруун багана) =================
-              ⚠️ `id="listing-results"` — «🔍 Хайх» товч (панелийн доод хэсэг)
-                 энэ рүү SMOOTH гүйлгэнэ ✓ (мобайлд шүүлт тавьсны дараа
-                 үр дүнгээ шууд харах боломж ✓) */}
+        <div className="flex flex-col gap-6">
+          {/* ================= ҮР ДҮН (бүтэн өргөн) =================
+              🆕 2026-10-10 (89): ЗҮҮН БАГАНА (280px сайдбар) БҮРЭН ХАСАГДАВ —
+                 «Дэлгэрэнгүй хайлт» нь одоо үр дүнгийн дээрх ШҮҮЛТИЙН МӨР
+                 (pill) + `Шүүлт` товчоор нээгдэх панель болов ⇒ үр дүн
+                 бүтэн өргөнөөр харагдана ✓ (хэрэглэгчийн хүсэлт)
+              ⚠️ `id="listing-results"` — `#filter-bar`-ийн Шүүлт/Эрэмбэлэх
+                 товчнуудын гүйлгэх зам ХЭВЭЭР ✓
+              ⚠️ `showAdvancedFilters` (= `!noSection`) — «Бүх зар» (нүүр хуудас)
+                 дээр мөр БАЙХГҮЙ ✗, хэсэг/дэд төрөл дээр харагдана ✓ */}
           <div id="listing-results" className="min-w-0 flex-1">
             {/* ГАРЧИГ + НИЙТ ТОО — жишиг сайт: «Өрөө байр зарна 16,345»
                 🆕 2026-10-06: баруун талын контролууд (🔀 Эрэмбэлэх · 🗺 Харах
@@ -3964,92 +3116,397 @@ export default function HomeClient() {
 
             </div>
 
-            {/* 🔖 ХАДГАЛСАН ХАЙЛТ (2026-10-06, жишиг сайт шиг) — одоогийн
-                шүүлтээ хадгалаад «Таалагдсан хайлтууд»-аас эргэн харна ✓
-                ⚠️ Энэ нь ШҮҮЛТ БИШ (үр дүн өөрчлөгдөхгүй) тул чипүүдийн
-                   тоонд ОРОХГҮЙ; CDP/тестийн тогтвортой дэгээ:
-                   `[data-save-search]` (товчны бичиг: «Хайлтыг хадгалах» ↔
-                   «✓ Хадгалагдсан», `aria-pressed`) ✓
-                ⚠️ жишиг сайт шиг БҮТЭН ӨРГӨНТЭЙ БАР (хайлтын үр дүнгийн дээд
-                   талд) — hover-т зөөлөн бараан болно ✓
-                ⚠️ Хадгалах утга байхгүй (зөвхөн «Бүх зар») бол товч
-                   ОГТ ГАРАХГҮЙ — `canSaveCurrentSearch` ✓ */}
-            {canSaveCurrentSearch && (
-              <button
-                type="button"
-                data-save-search
-                aria-pressed={currentSearchSaved}
-                onClick={onSaveSearch}
-                disabled={currentSearchSaved}
-                title={currentSearchSaved ? 'Энэ хайлт хадгалагдсан байна' : 'Одоогийн хайлтыг хадгалах'}
-                className={`mb-3 flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-[14px] font-semibold transition-all duration-150 ease-out ${
-                  currentSearchSaved
-                    ? 'cursor-default border-emerald-200 bg-emerald-50 text-emerald-700'
-                    : 'border-gray-200 bg-gray-100 text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900'
-                }`}
-              >
-                <span aria-hidden="true">{currentSearchSaved ? '♥' : '♡'}</span>
-                {currentSearchSaved ? '✓ Хадгалагдсан' : 'Хайлтыг хадгалах'}
-              </button>
-            )}
-
-            {/* ===== 🎛🍽 ҮР ДҮҮНГИЙН ДЭЭРХ ХЭВТЭЭ ШҮҮЛТИЙН МӨР (eBay-ийн «Color ⌄») =====
-                🆕 2026-10-04 (37): хэрэглэгчийн хүсэлт: «Түлш, Хурдны хайрцаг,
-                Төлбөрийн нөхцөл, Өнгө эдгээрийг ebay-ийн дээр байгаа Color шиг
-                болгоод өг, Төлбөрийн нөхцөл ба Өнгө олон сонголт хийх боломжтой
-                байх» ⇒ ⛽ Түлш · ⚙️ Хурдны хайрцаг · 🎨 Өнгө (албан ёсны «auto»
-                хэсэг) ба 💳 Төлбөрийн нөхцөл нь сайдбараас ГАРЧ, ЭНД «Color ⌄»
-                шиг pill товч болж, дарахад доошоо хөвөг панель (checkbox мөр)
-                гарна ✓ — бүгд ОЛОН СОНГОЛТТОЙ (OR) ХЭВЭЭР.
-                🆕 2026-10-05 (42): 💼-ийн 🕒 Ажлын цаг · 📊 Туршлага · 📈
-                Мэргэжлийн түвшин ч («фильтр задарсан sidebar биш, Өрөөний тоо/
-                Төлбөрийн нөхцөл шиг хайдаг байх» гэсэн хүсэлт) мөн ЭНЭ МӨРӨНД
-                pill болж нэгдэв — `lib/locationData.js`-ийн `filterBar: true`
-                туг л шийднэ ✓ (хатуу жагсаалт байхгүй).
-                ⚠️ `#filter-bar` нь албан ёсны тогтвортой дэгээ (CDP —
-                `scripts/cdp-notebook-specs.mjs` / `cdp-payments.mjs` /
-                `cdp-job-chips.mjs`).
-                ⚠️ Утга/URL/DB ХӨНДӨГДӨӨГҮЙ: `?attr_color=Хар,Цагаан`,
-                   `?attr_transmission=Автомат,Механик`, `?attr_fuel=Хайбрид`,
-                   `?attr_jobType=Бүтэн цагийн,Цагийн`, `?payment=lease,cash` →
-                   `lib/queries.js` (`in.(…)` / `cs.{…}`) ✓
-                🆕 2026-10-05 (43): 💻-ийн 📺 Дэлгэц · ⚙️ CPU · 🧠 RAM · 💾 Хард ба
-                ✅ «Төлөв» (⏳ хуучин нэр «Шинэ / Шинэвтэр / Хуучин») ч мөн
-                ЭНЭ МӨРӨНД pill болж нэгдсэн байв.
-                🆕 2026-10-06 (17): ⚠️ ОДОО ЭНЭ МӨРӨНД ЗӨВХӨН 💻-ийн 📺/⚙️/🧠/💾
-                4 pill ҮЛДЭВ — хэрэглэгчийн хүсэлтээр 🚗 🎨/⛽/⚙️ (💳 Төлбөрийн
-                нөхцөлийн АРАА), 💼 🕒/📊/📈 ба ✅ «Төлөв» нь САЙДБАРТ буцсан ✓
-                (мөр нь ⏳ (42)/(43)-д «сайдбарт attr 0» байснаа ОДОО урвуу:
-                4 pill л үлдэж, бусад нь сайдбарт ✓ — `filterBar` туг л шийднэ ✓)
-                ⚠️ Pill-ийн шошго нь `f.label` — «Төлөв» гэж ЛИБЭЭС ирнэ ✓ */}
-            {hasFilterBar && (
-              <div id="filter-bar" data-filter-bar className="mb-3 flex flex-wrap items-center gap-2">
-                {filterBarAttrs.map((f) => (
+            {/* ===== 🎛 2026-10-10 (89): ШҮҮЛТИЙН МӨР (PILL) + «Шүүлт» ПАНЕЛЬ =====
+                ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «…Шүүлт гэсэн товчлуур оруулж өгнө үү
+                (All Filter). Үүнийг дархад Дэлгэрэнгүй хайлт гарч ирнэ …
+                Дээд Доод хязгаар зааж байгаагаас бусад бүх хайлтыг энэ мөрөнд
+                … хайлтын товчлуур шиг болгож оруул. сонголттой хэсгүүдыг нь
+                checkbox болгоорой».
+                ⚠️ Байнгын САЙДБАР (`<aside id="advanced-filters">`) ХАСАГДАВ —
+                   оронд нь ЭНЭ мөр (бүх шүүлт pill) ба «Шүүлт» товчоор нээгдэх
+                   панель (зөвхөн Дээд/Доод ХЯЗГААРЫН шүүлтүүд: Үнэ · Талбай ·
+                   Барилгын давхар · Хэдэн давхарт · Ашиглалтанд орсон он) ✓
+                ⚠️ Утга / URL / DB / CDP дэгээ БҮГД ХӨНДӨӨГДӨӨГҮЙ ✓ */}
+            {showAdvancedFilters && (
+              <>
+                <div id="filter-bar" data-filter-bar className="mb-3 flex flex-wrap items-center gap-2">
+                  {/* 📍 БАЙРШИЛ — pill (⌄ панель доторх товчоор пикер нээгдэнэ) */}
                   <FilterPill
-                    key={f.key}
-                    testKey={f.key}
-                    label={f.label}
-                    count={countAttrValues(attrArray(f.key))}
-                    onClear={() => clearAttrMulti(f.key)}
+                    label={locationLabel}
+                    count={filters.city ? 1 : 0}
+                    onClear={() => applyLocation({ city: '', districts: [], khoroos: [] })}
+                    testKey="location"
                   >
-                    {/* 🆕 2026-10-06 (17): хайрцаг нь НЭГ газар бичигддэг
-                        (`attrChipBox` — сайдбарын чип блоктой ЯГ ИЖИЛ ✓) */}
-                    {attrChipBox(f)}
+                    <button
+                      type="button"
+                      data-sidebar-location
+                      aria-haspopup="dialog"
+                      onClick={() => setLocOpen(true)}
+                      className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-[14px] font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50"
+                    >
+                      <PinIcon className="h-[18px] w-[18px] shrink-0" />
+                      <span className="min-w-0 flex-1 truncate">{locationLabel}</span>
+                      <ChevronDownIcon className="h-4 w-4 shrink-0 opacity-60" />
+                    </button>
+                    {filters.city && (
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] font-semibold text-gray-700">
+                          {filters.city}
+                        </span>
+                        {filters.districts.map((d) => (
+                          <span key={`d-${d}`} data-location-pill="district" className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] text-gray-600">
+                            {d}
+                          </span>
+                        ))}
+                        {filters.khoroos.map((k) => (
+                          <span key={`k-${k}`} data-location-pill="khoroo" className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] text-gray-600">
+                            {k}
+                          </span>
+                        ))}
+                        <button
+                          type="button"
+                          data-location-clear
+                          onClick={() => applyLocation({ city: '', districts: [], khoroos: [] })}
+                          className="text-[13px] font-semibold text-gray-500 underline-offset-2 hover:text-primary hover:underline"
+                        >
+                          ✕ Цэвэрлэх
+                        </button>
+                      </div>
+                    )}
                   </FilterPill>
-                ))}
-                {/* ⏳ ИСТОРИ: 🛏 «Өрөөний тоо» (2026-10-04 (38)) ба 💳 «Төлбөрийн
-                    нөхцөл» (2026-10-04 (37)) нь ЭНД `#filter-bar` pill байв —
-                    🆕 2026-10-06-д хоёулаа САЙДБАРТ ЭРГЭЖ ОРОВ: 🛏 нь «📍 Байршил»-ийн
-                       доор, 💳 нь 🆕 (15)-д «💰 Үнэ, ₮»-ний дараа болов
-                       (хэрэглэгчийн хүсэлт:
-                       «Үл хөдлөхийн хайлт дээр байгаа Өрөөний тоо, Төлбөрийн
-                       нөхцөлийг Дэлгэрэнгүй хайлтын Байршил-ийн доор оруул»)
-                    ⇒ `#filter-bar`-т ЗӨВХӨН `filterBar: true` тугтай attr
-                       pill-үүд үлдэнэ (2 ӨӨР UI БАЙХГҮЙ ✓)
-                    ⚠️ Утга/URL/DB БҮГД ХӨНДӨГДӨӨГҮЙ: `?rooms=1,3` →
-                       `lib/queries.js → applyRoomFilter`, `?payment=lease,cash`
-                       → `applyPaymentFilter` (jsonb `cs` + OR) ✓ */}
-              </div>
+
+                  {/* 🛏 ӨРӨӨНИЙ ТОО — ☑ checkbox (олон сонголт) */}
+                  {showRooms && (
+                    <FilterPill
+                      label="Өрөөний тоо"
+                      count={filters.rooms.length}
+                      onClear={clearRooms}
+                      testKey="rooms"
+                    >
+                      <div
+                        className="flex flex-col gap-0.5 rounded-lg border border-gray-200 bg-gray-50/70 p-2"
+                        data-room-filter
+                        role="group"
+                        aria-label="Өрөөний тоо"
+                      >
+                        {ROOM_OPTIONS.map((r) => (
+                          <FilterOption
+                            key={r.value}
+                            label={r.label}
+                            checked={filters.rooms.includes(r.value)}
+                            onToggle={() => toggleRooms(r.value)}
+                            hook="data-room-value"
+                            value={r.value}
+                          />
+                        ))}
+                      </div>
+                    </FilterPill>
+                  )}
+
+                  {/* 🏷️🚙 ҮЙЛДВЭРЛЭГЧ, ЗАГВАР — pill (⌄ панель доторх товчоор пикер) */}
+                  {isAuto && (
+                    <FilterPill
+                      label={carLabel}
+                      count={(carBrand ? 1 : 0) + carModels.length}
+                      onClear={() => applyCar({ brand: '', model: [] })}
+                      testKey="car"
+                    >
+                      <button
+                        type="button"
+                        data-sidebar-car
+                        aria-haspopup="dialog"
+                        onClick={() => setCarOpen(true)}
+                        className="flex w-full items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-left text-[14px] font-semibold text-gray-700 transition hover:border-gray-300 hover:bg-gray-50"
+                      >
+                        <span className="min-w-0 flex-1 truncate">{carLabel}</span>
+                        <ChevronDownIcon className="h-4 w-4 shrink-0 opacity-60" />
+                      </button>
+                      {(carBrand || carModels.length > 0) && (
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          {carBrand && (
+                            <span data-car-pill="brand" className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] font-semibold text-gray-700">
+                              {carBrand}
+                            </span>
+                          )}
+                          {carModels.length > 0 && (
+                            <span data-car-pill="model" data-car-model-count={carModels.length} className="rounded-full bg-gray-100 px-2 py-0.5 text-[12px] text-gray-600">
+                              {attrListFilterLabel(carModels, 'загвар')}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            data-car-clear
+                            onClick={() => applyCar({ brand: '', model: [] })}
+                            className="text-[13px] font-semibold text-gray-500 hover:text-primary hover:underline"
+                          >
+                            ✕ Цэвэрлэх
+                          </button>
+                        </div>
+                      )}
+                    </FilterPill>
+                  )}
+
+                  {/* 🔀 ATTR ШҮҮЛТҮҮД — хязгаар БИШ нь pill (⌄ дотор ☑ / select / текст) */}
+                  {attrFilters
+                    .filter((f) => !f.range)
+                    .filter((f) => !(isAuto && (f.key === 'brand' || f.key === 'model')))
+                    .map((f) => {
+                      const depOptions = f.optionsFrom
+                        ? lookupMap(f.optionsMap, attrValue(f.optionsFrom))
+                        : [];
+                      const activeCount = f.chips ? countAttrValues(attrArray(f.key)) : (attrValue(f.key) ? 1 : 0);
+                      return (
+                        <FilterPill
+                          key={f.key}
+                          testKey={f.key}
+                          label={f.label}
+                          count={activeCount}
+                          onClear={() => (f.chips ? clearAttrMulti(f.key) : setAttr(f.key, ''))}
+                        >
+                          {f.chips ? (
+                            <div
+                              className="flex flex-col gap-0.5 rounded-lg border border-gray-200 bg-gray-50/70 p-2"
+                              data-attr-filter={f.key}
+                              data-attr-multi="true"
+                              role="group"
+                              aria-label={f.label}
+                            >
+                              {(f.options || []).map((o) => (
+                                <FilterOption
+                                  key={o}
+                                  label={o}
+                                  checked={attrArray(f.key).includes(o)}
+                                  onToggle={() => toggleAttrMulti(f.key, o)}
+                                  hook="data-attr-value"
+                                  value={o}
+                                />
+                              ))}
+                            </div>
+                          ) : f.optionsFrom ? (
+                            <SearchableSelect
+                              value={attrValue(f.key)}
+                              options={depOptions}
+                              onChange={(v) => setAttr(f.key, v)}
+                              placeholder={`${attrValue(f.optionsFrom)} загвар — хайна`}
+                              ariaLabel={f.label}
+                            />
+                          ) : f.filterable ? (
+                            <TextFilter
+                              value={attrValue(f.key)}
+                              onChange={(v) => setAttr(f.key, v)}
+                              placeholder={f.placeholder || 'Бичиж хайна'}
+                              ariaLabel={f.label}
+                            />
+                          ) : (
+                            <select
+                              className="form-select"
+                              aria-label={f.label}
+                              data-attr-filter={f.key}
+                              value={attrValue(f.key)}
+                              onChange={(e) => setAttr(f.key, e.target.value)}
+                            >
+                              <option value="">Бүгд</option>
+                              {f.options.map((o) => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          )}
+                        </FilterPill>
+                      );
+                    })}
+
+
+                  {/* 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — ☑ checkbox (олон сонголт) */}
+                  {showPayments && (
+                    <FilterPill
+                      label="Төлбөрийн нөхцөл"
+                      count={countPayments(filters.payments)}
+                      onClear={clearPayments}
+                      testKey="payments"
+                    >
+                      <div
+                        className="flex flex-col gap-0.5 rounded-lg border border-gray-200 bg-gray-50/70 p-2"
+                        data-payment-filter
+                        role="group"
+                        aria-label="Төлбөрийн нөхцөл"
+                      >
+                        {PAYMENT_OPTIONS.map((o) => (
+                          <FilterOption
+                            key={o.value}
+                            label={o.label}
+                            checked={filters.payments.includes(o.value)}
+                            onToggle={() => togglePayments(o.value)}
+                            hook="data-payment-value"
+                            value={o.value}
+                          />
+                        ))}
+                      </div>
+                    </FilterPill>
+                  )}
+
+                  {/* 🔄 СОЛИНО — ганц ☑ (автомашин · Спорт бараа → Дартс) */}
+                  {showSwap && (
+                    <FilterPill
+                      label={SWAP_LABEL}
+                      count={filters.swap ? 1 : 0}
+                      onClear={() => toggleSwap()}
+                      testKey="swap"
+                    >
+                      <div data-swap-filter role="group" aria-label={SWAP_LABEL}>
+                        <label className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-[14px] text-gray-700 hover:bg-gray-100">
+                          <input
+                            type="checkbox"
+                            data-swap-value="1"
+                            checked={!!filters.swap}
+                            onChange={toggleSwap}
+                            className="h-4 w-4 shrink-0 accent-primary"
+                          />
+                          <span>{SWAP_LABEL}</span>
+                        </label>
+                      </div>
+                    </FilterPill>
+                  )}
+
+                  {/* 🎛 ШҮҮЛТ (All Filters) — Дээд/Доод хязгаарын панелийг нээнэ */}
+                  <button
+                    type="button"
+                    data-all-filters
+                    aria-pressed={advOpen}
+                    aria-expanded={advOpen}
+                    onClick={() => setAdvOpen((v) => !v)}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[14px] font-semibold transition ${
+                      advOpen
+                        ? 'border-primary bg-primary-light text-primary'
+                        : 'border-gray-300 bg-white text-gray-800 hover:border-gray-400 hover:bg-gray-100'
+                    }`}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    Шүүлт
+                    {activeFilterCount > 0 && (
+                      <span className="rounded-full bg-primary px-1.5 text-[12px] font-bold text-white">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* ⇅ ЭРЭМБЭЛЭХ + 🗺 ГАЗРЫН ЗУРАГ — баруун тийшээ */}
+                  <div className="ml-auto flex flex-wrap items-center gap-2">
+                    <label
+                      htmlFor="listing-sort"
+                      className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 transition-colors hover:border-primary/40"
+                    >
+                      <span aria-hidden="true" className="text-[15px] text-gray-400">⇅</span>
+                      <select
+                        id="listing-sort"
+                        data-listing-sort
+                        aria-label="Эрэмбэлэх"
+                        className="appearance-none bg-transparent text-[14px] font-semibold text-gray-800 focus:outline-none"
+                        value={sort}
+                        onChange={(e) => changeSort(e.target.value)}
+                      >
+                        {SORT_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                      <span aria-hidden="true" className="text-[12px] text-gray-400">▾</span>
+                    </label>
+
+                    <button
+                      type="button"
+                      data-view-toggle
+                      aria-pressed={view === 'map'}
+                      onClick={() => setView(view === 'map' ? 'list' : 'map')}
+                      className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-[14px] font-semibold text-gray-700 transition-all duration-150 ease-out hover:border-primary/40 hover:text-primary"
+                    >
+                      {view === 'map' ? '☰ Жагсаалт руу буцах' : '🗺 Газрын зураг дээр харах'}
+                    </button>
+                  </div>
+                </div>
+
+
+
+                {/* ===== «ШҮҮЛТ» ПАНЕЛЬ — ЗӨВХӨН ДЭЭД/ДООД ХЯЗГААР =====
+                    ⚠️ `id="advanced-filters"` ХЭВЭЭР (CDP дэгээ ✓) — зөвхөн
+                       `advOpen` үед render болно. Утга/дэгээ ХӨНДӨӨГДӨХГҮЙ ✓ */}
+                {advOpen && (
+                  <div
+                    id="advanced-filters"
+                    data-filters-panel
+                    className="mb-3 rounded-xl border border-gray-200 bg-white p-4 shadow-card"
+                  >
+                    <h2 className="text-[15px] font-bold text-gray-900">Дээд / Доод хязгаар</h2>
+                    <p className="mb-2 mt-0.5 text-[13px] text-gray-500">
+                      Үнэ, талбай, давхар ба он — доод/дээд хязгаарыг бичнэ үү.
+                    </p>
+                    <div className="divide-y divide-gray-200">
+                      {priceSideBlock}
+                      {attrFilters.filter((f) => f.range).map((f) => (
+                        <SideBlock key={f.key} label={f.label}>
+                          <RangeInput
+                            label={f.label}
+                            unit="он"
+                            mode="year"
+                            bounds={yearBounds()}
+                            from={attrValue(`${f.key}_from`)}
+                            to={attrValue(`${f.key}_to`)}
+                            onChange={(a, b) => setAttrPair(f.key, a, b)}
+                          />
+                        </SideBlock>
+                      ))}
+                      {isRealEstate && (
+                        <SideBlock label="Талбай, м²">
+                          <RangeInput
+                            label="Талбай"
+                            unit="м²"
+                            mode="decimal"
+                            bounds={AREA_BOUNDS}
+                            from={filters.minArea}
+                            to={filters.maxArea}
+                            onChange={(a, b) => { setF('minArea', a); setF('maxArea', b); }}
+                          />
+                        </SideBlock>
+                      )}
+                      {showApartmentRanges && (
+                        <>
+                          <SideBlock label="Барилгын давхар">
+                            <RangeInput
+                              label="Барилгын давхар"
+                              unit="давхар"
+                              mode="int"
+                              bounds={FLOOR_BOUNDS}
+                              from={filters.minTotalFloors}
+                              to={filters.maxTotalFloors}
+                              onChange={(a, b) => { setF('minTotalFloors', a); setF('maxTotalFloors', b); }}
+                            />
+                          </SideBlock>
+                          <SideBlock label="Хэдэн давхарт">
+                            <RangeInput
+                              label="Хэдэн давхарт"
+                              unit="давхар"
+                              mode="int"
+                              bounds={FLOOR_BOUNDS}
+                              from={filters.minFloor}
+                              to={filters.maxFloor}
+                              onChange={(a, b) => { setF('minFloor', a); setF('maxFloor', b); }}
+                            />
+                          </SideBlock>
+                          <SideBlock label="Ашиглалтанд орсон он">
+                            <RangeInput
+                              label="Ашиглалтанд орсон он"
+                              unit="он"
+                              mode="year"
+                              bounds={buildYearLimit}
+                              from={filters.minBuildYear}
+                              to={filters.maxBuildYear}
+                              onChange={(a, b) => { setF('minBuildYear', a); setF('maxBuildYear', b); }}
+                            />
+                          </SideBlock>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {/* ⚠️🗑 2026-09-30 (4): «ӨРӨӨНИЙ ТООНЫ МӨР» (үр дүнгийн толгойн
@@ -4199,6 +3656,31 @@ export default function HomeClient() {
             onChange={goToPage}
           />
         )}
+
+            {/* 🔖 ХАДГАЛСАН ХАЙЛТ — 🆕 2026-10-10 (89) ЖАГСААЛТЫН ХАМГИЙН ДООР
+                (хэрэглэгчийн хүсэлт: «Одоо байгаа Хайлтгыг хадгалах хэсгийг
+                Хайлтын жагсаалтын хамгийн доор оруулчих, гоё санагдаад байна»).
+                ⚠️ Энэ нь ШҮҮЛТ БИШ (үр дүн өөрчлөгдөхгүй) тул чипүүдийн тоонд
+                   ОРОХГҮЙ; CDP/тестийн дэгээ `[data-save-search]` (+`aria-pressed`)
+                   ба товчны бичиг («Хайлтыг хадгалах» ↔ «✓ Хадгалагдсан») ХЭВЭЭР ✓ */}
+            {canSaveCurrentSearch && (
+              <button
+                type="button"
+                data-save-search
+                aria-pressed={currentSearchSaved}
+                onClick={onSaveSearch}
+                disabled={currentSearchSaved}
+                title={currentSearchSaved ? 'Энэ хайлт хадгалагдсан байна' : 'Одоогийн хайлтыг хадгалах'}
+                className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-[14px] font-semibold transition-all duration-150 ease-out ${
+                  currentSearchSaved
+                    ? 'cursor-default border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : 'border-gray-200 bg-gray-100 text-gray-700 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900'
+                }`}
+              >
+                <span aria-hidden="true">{currentSearchSaved ? '♥' : '♡'}</span>
+                {currentSearchSaved ? '✓ Хадгалагдсан' : 'Хайлтыг хадгалах'}
+              </button>
+            )}
 
           </div>
         </div>

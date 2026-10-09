@@ -402,21 +402,13 @@ t('🛏 HomeClient.jsx: «Өрөөний тоо»-гийн доорх «Өрөө
   assert.match(ui, /data-room-filter/, 'өрөөний блок алга болсон ✗');
   assert.match(ui, /data-room-value/, 'өрөөний чип алга болсон ✗');
   /**
-   * ⚠️ badge нь «N сонгосон» хэвээр (`cdp-rooms.mjs` бодит текстээр шалгана ✓)
-   * 🆕 2026-10-06: «Өрөөний тоо» нь сайдбарт (`SideBlock label="Өрөөний тоо"`,
-   *    📍 Байршил-ийн доор) буцав ⇒ badge-ийн тоо нь `{filters.rooms.length}` —
-   *    СОНГОЛТТОЙ үед л render болно ✓ (`FilterPill` нь зөвхөн `filterBar: true`
-   *    тугтай attr pill-үүдэд үлдсэн — өрөө/төлбөрт БИШ ✓)
-   * 🆕 2026-10-06 (18): блок нь ХУРААГДДАГ болов (`SideBlock` нь олон мөрт
-   *    проптой — `collapsible` + `collapseKey="rooms"` + `open={blockOpen(…)}`)
-   *    ⇒ шалгалт нь мөр хооронд таарах `[\s\S]` хэрэглэнэ ✓
+   * ⚠️ 2026-10-10 (89): өрөө нь `#filter-bar`-ийн PILL болов — `SideBlock`
+   *    (accordion) ХАСАГДАВ; «N сонгосон» badge нь `FilterPill`-ийн ⌄ панель
+   *    ДОТОР (`FilterPill` нь ⌄ товчны `count`-ыг badge болгож харуулна ✓)
    */
-  assert.match(ui, /<SideBlock[\s\S]{0,240}?label="Өрөөний тоо"/,
-    'өрөөний блок нь сайдбарын `SideBlock` БИШ ✗');
-  assert.match(ui, /collapseKey="rooms"[\s\S]{0,80}?collapsible/,
-    'өрөөний блок `collapsible` биш ✗ (2026-10-06 (18))');
-  assert.match(ui, /\{filters\.rooms\.length\} сонгосон/,
-    'өрөөний «N сонгосон» тоо холбоо алга ✗');
+  assert.match(ui, /label="Өрөөний тоо"/, 'өрөөний pill-ийн шошго алга ✗');
+  assert.ok(!/collapseKey="rooms"/.test(ui), 'өрөөний `collapsible` блок хэвээр ✗');
+  assert.match(ui, /\{filters\.rooms\.length\}/, 'өрөөний тооны холбоо алга ✗');
   assert.match(ui, /data-filter-pill=\{testKey\}/, '`FilterPill`-ийн `data-filter-pill` дэгээ алга ✗');
 });
 

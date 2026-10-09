@@ -604,14 +604,14 @@ t('🖥 HomeClient: чипүүд `toggleAttrMulti`-ээр (олон) + `setAttr(
    *   ③ ❌ pill-ийн жагсаалт ТУСДАА (`.filter((f) => !f.afterPayment)`) ✓
    *   ④ pill нь CDP-ийн дэгээтэй (`data-filter-pill` / `data-attr-value` ✓)
    */
-  assert.match(src, /const filterBarAttrs = useMemo\(\s*\(\) => attrFilters\.filter\(\(f\) => f\.chips && f\.multi && f\.filterBar\)/);
-  assert.match(src, /const afterPaymentAttrs = useMemo\(\s*\(\) => attrFilters\s*\.filter\(\(f\) => f\.chips && f\.multi && f\.afterPayment\)/);
-  assert.match(src, /\.filter\(\(f\) => !f\.filterBar\)/);
-  assert.match(src, /\.filter\(\(f\) => !f\.afterPayment\)/);
+  // 🆕 2026-10-10 (89): БҮХ хязгаарын бус attr нь pill; хязгаар нь панельд ✓
+  assert.match(src, /attrFilters\s*\.filter\(\(f\) => !f\.range\)/);
+  assert.match(src, /attrFilters\.filter\(\(f\) => f\.range\)\.map/);
   assert.match(src, /data-filter-pill=\{testKey\}/);
   assert.match(src, /testKey=\{f\.key\}/);
   assert.match(src, /label=\{f\.label\}/);
-  assert.match(src, /data-attr-value=\{o\}/);
+  assert.match(src, /hook="data-attr-value"/);
+  assert.match(src, /function FilterOption\(/);
 });
 
 t('⛔ ФОРМ (`AddListingClient.jsx`) ХӨНДӨГДӨӨГҮЙ — өнгө нэг утгатай хэвээр', () => {

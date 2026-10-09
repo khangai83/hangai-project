@@ -169,23 +169,15 @@ t('🎛 Шүүлт нь ЯГ 3 — гурвуулаа САЙДБАРТ (`chips` 
   });
 });
 
-t('🎛 HomeClient: pill → `#filter-bar` · сайдбарт `!f.filterBar` ба `!f.afterPayment`', () => {
+t('🎛 (89) HomeClient: `#filter-bar` — хязгаарын бус БҮХ attr PILL (хатуу жагсаалт БАЙХГҮЙ)', () => {
   /**
-   * 🆕 2026-10-05 (42) · 🆕 2026-10-06 (17): аль талбар `#filter-bar`-т гарахыг
-   *    `lib/locationData.js`-ийн `filterBar: true` туг л шийднэ (хатуу жагсаалт
-   *    `FILTER_BAR_ATTR_KEYS` БАЙХГҮЙ ✓) — 2 ӨӨР UI БАЙХГҮЙ (сайдбарт
-   *    `!f.filterBar`-ээр хасагдана ✓). 🆕 (17): 🔀 `afterPayment` талбар нь
-   *    үндсэн attr жагсаалтад ОРОХГҮЙ — «💳 Төлбөрийн нөхцөл»-ийн дараа ТУСДАА ✓
+   * 🆕 2026-10-10 (89): БҮХ шүүлт нь pill болов — «Шүүлт» панельд ЗӨВХӨН
+   *    хязгаар (`f.range`) үлдэв ⇒ `filterBar`/`afterPayment` тугууд нь
+   *    pill-ийн ЗААВАР шийдвэрлэгч БОЛИХОО БОЛЬСОН (хатуу жагсаалт БАЙХГҮЙ ✓)
    */
-  assert.match(HOME_CODE, /attrFilters\.filter\(\(f\) => f\.chips && f\.multi && f\.filterBar\)/);
-  assert.match(HOME_CODE, /\.filter\(\(f\) => !f\.filterBar\)/);
-  assert.match(HOME_CODE, /\.filter\(\(f\) => !f\.afterPayment\)/);
+  assert.match(HOME_CODE, /\.filter\(\(f\) => !f\.range\)/);
+  assert.match(HOME_CODE, /attrFilters\.filter\(\(f\) => f\.range\)\.map/);
   assert.ok(!/FILTER_BAR_ATTR_KEYS/.test(HOME_CODE), 'хатуу жагсаалт буцаж орсон ✗');
-  // 🆕 (17): 💼-ийн 3 чип нь сайдбарт — «💰 Цалин, ₮» блокийн ДАРАА ✓
-  const priceAt = HOME.indexOf('{isJobs && priceSideBlock}');
-  const attrAt = HOME.indexOf('{attrFilters');
-  assert.ok(priceAt > 0 && attrAt > 0 && priceAt < attrAt,
-    '💼 «Цалин, ₮» нь attr шүүлтүүдийн дараа байна ✗ (3 чип цалингийн дараа байх ёстой)');
   // pill нь `data-filter-pill`/`data-filter-panel` дэгээтэй (`FilterPill`)
   assert.match(HOME_CODE, /data-filter-pill=\{testKey\}/);
   assert.match(HOME_CODE, /data-filter-panel=\{testKey\}/);
@@ -239,12 +231,12 @@ t('🎛 Форм: `formChips` салбар — `.chip-toggle` + `data-attr-field
   assert.match(ADD_CODE, /legacy \? \[legacy, \.\.\.\(f\.options \|\| \[\]\)\]/);
 });
 
-// ---------- ⑤ SIDEBAR (HomeClient) ----------
-t('🕒 Sidebar: `f.chips` салбар НЭМЭГДЭВ (`chip-toggle` + `data-attr-value`)', () => {
+// ---------- ⑤ PILL (HomeClient) ----------
+t('🕒 PILL: `f.chips` салбар — ☑ `FilterOption` + `data-attr-value` (2026-10-10 (89))', () => {
   assert.match(HOME_CODE, /f\.chips \? \(/);
   assert.match(HOME_CODE, /data-attr-filter=\{f\.key\}/);
-  assert.match(HOME_CODE, /data-attr-value=\{o\}/);
-  assert.match(HOME_CODE, /setAttr\(f\.key, on \? '' : o\)/);
+  assert.match(HOME_CODE, /hook="data-attr-value"/);
+  assert.match(HOME_CODE, /toggleAttrMulti\(f\.key, o\)/);
 });
 
 t('💰 Sidebar: үнийн блок нэг эх сурвалж (`priceSideBlock`) + ажилд «Цалин, ₮»', () => {
@@ -253,18 +245,18 @@ t('💰 Sidebar: үнийн блок нэг эх сурвалж (`priceSideBlock
   assert.match(HOME_CODE, /label=\{priceWord\(section\)\}/);
 });
 
-t('💼 Sidebar дараалал: ажилд үнэ нь attr шүүлтүүдийн ӨМНӨ (`isJobs && priceSideBlock`)', () => {
-  assert.match(HOME_CODE, /\{isJobs && priceSideBlock\}/);
-  assert.match(HOME_CODE, /\{!isJobs && priceSideBlock\}/);
-  const beforeAttr = HOME_CODE.indexOf('{isJobs && priceSideBlock}');
+t('💼 (89) Үнийн блок (`priceSideBlock`) — «Шүүлт» панельд (хязгаар), НЭГ газар', () => {
+  assert.match(HOME_CODE, /\{priceSideBlock\}/);
+  assert.ok(!/\{isJobs && priceSideBlock\}/.test(HOME_CODE), 'хуучин `isJobs &&` салбар үлдсэн ✗');
+  const beforeAttr = HOME_CODE.indexOf('{priceSideBlock}');
   // ⚠️ 2026-10-04 (35): attr жагсаалт нь `CarPicker`-ийн төлөө `.filter(…)`-тэй
   //    болов (`{attrFilters\n .filter(…)`) тул `'{attrFilters.map('` гэсэн
   //    ХАТУУ мөр олдохгүй ✗ → зөвхөн блокийн ЭХЛЭЛИЙГ хайна ✓
-  const attrStart = HOME_CODE.indexOf('{attrFilters');
-  const afterAttr = HOME_CODE.indexOf('{!isJobs && priceSideBlock}');
-  assert.ok(beforeAttr > 0 && attrStart > 0 && afterAttr > 0, 'блок олдсонгүй ✗');
-  assert.ok(beforeAttr < attrStart, 'ажлын үнэ attr шүүлтүүдийн ДАРАА байна ✗');
-  assert.ok(afterAttr > attrStart, 'бусад хэсгийн үнэ attr шүүлтүүдийн ӨМНӨ байна ✗');
+  // ⚠️ (89): НЭГ Л ГАЗАР — «Шүүлт» (`id="advanced-filters"`) панельд (`priceWord`
+  //    нь «Цалин»/«Үнэ» болгож харуулна ✓); сайдбарын дарааллын дүрэм ХАСАГДАВ ✓
+  const advAt = HOME_CODE.indexOf('id="advanced-filters"');
+  assert.ok(beforeAttr > 0 && advAt > 0, 'үнийн блок олдсонгүй ✗');
+  assert.ok(beforeAttr > advAt, 'үнэ нь «Шүүлт» панельд БИШ ✗');
 });
 
 // ---------- ⑥ КАРТ / SEED ----------

@@ -373,26 +373,21 @@ t('💳 HomeClient.jsx: ЧИП (өрөөний тоотой ижил) + URL + DB
   assert.match(ui, /payments: \[\]/, 'хэсэг солих үед цэвэрлэхгүй ✗');
   assert.match(ui, /next\.payments = \[\]/, 'хуучин линкээс ирсэн утгыг хасах дүрэм алга ✗');
   assert.match(ui, /key === 'payments' \? \[\]/, 'идэвхтэй чипийн ✕ дээр массив цэвэрлэхгүй ✗');
-  // ⑤ 🆕 ЧИП ХЭВ (2026-10-03 (16) — хэрэглэгчийн хүсэлт: «Зар хайх
-  //    хэсэгийн 💳 Төлбөрийн нөхцөлийг ӨРӨӨНИЙ ТОО шиг сонгодог болго»):
-  //    ☑ checkbox БИШ — «🛏 Өрөөний тоо»-той ЯГ ИЖИЛ `chip-toggle` чипүүд ✓
-  // ⚠️ Зөвхөн ТӨЛБӨРИЙН блокийн мөрийг шалгана (хороо/өрөө Ч БАС чип ✓)
+  // ⑤ 🆕 2026-10-10 (89): сонголт нь ЖИНХЭНЭ ☑ CHECKBOX (`FilterOption`) —
+  //    хэрэглэгчийн хүсэлт: «…сонголттой хэсгүүдыг нь checkbox болгоорой»
+  //    (⏳ (16)-ийн `chip-toggle` чип ХАСАГДАВ — зөвхөн ХАРАГДАЦ солигдов ✓)
+  // ⚠️ Зөвхөн ТӨЛБӨРИЙН pill-ийн мөрийг шалгана
   const payAt = ui.indexOf('data-payment-filter');
-  const payRegion = ui.slice(payAt - 300, payAt + 1200);
-  assert.match(payRegion, /className=\{`chip-toggle \$\{on \? 'chip-toggle-active' : ''\}`\}/,
-    'чипийн класс (`.chip-toggle`) алга ✗');
-  assert.match(payRegion, /aria-pressed=\{on\}/, 'чипийн төлөв (`aria-pressed`) алга ✗');
-  assert.match(payRegion, /<button/, 'чип нь ЖИНХЭНЭ `<button>` байх ёстой ✗');
-  assert.match(payRegion, /data-payment-value=\{o\.value\}/, 'чипийн дэгээ холбогдоогүй ✗');
-  assert.match(payRegion, /\{on && <span aria-hidden="true">✓<\/span>\}/,
-    'идэвхтэй чип дээр `✓` тэмдэг алга ✗');
-  assert.match(payRegion, /onClick=\{\(\) => togglePayments\(o\.value\)\}/,
+  const payRegion = ui.slice(payAt - 300, payAt + 1600);
+  assert.match(payRegion, /<FilterOption/, '☑ `FilterOption` ашиглаагүй ✗');
+  assert.match(payRegion, /hook="data-payment-value"/, '☑ дэгээ (`data-payment-value`) алга ✗');
+  assert.match(payRegion, /checked=\{filters\.payments\.includes\(o\.value\)\}/, '☑ `checked` алга ✗');
+  assert.match(payRegion, /onToggle=\{\(\) => togglePayments\(o\.value\)\}/,
     'нэг эх сурвалж (`togglePayments`) холбогдоогүй ✗');
-  // ⏳ (6)-ийн ☑ хэв ХАСАГДАВ: хайлт дээр checkbox/pay-grid ОГТ байхгүй ✓
-  assert.ok(!/type="checkbox"/.test(payRegion), 'хайлт дээр ☑ checkbox хэвээр байна ✗');
+  // ⏳ 2 баганат `.pay-grid` хэв ОГТ БАЙХГҮЙ (форм ч ☑/чип) ✓
   assert.ok(!/pay-grid/.test(payRegion), 'хайлт дээр форм-ын `.pay-grid` хэвээр байна ✗');
-  // ⚠️ icon (💳/💵/🏦/🔄) нь Ч БАС харагдахгүй (өрөөний тоотой ижил — зөвхөн шошго ✓)
-  assert.ok(!/o\.icon/.test(payRegion), 'чип дээр icon харагдаж байна ✗');
+  // ⚠️ icon (💳/💵/🏦/🔄) нь Ч БАС харагдахгүй (зөвхөн шошго ✓)
+  assert.ok(!/o\.icon/.test(payRegion), '☑ дээр icon харагдаж байна ✗');
 });
 
 // ---------- ⑮ AddListingClient.jsx — зар оруулах форм ----------
@@ -456,7 +451,8 @@ t('🐍 CDP скрипт нь ЧИП БАЙГААГ, өрөөний тооны �
   //    `<button>`, `flex-wrap` мөр, ХАРАГДАХ хэмжээ ✓ (☑/2 багана БИШ ✗)
   assert.match(cdp, /aria-pressed/, 'чипийн төлвийг (`aria-pressed`) шалгахгүй ✗');
   assert.match(cdp, /tagName === 'BUTTON'/, 'жинхэнэ `<button>` эсэхийг шалгахгүй ✗');
-  assert.match(cdp, /flexWrap/, 'өрөөний тооны хэв (`flex-wrap`) шалгахгүй ✗');
+  // 🆕 (89): ☑ жагсаалт нь БАГАНА (`flexDirection`) — ⏳ `flex-wrap` чип байв
+  assert.match(cdp, /flexDirection/, 'өрөөний тооны хэв (багана) шалгахгүй ✗');
   assert.match(cdp, /chip-toggle/, 'чипийн классыг (`chip-toggle`) шалгахгүй ✗');
   assert.match(cdp, /getBoundingClientRect/, 'чипийн харагдах хэмжээг хэмждэггүй ✗');
   // ⏳ (6) ☑ checkbox-ийн шалгалтууд ХАСАГДАВ — хайлт дээр ☑ байхгүй ✓

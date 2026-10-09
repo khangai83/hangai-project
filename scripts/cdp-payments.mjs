@@ -195,19 +195,20 @@ const paymentUi = () => evalJs(`(() => {
       .replace(/\\s+/g, ' ').trim()),
     values: chips.map(val),
     selected: chips.filter(press).map(val),
-    // 🎛 Чип нь ЖИНХЭНЭ <button> (гар/хүртээмж ✓ — ☑ БИШ ✓)
+    // 🆕 (89): ☑ мөр нь <label> — дотор нь ЖИНХЭНЭ <input type=checkbox>
     buttons: chips.filter((i) => i.tagName === 'BUTTON').length,
-    // ⚠️ checkbox (<input>) ХАЙЛТ дээр ОГТ байхгүй байх ёстой (форм дээр л ✓)
-    inputs: chips.filter((i) => i.tagName === 'INPUT').length,
-    // 🎨 Хэв нь «Өрөөний тоо»-той ЯГ ИЖИЛ: <code>chip-toggle</code> класс ✓
+    inputs: chips.filter((i) => i.querySelector('input[type="checkbox"]')).length,
+    // 🎨 Хэв нь «Өрөөний тоо»-той ЯГ ИЖИЛ: chip-toggle класс ✓
     chipsStyled: chips.every((i) => i.classList.contains('chip-toggle')),
-    // 🎨 Мөр нь flex-wrap (өрөөний тооны хайрцагтай ижил ✓)
-    wrapped: box && box.firstElementChild
-      ? getComputedStyle(box.firstElementChild).flexWrap === 'wrap' : false,
+    // 🎨 ☑ жагсаалт нь БАГАНА (flex-col — өрөөний тоотой ижил ✓)
+    wrapped: box ? getComputedStyle(box).flexDirection === 'column' : false,
     // 🎨 Идэвхтэй чип нь chip-toggle-active (брэнд өнгөөр дүүрнэ ✓)
     active: chips.filter((i) => i.classList.contains('chip-toggle-active')).length,
-    // 🎨 Чип ХАРАГДАХ хэмжээтэй (0x0 биш — CSS ачаалагдсан ✓)
-    size: chips.length ? size(chips[0]) : '0x0',
+    // 🎨 PILL товч ХАРАГДАХ хэмжээтэй (панель нь нуугдмал тул pill-ийг хэмжинэ ✓)
+    size: (() => {
+      const p = document.querySelector('[data-filter-pill="payments"] > button');
+      return p ? size(p) : '0x0';
+    })(),
     // «N сонгосон» нь блокийн толгойд (чипүүдийн ЭЦЭГ эгч) — тоог тэмдэглэнэ
     badge: (() => {
       const m = (box && box.parentElement ? box.parentElement.textContent : '').match(/(\\d+) сонгосон/);
@@ -240,9 +241,10 @@ const PAY_CLEAR = `(() => {
   return [...box.parentElement.querySelectorAll('button')].find((b) => b.textContent.trim() === '✕ Цуцлах') || null;
 })()`;
 
-/** 🧭 Sidebar блокүүдийн гарчгууд (дарааллаар — байрлал шалгахад) */
-const sideLabels = () => evalJs(`[...document.querySelectorAll('aside .divide-y > div')]
-  .map((b) => (b.firstElementChild?.textContent || '').trim())`);
+/** 🧭 `#filter-bar`-ийн PILL-үүдийн түлхүүрүүд (дараалал — байрлал шалгахад)
+ *  🆕 2026-10-10 (89): сайдбар ХАСАГДАВ ⇒ бүх шүүлт нь pill (`data-filter-pill`) ✓ */
+const pillKeys = () => evalJs(`[...document.querySelectorAll('#filter-bar [data-filter-pill]')]
+  .map((p) => p.getAttribute('data-filter-pill'))`);
 
 let pass = 0; let fail = 0;
 const check = (label, ok, extra = '') => {
@@ -271,36 +273,31 @@ check('💳 Шошгууд нь «Хувь лизингээр … Бартер �
 // 🎛 ХЭВ (2026-10-03 (16) — хэрэглэгчийн хүсэлт: «Төлбөрийн нөхцөлийг өрөөний
 //   тоо шиг сонгодог болго»): «🛏 Өрөөний тоо»-той ЯГ ИЖИЛ ЧИП —
 //   `<button class="chip-toggle" aria-pressed>` (☑ `<input>` БИШ ✓) + `flex-wrap`
-check('🎛 Сонголт нь ЖИНХЭНЭ `<button>` (4) — ☑ checkbox БИШ (`aria-pressed` ✓)',
-  dom.buttons === 4 && dom.inputs === 0, `buttons=${dom.buttons} inputs=${dom.inputs}`);
-check('🎛 Хэв нь өрөөний тооны чиптэй ИЖИЛ (`.chip-toggle` + `flex-wrap` ✓)',
-  dom.chipsStyled && dom.wrapped, `chip-toggle=${dom.chipsStyled} wrap=${dom.wrapped}`);
+check('🎛 Сонголт нь ЖИНХЭНЭ ☑ `<input type=checkbox>` (4) — 2026-10-10 (89)',
+  dom.inputs === 4 && dom.buttons === 0, `inputs=${dom.inputs} buttons=${dom.buttons}`);
+check('🎛 ☑ мөр нь `.chip-toggle` класстай ба багана хэвтэй (өрөөний тоотой ижил ✓)',
+  dom.chipsStyled && dom.wrapped, `chip-toggle=${dom.chipsStyled} col=${dom.wrapped}`);
 check('🎛 Сонголтгүй үед `chip-toggle-active` 0 (брэнд өнгө ГАРАХГҮЙ ✓)',
   dom.active === 0, `active=${dom.active}`);
 const [chipW, chipH] = px(dom.size);
-check('🎛 Чип ХАРАГДАХ хэмжээтэй (≥60×24px — өрөөний тооны чиптэй ижил ✓)',
+check('🎛 💳 PILL ХАРАГДАХ хэмжээтэй (≥60×24px — CSS ачаалагдсан ✓)',
   chipW >= 60 && chipH >= 24, dom.size);
 check('💳 `aria-label="Төлбөрийн нөхцөл"` бүлэг ТААРЛАА (хороо/өрөөтэй ижил хэв маяг)',
   dom.toggles === 1, `toggles=${dom.toggles}`);
-const labels1 = await sideLabels();
-const roomsIdx = labels1.findIndex((l) => /Өрөөний тоо/.test(l));
-const priceIdx = labels1.findIndex((l) => /Үнэ/.test(l));
-const payIdx = labels1.indexOf('Төлбөрийн нөхцөл');
 /**
- * 🆕 2026-10-06: 💳 «Төлбөрийн нөхцөл» нь `#filter-bar` pill БАЙХАА БОЛЬЖ,
- *    сайдбарт ЭРГЭЖ ОРОВ (хэрэглэгчийн хүсэлт) ⇒ сайдбарт БИЙ, `#filter-bar`-т
- *    БАЙХГҮЙ ✓
- * 🆕 (15): сайдбарын дараалал «📍 Байршил» → «🛏 Өрөөний тоо» → «💰 Үнэ, ₮» →
- *    «💳 Төлбөрийн нөхцөл» болов (хэрэглэгчийн хүсэлт: «Автомашин дээр Үнийн
- *    дараа оруулах») ⇒ 💳 нь «Үнэ, ₮»-ний ДАРАА ✓
+ * 🆕 2026-10-10 (89): САЙДБАР ХАСАГДАВ ⇒ 💳 нь `#filter-bar`-ийн PILL.
+ *    Дараалал: 📍 location → 🛏 rooms → … → 💳 payments ✓
+ *    ⚠️ «Үнэ, ₮» (хязгаар) нь pill БИШ — «Шүүлт» (`#advanced-filters`) панельд ✓
  */
-const payBar = await evalJs(`document.querySelectorAll('#filter-bar [data-payment-filter]').length`);
-check('🧭 💳 сайдбарт БИЙ, `#filter-bar`-т БАЙХГҮЙ (pill БИШ — `SideBlock` ✓)',
-  payIdx > -1 && payBar === 0,
-  `payBar=${payBar} — ${labels1.join(' → ')}`);
-check('🧭 Сайдбар дараалал: «Байршил» → «Өрөөний тоо» → «Үнэ, ₮» → «Төлбөрийн нөхцөл»',
-  roomsIdx === 1 && priceIdx === 2 && payIdx === 3,
-  `өрөө=#${roomsIdx} үнэ=#${priceIdx} төлбөр=#${payIdx} — ${labels1.join(' → ')}`);
+const keys1 = await pillKeys();
+const roomsIdx = keys1.indexOf('rooms');
+const payIdx = keys1.indexOf('payments');
+check('🧭 (89) `#filter-bar` pill дараалал: rooms → … → payments ✓',
+  roomsIdx > 0 && payIdx > roomsIdx, keys1.join(' → '));
+check('🧭 (89) 💳 нь `#filter-bar`-т БИЙ (pill) — сайдбар БАЙХГҮЙ ✓',
+  payIdx > -1, `bar=[${keys1.join(',')}]`);
+check('🧭 (89) «Үнэ» (хязгаар) нь PILL БИШ — панельд ✓',
+  !keys1.includes('price'), `bar=[${keys1.join(',')}]`);
 
 // ═══════ ② 🚗 АВТО: БАЙНА · ⛔ АЖИЛ/КОМПЬЮТЕР/«БҮХ ЗАР»: БАЙХГҮЙ ═══════
 // 🆕 2026-10-09 (83): ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ — панель нь ЗӨВХӨН хэсэг (2-р түвшин)
@@ -322,13 +319,10 @@ check('🚗 «Автомашин зарна» дээр ЧИПҮҮД БАЙНА',
   `blocks=${autoUi.blocks} chips=${autoUi.chips}`);
 check('🚗 Авто дээрх шошгууд нь ч ЯГ ИЖИЛ (нэг эх сурвалж `PAYMENT_OPTIONS` ✓)',
   autoUi.values.join(',') === 'lease,cash,loan,barter', autoUi.values.join(','));
-/** 🆕 (15): сайдбарын дараалал АВТО дээр ч — 💳 нь «💰 Үнэ, ₮»-ний ЯГ ДАРАА ✓ */
-const autoLabels = await sideLabels();
-const autoPriceIdx = autoLabels.indexOf('Үнэ, ₮');
-const autoPayIdx = autoLabels.indexOf('Төлбөрийн нөхцөл');
-check('🧭 🚗 Авто дээр 💳 нь «💰 Үнэ, ₮»-ний ЯГ ДАРАА (🆕 (15) — хэрэглэгчийн хүсэлт ✓)',
-  autoPriceIdx > -1 && autoPayIdx === autoPriceIdx + 1,
-  `үнэ=#${autoPriceIdx} төлбөр=#${autoPayIdx} — ${autoLabels.join(' → ')}`);
+/** 🆕 (89): авто дээр ч 💳 нь `#filter-bar`-ийн pill, «Үнэ» нь панельд ✓ */
+const autoKeys = await pillKeys();
+check('🧭 (89) 🚗 Авто дээр `payments` pill БИЙ + «Үнэ» pill БИШ ✓',
+  autoKeys.includes('payments') && !autoKeys.includes('price'), autoKeys.join(' → '));
 await go(`${BASE}/?section=jobs`);
 const jobsUi = await paymentUi();
 check('⛔ «Ажил» дээр төлбөрийн блок БАЙХГҮЙ (`hasPaymentTerms` === false)',

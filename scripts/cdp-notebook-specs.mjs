@@ -200,25 +200,40 @@ const go = async (address) => {
    *    дараа) удаан байж болно. Тэр хооронд sidebar нь «Бүх зар» төлөвтөө
    *    (`attrFilters` = 0) харагдаж, проб `keys=[]` гэж БУРУУ онооно ✗
    *    (CDP дээр баригдсан flaky алдаа — бодит UI дээр асуудал байхгүй ✓)
-   *    ⇒ `#advanced-filters` доторх ЭХНИЙ `[data-attr-filter]` хүртэл хүлээнэ.
+   *    ⇒ `#filter-bar` доторх ЭХНИЙ `[data-attr-filter]` хүртэл хүлээнэ.
    *    ℹ️ Энэ скриптийн бүх хуудас ≥1 шүүлттэй (computers/Apple = 5 ·
    *       Mouse = 1 · `?section=computers` = 1 · 🚗 авто = 3) тул тохирно ✓
    */
   // 🆕 2026-10-04 (37): 🎨/⚙️/⛽ (ба 💳) нь үр дүнгийн дээрх ХЭВТЭЭ мөр
   //    (`#filter-bar`) руу шилжсэн ⇒ ХОЁР газрыг хамт хүлээнэ ✓
-  await waitFor(`document.querySelectorAll('#advanced-filters [data-attr-filter], #filter-bar [data-attr-filter]').length > 0`, 15000);
+  await waitFor(`document.querySelectorAll('#filter-bar [data-attr-filter], #filter-bar [data-attr-filter]').length > 0`, 15000);
   await sleep(500);
+  /**
+   * 🆕 2026-10-10 (89): БҮХ шүүлт нь `#filter-bar`-ийн pill ба «Шүүлт»
+   *    («Дээд/Доод хязгаар») панель болов ⇒ харагдац/хэмжээ шаарддаг
+   *    шалгалтуудын тулд панель БА pill-үүдийг НЭЭНЭ ✓ (утга/дэгээ хэвээр)
+   */
+  await evalJs(`(() => {
+    const b = document.querySelector('[data-all-filters]');
+    if (b && !document.getElementById('advanced-filters')) b.click();
+    return 'OK';
+  })()`).catch(() => {});
+  await evalJs(`(() => {
+    document.querySelectorAll('[data-filter-pill] > button').forEach((x) => x.click());
+    return 'OK';
+  })()`).catch(() => {});
+  await sleep(600);
 };
 
 /**
  * 🖥 Sidebar дахь attr шүүлтүүдийн төлөв — `[data-attr-filter]` дэгээгээр
- * 🆕 2026-10-03 (13): `#advanced-filters` (aside) нь ХЭСЭГ (2-р түвшин) ба
+ * 🆕 2026-10-03 (13): `#filter-bar` (aside) нь ХЭСЭГ (2-р түвшин) ба
  *    «Бүх зар» (1-р түвшин) дээр Ч бий — `showAdvancedFilters` нь ҮРГЭЛЖ ✓
  *    ⏳ урьд нь ЗӨВХӨН дэд төрөл сонгосон үед байв ✗ (progressive disclosure)
  *    (`components/HomeClient.jsx`: `{showAdvancedFilters && (<aside …>)}`)
  */
 const specUi = () => evalJs(`(() => {
-  const aside = document.getElementById('advanced-filters');
+  const aside = document.getElementById('filter-bar');
   /**
    * 🆕 2026-10-04 (37): 🎨/⚙️/⛽ (ба 💳) нь сайдбараас гарч, үр дүнгийн ДЭЭРХ
    *    ХЭВТЭЭ шүүлтийн мөр (#filter-bar) руу шилжсэн (eBay-ийн «Color ⌄» шиг)
@@ -229,7 +244,7 @@ const specUi = () => evalJs(`(() => {
    *       (2026-10-04 (39): синтакс алдаа зассан — node --check ✓)
    */
   const sels = [...document.querySelectorAll(
-    '#advanced-filters [data-attr-filter], #filter-bar [data-attr-filter]')];
+    '#filter-bar [data-attr-filter], #filter-bar [data-attr-filter]')];
   const txt = (el) => (el && el.textContent ? el.textContent.trim() : '');
   const footer = aside
     ? [...aside.querySelectorAll('p')].find((p) => /зар харуулах/.test(p.textContent))
@@ -268,7 +283,7 @@ const specUi = () => evalJs(`(() => {
      *    attr шүүлт ОГТ ҮЛДЭХГҮЙ — «asideTotal === 0» нь «2 ӨӨР UI БАЙХГҮЙ»
      *    гэдгийг (sidebar + pill) батлана ✓
      */
-    asideTotal: document.querySelectorAll('#advanced-filters [data-attr-filter]').length,
+    asideTotal: document.querySelectorAll('#filter-bar [data-attr-filter]').length,
     /**
      * 🆕 2026-10-06 (17): САЙДБАРТ («Дэлгэрэнгүй хайлт») буцсан шүүлтүүд —
      *    ✅ «Төлөв» (8 хэсэг) ба 🚗 🎨/⛽/⚙️ (afterPayment). ⚠️ pill-ийн ба
@@ -276,9 +291,9 @@ const specUi = () => evalJs(`(() => {
      *    ЗӨВХӨН нэг газарт («2 ӨӨР UI БАЙХГҮЙ» ✓)
      *    ⚠️ ЭНЭ КОММЕНТ НЬ ТЕМПЛЭЙТ ЛИТЕРАЛ ДОТОР ТУЛ BACKTICK БИЧИХГҮЙ ✗
      */
-    asideKeys: [...document.querySelectorAll('#advanced-filters [data-attr-filter]')]
+    asideKeys: [...document.querySelectorAll('#filter-bar [data-attr-filter]')]
       .map((el) => el.getAttribute('data-attr-filter')),
-    asideLabels: [...document.querySelectorAll('#advanced-filters [data-attr-filter]')]
+    asideLabels: [...document.querySelectorAll('#filter-bar [data-attr-filter]')]
       .map((el) => (el.getAttribute('aria-label') || '').trim()),
     /** «#filter-bar» дахь PILL-ийн түлхүүрүүд («data-filter-pill» — ⚠️ 2026-10-06:
      *  💳/🛏 нь pill БИШ, сайдбарт (SideBlock) ⇒ зөвхөн attr pill-үүд ✓) */
@@ -299,11 +314,11 @@ const specUi = () => evalJs(`(() => {
     counts: sels.filter((el) => el.tagName.toLowerCase() === 'select').map((s) => s.options.length),
     options: sels.filter((el) => el.tagName.toLowerCase() === 'select')
       .map((s) => [...s.options].slice(1).map(txt)),
-    blocks: [...document.querySelectorAll('#advanced-filters .divide-y > div')]
+    blocks: [...document.querySelectorAll('#filter-bar [data-filter-pill]')]
       .map((b) => txt(b.firstElementChild)),
     // 🎨 «N сонгосон» badge-ууд (олон сонголттой блок бүрийн толгойд —
     //    2026-10-03 (19): 🎨 «Өнгө», 🛏 «Өрөөний тоо», 💳 «Төлбөрийн нөхцөл» ✓)
-    multiBadges: [...document.querySelectorAll('#advanced-filters span, #filter-bar span')]
+    multiBadges: [...document.querySelectorAll('#filter-bar span')]
       .map(txt).filter((t) => /^[0-9]+ сонгосон$/.test(t)),
     chips: [...document.querySelectorAll('[aria-label$="хайлтыг хасах"]')]
       .map((b) => (b.getAttribute('aria-label') || '').replace(' хайлтыг хасах', '')),
@@ -321,8 +336,9 @@ const specUi = () => evalJs(`(() => {
 
 /** 🎛 ЧИП дарж шилжүүлэх (ОЛОН СОНГОЛТТОЙ талбарууд — ж: 🎨 «Өнгө») */
 const clickChip = (key, value) => evalJs(`(() => {
+  // 🆕 (89): ☑ мөр нь <label data-attr-value> (⏳ <button> байв)
   const b = document.querySelector('[data-attr-filter="' + ${JSON.stringify(key)}
-    + '"] button[data-attr-value="' + ${JSON.stringify(value)} + '"]');
+    + '"] [data-attr-value="' + ${JSON.stringify(value)} + '"]');
   if (!b) return 'NO_EL';
   b.click();
   return 'OK';
@@ -389,12 +405,12 @@ await go(`${BASE}/?section=computers&type=Notebook`);
  *    хүлээнэ ✓
  */
 const countReady = await waitFor(`(() => {
-  const p = [...document.querySelectorAll('#advanced-filters p')]
+  const p = [...document.querySelectorAll('#filter-bar p')]
     .find((x) => /зар харуулах/.test(x.textContent));
   return !!p;
 })()`, 25000);
 const apple = await specUi();
-check('🖥 Sidebar БАЙНА (`#advanced-filters` — хэсэг/дэд төрөл сонгосон үед ✓)', apple.sidebar);
+check('🖥 Sidebar БАЙНА (`#filter-bar` — хэсэг/дэд төрөл сонгосон үед ✓)', apple.sidebar);
 check('📺⚙️🧠💾✅ `[data-attr-filter]` === 5 (📺/⚙️/🧠/💾 pill + 🆕 ✅ сайдбарт)',
   apple.total === 5, `keys=[${apple.keys.join(', ')}]`);
 check('🎛 🆕 (17): 📺/⚙️/🧠/💾 4 нь `#filter-bar` PILL ба дараалал нь либээс ижил ✓',
@@ -549,7 +565,7 @@ check('🖱 📺/⚙️/🧠/💾 нь ОГТ БАЙХГҮЙ (холдуу дэ�
 /**
  * 🏷️ 2026-10-03 (20): «Брэнд» Ч хайлтад хязгаарлагдав — ⚠️ энэ нь
  *    `[data-attr-filter]`-ээр БАРИГДАХГҮЙ (combobox, `SearchableSelect`) тул
- *    sidebar-ийн БЛОКУУДЫН толгойгоор (`blocks` — `#advanced-filters .divide-y > div`)
+ *    sidebar-ийн БЛОКУУДЫН толгойгоор (`blocks` — `#filter-bar [data-filter-pill]`)
  *    шалгана ✓
  */
 check('🏷 Mouse дээр «Брэнд» блок ОГТ БАЙХГҮЙ (хайлтад хязгаарлагдав ✓)',
@@ -643,7 +659,7 @@ check('🚗 🆕 (17): Дараалал = «💳 Төлбөрийн нөхцөл
  *    Төлбөрийн нөхцөл»-ийн ЯГ АРАА ✓ (авто дээр `#filter-bar` ОГТ БАЙХГҮЙ ✓)
  */
 const autoSide = await evalJs(`(() => {
-  const aside = document.getElementById('advanced-filters');
+  const aside = document.getElementById('filter-bar');
   if (!aside) return null;
   const pay = aside.querySelector('[data-payment-filter]');
   const color = aside.querySelector('[data-attr-filter="color"]');
@@ -656,7 +672,7 @@ const autoSide = await evalJs(`(() => {
 check('🎛 🆕 (17): авто дээр 3 нь САЙДБАРТ (`beforeColor` — pill 0 ✓)',
   auto.barKeys.length === 0 && auto.asideKeys.join(',') === 'color,fuel,transmission',
   `pills=[${auto.barKeys.join(', ')}] · aside=[${auto.asideKeys.join(', ')}]`);
-check('💳 🆕 2026-10-06: 💳 блок нь САЙДБАРТ 1 (`#advanced-filters [data-payment-filter]`)',
+check('💳 🆕 2026-10-06: 💳 блок нь САЙДБАРТ 1 (`#filter-bar [data-payment-filter]`)',
   !!autoSide && autoSide.payments === 1, `aside=${autoSide && autoSide.payments}`);
 check('🧭 🆕 (17): 💳 «Төлбөрийн нөхцөл» нь 🎨 Өнгө-ний ЯГ ӨМНӨ (DOM дараалал ✓)',
   !!autoSide && autoSide.beforeColor === true, `beforeColor=${autoSide && autoSide.beforeColor}`);
@@ -745,7 +761,7 @@ const cleared = await evalJs(`(() => {
    *    координатаар биш, БЛОК-оор нь хайна (color-ийн data-attr-filter)
    *    ⚠️ ЭНЭ КОММЕНТ НЬ ТЕМПЛЭЙТ ЛИТЕРАЛ ДОТОР ТУЛ BACKTICK БИЧИХГҮЙ ✗
    */
-  const box = document.querySelector('#advanced-filters [data-attr-filter="color"]');
+  const box = document.querySelector('#filter-bar [data-attr-filter="color"]');
   const blk = box && box.closest('div[class*="py-4"]');
   const b = blk && [...blk.querySelectorAll('button')]
     .find((x) => (x.textContent || '').trim() === '✕ Цуцлах');
@@ -889,7 +905,7 @@ const condCleared = await evalJs(`(() => {
    *    pill-ийн ⌄ панель БАЙХГҮЙ ✗)
    *    ⚠️ ЭНЭ КОММЕНТ НЬ ТЕМПЛЭЙТ ЛИТЕРАЛ ДОТОР ТУЛ BACKTICK БИЧИХГҮЙ ✗
    */
-  const box = document.querySelector('#advanced-filters [data-attr-filter="condition"]');
+  const box = document.querySelector('#filter-bar [data-attr-filter="condition"]');
   const blk = box && box.closest('div[class*="py-4"]');
   const b = blk && [...blk.querySelectorAll('button')]
     .find((x) => (x.textContent || '').trim() === '✕ Цуцлах');
@@ -1061,7 +1077,7 @@ check('🆕 (16) 💻 HOVER: хулганыг зайлуулахад фон БУ
  */
 console.log('\n⑨′ 🛏 (2026-10-08 (71) · ✏️ шошго (73)) «Ор болдог эсэх» — зөвхөн «Буйдан, кресло» дэд төрөлд');
 const sofaProbe = () => evalJs(`(() => {
-  const aside = document.getElementById('advanced-filters');
+  const aside = document.getElementById('filter-bar');
   const el = aside ? aside.querySelector('[data-attr-filter="sofaBed"]') : null;
   const cond = aside ? aside.querySelector('[data-attr-filter="condition"]') : null;
   if (!el) return { found: false, cond: !!cond };
@@ -1091,7 +1107,7 @@ check('🛏 (71) Sidebar-д ЯГ 2 attr шүүлт (✅ Төлөв + 🛏 Ор �
   sofaSel.asideCount === 2, `count=${sofaSel.asideCount}`);
 listingReqs.length = 0;
 const sofaPicked = await evalJs(`(() => {
-  const el = document.querySelector('#advanced-filters [data-attr-filter="sofaBed"]');
+  const el = document.querySelector('#filter-bar [data-attr-filter="sofaBed"]');
   if (!el) return 'NO_EL';
   const setter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set;
   setter.call(el, 'Тийм');
@@ -1106,7 +1122,7 @@ check('🔗 (71) URL-д `?attr_sofaBed=Тийм` нэмэгдэв ✓',
 check('🔎 (71) DB: `attrs->>sofaBed=eq.Тийм` (энгийн <select> тул eq ✓)', dbQ('attrs->>sofaBed'), lastQ());
 const sofaBack = await sofaProbe();
 const sofaVal = await evalJs(`(() => {
-  const el = document.querySelector('#advanced-filters [data-attr-filter="sofaBed"]');
+  const el = document.querySelector('#filter-bar [data-attr-filter="sofaBed"]');
   return el ? el.value : 'NO_EL';
 })()`);
 check('🛏 (71) Сонгосон утга <select> дээр ХЭВЭЭР (Тийм) ✓',

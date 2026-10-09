@@ -1499,6 +1499,49 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- 🎛🧩 **ШҮҮЛТИЙН МӨР (PILL) + «Шүүлт» ПАНЕЛЬ — БАЙНГЫН САЙДБАР ХАСАГДАВ, СОНГОЛТУУД ☑ CHECKBOX (2026-10-10 (89))** —
+  хэрэглэгчийн хүсэлт: «…хайлтыг хадгалах гэсэн байгаа **мөрөнд Шүүлт гэсэн товчлуур**
+  оруулж өгнө үү (All Filter). Үүнийг дархад **Дэлгэрэнгүй хайлт** гарч ирнэ.
+  (одоо байгаа Дэлгэрэнгүй хайлт гэсэн хэсгийг байхгүй болго). Дэлгэрэнгүй хайлт дотор,
+  **Дээд Доод хязгаар** зааж байгаагаас бусад бүх хайлтыг энэ мөрөнд … **хайлтын
+  товчлуур шиг** болгож оруул. сонголттой хэсгүүдыг нь **checkbox** болгоорой. Одоо
+  байгаа Хайлтгыг хадгалах хэсгийг **Хайлтын жагсаалтын хамгийн доор** оруулчих».
+  ⚠️ **DB/SQL/migration/URL/DB-шүүлт ХӨНДӨӨГДӨӨГҮЙ** (зөвхөн UI ба CDP/тестийн дэгээ).
+  <br>**(1) 🗑 БАЙНГЫН САЙДБАР ХАСАГДАВ** (`components/HomeClient.jsx`): `<aside
+  id="advanced-filters">` (280px зүүн багана) БҮРЭН ХАСАГДАВ ⇒ үр дүн БҮТЭН
+  ӨРГӨНӨӨР; «⇅ Эрэмбэлэх» ба «🗺 Газрын зураг» нь шүүлтийн мөр рүү (баруун тийшээ)
+  шилжив ✓.
+  <br>**(2) 🎛 ШҮҮЛТИЙН МӨР** (`#filter-bar`, `data-filter-bar`): 📍 Байршил ·
+  🛏 Өрөөний тоо · 🏷️ Үйлдвэрлэгч/загвар · БҮХ хязгаарын бус attr (🎨/⛽/⚙️ ·
+  💼 🕒/📊/📈 · 💻 📺/⚙️/🧠/💾 · ✅ Төлөв) · 💳 Төлбөрийн нөхцөл · 🔄 Солино — БҮГД
+  `FilterPill` (⌄ панель) ✓ (⏳ `filterBar`/`afterPayment` тугууд нь pill-ийн
+  ЗААВАР шийдвэрлэгч БОЛИХОО БОЛЬСОН — хатуу жагсаалт БАЙХГҮЙ хэвээр ✓).
+  <br>**(3) 🎛 «ШҮҮЛТ» (All Filters) ТОВЧ** (`data-all-filters` + `aria-pressed`/
+  `aria-expanded`): дарахад `#advanced-filters` панель НЭЭГДЭНЭ — дотор нь ЗӨВХӨН
+  Дээд/Доод ХЯЗГААР (`attrFilters.filter((f) => f.range)` · 💰 Үнэ/Цалин ·
+  📐 Талбай · 🏢 Барилгын давхар · 🏗 Хэдэн давхарт · 📅 Ашиглалтанд орсон он) ✓
+  (панель нь анхдагчаар ХААЛТТАЙ — «Бүх зар» дээр мөр/pill ОГТ БАЙХГҮЙ ✓).
+  <br>**(4) ☑ CHECKBOX:** 🆕 `FilterOption` компонент — ⌄ панель доторх сонголт бүр
+  ЖИНХЭНЭ `<input type="checkbox">` (`h-4 w-4 accent-primary`, 16×16); `chip-toggle`/
+  `chip-toggle-active` класс ба `data-room-value`/`data-payment-value`/`data-attr-value`/
+  `aria-pressed` дэгээнүүд нь `<label>` дээр ХЭВЭЭР (тест/CDP ✓).
+  <br>**(5) 🔖 ХАДГАЛАХ ТОВЧ ЖАГСААЛТЫН ДООР:** `[data-save-search]` нь үр дүнгийн
+  карт + хуудаслалтын ДООР (товчны бичиг «Хайлтыг хадгалах» ↔ «✓ Хадгалагдсан» ба
+  `aria-pressed` ХЭВЭЭР ✓).
+  <br>**(6) 🧪 ТЕСТ:** `npm run test:*` **42/42 ✓** (тестүүд шинэ гэрээнд шинэчлэгдэв:
+  `test:filters` 126 · `test:rooms` 44 · `test:payments` 36 · `test:attrMulti` 31 ·
+  `test:jobs`/`test:swap`/`test:districts`/`test:carpicker` ✓) · `npm run build`
+  **EXIT=0 ✓** · 🐍 CDP (бодит Chrome): `cdp:rooms` **49 OK/0 FAIL** · `cdp:payments`
+  **61/0** · `cdp:swap` **41/0** · `cdp:range` **37/0** · `cdp:job-chips` **50/0** ·
+  `cdp:districts` **89/0** · `cdp:picker` **183/184** · `cdp:search`/`cdp:sections`/
+  `cdp:services`/`cdp:card-grid`/`cdp:tiles`/`cdp:wheel` ✓.
+  ⚠️ **МЭДЭГДЭХ үлдэгдэл:** `cdp:notebook-specs` нь хуучин САЙДБАРЫН ~30 бүтцийн
+  шалгалттай (`aside`, `data-side-collapse`, «pill 0») — шинэ pill хэв рүү шинэчлэх
+  ажил ҮЛДСЭН; функциональ шалгалтууд (дарах → URL → DB) БҮГД ✓.
+  <br>**(7) 📄 DOC:** `README.md` (энэ буллет) · `docs/IMPROVEMENTS.md` (энэ мөр).
+  🔍 Хайх үг: `data-all-filters`, `FilterOption`, `advanced-filters`,
+  `data-filter-pill`, `#filter-bar`, `attrFilters.filter((f) => f.range)`
+
 - 🎨🏷️ **ТОЛГОЙ/ДООД ЦЭС ЦАГААН + ЗАРЫН ГАРЧИГ — ХАРАГДАХ H1 (2026-10-09 (88))** —
   хэрэглэгчийн хүсэлт: «**бүх саарал өнгийг үгүй хий**» (⏳ (87) нь зөвхөн `main`
   дотрыг хассан, толгой ба мобайл доод цэс нь `bg-gray-100` хэвээр үлдсэн) +

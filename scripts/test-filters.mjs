@@ -1083,18 +1083,25 @@ t('🎛 `filterBar` туг: ЗААВАЛ `chips`+`multi` ба ЯГ 4 талба�
   ], `pill талбарууд: ${bar.join(', ')}`);
 });
 
-t('🎛 HomeClient: pill нь ЗӨВХӨН `chips && multi && filterBar`; сайдбараас `!f.filterBar`', () => {
+t('🎛 (89) HomeClient: БҮХ шүүлт PILL — сайдбар ХАСАГДАВ, панельд зөвхөн хязгаар', () => {
   const src = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
-  // ⚠️ Нэг эх сурвалж: pill-ийн жагсаалт нь ЛИБ-ийн тугуудаас (хатуу массив БАЙХГҮЙ ✓)
-  assert.match(src, /attrFilters\.filter\(\(f\) => f\.chips && f\.multi && f\.filterBar\)/);
-  // ⚠️ 2 ӨӨР UI БАЙХГҮЙ — сайдбар нь filterBar талбарыг ХАСНА ✓
-  assert.match(src, /\.filter\(\(f\) => !f\.filterBar\)/);
-  // ⚠️ Pill нь CDP-ийн дэгээтэй (DOM ↔ либ харьцуулалт — `cdp:specs` ✓)
-  assert.match(src, /data-filter-pill=\{testKey\}/);
-  assert.match(src, /data-filter-bar/);
-  // ⚠️ Идэвхтэй тоо нь `countAttrValues` (хоосон = 0 ✓), цэвэрлэгээ `[]`
-  assert.match(src, /count=\{countAttrValues\(attrArray\(f\.key\)\)\}/);
-  assert.match(src, /onClick=\{\(\) => toggleAttrMulti\(f\.key, o\)\}/);
+  // ⏳ Байнгын САЙДБАР (зүүн багана) БҮРЭН ХАСАГДАВ ✓
+  assert.ok(!/lg:flex-row lg:items-start/.test(src), '2 баганат (сайдбар) бүтэц буцаж орсон ✗');
+  assert.ok(!/SideBlock label="Байршил"/.test(src), 'сайдбарын «Байршил» блок хэвээр ✗');
+  // ✅ ШҮҮЛТИЙН МӨР — pill-үүд + «Шүүлт» товч
+  assert.match(src, /id="filter-bar" data-filter-bar/);
+  assert.match(src, /data-all-filters/, '«Шүүлт» (All Filters) товч алга ✗');
+  assert.match(src, /data-filter-pill=\{testKey\}/, 'pill-ийн дэгээ алга ✗');
+  assert.match(src, /data-filter-panel=\{testKey\}/, 'pill-ийн панелийн дэгээ алга ✗');
+  // ✅ «Шүүлт» панель — ЗӨВХӨН `f.range` (Дээд/Доод хязгаар) ба `advOpen` үед
+  assert.match(src, /\{advOpen && \(/, 'панель `advOpen`-оор нээгдэхгүй ✗');
+  assert.match(src, /id="advanced-filters"/, '`#advanced-filters` дэгээ алга ✗');
+  assert.match(src, /attrFilters\.filter\(\(f\) => f\.range\)\.map/, 'хязгаарын attr панельд алга ✗');
+  assert.match(src, /\.filter\(\(f\) => !f\.range\)/, 'хязгаарын бус attr pill болоогүй ✗');
+  // ✅ Сонголтууд нь ☑ CHECKBOX (`FilterOption`) — чип БИШ
+  assert.match(src, /function FilterOption\(/, '`FilterOption` (☑) компонент алга ✗');
+  assert.match(src, /type="checkbox"/, '☑ checkbox алга ✗');
+  assert.match(src, /hook="data-attr-value"/, 'attr-ийн ☑ дэгээ алга ✗');
 });
 
 // ---------- 🔀 🆕 2026-10-06 (17): PILL → САЙДБАР («Дэлгэрэнгүй хайлт») ----------
@@ -1164,25 +1171,18 @@ t('🔀 (17) 💼 🕒/📊/📈 ба ✅ «Төлөв» (8 хэсэг) — pill
   });
 });
 
-t('🔀 (17) HomeClient: `afterPaymentAttrs` нь 💳-ийн ЯГ ДАРАА, үндсэн жагсаалтаас ХАСАГДАНА', () => {
+t('🔀 (89) afterPayment attr (🚗 🎨/⛽/⚙️) нь PILL — `attrFilters`-ээс шүүгдэнэ', () => {
   const src = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
-  // ① Жагсаалт нь ЛИБ-ийн тугуудаас (`chips && multi && afterPayment`) — хатуу массив БАЙХГҮЙ ✓
-  assert.match(src, /attrFilters\s*\.filter\(\(f\) => f\.chips && f\.multi && f\.afterPayment\)/);
-  assert.match(src, /\.sort\(\(a, b\) => a\.afterPayment - b\.afterPayment\)/);
-  // ② Үндсэн attr жагсаалтаас ХАСНА (2 ӨӨР UI БАЙХГҮЙ ✓)
-  assert.match(src, /\.filter\(\(f\) => !f\.afterPayment\)/);
-  // ③ БАЙРЛАЛ: 💳 (`showPayments`) → afterPaymentAttrs → «📐 Талбай, м²»
-  const payAt = src.indexOf('{showPayments && (');
-  const afterAt = src.indexOf('{afterPaymentAttrs.map((f) => (');
-  const areaAt = src.indexOf('SideBlock label="Талбай, м²"');
-  assert.ok(payAt > 0 && afterAt > 0 && areaAt > 0, '💳/дараах/талбай блок олдсонгүй ✗');
-  assert.ok(payAt < afterAt, 'afterPayment блок 💳-ийн ӨМНӨ байна ✗');
-  assert.ok(afterAt < areaAt, 'afterPayment блок «Талбай, м²»-ийн дараа байна ✗');
-  // ④ Хайрцаг нь НЭГ газар (`attrChipBox`) — pill ⇢ ⌄ панель ч мөн адил ✓
-  assert.match(src, /const attrChipBox = \(f\) => \(/);
-  assert.match(src, /const attrChipsBlock = \(f\) => \(/);
-  assert.match(src, /\{attrChipBox\(f\)\}/);
-  assert.match(src, /\{attrChipsBlock\(f\)\}/);
+  // ⚠️ 🚗-ийн 🏷️ brand / 🚙 model нь CarPicker (pill) руу — pill жагсаалтаас шүүгдэнэ
+  assert.match(src, /\.filter\(\(f\) => !\(isAuto && \(f\.key === 'brand' \|\| f\.key === 'model'\)\)\)/);
+  // ⚠️ Хязгаарын бус БҮХ attr нь pill: `.filter((f) => !f.range)` ✓
+  assert.match(src, /\.filter\(\(f\) => !f\.range\)/);
+  // ⚠️ Хайрцаг нь НЭГ газар (`FilterOption` — ☑ checkbox) ✓
+  assert.match(src, /function FilterOption\(/);
+  assert.match(src, /data-attr-filter=\{f\.key\}/);
+  assert.match(src, /data-attr-multi="true"/);
+  assert.match(src, /hook="data-attr-value"/);
+  assert.match(src, /onToggle=\{\(\) => toggleAttrMulti\(f\.key, o\)\}/);
 });
 
 // ---------- 🗂 🆕 2026-10-06 (18): САЙДБАРЫН ЧИП БЛОК — ХУРААХ/ДЭЛГЭХ ГЭРЭЭ ----------
@@ -1241,30 +1241,26 @@ t('🗂 (18) HomeClient: `SideBlock` ЭВХЭГДДЭГ (`data-side-collapse` + 
   // ③ Анхдагч дүрэм + 3 давхарга төлөв (панелийн «Бүгдийг нээх» товчтой)
   assert.match(src, /return activeCount > 0 \|\| optionCount < SIDEBAR_CHIP_COLLAPSE_MIN;/,
     'идэвхтэй утгатай блок автоматаар нээгдэхгүй ✗');
-  assert.match(src, /data-side-toggle-all/, '«Бүгдийг нээх/Хураах» товч БАЙХГҮЙ ✗');
-  assert.match(src, /const toggleAllSideBlocks = \(\) => \{/, '`toggleAllSideBlocks` БАЙХГҮЙ ✗');
-  assert.match(src, /const \[allBlocksOpen, setAllBlocksOpen\] = useState\(null\)/,
-    '«Бүгдийг» төлөв (`allBlocksOpen`) БАЙХГҮЙ ✗');
+  // 🆕 (89): сайдбарын «Бүгдийг нээх/Хураах» accordion ХАСАГДАВ — оронд нь
+  //    pill-үүд (⌄ панель) ба «Шүүлт» (`data-all-filters`) товч ✓
+  assert.ok(!/data-side-toggle-all/.test(src), 'сайдбарын «Бүгдийг нээх» товч хэвээр ✗');
+  assert.match(src, /data-all-filters/, '«Шүүлт» товч алга ✗');
 });
 
-t('🗂 (18) HomeClient: 🛏/💳 · 🔀 afterPayment · 💼 чип блокууд `collapsible` тугтай (тоо нь либээс)', () => {
+t('🗂 (89) HomeClient: 🛏/💳/🔄 нь PILL (сонголт нь либээс — хатуу тоо БАЙХГҮЙ)', () => {
   const src = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
-  // 🛏 «Өрөөний тоо» ба 💳 «Төлбөрийн нөхцөл» — тусдаа блок (хатуу тоо БАЙХГҮЙ ✓)
-  assert.match(src, /label="Өрөөний тоо"\s*\n\s*collapseKey="rooms"\s*\n\s*collapsible/,
-    '🛏 блок `collapsible` биш ✗');
-  assert.match(src, /blockOpen\('rooms', ROOM_OPTIONS\.length, filters\.rooms\.length\)/,
-    '🛏 блокын босго нь либээс уншигдахгүй ✗');
-  assert.match(src, /label="Төлбөрийн нөхцөл"\s*\n\s*collapseKey="payments"\s*\n\s*collapsible/,
-    '💳 блок `collapsible` биш ✗');
-  assert.match(src, /blockOpen\('payments', PAYMENT_OPTIONS\.length, countPayments\(filters\.payments\)\)/,
-    '💳 блокын босго нь либээс уншигдахгүй ✗');
-  // 🔀 afterPayment (🚗 🎨/⛽/⚙️) — `attrChipsBlock` нь хураагддаг SideBlock дотор ✓
-  assert.match(src, /collapseKey=\{f\.key\}[\s\S]{0,120}?collapsible[\s\S]{0,400}?attrChipsBlock\(f\)/,
-    '🔀 afterPayment блок `collapsible` биш ✗');
-  // 💼 үндсэн attr жагсаалт — ЗӨВХӨН чип талбар (`<select>`/текст нь хэвээр ✓)
-  assert.match(src, /collapsible=\{!!f\.chips\}/, 'чип бус талбар ч хураагддаг болов ✗');
-  assert.match(src, /open=\{!f\.chips \|\| blockOpen\(f\.key, chipOptions, chipActive\)\}/,
-    'чип бус талбар нээлттэй байх дүрэм алга ✗');
+  // 🛏 «Өрөөний тоо» — pill, сонголтууд нь `ROOM_OPTIONS`-ээс (хатуу тоо БАЙХГҮЙ ✓)
+  assert.match(src, /label="Өрөөний тоо"[\s\S]{0,240}?ROOM_OPTIONS\.map/,
+    '🛏 pill нь `ROOM_OPTIONS`-ээс үүсэхгүй ✗');
+  assert.match(src, /checked=\{filters\.rooms\.includes\(r\.value\)\}/, '🛏 ☑ checked алга ✗');
+  assert.match(src, /onToggle=\{\(\) => toggleRooms\(r\.value\)\}/, '🛏 `toggleRooms` холбогдоогүй ✗');
+  // 💳 «Төлбөрийн нөхцөл» — pill, `PAYMENT_OPTIONS`
+  assert.match(src, /label="Төлбөрийн нөхцөл"[\s\S]{0,320}?PAYMENT_OPTIONS\.map/,
+    '💳 pill нь `PAYMENT_OPTIONS`-ээс үүсэхгүй ✗');
+  assert.match(src, /onToggle=\{\(\) => togglePayments\(o\.value\)\}/, '💳 `togglePayments` холбогдоогүй ✗');
+  // 🔄 «Солино» — pill + ☑ (нэг утга, `SWAP_LABEL` — нэг эх сурвалж ✓)
+  assert.match(src, /label=\{SWAP_LABEL\}/, '🔄 pill шошго алга ✗');
+  assert.match(src, /data-swap-value="1"/, '🔄 ☑ дэгээ алга ✗');
 });
 
 /**
@@ -1311,8 +1307,11 @@ t('🎛 FilterPill hover: сонгоогүй → `bg-gray-200`, идэвхтэй
   // ④ ⌄ панель нь `children`-ээ рендэрлэнэ (дотор нь `.chip-toggle` чипүүд —
   //    тэдгээрийн HOVER (primary текст) энэ өөрчлөлтөд ХӨНДӨГДӨӨГҮЙ ✓)
   assert.match(pill, /\{children\}/);
-  assert.match(src, /chip-toggle \$\{on \? 'chip-toggle-active' : ''\}/,
-    'панель доторх чипүүдийн класс өөрчлөгдсөн (хөндөгдөх ЁСТОЙ БАЙГАА ✗)');
+  // 🆕 (89): панель доторх сонголт нь ☑ CHECKBOX (`FilterOption`) ✓
+  assert.match(src, /chip-toggle w-full justify-start/,
+    'панель доторх ☑ мөрийн класс алга ✗');
+  assert.match(src, /chip-toggle-active bg-primary-light/,
+    'панель доторх ☑-ийн идэвхтэй төлөв алга ✗');
 });
 
 

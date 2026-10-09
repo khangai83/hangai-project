@@ -332,7 +332,8 @@ t('🔍 HomeClient.jsx (үргэлжлэл): BOOLEAN-ийн хоосон утг�
   //    ЯГ ИЖИЛ: `<input type="checkbox">` + `h-4 w-4 shrink-0 accent-primary` +
   //    шошго `SWAP_LABEL`; ⏳ (82)-ын чип/`aria-pressed`/«✕ Цуцлах» БАЙХГҮЙ ✓
   const at = ui.indexOf('data-swap-filter');
-  const region = ui.slice(at, at + 1000);
+  const end = ui.indexOf('</FilterPill>', at);
+  const region = ui.slice(at, end > at ? end : at + 500);
   assert.match(region, /<input/, '☑ нь ЖИНХЭНЭ `<input>` байх ёстой ✗');
   assert.match(region, /type="checkbox"/, '`type="checkbox"` алга ✗');
   assert.match(region, /className="h-4 w-4 shrink-0 accent-primary"/,

@@ -338,34 +338,27 @@ t('🛏 HomeClient.jsx: өрөө сонгох UI — САЙДБАРТ (📍 Ба
    *    (⏳ 2026-10-03 (4): «Үнэ, ₮»-ний өмнө сайдбарт; 2026-10-04 (38):
    *       `#filter-bar` pill байв — ОДОО тийм БИШ ✓)
    */
-  const asideAt = ui.indexOf('id="advanced-filters"');
   const barAt = ui.indexOf('id="filter-bar"');
-  const locAt = ui.indexOf('SideBlock label="Байршил"');
   const roomsAt = ui.indexOf('data-room-filter');
-  const priceAt = ui.indexOf('{!isJobs && priceSideBlock}');
   const payAt = ui.indexOf('data-payment-filter');
+  const advAt = ui.indexOf('id="advanced-filters"');
+  const priceAt = ui.indexOf('{priceSideBlock}');
   const areaAt = ui.indexOf('SideBlock label="Талбай, м²"');
-  assert.ok(asideAt > 0, '`<aside id="advanced-filters">` алга ✗');
-  assert.ok(barAt > 0, '#filter-bar (үр дүнгийн дээрх мөр) алга ✗');
-  assert.ok(locAt > 0, '«Байршил» блок алга ✗');
-  assert.ok(roomsAt > 0, 'өрөөний блок олдсонгүй ✗');
-  assert.ok(priceAt > 0, '«Үнэ, ₮» блок (`!isJobs && priceSideBlock`) олдсонгүй ✗');
-  assert.ok(payAt > 0, 'төлбөрийн блок олдсонгүй ✗');
+  assert.ok(barAt > 0, '#filter-bar (шүүлтийн мөр) алга ✗');
+  assert.ok(roomsAt > 0, 'өрөөний pill олдсонгүй ✗');
+  assert.ok(payAt > 0, 'төлбөрийн pill олдсонгүй ✗');
+  assert.ok(advAt > 0, '`#advanced-filters` (панель) алга ✗');
+  assert.ok(priceAt > 0, '«Үнэ, ₮» (хязгаар) блок олдсонгүй ✗');
   assert.ok(areaAt > 0, '«Талбай, м²» блок алга ✗');
-  // ⚠️ 2 ӨӨР UI БАЙХГҮЙ — rooms/payment нь `#filter-bar`-т ОГТ БАЙХГҮЙ ✓
-  assert.ok(roomsAt < barAt, 'өрөөний блок `#filter-bar`-т байна ✗ (сайдбарт байх ёстой)');
-  assert.ok(payAt < barAt, 'төлбөрийн блок `#filter-bar`-т байна ✗ (сайдбарт байх ёстой)');
-  // ⚠️ Сайдбар дотор: «Байршил» → «Өрөөний тоо» → «Үнэ, ₮» → «Төлбөрийн нөхцөл» ✓
-  assert.ok(asideAt < locAt && locAt < roomsAt,
-    'өрөөний блок «Байршил»-ийн ДАРАА биш ✗');
-  assert.ok(roomsAt < priceAt, 'өрөөний блок «Үнэ, ₮»-ний ДАРАА байна ✗ (урд байх ёстой)');
-  assert.ok(priceAt < payAt,
-    'төлбөрийн блок «Үнэ, ₮»-ний ДАРАА биш ✗ (2026-10-06 (15)-ийн хүсэлт)');
-  assert.ok(payAt < areaAt, 'төлбөрийн блок «Талбай, м²»-ний ДАРАА байна ✗ (урд байх ёстой)');
-  // ④ ХОРООНЫ блоктой ИЖИЛ хэв маяг (`chip-toggle` + «N сонгосон» + «✕ Цуцлах»)
-  assert.match(ui, /chip-toggle-active/, 'чипийн идэвхтэй хэв маяг алга ✗');
-  assert.match(src, /сонгосон/, '«N сонгосон» badge алга ✗');
-  assert.match(src, /✕ Цуцлах/, '«✕ Цуцлах» товч алга ✗');
+  // ⚠️ 2026-10-10 (89): БҮГД шүүлт нь pill (`#filter-bar`) — хязгаар нь ПАНЕЛЬД
+  assert.ok(roomsAt > barAt, 'өрөөний pill `#filter-bar`-т байх ёстой ✗');
+  assert.ok(payAt > barAt, 'төлбөрийн pill `#filter-bar`-т байх ёстой ✗');
+  assert.ok(priceAt > advAt, '«Үнэ, ₮» хязгаар нь ПАНЕЛЬД байх ёстой ✗');
+  assert.ok(areaAt > advAt, '«Талбай, м²» нь ПАНЕЛЬД байх ёстой ✗');
+  assert.ok(!/SideBlock label="Байршил"/.test(src), 'сайдбарын «Байршил» блок хэвээр ✗');
+  // ④ ☑ CHECKBOX хэв (`FilterOption`) — `chip-toggle` класс нь ХЭВЭЭР (CSS ✓)
+  assert.match(ui, /chip-toggle-active/, '☑ идэвхтэй хэв маяг алга ✗');
+  assert.match(ui, /type="checkbox"/, '☑ checkbox алга ✗');
   // ⑤ Зөвхөн өрөөтэй төрөлд (`hasRoomsFields`) — хорооны нөхцөлтэй ижил зарчим
   assert.match(ui, /hasRoomsFields\(filters\.propertyType\)/, 'showRooms-ийн нөхцөл алга ✗');
 });
