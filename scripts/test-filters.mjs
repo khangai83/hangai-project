@@ -157,7 +157,7 @@ t('🔀 Хөтлөгч форм, шүүлт, картын мөр ГУРВААС 
 t('🚗 Жолооны хүрд (steering) — форм БА карт (Зөв / Буруу), шүүлтэд ОРООГҮЙ', () => {
   const sec = getSection('auto');
   const f = getAttrField('auto', 'steering');
-  // ① Талбар нь формоос (`attrFields`) олдоно: unegui.mn-ийн ЯГ ИЖИЛ 2 сонголт
+  // ① Талбар нь формоос (`attrFields`) олдоно: жишиг сайтын ЯГ ИЖИЛ 2 сонголт
   assert.ok(f, 'steering талбар формоос олдохгүй байна ✗');
   assert.equal(f.label, 'Жолооны хүрд');
   assert.equal(f.icon, '🚗');
@@ -972,7 +972,7 @@ t('⚠️ `getAttrField` (картын мөр/шүүлт) нь `onlySubtypes`-а
 });
 
 // ---------- 🖥 2026-10-03 (7): 💻 NOTEBOOK-ИЙН ШҮҮЛТ SIDEBAR-д ----------
-// ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (unegui.mn-ийн Notebook хайлтын зураг): «notebook хайх
+// ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (жишиг сайтын Notebook хайлтын зураг): «notebook хайх
 // дээр Дэлгэцийн хэмжээ · CPU · RAM · SSD Hard шүүлтүүд гардаг байх».
 // ⚠️ Шүүлт нь ФОРМТОЙ нэг эх сурвалж (`attrFields`/`attrFilters` + `onlySubtypes`)
 //    тул дараах тестүүд 2 үүрэг хамгаална: ① Notebook дээр шүүлт ХАРАГДАХ
@@ -2037,7 +2037,7 @@ t('💼 jobs: хуучин 15 нэр БҮГД хасагдав (зөвхөн н�
   assert.deepEqual(OLD_JOB_SUBTYPES.filter((o) => subtypes.includes(o)), []);
   assert.ok(!subtypes.includes('Бусад'));
   // ⚠️ «Банк, санхүү, нябо, нярав» — «нябо» нь хэрэглэгчийн бичсэнээр
-  //    (нягтлан бодогчийн товчлол, unegui.mn-ийн хэв маяг) ХЭВЭЭР ✓
+  //    (нягтлан бодогчийн товчлол, жишиг сайтын хэв маяг) ХЭВЭЭР ✓
   assert.ok(subtypes.includes('Банк, санхүү, нябо, нярав'));
   // ⚠️ Монгол «Ресторан» — ЛАТИН «P» БИШ (хэрэглэгчийн бичлэгийн typo зассан ✓)
   assert.ok(!subtypes.includes('Pесторан, кафе, паб'));
@@ -2605,7 +2605,7 @@ t('🖥 ГЭРЭЭ: HomeClient — категори нь `getSectionCategoryChoi
   assert.ok(/data-category-value=\{c\.value\}/.test(home),
     'CDP дэгээ (`data-category-value`) алга ✗');
   // ② ✅ 2026-10-07 (хэрэглэгчийн хүсэлт: «background өнгийг байхгүй болгож,
-  //    зүүн тийш том, маш minimal — unegui.mn шиг») — ТӨВД байсан саарал
+  //    зүүн тийш том, маш minimal — жишиг сайт шиг») — ТӨВД байсан саарал
   //    дүүргэлттэй `segmented` pill ХАСАГДАВ → ЗҮҮН хавтгай текст линк.
   assert.ok(!/className="segmented"/.test(home),
     'хуучин `segmented` pill ҮЛДСЭН байна (хавтгай болох ёстой) ✗');

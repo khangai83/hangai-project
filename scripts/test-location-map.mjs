@@ -3,7 +3,7 @@
 //
 // 🎯 ХЭРЭГЛЭГЧИЙН ГОМДОЛ (2026-10-06): «Газрын зураг дээр 📍 23-р хороо,
 //    Хан-Уул, Улаанбаатар гэсэн байршил … энэ зар чинь харагдахгүй байна
-//    даа. Unegui.mn дээр … газрын зураг дээр зааж өгөх боломжтой хэсэг
+//    даа. Жишиг сайт дээр … газрын зураг дээр зааж өгөх боломжтой хэсэг
 //    тухайн цонхон дээр нь гараад ирдэг юм байна» ⇒ ЭНЭ тест тэр засварын
 //    гэрээг түгжинэ ✓
 //
@@ -14,7 +14,7 @@
 //      төвлөрөх дүрэм ажиллахын тулд)
 //   ③ `lib/listingLocation.mjs` — чекбокс солбицлыг ЦЭВЭРЛЭХ/БУЦААХ
 //   ④ ГЭРЭЭ — `AddListingClient` (форм · пин товч · модаль · centerPatch)
-//   ⑤ `LocationMapPicker` — `unegui.mn` мэт modal (пин · текст · дэгээнүүд)
+//   ⑤ `LocationMapPicker` — `жишиг сайт` мэт modal (пин · текст · дэгээнүүд)
 //   ⑥ DB — `latitude`/`longitude` нь аль хэдийн байгаа (migration 0 ✓)
 //   ⑦ 📄 README + `package.json` (тест бүртгэгдсэн эсэх)
 //   ⑧ 🆕 🔍 ХОРООНЫ НАРИЙВЧЛАЛ — `geocodeUrl`/`parseGeocodeResults` (Nominatim)
@@ -359,15 +359,15 @@ t('④ Модаль — `{mapPickerOpen && ( <LocationMapPicker … /> )}` form 
 });
 
 // ────────────────────────────────────────────────────────────
-// ⑤ `LocationMapPicker` — unegui.mn мэт modal
+// ⑤ `LocationMapPicker` — жишиг сайт мэт modal
 // ────────────────────────────────────────────────────────────
-console.log('\n── ⑤ LocationMapPicker: unegui.mn мэт modal ──');
+console.log('\n── ⑤ LocationMapPicker: жишиг сайт мэт modal ──');
 
 const pick = readSrc('components/LocationMapPicker.jsx');
 
 const pickCode = codeHard('components/LocationMapPicker.jsx');
 
-t('⑤ Модальын ТЕКСТ — unegui.mn-ийн мөрүүд (нэг эх сурвалж)', () => {
+t('⑤ Модальын ТЕКСТ — жишиг сайтын мөрүүд (нэг эх сурвалж)', () => {
   assert.ok(pick.includes("MAP_PICKER_TITLE = 'Газрын зураг дээрх байршил'"), 'гарчиг');
   assert.ok(pick.includes("MAP_PICKER_HINT = 'Газрын зургийг чирж, пинь төвд байгаа цэг дээр таарна уу'"), 'заавар');
   assert.ok(pick.includes("MAP_PICKER_BACK = 'Байршлын жагсаалт руу буцах'"), 'буцах');

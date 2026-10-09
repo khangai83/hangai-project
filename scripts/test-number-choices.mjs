@@ -321,7 +321,7 @@ t('🧩 ГЭРЭЭ: мобайлд сонголт нь 2 БАГАНАТ ЖАГС
   assert.match(src, /data-mobile-option=\{it\.value\}/, 'CDP-ийн тогтвортой selector ✓');
   assert.match(src, /data-mobile-option-skip/, '«Алгасах» (утга ЦЭВЭРЛЭНЭ) ✓');
   assert.match(src, /aria-pressed=\{on\}/, 'идэвхтэй сонголт нь тэмдэглэгдэнэ ✓');
-  // ② «Сонгох» ТОВЧ БАЙХГҮЙ болов (unegui.mn-ийн хэв ✓)
+  // ② «Сонгох» ТОВЧ БАЙХГҮЙ болов (жишиг сайтын хэв ✓)
   assert.doesNotMatch(src, /className="choice-trigger sm:hidden"/, 'хуучин мобайл товч үлдсэн ✗');
   assert.doesNotMatch(src, /\{shown \|\| 'Сонгох'\}/, '«Сонгох» бичиг үлдсэн ✗');
   // ③ 🎡 ДУГУЙ нь ЗӨВХӨН урт жагсаалтад ХЭВЭЭР (📅 48 он · 🏢 1–150 давхар) ✓

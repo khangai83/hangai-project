@@ -2,7 +2,7 @@
 // test-card.mjs — 📇 ЗАРЫН КАРТЫН ДИЗАЙНЫ ГЭРЭЭ (2026-10-03)
 //
 // Хэрэглэгчийн хүсэлт: «зарын картын дизайн их зүгээр юмаа, ийм дизайнтай
-// болгоорой» + **unegui.mn**-ийн жишээ картууд (ажил · орон сууц) —
+// болгоорой» + **жишиг сайт**-ийн жишээ картууд (ажил · орон сууц) —
 //   • зүүн талд ТОМ зураг (42%) + «🖼 1/16» зургийн тоо
 //   • мэдээллийн хэсгийн ДЭЭД талд нийтлэгчийн band (Avatar + нэр + ✅)
 //   • ТОМ bold ТОВЧ үнэ → 2 МӨРТ гарчиг → дэлгэрэнгүй мөр → доод мета мөр
@@ -52,7 +52,7 @@ const CARD = readSrc('components/ListingCard.jsx');
 const CARD_CODE = codeOnly(CARD);
 const HOME = readSrc('components/HomeClient.jsx');
 
-console.log('\n🧪 Зарын карт — unegui.mn хэв (components/ListingCard.jsx)\n');
+console.log('\n🧪 Зарын карт — жишиг сайт хэв (components/ListingCard.jsx)\n');
 
 // ---------- ① БҮТЭЦ / ХЭМЖЭЭ ----------
 t('📐 Карт нь хэвтээ (`sm:flex-row`) + өндөр `sm:h-[300px]` + `data-listing-card`', () => {

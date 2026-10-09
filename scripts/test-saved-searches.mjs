@@ -9,7 +9,7 @@
 //      `lib/savedSearch.mjs`-ийг/хүснэгтийг ХЭРЭГЛЭЖ байгаа эсэх
 //
 // ЯАГААД ХЭРЭГТЭЙ ВЭ:
-//   Хадгалсан хайлтын гарчиг (unegui.mn-ийн «Категори: … / Байршил: …») нь
+//   Хадгалсан хайлтын гарчиг (жишиг сайтын «Категори: … / Байршил: …») нь
 //   URL-ээс бодогддог тул формат эвдэрвэл хэрэглэгч ХААНД хадгалснаа
 //   мэдэхгүй болно ✗. Мөн давхардлын түлхүүр буруу бол нэг хайлт 2 удаа
 //   хадгалагдана ✗. Энэ тест тэр хоёр гэрээг түгждэг ✓
@@ -53,8 +53,8 @@ const link = (q) => `/?${new URLSearchParams(q).toString()}`;
 
 console.log('\n🧪 Хадгалсан хайлт — URL → шошго, давхардал, hybrid хадгалалт\n');
 
-// ---------- ① URL → шошго (unegui.mn-ийн ЯГ формат) ----------
-t('① descriptor: «Категори» ба «Байршил» нь unegui.mn-ийн мөрүүдтэй ижил', () => {
+// ---------- ① URL → шошго (жишиг сайтын ЯГ формат) ----------
+t('① descriptor: «Категори» ба «Байршил» нь жишиг сайтын мөрүүдтэй ижил', () => {
   const d = savedSearchDescriptor(link({
     category: 'sell', section: 'real-estate', type: 'Орон сууц', rooms: '3',
     district: 'Хан-Уул', khoroo: 'Нүхтийн ам',
@@ -213,7 +213,7 @@ t('⑳ ГЭРЭЭ: SavedSearchesClient — «Категори/Байршил» +
   assert.match(c, /savedSearchDescriptor\(it\.url\)/, 'шошгыг URL-ээс бодохгүй ✗');
 });
 
-t('㉑ ГЭРЭЭ: /favorites нь 2 ТАБТАЙ (unegui.mn шиг)', () => {
+t('㉑ ГЭРЭЭ: /favorites нь 2 ТАБТАЙ (жишиг сайт шиг)', () => {
   const f = codeOnly(readSrc('components/FavoritesClient.jsx'));
   assert.match(f, /import SavedSearchesClient from '\.\/SavedSearchesClient'/, 'импорт алга ✗');
   assert.match(f, /data-fav-tab="ads"/, '«Таалагдсан зарууд» таб алга ✗');

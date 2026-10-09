@@ -1,5 +1,5 @@
 -- ============================================================
--- 0001_schema.sql — ZAR.mn (unegui) Next.js + Supabase schema
+-- 0001_schema.sql — ZAR.mn Next.js + Supabase schema
 -- Supabase SQL Editor эсвэл `supabase db push`-ээр ажиллуулна.
 -- ============================================================
 
