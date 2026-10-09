@@ -144,13 +144,14 @@ async function main() {
       // ⚠️ 0014 нь БУСДААС ЯЛГААТАЙ: түүний `before insert` триггер нь
       //    «24 цагт 3 зар» SPAM хязгаартай тул demo seed-ийг БЛОКЛОНО.
       //    Тиймээс 0014-ийг ХАМГИЙН СҮҮЛД (seed-ийн ДАРАА) ажиллуулна.
-      label: '0014 — давхардлын хамгаалалт (dedupe_key)',
+      label: '0014 — давхардлын хамгаалалт (dedupe_key, V2)',
       cols: 'dedupe_key',
       file: '0014_listing_dedupe.sql',
-      hint: '⚠️ 0014-ийг ХАМГИЙН СҮҮЛД ажиллуулна (0022 → home seed → 0023 →\n' +
+      hint: '⚠️ 0014 (V2)-ыг ХАМГИЙН СҮҮЛД ажиллуулна (0022 → home seed → 0023 →\n' +
         '     construction/equipment seed → 0026 → furniture/travel seed → 0014).\n' +
-        '     Учир нь түүний `before insert` триггер «24 цагт 3 зар» хязгаартай тул\n' +
-        '     demo seed-ийг блоклоно.',
+        '     Учир нь түүний `before insert` триггер нь өдрийн лимит + 60 сек\n' +
+        '     cooldown-тай тул demo seed-ийг блоклоно.\n' +
+        '     ⚠️ Агентууд ХОРИГЛОГДОХГҮЙ: /admin/users → «⚡ Лимит» → 50 (эсвэл ∞).',
     },
     {
       label: '0015 — нэр ба профайл зураг',
@@ -240,6 +241,43 @@ async function main() {
     } catch (e) {
       report(null, `${label} — шалгахад алдаа`, e.message);
     }
+  }
+
+  // ---------- 4.65. 🩺 0014 — ДАВХАРДЛЫН ТРИГГЕР АСААЛТТАЙ ЭСЭХ ----------
+  // ⚠️ `dedupe_key` багана байх нь ХАНГАЛТГҮЙ: `seed:sections` нь demo
+  //    заруудыг оруулахын тулд триггерийг ТҮР ХААДАГ (README → «Demo seed-тэй
+  //    зөрчил») ⇒ дараа нь `enable` хийхээ мартвал хамгаалалт УНТАРСАН хэвээр
+  //    үлдэж, хэрэглэгч нэг зараа дахин дахин оруулах боломжтой болно ✗
+  //    (SQL Editor-т гараар `select tgname, tgenabled from pg_trigger …` хийж
+  //    л харна). `public.dedupe_status()` (0014 V2) нь үүнийг ЧАНГААР хэлнэ ✓
+  try {
+    const res = await fetch(`${url}/rest/v1/rpc/dedupe_status`, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    if (res.status === 404 || res.status === 400) {
+      report(null, '0014 — dedupe_status() RPC байхгүй (ХУУЧИН 0014 хувилбар)',
+        `${(await res.text()).slice(0, 200)}\n` +
+        '     → supabase/migrations/0014_listing_dedupe.sql-ийг (V2) дахин ажиллуулна уу.');
+    } else if (res.ok) {
+      const st = await res.json().catch(() => null);
+      const on = !!(st && st.trigger_enabled);
+      const hist = !!(st && st.history_trigger_enabled);
+      report(on && hist,
+        `0014 — давхардлын триггер ${on ? 'АСААЛТТАЙ' : 'УНТАРСАН ✗'}` +
+          ` (устгалын триггер: ${hist ? 'асаалттай' : 'унтарсан'})`,
+        on && hist
+          ? `анхдагч лимит: ${st.daily_default} зар/өдөр · cooldown: ${st.cooldown_seconds} сек`
+          : '⚠️ Триггер унтарсан байна (seed-ийн дараа `enable` хийгээгүй байж\n' +
+            '     магадгүй) → нэг зараа дахин дахин оруулах боломжтой ✗\n' +
+            '     ЗАСАХ: alter table public.listings enable trigger listings_prevent_duplicate;');
+    } else {
+      report(null, `0014 — dedupe_status() дуудаж чадсангүй (HTTP ${res.status})`,
+        (await res.text()).slice(0, 200));
+    }
+  } catch (e) {
+    report(null, '0014 — dedupe_status() шалгахад алдаа', e.message);
   }
 
   // ---------- 4.6. Утасны (phone) нэвтрэлт идэвхтэй эсэх ----------

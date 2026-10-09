@@ -72,6 +72,8 @@
     "test:brand": "node scripts/test-brand.mjs",
     "cdp:brand": "node scripts/cdp-brand.mjs",
     "test:youtube": "node scripts/test-youtube.mjs",
+    "test:dedupe": "node scripts/test-dedupe.mjs",
+    "test:dedupe:pg": "node scripts/test-dedupe-pg.mjs",
     "migration:copy": "node scripts/setup-migration.js",
     "enable:phone-auth": "node scripts/enable-phone-auth.js",
     "deploy:vercel": "node scripts/deploy-vercel-env.js",

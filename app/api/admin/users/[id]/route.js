@@ -1,21 +1,31 @@
 // ============================================================
-// PATCH /api/admin/users/[id] — Хэрэглэгчийн ЭРХ / БЛОК удирдах
+// PATCH /api/admin/users/[id] — Хэрэглэгчийн ЭРХ / БЛОК / ЛИМИТ удирдах
 //
 // Header: Authorization: Bearer <админ access_token>
 // Body:   { isAdmin: true|false }   // эрх олгох / авах
 //         { blocked: true|false }   // 🚫 блоклох / блокыг авах
-//         (хоёуланг нь нэг хүсэлтэд өгч болно)
-// Resp:   { ok, userId, isAdmin, blocked }
+//         { listingDailyLimit: 50 } // ⚡ өдрийн зарын лимит (0014 V2, 0 = ∞)
+//         (хэд хэдэн утгыг нэг хүсэлтэд өгч болно)
+// Resp:   { ok, userId, isAdmin, blocked, dailyLimit }
 //
 // ⚠️ Эрх нь `app_metadata`-д хадгалагдана (клиент хуурах боломжгүй).
 // ⚠️ Админ өөрөөсөө эрхээ / өөрийгөө блоклож чадахгүй (өөрийгөө түгжихээс
 //    сэргийлж). Мөн бүх админ алга болохоос сэргийлнэ.
 // 🚫 Блоклох нь: ① `profiles.blocked` (зар нийтэд харагдахгүй) ба
 //    ② Supabase-ийн бан (`ban_duration` — нэвтрэх хориг) хоёрыг ХАМТ бичнэ.
-//    Дэлгэрэнгүй: `lib/adminAuth.js → setUserBlocked`, `0038_user_blocks.sql`.
+// Дэлгэрэнгүй: `lib/adminAuth.js → setUserBlocked`, `0038_user_blocks.sql`.
+// ⚡ Лимит нь `app_metadata.listing_daily_limit` — давхардлын/spam
+//    хамгаалалтын триггер (0014) уншина. Агент/дэлгүүрт 50 (эсвэл 0 = ∞).
 // ============================================================
 import { NextResponse } from 'next/server';
-import { requireAdmin, setUserAdmin, setUserBlocked, isUserBlocked } from '../../../../../lib/adminAuth';
+import {
+  requireAdmin,
+  setUserAdmin,
+  setUserBlocked,
+  setUserDailyLimit,
+  dailyLimitOf,
+  isUserBlocked,
+} from '../../../../../lib/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,10 +46,17 @@ export async function PATCH(req, { params }) {
 
   const hasIsAdmin = typeof body.isAdmin === 'boolean';
   const hasBlocked = typeof body.blocked === 'boolean';
+  // ⚡ Лимит: тоо эсвэл null (null = анхдагч 3 руу буцаах)
+  const hasLimit =
+    body.listingDailyLimit === null ||
+    (body.listingDailyLimit !== undefined && body.listingDailyLimit !== '');
 
-  if (!hasIsAdmin && !hasBlocked) {
+  if (!hasIsAdmin && !hasBlocked && !hasLimit) {
     return NextResponse.json(
-      { ok: false, error: 'Өөрчлөх утга байхгүй — `isAdmin` эсвэл `blocked` илгээнэ үү.' },
+      {
+        ok: false,
+        error: 'Өөрчлөх утга байхгүй — `isAdmin`, `blocked` эсвэл `listingDailyLimit` илгээнэ үү.',
+      },
       { status: 400 }
     );
   }
@@ -65,12 +82,16 @@ export async function PATCH(req, { params }) {
     // эрхийг хадгална — хоёулаа `getUserById`→merge хийдэг).
     if (hasIsAdmin) user = await setUserAdmin(id, body.isAdmin);
     if (hasBlocked) user = await setUserBlocked(id, body.blocked);
+    // ⚡ Лимит — МӨН `app_metadata` merge хийдэг тул хамгийн сүүлд (эрх/блок
+    //    хадгалагдана ✓)
+    if (hasLimit) user = await setUserDailyLimit(id, body.listingDailyLimit);
 
     return NextResponse.json({
       ok: true,
       userId: user.id,
       isAdmin: !!(user.app_metadata && user.app_metadata.is_admin),
       blocked: isUserBlocked(user),
+      dailyLimit: dailyLimitOf(user),
     });
   } catch (err) {
     console.error('[admin/users/:id] алдаа:', (err && err.message) || err);

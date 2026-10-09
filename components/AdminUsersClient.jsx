@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from './AppProviders';
-import { fetchAdminUsers, updateUserAdmin, updateUserBlocked } from '../lib/adminApi';
+import { fetchAdminUsers, updateUserAdmin, updateUserBlocked, updateUserDailyLimit } from '../lib/adminApi';
 import { timeAgo } from '../lib/format';
 
 /** 97688093663 / +97688093663 → 88093663 */
@@ -97,6 +97,26 @@ export default function AdminUsersClient() {
       return;
     }
     setNotice(next ? `🚫 Блоклогдлоо: ${displayPhone(row)}` : `✅ Блокыг авлаа: ${displayPhone(row)}`);
+    load();
+  };
+
+  // ⚡ Өдрийн зарын лимит (0014 V2) — агент/дэлгүүрт өндөр (эсвэл ∞) өгнө.
+  //   `value`: 3 = анхдагч (metadata-аас УСТГАНА), 0 = хязгааргүй, N = тоо
+  const setDailyLimit = async (row, value) => {
+    setBusyId(row.id);
+    setNotice('');
+    const res = await updateUserDailyLimit(row.id, value);
+    setBusyId(null);
+    if (res.error) {
+      setNotice(`❌ ${res.error}`);
+      return;
+    }
+    const n = res.data.dailyLimit;
+    setNotice(
+      n === 0
+        ? `⚡ Хязгааргүй лимит олголоо: ${displayPhone(row)}`
+        : `⚡ Өдрийн лимит ${n} боллоо: ${displayPhone(row)}`
+    );
     load();
   };
 
@@ -225,7 +245,7 @@ export default function AdminUsersClient() {
 
       {/* ===== Хүснэгт ===== */}
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-        <table className="w-full min-w-[920px] text-left text-sm">
+        <table className="w-full min-w-[1040px] text-left text-sm">
           <thead className="border-b border-gray-200 bg-gray-50 text-[12px] uppercase tracking-wide text-gray-500">
             <tr>
               <th className="px-4 py-3">Хэрэглэгч</th>
@@ -234,6 +254,7 @@ export default function AdminUsersClient() {
               <th className="px-4 py-3">Сүүлд нэвтэрсэн</th>
               <th className="px-4 py-3 text-center">Зар</th>
               <th className="px-4 py-3 text-center">Эрх</th>
+              <th className="px-4 py-3 text-center">⚡ Лимит</th>
               <th className="px-4 py-3 text-center">Төлөв</th>
             </tr>
           </thead>
@@ -257,6 +278,15 @@ export default function AdminUsersClient() {
                     {r.blocked && (
                       <span className="ml-2 rounded bg-red-100 px-1.5 py-px text-[11px] font-semibold text-red-700">
                         БЛОКЛОГДСОН
+                      </span>
+                    )}
+                    {/* ⚡ Агент (3-аас өндөр эсвэл хязгааргүй лимит) */}
+                    {(r.dailyLimit === 0 || r.dailyLimit > 3) && (
+                      <span
+                        className="ml-2 rounded bg-emerald-100 px-1.5 py-px text-[11px] font-semibold text-emerald-800"
+                        title="Өдрийн зарын лимит өндөр — давхардлын хамгаалалт хэвээр"
+                      >
+                        ⚡ АГЕНТ
                       </span>
                     )}
                   </p>
@@ -295,6 +325,44 @@ export default function AdminUsersClient() {
                     {busyId === r.id ? '...' : r.isAdmin ? '👤 Эрх авах' : '🛠 Админ болгох'}
                   </button>
                 </td>
+                <td className="px-4 py-3">
+                  {/*
+                    ⚡ Өдрийн зарын лимит (0014 V2) — давхардал/SPAM хамгаалалт.
+                    ⚠️ Агент/дэлгүүр (20+ зартай) ХОРИГЛОГДОХГҮЙ байхын тулд
+                       лимитийг 50 (эсвэл ∞) болгоно. 3 = анхдагч (metadata-аас
+                       устгана). `app_metadata` тул хэрэглэгч өөрөө сольж чадахгүй.
+                  */}
+                  <div className="flex flex-col items-center gap-1">
+                    <span
+                      className={`text-[11px] font-semibold ${
+                        r.dailyLimit === 0 ? 'text-amber-700' : 'text-gray-500'
+                      }`}
+                      title="Өдөрт оруулж болох ШИНЭ зарын тоо (0 = хязгааргүй)"
+                    >
+                      {r.dailyLimit === 0 ? '∞ хязгааргүй' : `${r.dailyLimit} / өдөр`}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {[
+                        { v: 3, label: '3', tip: 'Энгийн хэрэглэгчийн анхдагч' },
+                        { v: 50, label: '50', tip: 'Агент (20+ зар)' },
+                        { v: 0, label: '∞', tip: 'Хязгааргүй (дэлгүүр)' },
+                      ].map((o) => (
+                        <button
+                          key={o.v}
+                          type="button"
+                          title={o.tip}
+                          className={`btn btn-sm ${
+                            r.dailyLimit === o.v ? 'btn-secondary' : 'btn-outline'
+                          }`}
+                          disabled={busyId === r.id}
+                          onClick={() => setDailyLimit(r, o.v)}
+                        >
+                          {busyId === r.id ? '…' : o.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </td>
                 <td className="px-4 py-3 text-center">
                   {r.blocked ? (
                     <div className="flex flex-col items-center gap-1">
@@ -321,7 +389,7 @@ export default function AdminUsersClient() {
             ))}
             {!rows.length && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-gray-500">
+                <td colSpan={8} className="px-4 py-10 text-center text-gray-500">
                   Хэрэглэгч олдсонгүй
                 </td>
               </tr>
