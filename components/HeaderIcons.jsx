@@ -23,8 +23,8 @@
  */
 
 /** ⚙️ ТҮҮНИЙ НИЙТЛЭГ SVG БҮТЭЦ — бүх икон үүн дээр тогтоно
- *  ⚠️ `...rest` (2026-10-08 (69c)) — нэмэлт атрибут (ж: `data-home-icon`) нь
- *     `svg` руу ШУУД тэнцэнэ; тодорхой иконуудыг CDP/тестээр барих боломж ✓
+ *  ⚠️ `...rest` (2026-10-08 (69c)) — нэмэлт атрибут (ж: `xmlns`, `data-*`) нь
+ *     `svg` руу ШУУД тэнцэнэ ✓
  *     (⚠️ `className`/`strokeWidth`/`children` нь тусдаа — давхардал үүсэхгүй ✓) */
 function Icon({ className, strokeWidth, children, ...rest }) {
   return (
@@ -233,45 +233,3 @@ export function BellIcon({ className = 'h-4 w-4', strokeWidth = 1.6 }) {
     </Icon>
   );
 }
-
-/**
- * 🅉 ЛОГОНЫ «Z» БРЭНД-ИКОН — толгойн мөрний ТУСДАА icon-only товч
- *   (лого ба ХАЙЛТЫН хэсгийн ХООРОНД, 2026-10-08 (69d) → 🆕 2026-10-10 (90)).
- *
- * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-10 (90)): «logo gehiimii symbol odoo neg baishin
- *   haragdaad bna te, home shig. uuniig facebook shig bolgoh ba f usgiin orond Z
- *   useg eer soli tegeed l boloo» ⇒ ⏳ байшинг/zурсан `HomeIcon` (3 зурсан зам)
- *   ХАСАГДАЖ, ФАЙСБҮҮКИЙН хэвээр **дугуйлан дүүргэсэн брэндийн өнгө (#2563eb)
- *   дээр ЦАГААН «Z» үсэг** бүхий икон болов ✓
- *
- * ⚠️ ЯАГААД EMOJI (`🏠`) БИШ SVG ВЭ (бусад толгойн иконтой ЯГ ИЖИЛ үндэслэл):
- *    • emoji нь OS бүрд өөр өөрөөр зурагдана ✗ — SVG нь БҮХ дээр ижил ✓
- *    • SVG нь хэмжээг `className`-аар (`h-6 w-6` = 24px) авна ✓
- * ⚠️ Энэ икон нь бусад толгойн иконоос ЯЛГААТАЙ нь **өөрийн брэнд өнгөтэй**
- *    (лого шиг) — тиймээс `currentColor` БИШ, `#2563eb` / `#ffffff` тогтмол ✓
- *
- * ⚠️ ДЭГЭЭ (УСТГАХГҮЙ): `data-home-icon` (CDP/тест) — `...rest`-ээр SVG руу
- *    шууд тэнцэнэ; линк нь `data-home-icon-link` ба `href="/"` (нүүр хуудас) ✓
- *
- * @param {{className?:string}} props
- *   `className` — хэмжээг гаднаас өгнө (толгойн мөрөнд `h-6 w-6` = 24px)
- */
-export function ZIcon({ className = 'h-6 w-6', ...rest }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      focusable="false"
-      className={className}
-      {...rest}
-    >
-      {/* ① Брэндийн дэвсгэр — дугуйлан (Facebook хэв) */}
-      <rect width="24" height="24" rx="7" fill="#2563eb" />
-      {/* ② Цагаан «Z» үсэг — нэг хаалттай зам (дээд · доод хөндлөн + диагональ) */}
-      <path d="M8 8H16V10.2L11.4 15.8H16V18H8V15.8L12.6 10.2H8V8Z" fill="#ffffff" />
-    </svg>
-  );
-}
-
-

@@ -1,21 +1,31 @@
 // ============================================================
-// test-brand.mjs — 🏠 ТУСДАА HOME ICON + 🏷️ БРЭНД (ZarBook.mn) ГЭРЭЭ (2026-10-08 (69c)/(69d))
+// test-brand.mjs — 🏷️ БРЭНД (ZarBook.mn) ГЭРЭЭ (2026-10-08 (69c) → 🆕 2026-10-10 (91))
+//
+// 🆕 (91) ТОЛГОЙН ТУСДАА ИКОН БҮРЭН ХАСАГДАВ — ХЭРЭГЛЭГЧИЙН ШИЙДВЭР (2026-10-10):
+//   «home deer baigaa ZarBook.mn nii ard baisan home icon … uuniig bur boliyo»
+//   ⇒ ⏳ (69d)-д нэмэгдэж, (90)-д «Z» бадж болсон логоны дараах ТУСДАА икон
+//   (`ZIcon` + `data-home-icon`/`data-home-icon-link`) БҮРЭН ХАСАГДАВ ✓
+//   🎯 УЧИР: лого нь өөрөө `href="/"` (нүүр хуудас) тул тусдаа икон нь ЗӨВХӨН
+//   давхардал байв — бадж болсноос хойш «нүүр хуудас» гэдгээ хэлэхээ болиод
+//   байв ✗ ⇒ одоо толгойн мөрөнд нүүр хуудасны ГАНЦ линк = ЛОГО ✓
 //
 // 🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (3 хэсэг):
-//   ① «zarlaa.mn гэсэн логооны хойд хэсэгт home icon оруул, энд дархад мэдээж
-//      home page дээр ирдэг байх» ⇒ логоны хажууд `ZIcon` SVG (emoji БИШ) ✓
+//   ① ⏳ (69d)/(90)/(91): «логооны хойд хэсэгт home icon оруул…» ⇒ лого нь өөрөө
+//      нүүр хуудасны линк (тусдаа икон (91)-д ХАСАГДАВ ✓ — доорх тестүүд хамгаална)
 //   ② «zarbook.mn гэсэн domain хаяг авсан тул бүгдийг ийм нэртэй болго ZarBook.mn»
 //      ⇒ `ZARLAA.MN`/`zarlaa.mn` брэнд ГАЗАР БҮРЭЭС `ZarBook.mn`/`zarbook.mn`
 //      болсон (лого · footer · бүх `<title>` · terms · export · UA · README ·
 //      R2 док · scripts-ийн жишээ домэйн · `package.json`)
-//   ③ 🆕 (69d) «би уугийг нь тусдаа icon болгоод өгөөч гэсэн юм… search хэсгийн
-//      өмнө тусдаа icon болгоод өгөөч» ⇒ икон нь логоны ДОТОР БИШ — лого нь
-//      ЗӨВХӨН ТЕКСТ (`ZarBook.mn`), 🏠 икон нь лого ба хайлтын хэсгийн ХООРОНД
-//      ТУСДАА `<Link href="/">` (`h-6 w-6`, `hidden lg:inline-flex`) ✓
-//   ④ 🆕 (72) «home ruu ordog icon chin zar luu orohoor bairlalaa uurchluud
-//      baigaa» ⇒ `[лого + 🏠 икон]` нь НЭГ `flex shrink-0` бүлэг болов (⏳ өмнө
-//      нь `justify-between`-ийн ДУНД хүүхэд байснаас `headerSlot`-гүй хуудсанд
-//      (зар · мессеж …) икон чөлөөт зайны ГОЛД шилжиж 300–435px болж байв ✗) ✓
+//   ③ ⏳ (69d) «би уугийг нь тусдаа icon болгоод өгөөч гэсэн юм… search хэсгийн
+//      өмнө тусдаа icon болгоод өгөөч» ⇒ икон нь логоны ДОТОР БИШ байв
+//      (лого нь ЗӨВХӨН ТЕКСТ, икон нь ТУСДАА `<Link href="/">`)
+//      ⚠️ 🆕 (91): энэ ТУСДАА икон нь БҮРЭН ХАСАГДАВ (давхардал байв ✗)
+//   ④ ⏳ (72) «home ruu ordog icon chin zar luu orohoor bairlalaa uurchluud
+//      baigaa» ⇒ `[лого + икон]` НЭГ `flex shrink-0` бүлэг болсон (⏳ өмнө нь
+//      `justify-between`-ийн ДУНД хүүхэд байснаас `headerSlot`-гүй хуудсанд
+//      (зар · мессеж …) икон чөлөөт зайны ГОЛД шилжиж 300–435px болж байв ✗)
+//      ⚠️ 🆕 (91): икон хасагдсан ч бүлэг `<div>` ХЭВЭЭР — `shrink-0` нь
+//      ЛОГО-г хайлтын мөр (`flex-1`) уртсах үед БҮРЧЛЭГДЭХЭЭС сэргийлнэ ✓
 //
 //
 // ⚠️ ХАМГААЛАЛТ (🔒 ХӨНДӨӨХГҮЙ — солибол ХЭРЭГЛЭГЧИЙН ӨГӨГДӨЛ/НЭВТРЭЛТ ЭВДЭРНЭ):
@@ -64,29 +74,23 @@ const t = (name, fn) => {
   console.log(`  ✓ ${name}`);
 };
 
-console.log('\n🏠 Тусдаа HOME ICON + 🏷️ ZarBook.mn брэнд (2026-10-08 (69c)/(69d))\n');
+console.log('\n🏷️ ZarBook.mn брэнд + 🆕 (91) толгойн ТУСДАА икон ХАСАГДАВ (лого = нүүр хуудасны ГАНЦ линк)\n');
 
 const ICONS = readSrc('components/HeaderIcons.jsx');
 const ICONS_CODE = codeOnly(ICONS);
 const AP_CODE = codeOnly(readSrc('components/AppProviders.jsx'));
 
 
-// ---------- ① HOME ICON (SVG, emoji БИШ) ----------
-t('🏠 `ZIcon` нь `components/HeaderIcons.jsx`-д экспортлогдсон ✓', () => {
-  assert.match(ICONS_CODE, /export function ZIcon\(/, '`ZIcon` экспорт алга ✗');
+// ---------- ① 🆕 (91) ТУСДАА ИКОН БҮРЭН ХАСАГДАВ — лого = нүүр хуудасны ГАНЦ линк ----------
+t('🆕 (91) Толгойн ТУСДАА икон БҮРЭН ХАСАГДАВ — `ZIcon` ба `data-home-icon(-link)` 0 ✓', () => {
+  assert.doesNotMatch(ICONS_CODE, /ZIcon/, '`components/HeaderIcons.jsx` дээр `ZIcon` үлдсэн ✗');
+  assert.doesNotMatch(AP_CODE, /ZIcon/, '`components/AppProviders.jsx` дээр `ZIcon` ашиглалт үлдсэн ✗');
+  assert.doesNotMatch(AP_CODE, /data-home-icon/, '⏳ (69d)/(90)-ийн `data-home-icon`/`data-home-icon-link` дэгээ үлдсэн ✗');
 });
 
-t('🎨 `ZIcon` нь ЖИНХЭНЭ SVG — viewBox 24 ба ФАЙСБҮҮК хэв (брэнд дэвсгэр + цагаан «Z») ✓', () => {
-  assert.match(ICONS_CODE, /export function ZIcon\(\{ className = '[^']+', \.\.\.rest \}\) \{/,
-    '`ZIcon` нь `{ className, ...rest }` хэлбэрээр БИШ ✗');
-  const body = ICONS_CODE.slice(ICONS_CODE.indexOf('export function ZIcon'));
-  assert.match(body, /viewBox="0 0 24 24"/, '`viewBox="0 0 24 24"` алга ✗');
-  assert.match(body, /\{\.\.\.rest\}/, '`...rest` (`data-home-icon` дэгээ) алга ✗');
-  assert.match(body, /<rect width="24" height="24" rx="7" fill="#2563eb" \/>/,
-    'брэндийн дүүргэлт (дугуйлан `#2563eb`) алга ✗');
-  assert.match(body, /<path d="[^"]+" fill="#ffffff" \/>/, 'цагаан «Z» зам алга ✗');
-  assert.doesNotMatch(body, /currentColor/, '⏳ зурсан `currentColor` зам үлдсэн ✗');
-  assert.doesNotMatch(body, /🏠|M2\.6 11\.4/, '⏳ хуучин байшингийн зам/emoji үлдсэн ✗');
+t('🧩 🆕 (91) [лого] бүлэгт ЯГ 1 линк — логоны дараа тусдаа икон линк БАЙХГҮЙ (`</Link></div>`) ✓', () => {
+  assert.match(AP_CODE, /<div className="flex shrink-0 items-center">\s*<Link[\s\S]{0,400}?<\/Link>\s*<\/div>/,
+    'бүлэгт нэмэлт линк/икон байна эсвэл хаалтын дараалал зөрүүтэй (тусдаа икон буцаж орсон ✗)');
 });
 
 // ---------- ② ЛОГОНЫ БҮТЭЦ (текст) + 🏠 ТУСДАА HOME ICON (69d) + БҮХ ӨРГӨНД харагдах (69e) ----------
@@ -95,57 +99,30 @@ t('🔗 Логоны линк нь `href="/"` (home page) + `title`, текст 
     'логоны `href="/"`/`title`/текст ✗');
 });
 
-t('🖼 Лого дотор икон/emoji ОГТ БАЙХГҮЙ — лого нь ЗӨВХӨН текст (икон нь ТУСДАА) ✓', () => {
+t('🖼 Лого дотор икон/emoji ОГТ БАЙХГҮЙ — лого нь ЗӨВХӨН текст (`svg` 0) ✓', () => {
   const i = AP_CODE.indexOf('aria-label="ZarBook.mn — нүүр хуудас"');
   assert.ok(i > -1, 'логоны `aria-label` алга ✗');
   const block = AP_CODE.slice(i, AP_CODE.indexOf('</Link>', i));
-  assert.doesNotMatch(block, /<svg|<ZIcon|🏠/, 'лого дотор икон/emoji байна (тусдаа байх ёстой) ✗');
+  assert.doesNotMatch(block, /<svg|🏠/, 'лого дотор икон/emoji байна ✗');
   assert.match(block, /ZarBook<span className="text-gray-900">\.mn<\/span>/, 'логоны текст ✗');
+  assert.ok(!AP_CODE.includes('data-home-icon-link'), '⏳ (91)-д ХАСАГДСАН тусдаа икон линк дахин орсон ✗');
 });
 
-t('🏠 🆕 (69d) HOME ICON нь логоноос ГАДНА, ТУСДАА линк (`href="/"` + `data-home-icon-link`) ✓', () => {
-  assert.match(AP_CODE, /<Link\s*href="\/"\s*data-home-icon-link[\s\S]{0,500}?<ZIcon\s*data-home-icon/,
-    'тусдаа home icon линк алга (лого дотор хэвээр байж болзошгүй) ✗');
-});
-
-t('📍 Дараалал нь [лого] → [🏠 икон] → [{headerSlot} ХАЙЛТЫН хэсэг] ✓', () => {
+t('📍 Дараалал нь [лого] → [{headerSlot} ХАЙЛТЫН хэсэг] (🆕 (91): тусдаа икон БАЙХГҮЙ) ✓', () => {
   const logo = AP_CODE.indexOf('aria-label="ZarBook.mn — нүүр хуудас"');
-  const icon = AP_CODE.indexOf('data-home-icon-link');
   const slot = AP_CODE.indexOf('{headerSlot &&');
-  assert.ok(logo > -1 && icon > 0 && slot > 0, 'дэгээ олдсонгүй ✗');
-  assert.ok(logo < icon, 'икон логоны ӨМНӨ байна (логоны дараа байх ёстой) ✗');
-  assert.ok(icon < slot, 'икон ХАЙЛТЫН хэсгийн дараа байна (өмнө байх ёстой) ✗');
+  assert.ok(logo > -1 && slot > 0, 'дэгээ олдсонгүй ✗');
+  assert.ok(logo < slot, 'лого ХАЙЛТЫН хэсгийн ДАРАА байна (өмнө байх ёстой) ✗');
 });
 
-t('🧩 🆕 (72) [лого + 🏠 икон] нь НЭГ `flex shrink-0` бүлэгт — `justify-between`-ийн ДУНД хүүхэд БОЛОХГҮЙ (зар руу ороход икон ШИЛЖИХГҮЙ ✓)', () => {
+t('🧩 🆕 (72)+(91) [лого] нь НЭГ `flex shrink-0` бүлэгт — `justify-between`-д ЗӨВХӨН 1 хүүхэд (зар руу ороход ЛОГО ШИЛЖИХГҮЙ ✓)', () => {
   const wrap = AP_CODE.search(/<div className="[^"]*\bflex\b[^"]*\bshrink-0\b[^"]*\bitems-center\b[^"]*">\s*<Link/);
-  assert.ok(wrap > -1, '`[лого + 🏠]` бүлгийн `div` алга ⇒ `justify-between` иконыг чөлөөт зайны ГОЛД түлхэнэ (хэрэглэгчийн гомдол буцаж гарна) ✗');
+  assert.ok(wrap > -1, '`[лого]` бүлгийн `div` алга ⇒ `justify-between` логог чөлөөт зайны ГОЛД түлхэнэ (2026-10-08 (72)-ийн гомдол буцаж гарна) ✗');
   const logo = AP_CODE.indexOf('aria-label="ZarBook.mn — нүүр хуудас"');
-  const icon = AP_CODE.indexOf('data-home-icon-link');
   const slot = AP_CODE.indexOf('{headerSlot &&');
-  assert.ok(wrap < logo && logo < icon, 'бүлэг нь [лого] → [🏠 икон] дараалалтай БИШ ✗');
-  assert.match(AP_CODE.slice(icon, slot), /<\/Link>\s*<\/div>/,
-    'бүлэг нь иконы дараа ХААГДААГҮЙ (икон бүлгээс ГАДНА үлдвэл хуудас бүрд шилжинэ ✗)');
-});
-
-t('📏 Икон `h-6 w-6` (24px — баруун талын ❤️/💬/🕐/🔔 icon-only товчнуудтай ИЖИЛ) ✓', () => {
-  assert.match(AP_CODE, /<ZIcon\s*data-home-icon\s*className="h-6 w-6[^"]*"/,
-    'иконы хэмжээ `h-6 w-6` биш (бусад толгойн икон 24px) ✗');
-});
-
-t('📱 🆕 (69e) Икон БҮХ ӨРГӨНД ХАРАГДАХ (`inline-flex`) — `hidden`/`lg:inline-flex` ХОРИГ (мобайлд ч логоны дараа ✓)', () => {
-  const i = AP_CODE.indexOf('data-home-icon-link');
-  assert.ok(i > 0, '`data-home-icon-link` алга ✗');
-  const cls = AP_CODE.slice(i, i + 600).match(/className="([^"]*)"/);
-  assert.ok(cls, 'иконы класс олдсонгүй ✗');
-  assert.match(cls[1], /(^|\s)inline-flex(\s|$)/, '`inline-flex` алга (икон огт харагдахгүй ✗)');
-  assert.doesNotMatch(cls[1], /(^|\s)hidden(\s|$)/, '`hidden` буцаж орсон (мобайлд икон НУУГДАНА ✗)');
-  assert.doesNotMatch(cls[1], /lg:inline-flex/, '`lg:inline-flex` буцаж орсон (зөвхөн ≥1024px харагдана ✗)');
-});
-
-t('🖱 Hover-т икон бага зэрэг томорно (`group-hover:scale-110`) — бусад иконтой ИЖИЛ хэв ✓', () => {
-  const i = AP_CODE.indexOf('data-home-icon-link');
-  assert.match(AP_CODE.slice(i, i + 700), /group-hover:scale-110/, 'hover эффект алга ✗');
+  assert.ok(wrap < logo && logo < slot, 'бүлэг нь [лого] → [{headerSlot}] дараалалтай БИШ ✗');
+  assert.match(AP_CODE.slice(logo, slot), /<\/Link>\s*<\/div>/,
+    'бүлэг нь логоны дараа ХААГДААГҮЙ (лого бүлгээс ГАДНА үлдвэл хуудас бүрд шилжинэ ✗)');
 });
 
 t('🛡 «ZarBook .MN» алдаа (2026-09-27) ХОРИГ — логоны линк дээр `gap-*` БАЙХГҮЙ ✓', () => {
@@ -264,5 +241,5 @@ t('🎨 Толгой ба мобайл доод цэс нь ЦАГААН бол�
   assert.match(AP_CODE, /hover:bg-gray-50/, 'ховерын хариу үйлдэл ХАСАГДСАН ✗ (UX)');
 });
 
-console.log(`\n✅ Нийт ${passed} шалгалт амжилттай — лого «ZarBook.mn» (зөвхөн текст) + 🅉 «Z» БРЭНД-БАДЖ (лого ба ХАЙЛТЫН хэсгийн хооронд, нүүр хуудас руу) + брэнд БҮГДЭЭ ZarBook.mn ✓\n`);
+console.log(`\n✅ Нийт ${passed} шалгалт амжилттай — лого «ZarBook.mn» (ЗӨВХӨН текст, нүүр хуудасны ГАНЦ линк; 🆕 (91) тусдаа икон ХАСАГДАВ) + брэнд БҮГДЭЭ ZarBook.mn ✓\n`);
 
