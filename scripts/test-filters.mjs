@@ -1115,13 +1115,21 @@ t('🎛 (95) «Шүүлт» нь ТУСДАА ГАРЧ ИРДЭГ ЦОНХ (moda
   // ② ХААХ 3 ЗАМ — ✕ · ард тал · `Escape` (📍 Байршлын пикертэй ЯГ ИЖИЛ ✓)
   assert.match(src, /data-filters-close/, '✕ хаах товчны дэгээ алга ✗');
   assert.match(src, /e\.target === e\.currentTarget/, 'ард талд дарахад хаагдахгүй ✗');
-  assert.match(src, /e\.key === 'Escape'[\s\S]{0,40}setAdvOpen\(false\)/, '`Escape`-ээр хаагдахгүй ✗');
+  // ✏️ (95c): `Escape` нь цонхыг хаана — ⚠️ ГЭХДЭЭ хязгаарын орон
+  // (`[data-range-input]`) доторх `Esc` нь зөвхөн бичсэнээ буцаана, цонх
+  // ХААГДАХГҮЙ (эс бөгөөс оруулгын буцаалт боломжгүй болно ✗)
+  assert.match(src, /onKey = \(e\) => \{[\s\S]{0,140}setAdvOpen\(false\)/, '`Escape`-ээр хаагдахгүй ✗');
   // ③ ТОЛГОЙ / БИЕ / ДООД МӨР — бие нь өөрөө гүйлгэгдэнэ, доод мөрд 2 үйлдэл ✓
   assert.match(src, /min-h-0 flex-1 overflow-y-auto/, 'бие нь гүйлгэгдэхгүй (`overflow-y-auto` алга) ✗');
   // ③b ✏️ (95b): «Цэвэрлэх» нь `resetAll()` БИШ — `clearFilters()` (хэсэг/төрөл ХЭВЭЭР)
-  assert.match(src, /data-filters-clear[\s\S]{0,140}onClick=\{clearFilters\}/, '«Цэвэрлэх» нь `clearFilters`-ийг дуудахгүй ✗');
+  assert.match(src, /data-filters-clear[\s\S]{0,90}onClick=\{clearFilters\}/, '«Цэвэрлэх» нь `clearFilters`-ийг дуудахгүй ✗');
   assert.match(src, /const clearFilters = \(\) => \{[\s\S]{0,240}propertyType: f\.propertyType/, '`clearFilters` нь сонгосон ТӨРЛИЙГ (`propertyType`) хадгалахгүй ✗');
-  assert.ok(!/data-filters-clear[\s\S]{0,140}resetAll\(\)/.test(src),
+  // ⛔ ТОВЧНЫ `onClick` нь `resetAll` БАЙХГҮЙ — ⚠️ `[\s\S]{0,N}resetAll` гэсэн
+  //    зайнаас хамаарсан шалгалт нь КОММЕНТ доторх `resetAll()` дээр ХУУРАМЧ
+  //    барьдаг ✗ ⇒ зөвхөн JSX товчны `onClick`-ийг ЯГ татна ✓
+  const clearBtn = src.match(/data-filters-clear[\s\S]{0,60}?onClick=(\{[^}]*\})/);
+  assert.ok(clearBtn, '«Цэвэрлэх» товчны `onClick` олдсонгүй ✗');
+  assert.ok(!/resetAll/.test(clearBtn[1]),
     '«Цэвэрлэх» нь `resetAll()`-ыг (хэсгийг ч арилгана ✗) дуусаар байна — (95b) регресс ✗');
   assert.match(src, /data-filters-apply/, '«Харуулах» товчны дэгээ алга ✗');
   // ④ ⚠️ ХӨНДӨӨГДӨӨГҮЙ — `#advanced-filters` ба БҮХ хуучин дэгээ/утга ✓
@@ -1131,6 +1139,71 @@ t('🎛 (95) «Шүүлт» нь ТУСДАА ГАРЧ ИРДЭГ ЦОНХ (moda
   assert.match(src, /SideBlock label="Талбай, м²"/, '«Талбай, м²» хязгаарын блок алга ✗');
   assert.match(src, /attrFilters\.filter\(\(f\) => f\.range\)\.map/, 'хязгаарын attr панельд алга ✗');
 });
+
+t('🧹 (95b) «Бүгдийг цэвэрлэх» — КАТЕГОРИОС ГАРАХГҮЙ (чипүүдийн мөр + цонх)', () => {
+  const src = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
+  // ⓪ ГОЛ АЛДАА: чипүүдийн мөрийн «Бүгдийг цэвэрлэх» нь `resetAll()` байв ⇒
+  //    `section = 'all'` болж хэрэглэгч КАТЕГОРИОС ГАРЧ нүүр хуудасны 7 tile
+  //    руу шилждэг байв ✗ (хэрэглэгчийн гомдол — (95b) засвар)
+  // ① 🆕 ЧИПҮҮДИЙН МӨРИЙН товч — `data-chips-clear` дэгээтэй, `clearFilters` дуудна ✓
+  assert.match(src, /data-chips-clear[\s\S]{0,90}onClick=\{clearFilters\}/,
+    'чипүүдийн мөрийн «Бүгдийг цэвэрлэх» нь `clearFilters`-ийг дуудахгүй ✗');
+  // ② ⛔ ХААНА Ч `onClick={resetAll}` БАЙХГҮЙ — товчнууд resetAll-ыг дуудахгүй ✓
+  assert.ok(!/onClick=\{resetAll\}/.test(src),
+    'товч `resetAll()`-ыг (хэсэг · категори · эрэмбэлэл БҮГДИЙГ арилгана ✗) дуусаар байна ✗');
+  // ③ `resetAll` нь ЗӨВХӨН breadcrumb-ийн «Бүх зар» (`nav.reset`) замд үлдсэн ✓
+  assert.match(src, /if \(nav\.reset\) \{ resetAll\(\); return; \}/,
+    'breadcrumb-ийн «Бүх зар» → `resetAll()` зам алга болов ✗');
+  // ④ `clearFilters` нь ХЭСЭГ/КАТЕГОРИ/ТӨРӨЛ/ЭРЭМБЭЛЭЛ-д ХҮРЭХГҮЙ (зөвхөн шүүлт+хуудас+хайлт)
+  const at = src.indexOf('const clearFilters = () => {');
+  assert.ok(at > 0, '`clearFilters` функц алга ✗');
+  const fn = src.slice(at, src.indexOf('\n  };', at));
+  ['setSection', 'setCategory', 'setSort', 'setSectionOpen', 'setGroupOpen'].forEach((bad) => {
+    assert.ok(!fn.includes(bad),
+      `\`clearFilters\` нь \`${bad}\`-ыг дуудаж байна ✗ (хэрэглэгч категориосоо гарна)`);
+  });
+  ['setPage(1)', "setQuery('')", "setSearch('')", 'emptyFilters()', 'propertyType: f.propertyType']
+    .forEach((need) => assert.ok(fn.includes(need), `\`clearFilters\` дотор \`${need}\` алга ✗`));
+  // ⑤ 🎛 ЧИПҮҮДИЙН МӨРӨНД `propertyType` чип БАЙХГҮЙ (navigation ≠ шүүлт) —
+  //    ⚠️ эс бөгөөс «Бүгдийг цэвэрлэх» дарсны дараа ч чип үлдэж, товч «худал» болно ✗
+  const cAt = src.indexOf('const activeFilterChips = useMemo(');
+  assert.ok(cAt > 0, '`activeFilterChips` алга ✗');
+  const chips = src.slice(cAt, src.indexOf('const activeFilterCount', cAt));
+  assert.ok(!/key: 'propertyType'/.test(chips),
+    'чипүүдийн мөрөнд `propertyType` чип буцаж оржээ ✗ (цэвэрлэгдэхгүй чип = худал товч ✗)');
+  assert.ok(!/getPropertyTypeLabel\(filters\.propertyType/.test(chips),
+    '`propertyType` шошго чипүүдийн мөрөнд буцаж оржээ ✗');
+});
+
+/**
+ * 🆕 (95c): хязгаарын орон доторх `Escape` (⏎ биш — бичсэнээ БУЦААХ) ба
+ * цонхны `Escape` (ХААХ) хоёр НЭГ event дээр ЗЭРЭГЛЭХ ЁСТОЙ.
+ * ⏳ (95) дээр хоёулаа зэрэг ажиллаж, `Escape` дармагц БҮХЭЛ цонх хаагддаг
+ * байв ✗ ⇒ оруулгын буцаалт боломжгүй болж, 🐍 `cdp:range` ⑤/⑥ 5 шалгалт унав
+ * (32/37). Засвар нь «эх сурвалжаар шүүх» — зөвхөн `stopPropagation()` нь
+ * React-ийн root listener-тай НЭГ зангилаа (`document`) дээр байх тул
+ * хангалтгүй ✗.
+ */
+t('⌨️ (95c) ЦОНХНЫ орон доторх Esc → УТГА БУЦААХ (цонх ХААГДАХГҮЙ)', () => {
+  const src = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
+  // ① Цонхны listener: `Escape` + эх сурвалж нь `[data-range-input]` бол ГАРНА ✓
+  const at = src.indexOf('if (!advOpen) return undefined;');
+  assert.ok(at > 0, 'цонхны `Escape` useEffect (`!advOpen`) алга ✗');
+  const fn = src.slice(at, at + 460);
+  assert.match(fn, /e\.key !== 'Escape'/, 'цонхны `Esc` шалгалт алга ✗');
+  assert.match(fn, /closest\('\[data-range-input\]'\)/,
+    'цонхны `Esc` нь хязгаарын орон (`[data-range-input]`)-ыг ШҮҮХГҮЙ ✗ — (95c) регресс ✗');
+  assert.match(fn, /setAdvOpen\(false\)/, 'цонхны `Esc` → `setAdvOpen(false)` алга ✗');
+  assert.match(src, /document\.addEventListener\('keydown', onKey\)/,
+    'цонхны `keydown` listener бүртгэл алга ✗');
+  // ② Оруулга нь өөрөө `Escape`-д бичсэнээ буцаана (утга/URL ХӨНДӨӨГДӨХГҮЙ ✓)
+  const ri = readFileSync(new URL('../components/RangeInput.jsx', import.meta.url), 'utf8');
+  assert.match(ri, /e\.key === 'Escape'\) \{ e\.preventDefault\(\); setTyping\(null\); \}/,
+    '`RangeInput`-ийн `Escape` → `setTyping(null)` (буцаалт) алга ✗');
+  assert.match(ri, /data-range-input="from"[\s\S]{0,400}data-range-input="to"/,
+    '`data-range-input` дэгээ (цонхны шүүлтэд хэрэгтэй ✓) алга ✗');
+});
+
 
 // ---------- 🔀 🆕 2026-10-06 (17): PILL → САЙДБАР («Дэлгэрэнгүй хайлт») ----------
 /**

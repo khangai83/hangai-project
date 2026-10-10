@@ -1525,24 +1525,61 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   CDP (`cdp-range`/`cdp-rooms`/`cdp-payments`) ба эхийн дараалал (`#filter-bar` →
   pill-үүд → `#advanced-filters` → `{priceSideBlock}` →
   `SideBlock label="Талбай, м²"`) ХЭВЭЭР ✓.
-  <br>**(3b) ✏️ (95b) ЗАСВАР — «Бүгдийг цэвэрлэх» КАТЕГОРИОС ГАРАХГҮЙ БОЛОВ:**
-  ⏳ (95)-д энэ товч `resetAll()`-ыг дуудаж, `section` нь `all` болж хэрэглэгч
-  нүүр хуудасны 7 tile руу шилждэг байв ✗ (хэрэглэгч илрүүлэв: «…тухайн сонгосон
-  байгаа категори оос гарч байгаа нь маш буруу») ⇒ 🆕 **`clearFilters()`** —
-  ЗӨВХӨН шүүлтийг (`filters` + `query`/`search`) цэвэрлэнэ; **ХЭСЭГ (категори) ·
-  сонгосон ТӨРӨЛ (`filters.propertyType`) · `category` · `sort`** БҮГД ХЭВЭЭР ✓
-  ба цонх НЭЭЛТТЭЙ үлдэж, талбарууд хоосон болсныг харна ✓.
-  🧪 `test:filters` **127 ✓** (🆕 «`clearFilters` нь `propertyType` хадгална» +
-  «`data-filters-clear` нь `resetAll()` дуудахыг ХОРИГЛОНО» регресс) ·
-  `npm run build` **EXIT=0 ✓** · 🐍 CDP (бодит Chrome): шүүлт тавьж → «Бүгдийг
-  цэвэрлэх» → URL нь `?section=…&type=…` ХЭВЭЭР, бичилтүүд хоосон, үр дүн
-  хэсгийнхээ хэвээр ✓.
-  <br>**(4) 🧪 ТЕСТ:** `test:filters` **126 → 127 ✓** (🆕 «🎛 (95) … ТУСДАА ГАРЧ
-  ИРДЭГ ЦОНХ» — overlay/`role`/`aria-modal`/хаах 3 зам/доод мөр/хуучин дэгээ) ·
-  `npm run test:*` **42/42 ✓** · `npm run build` **EXIT=0 ✓**.
-  <br>**(5) 📄 DOC:** `README.md` (энэ буллет) · `docs/IMPROVEMENTS.md` (энэ мөр).
+  <br>**(3b) ✏️ (95b) ЗАСВАР — «Бүгдийг цэвэрлэх» КАТЕГОРИОС ГАРАХГҮЙ БОЛОВ (2 ТОВЧ):**
+  ⏳ (95)-д **хоёулаа** (① үр дүнгийн дээд талын чипүүдийн мөрийн товч
+  ② шүүлтийн цонхны доод мөрийн товч) `resetAll()`-ыг дуудаж, `section` нь `all`
+  болж хэрэглэгч нүүр хуудасны 7 tile руу шилждэг байв ✗ (хэрэглэгч илрүүлэв:
+  «…тухайн сонгосон байгаа категори оос гарч байгаа нь маш буруу») ⇒
+  🆕 **`clearFilters()`** — ЗӨВХӨН шүүлтийг (`filters` + `query`/`search`)
+  цэвэрлэнэ; **ХЭСЭГ (категори) · сонгосон ТӨРӨЛ (`filters.propertyType`) ·
+  `category` · `sort`** БҮГД ХЭВЭЭР ✓ ба цонх НЭЭЛТТЭЙ үлдэж, талбарууд хоосон
+  болсныг харна ✓. ⚠️ **ГОЛ АЛДАА нь чипүүдийн мөрийн товч байв**
+  (`data-chips-clear` — цонх нээхгүйгээр шууд харагддаг, хамгийн их дарагддаг)
+  ⇒ 2 товч НЭГ дүрэмтэй болов (тусдаа хувилбар БАЙХГҮЙ ✓).
+  <br>**(3b′) 🗑 ЧИПҮҮДИЙН МӨРӨӨС `propertyType` ЧИП ХАСАГДАВ:**
+  тэр нь шүүлт БИШ, «хаана явж байна» (breadcrumb + `<h1>` дээр аль хэдийн байгаа)
+  ⇒ ⏳ товч нь «Бүгдийг цэвэрлэх» гэж бичээд **цэвэрлэж чадахгүй чип үлдээдэг**
+  байсан нь «худал товч» ✗ ⇒ одоо «Бүгдийг цэвэрлэх» дархад чипүүдийн мөр БҮРЭН
+  ХООСОРЧ, хэрэглэгч КАТЕГОРИОСОО ГАРАХГҮЙ ✓ (сонгосон төрөл нь breadcrumb дээр
+  хэвээр ✓; буцах зам нь breadcrumb — 2646-2647-р мөрийн progressive disclosure
+  дүрэм ХЭВЭЭР ✓).
+  🧪 `test:filters` **127 → 129 ✓** (🆕 «🧹 (95b) … КАТЕГОРИОС ГАРАХГҮЙ
+  (чипүүдийн мөр + цонх)»: 2 товч `clearFilters` дуудах · `onClick={resetAll}`
+  ХААНА Ч БАЙХГҮЙ · `clearFilters` нь `setSection`/`setCategory`/`setSort`/
+  `setSectionOpen`/`setGroupOpen` дуудахыг ХОРИГЛОХ · `propertyType` чип эргэж
+  орохыг ХОРИГЛОХ) · `npm run test:*` **42/42 ✓** · `npm run build` **EXIT=0 ✓** ·
+  🐍 CDP (бодит Chrome, `?section=real-estate&type=Орон сууц&minPrice=…`)
+  **12 OK / 0 FAIL** — ① чипүүдийн мөр (1280px) ② цонх (390px) хоёулааг дарсны
+  дараа `minPrice` арилж, `section`/`type` ХЭВЭЭР, чип **0**, `[data-section-panel]`
+  (нүүр хуудасны 7 tile) ГАРААГҮЙ, «N зар олдлоо» ба breadcrumb
+  («Бүх зар › Үл хөдлөх › Орон сууц») ХЭВЭЭР, JS exception **0** ✓;
+  ⏳ (95b) цонхны CDP **8/0 ✓** ХЭВЭЭР ✓.
+  <br>**(3c) ⌨️ (95c) ЗАСВАР — ЦОНХНЫ оронд `Esc` дархад ЦОНХ ХААГДАХГҮЙ БОЛОВ:**
+  ⏳ (95)-ийн `Escape`-хаагч (`document.addEventListener('keydown', …)`) нь
+  `RangeInput`-ийн өөрийн `Esc` («бичсэнээ болиод хадгалагдсан утга руу буц»)
+  дээр ЗЭРЭГ ажиллаж, 「Үнэ/Талбай」-д бичээд `Esc` дармагц **БҮХЭЛ цонх хаагдаж**,
+  буцаалт боломжгүй болдог байв ✗ ⇒ listener нь **эх сурвалжаар** шүүнэ:
+  `if (e.target.closest('[data-range-input]')) return;` ✓ (⚠️ зөвхөн
+  `stopPropagation()` ХАНГАЛТГҮЙ — React-ийн root listener ба энэ listener хоёулаа
+  `document` дээр, нэг зангилааны дараагийн listener-ийг `stopPropagation` зогсоохгүй ✗).
+  Зан нь: **хязгаарын орон доторх `Esc` = утга буцаах (цонх ХЭВЭЭР)** ·
+  **бусад газарт `Esc` = цонх хаах** ✓. 🧪 `test:filters` **129 ✓** (🆕 «⌨️ (95c) …
+  ЦОНХНЫ орон доторх Esc → УТГА БУЦААХ (цонх ХААГДАХГҮЙ)»: `closest('[data-range-input]')`
+  шүүлт + `setAdvOpen(false)` + `RangeInput`-ийн `setTyping(null)`) ·
+  🐍 `cdp:range` ⏳ **32/37 ✗ → 37/37 ✓** (бодит Chrome: Esc → «3.000.000» буцав,
+  талбай «1.234,5» → `minArea=1234.5` → DB `area=gte.1234.5` ✓) ·
+  `cdp:chips` 51/0 · `cdp:sections` 35/0 · `cdp:rooms` 49/0 · `cdp:payments` 61/0 ·
+  `cdp:swap` 41/0 · `cdp:districts` 89/0 ✓ · `npm run build` **EXIT=0 ✓**.
+  <br>**(4) 🧪 ТЕСТ:** `test:filters` **126 → 129 ✓** (🆕 «🎛 (95) … ТУСДАА ГАРЧ
+  ИРДЭГ ЦОНХ» — overlay/`role`/`aria-modal`/хаах 3 зам/доод мөр/хуучин дэгээ +
+  🆕 «🧹 (95b) …» ба «⌨️ (95c) …») · `npm run test:*` **42/42 ✓** ·
+  `npm run build` **EXIT=0 ✓**.
+  <br>**(5) 📄 DOC:** `README.md` (энэ буллет) · `docs/IMPROVEMENTS.md` (энэ мөр) ·
+  `scripts/cdp-range.mjs` §⑦-ийн ХУУЧИРСАН коммент («`Бүгдийг цэвэрлэх` нь
+  section/type-ыг ч арилгана») шинэчлэгдэв ✓.
   🔍 Хайх үг: `data-filters-modal`, `data-filters-close`, `data-filters-clear`,
-  `data-filters-apply`, `role="dialog"`, `#advanced-filters`
+  `data-filters-apply`, `data-chips-clear`, `clearFilters`, `data-range-input`,
+  `role="dialog"`, `#advanced-filters`
 - 📍 **«ГАЗРЫН ЗУРАГ» ТОВЧНЫ ИКОН — 🗺 EMOJI → PIN SVG (2026-10-10 (94))** —
   хэрэглэгчийн хүсэлт: «Газрын зургийг иконыг соль» (+ pin-ийн зургийг илгээв).
   ⚠️ **DB/SQL/migration/URL/logic ХӨНДӨӨГДӨӨГҮЙ** (зөвхөн UI икон).
