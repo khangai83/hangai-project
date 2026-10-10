@@ -2596,7 +2596,7 @@ t('🛠 0035 migration: «Нүүлгэлт ба тээвэр» → «Нүүлг�
 //    `attrFields`-ийн шошго/icon/дарааллаар мөр болгоно — энэ тест гэрээг түгжинэ.
 // ============================================================
 
-t('📋 getAttrRows(auto) — 🚗 10 мөр, attrFields дараалал + «146,000» таслалттай', () => {
+t('📋 getAttrRows(auto) — 🚗 8 мөр, 🆕 (113): Үйлдвэрлэгч/Загвар ХАСАГДАВ, Гүйлт нь он-ы ӨМНӨ', () => {
   // ⚠️ БОДИТ demo зарын `attrs` (`826210d7…` — 🚗 Toyota Sai)
   const rows = getAttrRows('auto', {
     brand: 'Toyota', model: 'Sai', color: 'Хар', year: '2010', importYear: '2020',
@@ -2604,28 +2604,38 @@ t('📋 getAttrRows(auto) — 🚗 10 мөр, attrFields дараалал + «14
     engine: '2.1л - 2.7л', fuel: 'Бензин',
     negotiable: 'yes', drive: 'Урд',   // ⚠️ ХОЁУЛАА ХАРАГДАХГҮЙ (доорх тест ✓)
   });
-  // ① Түлхүүр ба дараалал нь `attrFields`-ийн дараалал (форм/sidebar-тай ижил)
+  // ① 🆕 (113) Түлхүүр ба дараалал: `brand`/`model` ХАСАГДАВ, `mileage` нь
+  //    `year`-ийн ӨМНӨ (хэрэглэгчийн хүсэлт: swap «Үйлдвэрлэсэн он» ↔ «Гүйлт (км)»)
   assert.deepEqual(rows.map((r) => r.key), [
-    'brand', 'model', 'color', 'year', 'importYear', 'mileage', 'transmission',
+    'color', 'mileage', 'year', 'importYear', 'transmission',
     'steering', 'engine', 'fuel',
   ]);
-  // ② Шошго нь `attrFields`-ээс (карт дээр харагдах нэртэй ЯГ ижил) + icon
+  // ② ⛔ Үйлдвэрлэгч/Загвар нь хүснэгтэд ГАРАХГҮЙ (гарчигт/breadcrumb-д бий ✓)
+  assert.ok(!rows.some((r) => r.key === 'brand' || r.key === 'model'),
+    'Үйлдвэрлэгч/Загвар мөр БУЦАЖ ОРСОН ✗');
+  // ③ Шошго нь `attrFields`-ээс (карт дээр харагдах нэртэй ЯГ ижил)
   const byKey = Object.fromEntries(rows.map((r) => [r.key, r]));
-  assert.equal(byKey.brand.label, 'Үйлдвэрлэгч');
-  assert.equal(byKey.brand.icon, '🏷️');
-  assert.equal(byKey.model.label, 'Загвар');
   assert.equal(byKey.mileage.label, 'Гүйлт (км)');
-  // ③ Утга: гүйлт нь мянгатын таслалттай («км» шошгонд байгаа тул ДАВХАРДСАНГҮЙ)
+  assert.equal(byKey.year.label, 'Үйлдвэрлэсэн он');
+  // ④ Утга: гүйлт нь мянгатын таслалттай («км» шошгонд байгаа тул ДАВХАРДСАНГҮЙ)
   assert.equal(byKey.mileage.value, '146,000');
   assert.ok(!byKey.mileage.value.includes('км'), 'нэгж нь шошгонд — утгад дахин гарахгүй ✓');
-  // ④ 🔧 Сонголттой «2.1л - 2.7л» нь нэгжээ өөрөө агуулна → «л» ДАВХАРДАХГҮЙ
+  // ⑤ 🔧 Сонголттой «2.1л - 2.7л» нь нэгжээ өөрөө агуулна → «л» ДАВХАРДАХГҮЙ
   assert.equal(byKey.engine.value, '2.1л - 2.7л');
-  // ⑤ Он ба бусад нь ЗӨВӨӨР нь (шошго тайлбарлана)
+  // ⑥ Он ба бусад нь ЗӨВӨӨР нь (шошго тайлбарлана)
   assert.equal(byKey.year.value, '2010');
   assert.equal(byKey.importYear.value, '2020');
   assert.equal(byKey.color.value, 'Хар');
-  // ⑥ ХУУЧИН/demo тоон хөдөлгүүр нь «2.5 л» болно (картын мөртэй ижил ✓)
+  // ⑦ ХУУЧИН/demo тоон хөдөлгүүр нь «2.5 л» болно (картын мөртэй ижил ✓)
   assert.equal(getAttrRows('auto', { engine: '2.5' })[0].value, '2.5 л');
+  // ⑧ 🆕 (113) Зөвхөн гүйлт (он хоосон) → мөр нь ЗӨВХӨН 1 («Гүйлт (км)») ✓
+  assert.deepEqual(getAttrRows('auto', { mileage: '5000' }).map((r) => r.key), ['mileage']);
+  // ⑨ 🆕 (113) Зөвхөн он (гүйлт хоосон) → зөвхөн «Үйлдвэрлэсэн он» ✓
+  assert.deepEqual(getAttrRows('auto', { year: '2015' }).map((r) => r.key), ['year']);
+  // ⑩ 🆕 (113) ФОРМ/ШҮҮЛТ ХӨНДӨГДӨӨГҮЙ — Үйлдвэрлэгч/Загвар талбар ХЭВЭЭР ✓
+  assert.equal(getAttrField('auto', 'brand').label, 'Үйлдвэрлэгч');
+  assert.equal(getAttrField('auto', 'model').label, 'Загвар');
+  assert.ok(getAttrFilters('auto').some((f) => f.key === 'brand'));
 });
 
 t('📋 getAttrRows — хоосон утга ба `negotiable`/`drive` ХАРАГДАХГҮЙ', () => {
@@ -2633,11 +2643,12 @@ t('📋 getAttrRows — хоосон утга ба `negotiable`/`drive` ХАРА
     brand: 'Toyota', model: '   ', color: null, year: '', mileage: 0, negotiable: 'yes', drive: 'Урд',
   });
   // ⚠️ `attrFields`-д БАЙХГҮЙ түлхүүр (`negotiable`, 2026-10-01-д ХАСАГДСАН `drive`)
-  //    нь `attrs`-д байсан ч мөр БОЛОХГҮЙ ✓
+  //    нь `attrs`-д байсан ч мөр БОЛОХГҮЙ ✓; `brand`/`model` нь (113)-аас хойш
+  //    хүснэгтэд ГАРАХГҮЙ ✓
   // ⚠️ `0` нь ХООСОН БИШ (`formatAttrsLine`-тэй ижил дүрэм) — ШИНЭ машин 0 км-тэй
   //    байж болно тул «🛣️ Гүйлт (км): 0» гарах нь ЗӨВ ✓
-  assert.deepEqual(rows.map((r) => r.key), ['brand', 'mileage']);
-  assert.equal(rows[1].value, '0');
+  assert.deepEqual(rows.map((r) => r.key), ['mileage']);
+  assert.equal(rows[0].value, '0');
   // ⚠️ Утгагүй `attrs` (null/undefined) дээр КРАШ ХИЙХГҮЙ — хоосон массив ✓
   assert.deepEqual(getAttrRows('auto', null), []);
   assert.deepEqual(getAttrRows('auto', undefined), []);
