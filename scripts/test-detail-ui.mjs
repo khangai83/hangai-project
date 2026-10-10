@@ -337,15 +337,17 @@ t('⑩ 🏷️ Дэлгэрэнгүй хуудсанд ЗАРЫН ГАРЧИГ �
   // ① НЭГ ЭХ СУРВАЛЖ — `lib/format.js → listingTitle` (карттай ЯГ ижил) ✓
   assert.ok(/import \{[^}]*\blistingTitle\b[^}]*\} from '\.\.\/lib\/format'/.test(DET_CODE),
     '`listingTitle` нь `../lib/format`-аас импортлогдоогүй (гарчиг 2 газар зөрөх эрсдэл) ✗');
-  // 🆕 (97) 🚗 АВТО нөөц гарчиг — хэрэглэгчийн хүсэлт: «Only car detail card like
-  //    photo, it's head is category name Toyota Harrier, Its Brand and Model then
-  //    manufactured date/Imported year» ⇒ зар оруулагч бичээгүй бол `carTitle`
-  assert.ok(DET_CODE.includes("const adTitle = listingTitle(listing) || (isAuto ? carTitle(listing.attrs) : '');"),
-    '🚗 АВТО нөөц гарчиг (`carTitle`) алга ✗ («Toyota Harrier, 2017/2024» гарахгүй)');
-  assert.ok(/import \{[^}]*\bcarTitle\b[^}]*\} from '\.\.\/lib\/format'/.test(DET_CODE),
-    '`carTitle` нь `../lib/format`-аас импортлогдоогүй ✗');
-  assert.ok(DET_CODE.includes("const isAuto = (listing.section || 'real-estate') === 'auto';"),
-    '`isAuto` шалгалт алга ✗ (бусад хэсэгт авто-гарчиг орж болзошгүй)');
+  // 🆕 (97)(105) 🚗/💻 АВТО нөөц гарчиг — хэрэглэгчийн хүсэлт: «Only car detail
+  //    card like photo, it's head is category name Toyota Harrier, Its Brand and
+  //    Model then manufactured date/Imported year» + 🆕 (105) «For laptops, the
+  //    title should be based on “Screen size, CPU, and RAM”» ⇒ аттрибутаас
+  //    автоматаар бүтнэ (форм дээр талбар БАЙХГҮЙ — `hasAutoTitle`)
+  assert.ok(DET_CODE.includes('const adTitle = autoTitle(listing) || listingTitle(listing);'),
+    '🚗💻 АВТО-гарчиг (`autoTitle`) алга ✗ («Toyota Harrier, 2017/2024» гарахгүй)');
+  assert.ok(/import \{[^}]*\bautoTitle\b[^}]*\} from '\.\.\/lib\/format'/.test(DET_CODE),
+    '`autoTitle` нь `../lib/format`-аас импортлогдоогүй ✗');
+  assert.ok(!/const isAuto/.test(DET_CODE),
+    '⏳ (97)-ийн `isAuto` хувьсагч үлдсэн ✗ (одоо `autoTitle` нэг эх сурвалж)');
   // ② H1 нь `data-listing-title` тэмдэгтэй ба ЯГ НЭГ удаа ✓
   assert.ok(DET_CODE.includes('data-listing-title'),
     '`h1[data-listing-title]` тэмдэг алга (CDP барих боломжгүй) ✗');

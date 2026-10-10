@@ -1503,6 +1503,35 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- 🏷️🚗💻 **АВТО-ГАРЧИГ: МАШИН БА NOTEBOOK-ИЙН ГАРЧГИЙН ТАЛБАР ХАСАГДАВ — ГАРЧИГ НЬ ДЭЛГЭРЭНГҮЙГЭЭС БҮТНЭ (2026-10-10 (105))** —
+  ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «remove the manual title field for certain listings and
+  instead generate the title from the details … For vehicles, the title should be
+  constructed using the “Manufacturer model, Manufactured year/import year”. For
+  laptops, the title should be based on “Screen size, CPU, and RAM”» + «remove the
+  listing title input field for Car and Notebook categories».
+  <br>**(1) 🔑 НЭГ ЭХ СУРВАЛЖ — `lib/locationData.js → hasAutoTitle(section, subtype)`:**
+  🚗 `auto` (БҮХ дэд төрөл) ба 💻 `computers`-ийн **`Notebook`** (`PC_SPEC_SUBTYPES` —
+  📺/⚙️/🧠/💾 талбаруудтай ЯГ ИЖИЛ жагсаалт) = `true`; бусад нь `false` (гарчиг ХЭВЭЭР).
+  Энэ дүрэм нь ① ФОРМ (талбарыг нуух) ② ХАРАГДАЦ (`autoTitle`) — ХОЁУЛАНГ нь удирдана
+  ⇒ «талбар байхгүй атлаа гарчиг ч гарахгүй» зөрүү ҮҮСЭХГҮЙ ✓
+  <br>**(2) 🧩 ГАРЧИГ БҮТЭЭХ — `lib/format.js → autoTitle(listing)`** (🚗 `carTitle` —
+  «Toyota Harrier, 2017/2024» · 💻 `notebookTitle` — «14.0", Intel Core i5, 16 GB»
+  = 📺 `screen` · ⚙️ `cpu` · 🧠 `ram`, зөвхөн байгаа утгуудыг «, »-ээр холбоно).
+  Харагдац нь `autoTitle(listing) || listingTitle(listing)` — аттр дутуу (хуучин) зар
+  дээр хадгалагдсан гарчиг нөөцөөрөө гарна ✓ (3 газар: карт · дэлгэрэнгүй H1 · миний зарууд)
+  <br>**(3) 📝 ФОРМ (`components/AddListingClient.jsx`):** `autoTitleOn = hasAutoTitle(form.section,
+  form.propertyType)` ⇒ ① 🖥 гарчгийн мөр `{!autoTitleOn && (…)}` ② 📱 `detailScreens`-ээс
+  «Зарын гарчиг» дэлгэц ХАСАГДАВ ③ `requiredDetailMsg('title')` нь `autoTitleOn` үед `''`
+  (эс бөгөөс шинэ машин/ноутбукийн зар 3-р алхмаас ЦААШ ГАРАХГҮЙ болно ✗). ⚠️ `form.title`/
+  payload/DB ХӨНДӨӨГДӨӨГҮЙ — хуучин зарыг засахад гарчиг АЛДАГДАХГҮЙ ✓ · **Migration 0** ✓
+  <br>**(4) 🧪 ТЕСТ:** `test:format` **36 → 38** (🆕 `notebookTitle` 2 тест) · `test:filters`
+  **129 → 131** (🆕 `hasAutoTitle` 2 тест — 🚗 бүх дэд төрөл · 💻 зөвхөн Notebook · бусад нь false) ·
+  `test:card` 24 · `test:detail-ui` 28 · `test:wizard` **65 → 66** (🆕 (105) гэрээ) ·
+  бүх `test:*` ✅ · `npm run build` **EXIT=0** ✓
+  <br>**(5) ⚠️ ХЭВЭЭР:** `MAX_LISTING_TITLE_LENGTH` (120) · `0027_listing_title.sql` багана ·
+  🏠/💼/бусад харагдах гарчиг · карт/дэлгэрэнгүй дизайн · URL/query
+  🔍 Хайх үг: `hasAutoTitle`, `autoTitle`, `notebookTitle`, `autoTitleOn`,
+  `remove the … title input field for Car and Notebook`
 - 📏🖼 **ЗУРАГ ⟂ ТАЙЛБАР ЗЭРЭГЦЭВ + ӨРГӨН/ФОНТ ТААРУУЛАВ (2026-10-10 (104))** —
   ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «align the advertisement image and the description …
   adjust the width so that it measures approximately 23 cm on a 23.8-inch screen

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { shortPriceLabel, hasRealPrice, getPropertyIcon, firstImage, carTitle, timeAgo, formatAddress, listingTitle } from '../lib/format';
+import { shortPriceLabel, hasRealPrice, getPropertyIcon, firstImage, autoTitle, timeAgo, formatAddress, listingTitle } from '../lib/format';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 import VerifiedBadge from './VerifiedBadge';
 // 📍👁 2026-10-10 (96) — МЕТА МӨРИЙН ICONУУД EMOJI → SVG (хэрэглэгчийн хүсэлт):
@@ -83,8 +83,9 @@ const MAX_CARD_DOTS = 5;
  *   ② 👤 НИЙТЛЭГЧИЙН BAND (Avatar 28px + нэр) КАРТ ДЭЭР ХАСАГДАВ — жишиг
  *      сайтын машин/байрны карт дээр нэр/профайл зураг ОГТ БАЙХГҮЙ ⇒ харин
  *      ✅ `VerifiedBadge` нь ҮНИЙ ЯГ ХАЖУУД үлдэв (`authorVisible`) ✓
- *   ③ 🚗 МАШИНЫ АВТО-ГАРЧИГ — зар оруулагч гарчиг БИЧЭЭГҮЙ бол `carTitle()`
- *      нь `attrs`-аас «Toyota Vellfire, 2017/2026» гэж бүтээнэ ✓
+ *   ③ 🚗💻 АВТО-ГАРЧИГ (🆕 (105)) — 🚗 Машин ба 💻 Notebook-д гарчгийн талбар
+ *      БАЙХГҮЙ ⇒ `autoTitle()` нь `attrs`-аас бүтээнэ: 🚗 «Toyota Vellfire,
+ *      2017/2026» (брэнд загвар, он) · 💻 «14.0", Intel Core i5, 16 GB» ✓
  *   ④ 🏠 БАЙРНЫ МӨР — 🛏 өрөө · 🚿 угаалгын өрөө · 📐 м² · 🏢 давхар ХАСАГДАВ
  *      (хэрэглэгчийн хүсэлт); 📅 «ашиглалтанд орсон он» ХЭВЭЭР ✓
  *
@@ -130,7 +131,8 @@ const MAX_CARD_DOTS = 5;
  * 🔍 ХАЙХ ҮГ: ListingCard, aspect-[4/3], data-listing-card, line-clamp-2,
  *    data-card-images, data-card-slide, data-card-prev, data-card-next,
  *    data-card-counter, data-card-dots, data-fav-toggle, activeIdx, goToImage,
- *    MAX_CARD_DOTS, carTitle, snap-x snap-mandatory, rounded-xl, bg-white/90,
+ *    MAX_CARD_DOTS, autoTitle, carTitle, notebookTitle, snap-x snap-mandatory,
+ *    rounded-xl, bg-white/90,
  *    pt-2.5, border-t ХАСАГДАВ, pr-20
  *    grid-cols-1 sm:grid-cols-2 (жагсаалтын grid нь ХУУДАС бүр дээр)
  */
@@ -171,13 +173,13 @@ export default function ListingCard({ listing, author, attrsLine }) {
   // ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд (хэрэглэгчийн хүсэлт) —
   //    бусад хэсэгт (авто/ажил/компьютер…) энэ badge ХАРАГДАХГҮЙ.
   const isRealEstate = (listing.section || 'real-estate') === 'real-estate';
-  // 🚗 Машин уу? — 🆕 (85) АВТО-гарчиг нь зөвхөн `auto` хэсэгт ✓
-  const isAuto = (listing.section || 'real-estate') === 'auto';
   // 🏷️ Зарын гарчиг (0027_listing_title.sql) — хоосон бол мөр ГАРАХГҮЙ
-  //    🆕 (85): 🚗 машин дээр зар оруулагч гарчиг БИЧЭЭГҮЙ бол `attrs`-аас
-  //    «Toyota Vellfire, 2017/2026» гэж бүтээнэ (`carTitle`) — жишиг сайтын хэв;
-  //    ⚠️ бичсэн гарчиг БАЙВАЛ түрүүлнэ (хэрэглэгчийн үгийг дарж бичихгүй ✓)
-  const title = listingTitle(listing) || (isAuto ? carTitle(listing.attrs) : '');
+  //    🆕 (105): 🚗 Машин ба 💻 Notebook-д гарын гарчгийн талбар БАЙХГҮЙ
+  //    (`hasAutoTitle`) ⇒ гарчиг нь `autoTitle(listing)`-ээр аттрибутаас
+  //    автоматаар бүтнэ (🚗 «Toyota Vellfire, 2017/2026» · 💻 «14.0", Intel
+  //    Core i5, 16 GB»); ⚠️ авто-гарчиг ХООСОН бол (аттр дутуу) хуучин
+  //    заруудын бичсэн `title` нөөцөөрөө харагдана ✓
+  const title = autoTitle(listing) || listingTitle(listing);
   const address = formatAddress(listing);
   // ⚠️ 2026-10-06: 📝 ТАЙЛБАР карт дээр ХАСАГДАВ (хэрэглэгчийн хүсэлт:
   //    «Нүүр хуудас дээрх зарын карт дээрээс Тайлбарыг байхгүй болго»).

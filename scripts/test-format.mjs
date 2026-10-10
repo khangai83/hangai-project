@@ -28,7 +28,7 @@ assert(!/^import /m.test(stripped), 'бүх import хасагдсан байх �
 const tmp = path.join(here, '..', '.format.test.tmp.mjs');
 fs.writeFileSync(tmp, stripped);
 
-const { formatThousands, digitCount, shortPrice, isNegotiablePrice, priceLabel, shortPriceLabel, hasRealPrice, negotiableNote, NEGOTIABLE_PRICE_LABEL, listingTitle, carTitle, MAX_LISTING_TITLE_LENGTH, shortListingId, SHORT_LISTING_ID_LENGTH } = await import(`${tmp}?t=${Date.now()}`);
+const { formatThousands, digitCount, shortPrice, isNegotiablePrice, priceLabel, shortPriceLabel, hasRealPrice, negotiableNote, NEGOTIABLE_PRICE_LABEL, listingTitle, carTitle, notebookTitle, MAX_LISTING_TITLE_LENGTH, shortListingId, SHORT_LISTING_ID_LENGTH } = await import(`${tmp}?t=${Date.now()}`);
 fs.unlinkSync(tmp);
 
 let passed = 0;
@@ -355,6 +355,45 @@ t('🚗 carTitle: олон зай НЭГ зай болов + тоон он ч а
   assert.equal(carTitle({ brand: 'Toyota  ', model: ' Vellfire ', year: '2017' }), 'Toyota Vellfire, 2017');
   assert.equal(carTitle({ brand: 'Toyota', model: 'Vellfire', year: 2017, importYear: 2026 }),
     'Toyota Vellfire, 2017/2026');
+});
+
+// ============================================================
+// 💻 НОУТБУКИЙН АВТО-ГАРЧИГ — «Дэлгэц, CPU, RAM» (2026-10-10 (105))
+// 🎯 Хэрэглэгчийн хүсэлт: «For laptops, the title should be based on
+//    “Screen size, CPU, and RAM”» + гарын талбар ХАСАГДАВ ⇒ гарчиг нь
+//    `attrs` (форм дээрх сонголтууд)-аас автоматаар бүтнэ ✓
+// ⚠️ `autoTitle(listing)` нь хэсэг/дэд төрлийг шалгадаг (`hasAutoTitle`) тул
+//    `locationData`-аас хамаарна — энд ЗӨВХӨН цэвэр `notebookTitle`-ыг тестлэнэ;
+//    дүрэм (`hasAutoTitle`) ба `autoTitle`-ийн диспатч нь `test:filters` ба
+//    `test:card`/`test:detail-ui`-ийн эх кодын гэрээгээр түгжигдэнэ ✓
+// ============================================================
+
+t('💻 notebookTitle: «Дэлгэц, CPU, RAM» — таслалаар, БАЙГАА утгуудыг л холбоно', () => {
+  assert.equal(
+    notebookTitle({ screen: '14.0"', cpu: 'Intel Core i5', ram: '16 GB' }),
+    '14.0", Intel Core i5, 16 GB'
+  );
+  assert.equal(
+    notebookTitle({ screen: '15.6"', cpu: 'Apple M2', ram: '8 GB' }),
+    '15.6", Apple M2, 8 GB'
+  );
+  // ⚠️ Дутуу утга → «хоосон таслалт» (`a, , b`) ҮҮСЭХГҮЙ ✓
+  assert.equal(notebookTitle({ screen: '14.0"', ram: '16 GB' }), '14.0", 16 GB');
+  assert.equal(notebookTitle({ cpu: 'Intel Core i7' }), 'Intel Core i7');
+  // ⚠️ Олон зай/мөр таслалт НЭГ зай болов
+  assert.equal(
+    notebookTitle({ screen: '  14.0" ', cpu: 'Intel  Core i5', ram: ' 16 GB ' }),
+    '14.0", Intel Core i5, 16 GB'
+  );
+});
+
+t("💻 notebookTitle: гурвуулаа хоосон/буруу төрөл → '' (карт дээр мөр ГАРАХГҮЙ)", () => {
+  assert.equal(notebookTitle(null), '');
+  assert.equal(notebookTitle(undefined), '');
+  assert.equal(notebookTitle({}), '');
+  assert.equal(notebookTitle({ screen: '   ' }), ''); // зөвхөн зай → хоосон ✓
+  assert.equal(notebookTitle('14.0"'), ''); // текст → крашгүй
+  assert.equal(notebookTitle(['14.0"']), ''); // массив → крашгүй
 });
 
 console.log(`\n✅ БҮГД ТЭНЦСЭН — ${passed} тест\n`);

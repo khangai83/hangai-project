@@ -907,4 +907,28 @@ t('🚫 Товч бүр DOM-д ЯГ 1 (`[data-step-next]` · `[data-step-submit]
   assert.equal((CODE.match(/data-step-back/g) || []).length, 1, '`[data-step-back]` олон ✗');
 });
 
+t('🏷️ (105) АВТО-ГАРЧИГ: 🚗 Машин / 💻 Notebook дээр гарчгийн талбар · дэлгэц · ЗААВАЛ шалгалт БАЙХГҮЙ (`hasAutoTitle`) ✓', () => {
+  /** 🎯 Хэрэглэгчийн хүсэлт: «remove the … title input field for Car and Notebook
+   *  categories» + «instead generate the title from the details» ⇒ дүрэм нь
+   *  `lib/locationData.js → hasAutoTitle` — форм ГУРВУУЛАА түүнээс удирдана ✓ */
+  // ① Импорт + туг (нэг эх сурвалж)
+  assert.match(CODE, /hasAutoTitle\b[^}]*\} from '\.\.\/lib\/locationData'/,
+    '`hasAutoTitle` импортлогдоогүй ✗');
+  assert.ok(CODE.includes('const autoTitleOn = hasAutoTitle(form.section || \'real-estate\', form.propertyType);'),
+    '`autoTitleOn` туг алга ✗');
+  // ② 📱 wizard: «Зарын гарчиг» дэлгэц нь autoTitleOn үед НЭМЭГДЭХГҮЙ
+  assert.ok(screensBody.includes('if (!autoTitleOn) out.push({ key: \'title\', title: \'Зарын гарчиг\', group: \'title\', required: !isEdit });'),
+    '📱 «Зарын гарчиг» дэлгэц нь НӨХЦӨЛГҮЙ нэмэгдсэн хэвээр ✗ (мобайлд блоклоно)');
+  // ③ 🛡️ ЗААВАЛ шалгалт: autoTitleOn үед алгасна
+  assert.ok(CODE.includes("if (key === 'title' && autoTitleOn) return '';"),
+    '🛡️ `requiredDetailMsg` дээр авто-гарчгийн алгасалт алга ✗ (шинэ зар блоклогдоно)');
+  // ④ 🖥 Гарчгийн талбар DOM-д байгаа ч `autoTitleOn` үед НУУГДАНА
+  assert.ok(CODE.includes('{!autoTitleOn && ('), '🖥 гарчгийн мөрийг нуух нөхцөл алга ✗');
+  assert.ok(step3.includes('data-detail-field="title"'),
+    '🖥 гарчгийн талбар DOM-оос БҮРЭН ХАСАГДСАН ✗ (бусад хэсэгт хэрэгтэй)');
+  // ⑤ ⚠️ `form.title`/payload ХӨНДӨӨГДӨӨГҮЙ (зөвхөн НУУХ — хуучин гарчиг алдагдахгүй)
+  assert.ok(CODE.includes("onChange={(e) => set('title', e.target.value)}"),
+    '`form.title` холбоос ХӨНДӨӨГДСӨН ✗');
+});
+
 console.log(`\n✅ Нийт ${passed} шалгалт амжилттай — 📱 «асуулт бүр нэг дэлгэц» + 🖥 3 хуудас (3, 4 ба 5-р алхам нэг болов) гэрээ түгжигдэв\n`);

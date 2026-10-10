@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, useToast, useUI } from './AppProviders';
 import { createListing, updateListing, uploadImages, fetchListingById } from '../lib/queries';
-import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, hasSimpleForm, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSection, getSubtypes, hasCategoryChoice, getSectionCategories, getSubtypeGroups, findSubtypeGroup, getAttrFields, PROPERTY_TYPE_ICONS, descriptionAfterTitle } from '../lib/locationData';
+import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, hasSimpleForm, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSection, getSubtypes, hasCategoryChoice, getSectionCategories, getSubtypeGroups, findSubtypeGroup, getAttrFields, PROPERTY_TYPE_ICONS, descriptionAfterTitle, hasAutoTitle } from '../lib/locationData';
 import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice, isNegotiablePrice, NEGOTIABLE_PRICE_LABEL, NEGOTIABLE_SALARY_LABEL, MAX_LISTING_TITLE_LENGTH } from '../lib/format';
 import phoneEmail from '../lib/phoneEmail';
 import YouTubeField from './YouTubeField';
@@ -1630,6 +1630,19 @@ export default function AddListingClient() {
    */
   const descAfterTitle = descriptionAfterTitle(form.section || 'real-estate', form.propertyType);
   /**
+   * 🏷️ АВТО-ГАРЧИГ (2026-10-10 (105)) — 🚗 Машин ба 💻 Notebook-д зарын гарчиг
+   *    нь ГАРААР бичигдэхгүй, дэлгэрэнгүй мэдээллээс автоматаар бүтнэ
+   *    (хэрэглэгчийн хүсэлт: «remove the … title input field for Car and Notebook
+   *    categories» + «instead generate the title from the details»).
+   * ⚠️ Дүрэм нь ЦЭВЭР модуль дээр (`lib/locationData.js → hasAutoTitle`) — энэ
+   *    туг нь ① гарчгийн талбарыг НУУХ ② 📱 `detailScreens`-ээс «Зарын гарчиг»
+   *    дэлгэцийг ХАСАХ ③ ЗААВАЛ шалгалтыг АЛГАСАХ — ГУРВУУЛАА удирдана ✓
+   *    (карт/дэлгэрэнгүй дээрх гарчиг нь `lib/format.js → autoTitle` —
+   *     ЯГ ИЖИЛ `hasAutoTitle` дүрмээр бүтнэ ⇒ форм ба харагдац ЗӨРӨХГҮЙ ✓)
+   * 🔍 Хайх үг: hasAutoTitle, autoTitleOn, autoTitle
+   */
+  const autoTitleOn = hasAutoTitle(form.section || 'real-estate', form.propertyType);
+  /**
    * 💼 АЖЛЫН ЗАРТ «ҮНЭ» БИШ — ЦАЛИН (2026-10-03 (9), хэрэглэгчийн хүсэлт).
    * ⚠️ Хэрэглэгч: «Жич Энд Үнэ биш Цалин байх юм шүү хавсралтыг хараарай» ⇒
    *    4-р алхмын үнийн талбар нь ажлын зар дээр «Цалингийн хэмжээ» болж,
@@ -1918,7 +1931,14 @@ export default function AddListingClient() {
     && !f.formChips;
   const detailScreens = (() => {
     /** ⚠️ `required` — зөвхөн ШИНЭ зард (засах горимд `validateStep` ч шаарддаггүй ✓) */
-    const out = [{ key: 'title', title: 'Зарын гарчиг', group: 'title', required: !isEdit }];
+    const out = [];
+    /**
+     * 🏷️ «Зарын гарчиг» дэлгэц — 🆕 (105): 🚗 Машин ба 💻 Notebook-д ЭНЭ ДЭЛГЭЦ
+     *    ОГТ БАЙХГҮЙ (`autoTitleOn`) — тэнд гарчиг нь аттрибутаас автоматаар
+     *    бүтдэг тул асуух зүйл байхгүй ✓ (эс бөгөөс мобайлд «бөглөх боломжгүй
+     *    хоосон талбар» гарч, `required` шалгалт хэрэглэгчийг БЛОКЛОНО ✗)
+     */
+    if (!autoTitleOn) out.push({ key: 'title', title: 'Зарын гарчиг', group: 'title', required: !isEdit });
     /**
      * 📝 «Тайлбар» — 🏷️ гарчигны ЯГ ДАРАА (2026-10-07, `descriptionAfterTitle`):
      *    энгийн формтой хэсэгт (⚙️ attr нь зөвхөн ✅ «Төлөв», эсвэл огт байхгүй)
@@ -2105,6 +2125,13 @@ export default function AddListingClient() {
    *      зарууд `attrs.payment_terms`-гүй ✓)
    */
   const requiredDetailMsg = (key) => {
+    /**
+     * 🆕 (105) 🚗/💻 АВТО-ГАРЧИГ: гарчгийн талбар БАЙХГҮЙ (`autoTitleOn`) хэсэгт
+     *    `title` нь ШААРДАГДАХГҮЙ — эс бөгөөс шинэ машин/ноутбукийн зар
+     *    «Зарын гарчигаа оруулна уу» гээд 3-р алхмаас ЦААШ ГАРАХГҮЙ болно ✗
+     *    (гарчиг нь аттрибутаас автоматаар бүтнэ ✓)
+     */
+    if (key === 'title' && autoTitleOn) return '';
     if (key === 'title' && !isEdit && !String(form.title || '').trim()) {
       return 'Зарын гарчигаа оруулна уу';
     }
@@ -3129,6 +3156,12 @@ export default function AddListingClient() {
                    зарууд дээр гарчиг байхгүй тул блоклохгүй ✓
                 ⚠️ 120 тэмдэгт (`MAX_LISTING_TITLE_LENGTH` = DB-ийн CHECK = queries.js)
                    🔍 Хайх үг: listingTitle, 0027_listing_title.sql */}
+            {/* 🆕 (105) 🚗 Машин / 💻 Notebook дээр ЭНЭ ТАЛБАР БАЙХГҮЙ
+                (`autoTitleOn`) — гарчиг нь аттрибутаас автоматаар бүтнэ
+                (`lib/format.js → autoTitle`); бусад хэсэгт ХЭВЭЭР ✓
+                ⚠️ Зөвхөн НУУХ — `form.title`/DB/payload ХӨНДӨӨГДӨХГҮЙ (хуучин
+                зарыг засахад хадгалагдсан гарчиг АЛДАГДАХГҮЙ ✓) */}
+            {!autoTitleOn && (
             <div
               className="form-row-single"
               data-form-row="details"
@@ -3150,6 +3183,7 @@ export default function AddListingClient() {
                 </p>
               </div>
             </div>
+            )}
             {/* ═══ 📝 ТАЙЛБАР — 🏷️ ГАРЧИГНЫ ЯГ ДАРАА (2026-10-07) ═══
                 Хэрэглэгчийн хүсэлт: «Тавилга, Гэр ахуйн бараа, Цахилгаан бараа,
                 Үйлдвэр & Үйлчилгээ, Бизнес, Барилгын материал, Тоног төхөөрөмж,

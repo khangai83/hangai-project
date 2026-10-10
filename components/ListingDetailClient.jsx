@@ -15,7 +15,7 @@ import Avatar from './Avatar';
 import VerifiedBadge from './VerifiedBadge';
 import { trackListingView } from '../lib/statsClient';
 import { normalizeError } from '../lib/errors';
-import { formatPrice, shortPriceLabel, negotiableNote, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress, shortListingId, listingTitle, carTitle } from '../lib/format';
+import { formatPrice, shortPriceLabel, negotiableNote, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress, shortListingId, listingTitle, autoTitle } from '../lib/format';
 // 🔄 «СОЛИНО» (2026-10-09) — үнийн доорх мөр («🤝 Үнэ тохирно»-гийн ЯГ ДООР).
 //    ⚠️ Дүрэм нь `lib/swapFilter.mjs` (цэвэр) — форм ☑ ба хайлтын чиптэй
 //    нэг эх сурвалж ✓
@@ -381,14 +381,16 @@ export default function ListingDetailClient({ id }) {
   //    дууддаг тул гарчиг 2 газар өөр харагдах боломжгүй ✓
   //    ⚠️ `null` (0027-оос өмнөх 782 хуучин зар) эсвэл зөвхөн зай байвал `''`
   //    буцаана ⇒ доорх H1 нь `sr-only` хэвээр үлдэнэ ✓
-  // 🆕 (97) 🚗 АВТО: зар оруулагч гарчиг БИЧЭЭГҮЙ бол `attrs`-аас
-  //    «Toyota Harrier, 2017/2024» (брэнд + загвар, үйлдвэрлэсэн/орж ирсэн он)
-  //    — жишиг сайтын машин деталь хуудасны гарчигтай ЯГ ИЖИЛ ✓ (`carTitle`;
-  //    хэрэглэгчийн хүсэлт: «Only car detail card like photo, it's head is
-  //    category name Toyota Harrier, Its Brand and Model then manufactured
-  //    date/Imported year»). ⚠️ Зар оруулагчийн бичсэн гарчиг ТҮРҮҮЛНЭ ✓
-  const isAuto = (listing.section || 'real-estate') === 'auto';
-  const adTitle = listingTitle(listing) || (isAuto ? carTitle(listing.attrs) : '');
+  // 🆕 (97) 🚗/💻 АВТО-ГАРЧИГ (🆕 (105) — Notebook ч нэмэгдэв): 🚗 машин ба 💻
+  //    Notebook-д гарын гарчгийн талбар БАЙХГҮЙ (`hasAutoTitle`) ⇒ H1 нь
+  //    аттрибутаас бүтнэ — 🚗 «Toyota Harrier, 2017/2024» (брэнд + загвар,
+  //    үйлдвэрлэсэн/орж ирсэн он) · 💻 «14.0", Intel Core i5, 16 GB»
+  //    (дэлгэц · CPU · RAM) — жишиг сайтын деталь хуудасны гарчигтай ЯГ ИЖИЛ ✓
+  //    (`autoTitle`; хэрэглэгчийн хүсэлт: «Only car detail card like photo,
+  //    it's head is category name Toyota Harrier, Its Brand and Model then
+  //    manufactured date/Imported year»). ⚠️ Аттр дутуу бол хуучин
+  //    заруудын бичсэн гарчиг нөөцөөрөө харагдана ✓
+  const adTitle = autoTitle(listing) || listingTitle(listing);
   const garageLabel = getGarageLabel(listing.has_garage);
   const isSell = listing.category === 'sell';
   // ⚠️ «Зарах / Түрээслэх» badge, ₮/м², ипотекийн тооцоолуур нь ЗӨВХӨН

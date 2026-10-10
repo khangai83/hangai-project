@@ -51,6 +51,8 @@ import {
   AUTO_COLOR_OPTIONS,
   // 🆕 2026-10-06 (18): сайдбарын чип блок хураагдах босго + өрөөний сонголтууд
   SIDEBAR_CHIP_COLLAPSE_MIN, ROOM_OPTIONS,
+  // 🆕 2026-10-10 (105): 🚗/💻 АВТО-ГАРЧИГ — гарын гарчгийн талбар БАЙХГҮЙ дүрэм
+  hasAutoTitle,
 } from '../lib/locationData.js';
 // 🆕 2026-10-06 (18): 💳 «Төлбөрийн нөхцөл»-ийн сонголтын тоо (босготой харьцуулна)
 import { PAYMENT_OPTIONS } from '../lib/paymentFilter.mjs';
@@ -2962,6 +2964,43 @@ t('🎨 `icon` (emoji) нь tile-ээс ГАДНА ХЭВЭЭР (форм/attr �
   const add = readFileSync(new URL('../components/AddListingClient.jsx', import.meta.url), 'utf8');
   // ⚠️ Зарын форм нь `SECTIONS[].icon`-ыг ХЭВЭЭР уншина (emoji-г ХӨНДӨӨГҮЙ ✓)
   assert.match(add, /icon: s\.icon/, 'форм нь `SECTIONS[].icon`-ыг ашиглахаа больсон ✗');
+});
+
+// ============================================================
+// 🏷️ АВТО-ГАРЧИГ — «гарын талбаргүй» хэсэг/дэд төрөл (2026-10-10 (105))
+// 🎯 Хэрэглэгчийн хүсэлт: «remove the … title input field for Car and Notebook
+//    categories» + «For laptops … Screen size, CPU, and RAM» ⇒ энэ дүрэм
+//    (`hasAutoTitle`) нь ① ФОРМ (талбарыг нуух) ② ГАРЧИГ (`format.autoTitle`)
+//    хоёуланг нь удирддаг ⇒ «талбар байхгүй атлаа гарчиг ч гарахгүй» зөрүү үгүй ✓
+// ============================================================
+
+t('🏷️ hasAutoTitle: 🚗 auto БҮХ дэд төрөл + 💻 computers ЗӨВХӨН Notebook = true', () => {
+  // 🚗 Машин — БҮХ дэд төрөл (суудлын/ачааны/мотоцикл …)
+  getSubtypes('auto').forEach((s) => {
+    assert.equal(hasAutoTitle('auto', s), true, `🚗 «${s}» → true байх ёстой ✗`);
+  });
+  assert.equal(hasAutoTitle('auto', ''), true, '🚗 дэд төрөл хоосон ч true ✗');
+  // 💻 Notebook (PC_SPEC_SUBTYPES) — ЗӨВХӨН энэ
+  PC_SPEC_SUBTYPES.forEach((s) => {
+    assert.equal(hasAutoTitle('computers', s), true, `💻 «${s}» → true ✗`);
+  });
+  assert.deepEqual(PC_SPEC_SUBTYPES, ['Notebook'], 'Notebook нь цорын ганц спектр дэд төрөл ✗');
+});
+
+t('🏷️ hasAutoTitle: бусад хэсэг/дэд төрөл → false (гарын талбар ХЭВЭЭР)', () => {
+  // 💻-ийн бусад дэд төрөл (Хулгана, Дэлгэц, тонер …) — гарчиг ГАРААР бичигдэнэ
+  getSubtypes('computers')
+    .filter((s) => !PC_SPEC_SUBTYPES.includes(s))
+    .forEach((s) => assert.equal(hasAutoTitle('computers', s), false, `💻 «${s}» → false ✗`));
+  // 🏠 үл хөдлөх / 💼 ажил / бусад бараа — ХӨНДӨӨГДӨӨГҮЙ (гарчиг ХЭВЭЭР)
+  ['real-estate', 'jobs', 'furniture', 'home', 'hobby', 'services'].forEach((sec) => {
+    assert.equal(hasAutoTitle(sec, ''), false, `«${sec}» → false ✗`);
+  });
+  // ⚠️ `section` ХООСОН/танигдмааргүй бол `real-estate` (хуучин зарын хэв) → false
+  assert.equal(hasAutoTitle('', ''), false, 'хоосон хэсэг → false ✗');
+  assert.equal(hasAutoTitle(undefined, 'Notebook'), false, 'хэсэг дутуу → false ✗');
+  // ⚠️ Том/жижиг үсэг ба зай — trim хийгдэнэ (форм-оос ирэх утга)
+  assert.equal(hasAutoTitle('computers', '  Notebook '), true, 'зайтай утга → true ✗');
 });
 
 console.log(`\n✅ БҮГД ОК: ${passed} тест\n`);

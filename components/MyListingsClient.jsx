@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAuth, useToast, useUI } from './AppProviders';
 import { fetchMyListings, deleteListing } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
-import { shortPriceLabel, negotiableNote, getPropertyIcon, timeAgo, getFloorLabel, getGarageLabel, formatAddress, listingTitle, carTitle } from '../lib/format';
+import { shortPriceLabel, negotiableNote, getPropertyIcon, timeAgo, getFloorLabel, getGarageLabel, formatAddress, listingTitle, autoTitle } from '../lib/format';
 // 🔄 «СОЛИНО» (2026-10-09) — 🤝 «Үнэ тохирно»-гийн ЯГ ДООР гарах мөр
 //    (нэг эх сурвалж: `lib/swapFilter.mjs` — форм ☑/хайлтын чиптэй ижил ✓)
 import { SWAP_ICON, swapLabel } from '../lib/swapFilter.mjs';
@@ -180,9 +180,9 @@ export default function MyListingsClient() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {listings.map((l) => {
                 const firstImage = Array.isArray(l.images) && l.images.length ? l.images[0] : null;
-                /* 🏷️ Гарчиг — карттай ЯГ ижил дүрэм (`ListingCard`): зар
-                   оруулагчийн бичсэн гарчиг → 🚗 машин бол `carTitle` → хоосон ✓ */
-                const title = listingTitle(l) || ((l.section || 'real-estate') === 'auto' ? carTitle(l.attrs) : '');
+                /* 🏷️ Гарчиг — карттай ЯГ ижил дүрэм (`ListingCard`): 🚗/💻 авто-
+                   гарчиг (`autoTitle`) → зар оруулагчийн бичсэн → хоосон ✓ */
+                const title = autoTitle(l) || listingTitle(l);
                 /* 📋 МЭДЭЭЛЛИЙН МӨР — ⏳ тусдаа `<p>` мөр бүр (🛏/🚿/📐/🏢/📅/🚪/🅿️)
                    нь ОДОО « · »-ээр холбогдсон НЭГ мөр болов (картын хэв рүү) —
                    emoji-гүй, `text-[14px] text-gray-600` ✓ МЭДЭЭЛЭЛ АЛГА БОЛООГҮЙ ✓ */

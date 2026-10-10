@@ -214,14 +214,20 @@ t('🏠 (85) БАЙРНЫ мөр: 🛏 өрөө · 🚿 угаалгын өрө�
   assert.ok(!/📅/.test(CARD_CODE), '📅 emoji буцаж орсон ✗ ((101): зөвхөн текст)');
 });
 
-t('🚗 (85) АВТО-ГАРЧИГ — зар оруулагч бичээгүй бол `attrs`-аас (`carTitle`)', () => {
-  assert.match(CARD_CODE, /listingTitle\(listing\) \|\| \(isAuto \? carTitle\(listing\.attrs\) : ''\)/,
-    '`carTitle` нөөц гарчиг алга ✗ («Toyota Vellfire, 2017/2026» гарахгүй)');
-  assert.match(CARD_CODE, /const isAuto = \(listing\.section \|\| 'real-estate'\) === 'auto'/,
-    '`isAuto` шалгалт алга ✗ (бусад хэсэгт авто-гарчиг орж болзошгүй)');
-  // ⚠️ `carTitle` нь `lib/format.js`-д ЦЭВЭР функц байх ёстой (тестлэгддэг ✓)
+t('🚗💻 (85)(105) АВТО-ГАРЧИГ — `autoTitle(listing)` (🚗 машин · 💻 Notebook), нөөц нь `listingTitle`', () => {
+  assert.match(CARD_CODE, /const title = autoTitle\(listing\) \|\| listingTitle\(listing\)/,
+    '`autoTitle` нөөц гарчиг алга ✗ («Toyota Vellfire, 2017/2026» гарахгүй)');
+  assert.ok(!/const isAuto/.test(CARD_CODE), '⏳ (85)-ийн `isAuto` хувьсагч үлдсэн ✗');
+  // ⚠️ `carTitle`/`notebookTitle`/`autoTitle` нь `lib/format.js`-д ЦЭВЭР функц (тестлэгддэг ✓)
   assert.match(readSrc('lib/format.js'), /export function carTitle\(attrs\)/,
     '`lib/format.js`-д `carTitle` алга ✗');
+  assert.match(readSrc('lib/format.js'), /export function notebookTitle\(attrs\)/,
+    '`lib/format.js`-д `notebookTitle` алга ✗');
+  assert.match(readSrc('lib/format.js'), /export function autoTitle\(listing\)/,
+    '`lib/format.js`-д `autoTitle` алга ✗');
+  // ⚠️ Дүрэм нь НЭГ ЭХ СУРВАЛЖ (`lib/locationData.js → hasAutoTitle`)
+  assert.match(readSrc('lib/locationData.js'), /export function hasAutoTitle\(section, subtype = ''\)/,
+    '`hasAutoTitle` дүрэм алга ✗ (форм ба харагдац зөрөх эрсдэл)');
 });
 
 // ---------- ③ ЗУРАГ ДЭЭРХ ТЭМДЭГҮҮД ----------
