@@ -43,6 +43,20 @@
  *      `border-width: 0px` ба дэвсгэр `rgba(0, 0, 0, 0)`, hover нь зөвхөн
  *      ӨНГӨӨР (`hover:text-red-600` / `hover:text-primary`), `px-1` ✓ ·
  *      (⚠️ 🏷️/🔑 сайдбарын «N идэвхтэй зар» тоолуул нь (95)-ийн feature — ХӨНДӨӨГДӨӨГҮЙ)
+ *      · 🆕 (102) ЖИШИГ ЗУРГИЙН «SIZE · FONT · COLOR» (хэрэглэгчийн хавсаргасан
+ *      зургийг пикселээр хэмжсэн — 898×135, 1:1 CSS px): ① 🕒 ЦАГИЙН ИКОН
+ *      БУЦАВ (`ClockIcon` SVG 20×20px — ⏳ (101)-д ХАСАГДСАН байв) ② мета
+ *      ТЕКСТ 13px → **16px** (`text-base`; жишиг: x-height 9px, ascender 12px)
+ *      ③ ❤️/↪ PILL нь жишиг зургийн ДҮҮРГЭЛТТЭЙ pill болов: **h 44px**
+ *      (`h-11`) · `bg-gray-100` (`rgb(244, 241, 234)`) · `rounded-full`
+ *      (9999px) · `text-gray-900` · икон **24px** (`h-6`) — ⏳ (100)-ийн
+ *      «дэвсгэргүй» товч нь зургийн pill-тэй таарахгүй байв ✗
+ *      (⚠️ ХҮРЭЭ 0px ХЭВЭЭР — (100)-ийн шийдэл хүчинтэй ✓) ④ `🔗` EMOJI →
+ *      **`ShareIcon` SVG** (зургийн сум; товч бүрд ЯГ 1 svg) ⑤ СОНГОСОН
+ *      ЗУРГИЙН ХЭМЖЭЭ **800×600** (`[data-gallery-main]`, `aspect-[4/3]` +
+ *      `max-w-[800px]`) — 1280px дэлгэцэд зүүн слат 858px тул ЯГ 800×600 ✓
+ *      ⚠️ мета мөрд SVG 5 болсон (pin · цаг · нүд · зүрхэн · хуваалцах) ⇒
+ *      иконуудыг ИНДЕКСЭЭР БИШ `data-icon` АТРИБУТААР олно ✓
  *   ⑦ 📸 /tmp/detail-style-1280.png · /tmp/detail-style-390.png
  *      (+ 🆕 (96) 3× томруулсан: /tmp/detail-meta-1280.png · /tmp/detail-actions-1280.png)
  *
@@ -179,6 +193,11 @@ const shot = async (file) => {
  *      (hover) нь саарал БИШ — тоолохгүй ✓
  *   ⚠️ `[data-similar-listings]` (🔎 Төстэй зарууд) нь ХЭСЭГ БИШ —
  *      хайрцаг/зураасны шалгалтаас ХАСНА ✓
+ *   ⚠️ 🆕 (102) МЕТА МӨРИЙН ❤️/↪ PILL — хэрэглэгчийн хавсаргасан жишиг зургийн
+ *      ДҮҮРГЭЛТТЭЙ товч (`bg-gray-100` ≈ хэмжсэн `#F2F2F3`) нь ГАНЦ ГҮЙЛГЭЭ:
+ *      `[data-listing-meta]` дотрын дүүргэлтийг ТООЛОХГҮЙ ✓ (товч нь «хайрцаг/
+ *      панель» БИШ — (87)-ийн «галерей/видео/шинж/тайлбар/зураг/хайрцаг» дээрх
+ *      саарал дүүргэлтийн ХОРИГ ХЭВЭЭР ✓)
  */
 const PROBE = `(() => {
   const GRAY = ['rgb(250, 248, 245)', 'rgb(244, 241, 234)', 'rgb(233, 228, 217)'];
@@ -187,7 +206,7 @@ const PROBE = `(() => {
   if (!main) return { noMain: true };
   const els = [...main.querySelectorAll('*')];
   const gray = els
-    .filter((el) => GRAY.includes(getComputedStyle(el).backgroundColor))
+    .filter((el) => GRAY.includes(getComputedStyle(el).backgroundColor) && !el.closest('[data-listing-meta]'))
     .map((el) => (typeof el.className === 'string' && el.className ? el.className.slice(0, 70) : el.tagName.toLowerCase()))
     .slice(0, 6);
   const sections = els
@@ -215,7 +234,7 @@ const PROBE = `(() => {
   //       ХЭРЭГЛЭХГҮЙ — утга нь өөрөө template literal дотор байгаа тул мөр
   //       ТАСАЛЖ, скрипт унана ✗ (тиймээс мөр угсрахдаа + ашиглана ✓)
   const pageGray = [...document.querySelectorAll('body *')]
-    .filter((el) => GRAY.includes(getComputedStyle(el).backgroundColor))
+    .filter((el) => GRAY.includes(getComputedStyle(el).backgroundColor) && !el.closest('[data-listing-meta]'))
     .map((el) => {
       const cls = typeof el.className === 'string' ? el.className : '';
       return el.tagName.toLowerCase() + (cls ? '[' + cls.slice(0, 55) + ']' : '');
@@ -273,7 +292,7 @@ await waitFor(`!!document.querySelector('main') && document.querySelectorAll('ma
 const d = await evalJs(PROBE);
 check('①b Зарын дэлгэрэнгүй хуудас нээгдэв (≥3 хэсэгтэй)',
   !d.noMain && d.sections.length >= 3, d.noMain ? '`main` алга' : `${d.sections.length} хэсэг`);
-check('② `main` дотор СААРАЛ (крем) дүүргэлттэй элемент 0',
+check('② `main` дотор СААРАЛ (крем) дүүргэлттэй элемент 0 (⚠️ мета мөрийн ❤️/↪ pill — (102) ГАНЦ ГҮЙЛГЭЭ)',
   d.grayCount === 0, d.grayCount ? `${d.grayCount} → ${d.graySample.join(' | ')}` : '0 ✓');
 check('②b 🌍 БҮТЭН ХУУДАС (толгой + мобайл доод цэс оруулаад) СААРАЛГҮЙ — крем дүүргэлт 0',
   d.pageGrayCount === 0, d.pageGrayCount ? `${d.pageGrayCount} → ${d.pageGraySample.join(' | ')}` : '0 ✓');
@@ -359,20 +378,33 @@ const ICONS = `(() => {
   const actions = main.querySelector('[data-listing-actions]');
   const metaSvgs = meta ? [...meta.querySelectorAll('svg')] : [];
   //   🆕 (97): 👁/❤️/🔗 нь толгойн мета мөр рүү шилжсэн ⇒ [data-listing-actions]
-  //   === [data-listing-meta] (НЭГ л div) тул SVG-үүд нэг дор: [0] 📍 pin,
-  //   [1] 👁 нүд, [2] ❤️ зүрхэн (🆕 (101) — ⏳ emoji байв) ✓
-  //   ⚠️ favBtn.querySelectorAll('svg') нь ЯГ 1 байх ЁСТОЙ (⑨l) — 🔗 товч нь
-  //      текст/emoji тул энэ тоонд ОРОХГҮЙ ✓
+  //   === [data-listing-meta] (НЭГ л div) тул SVG-үүд нэг дор байна ✓
+  //   🆕 (102): мета мөрд SVG 5 болсон (📍 pin · 🕒 цаг · 👁 нүд · ❤️ зүрхэн ·
+  //   ↪ хуваалцах) ⇒ ИНДЕКСЭЭР БИШ data-icon АТРИБУТААР олно
+  //   (⏳ (97)–(101)-д metaSvgs[0]/[1] индексээр байсан тул цагийн икон
+  //   нэмэгдэхэд ШИЛЖИЖ, ⑨e/⑨f/⑨k нь ЧИМЭЭГҮЙ БУРУУ икон хэмжих байв ✗)
+  //   ⚠️ favBtn.querySelectorAll('svg') нь ЯГ 1 байх ЁСТОЙ (⑨l) — ↪ нь ӨӨР
+  //      товчин дотор тул энэ тоонд ОРОХГҮЙ ✓
   //   ⚠️ (99) ЭНЭ МӨРҮҮД НЬ JS ТЕМПЛЕЙТ МӨР ДОТОР — grave accent (0x60) ХЭРЭГЛЭЖ
   //      БОЛОХГҮЙ ✗ (тэр тэмдэгт мөрийг эрт хааж, ICONS нь ReferenceError-оор
   //      унадаг байв — (97)-д нэмсэн тайлбар дээр гарсан латент алдаа)
-  const pin = metaSvgs[0] || null;
+  const pin = meta ? meta.querySelector('[data-icon="pin"] svg') : null;
   const pinCs = pin ? getComputedStyle(pin) : null;
   const pinBox = pin ? pin.getBoundingClientRect() : null;
-  const eye = metaSvgs[1] || null;
+  //   🆕 (102) 🕒 ЦАГИЙН ИКОН — жишиг зургийн мета мөрөнд огнооны өмнө байв
+  //   (⏳ (101)-д 🕒 emoji ХАСАГДСАН ⇒ одоо ClockIcon SVG) ✓
+  const clock = meta ? meta.querySelector('[data-icon="clock"] svg') : null;
+  const clockCs = clock ? getComputedStyle(clock) : null;
+  const clockBox = clock ? clock.getBoundingClientRect() : null;
+  const clockSpan = clock ? clock.closest('span') : null;
+  const eye = meta ? meta.querySelector('[data-icon="eye"] svg') : null;
   const eyeCs = eye ? getComputedStyle(eye) : null;
   const eyeBox = eye ? eye.getBoundingClientRect() : null;
   const viewsSpan = eye ? eye.closest('span') : null;
+  //   🆕 (102) 🖼 СОНГОСОН ЗУРГИЙН ХЭМЖЭЭ 800×600 — gallery-ийн ҮНДСЭН зураг
+  //   (1280px дэлгэцэд зүүн слат 858px ⇒ max-w-[800px] ХҮЧИНТЭЙ + 4:3 = 800×600)
+  const gimg = main.querySelector('[data-gallery-main]');
+  const gbox = gimg ? gimg.getBoundingClientRect() : null;
   //   🆕 (99) ЗАЙ ХААХ — ❤️/🔗 pill ба мета хоорондын ЗАЙГ бодитоор хэмжинэ:
   //   idSpan.right (ID текстийн төгсгөл) → favBtn.left = gap-x + ml-1;
   //   rightFree = мөрийн баруун зах хүртэлх СУЛ зай — ml-auto байсан бол 0 ✓
@@ -404,6 +436,12 @@ const ICONS = `(() => {
     } : null,
     actionsFound: !!actions,
     views: viewsSpan ? flat(viewsSpan.textContent) : null,
+    //   🆕 (102) 🕒 цагийн икон + мета мөрийн ФОНТЫН ХЭМЖЭЭ (жишиг: 16px) ✓
+    clock: clock ? { w: Math.round(clockBox.width), h: Math.round(clockBox.height), color: clockCs.color } : null,
+    clockText: clockSpan ? flat(clockSpan.textContent) : null,
+    metaFont: metaCs ? metaCs.fontSize : null,
+    //   🆕 (102) gallery-ийн үндсэн зураг (жишиг: 800×600 — 1280px дэлгэцэд) ✓
+    gallery: gbox ? { w: Math.round(gbox.width), h: Math.round(gbox.height) } : null,
     eye: eye ? { w: Math.round(eyeBox.width), h: Math.round(eyeBox.height), color: eyeCs.color } : null,
     actionsColor: actions ? getComputedStyle(actions).color : null,
     gap: {
@@ -420,10 +458,24 @@ const ICONS = `(() => {
       shareBorder: shareBtn ? parseFloat(getComputedStyle(shareBtn).borderTopWidth) || 0 : null,
       favBg: favBtn ? getComputedStyle(favBtn).backgroundColor : null,
       shareBg: shareBtn ? getComputedStyle(shareBtn).backgroundColor : null,
-      //   🆕 (101) ❤️/🤍 EMOJI → HeartIcon SVG ⇒ meta мөрд SVG-ийн тоо 3
-      //   (📍 pin · 👁 нүд · ❤️ зүрхэн); товчин дотор ТЕКСТ (тоо) ч БАЙНА ✓
+      /*   🆕 (102) ЖИШИГ ЗУРГИЙН PILL (хэмжсэн: h 44px · bg #F2F2F3 · текст
+         #0D0D0E · икон ~22px · хүрээ 0px) ⇒ манай pill: h-11 (44px) ·
+         bg-gray-100 (#F4F1EA — Sandstone хувилбар) · rounded-full (9999px) ·
+         text-gray-900 · икон 24px (h-6) ✓ */
+      favH: favBtn ? Math.round(bx(favBtn).height) : null,
+      shareH: shareBtn ? Math.round(bx(shareBtn).height) : null,
+      favRadius: favBtn ? getComputedStyle(favBtn).borderRadius : null,
+      shareRadius: shareBtn ? getComputedStyle(shareBtn).borderRadius : null,
+      favIconSize: favBtn && favBtn.querySelector('svg')
+        ? Math.round(favBtn.querySelector('svg').getBoundingClientRect().width) : null,
+      shareIconSize: shareBtn && shareBtn.querySelector('svg')
+        ? Math.round(shareBtn.querySelector('svg').getBoundingClientRect().width) : null,
+      //   🆕 (101) ❤️/🤍 EMOJI → HeartIcon SVG; 🆕 (102) 🔗 EMOJI → ShareIcon
+      //   SVG ⇒ товч бүрд ЯГ 1 svg (⏳ (101)-д ↪ товч нь текст/emoji байв) ✓
       favSvg: favBtn ? favBtn.querySelectorAll('svg').length : 0,
+      shareSvg: shareBtn ? shareBtn.querySelectorAll('svg').length : 0,
       favText: favBtn ? flat(favBtn.textContent) : null,
+      shareText: shareBtn ? flat(shareBtn.textContent) : null,
     },
     dt: {
       count: dts.length,
@@ -443,7 +495,8 @@ check('⑨c 📍 SVG текстийн урсгалд суусан (`vertical-ali
   ic.pin ? `va ${ic.pin.va} · truncate ${ic.pin.trunc ? 'yes' : 'no'}` : '—');
 check('⑨d 🔖 emoji БАЙХГҮЙ — зарын дугаар ЗӨВХӨН текст «ID:» (мета мөрд emoji 0)',
   ic.metaEmoji.length === 0 && !!ic.metaText && ic.metaText.includes('ID:'),
-  ic.metaEmoji.length ? `${ic.metaEmoji.join(' ')} үлдсэн ✗` : `${ic.metaSvg} svg (pin + нүд) ✓`);
+  ic.metaEmoji.length ? `${ic.metaEmoji.join(' ')} үлдсэн ✗`
+    : `${ic.metaSvg} svg (pin + цаг + нүд + зүрхэн + хуваалцах) ✓`);
 check('⑨e 👁 emoji БАЙХГҮЙ — «N» нь `EyeIcon` SVG 20×20px (🆕 (100) томруулав)',
   !!ic.eye && ic.eye.w === 20 && ic.eye.h === 20 && /^\d+$/.test((ic.views || '').trim()),
   ic.views ? `${ic.views} · svg ${ic.eye ? `${ic.eye.w}×${ic.eye.h}` : '—'}px` : 'алга');
@@ -468,11 +521,20 @@ check('⑨i 📏 ЗАЙ ХААСАН (🆕 (99)) — мета хооронд 4px
   ic.gap
     ? `gap-x ${ic.gap.x}px · ID→❤️ ${ic.gap.idFav}px · ❤️↔🔗 ${ic.gap.favShare}px · баруун сул зай ${ic.gap.rightFree}px`
     : '—');
-check('⑨j 🚫 «Surrounding border» ХАСАГДСАН (🆕 (100)) — ❤️/🔗 товчны border-width 0px · дэвсгэр тунгалаг (bg-white ХАСАГДСАН)',
+/*   🆕 (102) ЖИШИГ ЗУРГИЙН PILL (хэмжсэн: **h 44px** · дэвсгэр `#F2F2F3` ·
+     текст `#0D0D0E` · икон ~22px · хүрээ 0px) ⇒ ⏳ (100)-ийн «ямар ч
+     дэвсгэргүй» товч зургийн pill-тэй ТААРАХГҮЙ байв ✗ ⇒ одоо `h-11` (44px) ·
+     `bg-gray-100` (`rgb(244, 241, 234)` = Sandstone хувилбар) · `rounded-full`
+     (9999px) · `text-gray-900` · икон 24px (h-6). ⚠️ ХҮРЭЭ 0px ХЭВЭЭР —
+     (100)-ийн «surrounding border хас» шийдэл хүчинтэй ✓
+     ⛔ дүүргэлт буцаж арилвал (`rgba(0, 0, 0, 0)`) ⇒ УНАХАР ✓ */
+check('⑨j 🎨 ЖИШИГ ЗУРГИЙН PILL (🆕 (102)) — ❤️/↪ 44px · `bg-gray-100` · бүрэн дугуй · хүрээ 0px (⏳ (100) ХЭВЭЭР)',
   !!ic.gap && ic.gap.favBorder === 0 && ic.gap.shareBorder === 0 &&
-    ic.gap.favBg === 'rgba(0, 0, 0, 0)' && ic.gap.shareBg === 'rgba(0, 0, 0, 0)',
+    ic.gap.favH === 44 && ic.gap.shareH === 44 &&
+    ic.gap.favRadius === '9999px' && ic.gap.shareRadius === '9999px' &&
+    ic.gap.favBg === 'rgb(244, 241, 234)' && ic.gap.shareBg === 'rgb(244, 241, 234)',
   ic.gap
-    ? `❤️ border ${ic.gap.favBorder}px · bg ${ic.gap.favBg} ⟂ 🔗 border ${ic.gap.shareBorder}px · bg ${ic.gap.shareBg}`
+    ? `❤️ ${ic.gap.favH}px · bg ${ic.gap.favBg} · r ${ic.gap.favRadius} · border ${ic.gap.favBorder}px ⟂ ↪ ${ic.gap.shareH}px · bg ${ic.gap.shareBg} · border ${ic.gap.shareBorder}px`
     : '—');
 check('⑨k 🔍 ICON ТОМРУУЛАВ (🆕 (100)) — 📍 pin === 👁 нүд (20×20px, ХОЁР ИЖИЛ) — «icon-ыг томруул» хүсэлт ✓',
   !!ic.pin && !!ic.eye && ic.pin.w === 20 && ic.pin.h === 20 && ic.eye.w === 20 && ic.eye.h === 20,
@@ -483,6 +545,29 @@ check('⑨k 🔍 ICON ТОМРУУЛАВ (🆕 (100)) — 📍 pin === 👁 нү
 check('⑨l ❤️ EMOJI → SVG (🆕 (101)) — «Таалагдсан» товчинд `HeartIcon` SVG 1 ширхэг (emoji дүрс 0)',
   !!ic.gap && ic.gap.favSvg === 1,
   ic.gap ? `fav svg ${ic.gap.favSvg} · текст «${ic.gap.favText}»` : '—');
+/*   🆕 (102) «SIZE · FONT · COLOR» (хэрэглэгч: «copy like attached screenshot card
+     details information to Size, font, color») — хавсаргасан зургийг пикселээр
+     хэмжсэн 4 гэрээ:
+       ① 🕒 ЦАГИЙН ИКОН (⏳ (101)-д ХАСАГДСАН) — огнооны өмнө SVG байх ЁСТОЙ ✓
+       ② МЕТА ТЕКСТ **16px** (`text-base`) — жишиг: x-height 9px ⇒ ~16px ✓
+       ③ PILL-ийн ИКОН **24px** (`h-6`) — мета иконуудаас (20px) ТОМ ✓
+       ④ СОНГОСОН ЗУРГИЙН ХЭМЖЭЭ **800×600** (`[data-gallery-main]`, 4:3) ✓ */
+check('⑨m 🕒 ЦАГИЙН ИКОН БУЦАВ (🆕 (102)) — огнооны өмнө `ClockIcon` SVG 20×20px · өнгө нь 👁-тэй ЯГ ИЖИЛ (`text-gray-700`) · ⏳ `🕒` emoji 0',
+  !!ic.clock && ic.clock.w === 20 && ic.clock.h === 20 && !!ic.eye && ic.clock.color === ic.eye.color &&
+    !!ic.clockText && !/[\u{1F550}\u{1F551}\u{1F552}]/u.test(ic.clockText),
+  ic.clock ? `🕒 ${ic.clock.w}×${ic.clock.h}px · ${ic.clock.color} · «${ic.clockText}»` : 'SVG алга');
+check('⑨n 📏 МЕТА ТЕКСТ 16px (`text-base`, 🆕 (102)) — жишиг зургийн хэмжээ (⏳ 13px нь жижиг байв ✗)',
+  ic.metaFont === '16px', ic.metaFont || '—');
+check('⑨o ❤️/↪ PILL-ИЙН ИКОН 24×24px (🆕 (102)) — `HeartIcon` + `ShareIcon` SVG 1/1 (`🔗` emoji 0) · мета иконуудаас (20px) ТОМ ✓',
+  !!ic.gap && ic.gap.favIconSize === 24 && ic.gap.shareIconSize === 24 &&
+    ic.gap.favSvg === 1 && ic.gap.shareSvg === 1 &&
+    !!ic.gap.shareText && !ic.gap.shareText.includes('\u{1F517}'),
+  ic.gap
+    ? `❤️ ${ic.gap.favIconSize}px (svg ${ic.gap.favSvg}) ⟂ ↪ ${ic.gap.shareIconSize}px (svg ${ic.gap.shareSvg}) · «${ic.gap.shareText}»`
+    : '—');
+check('⑨p 🖼 СОНГОСОН ЗУРГИЙН ХЭМЖЭЭ 800×600 (🆕 (102)) — `[data-gallery-main]` 1280px дэлгэцэд ЯГ 800×600 (4:3, `max-w-[800px]`) ✓',
+  !!ic.gallery && ic.gallery.w === 800 && ic.gallery.h === 600,
+  ic.gallery ? `${ic.gallery.w}×${ic.gallery.h}px` : 'зураг алга');
 if (ic.metaFound) await shotEl('[data-listing-meta]', '/tmp/detail-meta-1280.png');
 if (ic.actionsFound) await shotEl('[data-listing-actions]', '/tmp/detail-actions-1280.png', { scroll: true });
 
@@ -492,7 +577,8 @@ await shot('/tmp/detail-style-1280.png');
 await goto(`${BASE}${href}`, 390, 900);
 await waitFor(`!!document.querySelector('main') && document.querySelectorAll('main section').length > 0`);
 const m = await evalJs(PROBE);
-check('⑤b 📱 390px: саарал дүүргэлт 0', m.grayCount === 0,
+check('⑤b 📱 390px: саарал дүүргэлт 0 (⚠️ мета мөрийн ❤️/↪ pill — (102) ГАНЦ ГҮЙЛГЭЭ)',
+  m.grayCount === 0,
   m.grayCount ? `${m.grayCount} → ${m.graySample.join(' | ')}` : '0 ✓');
 check('⑤b2 📱 390px: БҮТЭН ХУУДАС (доод цэс оруулаад) сааралгүй',
   m.pageGrayCount === 0, m.pageGrayCount ? `${m.pageGrayCount} → ${m.pageGraySample.join(' | ')}` : '0 ✓');

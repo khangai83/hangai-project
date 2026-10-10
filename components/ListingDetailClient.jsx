@@ -44,7 +44,10 @@ import SimilarListings from './SimilarListings';
 //    ② 👁 → `EyeIcon` — илгээсэн нүдний зураг (өнгө нь ТОД)
 //    ⚠️ emoji нь OS бүрд өөрөөр зурагдаж, өнгө нь текстийг дагахгүй ✗
 //    (үндэслэлийг `components/HeaderIcons.jsx`-ийн тайлбарт бичсэн ✓)
-import { MapPinIcon, EyeIcon, HeartIcon } from './HeaderIcons';
+//    🆕 (102) ③ 🕒 → `ClockIcon` — жишиг зургийн мета мөрөнд огнооны өмнө
+//    ЦАГИЙН ИКОН байгаа (⏳ (101)-д 🕒 emoji ХАСАГДСАН байв — одоо SVG-ээр
+//    БУЦАВ: `🕒` emoji биш, `ClockIcon` ✓)
+import { MapPinIcon, ClockIcon, EyeIcon, HeartIcon } from './HeaderIcons';
 
 export default function ListingDetailClient({ id }) {
   const { showToast } = useToast();
@@ -454,8 +457,37 @@ export default function ListingDetailClient({ id }) {
                `EyeIcon`), ⏳ `🔖` ХАСАГДАВ ✓
             ⚠️ `data-listing-meta` + `data-listing-actions` — бодит DOM-ыг шалгах
                CDP/тестийн ТОГТВОРТОЙ selector; Дэлгэц нарийсахад `flex-wrap`-ээр
-               эвхэгдэнэ — хэвтээ overflow ✗ ✓ */}
-        <div data-listing-meta data-listing-actions className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] text-gray-500">
+               эвхэгдэнэ — хэвтээ overflow ✗ ✓
+
+            🆕 (102) 2026-10-10 — «ЖИШИГ ЗУРГИЙН SIZE · FONT · COLOR» (хэрэглэгч:
+               «copy like attached screenshot card details information to Size,
+               font, color and also change selected photo size to 800x600»).
+               Хавсаргасан зургийг (898×135; 1:1 CSS px) ПИКСЕЛЭЭР хэмжив:
+                 ① ТЕКСТ 13px → **16px** (`text-base`): жишиг дээр x-height
+                    **9px** · ascender **12px** ⇒ фонт ~16px (манай 13px нь
+                    x-height 6.9px — жижиг байв ✗)
+                    ⚠️ ИКОНУУД ХӨНДӨӨГДӨӨГҮЙ: жишиг зургийн 👁 нүдний БОДИТ
+                    зураас **16px** байсан ба манай `h-5 w-5` (20px box)
+                    `EyeIcon`-ийн зураас ЯГ 16px ⇒ (100)-ийн 20×20px ЗӨВ байсан ✓
+                    (📍 pin 12×14px · 🕒 цаг 14×14px — ижил 20px box-той нийцнэ ✓)
+                 ② ӨНГӨ (мета текст): жишиг дээр `#66666E` (саармаг саарал) ⇒
+                    манай Sandstone `text-gray-500` (`#776F5E`) ХЭВЭЭР — ижил
+                    гэрэлтэйн ДУЛААН хувилбар (бренд палитр ✓)
+                 ③ ❤️/🔗 PILL: жишиг дээр **саарал ДҮҮРГЭЛТТЭЙ** (`#F2F2F3`),
+                    өндөр **44px**, бүрэн дугуй, бараг хар текст (`#0D0D0E`),
+                    икон ~22px, ХҮРЭЭ 0px ⇒ (100)-ийн «дүүргэлтгүй» товч нь
+                    зургийн pill-тэй ТААРАХГҮЙ байв ✗ ⇒ `bg-gray-100` +
+                    `h-11` (44px) + `text-gray-900` + `h-6 w-6` икон
+                    (⚠️ ХҮРЭЭ БАЙХГҮЙ ХЭВЭЭР — (100)-ийн шийдэл хүчинтэй ✓)
+                 ④ `🕒` ЦАГИЙН ИКОН БУЦАВ — жишиг зургийн мета мөрөнд огнооны
+                    өмнө цагийн икон БАЙНА ⇒ SVG (`ClockIcon`) хэлбэрээ
+                    (⏳ (101)-д emoji хэлбэрээр ХАСАГДСАН байв — emoji БУЦАХГҮЙ ✗)
+                 ⚠️ ХАЯГ нь `truncate` ХЭВЭЭР: жишиг зургийн хаяг ч «Нарны х…»
+                    гэж ТАЙРАГДСАН байна ✓ (карт дээр `break-words` — (101) ✓)
+                 ⚠️ `·` ТУСГААРЛАГЧ ба 4px ЗАЙ ХЭВЭЭР — (99)-ийн «зайг хаа»
+                    хүсэлт хүчинтэй (жишиг зургийн зай ~20px ч хэрэглэгч
+                    түүнийг ЗОРИУД хасуулсан ✓) */}
+        <div data-listing-meta data-listing-actions className="flex flex-wrap items-center gap-x-1 gap-y-1 text-base text-gray-500">
           {/* 📍 Байршил — 🚫 «Байршил сонгохгүй» чекбоксоор хадгалагдсан зар
               (`city = ''`) дээр «Хаяг тодорхойгүй» БИШ, «Байршил заагаагүй»
               гэж харуулна (хэрэглэгч ЗОРИУДОО заагаагүй тул «алдаа» мэт
@@ -467,23 +499,41 @@ export default function ListingDetailClient({ id }) {
                  ⚠️ SVG нь ТЕКСТИЙН УРСГАЛД (`inline-block`) орсон тул хаягны
                  `truncate` ХӨНДӨӨГДӨХГҮЙ ✓ (`align-[-3px]` — 🆕 (98) иконыг 16px
                  болгосон тул суурьтай нийцүүлэх зай 2px → 3px ✓) */}
-          <span className="min-w-0 truncate" title={address || NO_LOCATION_LABEL}>
+          <span data-icon="pin" className="min-w-0 truncate" title={address || NO_LOCATION_LABEL}>
             {/* 🆕 (100): 📍 icon 16→**20px** («location icon-ыг томруул») —
-                20px икон 13px тексттэй суурь нийцүүлэх зай 3→4px ✓ */}
+                20px икон 13px тексттэй суурь нийцүүлэх зай 3→4px ✓
+                🆕 (102): текст 16px болсон ч `align-[-4px]` ХЭВЭЭР — 20px
+                икон суурьтай нийцэх зайгаа хадгална (хөндөх шаардлагагүй ✓)
+                ⚠️ `data-icon="pin"` — 🆕 (102) CDP/тестийн ТОГТВОРТОЙ selector:
+                мета мөрд SVG 3 болсон (pin · цаг · нүд) тул индексээр биш
+                АТРИБУТААР олдоно ✓ */}
             <MapPinIcon className="mr-1 inline-block h-5 w-5 align-[-4px]" />
             {address || NO_LOCATION_LABEL}
           </span>
           <span aria-hidden="true" className="text-gray-300">·</span>
           {/* 🕒 ОГНОО — харьцангуу (`timeAgo` — карт дээрхтэй ЯГ ижил)
-              🆕 (101) ⏳ `🕒 {timeAgo(...)}` → **`{timeAgo(...)}`** — картын мета
-              мөртэй ЯГ ижил болов (жишиг зургийн хэв: цагийн дүрсГҮЙ) ✓ */}
-          <span title="Нийтэлсэн огноо" className="whitespace-nowrap">{timeAgo(listing.created_at)}</span>
+              🆕 (101) ⏳ `🕒 {timeAgo(...)}` → **`{timeAgo(...)}`** — КАРТЫН мета
+              мөртэй ЯГ ижил болов (картын хэв: цагийн дүрсГҮЙ) ✓
+              🆕 (102) ДЭЛГЭРЭНГҮЙ ХУУДАС ДЭЭР цагийн икон БУЦАВ — жишиг
+              зургийн мета мөрөнд огнооны өмнө ЦАГИЙН ИКОН байна (хэмжсэн
+              зураас 14×14px, ижил саарал) ⇒ `ClockIcon` **SVG** хэлбэрээр
+              (⏳ (101)-ийн `🕒` нь EMOJI байсан — emoji БУЦАХГҮЙ ✗, SVG ✓)
+              ⚠️ Өнгө нь 👁-ийнхтэй ЯГ ИЖИЛ (`text-gray-700`) — ⑨f-ийн
+              «икон нь мета текстийнхээс ТОД» гэрээ хүчинтэй ✓ */}
+          <span data-icon="clock" title="Нийтэлсэн огноо" className="inline-flex items-center gap-1 whitespace-nowrap">
+            <ClockIcon className="h-5 w-5 text-gray-700" />
+            {timeAgo(listing.created_at)}
+          </span>
           <span aria-hidden="true" className="text-gray-300">·</span>
           {/* 👁 ҮЗСЭН — icon + тоо (🆕 (97): галерейн footer-оос энэ мөрөнд шилжив;
               жишиг сайтын хэвээр зөвхөн тоо — «37 үзсэн» БИШ «37») ✓ */}
-          <span title="Энэ зарыг хэдэн хүн үзсэн" className="inline-flex items-center gap-1 font-semibold tabular-nums text-gray-600">
+          <span data-icon="eye" title="Энэ зарыг хэдэн хүн үзсэн" className="inline-flex items-center gap-1 font-semibold tabular-nums text-gray-600">
             {/* 🆕 (100): 👁 icon 18→**20px** («eye icon-ыг томруул») — 📍-тэй
-                ЯГ ИЖИЛ хэмжээ (20×20) ⇒ хоёр икон тэнцүү харагдана ✓ */}
+                ЯГ ИЖИЛ хэмжээ (20×20) ⇒ хоёр икон тэнцүү харагдана ✓
+                🆕 (102) ХЭМЖИЛТ БАТАЛСАН: жишиг зургийн нүдний зураас 16px
+                (16×10px) = манай 20px box-той `EyeIcon`-ийн зураас ЯГ 16×10px
+                ⇒ 20px нь ЗӨВ хэмжээ байсан (хөндөх шаардлагагүй ✓)
+                ⚠️ `data-icon="eye"` — 🆕 (102) CDP/тестийн ТОГТВОРТОЙ selector ✓ */}
             <EyeIcon className="h-5 w-5 text-gray-700" />
             {viewCount}
           </span>
@@ -496,7 +546,13 @@ export default function ListingDetailClient({ id }) {
           {/* ❤️ ТААЛАГДСАН · 🔗 ХУВААЛЦАХ — pill товч (⏳ (97)-д мөрийн БАРУУН захад
               байв ⇒ 🆕 (99): «зайг хаа» хүсэлтээр `ml-auto` ХАСАГДАВ — «ID: …»-ийн
               ЯГ ДАРАА (нийт 8px) наалдана ✓)
-              ⚠️ Дараалал: эхлээд ❤️ таалагдсан, дараа нь 🔗 Хуваалцах ✓ */}
+              ⚠️ Дараалал: эхлээд ❤️ таалагдсан, дараа нь 🔗 Хуваалцах ✓
+              🆕 (102) ЖИШИГ ЗУРГИЙН PILL БУЦАВ (хэмжилт: h **44px** ·
+                 `bg #F2F2F3` · текст `#0D0D0E` · икон ~22px · хүрээ 0px):
+                 `h-8 px-1` → **`h-11 px-4`**, `bg-gray-100` (⏳ (100)-д
+                 ХАСАГДСАН дүүргэлт), `text-gray-900` (бараг хар), икон
+                 `h-5` → **`h-6`** ⇒ товчнууд зургийн pill-тэй ЯГ ижил жинтэй
+                 боллоо ✓ ⚠️ ХҮРЭЭ (border) БАЙХГҮЙ ХЭВЭЭР — (100) ✓ */}
           <div className="ml-1 flex items-center gap-1">
             <button
               type="button"
@@ -504,14 +560,17 @@ export default function ListingDetailClient({ id }) {
               onClick={() => toggleFavorite(listing.id)}
               aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
               title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
-              className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-1 font-semibold tabular-nums transition hover:text-red-600 ${
-                isFav ? 'text-red-600' : 'text-gray-700'
+              className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-gray-100 px-4 font-semibold tabular-nums text-gray-900 transition hover:bg-gray-200 hover:text-red-600 ${
+                isFav ? 'text-red-600' : ''
               }`}
             >
               {/* 🆕 (101) ⏳ `{isFav ? '❤️' : '🤍'} {likeCount}` emoji → SVG —
                   картын зүрхэнтэй ЯГ ИЖИЛ (`HeartIcon`, `filled={isFav}`) ⇒
-                  хэрэглэгчийн хавсаргасан жишиг зургийн хэв (нимгэн хар зураас) ✓ */}
-              <HeartIcon className="h-5 w-5" filled={isFav} />
+                  хэрэглэгчийн хавсаргасан жишиг зургийн хэв (нимгэн хар зураас) ✓
+                  🆕 (102) `h-5` → **`h-6 w-6`** + `strokeWidth={2}` — жишиг
+                  зургийн зүрхэн (22×19px зураас, ЗУЗААН) нь мета мөрийн
+                  иконуудаас (20px) ТОМ харагдана ✓ */}
+              <HeartIcon className="h-6 w-6" strokeWidth={2} filled={isFav} />
               {likeCount}
             </button>
             {/* ⚠️ `ShareButton` нь одоогийн хуудасны URL-ыг clipboard-д хуулна ✓ */}
@@ -527,15 +586,30 @@ export default function ListingDetailClient({ id }) {
           {/* ===== 🖼 ГАЛЕРЕЙ — ХАЙРЦАГГҮЙ (🆕 2026-10-09 (87)) =====
               хэрэглэгчийн хүсэлт: «бүх саарал өнгийг үгүй хий» ⇒ ⏳ (83)-ийн
               `border border-gray-200 bg-gray-100` ХАСАГДАВ — цагаан дэвсгэр дээр
-              зөвхөн ЗУРАГ (`rounded-xl`) үлдэв (картын хэвтэй ЯГ ИЖИЛ ✓) */}
-          <div className="overflow-hidden rounded-xl">
+              зөвхөн ЗУРАГ (`rounded-xl`) үлдэв (картын хэвтэй ЯГ ИЖИЛ ✓)
+              🆕 (102) «СОНГОСОН ЗУРГИЙН ХЭМЖЭЭ 800×600» (хэрэглэгч: «change
+                 selected photo size to 800x600»): ⏳ өмнө нь зураг нь
+                 `h-[280px] sm:h-[440px]` — өргөн нь слатыг БҮТЭН дүүргэж
+                 (~858px) **1.95:1** болж хэт ХАВТГАЙ (кино шиг) сунадаг байв ✗
+                 ⇒ одоо ① ХАРЬЦАА нь **4:3** (`aspect-[4/3]` = 800×600-ийн
+                 ЯГ харьцаа) ② ХЭМЖЭЭ нь **дээд тал нь 800px** өргөн
+                 (`max-w-[800px]` + `mx-auto` — 1280px дэлгэцэд ЯГ **800×600**,
+                 мобайлд слатын бүтэн өргөн) ✓
+                 ⚠️ `mx-auto` — 800px нь слатаас (858px) нарийн тул зургийг
+                 ТӨВЛӨРҮҮЛНЭ (зураг/тоолуур/сум/thumbnail БҮГД нэг хайрцагт
+                 тул ижил өргөнтэй хэвээр ✓ — сум нь зургийн ЯГ ирмэг дээр
+                 (`.relative` нь хайрцгийн өргөнтэй) ✓)
+                 ⚠️ `object-cover` ХЭВЭЭР — 4:3 биш зураг (ж: босоо) нь
+                 хайрцгийг дүүргэж, илүү хэсэг нь тайрагдана (⏳ өмнөхтэй ижил
+                 зарчим ✓); `h-[280px]`/`sm:h-[440px]` ХАСАГДАВ ✗ */}
+          <div className="mx-auto w-full max-w-[800px] overflow-hidden rounded-xl">
             <div className="relative">
               {/* ⚠️ ЗУРАГ дээр «таалагдсан/үзсэн» тэмдэглээ БАЙХГҮЙ (карттай ижил).
                   👁/❤️ тоо ба ❤️/🤍 toggle нь доорх FB-style footer мөрөнд. */}
               {images.length ? (
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={images[active]} alt={typeLabel} className="h-[280px] w-full object-cover sm:h-[440px]" />
+                  <img data-gallery-main src={images[active]} alt={typeLabel} className="aspect-[4/3] w-full object-cover" />
                   {images.length > 1 && (
                     <>
                       <span className="absolute bottom-3 right-3 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white">
@@ -561,7 +635,7 @@ export default function ListingDetailClient({ id }) {
                   )}
                 </>
               ) : (
-                <div className="flex h-[280px] w-full items-center justify-center text-7xl">
+                <div className="flex aspect-[4/3] w-full items-center justify-center text-7xl">
                   {getPropertyIcon(listing.property_type, listing.section)}
                 </div>
               )}

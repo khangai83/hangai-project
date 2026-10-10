@@ -291,7 +291,18 @@ t('⑨ 🎨 Дэлгэрэнгүй хуудсанд СААРАЛ (крем) ДҮ
    *  ⚠️ `bg-red-50` (алдааны мөр) · `bg-primary-light` (hover) · `bg-black`
    *     ба `bg-white/85`/`bg-white/90` (зургийн ‹ › товч ба ▶️ тоглуулагч) нь
    *     СААРАЛ БИШ (семантик/hover/контрол) тул ХӨНДӨӨГДӨӨГҮЙ ✓ */
-  const grays = DET_CODE.match(/bg-gray-\d+/g) || [];
+  const grays = (() => {
+    /*  🆕 (102) ГАНЦ ГҮЙЛГЭЭ — МЕТА МӨРИЙН ❤️/↪ PILL: хэрэглэгчийн хавсаргасан
+        жишиг зургийн ДҮҮРГЭЛТТЭЙ товч (хэмжсэн `#F2F2F3` ⇒ манай Sandstone
+        `bg-gray-100` = `#F4F1EA`; хэмжсэн өндөр 44px = `h-11`) нь «хайрцаг/
+        панель» БИШ — товч тул дүүргэлттэй байх ЁСТОЙ ✓. (87)-ийн хориг нь
+        галерей · 🎥 видео · 📋 шинж чанар · 📝 тайлбар · 🗺 газрын зураг ·
+        💰 холбоо барих ба 👤 нийтлэгчийн хайрцгуудад ХЭВЭЭР ✓
+        ⚠️ Иймд ЗӨВХӨН энэ pill-ийн классыг хасаад үлдсэнийг шалгана */
+    const META_PILL = 'inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-gray-100 px-4 font-semibold tabular-nums text-gray-900 transition hover:bg-gray-200';
+    assert.ok(DET_CODE.includes(META_PILL), '❤️ pill-ийн (102) жишиг класс алга ✗');
+    return DET_CODE.split(META_PILL).join('').match(/bg-gray-\d+/g) || [];
+  })();
   assert.deepEqual(grays, [], `саарал дүүргэлт үлдсэн: ${grays.join(', ')} ✗`);
   // ⚠️ Хэсгүүд нь ХАЙРЦАГГҮЙ — оронд нь 1px дээд зураас + `pt-6` (жишиг сайт хэв):
   //    🎥 видео · 📋 шинж чанар · 📝 тайлбар · 🗺 газрын зураг — ЯГ 4 хэсэг ✓
@@ -353,8 +364,8 @@ t('⑪ (96) Мета мөр: `📍` → `MapPinIcon` SVG · `🔖` ХАСАГД�
    *  өмнөх шиг болго. 🔖 Зарын дугаарыг өмнөх icon ийг үгүй хий» ⇒ ① хаягны
    *  `📍` emoji → `MapPinIcon` (🗺 «Газрын зураг» товчны pin-тай ЯГ ИЖИЛ SVG)
    *  ② зарын дугаарын `🔖` emoji ХАСАГДАВ (текст нь дангаараа ойлгомжтой ✓) */
-  assert.match(DET_CODE, /import \{ ?MapPinIcon, EyeIcon, HeartIcon ?\} from '\.\/HeaderIcons'/,
-    '`MapPinIcon`/`EyeIcon`/`HeartIcon` нь `./HeaderIcons`-аас импортлогдоогүй ✗');
+  assert.match(DET_CODE, /import \{ ?MapPinIcon, ClockIcon, EyeIcon, HeartIcon ?\} from '\.\/HeaderIcons'/,
+    '`MapPinIcon`/`ClockIcon`/`EyeIcon`/`HeartIcon` нь `./HeaderIcons`-аас импортлогдоогүй ✗');
   assert.match(DET_CODE, /<MapPinIcon\b/, 'хаягны `MapPinIcon` (📍 emoji биш) алга ✗');
   assert.ok(!/📍/.test(DET_CODE), '📍 emoji буцаж орсон ✗ ((96): `MapPinIcon` байх ЁСТОЙ)');
   assert.ok(!/🔖/.test(DET_CODE), '🔖 emoji буцаж орсон ✗ ((96): icon ХАСАГДСАН байх ЁСТОЙ)');
@@ -414,6 +425,43 @@ t('⑤ 📦 `package.json`-д `test:detail-ui` скрипт + README-д бүрт
   const README = readSrc('README.md');
   assert.ok(README.includes('test:detail-ui'), 'README-д `test:detail-ui` алга ✗');
   assert.ok(README.includes('scripts/test-detail-ui.mjs'), 'README-д файлын нэр алга ✗');
+// ---------- ⑫ 🎨 ЖИШИГ ЗУРГИЙН «SIZE · FONT · COLOR» (2026-10-10 (102)) ----------
+t('⑫ (102) Мета мөр: 16px (`text-base`) + 🕒 `ClockIcon` SVG + ❤️ pill 44px ✓', () => {
+  /** ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «copy like attached screenshot card details information
+   *  to Size, font, color» ⇒ мета мөр нь хавсаргасан жишиг зургийн хэмжээ/
+   *  фонт/өнгөтэй болов (хэмжилт: x-height 9px ⇒ 16px · pill 44px · `#F2F2F3`):
+   *  ① `text-[13px]` → **`text-base`** (16px) ② огнооны өмнө **`ClockIcon`** SVG
+   *  (⏳ (101)-д 🕒 emoji ХАСАГДСАН байв — жишиг зургийн мета мөрөнд цагийн икон
+   *  БАЙНА ✓) ③ зүрхэн 20px → **24px** (`h-6 w-6`) — жишигт pill-ийн икон нь мета
+   *  иконуудаас ТОМ ✓ */
+  assert.ok(DET_CODE.includes('className="flex flex-wrap items-center gap-x-1 gap-y-1 text-base text-gray-500"'),
+    'мета мөр «16px» (`text-base`) БИШ ✗');
+  assert.ok(DET_CODE.includes('<ClockIcon className="h-5 w-5 text-gray-700" />'),
+    'огнооны өмнө `ClockIcon` SVG алга ✗');
+  assert.ok(DET_CODE.includes('data-icon="clock"'),
+    'цагийн иконы `data-icon="clock"` дэгээ алга ✗');
+  assert.ok(DET_CODE.includes('<HeartIcon className="h-6 w-6" strokeWidth={2} filled={isFav} />'),
+    '❤️ pill-ийн зүрхэн 24px (`h-6 w-6`) + `strokeWidth={2}` БИШ ✗');
+});
+
+t('⑫b (102) Сонгосон зураг 800×600: `aspect-[4/3]` + `max-w-[800px]` ✓', () => {
+  /** «change selected photo size to 800x600» ⇒ gallery-ийн ҮНДСЭН зураг нь
+   *  4:3 (`aspect-[4/3]` = 800×600-ийн харьцаа) ба дээд тал нь 800px өргөн
+   *  (1280px дэлгэцэд ЯГ 800×600) ✓ ⏳ `h-[280px]`/`sm:h-[440px]` (1.95:1 —
+   *  хэт хавтгай) ХАСАГДАВ ✓ */
+  assert.ok(DET_CODE.includes('className="mx-auto w-full max-w-[800px] overflow-hidden rounded-xl"'),
+    'галерейн хайрцаг `max-w-[800px]` БИШ ✗');
+  assert.ok(DET_CODE.includes('data-gallery-main'),
+    'үндсэн зургийн `data-gallery-main` дэгээ алга ✗');
+  assert.ok(DET_CODE.includes('className="aspect-[4/3] w-full object-cover"'),
+    'үндсэн зураг `aspect-[4/3]` БИШ ✗');
+  assert.ok(!/h-\[280px\]|sm:h-\[440px\]/.test(DET_CODE),
+    '⏳ хуучин `h-[280px]`/`sm:h-[440px]` дүрслэл үлдсэн ✗');
+  assert.ok(DET_CODE.includes('className="flex aspect-[4/3] w-full items-center justify-center text-7xl"'),
+    'зураггүй зарын хайрцаг `aspect-[4/3]` БИШ ✗');
+});
+
+
 });
 
 console.log(`\n✅ БҮГД ОК: ${passed} тест — jobs зураггүй · Нэр талбар · тэгш өнцөгт Avatar · бүх зарт газрын зураг · урт текст 'break-words' · нийтлэгчийн карт (96px аватар картын ДЭЭД талд, ГОЛЛУУЛЖ) · «📋 N идэвхтэй зар» ТУСДАА ЛИНК · 🎨 саарал дүүргэлт 0 · 🏷️ зарын гарчиг (харагдах H1) · 🎨 мета иконууд (📍/👁 → SVG, 🔖 ба шинж чанарын icon ХАСАГДАВ) ✓\n`);

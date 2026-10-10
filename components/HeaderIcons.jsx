@@ -179,6 +179,43 @@ export function HeartIcon({ className = 'h-4 w-4', strokeWidth = 1.7, filled = f
 }
 
 /**
+ * ↪ ХУВААЛЦАХ — УРАГШ СУМ («Хуваалцах» pill товчны икон) — 2026-10-10 (102).
+ *
+ * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (хавсаргасан 2 зурагтай): «copy like attached screenshot
+ *   card details information to Size, font, color and also change selected photo
+ *   size to 800x600» ⇒ жишиг сайтын дэлгэрэнгүй толгойн `[↪ Хуваалцах]` pill
+ *   дэх сум нь НИМГЭН ХАР ЗУРААСТАЙ SVG (🆕 (102) хэмжсэн: 22×22px, өнгө
+ *   `#0D0D0E`) — ⏳ манай товч дээр `🔗` EMOJI байв ✗ (зургийн сумтай ОГТ
+ *   адилгүй, OS бүрд өөрөөр зурагдана).
+ *
+ * ⚠️ ЯАГААД EMOJI БИШ SVG ВЭ (`HeartIcon`/`ClockIcon`/`EyeIcon`-той ЯГ ИЖИЛ
+ *    үндэслэл): emoji нь OS бүрд (Apple/Samsung/Windows) өөр өөрөөр зурагдаж,
+ *    өөрийн гэсэн өнгөтэй тул pill-ийн `text-gray-900`/`text-primary` өнгийг
+ *    дагахгүй ✗; SVG нь `currentColor`-оор зурагдана ⇒ хуулагдсан (`copied`)
+ *    төлөвт өнгийг CSS-ээр солино ✓
+ *
+ * ⚠️ ХЭЛБЭР (жишиг зураг ба хэрэглэгчийн илгээсэн сумын ЯГ ИЖИЛ хэв):
+ *   ① СУМНЫ ТОЛГОЙ — `M14 5.5 20.5 12 14 18.5` (нээлттэй «>» тул
+ *      `strokeLinejoin: round` нь үзүүрийг зөөлрүүлнэ ✓)
+ *   ② БАРИУЛ — тэр оройгоос (`20.5 12`) зүүн тийш, дараа нь ДООШ БӨГӨРЧ
+ *      төгсгөлдөнө (сүүл нь доод зүүн буланд) — «хуваалцах/дамжуулах» сумын
+ *      хэв ✓ (`strokeLinecap: round` нь сүүлийг дугуйруулна ✓)
+ *
+ * @param {{className?:string, strokeWidth?:number}} props
+ *   `className` — хэмжээ/өнгийг гаднаас өгнө (ж: `h-6 w-6`, `text-gray-900`)
+ */
+export function ShareIcon({ className = 'h-4 w-4', strokeWidth = 1.8 }) {
+  return (
+    <Icon className={className} strokeWidth={strokeWidth}>
+      {/* ① сумны толгой */}
+      <path d="M14 5.5 20.5 12 14 18.5" />
+      {/* ② бариул (хойш зүүн тийш) ба доош бөгөрсөн сүүл */}
+      <path d="M20.5 12H11c-3.6 0-6.5 2.9-6.5 6.5V20" />
+    </Icon>
+  );
+}
+
+/**
  * 💬 МЕССЕЖИЙН ИКОН — ХОЁР ДАВХАРЛАСАН ЯРИАНЫ БӨМБӨЛӨГ — 2026-10-07.
  *
  * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (жишээ зурагтай, 2026-10-07): «messege nii icon iig

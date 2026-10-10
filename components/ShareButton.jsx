@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useToast } from './AppProviders';
+// ↪ 2026-10-10 (102): `🔗` EMOJI → `ShareIcon` SVG (жишиг зургийн сумтай ИЖИЛ;
+//    DETAIL нь emoji→SVG бодлогын үргэлжлэл — `HeartIcon`/`ClockIcon`-той адил) ✓
+import { ShareIcon } from './HeaderIcons';
 
 /**
  * 🔗 ХУВААЛЦАХ / ЛИНК ХУУЛАХ ТОВЧ — 2026-10-07
@@ -91,12 +94,25 @@ export default function ShareButton({
       data-share-button
       /* 🆕 (100): «Surrounding border» ХАСАГДАВ — ⏳ `border border-gray-200
          bg-white` pill-ийн хүрээ/дэвсгэр байв ⇒ одоо ЦЭВЭР icon+текст
-         (`px-1` — товчны хэмжээ хадгалагдана, hover нь ӨНГӨӨР л ✓) */
-      className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-1 font-semibold text-gray-700 transition hover:text-primary ${
+         (`px-1` — товчны хэмжээ хадгалагдана, hover нь ӨНГӨӨР л ✓)
+         🆕 (102) ЖИШИГ ЗУРГИЙН ХЭВ БУЦАВ (хэрэглэгч: «copy like attached
+         screenshot card details information to Size, font, color»):
+         ⏳ (100)-ийн «ямар ч дэвсгэргүй» товч нь жишиг зургийн СААРАЛ
+         ДҮҮРГЭЛТТЭЙ pill-тэй ТААРАХГҮЙ байв ✗ ⇒ одоо:
+           ① `h-8 px-1` → **`h-11 px-4`** (хэмжсэн 44px өндөр × 16px padding)
+           ② `bg-gray-100` СААРАЛ ДҮҮРГЭЛТ (⏳ (100)-д ХАСАГДСАН) — ⚠️ ХҮРЭЭ
+              БАЙХГҮЙ ХЭВЭЭР (`border` 0px ✓ (100)-ийн шийдэл хүчинтэй)
+           ③ `text-gray-700` → **`text-gray-900`** (жишиг зургийн `#0D0D0E`
+              бараг хар өнгө; манай Sandstone `gray-900` = `#1B1815`)
+           ④ hover нь `hover:bg-gray-200` (дүүргэлтээ нэг шат гүнзгийрүүлнэ) ✓
+         @see ListingDetailClient.jsx — ❤️ pill нь ЯГ ИЖИЛ хэв ✓ */
+      className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-gray-100 px-4 font-semibold text-gray-900 transition hover:bg-gray-200 ${
         copied ? 'text-primary' : ''
       } ${className}`}
     >
-      <span aria-hidden="true">{copied ? '✓' : '🔗'}</span>
+      {/* 🆕 (102): `🔗` EMOJI → `ShareIcon` SVG (жишиг зургийн сум; ⏳ emoji нь
+          pill-ийн өнгийг дагадаггүй байв ✗). Хуулагдсан үед «✓» тэмдэгт ✓ */}
+      {copied ? <span aria-hidden="true">✓</span> : <ShareIcon className="h-6 w-6" strokeWidth={2} />}
       {copied ? 'Хуулагдлаа' : label}
     </button>
   );

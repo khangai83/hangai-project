@@ -18,6 +18,9 @@
 // ХАМРАХ ХҮРЭЭ (DB/React/CDP ХОЛБОГДОХГҮЙ — зөвхөн Node):
 //   ① `components/ListingDetailClient.jsx` — footer дахь ДАРААЛАЛ
 //   ② `components/ShareButton.jsx` — clipboard механизм (clipboard → execCommand)
+//   ③ 🆕 (102) `ShareButton.jsx` — `🔗` emoji → **`ShareIcon` SVG** ба pill-ийн
+//      жишиг хэв (`h-11` · `bg-gray-100` · `rounded-full` — хэрэглэгчийн
+//      хавсаргасан жишиг зургийн pill) ✓
 //
 // АЖИЛЛУУЛАХ:  npm run test:share-btn
 // ============================================================
@@ -97,10 +100,28 @@ t('📋 Линк нь ЗӨВХӨН дарах МӨЧИД уншигдана (`wi
     'SSR хамгаалалт (`typeof window !== \'undefined\'`) алга ✗');
 });
 
-t('🔗 Товчны бичиг/дэгээ: `label = \'Хуваалцах\'` + `data-share-button` + `🔗` icon ✓', () => {
+t('↪ Товчны бичиг/дэгээ: `label = \'Хуваалцах\'` + `data-share-button` + `ShareIcon` SVG ✓', () => {
   assert.match(SHARE, /label = 'Хуваалцах'/, 'анхдагч `label` «Хуваалцах» алга ✗');
   assert.match(SHARE, /data-share-button/, 'CDP-ийн дэгээ (`data-share-button`) алга ✗');
-  assert.match(SHARE, /\{copied \? '✓' : '🔗'\}/, '`🔗` → `✓` сэлгэлт алга ✗');
+  /* 🆕 (102) `🔗` EMOJI → `ShareIcon` SVG (хэрэглэгчийн хавсаргасан жишиг
+     зургийн сум): ⏳ `{copied ? '✓' : '🔗'}` байв ⇒ одоо хуулагдсан үед «✓»
+     тэмдэгт, бусад үед SVG икон ✓ */
+  assert.match(SHARE, /import \{ ShareIcon \} from '\.\/HeaderIcons'/,
+    '`ShareIcon` import алга ✗');
+  assert.match(SHARE, /<ShareIcon className="h-6 w-6" strokeWidth=\{2\} \/>/,
+    '`ShareIcon` (h-6 w-6) товчин дотор алга ✗');
+  assert.ok(!/\{copied \? '✓' : '🔗'\}/.test(SHARE),
+    '⏳ `🔗` emoji-той хуучин сэлгэлт ХАСАГДААГҮЙ байна ✗');
+});
+
+t('🎨 PILL нь жишиг зургийн хэв (🆕 (102)): `h-11` · `bg-gray-100` · `rounded-full` ✓', () => {
+  assert.match(SHARE,
+    /className=\{`inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-gray-100 px-4 font-semibold text-gray-900 transition hover:bg-gray-200 \$\{/,
+    'pill-ийн класс (h-11 · bg-gray-100 · rounded-full · px-4 · text-gray-900) алга ✗');
+  /* ⚠️ Зөвхөн КОД дээр шалгана — ⏳ (100)-ийн «`border border-gray-200`
+     ХАСАГДАВ» гэсэн ТАЙЛБАР нь файлд үлдсэн (хуурамч улаан ✗) */
+  assert.ok(!/border border-gray-200/.test(codeOnly(SHARE)),
+    '⏳ (100)-д ХАСАГДСАН `border border-gray-200` буцаж орсон байна ✗');
 });
 
 console.log(`\n✅ БҮГД ОК: ${passed} тест — «Хуваалцах» нь 🤍/❤️ таалагдсаны АРД; `
