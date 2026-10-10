@@ -606,6 +606,42 @@ function MobileAnswers({ rows = [], onEdit }) {
  *    `step-location` түлхүүрүүд — `gotoStep(0)`/`gotoStep(1)`) ✓
  * 🔍 Хайх үг: DesktopSummary, data-desktop-summary, data-desktop-summary-edit
  */
+/**
+ * 📄 БҮЛГИЙН ГАРЧИГ — «НЭГ ЦАГААН ХУУДАС + СЕКЦҮҮД» (2026-10-10 (111))
+ *
+ * 🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Change the ad submission form to look like a page with
+ *    an attachment. I don't want to clutter up the form like a junk box …
+ *    change only Step 3 form» ⇒ 📋 Дэлгэрэнгүй (3 дахь хуудас) дээрх УРТ
+ *    ЦУВАА талбарууд нь ЦАГААН «хуудас» дотор **бүлэг гарчигтай** хэсгүүдэд
+ *    хуваагдана (📄 Үндсэн мэдээлэл → 🏷 Үзүүлэлтүүд → 💰 Үнэ ба төлбөр →
+ *    ☎️ Холбоо барих → 📎 Хавсралт (зураг)) ✓
+ *
+ * ⚠️ `hidden sm:flex` — ЗӨВХӨН 🖥 ≥640px дээр ХАРАГДАНА:
+ *    • 📱 <640px дээр форм нь «асуулт бүр НЭГ ДЭЛГЭЦ» хэвээр — бүлгийн гарчиг
+ *      хэрэггүй (талбарын нэр өөрөө 17px BOLD-оор асуулт болж гардаг ✓) ⇒
+ *      📱 урсгал (3/4/5 дахь дэлгэц) ХӨНДӨӨГДӨХГҮЙ ✓
+ *    • 🖥 ≥640px дээр 3, 4, 5-р алхам НЭГ хуудас (`lastStepIndex`) тул бүлгүүд
+ *      нэг харагдац дээр дараалан гарна ✓
+ * ⚠️ Зөвхөн ХАРАГДАЦ (Tailwind класс) — DOM/`form`/`payload`/DB/migration 0 ✓
+ * ⚠️ `data-detail-section` нь CDP/тестийн ТОГТВОРТОЙ selector — ⏳ хасагдсан
+ *    АЛХМЫН гарчиг (`data-step-heading` = 0 байх ёстой) ХЭВЭЭР 0 ✓
+ * 🔍 Хайх үг: DetailSection, data-detail-section, бүлэг гарчиг, цагаан хуудас,
+ *    «page with an attachment», junk box
+ */
+function DetailSection({ id, icon, title }) {
+  return (
+    <div
+      data-detail-section={id}
+      className="mb-3 hidden items-baseline gap-x-2 border-b border-gray-200 pb-1.5 sm:flex"
+    >
+      {/* ⚠️ `h3` — гарчиг нь форм дотор, screen reader-т бүлгийн түвшин ✓ */}
+      <h3 className="text-[15px] font-bold leading-tight text-gray-900">
+        <span aria-hidden="true">{icon}</span> {title}
+      </h3>
+    </div>
+  );
+}
+
 function DesktopSummary({ categoryPath, locationPath, step = 0, onEdit }) {
   // ⚠️ 1-р алхамд ОГТ ГАРАХГҮЙ — сонгосон зам нь 1-р алхмын picker-ийн
   //    цэнхэр мөр ба `[data-picker-summary]` дээр харагдана ✓
@@ -1737,6 +1773,15 @@ export default function AddListingClient() {
    */
   const showPayments = hasPaymentTerms(form.section);
 
+  /**
+   * 🏷 3 дахь хуудасны «ҮЗҮҮЛЭЛТҮҮД» бүлэг ХАРАГДАХ эсэх (2026-10-10 (111)).
+   * ⚠️ Бүлгийн гарчиг (`DetailSection`) нь `attrFields`-ийн нөхцөлөөс ГАДНА
+   *    байрлана (доор нь өрөө/талбай/давхар/угаалгын өрөө/гараж ч орно) —
+   *    тиймээс «хоосон гарчиг» гарахаас сэргийлж нэгдсэн нөхцөл ашиглана ✓
+   */
+  const showSpecsSection = attrFields.length > 0 || showPayments || showRooms
+    || isRealEstate || showFloors || showBathrooms;
+
   /* ==========================================================================
      📱 МОБАЙЛ (<640px) — «АСУУЛГА БҮР НЭГ ДЭЛГЭЦ» (2026-10-02)
      ──────────────────────────────────────────────────────────────────────────
@@ -2629,7 +2674,17 @@ export default function AddListingClient() {
       </nav>
 
       <div className="mx-auto w-full max-w-3xl">
-        <div className="section-card !p-0">
+        {/* 🆕 2026-10-10 (111): 3 ДАХЬ ХУУДАС (`isDesktop && step >= 2`) дээр
+            форм нь «НЭГ ЦАГААН ХУУДАС» болов (⏳ (83)-ээс хойш `.section-card`
+            нь `bg-gray-100` КРЕМ байв) — бүлгийн гарчигуудтай хамт
+            «хуудас + 📎 хавсралт» хэв үүсгэнэ ✓
+            ⚠️ 1, 2-Р АЛХАМ ХӨНДӨӨГДӨӨГҮЙ: класс нь зөвхөн 3 дахь хуудсан дээр
+               нэмэгдэнэ (хэрэглэгчийн хүсэлт: «steps 1 and 2 remain as they
+               are. change only Step 3 form») ⇒ 🗂 Ангилал/📍 Байршил нь
+               хуучин КРЕМ хэвээр ✓
+            ⚠️ `isDesktop` нь SSR/эхний render-д ХУДАЛ (📱) — класс сүүлд нэмэгдэнэ
+               (`useIsDesktop`-ийн тайлбарыг үз; hydration зөрөхгүй ✓) */}
+        <div className={`section-card !p-0 ${isDesktop && step >= 2 ? '!bg-white' : ''}`}>
           {/* ⚠️ 2026-10-01 — хэрэглэгчийн ХОЁР хүсэлтээр ЭНЭ ГАЗРЫН ХАРАГДАЦ
               БҮРЭН ЦЭВЭРЛЭВ:
               ① «Зар нэмэхэд энийг харуулахгүй» → ДЭЭД ТОЛГОЙ БҮХЭЛДЭЭ ХАСАГДАВ
@@ -3141,6 +3196,8 @@ export default function AddListingClient() {
                 ⚠️ Толгойд асуултын нэр ГАРАХГҮЙ (нэр ДАВХАРДАХГҮЙ ✓) — асуулт
                    нь доор, өөрийн талбарын толгойн мөрөнд (label) харагдана ✓ */}
             <MobileAnswers rows={mobileAnswerRows} onEdit={mobileAnswerEdit} />
+            {/* 📄 ① БҮЛЭГ · ҮНДСЭН МЭДЭЭЛЭЛ (🖥 ≥640px — `DetailSection`-ийг үз) */}
+            <DetailSection id="basics" icon="📄" title="Үндсэн мэдээлэл" />
             {/* ═══ 🏷️ ЗАРЫН ГАРЧИГ (2026-10-02) — БҮХ ХЭСЭГТ, ХАМГИЙН ЭХЭНД ═══
                 хэрэглэгчийн хүсэлт: «Бүх зард Зарын гарчиг гэдэг утга оруулахаа
                 мартсан байна. Тэр нь зарын карт дээр Үнэ мэдээллийн доор bold
@@ -3256,6 +3313,10 @@ export default function AddListingClient() {
                 🔎 `searchable: true` (ж: 🏷️ Үйлдвэрлэгч — 95 сонголт) нь ХАЙЛТТАЙ
                    COMBOBOX: бичнэ → жагсаалт шүүгдэнэ; жагсаалтад байхгүй
                    брэндийг ГАРААР бичиж болно ✓ (хэрэглэгчийн хүсэлт). */}
+            {/* 🏷 ② БҮЛЭГ · ҮЗҮҮЛЭЛТҮҮД (🖥 ≥640px — `DetailSection`-ийг үз)
+                ⚠️ Гарчиг нь `attrFields`-ийн нөхцөлөөс ГАДНА — доор нь Өрөө/Талбай/
+                   давхар/угаалгын өрөө/гараж ч багтана (`showSpecsSection`) ✓ */}
+            {showSpecsSection && <DetailSection id="specs" icon="🏷" title="Үзүүлэлтүүд" />}
             {attrFields.length > 0 && (
               /* ⚠️ 2026-10-01 (5 дахь засвар): «Дэлгэрэнгүй хэсгийн мэдээллийг
                  оруулах хэсгийг ЦУВАА буюу 1 БАГАНА болго» → 3-р алхмын БҮХ
@@ -3792,6 +3853,9 @@ export default function AddListingClient() {
                    (хуудас хагас хоосон болохгүй ✓); 📱 дээр ЗӨВХӨН 4 дэх
                    дэлгэцэд ✓ */}
             <div data-step-block="price" className={step === 3 ? '' : step === 2 || step === 4 ? 'hidden sm:block' : 'hidden'}>
+            {/* 💰 ③ БҮЛЭГ · ҮНЭ БА ТӨЛБӨР (🖥 ≥640px; доор нь 📝 Тайлбар ба
+                🎥 видео блок үргэлжилнэ — `DetailSection`-ийг үз) */}
+            <DetailSection id="price" icon="💰" title="Үнэ ба төлбөр" />
             <div className="form-row">
               <div className="form-group">
                 <label>{priceFieldTitle} </label>
@@ -3946,6 +4010,8 @@ export default function AddListingClient() {
                    📱 дээр ЗӨВХӨН 5 дахь дэлгэцэд (step === 4) ✓
                 ⚠️ `?step=5` (🖥 дээр) хаягаар орвол ч ХАРАГДАХААР үлдэнэ ✓ */}
             <div data-step-block="media" className={step === 4 ? '' : step === 2 || step === 3 ? 'hidden sm:block' : 'hidden'}>
+            {/* ☎️ ④ БҮЛЭГ · ХОЛБОО БАРИХ (🖥 ≥640px — `DetailSection`-ийг үз) */}
+            <DetailSection id="contact" icon="☎️" title="Холбоо барих" />
             <div className="form-row">
               <div className="form-group">
                 <label>Холбоо барих утас *</label>
@@ -4024,6 +4090,10 @@ export default function AddListingClient() {
                 ХЭВЭЭР ✓. Блок бүхэлдээ нөхцөлтэй (пикер, одоогийн/шинэ зураг). */}
             {allowImages && (
             <div data-step-block="media-images" className={step === 4 ? '' : step === 2 || step === 3 ? 'hidden sm:block' : 'hidden'}>
+            {/* 📎 ⑤ БҮЛЭГ · ХАВСРАЛТ (ЗУРАГ) — 🖥 ≥640px (`DetailSection`-ийг үз)
+                🎯 Хэрэглэгчийн хүсэлт: «a page with an attachment» ⇒ зурагнууд нь
+                хуудасны ХАВСРАЛТ хэсэг болж тусдаа гарчигтай болов ✓ */}
+            <DetailSection id="attachment" icon="📎" title="Хавсралт (зураг)" />
             {isEdit && existingImages.length > 0 && (
               <div className="form-group">
                 <label>Одоогийн зурагнууд ({existingImages.length})</label>

@@ -1503,6 +1503,42 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- 📄📎 **3 ДАХЬ ХУУДАС — «НЭГ ЦАГААН ХУУДАС + БҮЛГИЙН ГАРЧИГ» (2026-10-10 (111))** —
+  ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Change the ad submission form to look like a page with an
+  attachment. I don't want to clutter up the form like a junk box … change only
+  Step 3 form.»
+  <br>**(1) ⏳ АСУУДАЛ:** 📋 Дэлгэрэнгүй (3 дахь хуудас) дээр гарчиг · аттр · өрөө ·
+  талбай · давхар · угаалгын өрөө · тагт · гараж · үнэ · тайлбар · утас · зураг
+  БҮГД нэг УРТ ЦУВАА болж, ямар ч бүлэг хуваагдалгүй «хогон хайрцаг» мэт
+  харагдаж байв ✗
+  <br>**(2) ✅ ШИЙДЭЛ (зөвхөн Tailwind класс — DOM/`form`/`payload`/DB/migration 0 ✓):**
+  ① форм нь 3 дахь хуудсанд **ЦАГААН** болов — `section-card !p-0` +
+  `${isDesktop && step >= 2 ? '!bg-white' : ''}` (⏳ (83)-ээс хойш `.section-card`
+  нь `bg-gray-100` КРЕМ байсан) ② 🆕 **`DetailSection`** компонент — 🖥 ≥640px дээр
+  5 бүлгийн гарчиг: **📄 Үндсэн мэдээлэл** → **🏷 Үзүүлэлтүүд** →
+  **💰 Үнэ ба төлбөр** → **☎️ Холбоо барих** → **📎 Хавсралт (зураг)**
+  (доод шугам `border-b`; `data-detail-section` = CDP-ийн тогтвортой selector) ·
+  бүлэг бүр харгалзах `data-step-block`-ийн ЭХНИЙ хүүхэд (блокийн
+  харагдах-нуугдах нь гарчгийг ч удирдана ✓)
+  <br>**(3) ⚠️ 1, 2-Р АЛХАМ ба 📱 ХӨНДӨӨГДӨӨГҮЙ:** гарчиг нь `hidden sm:flex` тул
+  📱 <640px дээр ГАРАХГҮЙ (мобайл нь «асуулт бүр НЭГ ДЭЛГЭЦ» хэвээр — форм ХОЁР
+  ДАХИН рендэрлэгдэхгүй ✓) · `!bg-white` нь ЗӨВХӨН 3 дахь хуудсанд нэмэгдэнэ
+  (🗂 Ангилал/📍 Байршил КРЕМ хэвээр — хэрэглэгч: «steps 1 and 2 remain as they
+  are») · `[data-step-heading]` (хасагдсан алхмын гарчиг) ХЭВЭЭР **0** ✓ ·
+  `data-form-row`/`data-detail-row`/`data-detail-field`/`data-mobile-active`
+  БҮГД хэвээр ⇒ CDP/мобайл wizard-ийн дэгээнүүд ХӨНДӨӨГДӨӨГҮЙ ✓
+  <br>**(4) 🧪 ТЕСТ:** `test:wizard` **66 → 67 ✓** (🆕 `DetailSection` + 5 бүлэг ·
+  `hidden sm:flex` · `!bg-white` нөхцөл · ⛔ `data-step-heading` буцаж орохгүй) ·
+  **бүх 42 `test:*` OK** · `npm run build` **EXIT=0 ✓**
+  <br>**(5) ✅ БОДИТ Chrome (CDP, формд нэвтэрсэн):** 🖥 1440px —
+  `.section-card` bg `rgb(255,255,255)` + 5 бүлэг БҮГД харагдана + 📋/💰/☎️/📎 блок
+  харагдаж, 🗂 Ангилал/📍 Байршил НУУГДСАН ✓ · 🖥 1 дэх хуудас (`/listings/new`) —
+  карт `rgb(244,241,234)` **КРЕМ хэвээр**, бүлэг **0** ✓ · 📱 390px — бүлгийн
+  гарчиг **0**, карт крем, хэвтээ гүйлт **0** ✓
+  📸 `/tmp/step3-page-1440.png` · `/tmp/step3-page-390.png`
+  📁 `components/AddListingClient.jsx`, `scripts/test-detail-wizard.mjs`
+  🔍 Хайх үг: `DetailSection`, `data-detail-section`, `!bg-white`, «Хавсралт (зураг)»,
+  «page with an attachment», «junk box»
 - ✏️🪜 **«✏️ ЗАСАХ» ТОВЧ 3 ДАХЬ ХУУДАС РУУ ШУУД ОРДОГ БОЛОВ (2026-10-10 (110))** —
   ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «clicking the "edit ad" button takes the user directly to the
   third page».
