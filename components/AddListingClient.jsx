@@ -840,12 +840,21 @@ const attrWheelUnit = (f) => f.choiceUnit || (f.type === 'number' ? 'он' : '')
  *   ⚠️ `pick: true`-той ХАМТ хэрэглэж БОЛОХГҮЙ: бичилт дээр `MobileOptions`
  *      байхгүй тул «дармагц дараагийн асуулт» боломжгүй ⇒ доод
  *      «Алгасах / Үргэлжлүүлэх» товч ГАРАХ ЁСТОЙ (`pick: false` ✓)
+ * @param {boolean}  [hideLabel] 🆕 2026-10-10 (116) — `true` бол компонентын
+ *   ӨӨРИЙН `<label>` РЕНДЭРЛЭГДЭХГҮЙ. Зорилго: 3-р алхмын attr давталт
+ *   (`attrFields.map`) нь талбар бүрийг ГАДНА `.form-group` +
+ *   `<label>{f.label}</label>`-ээр ороодог тул 📅 «Үйлдвэрлэсэн он» /
+ *   📥 «Орж ирсэн он» (`choices`-той `ChoiceField`) дээр нэр нь ХОЁР ДАХИН
+ *   (📱 17px асуултын толгой + 14px шошго · 🖥 зүүн багана + оролтын дээд
+ *   шошго) гарч байв ✗ ⇒ гадна шошго нь (📱 толгой / 🖥 зүүн багана)
+ *   ХЭВЭЭР, дотоод нь дарагдана ✓ · ⚠️ `label` нь 🎡 дугуйн гарчигт
+ *   ХЭРЭГТЭЙ тул УСТГАХГҮЙ (зөвхөн харагдац ✓)
  */
 function ChoiceField({
   label, hint = '', wheelHint = '', value = '', items = [], unit = '',
   testId, placeholder = '', min, max, desktopControl = 'input', onChange,
   onPick, onSkip, openWheel, fieldKey = '', mobileActive, plusValue = '',
-  mobileInput = false,
+  mobileInput = false, hideLabel = false,
 }) {
   /** 🎛 Товч/дугуй дээрх бичиг: `'5 давхар'` · `'2015 он'` · `'+5 тагт'` */
   const shown = choiceText(value, unit, plusValue);
@@ -860,7 +869,9 @@ function ChoiceField({
       data-detail-field={fieldKey || undefined}
       data-mobile-active={mobileActive === undefined ? undefined : (mobileActive ? 'true' : 'false')}
     >
-      <label>{label}</label>
+      {/* ⚠️ (116) `hideLabel` — гадна `.form-group` нь нэрийг аль хэдийн
+          гаргасан үед (`attrFields.map`) давхардал үүсэхгүй ✓ */}
+      {hideLabel ? null : <label>{label}</label>}
       <div className="flex w-full items-stretch gap-2">
         {/* ═ 🖥 ≥640px: ГАР БИЧИЛТ (өмнөх зан төлөв ХЭВЭЭР) ═ */}
         {desktopControl === 'select' ? (
@@ -3532,6 +3543,9 @@ export default function AddListingClient() {
                        */
                       <ChoiceField
                         label={f.label}
+                        /* ⚠️ (116): нэр нь ГАДНА `<label>{f.label}</label>`-д
+                           аль хэдийн гарсан ⇒ дотоод шошго дарагдана ✓ */
+                        hideLabel
                         value={value}
                         items={attrWheelItems(f, value)}
                         unit={attrWheelUnit(f)}

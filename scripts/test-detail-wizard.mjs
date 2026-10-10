@@ -1042,4 +1042,39 @@ t('📄 (111) 3 ДАХЬ ХУУДАС — «НЭГ ЦАГААН ХУУДАС»: 
   assert.ok(!CODE.includes('data-step-heading'), '`data-step-heading` буцаж орсон ✗');
 });
 
+t('📅📥 (116) «Үйлдвэрлэсэн он / Орж ирсэн он» нэр нь ГАНЦ удаа — `ChoiceField`-ийн дотоод шошго `hideLabel`-ээр дарагдсан ✓', () => {
+  /** 🎯 ХЭРЭГЛЭГЧИЙН ГОМДОЛ (2026-10-10): «delete duplicate text
+   *  "Үйлдвэрлэсэн он, Орж ирсэн он" on the ad adding car page».
+   *  ШАЛТГААН: 🚗 3-р алхамд эдгээр 2 талбар нь `choices` МЕТАТАЙ
+   *  (`lib/locationData.js → yearFilter(…), choices: YEAR_CHOICES`) тул
+   *  `ChoiceField`-ээр рендэрлэгддэг — тэр нь ӨӨРИЙН `<label>{label}</label>`
+   *  гаргадаг ба attr давталт (`attrFields.map`) гадна талд нь
+   *  `<label>{f.label}</label>`-тэй тул нэр ХОЁР ДАХИН харагдаж байв ✗
+   *  (📱: 17px асуултын толгой + 14px шошго · 🖥: зүүн багана + оролтын
+   *  дээд шошго — бодит Chrome хэмжилтээр 2/2 ✓)
+   *  ✅ ШИЙДЭЛ: `hideLabel` туг — ГАДНА шошго (📱 толгой / 🖥 зүүн багана)
+   *  ХЭВЭЭР, дотоод нь дарагдана; `label` нь 🎡 дугуйн гарчигт хэвээр ✓ */
+  // ① Проп + нөхцөлт рендэр (анхдагч `false` ⇒ бусад ChoiceField ХӨНДӨГДӨХГҮЙ ✓)
+  assert.ok(CODE.includes('mobileInput = false, hideLabel = false,'),
+    '`ChoiceField`-ийн `hideLabel` проп алга ✗');
+  assert.ok(CODE.includes('{hideLabel ? null : <label>{label}</label>}'),
+    '`hideLabel` нөхцөлт рендэр алга ✗');
+  // ② ⚠️ `label` нь 🎡 дугуйн (WheelPicker) гарчигт ХЭРЭГТЭЙ — УСТГААГҮЙ ✓
+  assert.ok(CODE.includes('title: label,'), '🎡 дугуйн гарчиг (`title: label`) алга ✗');
+  // ③ 🚗 attr давталтын `ChoiceField` (📅/📥) дээр туг ДАМЖСАН ✓
+  assert.match(step3, /label=\{f\.label\}[\s\S]{0,300}?\bhideLabel\b/,
+    'attr давталт нь `hideLabel` дамжуулаагүй ✗ (нэр ДАВХАРДАХ хэвээр)');
+  // ④ Туг нь ЗӨВХӨН 1 (📅/📥) — 🏠 «Ашиглалтанд орсон он»/давхар/тагт/угаалгын
+  //    өрөөний ChoiceField-үүд нь ГАНЦААРАА (гадна шошгогүй) тул шошгоо ХЭВЭЭР ✓
+  assert.equal((step3.match(/\bhideLabel\b/g) || []).length, 1,
+    '`hideLabel` нь 3-р алхамд ЯГ 1 (📅/📥) байх ёстой ✗');
+  assert.equal((step3.match(/<ChoiceField/g) || []).length, 6,
+    '3-р алхмын `ChoiceField` нь 6 байх ёстой ✗');
+  // ⑤ Гадна шошго (📱 асуултын толгой / 🖥 зүүн багана) ХӨНДӨӨГДӨӨГҮЙ ✓
+  assert.ok(step3.includes('<label>{f.label}</label>'), 'гадна шошго алга болсон ✗');
+  // ⑥ Сонголтын эх сурвалж/утга ХӨНДӨӨГДӨӨГҮЙ (зөвхөн ХАРАГДАЦ ✓)
+  assert.ok(step3.includes('items={attrWheelItems(f, value)}'),
+    '📅 сонголтын эх сурвалж (`attrWheelItems`) өөрчлөгдсөн ✗');
+});
+
 console.log(`\n✅ Нийт ${passed} шалгалт амжилттай — 📱 «асуулт бүр нэг дэлгэц» + 🖥 3 хуудас (3, 4 ба 5-р алхам нэг болов) гэрээ түгжигдэв\n`);
