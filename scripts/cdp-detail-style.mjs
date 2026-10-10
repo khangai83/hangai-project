@@ -301,19 +301,28 @@ const shotEl = async (sel, file, { scale = 3, pad = 10, scroll = false } = {}) =
     await evalJs(`(() => { const e = document.querySelector('${sel}'); if (e) e.scrollIntoView({ block: 'center' }); return true; })()`);
     await new Promise((r) => setTimeout(r, 500));
   }
+  //   ⚠️ `Page.captureScreenshot`-ийн `clip` нь ХУУДАСНЫ (document) координат
+  //      шаарддаг бол `getBoundingClientRect()` нь VIEWPORT-ын координат
+  //      буцаадаг ⇒ `window.scrollX/scrollY`-г НЭМЭХ ЁСТОЙ. Үгүй бол доош
+  //      гүйлгэсэн элемент дээр буруу бүс (хуудасны дээд хэсэг) баригдана ✗
+  //      (жишээ: `[data-listing-actions]` → оронд нь зургийн хэсэг гарсан ✗)
   const box = await evalJs(`(() => {
     const e = document.querySelector('${sel}');
     if (!e) return null;
     const r = e.getBoundingClientRect();
     return {
-      x: Math.max(0, r.x - ${pad}),
-      y: Math.max(0, r.y - ${pad}),
+      x: Math.max(0, r.x + window.scrollX - ${pad}),
+      y: Math.max(0, r.y + window.scrollY - ${pad}),
       width: Math.min(r.width + ${pad * 2}, window.innerWidth),
       height: r.height + ${pad * 2},
     };
   })()`);
   if (!box) { console.log(`  ⚠️  ${sel} — зураг авах элемент олдсонгүй`); return; }
-  const r = await rpc('Page.captureScreenshot', { format: 'png', clip: { ...box, scale } });
+  const r = await rpc('Page.captureScreenshot', {
+    format: 'png',
+    captureBeyondViewport: true, // ⚠️ clip нь ХУУДАСНЫ координат (дээрх +)
+    clip: { ...box, scale },
+  });
   fs.writeFileSync(file, Buffer.from(r.data, 'base64'));
   console.log(`  📸 ${file}`);
 };
