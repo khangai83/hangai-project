@@ -434,6 +434,15 @@ export default function ListingDetailClient({ id }) {
                дэлгэрэнгүй толгойн ЯГ хэв: зүүн талд `📍 хаяг · 🕒 огноо · 👁 N ·
                ID: XXXXXXXX`, БАРУУН захад хүрээтэй pill товч `[❤️ N]` ба
                `[🔗 Хуваалцах]`.
+            🆕 (99) ЗАЙ ХААХ — «🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-10): cloud you to
+               close the gap like and share on the detail cart. It's location,
+               created date, id, eye showed, like and share» ⇒ бүх 6 элементийн
+               (байршил · огноо · ID · үзсэн · таалагдсан · хуваалцах) хоорондын
+               ЗАЙГ хаав: (1) мөрийн `gap-x-2` (8px) → `gap-x-1` (**4px**) ✓
+               (2) ⏳ (97)-д ❤️/🔗 нь `ml-auto`-оор мөрийн БАРУУН захад
+               түлхэгдэж, «ID: …»-ийн дараа ХООСОН зай үлддэг байв ⇒ `ml-auto`
+               ХАСАГДАВ, `ml-1` болж «ID: …»-ийн ЯГ ДАРАА наалдав (нийт 8px) ✓
+               (3) ❤️ ↔ 🔗 pill хоорондоо `gap-2` (8px) → `gap-1` (**4px**) ✓
             ⚠️ ДАРААЛАЛ (тестийн гэрээ): 👁 үзсэн → ❤️ таалагдсан → 🔗 Хуваалцах
             ⚠️ ⏳ (2026-10-01 (14) / 2026-10-07) 👁/❤️/🔗 нь ГАЛЕРЕЙН доорх footer-т
                байв ⇒ ОДОО ТОЛГОЙ руу шилжив (жишиг сайтын хэв) — тэр footer
@@ -446,7 +455,7 @@ export default function ListingDetailClient({ id }) {
             ⚠️ `data-listing-meta` + `data-listing-actions` — бодит DOM-ыг шалгах
                CDP/тестийн ТОГТВОРТОЙ selector; Дэлгэц нарийсахад `flex-wrap`-ээр
                эвхэгдэнэ — хэвтээ overflow ✗ ✓ */}
-        <div data-listing-meta data-listing-actions className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-gray-500">
+        <div data-listing-meta data-listing-actions className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] text-gray-500">
           {/* 📍 Байршил — 🚫 «Байршил сонгохгүй» чекбоксоор хадгалагдсан зар
               (`city = ''`) дээр «Хаяг тодорхойгүй» БИШ, «Байршил заагаагүй»
               гэж харуулна (хэрэглэгч ЗОРИУДОО заагаагүй тул «алдаа» мэт
@@ -477,9 +486,11 @@ export default function ListingDetailClient({ id }) {
             ID: <span className="font-mono font-semibold text-gray-600">{shortId}</span>
           </span>
 
-          {/* ❤️ ТААЛАГДСАН · 🔗 ХУВААЛЦАХ — мөрийн БАРУУН захад (🆕 (97), pill товч)
+          {/* ❤️ ТААЛАГДСАН · 🔗 ХУВААЛЦАХ — pill товч (⏳ (97)-д мөрийн БАРУУН захад
+              байв ⇒ 🆕 (99): «зайг хаа» хүсэлтээр `ml-auto` ХАСАГДАВ — «ID: …»-ийн
+              ЯГ ДАРАА (нийт 8px) наалдана ✓)
               ⚠️ Дараалал: эхлээд ❤️ таалагдсан, дараа нь 🔗 Хуваалцах ✓ */}
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-1 flex items-center gap-1">
             <button
               type="button"
               data-fav-toggle

@@ -399,7 +399,12 @@ t('⑥ 🆕`ListingDetailClient` — 📍 · 🕒 · 🔖 НЭГ МӨРӨНД (�
   const src = codeOnly('components/ListingDetailClient.jsx');
   // ⚠️ ХУУЧИН 2-МӨРИЙН хэв (📍 нь өөрийн гэсэн `<div>`-тэй) БУЦАЖ БОЛОХГҮЙ
   assert.equal(src.includes('<div className="min-w-0">📍'), false, '📍 тусдаа мөрөнд үлдсэн ✗');
-  const row = src.slice(src.indexOf('flex flex-wrap items-center gap-x-2 gap-y-0.5'));
+  //   🆕 (99): ⏳ `gap-x-2` (8px) → `gap-x-1` (4px) — зай хаах хүсэлт ⇒
+  //   ⚠️ anchor нь ЗӨВХӨН мөрийн эхлэлийг барина (зайны ТОДОРХОЙ утгыг
+  //      түгжихгүй — тэр нь дизайны шийдэл, CDP тест хэмждэг ✓)
+  const anchor = src.indexOf('flex flex-wrap items-center gap-x-');
+  assert.ok(anchor >= 0, 'мета мөрийн `flex flex-wrap items-center gap-x-` класс олдсонгүй ✗');
+  const row = src.slice(anchor);
   // 🆕 2026-10-10 (96): ⏳ `📍` emoji → `MapPinIcon` SVG, ⏳ `🔖` emoji ХАСАГДАВ —
   //    ⚠️ мөрийн ДАРААЛАЛ (байршил → огноо → зарын дугаар) ХӨНДӨӨГДӨӨГҮЙ ✓
   const at = row.indexOf('{address || NO_LOCATION_LABEL}');

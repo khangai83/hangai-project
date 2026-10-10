@@ -1503,6 +1503,36 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- 📏🔗 **ДЭЛГЭРЭНГҮЙ ТОЛГОЙН МЕТА МӨРИЙН ЗАЙ ХААВ — `gap-x` 8→4px, `ml-auto` ХАСАГДАВ, ❤️↔🔗 4px (2026-10-10 (99))** —
+  хэрэглэгчийн хүсэлт: «cloud you to close the gap like and share on the detail
+  cart. It's location, created date, id, eye showed, like and share» ⇒ дэлгэрэнгүй
+  хуудасны 📍 байршил · 🕒 огноо · 🆔 ID · 👁 үзсэн · ❤️ таалагдсан · 🔗 хуваалцах
+  мөрийн хоорондын ЗАЙ хэт өргөн байв (⏳ (97): «ID: …» ба ❤️/🔗-ийн завсарт
+  хэдэн зуун px хоосон зай үлддэг).
+  <br>**(1) Зай багасгав:** мета мөрийн `gap-x-2` (8px) → **`gap-x-1` (4px)** —
+  `components/ListingDetailClient.jsx` (мөр `flex flex-wrap items-center gap-x-1
+  gap-y-0.5`, `gap-y` хэвээр 2px).
+  <br>**(2) ❤️/🔗 нь «ID: …»-ийн ЯГ ДАРАА:** ⏳ `ml-auto` нь pill-үүдийг мөрийн
+  БАРУУН захад түлхэж, «ID: …»-ийн дараа ХООСОН зай үлдээдэг байв ⇒ `ml-auto`
+  **ХАСАГДАВ**, `ml-1` болж наалдав (нийт 8px = `gap-x-1` 4 + `ml-1` 4) ✓
+  <br>**(3) pill-үүд хоорондоо:** `gap-2` (8px) → **`gap-1` (4px)** ✓
+  <br>**(4) 🧪 ТЕСТ:** `cdp:detail` — 🆕 ⑨i (бодит `getBoundingClientRect()`): мөрийн
+  `column-gap` **4px**, `❤️ ↔ 🔗` **4px**, pill-үүдийн дараах СУЛ зай **> 24px**
+  (⛔ `ml-auto` буцаж орвол сул зай 0 болж тест УНАХАР — РЕГРЕСС ХАМГААЛАЛТ ✓);
+  `test:location` ⑥-ийн anchor нь зайны утгыг түгжихээ болив (`flex flex-wrap
+  items-center gap-x-` + олдохгүй бол `assert` ✓).
+  ⚠️ ХӨНДӨӨГДӨӨГҮЙ: 📍/👁 SVG (16/18px, (98)) · мета дараалал (байршил → огноо →
+  ID) · `data-listing-meta`/`data-listing-actions` selector-ууд ✓
+  <br>**(5) 🐛 ЛАТЕНТ АЛДАА ЗАСАВ (`cdp:detail`):** ⏳ (97)-д `ICONS` JS темолейт мөр
+  ДОТОР пайлны тайлбарт grave accent (0x60) бичсэнээс болж мөр нь эрт хаагдаж,
+  `[data-listing-actions]` нь КОД болж хувирч скрипт `ReferenceError: data is not
+  defined`-ээр УНАДАГ байв (⚠️ `node -c` нь синтакс зөв гэж «хуурамчаар» өнгөрдөг
+  байсан ⇒ тест ажиллуулахгүй бол мэдэгдэхгүй) ⇒ бүх grave accent-ыг тайлбараас
+  арилгав, дээр нь сэрэмжлүүлэг тайлбар нэмэв ✓
+  <br>**(6) VERIFY:** `cdp:detail` **26 OK / 0 FAIL** — ⑨i: `gap-x 4px · ID→❤️ 8px ·
+  ❤️↔🔗 4px · баруун сул зай 545px` ✓
+
+  🔍 Хайх үг: `gap-x-1`, `ml-1 flex items-center gap-1`, `close the gap`
 - 🔍📍 **МЕТА ИКОНУУД ТОМРУУЛАВ — `MapPinIcon` 13 → 16px, `EyeIcon` 15 → 18px (2026-10-10 (98))** —
   хэрэглэгчийн хүсэлт: «could you please increase that icons my web already applied»
   + 📍/👁 зурагууд ⇒ иконууд хэт жижиг байв.

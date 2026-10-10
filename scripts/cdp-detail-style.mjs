@@ -35,6 +35,9 @@
  *      тоолуурынхаас ТОД — хэрэглэгчийн «өнгийг нь тодруулаарай») · 📋 «Зарын
  *      дэлгэрэнгүй» хүснэгтийн `dt`/`dd`-д icon/svg 0 · БҮТЭН `main` дээр
  *      📍/🔖/👁 emoji 0 ✓
+ *      · 🆕 (99) ЗАЙ ХААСАН: мөрийн `gap-x` 8px → **4px**, ❤️ ↔ 🔗 **4px**,
+ *      ❤️/🔗 нь «ID: …»-ийн ЯГ ДАРАА (`ml-auto` ХАСАГДАВ ⇒ баруун сул зай
+ *      > 24px байх ЁСТОЙ — баруун захад түлхэгдсэн бол ✗) ✓
  *      (⚠️ 🏷️/🔑 сайдбарын «N идэвхтэй зар» тоолуул нь (95)-ийн feature — ХӨНДӨӨГДӨӨГҮЙ)
  *   ⑦ 📸 /tmp/detail-style-1280.png · /tmp/detail-style-390.png
  *      (+ 🆕 (96) 3× томруулсан: /tmp/detail-meta-1280.png · /tmp/detail-actions-1280.png)
@@ -349,9 +352,12 @@ const ICONS = `(() => {
   const meta = main.querySelector('[data-listing-meta]');
   const actions = main.querySelector('[data-listing-actions]');
   const metaSvgs = meta ? [...meta.querySelectorAll('svg')] : [];
-  //   🆕 (97): 👁/❤️/🔗 нь толгойн мета мөр рүү шилжсэн ⇒ `[data-listing-actions]`
-  //   === `[data-listing-meta]` (НЭГ л div) тул SVG-үүд нэг дор: [0] 📍 pin,
+  //   🆕 (97): 👁/❤️/🔗 нь толгойн мета мөр рүү шилжсэн ⇒ [data-listing-actions]
+  //   === [data-listing-meta] (НЭГ л div) тул SVG-үүд нэг дор: [0] 📍 pin,
   //   [1] 👁 нүд (❤️/🤍 ба 🔗 нь emoji — SVG БИШ) ✓
+  //   ⚠️ (99) ЭНЭ МӨРҮҮД НЬ JS ТЕМПЛЕЙТ МӨР ДОТОР — grave accent (0x60) ХЭРЭГЛЭЖ
+  //      БОЛОХГҮЙ ✗ (тэр тэмдэгт мөрийг эрт хааж, ICONS нь ReferenceError-оор
+  //      унадаг байв — (97)-д нэмсэн тайлбар дээр гарсан латент алдаа)
   const pin = metaSvgs[0] || null;
   const pinCs = pin ? getComputedStyle(pin) : null;
   const pinBox = pin ? pin.getBoundingClientRect() : null;
@@ -359,6 +365,18 @@ const ICONS = `(() => {
   const eyeCs = eye ? getComputedStyle(eye) : null;
   const eyeBox = eye ? eye.getBoundingClientRect() : null;
   const viewsSpan = eye ? eye.closest('span') : null;
+  //   🆕 (99) ЗАЙ ХААХ — ❤️/🔗 pill ба мета хоорондын ЗАЙГ бодитоор хэмжинэ:
+  //   idSpan.right (ID текстийн төгсгөл) → favBtn.left = gap-x + ml-1;
+  //   rightFree = мөрийн баруун зах хүртэлх СУЛ зай — ml-auto байсан бол 0 ✓
+  const metaCs = meta ? getComputedStyle(meta) : null;
+  const metaBox = meta ? meta.getBoundingClientRect() : null;
+  const idSpan = meta ? meta.querySelector('[title^="Зарын дугаар"]') : null;
+  const favBtn = meta ? meta.querySelector('[data-fav-toggle]') : null;
+  const shareBtn = meta ? meta.querySelector('[data-share-button]') : null;
+  const bx = (el) => (el ? el.getBoundingClientRect() : null);
+  const gapIdFav = idSpan && favBtn ? Math.round(bx(favBtn).left - bx(idSpan).right) : null;
+  const gapFavShare = favBtn && shareBtn ? Math.round(bx(shareBtn).left - bx(favBtn).right) : null;
+  const rightFree = metaBox && shareBtn ? Math.round(metaBox.right - bx(shareBtn).right) : null;
   const feat = main.querySelector('section[data-component="AdvertFeaturesApp"]');
   const dts = feat ? [...feat.querySelectorAll('dt')] : [];
   const dds = feat ? [...feat.querySelectorAll('dd')] : [];
@@ -380,6 +398,14 @@ const ICONS = `(() => {
     views: viewsSpan ? flat(viewsSpan.textContent) : null,
     eye: eye ? { w: Math.round(eyeBox.width), h: Math.round(eyeBox.height), color: eyeCs.color } : null,
     actionsColor: actions ? getComputedStyle(actions).color : null,
+    gap: {
+      x: metaCs ? Math.round(parseFloat(metaCs.columnGap) || 0) : null,
+      idFav: gapIdFav,
+      favShare: gapFavShare,
+      rightFree,
+      hasFav: !!favBtn,
+      hasShare: !!shareBtn,
+    },
     dt: {
       count: dts.length,
       svg: dts.filter((d) => d.querySelector('svg')).length,
@@ -414,6 +440,15 @@ check('⑨g 📋 «Зарын дэлгэрэнгүй» хүснэгтийн `dt`
 //      (тиймээс ⑨h нь ЗӨВХӨН 📍/🔖/👁-г бүтэн `main` дээр шалгана ✓)
 check('⑨h 📄 БҮТЭН `main` дотор 📍/🔖/👁 emoji 0 (🏷️/🔑 сайдбарын тоолуул ХЭВЭЭР)',
   ic.mainEmoji.length === 0, ic.mainEmoji.length ? `${ic.mainEmoji.join(' ')} үлдсэн ✗` : '0 ✓');
+/*   🆕 (99): ЗАЙ ХААХ — ⚠️ БОДИТ `getBoundingClientRect()`-ээр хэмжинэ (тооцоо БИШ) ⇒
+     ⛔ `ml-auto` буцаж орвол `rightFree` 0 болж УНАХАР байна (регресс хамгаалалт) ✓
+     ⛔ зайг буцаагаад томруулбал `x`/`favShare` ≠ 4px ⇒ УНАХАР ✓ */
+check('⑨i 📏 ЗАЙ ХААСАН (🆕 (99)) — мета хооронд 4px · ❤️↔🔗 4px · ❤️/🔗 нь «ID: …»-ийн ЯГ ДАРАА (`ml-auto` ХАСАГДСАН)',
+  !!ic.gap && ic.gap.hasFav && ic.gap.hasShare && ic.gap.x === 4 && ic.gap.favShare === 4 &&
+    ic.gap.rightFree !== null && ic.gap.rightFree > 24,
+  ic.gap
+    ? `gap-x ${ic.gap.x}px · ID→❤️ ${ic.gap.idFav}px · ❤️↔🔗 ${ic.gap.favShare}px · баруун сул зай ${ic.gap.rightFree}px`
+    : '—');
 if (ic.metaFound) await shotEl('[data-listing-meta]', '/tmp/detail-meta-1280.png');
 if (ic.actionsFound) await shotEl('[data-listing-actions]', '/tmp/detail-actions-1280.png', { scroll: true });
 
