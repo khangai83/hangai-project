@@ -14,7 +14,7 @@ import CarPicker from './CarPicker';
 // 🧩 ТОЛГОЙН МӨРНИЙ ИКОНУУД (2026-10-04 (28)) — emoji (`📋 📍 ▾ 🔍`) БИШ
 //    `currentColor` SVG: өнгө нь идэвхтэй/идэвхгүй төлвөөр солигдоно,
 //    OS бүр дээр ЯГ ижил харагдана ✓ (`components/HeaderIcons.jsx`)
-import { ChevronDownIcon, PinIcon, SearchIcon } from './HeaderIcons';
+import { ChevronDownIcon, ListIcon, MapPinIcon, PinIcon, SearchIcon } from './HeaderIcons';
 import { useToast, useUI, useAuth, useHeaderSlot } from './AppProviders';
 import {
   fetchListings, fetchPropertyTypeCounts, fetchProfilesByIds,
@@ -3483,7 +3483,18 @@ export default function HomeClient() {
                       onClick={() => setView(view === 'map' ? 'list' : 'map')}
                       className="inline-flex items-center gap-1.5 text-[13px] font-medium text-gray-700 transition-colors hover:text-primary"
                     >
-                      {view === 'map' ? '☰ Жагсаалт' : '🗺 Газрын зураг'}
+                      {view === 'map' ? (
+                        <>
+                          <ListIcon className="h-4 w-4 shrink-0" />
+                          Жагсаалт
+                        </>
+                      ) : (
+                        <>
+                          {/* 🆕 2026-10-10 (94): 🗺 emoji → pin SVG (жишиг зураг) */}
+                          <MapPinIcon className="h-4 w-4 shrink-0" />
+                          Газрын зураг
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

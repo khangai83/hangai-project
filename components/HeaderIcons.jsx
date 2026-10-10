@@ -84,6 +84,24 @@ export function PinIcon({ className = 'h-4 w-4', strokeWidth = 1.8 }) {
   );
 }
 
+/**
+ * 🗺 ГАЗРЫН ЗУРГИЙН PIN — «Газрын зураг» харах горимын икон (2026-10-10 (94)).
+ *
+ * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Газрын зургийг иконыг соль» + pin-ийн зургийг илгээв
+ * ⇒ ⏳ `🗺` emoji ХАСАГДАЖ SVG болов (emoji нь OS бүрд өөр харагдана ✗).
+ * ⚠️ 📍 `PinIcon`-оос ЯЛГААТАЙ: дотор нь ХӨНДИЙ (цагаан) тойрог — `PinIcon` нь
+ *    бөглөсөн цэгтэй (`fill="currentColor"`) тул жишиг зурагтай ЯГ ижил болгохын
+ *    тулд ТУСДАА компонент ✓ (📍 Байршлын pill нь `PinIcon`-оо ХЭВЭЭР.)
+ */
+export function MapPinIcon({ className = 'h-4 w-4', strokeWidth = 1.8 }) {
+  return (
+    <Icon className={className} strokeWidth={strokeWidth}>
+      <path d="M12 21.5c4.2-4.3 6.3-7.6 6.3-10.2a6.3 6.3 0 1 0-12.6 0c0 2.6 2.1 5.9 6.3 10.2Z" />
+      <circle cx="12" cy="11" r="2.6" />
+    </Icon>
+  );
+}
+
 /** ▾ ДООШОО СУМ — native `<select>`-ийг `appearance-none` болгосон үед
  *  ЗААВАЛ хэрэгтэй (эс бөгөөс сонголт хийх боломжтой гэдэг нь мэдэгдэхгүй ✗) */
 export function ChevronDownIcon({ className = 'h-4 w-4', strokeWidth = 1.8 }) {

@@ -1503,6 +1503,27 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- 📍 **«ГАЗРЫН ЗУРАГ» ТОВЧНЫ ИКОН — 🗺 EMOJI → PIN SVG (2026-10-10 (94))** —
+  хэрэглэгчийн хүсэлт: «Газрын зургийг иконыг соль» (+ pin-ийн зургийг илгээв).
+  ⚠️ **DB/SQL/migration/URL/logic ХӨНДӨӨГДӨӨГҮЙ** (зөвхөн UI икон).
+  <br>**(1) 🗑 ХАСАГДАВ:** `data-view-toggle` товчны `🗺` emoji (OS бүрд өөр
+  харагддаг ✗) ба `☰` emoji (буцах төлөв) ✓.
+  <br>**(2) ➕ `components/HeaderIcons.jsx` → 🆕 `MapPinIcon`:** жишиг зургийн ЯГ
+  pin — гадна хэлбэр нь `PinIcon`-тэй ИЖИЛ (`M12 21.5c4.2-4.3 6.3-7.6 6.3-10.2a6.3
+  6.3 0 1 0-12.6 0c0 2.6 2.1 5.9 6.3 10.2Z`), гэхдээ дотор нь **ХӨНДИЙ (цагаан)
+  тойрог** (`<circle cx="12" cy="11" r="2.6" />` — `fill` БАЙХГҮЙ) ✓; ⚠️ `PinIcon`
+  нь БӨГЛӨСӨН цэгтэй (`fill="currentColor"` — 📍 Байршлын pill) тул ТУСДАА
+  компонент болов (жишиг зурагтай ЯГ ижил ✓).
+  <br>**(3) 🖥 `components/HomeClient.jsx`:** товчны агуулга нь
+  `<MapPinIcon className="h-4 w-4 shrink-0" /> Газрын зураг` / `<ListIcon … />
+  Жагсаалт` — SVG (`currentColor`) тул hover дээр `hover:text-primary`-тэй хамт
+  өнгө солигдоно ✓ · `data-view-toggle` · `aria-pressed` ХЭВЭЭР ✓.
+  <br>**(4) 🧪 ТЕСТ:** `npm run test:*` 42/42 ✓ · `npm run build` **EXIT=0 ✓** ·
+  📸 `/tmp/zar-94-auto-1280.png` (🖥 1280px — «📍 Газрын зураг» pin-тэй ✓).
+  ℹ️ CDP дээр энэ товч ЗӨВХӨН байгаа эсэхээр шалгагддаг
+  (`!!document.querySelector('[data-view-toggle]')`) тул гэрээ ХЭВЭЭР ✓.
+  <br>**(5) 📄 DOC:** `README.md` (энэ буллет) · `docs/IMPROVEMENTS.md` (энэ мөр).
+  🔍 Хайх үг: `MapPinIcon`, `ListIcon`, `data-view-toggle`, `🗺`
 - 📊 **ҮР ДҮНГИЙН ТОО + ⇅ «ЭРЭМБЭЛЭХ» МӨР — ЖИШИГ САЙТЫН «N results … Sort: …» МӨР БОЛЖ, НИЙТ 2 ШУГАМ (2026-10-10 (93))** —
   хэрэглэгч жишиг зургаа дахин илгээж: «би яг энэ хэсэг шиг болгохыг хүссэн,
   тэгтэл чи яг юу хийсэн бэ» ⇒ ⏳ (92)-т шугамын доор ЗӨВХӨН «Эрэмбэлэх» байсан —
