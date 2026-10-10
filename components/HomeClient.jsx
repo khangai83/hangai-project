@@ -3460,7 +3460,7 @@ export default function HomeClient() {
                     </FilterPill>
                   )}
 
-                  {/* 🎛 ШҮҮЛТ (All Filters) — Дээд/Доод хязгаарын панелийг нээнэ
+                  {/* 🎛 ШҮҮЛТ (All Filters) — хязгаарын шүүлтүүдын панелийг нээнэ
                       🆕 2026-10-10 (92): икон нь жишиг сайтын «шүүлтүүр» (3 мөр +
                       бөмбөлгүүд) ба фонт нь мөрийн бусад pill-тэй ИЖИЛ (13px) ✓ */}
                   <button
@@ -3597,12 +3597,8 @@ export default function HomeClient() {
                         </button>
                       </div>
 
-                      {/* ---- БИЕ — Дээд/Доод хязгаар + «Бусад шүүлт» (гүйлгэгдэнэ) ---- */}
+                      {/* ---- БИЕ — хязгаарын шүүлтүүд + «Бусад шүүлт» (гүйлгэгдэнэ) ---- */}
                       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
-                        <h3 className="text-[13px] font-semibold text-gray-900">Дээд / Доод хязгаар</h3>
-                        <p className="mb-2 mt-0.5 text-[12px] text-gray-500">
-                          Үнэ, талбай, давхар ба он — доод/дээд хязгаарыг бичнэ үү.
-                        </p>
                         <div className="divide-y divide-gray-200">
                           {priceSideBlock}
                           {attrFilters.filter((f) => f.range).map((f) => (
