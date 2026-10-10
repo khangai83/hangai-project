@@ -465,7 +465,8 @@ export default function ListingDetailClient({ id }) {
                  pin-тай ЯГ ИЖИЛ SVG; хэрэглэгчийн хүсэлт: «📍 26-р хороо үүний
                  өмнөх icon ийг Газрын зургийн өмнөх шиг болго» ✓).
                  ⚠️ SVG нь ТЕКСТИЙН УРСГАЛД (`inline-block`) орсон тул хаягны
-                 `truncate` ХӨНДӨӨГДӨХГҮЙ ✓ (`align-[-2px]` — текстийн суурьтай нийцүүлнэ) */}
+                 `truncate` ХӨНДӨӨГДӨХГҮЙ ✓ (`align-[-3px]` — 🆕 (98) иконыг 16px
+                 болгосон тул суурьтай нийцүүлэх зай 2px → 3px ✓) */}
           <span className="min-w-0 truncate" title={address || NO_LOCATION_LABEL}>
             <MapPinIcon className="mr-1 inline-block h-4 w-4 align-[-3px]" />
             {address || NO_LOCATION_LABEL}
