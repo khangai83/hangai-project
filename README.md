@@ -1525,6 +1525,18 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   CDP (`cdp-range`/`cdp-rooms`/`cdp-payments`) ба эхийн дараалал (`#filter-bar` →
   pill-үүд → `#advanced-filters` → `{priceSideBlock}` →
   `SideBlock label="Талбай, м²"`) ХЭВЭЭР ✓.
+  <br>**(3b) ✏️ (95b) ЗАСВАР — «Бүгдийг цэвэрлэх» КАТЕГОРИОС ГАРАХГҮЙ БОЛОВ:**
+  ⏳ (95)-д энэ товч `resetAll()`-ыг дуудаж, `section` нь `all` болж хэрэглэгч
+  нүүр хуудасны 7 tile руу шилждэг байв ✗ (хэрэглэгч илрүүлэв: «…тухайн сонгосон
+  байгаа категори оос гарч байгаа нь маш буруу») ⇒ 🆕 **`clearFilters()`** —
+  ЗӨВХӨН шүүлтийг (`filters` + `query`/`search`) цэвэрлэнэ; **ХЭСЭГ (категори) ·
+  сонгосон ТӨРӨЛ (`filters.propertyType`) · `category` · `sort`** БҮГД ХЭВЭЭР ✓
+  ба цонх НЭЭЛТТЭЙ үлдэж, талбарууд хоосон болсныг харна ✓.
+  🧪 `test:filters` **127 ✓** (🆕 «`clearFilters` нь `propertyType` хадгална» +
+  «`data-filters-clear` нь `resetAll()` дуудахыг ХОРИГЛОНО» регресс) ·
+  `npm run build` **EXIT=0 ✓** · 🐍 CDP (бодит Chrome): шүүлт тавьж → «Бүгдийг
+  цэвэрлэх» → URL нь `?section=…&type=…` ХЭВЭЭР, бичилтүүд хоосон, үр дүн
+  хэсгийнхээ хэвээр ✓.
   <br>**(4) 🧪 ТЕСТ:** `test:filters` **126 → 127 ✓** (🆕 «🎛 (95) … ТУСДАА ГАРЧ
   ИРДЭГ ЦОНХ» — overlay/`role`/`aria-modal`/хаах 3 зам/доод мөр/хуучин дэгээ) ·
   `npm run test:*` **42/42 ✓** · `npm run build` **EXIT=0 ✓**.

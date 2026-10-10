@@ -1118,7 +1118,11 @@ t('🎛 (95) «Шүүлт» нь ТУСДАА ГАРЧ ИРДЭГ ЦОНХ (moda
   assert.match(src, /e\.key === 'Escape'[\s\S]{0,40}setAdvOpen\(false\)/, '`Escape`-ээр хаагдахгүй ✗');
   // ③ ТОЛГОЙ / БИЕ / ДООД МӨР — бие нь өөрөө гүйлгэгдэнэ, доод мөрд 2 үйлдэл ✓
   assert.match(src, /min-h-0 flex-1 overflow-y-auto/, 'бие нь гүйлгэгдэхгүй (`overflow-y-auto` алга) ✗');
-  assert.match(src, /data-filters-clear[\s\S]{0,200}resetAll\(\)/, '«Цэвэрлэх» нь `resetAll()`-ийг дуудахгүй ✗');
+  // ③b ✏️ (95b): «Цэвэрлэх» нь `resetAll()` БИШ — `clearFilters()` (хэсэг/төрөл ХЭВЭЭР)
+  assert.match(src, /data-filters-clear[\s\S]{0,140}onClick=\{clearFilters\}/, '«Цэвэрлэх» нь `clearFilters`-ийг дуудахгүй ✗');
+  assert.match(src, /const clearFilters = \(\) => \{[\s\S]{0,240}propertyType: f\.propertyType/, '`clearFilters` нь сонгосон ТӨРЛИЙГ (`propertyType`) хадгалахгүй ✗');
+  assert.ok(!/data-filters-clear[\s\S]{0,140}resetAll\(\)/.test(src),
+    '«Цэвэрлэх» нь `resetAll()`-ыг (хэсгийг ч арилгана ✗) дуусаар байна — (95b) регресс ✗');
   assert.match(src, /data-filters-apply/, '«Харуулах» товчны дэгээ алга ✗');
   // ④ ⚠️ ХӨНДӨӨГДӨӨГҮЙ — `#advanced-filters` ба БҮХ хуучин дэгээ/утга ✓
   assert.match(src, /id="advanced-filters"/, '`#advanced-filters` дэгээ алга ✗');

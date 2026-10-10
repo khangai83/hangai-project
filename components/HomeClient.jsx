@@ -1508,6 +1508,29 @@ export default function HomeClient() {
     setFilters(emptyFilters()); // массив хуваалцахгүй
   };
 
+  /**
+   * 🧹 2026-10-10 (95b): «БҮГДИЙГ ЦЭВЭРЛЭХ» (ШҮҮЛТ ЦОНХНЫ доод мөр) — ЗӨВХӨН
+   *    ШҮҮЛТИЙГ цэвэрлэнэ: сонгосон **ХЭСЭГ (категори)** ба **ТӨРӨЛ**
+   *    (`filters.propertyType`, ж: «Орон сууц») ХЭВЭЭР үлдэнэ ✓
+   *
+   * ⚠️ ШАЛТГААН: ⏳ (95)-д `resetAll()`-ыг дуудаж байв ⇒ `section = 'all'`
+   *    болж, хэрэглэгч ТУХАЙН КАТЕГОРИОС ГАРААД нүүр хуудасны 7 tile руу
+   *    шилждэг байв ✗ (хэрэглэгч илрүүлэв: «Бүгдийг цэвэрлэх дархад тухайн
+   *    сонгосон байгаа категори оос гарч байгаа нь маш буруу»).
+   * ⚠️ `filters.propertyType` ХАДГАЛНА — эс бөгөөс хэрэглэгч төрлөөсөө ч
+   *    гарч, хэсгийн дэд төрлийн tile панель нээгдэнэ ✗
+   * ⚠️ `category` (`sell`/`rent`) · `section` · `sectionOpen` · `groupOpen` ·
+   *    `sort` ХӨНДӨӨГДӨХГҮЙ (эдгээр нь «хаана явж байна» ба эрэмбэлэлт ✓)
+   * ⚠️ `query`/`search` (толгойн хайлтын үг) ЦЭВЭРЛЭГДЭНЭ — `hasFilters`
+   *    тодорхойлолт нь хайлтын үгийг Ч шүүлтэд тооцдог тул «Бүгдийг» ✓
+   */
+  const clearFilters = () => {
+    setPage(1); // 📄 шүүлт арилсан → 1-р хуудас
+    setQuery('');
+    setSearch('');
+    setFilters((f) => ({ ...emptyFilters(), propertyType: f.propertyType }));
+  };
+
   /* 🗑 2026-09-29 (хэрэглэгчийн хүсэлт: «Бүх бүлэг, Бүх хэсэг, гэсэн буцах
      товчийг байхгүй болго») `backToAllSections()` ХАСАГДАВ — түүнийг дуудаж
      байсан «← Бүх хэсэг» чип ч хамт хасагдсан ✓
@@ -3644,14 +3667,17 @@ export default function HomeClient() {
                           🆕 2026-10-10 (95): жишиг сайтын «Clear all» /
                           «Show N places» хэвээр; «харуулах» нь шүүлтийг аль
                           хэдийн хэрэглэсэн (шүүлт ШУУД үйлчилнэ ✓) тул зөвхөн
-                          цонхыг хаана. «Цэвэрлэх» нь одоо байгаа `resetAll()`
-                          (БҮХ шүүлт/хэсэг/эрэмбэлэлт анхдагч) — 2 өөр утга
-                          БАЙХГҮЙ ✓ */}
+                          цонхыг хаана.
+                          ✏️ (95b): «цэвэрлэх» нь `resetAll()` БИШ —
+                          `clearFilters()` (зөвхөн ШҮҮЛТ; ХЭСЭГ ба сонгосон
+                          ТӨРӨЛ ХЭВЭЭР) ⇒ хэрэглэгч тухайн категориос
+                          ГАРАХГҮЙ ✓ ба цонх НЭЭЛТТЭЙ үлдэж, талбарууд
+                          хоосон болсныг ХАРНА ✓ */}
                       <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-100 px-4 py-3">
                         <button
                           type="button"
                           data-filters-clear
-                          onClick={() => { resetAll(); setAdvOpen(false); }}
+                          onClick={clearFilters}
                           className="text-[13px] font-semibold text-gray-500 transition hover:text-primary hover:underline"
                         >
                           ✕ Бүгдийг цэвэрлэх
