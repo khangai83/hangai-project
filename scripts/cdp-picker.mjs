@@ -674,8 +674,17 @@ ok('багана 2-т «Баянгол» сонгогдов',
 ok('багана 2-т «Баянгол» ГАНЦ (цэнхэр мөр ✓, толгойн давхардал үгүй)',
   p10.cols['loc-district']?.dupe === 1,
   `dupe=${p10.cols['loc-district']?.dupe} selected=${JSON.stringify(p10.cols['loc-district']?.selected)}`);
-ok('багана 3-т Баянголын 33 хороо гарч ирэв',
-  p10.cols['loc-khoroo']?.items.length === 33, String(p10.cols['loc-khoroo']?.items.length));
+/**
+ * ⚠️ (117): Баянголын хорооны баганад 🆕 **ГАЗРЫН НЭРС** нэмэгдэв
+ *    (33 албан ёсны `N-р хороо` + 10 газрын нэр — «Вокзал», «3 ба 4-р
+ *    хороолол» …) ⇒ нийт **43 мөр** (⏳ (117)-ээс өмнө 33 байв ✗).
+ *    ⚠️ Дараалал: эхлээд албан ёсны хороо, дараа нь газрын нэрс ✓
+ */
+ok('багана 3-т Баянголын 43 мөр (33 хороо + 🆕 10 газрын нэр) гарч ирэв',
+  p10.cols['loc-khoroo']?.items.length === 43
+  && p10.cols['loc-khoroo']?.items.includes('33-р хороо')
+  && p10.cols['loc-khoroo']?.items.includes('Вокзал'),
+  String(p10.cols['loc-khoroo']?.items.length));
 await click('[data-picker="loc-khoroo"] button[data-picker-value="3-р хороо"]');
 const p11 = await probe();
 ok('багана 3-т «3-р хороо» сонгогдов',

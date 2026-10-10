@@ -27,6 +27,7 @@
     "test:search-history": "node scripts/test-search-history.mjs",
     "test:rooms": "node scripts/test-rooms.mjs",
     "test:districts": "node scripts/test-districts.mjs",
+    "test:khoroo-areas": "node scripts/test-khoroo-areas.mjs",
     "test:card": "node scripts/test-card.mjs",
     "test:similar": "node scripts/test-similar.mjs",
     "test:edit-btn": "node scripts/test-edit-btn.mjs",

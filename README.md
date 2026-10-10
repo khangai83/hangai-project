@@ -73,6 +73,14 @@
 'Хан-Уул': khorooRange(24),   // ← 26-р хороо нэмэгдвэл 26 болгоно
 ```
 
+🆕 **ГАЗРЫН НЭРШИЛ (2026-10-10 (117)):** дээрх албан ёсны `N-р хороо`-ны ДАРАА
+тухайн дүүрэгт амын ярианд түгээмэл **газрын нэр** (хотхон, ам, дэд төв, буудал …)
+ч сонгогдоно — нэг эх сурвалж нь `UB_KHOROO_AREAS` (УБ-ын 6 дүүрэгт нийт **88**
+нэр; жишээ нь Хан-Уул **24 → 54**, Баянгол **33 → 43** мөр). Нэр нэмэхдээ:
+① дүүрэг дотор ба дүүрэг хооронд давхцалгүй · ② `N-р хороо` маягийн нэр БИШ ·
+③ ⚠️ нэр дотор **таслал (`,`) БАЙХГҮЙ** (URL нь `?khoroo=A,B` гэж таслалаар
+нэгтгэгддэг ⇒ «3, 4-р хороолол» гэвэл нэг сонголт хагацна ✗ → «3 ба 4-р
+хороолол» ✓); регресс нь `npm run test:khoroo-areas` (25 тест) ✓
 ### 🆕 Хорооны БОДИТ хил (2026-10-06)
 
 `lib/ubKhorooCenters.mjs` — УБ-ын **204 хорооны** БОДИТ полигон ДОТОРх цэг
@@ -885,8 +893,10 @@ Node дээр `chrome --headless=new --remote-debugging-port=9335` + `WebSocket`
  │ Улаанбаатар ▓ │  Баянгол ▓    │   1-р хороо          │  ← толгой БАЙХГҮЙ;
  │ Архангай      │  Баянзүрх     │   2-р хороо          │    сонгосон утга нь
  │ Баян-Өлгий    │  Сүхбаатар    │   3-р хороо ▓        │    мөрөн дээрээ л
- │ … (22 хот)    │  … (9 дүүрэг) │   … (33 хороо)       │    ЦЭНХЭРЭЭР (▓) ✓
+ │ … (22 хот)    │  … (9 дүүрэг) │  … (43 мөр ✦)        │    ЦЭНХЭРЭЭР (▓) ✓
  └───────────────┴───────────────┴──────────────────────┘
+   ✦ 🆕 2026-10-10 (117): 33 албан ёсны «N-р хороо» + 10 ГАЗРЫН НЭР
+     («Вокзал», «3 ба 4-р хороолол», «Модны 2» …) — УБ-ын 6 дүүрэгт нийт 88 нэр
    Сонгосон: 📍 Улаанбаатар › Баянгол › 3-р хороо   ← [data-location-summary]
    ☐ 📍 Байршил сонгохгүй  ← [data-no-location]  (2026-10-06: хэсгийн ДООД талд —
                                 сонголт ба «Сонгосон: …» мөрийн ДАРАА; ⚠️ урьд нь
@@ -897,7 +907,7 @@ Node дээр `chrome --headless=new --remote-debugging-port=9335` + `WebSocket`
 |---|---|---|
 | ① | **ХОТ / АЙМАГ** (`CITIES`, 22) | ҮРГЭЛЖ |
 | ② | **ДҮҮРЭГ / СУМ** (`getDistricts(city)`) | ҮРГЭЛЖ |
-| ③ | **ХОРОО** (`getKhoroos(city, district)`) | `!hasSimpleForm(section)` |
+| ③ | **ХОРОО** (`getKhoroos(city, district)` = албан ёсны `N-р хороо` + 🆕 (117) ГАЗРЫН НЭРС `UB_KHOROO_AREAS`) | `!hasSimpleForm(section)` |
 
 - ⚠️ **`<select>` БҮРЭН ХАСАГДАВ** — 1-р алхамтай ижил `PickerColumn` (мөр дээр
   дарахад сонгогдоно; ⚠️ **4 дэх засвар** — баганын ДЭЭД ТОЛГОЙ ч ХАСАГДАВ,
@@ -919,6 +929,10 @@ Node дээр `chrome --headless=new --remote-debugging-port=9335` + `WebSocket`
 - 🧪 **CDP:** `npm run cdp:picker` → ⑥/⑥′/⑥″ хэсэгт 3 багана, `<select>` **0**,
   Хот → Дүүрэг → Хороо дараалал, хот солиход цэвэрлэгдэх, 3-р алхам руу шилжих —
   бүгд бодит Chrome дээр шалгагдана ✓
+- 🏘🆕 **(117) ГАЗРЫН НЭРС:** 3 дахь баганад албан ёсны хорооны ДАРАА тухайн
+  дүүрэгт түгээмэл газрын нэр («Яармаг», «Зайсан», «Саппоро», «Вокзал» …) багтана —
+  нэг эх сурвалж (`UB_KHOROO_AREAS`, `lib/locationData.js`) ⇒ форм · пикер ·
+  хайлтын Хороо чип ГУРАА ижил жагсаалттай ✓ (`npm run test:khoroo-areas` 25 тест ✓)
 
 #### 🗺 Газрын зураг дээрх байршил — ПИН (2026-10-06)
 
@@ -1503,6 +1517,39 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- 🏘🗺 **ХОРООНЫ ГАЗРЫН НЭРШИЛ — АМЫН ЯРИАНЫ НЭРС (`Яармаг`, `Зайсан`, `Саппоро` …) ХОРООНЫ СОНГОЛТОД НЭМЭГДЭВ (2026-10-10 (117))** —
+  ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «add to хороо by дүүрэг».
+  <br>**(1) 🔍 ШАЛТГААН:** хорооны сонголт нь ЗӨВХӨН албан ёсны `N-р хороо` байв ⇒
+  хайгч «Яармаг», «Зайсан», «Нисэх» гэж боддог ч сонгох утга БАЙХГҮЙ, газрын
+  нэрээр тэмдэглэсэн зарыг «N-р хороо»-гоор хайж ОЛОХГҮЙ байв ✗
+  <br>**(2) ✅ ШИЙДЭЛ — 🆕 `UB_KHOROO_AREAS` (НЭГ ЭХ СУРВАЛЖ, `lib/locationData.js`):**
+  6 дүүрэгт (Хан-Уул · Баянгол · Сонгинохайрхан · Сүхбаатар · Чингэлтэй · Баянзүрх)
+  амын ярианд түгээмэл **88 газрын нэр** (хотхон, ам, дэд төв, буудал, худалдааны
+  төв). `getKhoroos()` нь `[...UB_DISTRICTS[d], …getKhorooAreas()]` — эхлээд АЛБАН
+  ЁСНЫ `N-р хороо` (хуучин дадал ХЭВЭЭР), дараа нь ГАЗРЫН НЭРС ✓ (Баянгол **33 → 43**)
+  <br>**(3) 📏 ДҮРЭМ (тестээр түгжив — `scripts/test-khoroo-areas.mjs`):** ① нэр
+  ХООСОН БИШ, ирмэгийн/давхар зайгүй · ② дүүрэг ДОТОР ба дүүрэг ХООРОНД давхцалгүй
+  (давхцвал нэгдэл дээр нэг нэр 2 дүүрэгт харьяалагдсан мэт болно ✗) · ③ `N-р хороо`
+  маягийн нэр БИШ · ④ ⚠️ нэр дотор ТАСЛАЛ (`,`) БАЙХГҮЙ — URL нь `?khoroo=A,B` гэж
+  таслалаар нэгтгэгддэг тул `3, 4-р хороолол` гэвэл нэг сонголт ХОЁР болж хагацна ✗
+  ⇒ `3 ба 4-р хороолол` ✓
+  <br>**(4) 🗺 ГАЗРЫН ЗУРАГ:** газрын нэр нь ДУГААРГҮЙ ⇒ `khorooNumber()` `null` ⇒
+  `khorooCenter()` `null` ⇒ авто пин нь **дүүргийн төв** рүү буцна (`autoCenterFor`);
+  хэрэглэгч өөрөө пин тавьсан бол ХӨНДӨӨГДӨХГҮЙ ✓; `N-р хороо`-ны нарийвчлал
+  ХЭВЭЭР (регресс 0) ✓
+  <br>**(5) 🖥📱 ХАМРАХ ХҮРЭЭ (3 газар БҮГДЭЭ нэг эх сурвалжаас):** 📝 форм
+  (`AddListingClient` → `getKhoroos`) · 📍 пикер ба 🔎 хайлтын Хороо чип
+  (`LocationPicker` → `getKhoroosForDistricts`) · 📱 wizard-ийн `locScreens` ✓
+  (компонент дотор хатсан нэр 0 — тест `codeOnly()`-оор барина ✓)
+  <br>**(6) 🧪 ТЕСТ:** 🆕 `npm run test:khoroo-areas` → **25 тест ✓** · `test:districts`
+  **42 ✓** · `test:location` 37 ✓ · `test:location-map` 71 ✓ · `test:search` 77 ✓ ·
+  `test:saved-searches` 24 ✓ · `test:filters` 132 ✓ · `test:brand` 22 ✓ ·
+  `npm run build` **EXIT=0 ✓** · 🐍 `cdp:picker` ⑥ — Баянголын хорооны багана
+  **33 → 43 мөр** (сүүлд «Вокзал»)
+  <br>⚠️ **DB / SQL / migration / URL / query — 0 өөрчлөлт** (`khoroo` нь текст
+  талбар; `?khoroo=Вокзал` ч `khoroo=in.(…)`-ээр ажиллана ✓)
+  <br>**(7) 📄 DOC:** энэ буллет + доорх тестийн хүснэгтийн мөр. 🔍 Хайх үг:
+  `UB_KHOROO_AREAS`, `getKhorooAreas`, газрын нэршил, `test:khoroo-areas`
 - 📅📥✂️ **🚗 ЗАР ОРУУЛАХ ХУУДАС — «Үйлдвэрлэсэн он / Орж ирсэн он» НЭР НЬ ГАНЦ УДАА ХАРАГДАХ БОЛОВ (2026-10-10 (116))** —
   ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «delete duplicate text „Үйлдвэрлэсэн он, Орж ирсэн он“
   on the ad adding car page».
@@ -4094,7 +4141,7 @@ Sidebar нь `SideBlock` (дээрээ гарчиг + доор нь оролту
 | Блок | Зан төлөв |
 |---|---|
 | **Толгой** | **Голлосон** «🔍 Хайлт» + түүний хажууд **`activeFilterCount`** badge (зөвхөн идэвхтэй хайлт байвал). «✕ Хаах» товч (мобайл) нь `absolute right-3` — голыг хөдөлгөхгүй |
-| **Байршил** | `Хот/Аймаг` (select) → **`Дүүрэг` (🆕 2026-10-03 (12): ОЛОН сонголттой чип — `chip-toggle`, скроллтой)** → `Хороо` (**ОЛОН** сонголттой чип, сонгосон дүүргүүдийн **НЭГДЭЛ**, скроллтой) |
+| **Байршил** | `Хот/Аймаг` (select) → **`Дүүрэг` (🆕 2026-10-03 (12): ОЛОН сонголттой чип — `chip-toggle`, скроллтой)** → `Хороо` (**ОЛОН** сонголттой чип, сонгосон дүүргүүдийн **НЭГДЭЛ**, скроллтой) — 🆕 **(117): газрын нэрс ч багтана** («Яармаг», «Зайсан», «Саппоро» …; нэг эх сурвалж `UB_KHOROO_AREAS` ⇒ сонгосон дүүрэг хооронд давхцалгүй) |
 | **🛏 Өрөөний тоо** | 🆕 **2026-10-03 (4)-д ЭРГЭЖ ИРЭВ** (⏳ 2026-09-30 (4)-д түр хасагдсан байв) — `showRooms`, `ROOM_OPTIONS`, `toggleRoomValue`, `toggleRooms`/`clearRooms`, «N сонгосон» badge, «✕ Цуцлах» бүгд буцаж ирэв ✓. ⚠️ Байрлал: sidebar-д **«Үнэ, ₮»-ний ДЭЭР** (хэрэглэгчийн хүсэлт), ЭХНИЙ блок нь **«Байршил»** хэвээр · Хорооны блоктой ижил `chip-toggle` чипүүд · зөвхөн өрөөтэй төрөлд (`hasRoomsFields`) — доорх «🛏 ӨРӨӨНИЙ ТОО» хэсгийг үзнэ үү · ⏳ **2026-10-04 (38): 💳 Төлбөрийн нөхцөлийн ЯГ ӨМНӨ, үр дүнгийн дээрх `#filter-bar` pill dropdown болов — сайдбараас БҮРЭН ГАРСАН → 🆕 2026-10-06: pill БИШ, ЭРГЭЖ сайдбарт («📍 Байршил»-ийн ЯГ ДООР) оров ✓** · 🆕 **(18) 2026-10-06: 5 чип тул анхдагчаар ХУРААСАН** (`collapsible` — гарчиг дээр дарж/«Бүгдийг нээх» товчоор нээгдэнэ; ⚠️ сонгосон утга байвал АВТОМАТААР НЭЭЛТТЭЙ ✓) |
 | **💳 Төлбөрийн нөхцөл** | 🆕 **2026-10-03 (5)-д НЭМЭГДЭВ** — `showPayments` (= `hasPaymentTerms(propertyType)` → **зөвхөн үл хөдлөх + авто**), `PAYMENT_OPTIONS` (4 чип: 💳/💵/🏦/🔄), `togglePaymentValue`, «N сонгосон» badge, «✕ Цуцлах» · ⚠️ Байрлал: **🆕 (15) «💰 Үнэ, ₮»-ний ЯГ ДАРАА** (⏳ (16): «Өрөөний тоо»-ны дараа, «Үнэ, ₮»-ний өмнө; жишиг сайттай ижил); URL `?payment=lease,cash` → DB `attrs=cs.{"payment_terms":["lease"]}` / 2+ утга `or=(…)` — 🆕 **(16): ХАЙЛТ нь «🛏 Өрөөний тоо»-той ЯГ ИЖИЛ ЧИП** ба 🆕 **(18): ФОРМ ч МӨН ТЭР ЧИП** (⏳ (6)-ийн 2 баганат ☑ `.pay-grid`/`.pay-check` бүрэн хасагдав) — доорх «💳 ТӨЛБӨРИЙН НӨХЦӨЛ» хэсгийг үзнэ үү · ⏳ **2026-10-04 (37): `#filter-bar` pill dropdown болж сайдбараас ГАРСАН; (38)-д 🛏 «Өрөөний тоо» ч түүний ЯГ ӨМНӨ нэгдэв → 🆕 2026-10-06: pill БИШ, ЭРГЭЖ сайдбарт («📍 Байршил» → 🛏 → 💰 → 💳 дарааллаар; 🆕 (15): 💳 нь «Үнэ, ₮»-ний дараа) оров ✓** |
 | **🖥 💻 Notebook-ийн шүүлт** | 🆕 **2026-10-03 (7)-д НЭМЭГДЭВ** — 💻 `computers` хэсгийн sidebar-д **📺 Дэлгэцийн хэмжээ (инч) · ⚙️ Процессор (CPU) · 🧠 Санах ой (RAM) · 💾 Хард диск (SSD / HDD)** гэсэн 4 `<select>` («Бүгд» анхдагчтай) — ⚠️ **зөвхөн «Notebook» дэд төрөл** сонгосон үед (`onlySubtypes`; 🆕 **(52): «Иж бүрэн компьютер» · (55): «Процессор, сервер» ХАСАГДАВ** — форм нь Mouse/«Дэлгэц»-тэй ЯГ ИЖИЛ, зөвхөн ✅ «Төлөв»); Mouse/Keyboard/тонер/чихэвч ба **дэд төрөл сонгоогүй** үед ХАРАГДАХГҮЙ · Байрлал: 🏷️ Брэнд-ийн ДАРАА, ✅ Төлөв-ийн ӨМНӨ (формтой ижил дараалал) · URL `?attr_cpu=Intel+Core+i5` (олон сонголт: `?attr_cpu=Intel+Core+i5,Intel+Core+i7`) → DB `attrs->>cpu=in.(…)` (OR) · 🆕 **2026-10-05 (43): эдгээр 4 нь сайдбараас ГАРЧ `#filter-bar` pill болов** (сайдбарт attr шүүлт 0 — 💻 дээр зөвхөн 🏷️ «Брэнд» л үлдэнэ) — доорх «🖥 💻 NOTEBOOK-ИЙН ШҮҮЛТ» хэсгийг үзнэ үү |
@@ -7624,6 +7671,7 @@ npm run test:format      # 💰 үнэ/мянгатын таслалт + 🤝 «
 npm run test:filters     # 🔎 attrFilters-ийн гэрээ + 🧳 travel/🧺 home/🛋️ furniture/⚡ electric/⚽ hobby хялбар форм + 💻 Notebook-ийн 📺/⚙️/🧠/💾 сонголт + 🔧 хөдөлгүүр/🎨 өнгө (+ 🎨 өнгө нь «Загвар»-ын дараа — форм/sidebar/карт) + 🛡️ 💻 «Баталгаа» (`warranty`) ХАСАГДАВ + 📋 `getAttrRows` (зарын дэлгэрэнгүй 2 багана) + «Шинэ / Шинэвтэр / Хуучин» (condition ЯГ 3 сонголттой, «Шинэвтэр» дунд) + 🆕 💻 Notebook-ийн 4 ШҮҮЛТ дэд төрлөөр (`getAttrFilters(section, subtype)`) + 🆕 `pruneGatedAttrs` (үл үзэгдэх шүүлт цэвэрлэнэ) + 🆕 🎨 ӨНГӨ нь ОЛОН СОНГОЛТТОЙ ЧИП (`chips`/`multi`/`multiNoun` — зөвхөн sidebar; форм `<select>` ХЭВЭЭР) + 🆕 ✅ «Шинэ / Шинэвтэр / Хуучин» нь 8 хэсэгт МӨН ОЛОН СОНГОЛТТОЙ ЧИП (`CONDITION_FILTER_EXTRA`, `multiNoun: 'төлөв'`; форм ХӨНДӨӨГДӨӨГҮЙ) + 🆕 🏷️ 💻 «Брэнд» нь `filterSubtypes`-тай (хайлтад Notebook-ийн гэр бүлд л; форм ХӨНДӨӨГДӨӨГҮЙ) + 🆕 2026-10-04 (23): 🖥📱 хэсгийн панелийн «Зарах / Түрээслэх» нь `segmented` + `getSectionCategoryChoices` (БҮТЭН шошго + «Бүгд» сүүлд) — 110 тест, 0₮ — 🆕 2026-10-06 (16): `FilterPill` HOVER-ийн гэрээ (`hover:bg-gray-200` / `hover:bg-primary/25`, ⏳ `hover:bg-gray-50` буцаж орохгүй))
 npm run test:rooms       # 🛏🗑 ӨРӨӨНИЙ ТОО — UI ХАСАГДСАН, URL/DB/breadcrumb ХЭВЭЭР (44 тест, 0₮) ✓
 npm run test:districts   # 🗺 ДҮҮРЭГ / СУМ — ОЛОН сонголттой чип (eq/in, нэгдэл, шошго) (40 тест, 0₮) ✓
+npm run test:khoroo-areas # 🏘🆕 (117) ХОРООНЫ ГАЗРЫН НЭРШИЛ — «Яармаг», «Зайсан», «Саппоро», «Вокзал» … албан ёсны «N-р хороо»-ны ДАРАА (нэг эх сурвалж · давхцалгүй · таслалгүй · авто пин дүүргийн төв рүү) (25 тест, 0₮) ✓
 npm run test:carpicker   # 🏷️🚙 АВТО «ҮЙДВЭРЛЭГЧ, ЗАГВАР» — Байршил шиг НЭГ пикер (CarPicker гэрээ + attr жагсаалтаас шүүх + applyCar/cascade + олон загвар + форм ХӨНДӨӨГДӨӨГҮЙ) (18 тест, 0₮) ✓
 npm run test:payments    # 💳 ТӨЛБӨРИЙН НӨХЦӨЛ — хайлтад ЧИП (өрөөний тоотой ижил), формд ☑/URL/DB (jsonb `cs`) + ЗААВАЛ (36 тест, 0₮) ✓
 npm run test:swap        # 🔄 СОЛИНО — 🚗 Автомашин ба ⚽ «Дартс»-д л: формд ☑ (🤝 «Үнэ тохирно»-гийн баруун талд), хайлтад чип, URL `?swap=1`, DB `attrs->>swap=eq.yes` (24 тест, 0₮) ✓
@@ -8051,6 +8099,7 @@ thumbUrl → `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
 | `scripts/test-payments.mjs` | 🆕 **36 тест** — `npm run test:payments` (2026-10-03 (5): 💳 төлбөрийн нөхцөлийн гэрээг хамгаална — ① `lib/paymentFilter.mjs`-ийн цэвэр функцууд: `hasPaymentTerms` (зөвхөн `real-estate`/`auto` ✓) · `normalizePaymentValue`/`isPaymentValue` (trim + lowercase) · `parsePaymentList` (эвдэрсэн утга хасч, КАНОН дараалал) · `paymentsUrlValue` · `countPayments`/`isPaymentsEmpty` · `paymentOptionLabel`/`Icon` · `paymentsFilterLabel` · `togglePaymentValue` · `paymentsFilterDescriptor` ② `paymentContainsJson` ба `applyPaymentFilter` нь fake PostgREST builder-ээр: **1 утга → `attrs=cs.{"payment_terms":["x"]}`**, **2+ → `or=(…)`**, ⚠️ **`["a","b"]` гэсэн ХОЁР ЭЛЕМЕНТТЭЙ массив ХЭЗЭЭ Ч ЯВАХГҮЙ** (таслал `.or()`-ийг эвдэж `22P02` өгнө ✗) ③ `paymentTermsForAttrs` (дэмжигдэхгүй/хоосон → `null`) ④ `getAttrRows` — 💳 мөр зарын дэлгэрэнгүйд гарна (4 тохиолдол) ⑤ `lib/queries.js`/`HomeClient.jsx`/`AddListingClient.jsx`/`cdp-payments.mjs`/`package.json` дээрх ЭХ ФАЙЛЫН ГЭРЭЭ (regex) ✓ + 🆕 **(16) ХАЙЛТ нь ЧИП:** `HomeClient.jsx`-д `chip-toggle`/`aria-pressed`/`<button>` байна, `pay-grid`/`type="checkbox"` БАЙХГҮЙ, icon харагдахгүй ✓ + 🆕 **(18) ФОРМ Ч МӨН ЧИП:** `AddListingClient` нь `chip-toggle`/`aria-pressed`/`<button>` ба `pay-grid`/`pay-check`/`type="checkbox"`/`checked` **БАЙХГҮЙ** ✓, `globals.css`-ээс ☑-ийн дүрмүүд (`.pay-grid`/`.pay-check`/`appearance:none`/SVG) **УСТГАГДАВ** ба хайлт=форм нэг хэв (`.chip-toggle`) ✓) — ⚠️ `scripts/cdp-payments.mjs` нь БОДИТ DOM дээр чипийн хэмжээ (124x33), `aria-pressed`, `flex-wrap`-ыг хэмжинэ ✓) |
 | `scripts/test-districts.mjs` | **40 тест** — `npm run test:districts` (🆕 2026-10-03 (12): 🗺 дүүргийн **ОЛОН сонголтын** гэрээ — 🏷️ 2026-10-03 (14): `districtsFilterLabel` нь **«2 дүүрэг»** (өмнө «2 дүүрэг/сум») · `normalizeDistrict` (зай/таслалт/хүчингүй утга) · `parseDistrictList` (эвдэрсэн гишүүн хасаж, дараалал хадгална) · `isDistrictsEmpty`/`countDistricts` · `toggleDistrictValue` (checkbox мэт) · `districtsUrlValue` · `districtsFilterLabel` (**1 → нэрээр** «Баянгол» · 2+ → «2 дүүрэг») · `districtsFilterDescriptor`/`applyDistrictFilter` fake builder-ээр — **`['Баянгол']` → `eq`** (хуучин гэрээ ЯГ ижил ✓), 2+ → `in`; `getKhoroosForDistricts` (нэгдэл, хорооны нэрээр давхцалгүй, танихгүй хот → `[]`) · `lib/queries.js` ба `lib/breadcrumb.js` нь модулийг дуудна (`codeOnly()` эх кодын гэрээ) · `HomeClient.jsx`-д `<select>` БАЙХГҮЙ + `data-district-filter`/`data-district-value` БАЙНА, «Өрөө» илүүц текст БАЙХГҮЙ · `scripts/cdp-districts.mjs` нь чип дарах замыг шалгана ✓) |
 | `scripts/test-carpicker.mjs` | 🆕 **18 тест** — `npm run test:carpicker` (**2026-10-04 (35): 🏷️🚙 авто «Үйлдвэрлэгч, Загвар» нь 📍 Байршил шиг НЭГ ПИКЕР болов**; 🆕 **(36): 🚙 «Загвар» нь ОЛОН СОНГОЛТТОЙ** — ① РЕГРЕСС: `getAttrFilters('auto')` нь `brand`/`model`-ыг ХЭВЭЭР (форм/URL/DB нэг эх сурвалж) ба `model.optionsFrom='brand'`+`filterable` ② 🆕 `components/CarPicker.jsx`-ийн гэрээ: `CAR_BRANDS`/`getCarModels` импорт (`<select>` 0) · `#car-search` + каскад баганууд (`[data-car-brand-filter]`/`[data-car-model-filter]`) · хайлтын `match()` · брэнд солигдоход `setDraftModels([])` (🖥 ба 📱) · ноорог ЗӨВХӨН `onApply({brand, model: draftModels})` дээр · мобайл drill-down (`data-mobile-car`, `mStep`) · `modelOptions.length === 0` үед чөлөөт текст; 🆕 **(36) ОЛОН ЗАГВАР:** `model` нь `multi: true` + `multiNoun: 'загвар'` (⚠️ `chips` БАЙХГҮЙ — UI нь пикер) · `draftModels` МАССИВ + `pickModel` = `toggleAttrValue` · чип утга БҮРД тусдаа · `[data-car-model-count]` · `cascadeAttrs` нь МАССИВЫГ шүүнэ (өөр брэндийн загвар ХАСГАЖ, гараар бичсэн нь ҮЛДЭЖ, хоосон бол талбар УСТАНА — `[]` үлдэхгүй ✓) ③ `components/HomeClient.jsx`: `import CarPicker` + `<CarPicker open={carOpen} … models={carModels} onApply={applyCar}>` + `const isAuto = section === 'auto'` + `[data-sidebar-car]` + `attrFilters.filter(…)` нь brand/model-ыг шүүнэ + `applyCar` (нэг `setFilters`, `parseAttrList(model)`, хоосныг `delete`, `setPage(1)`) + `const carModels = attrArray('model')` + товчилсон шошго (`attrListFilterLabel` → «2 загвар») + pill/`[data-car-clear]` (`model: []`) ④ 🖥 `AddListingClient.jsx` ХӨНДӨӨГДӨӨГҮЙ (`<SearchableSelect`/`optionsFrom` хэвээр, `CarPicker` ОРООГҮЙ) ✓) |
+| `scripts/test-khoroo-areas.mjs` | 🆕 **25 тест** — `npm run test:khoroo-areas` (2026-10-10 (117): 🏘 **ХОРООНЫ ГАЗРЫН НЭРШИЛ** — «Яармаг», «Зайсан», «Саппоро», «Вокзал» … нь албан ёсны `N-р хороо`-ны ДАРАА, НЭГ ЭХ СУРВАЛЖААС (`UB_KHOROO_AREAS` · `getKhorooAreas` · `getKhoroos` · `getKhoroosForDistricts`). ① БҮТЭЦ: 6 дүүрэг (Хан-Уул 30 · Баянгол 10 · Сонгинохайрхан 13 · Сүхбаатар 8 · Чингэлтэй 10 · Баянзүрх 17) = **88 нэр**, зөвхөн `UB_DISTRICTS`-ийн дүүрэгт ② ДҮРЭМ: trim/давхар зайгүй · ⚠️ **ТАСЛАЛ (`,`) БАЙХГҮЙ** (URL `?khoroo=A,B` нэгдэл ⇒ нэг сонголт хагацана ✗) · `N-р хороо` маягийн нэр БИШ · дүүрэг ДОТОР ба ХОРООНД давхцалгүй ③ `getKhoroos` = `[...N-р хороо, ...газрын нэр]` (дараалал ЧУХАЛ · Налайх ХӨНДӨӨГДӨӨГҮЙ · УБ биш → `[]` · буцаасан массив ХУУЛБАР — мутацлагагүй) ④ `getKhoroosForDistricts` нэгдэл (`['Баянгол','Сүхбаатар']` → 51 мөр, «1-р хороо»…«20-р хороо» ХАСАГДАНА; 3 дүүрэг ч зөв) ⑤ URL гэрээ (join(`,`) → split(`.trim`) → ЯГ ижил утга + `encodeURIComponent` round-trip) ⑥ 🗺 ЗУРАГ: газрын нэр → `khorooNumber`/`khorooCenter` `null` ⇒ `autoCenterFor` нь **дүүргийн төв** рүү, `N-р хороо`-ны нарийвчлал ХЭВЭЭР ✓ ⑦ ЭХ ФАЙЛЫН ГЭРЭЭ (`codeOnly()`): форм/пикер нь `getKhoroos*`-аас уншина — компонент дотор хатсан нэр 0 ба `UB_KHOROO_AREAS` ЯГ 1 файлд (`lib/locationData.js`)) |
 
 
 | `scripts/test-rooms.mjs` | **44 тест** — `npm run test:rooms` (🆕 2026-10-03 (4): өрөөний **UI ЭРГЭЖ ИРСНИЙ** гэрээг хамгаална — `codeOnly()`-оор `data-room-filter`/`data-room-value`/`ROOM_OPTIONS`/`toggleRoomValue`/`toggleRooms`/`clearRooms`/`showRooms`/«Өрөөний тоо» **КОДОД БАЙНА** ✓ ба ⚠️ `data-room-filter` нь «Үнэ, ₮»-ний **ӨМНӨ** байрлана (`indexOf`) ✓; ⚠️ ХАДГАЛАГДСАН: `rooms: []`, `parseRoomList(sp.get('rooms'))`, `roomsUrlValue(filters.rooms)`, `roomsFilterLabel(filters.rooms)`; 📌 CDP скрипт нь `dom.chips === 5` (Орон сууц дээр чип 5 байна) ба `clickRoom(` (чип дарж URL/DB шалгах) замыг шаардана ✓. Мөн: `ROOM_VALUES`/`normalizeRoomValue` (`'5+'`/`+5`/`5` → `'5'`)/`parseRoomList` (эвдэрсэн `abc` хасаж, өсөх эрэмбээр)/`toggleRoomValue`/`isRoomsEmpty`/`countRooms`/`roomsUrlValue`/`roomsFilterLabel`/`roomsFilterDescriptor` ба `applyRoomFilter` fake builder-ээр — **`['5']`→`gte 5`, `['3']`→`in ['3']` (хуучин үр дүнтэй ЯГ ижил)**, `['4','5']`→`gte 4`, `['1','5']`→`or(…)`; ⚠️ 2026-09-30 (4)-д тестэд гарсан алдаа: `ROOM_OPTIONS`-ийн хүлээлт нь `'2 өрөө','2 өрөө'` гэж бичигдсэн байсныг `'1 өрөө'` болгож зассан ✓) |
