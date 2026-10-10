@@ -1104,6 +1104,30 @@ t('🎛 (89) HomeClient: БҮХ шүүлт PILL — сайдбар ХАСАГД�
   assert.match(src, /hook="data-attr-value"/, 'attr-ийн ☑ дэгээ алга ✗');
 });
 
+t('🎛 (95) «Шүүлт» нь ТУСДАА ГАРЧ ИРДЭГ ЦОНХ (modal) — дэгээ/утга ХӨНДӨӨГДӨӨГҮЙ', () => {
+  const src = readFileSync(new URL('../components/HomeClient.jsx', import.meta.url), 'utf8');
+  // ① ЦОНХНЫ БҮТЭЦ — `{advOpen && (` дотор ГАРЧ ИРДЭГ overlay (`fixed inset-0`) ✓
+  assert.match(src, /\{advOpen && \(/, 'цонх `advOpen`-оор нээгдэхгүй ✗');
+  assert.match(src, /data-filters-modal/, 'modal-ийн дэгээ (`data-filters-modal`) алга ✗');
+  assert.match(src, /className="fixed inset-0[^"]*bg-black\/40/, 'overlay нь `fixed inset-0` + хар бүрхүүл биш ✗');
+  assert.match(src, /role="dialog"/, '`role="dialog"` алга ✗');
+  assert.match(src, /aria-modal="true"/, '`aria-modal="true"` алга ✗');
+  // ② ХААХ 3 ЗАМ — ✕ · ард тал · `Escape` (📍 Байршлын пикертэй ЯГ ИЖИЛ ✓)
+  assert.match(src, /data-filters-close/, '✕ хаах товчны дэгээ алга ✗');
+  assert.match(src, /e\.target === e\.currentTarget/, 'ард талд дарахад хаагдахгүй ✗');
+  assert.match(src, /e\.key === 'Escape'[\s\S]{0,40}setAdvOpen\(false\)/, '`Escape`-ээр хаагдахгүй ✗');
+  // ③ ТОЛГОЙ / БИЕ / ДООД МӨР — бие нь өөрөө гүйлгэгдэнэ, доод мөрд 2 үйлдэл ✓
+  assert.match(src, /min-h-0 flex-1 overflow-y-auto/, 'бие нь гүйлгэгдэхгүй (`overflow-y-auto` алга) ✗');
+  assert.match(src, /data-filters-clear[\s\S]{0,200}resetAll\(\)/, '«Цэвэрлэх» нь `resetAll()`-ийг дуудахгүй ✗');
+  assert.match(src, /data-filters-apply/, '«Харуулах» товчны дэгээ алга ✗');
+  // ④ ⚠️ ХӨНДӨӨГДӨӨГҮЙ — `#advanced-filters` ба БҮХ хуучин дэгээ/утга ✓
+  assert.match(src, /id="advanced-filters"/, '`#advanced-filters` дэгээ алга ✗');
+  assert.match(src, /data-filters-panel/, '`data-filters-panel` дэгээ алга ✗');
+  assert.match(src, /data-filter-overflow/, '`data-filter-overflow` (Бусад шүүлт) алга ✗');
+  assert.match(src, /SideBlock label="Талбай, м²"/, '«Талбай, м²» хязгаарын блок алга ✗');
+  assert.match(src, /attrFilters\.filter\(\(f\) => f\.range\)\.map/, 'хязгаарын attr панельд алга ✗');
+});
+
 // ---------- 🔀 🆕 2026-10-06 (17): PILL → САЙДБАР («Дэлгэрэнгүй хайлт») ----------
 /**
  * 🆕 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Автомашины Дэлгэрэнгүй хайлт дээр Төлбөрийн нөхцөл

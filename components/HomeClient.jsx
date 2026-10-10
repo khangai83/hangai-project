@@ -986,6 +986,15 @@ export default function HomeClient() {
   //    хязгаарын шүүлтүүд (Үнэ · Талбай · он · давхар) ЭНД байна; бусад бүх
   //    шүүлт нь үр дүнгийн дээрх мөрөнд PILL болно (хэрэглэгчийн хүсэлт ✓)
   const [advOpen, setAdvOpen] = useState(false);
+  // 🎛 2026-10-10 (95): «Шүүлт» нь тусдаа цонх (modal) болсон тул `Escape`
+  //    товчоор хаагдана (📍 Байршлын пикер ба `FilterPill`-тэй ИЖИЛ зан ✓).
+  //    ⚠️ Утга/URL/DB ХӨНДӨӨГДӨХГҮЙ — зөвхөн нээлттэй/хаалттай төлөв ✓
+  useEffect(() => {
+    if (!advOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setAdvOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [advOpen]);
 
   const [category, setCategory] = useState('all');
   const [search, setSearch] = useState('');
@@ -3501,98 +3510,162 @@ export default function HomeClient() {
 
 
 
-                {/* ===== «ШҮҮЛТ» ПАНЕЛЬ — ЗӨВХӨН ДЭЭД/ДООД ХЯЗГААР =====
-                    ⚠️ `id="advanced-filters"` ХЭВЭЭР (CDP дэгээ ✓) — зөвхөн
-                       `advOpen` үед render болно. Утга/дэгээ ХӨНДӨӨГДӨХГҮЙ ✓ */}
+                {/* ===== 🎛 «ШҮҮЛТ» — ТУСДАА ГАРЧ ИРДЭГ ЦОНХ (modal) =====
+                    🆕 2026-10-10 (95): ⏳ (89)/(92) дээр панель нь шүүлтийн мөрийн
+                    ДООР шууд render болдог байв ✗ ⇒ одоо жишиг сайтын «шүүлт»
+                    цонхны хэвээр ТУСДАА ГАРЧ ИРДЭГ ЦОНХ болов (хэрэглэгчийн хүсэлт:
+                    «Шүүлт ийг тусдаа гарч ирдэг цонх болго …», жишээ зурагтай) —
+                    толгойд «Шүүлт» (төвд) + ✕, доод мөрд «✕ Бүгдийг цэвэрлэх» ба
+                    «Харуулах»; бие нь өөрөө гүйлгэгдэнэ (утас/жижиг дэлгэцэд ч
+                    бүтэн харагдана ✓)
+                    ⚠️ `id="advanced-filters"` · `data-filters-panel` · доорх
+                       `SideBlock`/`RangeInput`/`data-filter-overflow` ба БҮХ утга/
+                       URL/DB/CDP дэгээ ХӨНДӨӨГДӨХГҮЙ ✓ (зөвхөн ГАРАХ ХЭЛБЭР) */}
                 {advOpen && (
                   <div
-                    id="advanced-filters"
-                    data-filters-panel
-                    className="mb-3 rounded-xl border border-gray-200 bg-white p-4 shadow-card"
+                    data-filters-modal
+                    className="fixed inset-0 z-[1500] flex items-start justify-center overflow-y-auto bg-black/40 p-3 sm:items-center sm:p-6"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Шүүлт"
+                    onMouseDown={(e) => {
+                      /* Ард тал (картын ГАДНА) дарахад хаагдана — 📍 Байршлын
+                         пикер ба 🚗 машины пикертэй ЯГ ИЖИЛ хэв ✓ */
+                      if (e.target === e.currentTarget) setAdvOpen(false);
+                    }}
                   >
-                    <h2 className="text-[13px] font-semibold text-gray-900">Дээд / Доод хязгаар</h2>
-                    <p className="mb-2 mt-0.5 text-[12px] text-gray-500">
-                      Үнэ, талбай, давхар ба он — доод/дээд хязгаарыг бичнэ үү.
-                    </p>
-                    <div className="divide-y divide-gray-200">
-                      {priceSideBlock}
-                      {attrFilters.filter((f) => f.range).map((f) => (
-                        <SideBlock key={f.key} label={f.label}>
-                          <RangeInput
-                            label={f.label}
-                            unit="он"
-                            mode="year"
-                            bounds={yearBounds()}
-                            from={attrValue(`${f.key}_from`)}
-                            to={attrValue(`${f.key}_to`)}
-                            onChange={(a, b) => setAttrPair(f.key, a, b)}
-                          />
-                        </SideBlock>
-                      ))}
-                      {isRealEstate && (
-                        <SideBlock label="Талбай, м²">
-                          <RangeInput
-                            label="Талбай"
-                            unit="м²"
-                            mode="decimal"
-                            bounds={AREA_BOUNDS}
-                            from={filters.minArea}
-                            to={filters.maxArea}
-                            onChange={(a, b) => { setF('minArea', a); setF('maxArea', b); }}
-                          />
-                        </SideBlock>
-                      )}
-                      {showApartmentRanges && (
-                        <>
-                          <SideBlock label="Барилгын давхар">
-                            <RangeInput
-                              label="Барилгын давхар"
-                              unit="давхар"
-                              mode="int"
-                              bounds={FLOOR_BOUNDS}
-                              from={filters.minTotalFloors}
-                              to={filters.maxTotalFloors}
-                              onChange={(a, b) => { setF('minTotalFloors', a); setF('maxTotalFloors', b); }}
-                            />
-                          </SideBlock>
-                          <SideBlock label="Хэдэн давхарт">
-                            <RangeInput
-                              label="Хэдэн давхарт"
-                              unit="давхар"
-                              mode="int"
-                              bounds={FLOOR_BOUNDS}
-                              from={filters.minFloor}
-                              to={filters.maxFloor}
-                              onChange={(a, b) => { setF('minFloor', a); setF('maxFloor', b); }}
-                            />
-                          </SideBlock>
-                          <SideBlock label="Ашиглалтанд орсон он">
-                            <RangeInput
-                              label="Ашиглалтанд орсон он"
-                              unit="он"
-                              mode="year"
-                              bounds={buildYearLimit}
-                              from={filters.minBuildYear}
-                              to={filters.maxBuildYear}
-                              onChange={(a, b) => { setF('minBuildYear', a); setF('maxBuildYear', b); }}
-                            />
-                          </SideBlock>
-                        </>
-                      )}
-                    </div>
-
-                    {/* 🆕 2026-10-10 (92): «БУСАД ШҮҮЛТ» — мөрийн 7 pill-д
-                        багтаагүй attr pill-үүд ЭНД (жишиг сайтын «All Filters»
-                        панель шиг). ⚠️ Ижил `renderAttrPill` ⇒ утга/URL/DB/дэгээ
-                        (`data-attr-filter` · `data-attr-value`) БҮГД ХЭВЭЭР ✓ */}
-                    {barAttrOverflow.length > 0 && (
-                      <div data-filter-overflow className="mt-4 border-t border-gray-200 pt-3">
-                        <h2 className="mb-2 text-[13px] font-semibold text-gray-900">Бусад шүүлт</h2>
-                        <div className="flex flex-wrap gap-2">
-                          {barAttrOverflow.map(renderAttrPill)}
-                        </div>
+                    <div
+                      id="advanced-filters"
+                      data-filters-panel
+                      className="flex max-h-[calc(100vh-1.5rem)] w-full max-w-[560px] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-card-hover sm:max-h-[calc(100vh-3rem)]"
+                    >
+                      {/* ---- ТОЛГОЙ — «Шүүлт» (төвд) + ✕ (жишиг сайтын хэв) ---- */}
+                      <div className="relative flex shrink-0 items-center justify-center border-b border-gray-100 px-4 py-4">
+                        <h2 className="text-[16px] font-bold text-gray-900">Шүүлт</h2>
+                        <button
+                          type="button"
+                          data-filters-close
+                          aria-label="Хаах"
+                          onClick={() => setAdvOpen(false)}
+                          className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-[18px] text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
+                        >
+                          ✕
+                        </button>
                       </div>
-                    )}
+
+                      {/* ---- БИЕ — Дээд/Доод хязгаар + «Бусад шүүлт» (гүйлгэгдэнэ) ---- */}
+                      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+                        <h3 className="text-[13px] font-semibold text-gray-900">Дээд / Доод хязгаар</h3>
+                        <p className="mb-2 mt-0.5 text-[12px] text-gray-500">
+                          Үнэ, талбай, давхар ба он — доод/дээд хязгаарыг бичнэ үү.
+                        </p>
+                        <div className="divide-y divide-gray-200">
+                          {priceSideBlock}
+                          {attrFilters.filter((f) => f.range).map((f) => (
+                            <SideBlock key={f.key} label={f.label}>
+                              <RangeInput
+                                label={f.label}
+                                unit="он"
+                                mode="year"
+                                bounds={yearBounds()}
+                                from={attrValue(`${f.key}_from`)}
+                                to={attrValue(`${f.key}_to`)}
+                                onChange={(a, b) => setAttrPair(f.key, a, b)}
+                              />
+                            </SideBlock>
+                          ))}
+                          {isRealEstate && (
+                            <SideBlock label="Талбай, м²">
+                              <RangeInput
+                                label="Талбай"
+                                unit="м²"
+                                mode="decimal"
+                                bounds={AREA_BOUNDS}
+                                from={filters.minArea}
+                                to={filters.maxArea}
+                                onChange={(a, b) => { setF('minArea', a); setF('maxArea', b); }}
+                              />
+                            </SideBlock>
+                          )}
+                          {showApartmentRanges && (
+                            <>
+                              <SideBlock label="Барилгын давхар">
+                                <RangeInput
+                                  label="Барилгын давхар"
+                                  unit="давхар"
+                                  mode="int"
+                                  bounds={FLOOR_BOUNDS}
+                                  from={filters.minTotalFloors}
+                                  to={filters.maxTotalFloors}
+                                  onChange={(a, b) => { setF('minTotalFloors', a); setF('maxTotalFloors', b); }}
+                                />
+                              </SideBlock>
+                              <SideBlock label="Хэдэн давхарт">
+                                <RangeInput
+                                  label="Хэдэн давхарт"
+                                  unit="давхар"
+                                  mode="int"
+                                  bounds={FLOOR_BOUNDS}
+                                  from={filters.minFloor}
+                                  to={filters.maxFloor}
+                                  onChange={(a, b) => { setF('minFloor', a); setF('maxFloor', b); }}
+                                />
+                              </SideBlock>
+                              <SideBlock label="Ашиглалтанд орсон он">
+                                <RangeInput
+                                  label="Ашиглалтанд орсон он"
+                                  unit="он"
+                                  mode="year"
+                                  bounds={buildYearLimit}
+                                  from={filters.minBuildYear}
+                                  to={filters.maxBuildYear}
+                                  onChange={(a, b) => { setF('minBuildYear', a); setF('maxBuildYear', b); }}
+                                />
+                              </SideBlock>
+                            </>
+                          )}
+                        </div>
+
+                        {/* 🆕 2026-10-10 (92): «БУСАД ШҮҮЛТ» — мөрийн 7 pill-д
+                            багтаагүй attr pill-үүд ЭНД (жишиг сайтын «All Filters»
+                            панель шиг). ⚠️ Ижил `renderAttrPill` ⇒ утга/URL/DB/дэгээ
+                            (`data-attr-filter` · `data-attr-value`) БҮГД ХЭВЭЭР ✓ */}
+                        {barAttrOverflow.length > 0 && (
+                          <div data-filter-overflow className="mt-4 border-t border-gray-200 pt-3">
+                            <h3 className="mb-2 text-[13px] font-semibold text-gray-900">Бусад шүүлт</h3>
+                            <div className="flex flex-wrap gap-2">
+                              {barAttrOverflow.map(renderAttrPill)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ---- ДООД МӨР — «✕ Бүгдийг цэвэрлэх» + «Харуулах» ----
+                          🆕 2026-10-10 (95): жишиг сайтын «Clear all» /
+                          «Show N places» хэвээр; «харуулах» нь шүүлтийг аль
+                          хэдийн хэрэглэсэн (шүүлт ШУУД үйлчилнэ ✓) тул зөвхөн
+                          цонхыг хаана. «Цэвэрлэх» нь одоо байгаа `resetAll()`
+                          (БҮХ шүүлт/хэсэг/эрэмбэлэлт анхдагч) — 2 өөр утга
+                          БАЙХГҮЙ ✓ */}
+                      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-gray-100 px-4 py-3">
+                        <button
+                          type="button"
+                          data-filters-clear
+                          onClick={() => { resetAll(); setAdvOpen(false); }}
+                          className="text-[13px] font-semibold text-gray-500 transition hover:text-primary hover:underline"
+                        >
+                          ✕ Бүгдийг цэвэрлэх
+                        </button>
+                        <button
+                          type="button"
+                          data-filters-apply
+                          onClick={() => setAdvOpen(false)}
+                          className="btn btn-primary btn-sm"
+                        >
+                          Харуулах
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </>
@@ -3608,16 +3681,14 @@ export default function HomeClient() {
 
 
             {/* ===== ⚙️ МОБАЙЛ ТОВЧ — 2026-09-27-нд ХАСАГДСАН =====
-                ⚠️ Хэрэглэгчийн хүсэлт: «Дэлгэрэнгүй хайлтыг үргэлж нээлттэй
+                ⏳ Хэрэглэгчийн хүсэлт: «Дэлгэрэнгүй хайлтыг үргэлж нээлттэй
                    болгоё» → «⚙️ Дэлгэрэнгүй хайлт ▼» товч ХЭРЭГГҮЙ болсон ✗
-                   Учир нь панель (`<aside id="advanced-filters">`) нь одоо
-                   МОБАЙЛ дээр ч ҮРГЭЛЖ харагдана ✓ (товчлох зүйл байхгүй).
-                📱 МОБАЙЛ дээрх ДАРААЛАЛ одоо:
-                     [төрөл сонгосон] →
-                     [Дэлгэрэнгүй хайлт панель — БҮРЭН НЭЭЛТТЭЙ ✓] →
-                     [гарчиг] → [чипүүд] → [картууд]
-                ⚠️ Панель нь `<aside>` дээр тулгуурласан (DOM-д результатовын
-                   ӨМНӨ) — тиймээс мобайлд шүүлт ЭХЭНД гарна ✓
+                   (учир нь панель МОБАЙЛ дээр ч ҮРГЭЛЖ харагддаг байв).
+                ✅ 2026-10-10 (95): панель нь ТУСДАА ЦОНХ (modal,
+                   `data-filters-modal`) болов ⇒ мобайл ба desktop ХОЁУЛАНД
+                   НЭГ ижил дүрэм: «Шүүлт» pill дарж нээгдэнэ, ✕ / ард тал /
+                   `Escape`-ээр хаагдана (📍 ба 🚗 пикерийн ИЖИЛ зан ✓) ⇒
+                   тусдаа мобайл товч ХЭРЭГГҮЙ хэвээр ✓
                 ↺ БУЦААХ БОЛ: `const [filtersOpen, setFiltersOpen] =
                    useState(false)` төлөв + `${filtersOpen ? '' : 'hidden'}`
                    класс + энэ товчийг буцааж нэмнэ. */}

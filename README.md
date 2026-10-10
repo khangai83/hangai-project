@@ -1503,6 +1503,34 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- 🎛🪟 **«ШҮҮЛТ» — ТУСДАА ГАРЧ ИРДЭГ ЦОНХ (modal) БОЛОВ (2026-10-10 (95))** —
+  хэрэглэгчийн хүсэлт: «Шүүлт ийг тусдаа гарч ирдэг цонх болго, жишээ зураг
+  явуулав … шиг». ⚠️ **DB/SQL/migration/URL/DB-шүүлт/logic ХӨНДӨӨГДӨӨГҮЙ**
+  (зөвхөн JSX + гарын `Escape`).
+  <br>**(1) 🪟 ЦОНХ** (`components/HomeClient.jsx`): ⏳ (89)/(92) дээр «Шүүлт» нь
+  шүүлтийн мөрийн ДООР шууд render болдог панель байв ✗ ⇒ одоо `{advOpen && (`
+  дотор **`fixed inset-0 z-[1500] bg-black/40`** overlay + `role="dialog"` +
+  `aria-modal="true"` (📍 Байршлын пикер ба 🚗 машины пикертэй ЯГ ИЖИЛ хэв ✓),
+  карт нь төвд (`max-w-[560px]`, `rounded-2xl`, `shadow-card-hover`) — толгойд
+  «Шүүлт» (төвд) + ✕, бие нь `min-h-0 flex-1 overflow-y-auto` (утас/жижиг
+  дэлгэцэд ч БҮТЭН харагдана ✓), доод мөрд «✕ Бүгдийг цэвэрлэх» (`resetAll()`) +
+  «Харуулах» (`btn btn-primary btn-sm`) — жишиг сайтын «Clear all» /
+  «Show N places» хэвээр ✓.
+  <br>**(2) 🚪 ХААХ 3 ЗАМ:** `✕` (`data-filters-close`) · ард тал
+  (`onMouseDown` → `e.target === e.currentTarget`) · `Escape`
+  (🆕 `useEffect([advOpen])`) ✓.
+  <br>**(3) ⚠️ ХӨНДӨӨГДӨӨГҮЙ:** `id="advanced-filters"` · `data-filters-panel` ·
+  `data-all-filters` (+`aria-pressed`/`aria-expanded`) · `data-filter-overflow` ·
+  `SideBlock`/`RangeInput` · `attrFilters.filter((f) => f.range)` — БҮХ ХЭВЭЭР ⇒
+  CDP (`cdp-range`/`cdp-rooms`/`cdp-payments`) ба эхийн дараалал (`#filter-bar` →
+  pill-үүд → `#advanced-filters` → `{priceSideBlock}` →
+  `SideBlock label="Талбай, м²"`) ХЭВЭЭР ✓.
+  <br>**(4) 🧪 ТЕСТ:** `test:filters` **126 → 127 ✓** (🆕 «🎛 (95) … ТУСДАА ГАРЧ
+  ИРДЭГ ЦОНХ» — overlay/`role`/`aria-modal`/хаах 3 зам/доод мөр/хуучин дэгээ) ·
+  `npm run test:*` **42/42 ✓** · `npm run build` **EXIT=0 ✓**.
+  <br>**(5) 📄 DOC:** `README.md` (энэ буллет) · `docs/IMPROVEMENTS.md` (энэ мөр).
+  🔍 Хайх үг: `data-filters-modal`, `data-filters-close`, `data-filters-clear`,
+  `data-filters-apply`, `role="dialog"`, `#advanced-filters`
 - 📍 **«ГАЗРЫН ЗУРАГ» ТОВЧНЫ ИКОН — 🗺 EMOJI → PIN SVG (2026-10-10 (94))** —
   хэрэглэгчийн хүсэлт: «Газрын зургийг иконыг соль» (+ pin-ийн зургийг илгээв).
   ⚠️ **DB/SQL/migration/URL/logic ХӨНДӨӨГДӨӨГҮЙ** (зөвхөн UI икон).
