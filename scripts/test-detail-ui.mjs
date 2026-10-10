@@ -26,12 +26,20 @@
 //   ⑨ 2026-10-09 (88): «энэ явуулсан зургийг дуурайж дизайныг сайжруул» ⇒
 //      жишиг сайтын хэвээр ЗАР ОРУУЛАГЧИЙН ГАРЧИГ нь breadcrumb-ийн доор
 //      ХАРАГДАХ H1 (ТОМ БОЛД) болов; толгой ба мобайл доод цэс ч ЦАГААН (⑩)
+//   ⑪ 2026-10-10 (96): «📍 26-р хороо үүний өмнөх icon ийг Газрын зургийн өмнөх
+//      шиг болго» · «🔖 Зарын дугаарыг өмнөх icon ийг үгүй хий» · «👁 3 үзсэн
+//      -ийг icon ийг соль (Icon явуулав, өнгийг нь тодруулаарай)» · «Зарын
+//      дэлгэрэнгүй хэсгийн 🏷️ Үйлдвэрлэгч: гэх мэтийн бүх icon ийг байхгүй
+//      болго, хэрэггүй» ⇒ ① хаягны 📍 → `MapPinIcon` SVG ② зарын дугаарын 🔖
+//      ХАСАГДАВ ③ 👁 → `EyeIcon` SVG (өнгө ТОД) ④ «Зарын дэлгэрэнгүй»
+//      хүснэгтээс icon БҮГД ХАСАГДАВ (`{f.label}`; ⚠️ `getAttrRows` ХЭВЭЭР) (⑪)
 //
 // ⚠️ Эдгээр нь БҮГД ХАРАГДАЦ/UI-ийн гэрээ — DB/query/migration 0 ✓
 //
 // ХАМРАХ ХҮРЭЭ (DB/React/CDP ХОЛБОГДОХГҮЙ — зөвхөн Node):
 //   `components/AddListingClient.jsx` · `components/ListingDetailClient.jsx`
 //   · `components/Avatar.jsx` · `components/MapView.jsx`
+//   · `components/HeaderIcons.jsx` · `components/ListingCard.jsx` (🆕 (96))
 //
 // АЖИЛЛУУЛАХ:  npm run test:detail-ui
 // ============================================================
@@ -332,6 +340,47 @@ t('⑩ 🏷️ Дэлгэрэнгүй хуудсанд ЗАРЫН ГАРЧИГ �
     '`sr-only` нөөц текстийн хаяг ХАСАГДСАН ✗');
 });
 
+// ---------- ⑪ 🎨 МЕТА ИКОНУУД + ШИНЖИЙН ICON (2026-10-10 (96)) ----------
+t('⑪ (96) Мета мөр: `📍` → `MapPinIcon` SVG · `🔖` ХАСАГДАВ (текст ХЭВЭЭР) ✓', () => {
+  /** ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «📍 26-р хороо үүний өмнөх icon ийг Газрын зургийн
+   *  өмнөх шиг болго. 🔖 Зарын дугаарыг өмнөх icon ийг үгүй хий» ⇒ ① хаягны
+   *  `📍` emoji → `MapPinIcon` (🗺 «Газрын зураг» товчны pin-тай ЯГ ИЖИЛ SVG)
+   *  ② зарын дугаарын `🔖` emoji ХАСАГДАВ (текст нь дангаараа ойлгомжтой ✓) */
+  assert.match(DET_CODE, /import \{ ?MapPinIcon, EyeIcon ?\} from '\.\/HeaderIcons'/,
+    '`MapPinIcon`/`EyeIcon` нь `./HeaderIcons`-аас импортлогдоогүй ✗');
+  assert.match(DET_CODE, /<MapPinIcon\b/, 'хаягны `MapPinIcon` (📍 emoji биш) алга ✗');
+  assert.ok(!/📍/.test(DET_CODE), '📍 emoji буцаж орсон ✗ ((96): `MapPinIcon` байх ЁСТОЙ)');
+  assert.ok(!/🔖/.test(DET_CODE), '🔖 emoji буцаж орсон ✗ ((96): icon ХАСАГДСАН байх ЁСТОЙ)');
+  // ⚠️ Зарын дугаарын УТГА/текст ХӨНДӨӨГДӨӨГҮЙ (зөвхөн icon арилав ✓)
+  assert.ok(DET_CODE.includes('Зарын дугаар: <span className="font-mono font-semibold text-gray-600">{shortId}</span>'),
+    'зарын дугаарын текст/утга ХӨНДӨӨГДСӨН ✗');
+  // ⚠️ CDP (бодит Chrome) нь ЭДГЭЭР selector-оор хэмждэг — байхгүй бол CDP SKIP ✓
+  assert.match(DET_CODE, /data-listing-meta/, 'мета мөрний `data-listing-meta` selector алга ✗');
+  assert.match(DET_CODE, /data-listing-actions/, '«үзсэн/таалагдсан/хуваалцах» мөрний `data-listing-actions` алга ✗');
+});
+
+t('⑪ (96) «N үзсэн» нь `EyeIcon` SVG — өнгө ТОД (`text-gray-700`) ✓', () => {
+  /** ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «👁 3 үзсэн -ийг icon ийг соль (Icon явуулав, өнгийг
+   *  нь тодруулаарай)» ⇒ ⏳ `👁` emoji → `EyeIcon`; ⚠️ өнгө нь тоолуурын
+   *  `text-gray-500`-аас ТОД (`text-gray-700`) байх ЁСТОЙ ✓ */
+  assert.match(DET_CODE, /<EyeIcon className="[^"]*text-gray-700[^"]*"/,
+    '`EyeIcon` нь ТОД өнгөтэй (`text-gray-700`) БИШ ✗');
+  assert.ok(!/👁/.test(DET_CODE), '👁 emoji буцаж орсон ✗ ((96): `EyeIcon` байх ЁСТОЙ)');
+  assert.ok(DET_CODE.includes('{viewCount} үзсэн'), '«N үзсэн» текст ХӨНДӨӨГДСӨН ✗');
+});
+
+t('⑪ (96) «Зарын дэлгэрэнгүй» хүснэгтэд icon ХАРАГДАХГҮЙ (`{f.label}` — `f.icon` биш) ✓', () => {
+  /** ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Зарын дэлгэрэнгүй хэсгийн 🏷️ Үйлдвэрлэгч: гэх мэтийн
+   *  бүх icon ийг байхгүй болго, хэрэггүй» ⇒ `<dt>` нь ОДОО ЗӨВХӨН шошго.
+   *  ⚠️ `getAttrRows`-ийн `icon` утга (форм/сайдбарын чип — НЭГ ЭХ СУРВАЛЖ)
+   *  ХӨНДӨӨГДӨӨГҮЙ: зөвхөн ЭНД дүрслэгдэхгүй ✓ */
+  assert.ok(DET_CODE.includes('<dt className="w-[45%] shrink-0 text-gray-500">{f.label}:</dt>'),
+    '`<dt>` нь зөвхөн `{f.label}` БИШ (icon дүрслэгдсээр) ✗');
+  assert.ok(!/f\.icon/.test(DET_CODE), '`f.icon` дүрслэл буцаж орсон ✗');
+  assert.match(readSrc('lib/locationData.js'), /icon: f\.icon \|\| ''/,
+    '`getAttrRows` icon утга ХАСАГДСАН ✗ (форм/сайдбарын чип иконууд эвдэрнэ)');
+});
+
 // ---------- ⑤ README + package.json ----------
 t('⑤ 📦 `package.json`-д `test:detail-ui` скрипт + README-д бүртгэл ✓', () => {
   const pkg = JSON.parse(readSrc('package.json'));
@@ -342,5 +391,5 @@ t('⑤ 📦 `package.json`-д `test:detail-ui` скрипт + README-д бүрт
   assert.ok(README.includes('scripts/test-detail-ui.mjs'), 'README-д файлын нэр алга ✗');
 });
 
-console.log(`\n✅ БҮГД ОК: ${passed} тест — jobs зураггүй · Нэр талбар · тэгш өнцөгт Avatar · бүх зарт газрын зураг · урт текст 'break-words' · нийтлэгчийн карт (96px аватар картын ДЭЭД талд, ГОЛЛУУЛЖ) · «📋 N идэвхтэй зар» ТУСДАА ЛИНК · 🎨 саарал дүүргэлт 0 · 🏷️ зарын гарчиг (харагдах H1) ✓\n`);
+console.log(`\n✅ БҮГД ОК: ${passed} тест — jobs зураггүй · Нэр талбар · тэгш өнцөгт Avatar · бүх зарт газрын зураг · урт текст 'break-words' · нийтлэгчийн карт (96px аватар картын ДЭЭД талд, ГОЛЛУУЛЖ) · «📋 N идэвхтэй зар» ТУСДАА ЛИНК · 🎨 саарал дүүргэлт 0 · 🏷️ зарын гарчиг (харагдах H1) · 🎨 мета иконууд (📍/👁 → SVG, 🔖 ба шинж чанарын icon ХАСАГДАВ) ✓\n`);
 

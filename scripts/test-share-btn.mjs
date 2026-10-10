@@ -51,11 +51,16 @@ const DET_CODE = codeOnly(DET);
 const SHARE = readSrc('components/ShareButton.jsx');
 
 // ---------- ① ДАРААЛАЛ: 👁 үзсэн → 🤍/❤️ таалагдсан → 🔗 Хуваалцах ----------
-t('📋 Footer-ийн дараалал: `👁 үзсэн` → `🤍/❤️ таалагдсан` → `🔗 Хуваалцах` ✓', () => {
-  const iViews = DET_CODE.indexOf('👁 {viewCount} үзсэн');
+t('📋 Footer-ийн дараалал: `EyeIcon` үзсэн → `🤍/❤️ таалагдсан` → `🔗 Хуваалцах` ✓', () => {
+  // 🆕 2026-10-10 (96): ⏳ `👁 {viewCount} үзсэн` → `<EyeIcon /> {viewCount} үзсэн`
+  //    (хэрэглэгч нүдний зургийг илгээж «icon ийг соль» гэсэн) ⇒ байрлалыг
+  //    түгжихэд `{viewCount} үзсэн` текст хангалттай ✓
+  const iViews = DET_CODE.indexOf('{viewCount} үзсэн');
   const iLike = DET_CODE.indexOf('toggleFavorite(listing.id)');
   const iShare = DET_CODE.indexOf('<ShareButton');
-  assert.ok(iViews >= 0, '`👁 {viewCount} үзсэн` span олдсонгүй ✗');
+  assert.ok(iViews >= 0, '`{viewCount} үзсэн` span олдсонгүй ✗');
+  assert.match(DET_CODE, /<EyeIcon\b/, '`EyeIcon` (👁 emoji биш) алга ✗');
+  assert.ok(!/👁/.test(DET_CODE), '👁 emoji буцаж орсон ✗ ((96): `EyeIcon` байх ЁСТОЙ)');
   assert.ok(iLike > iViews, '`🤍/❤️ таалагдсан` нь `👁 үзсэн`-ий ДАРАА байх ёстой ✗');
   assert.ok(iShare > iLike,
     '`🔗 Хуваалцах` нь `🤍/❤️ таалагдсан`-ий ДАРАА байх ёстой ✗ '
@@ -65,7 +70,7 @@ t('📋 Footer-ийн дараалал: `👁 үзсэн` → `🤍/❤️ та�
 t('🔗 `<ShareButton />` нь явган `👁 …`-ийн ЯГ ХАЖУУД БИШ (хуучин байрлал БУЦАХГҮЙ) ✓', () => {
   // ⚠️ Хуучин байрлалд 👁-ийн дараа ШУУД <ShareButton /> ирдэг байв ✗ —
   //    одоо 👁-ийн дараа эхлээд 🤍/❤️ таалагдсан товч орсон байх ёстой.
-  const after = DET_CODE.slice(DET_CODE.indexOf('👁 {viewCount} үзсэн'));
+  const after = DET_CODE.slice(DET_CODE.indexOf('{viewCount} үзсэн'));
   const iLike = after.indexOf('toggleFavorite(listing.id)');
   const iShare = after.indexOf('<ShareButton');
   assert.ok(iLike >= 0 && iLike < iShare, '👁-ийн дараа ШУУД Хуваалцах буцсан ✗');

@@ -39,6 +39,12 @@ import { recordListingView } from '../lib/searchHistory';
 // 🔎 2026-10-09 (79): «Төстэй зарууд» — үндсэн агуулгын ДООР (жишиг сайтын хэв).
 //    Онооллын логик нь `lib/similarListings.mjs`, UI нь `SimilarListings` ✓
 import SimilarListings from './SimilarListings';
+// 📍👁 2026-10-10 (96) — МЕТА МӨРИЙН ICONУУД EMOJI → SVG (хэрэглэгчийн хүсэлт):
+//    ① 📍 → `MapPinIcon` — 🗺 «Газрын зураг» товчны pin-тай ЯГ ИЖИЛ хэв
+//    ② 👁 → `EyeIcon` — илгээсэн нүдний зураг (өнгө нь ТОД)
+//    ⚠️ emoji нь OS бүрд өөрөөр зурагдаж, өнгө нь текстийг дагахгүй ✗
+//    (үндэслэлийг `components/HeaderIcons.jsx`-ийн тайлбарт бичсэн ✓)
+import { MapPinIcon, EyeIcon } from './HeaderIcons';
 
 export default function ListingDetailClient({ id }) {
   const { showToast } = useToast();
@@ -291,6 +297,10 @@ export default function ListingDetailClient({ id }) {
     // ✅ Одоо `attrs` (🏷️ Үйлдвэрлэгч · 🚙 Загвар · 🎨 Өнгө · 📅 он · 📥 орж
     //    ирсэн он · 🛣️ гүйлт · ⚙️ хайрцаг · 🔧 хөдөлгүүр · ⛽ түлш …) нь хэсгийн
     //    `attrFields`-ийн шошго/icon/дарааллаар мөр болно (`getAttrRows`).
+    //    🆕 (96): ХҮСНЭГТЭД мөр нь ОДОО `{шошго}: {утга}` — icon ХАРАГДАХГҮЙ
+    //    (хэрэглэгчийн хүсэлт: «🏷️ Үйлдвэрлэгч: гэх мэтийн бүх icon ийг
+    //    байхгүй болго, хэрэггүй»). ⚠️ `icon` утга нь `getAttrRows`-д ХЭВЭЭР
+    //    (форм/сайдбарын чип иконууд хөндөгдөхгүй ✓), зөвхөн дүрслэл өөрчлөгдөв ✓
     // ⚠️ Дараалал: ҮЛ ХӨДЛӨХИЙН талбарууд ЭХЭНД, `attrs` тэдний ДАРАА — 2 хэсэг
     //    нэг зар дээр давхардахгүй (RE зард `attrFields` огт байхгүй → 0 мөр ✓)
     // ⚠️ `subtype` = `listing.property_type` — 💻 Notebook-ийн 📺/⚙️/🧠/💾
@@ -419,21 +429,37 @@ export default function ListingDetailClient({ id }) {
                Дэлгэц нарийсахад `flex-wrap`-ээр эвхэгдэнэ — хэвтээ overflow ✗ ✓
             ⚠️ Огноо ХАРЬЦАНГУУ (`timeAgo` — карт дээрхтэй ЯГ ижил); зарын дугаар нь
                БОГИНО (`shortListingId`); бүтэн uuid нь `title` (hover) дээр — админ
-               ID-ийн эхний тэмдэгтээр хайдаг тул богино дугаар шууд олдоно ✓ */}
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-gray-500">
+               ID-ийн эхний тэмдэгтээр хайдаг тул богино дугаар шууд олдоно ✓
+            🆕 2026-10-10 (96) — ICON ЗАСВАР (хэрэглэгчийн хүсэлт): ⏳ `📍` ба `👁`
+               emoji → SVG (`MapPinIcon`/`EyeIcon`), ⏳ `🔖` ХАСАГДАВ;
+               ⚠️ мөрийн дараалал (байршил → огноо → зарын дугаар) ХӨНДӨӨГДӨӨГҮЙ ✓
+            ⚠️ `data-listing-meta` — бодит DOM-ыг шалгах CDP/тестийн ТОГТВОРТОЙ
+               selector (`data-listing-card`/`data-listing-title`-ийн адил) ✓ */}
+        <div data-listing-meta className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-gray-500">
           {/* 📍 Байршил — 🚫 «Байршил сонгохгүй» чекбоксоор хадгалагдсан зар
               (`city = ''`) дээр «Хаяг тодорхойгүй» БИШ, «Байршил заагаагүй»
               гэж харуулна (хэрэглэгч ЗОРИУДОО заагаагүй тул «алдаа» мэт
               харуулах нь буруу ✗ — нэг эх сурвалж: `lib/listingLocation.mjs`).
-              ⚠️ `min-w-0 truncate` — хаяг урт үед `…` болж, БҮТЭН хаяг `title`-д ✓ */}
-          <span className="min-w-0 truncate" title={address || NO_LOCATION_LABEL}>📍 {address || NO_LOCATION_LABEL}</span>
+              ⚠️ `min-w-0 truncate` — хаяг урт үед `…` болж, БҮТЭН хаяг `title`-д ✓
+              🆕 (96) — ⏳ `📍` emoji → **`MapPinIcon`** (🗺 «Газрын зураг» товчны
+                 pin-тай ЯГ ИЖИЛ SVG; хэрэглэгчийн хүсэлт: «📍 26-р хороо үүний
+                 өмнөх icon ийг Газрын зургийн өмнөх шиг болго» ✓).
+                 ⚠️ SVG нь ТЕКСТИЙН УРСГАЛД (`inline-block`) орсон тул хаягны
+                 `truncate` ХӨНДӨӨГДӨХГҮЙ ✓ (`align-[-2px]` — текстийн суурьтай нийцүүлнэ) */}
+          <span className="min-w-0 truncate" title={address || NO_LOCATION_LABEL}>
+            <MapPinIcon className="mr-1 inline-block h-[13px] w-[13px] align-[-2px]" />
+            {address || NO_LOCATION_LABEL}
+          </span>
           <span aria-hidden="true" className="text-gray-300">·</span>
           {/* 🕒 ОГНОО — харьцангуу (`timeAgo` — карт дээрхтэй ЯГ ижил) */}
           <span title="Нийтэлсэн огноо" className="whitespace-nowrap">🕒 {timeAgo(listing.created_at)}</span>
           <span aria-hidden="true" className="text-gray-300">·</span>
-          {/* 🔖 БОГИНО ЗАРЫН ДУГААР — бүтэн uuid нь `title` (hover) дээр ✓ */}
+          {/* 🆕 (96) БОГИНО ЗАРЫН ДУГААР — ⏳ `🔖` emoji ХАСАГДАВ (хэрэглэгчийн
+              хүсэлт: «🔖 Зарын дугаарыг өмнөх icon ийг үгүй хий» — «Зарын
+              дугаар:» гэсэн текст нь дангаараа ойлгомжтой тул icon ХЭРЭГГҮЙ ✓);
+              бүтэн uuid нь `title` (hover) дээр ✓ */}
           <span title={`Зарын дугаар — бүтэн ID: ${listing.id}`} className="whitespace-nowrap">
-            🔖 Зарын дугаар: <span className="font-mono font-semibold text-gray-600">{shortId}</span>
+            Зарын дугаар: <span className="font-mono font-semibold text-gray-600">{shortId}</span>
           </span>
         </div>
       </header>
@@ -517,10 +543,17 @@ export default function ListingDetailClient({ id }) {
                 ⚠️ 2026-10-01 (14): 📍/📅 нь ЭНЭ footer-ийн 2 дахь мөрөөс ХАСАГДАЖ,
                    толгойн доорх (`<header>`) 📍 1-р мөр / 📅 2-р мөр рүү БУЦАЖ
                    байрлав ✓ — карт дотор ЗӨВХӨН энэ (👁/🤍) мөр үлдэв
-                ⚠️ Тоо нь серверээс (listings.views / listings.likes — 0007). */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-gray-200 pt-3 text-[13px] text-gray-500">
-              <span title="Энэ зарыг хэдэн хүн үзсэн" className="font-semibold tabular-nums">
-                👁 {viewCount} үзсэн
+                ⚠️ Тоо нь серверээс (listings.views / listings.likes — 0007).
+                🆕 (96): ⏳ `👁 N үзсэн` → **`<EyeIcon /> N үзсэн`** (emoji → SVG;
+                   ⚠️ ДАРААЛАЛ ба `ShareButton`-ийн байрлал ХӨНДӨӨГДӨӨГҮЙ ✓)
+                ⚠️ `data-listing-actions` — CDP/тестийн ТОГТВОРТОЙ selector (🆕 (96)) ✓ */}
+            <div data-listing-actions className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-gray-200 pt-3 text-[13px] text-gray-500">
+              <span title="Энэ зарыг хэдэн хүн үзсэн" className="inline-flex items-center gap-1 font-semibold tabular-nums">
+                {/* 🆕 (96): ⏳ `👁` emoji → `EyeIcon` SVG (хэрэглэгч нүдний зургийг
+                    илгээж «өнгийг нь тодруулаарай» гэсэн ⇒ `text-gray-700` —
+                    хажуугийн `text-gray-500` текстээс ТОД ✓) */}
+                <EyeIcon className="h-[15px] w-[15px] text-gray-700" />
+                {viewCount} үзсэн
               </span>
               <button
                 type="button"
@@ -627,7 +660,13 @@ export default function ListingDetailClient({ id }) {
                       features.length % 2 === 0 ? 'sm:[&:nth-last-child(-n+2)]:border-b-0' : 'sm:[&:last-child]:border-b-0'
                     }`}
                   >
-                    <dt className="w-[45%] shrink-0 text-gray-500">{f.icon ? `${f.icon} ${f.label}` : f.label}:</dt>
+                    {/* 🆕 (96): ⏳ `{f.icon} {f.label}` → **`{f.label}`** — БҮХ icon
+                        ХАСАГДАВ (хэрэглэгчийн хүсэлт: «🏷️ Үйлдвэрлэгч: гэх мэтийн
+                        бүх icon ийг байхгүй болго, хэрэггүй» ✓).
+                        ⚠️ `getAttrRows`-ийн `icon` утга (форм/шүүлтийн нэг эх
+                        сурвалж — `attrFields`) ХӨНДӨӨГДӨӨГҮЙ, зөвхөн ЭНД
+                        дүрслэгдэхгүй ✓ (форм/сайдбарын чип иконууд ХЭВЭЭР) */}
+                    <dt className="w-[45%] shrink-0 text-gray-500">{f.label}:</dt>
                     <dd className="min-w-0 flex-1 font-medium text-gray-900">{f.value}</dd>
                   </div>
                 ))}

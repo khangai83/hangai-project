@@ -5,6 +5,10 @@ import Link from 'next/link';
 import { shortPriceLabel, hasRealPrice, getPropertyIcon, firstImage, carTitle, timeAgo, formatAddress, listingTitle } from '../lib/format';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 import VerifiedBadge from './VerifiedBadge';
+// 📍👁 2026-10-10 (96) — МЕТА МӨРИЙН ICONУУД EMOJI → SVG (хэрэглэгчийн хүсэлт):
+//    ① 📍 → `MapPinIcon` (🗺 «Газрын зураг» товчны pin-тай ЯГ ИЖИЛ) ② 👁 → `EyeIcon`.
+//    ⚠️ Дэлгэрэнгүй хуудасны ЯГ ТЭР иконууд — хоёр гадаргуу нэг харагдацтай ✓
+import { MapPinIcon, EyeIcon } from './HeaderIcons';
 
 /**
  * 🖼 КАРТ ДЭЭРХ ЦЭГИЙН ДЭЭД ХЯЗГААР (🆕 (85)) — 5-аас олон зурагтай үед цэгүүд
@@ -31,7 +35,7 @@ const MAX_CARD_DOTS = 5;
  *   ├─────────────────────────────────┤  ⛔ хүрээ/сүүдэр/саарал хайрцаг БАЙХГҮЙ
  *   │  Toyota Vellfire, 2017/2026      │ ← 🏷️ гарчиг (🚗 АВТО-гарчиг, 2 мөр)
  *   │  135,500 км · Автомат · 2.5 л    │ ← 📋 мэдээллийн мөр
- *   │  🕒 27 минутын өмнө | 📍 Баянзүрх │ ← 📅 мета мөр (+ 👁 баруун захад)
+ *   │  🕒 27 минутын өмнө | (pin) Баянзүрх │ ← 📅 мета мөр (+ 👁 нүдний икон баруун захад)
  *   │  340 сая ₮ ✅                    │ ← 💰 ҮНЭ (22px, bold) ХАМГИЙН ДООР
  *   └─────────────────────────────────┘
  *
@@ -421,18 +425,31 @@ export default function ListingCard({ listing, author, attrsLine }) {
                ≥640px-д `sm:order-none sm:flex-1` → нэг мөрөнд буцаж эгнэнэ ✓
             ⚠️ `pr-20` — /favorites-ийн «Хасах» товч (🆕 (86): БҮХ дэлгэцэд баруун
                ДОО буланд) доод 2 мөрний баруун захад давхцаж болзошгүй тул мөр
-               БҮРД 80px нөөц үлдээнэ (⏳ `sm:pr-0` ХАСАГДАВ ✓) */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 pr-20 pt-0.5 text-[13px] text-gray-500 sm:flex-nowrap">
+               БҮРД 80px нөөц үлдээнэ (⏳ `sm:pr-0` ХАСАГДАВ ✓)
+            🆕 (96): ⏳ `📍` ба `👁` emoji → SVG (`MapPinIcon`/`EyeIcon`; ⚠️ дэлгэрэнгүй
+               хуудасныхтай ЯГ ижил) — хэрэглэгчийн хүсэлт: «📍 26-р хороо үүний
+               өмнөх icon ийг Газрын зургийн өмнөх шиг болго» · «👁 3 үзсэн -ийг
+               icon ийг соль (Icon явуулав, өнгийг нь тодруулаарай)» ✓
+            ⚠️ `data-listing-meta` — CDP/тестийн ТОГТВОРТОЙ selector (🆕 (96)) ✓ */}
+        <div data-listing-meta className="flex flex-wrap items-center gap-x-3 gap-y-0.5 pr-20 pt-0.5 text-[13px] text-gray-500 sm:flex-nowrap">
           <span className="whitespace-nowrap" title="Нийтэлсэн огноо">🕒 {timeAgo(listing.created_at)}</span>
           {address && (
             <span className="order-last w-full truncate sm:order-none sm:w-auto sm:flex-1" title={address}>
               <span aria-hidden="true" className="mr-1.5 hidden text-gray-300 sm:inline">|</span>
-              📍 {address}
+              {/* 🆕 (96): ⏳ `📍` emoji → `MapPinIcon` (🗺 «Газрын зураг» товчны
+                  pin-тай ЯГ ИЖИЛ SVG; дэлгэрэнгүй хуудасныхтай ИЖИЛ ✓).
+                  ⚠️ SVG нь ТЕКСТИЙН УРСГАЛД (`inline-block`) орсон тул хаягны
+                  `truncate` ХӨНДӨӨГДӨХГҮЙ ✓ */}
+              <MapPinIcon className="mr-1 inline-block h-[13px] w-[13px] align-[-2px]" />
+              {address}
             </span>
           )}
           <span className="ml-auto flex shrink-0 items-center gap-2">
-            <span className="font-semibold tabular-nums text-gray-600" title="Энэ зарыг хэдэн хүн үзсэн">
-              👁 {views}
+            <span className="inline-flex items-center gap-1 font-semibold tabular-nums text-gray-600" title="Энэ зарыг хэдэн хүн үзсэн">
+              {/* 🆕 (96): ⏳ `👁` emoji → `EyeIcon` SVG («өнгийг нь тодруулаарай» ⇒
+                  `text-gray-700` — тоолуурын `text-gray-600`-аас ТОД ✓) */}
+              <EyeIcon className="h-[15px] w-[15px] text-gray-700" />
+              {views}
             </span>
           </span>
         </div>

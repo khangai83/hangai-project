@@ -267,11 +267,24 @@ t('🏷️ «Зарах / Түрээслэх» badge — ЗӨВХӨН үл хө�
 
 
 // ---------- ④ ДООД МЕТА МӨР ----------
-t('📅 Доод мета мөр: 🕒 `timeAgo` | 📍 `formatAddress` + 👁 views (❤️ ГАРАХГҮЙ)', () => {
+t('📅 Доод мета мөр: 🕒 `timeAgo` | `MapPinIcon` хаяг + `EyeIcon` views (❤️ ГАРАХГҮЙ)', () => {
   assert.match(CARD_CODE, /timeAgo\(listing\.created_at\)/, 'огноо (`timeAgo`) алга ✗');
   assert.match(CARD_CODE, /address &&/, 'хаягийн хаалт алга ✗');
   assert.match(CARD_CODE, /formatAddress\(listing\)/, 'хаяг (`formatAddress`) алга ✗');
-  assert.match(CARD_CODE, /👁 \{views\}/, '👁 үзсэн тоо алга ✗');
+  // 🆕 2026-10-10 (96) — хэрэглэгчийн хүсэлт: «📍 26-р хороо үүний өмнөх icon ийг
+  //    Газрын зургийн өмнөх шиг болго» · «👁 3 үзсэн -ийг icon ийг соль (Icon
+  //    явуулав, өнгийг нь тодруулаарай)» ⇒ ⏳ `📍`/`👁` emoji → SVG.
+  //    ⚠️ Дэлгэрэнгүй хуудасныхтай ЯГ ижил иконууд (`HeaderIcons.jsx`) ✓
+  assert.match(CARD_CODE, /<MapPinIcon\b/, 'хаягийн `MapPinIcon` (📍 emoji биш) алга ✗');
+  assert.match(CARD_CODE, /<EyeIcon\b/, 'тоолуурын `EyeIcon` (👁 emoji биш) алга ✗');
+  assert.match(CARD_CODE, /\{views\}/, 'үзсэн тоо (`{views}`) алга ✗');
+  // ⚠️ Мета мөр нь CDP/тестийн ТОГТВОРТОЙ selector-той (`data-listing-card`-ийн
+  //    адил) — эс бөгөөс икон шалгалт нь класс мөрөөс хамаарч эвдрэмтгий ✗ (🆕 (96))
+  // ⛔ РЕГРЕСС: emoji буцаж орвол ✗ (SVG байх ЁСТОЙ — OS бүрд ижил харагдана)
+  assert.ok(!/📍/.test(CARD_CODE), '📍 emoji буцаж орсон ✗ ((96): SVG байх ЁСТОЙ)');
+  assert.ok(!/👁/.test(CARD_CODE), '👁 emoji буцаж орсон ✗ ((96): SVG байх ЁСТОЙ)');
+  // ⚠️ Мета мөр CDP-д `data-listing-meta`-аар олддог (класс мөр биш) ✓
+  assert.match(CARD_CODE, /data-listing-meta/, 'мета мөрний `data-listing-meta` selector алга ✗');
 });
 
 t('❤️/🤍 нь favorite toggle — `preventDefault` + `stopPropagation` (Link доторх товч)', () => {

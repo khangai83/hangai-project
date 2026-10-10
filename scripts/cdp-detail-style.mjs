@@ -27,7 +27,15 @@
  *   ⑤ 📱 390px: саарал дүүргэлт 0 ба хэвтээ гүйлт 0 ✓
  *   ⑥ 🐍 JS exception 0 (Leaflet-ээс бусад) ба hydration/
  *      `validateDOMNesting` алдаа 0 ✓
+ *   ⑨ 🎨 SVG ИКОНУУД (🆕 (96)) — мета мөр (`[data-listing-meta]`): 📍 emoji
+ *      ХАСАГДАЖ `MapPinIcon` (13×13px, `vertical-align: -2px` ⇒ хаягны
+ *      `truncate` эвдрэхгүй), `🔖` БҮХЭЛДЭЭ арилсан (зарын дугаар ЗӨВХӨН текст) ✓
+ *      · `[data-listing-actions]`: 👁 → `EyeIcon` (15×15px, өнгө нь тоолуурынхаас
+ *      ТОД — хэрэглэгчийн «өнгийг нь тодруулаарай») · 📋 «Зарын дэлгэрэнгүй»
+ *      хүснэгтийн `dt`/`dd`-д icon/svg 0 · БҮТЭН `main` дээр 📍/🔖/👁 emoji 0 ✓
+ *      (⚠️ 🏷️/🔑 сайдбарын «N идэвхтэй зар» тоолуул нь (95)-ийн feature — ХӨНДӨӨГДӨӨГҮЙ)
  *   ⑦ 📸 /tmp/detail-style-1280.png · /tmp/detail-style-390.png
+ *      (+ 🆕 (96) 3× томруулсан: /tmp/detail-meta-1280.png · /tmp/detail-actions-1280.png)
  *
  * ⚙️ АЖИЛЛУУЛАХ:
  *   1) `npm run build && npm run start` (http://localhost:3000)
@@ -283,6 +291,117 @@ if (d.title) {
     shown && parseInt(d.title.size, 10) >= 18 && d.title.weight === '700',
     `«${d.title.text}» · ${d.title.size}/${d.title.weight} · h ${d.title.h}${shown ? '' : ' ← ХАРАГДАХГҮЙ ✗'}`);
 }
+/**
+ * 📸 ЭЛЕМЕНТИЙГ ТОМРУУЛАН АВАХ (clip) — иконы хэмжээ/өнгийг НҮДЭЭР шалгах
+ *   ⚠️ `sel` нь КАВЫН ХААЛТГҮЙ CSS selector байх ЁСТОЙ (ж: `[data-listing-meta]`)
+ *   ⚠️ `scroll` — элемент дэлгэцээс ДООШ байвал төв рүү гүйлгэнэ
+ */
+const shotEl = async (sel, file, { scale = 3, pad = 10, scroll = false } = {}) => {
+  if (scroll) {
+    await evalJs(`(() => { const e = document.querySelector('${sel}'); if (e) e.scrollIntoView({ block: 'center' }); return true; })()`);
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  const box = await evalJs(`(() => {
+    const e = document.querySelector('${sel}');
+    if (!e) return null;
+    const r = e.getBoundingClientRect();
+    return {
+      x: Math.max(0, r.x - ${pad}),
+      y: Math.max(0, r.y - ${pad}),
+      width: Math.min(r.width + ${pad * 2}, window.innerWidth),
+      height: r.height + ${pad * 2},
+    };
+  })()`);
+  if (!box) { console.log(`  ⚠️  ${sel} — зураг авах элемент олдсонгүй`); return; }
+  const r = await rpc('Page.captureScreenshot', { format: 'png', clip: { ...box, scale } });
+  fs.writeFileSync(file, Buffer.from(r.data, 'base64'));
+  console.log(`  📸 ${file}`);
+};
+
+// ---------- ⑨ 🎨 SVG ИКОНУУД (🆕 (96)) ----------
+//   ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «📍 26-р хороо үүний өмнөх icon ийг Газрын зургийн
+//   өмнөх шиг болго» · «🔖 Зарын дугаарыг өмнөх icon ийг үгүй хий» · «👁 3 үзсэн
+//   -ийг icon ийг соль (Icon явуулав, өнгийг нь тодруулаарай)» · «Зарын
+//   дэлгэрэнгүй хэсгийн 🏷️ Үйлдвэрлэгч: гэх мэтийн бүх icon ийг байхгүй болго»
+//   ⇒ ⏳ emoji → SVG (`MapPinIcon`/`EyeIcon`), 🔖 ба шинж чанарын icon ХАСАГДАВ ✓
+//   ⚠️ ЭНД БОДИТ DOM + `getComputedStyle` ХЭМЖИГДЭНЭ (эх кодын гэрээ БИШ):
+//      pin 13px + `vertical-align: -2px` (хаягны `truncate` эвдрэхгүй) ·
+//      нүд 15px ба өнгө нь тоолуурынхаас ТОД · `dt` icon/svg 0 · emoji 0 ✓
+const ICONS = `(() => {
+  const EMO = ['📍', '🔖', '👁'];
+  const SPEC = ['🏷️', '🚗', '📅'];
+  const main = document.querySelector('main');
+  if (!main) return { noMain: true };
+  const flat = (s) => (s || '').replace(/\\s+/g, ' ').trim();
+  const meta = main.querySelector('[data-listing-meta]');
+  const actions = main.querySelector('[data-listing-actions]');
+  const metaSvgs = meta ? [...meta.querySelectorAll('svg')] : [];
+  const pin = metaSvgs[0] || null;
+  const pinCs = pin ? getComputedStyle(pin) : null;
+  const pinBox = pin ? pin.getBoundingClientRect() : null;
+  const viewsSpan = actions
+    ? [...actions.querySelectorAll('span')].find((s) => /үзсэн/.test(s.textContent || '') && s.querySelector('svg'))
+    : null;
+  const eye = viewsSpan ? viewsSpan.querySelector('svg') : null;
+  const eyeCs = eye ? getComputedStyle(eye) : null;
+  const feat = main.querySelector('section[data-component="AdvertFeaturesApp"]');
+  const dts = feat ? [...feat.querySelectorAll('dt')] : [];
+  const dds = feat ? [...feat.querySelectorAll('dd')] : [];
+  return {
+    noMain: false,
+    mainEmoji: EMO.filter((e) => (main.textContent || '').includes(e)),
+    metaFound: !!meta,
+    metaText: meta ? flat(meta.textContent).slice(0, 90) : null,
+    metaEmoji: meta ? EMO.filter((e) => (meta.textContent || '').includes(e)) : [],
+    metaSvg: metaSvgs.length,
+    pin: pin ? {
+      w: Math.round(pinBox.width),
+      h: Math.round(pinBox.height),
+      va: pinCs.verticalAlign,
+      color: pinCs.color,
+      trunc: !!meta.querySelector('.truncate'),
+    } : null,
+    actionsFound: !!actions,
+    views: viewsSpan ? flat(viewsSpan.textContent) : null,
+    eye: eye ? { w: Math.round(eye.getBoundingClientRect().width), color: eyeCs.color } : null,
+    actionsColor: actions ? getComputedStyle(actions).color : null,
+    dt: {
+      count: dts.length,
+      svg: dts.filter((d) => d.querySelector('svg')).length,
+      sample: dts.slice(0, 3).map((d) => flat(d.textContent)),
+    },
+    dtEmoji: SPEC.filter((e) => dts.some((d) => (d.textContent || '').includes(e))),
+    ddEmoji: SPEC.filter((e) => dds.some((d) => (d.textContent || '').includes(e))),
+  };
+})()`;
+const ic = await evalJs(ICONS);
+check('⑨ 🎨 Мета мөр олдлоо (`data-listing-meta`)', !ic.noMain && ic.metaFound, ic.metaText || '—');
+check('⑨b 📍 emoji БАЙХГҮЙ — оронд нь `MapPinIcon` SVG 13×13px',
+  !!ic.pin && ic.pin.w === 13 && ic.pin.h === 13, ic.pin ? `${ic.pin.w}×${ic.pin.h}px` : 'SVG алга');
+check('⑨c 📍 SVG текстийн урсгалд суусан (`vertical-align: -2px`) — хаягны `truncate` хэвээр',
+  !!ic.pin && ic.pin.va === '-2px' && ic.pin.trunc,
+  ic.pin ? `va ${ic.pin.va} · truncate ${ic.pin.trunc ? 'yes' : 'no'}` : '—');
+check('⑨d 🔖 emoji БАЙХГҮЙ — зарын дугаар ЗӨВХӨН текст (мета мөрд emoji 0)',
+  ic.metaEmoji.length === 0 && !!ic.metaText && ic.metaText.includes('Зарын дугаар:'),
+  ic.metaEmoji.length ? `${ic.metaEmoji.join(' ')} үлдсэн ✗` : `${ic.metaSvg} svg (зөвхөн pin) ✓`);
+check('⑨e 👁 emoji БАЙХГҮЙ — «N үзсэн» нь `EyeIcon` SVG 15×15px',
+  !!ic.eye && ic.eye.w === 15 && /үзсэн/.test(ic.views || ''),
+  ic.views ? `${ic.views} · svg ${ic.eye ? ic.eye.w : '—'}px` : 'алга');
+check('⑨f 👁 иконы өнгө нь тоолуурынхнаас ТОД («өнгийг нь тодруулаарай»)',
+  !!ic.eye && !!ic.actionsColor && ic.eye.color !== ic.actionsColor,
+  ic.eye ? `${ic.eye.color} ≠ ${ic.actionsColor}` : '—');
+check('⑨g 📋 «Зарын дэлгэрэнгүй» хүснэгтийн `dt`/`dd` — icon/svg 0 (emoji 0)',
+  ic.dt.count > 0 && ic.dt.svg === 0 && ic.dtEmoji.length === 0 && ic.ddEmoji.length === 0,
+  `${ic.dt.count} мөр · svg ${ic.dt.svg} · ${ic.dt.sample.join(' | ')}`);
+//   ⚠️ 🏷️/🔑 нь САЙДБАРЫН «📋 N идэвхтэй зар» линкийн тоолуул (🆕 (95)-ийн
+//      `sellerStats` — БАЙРШИЛ БА ТҮРЭЭСИЙН тоо) — хэрэглэгчийн «Зарын
+//      дэлгэрэнгүй хэсгийн icon»-той ХОЛБООГҮЙ тул ХӨНДӨӨГДӨӨГҮЙ ✓
+//      (тиймээс ⑨h нь ЗӨВХӨН 📍/🔖/👁-г бүтэн `main` дээр шалгана ✓)
+check('⑨h 📄 БҮТЭН `main` дотор 📍/🔖/👁 emoji 0 (🏷️/🔑 сайдбарын тоолуул ХЭВЭЭР)',
+  ic.mainEmoji.length === 0, ic.mainEmoji.length ? `${ic.mainEmoji.join(' ')} үлдсэн ✗` : '0 ✓');
+if (ic.metaFound) await shotEl('[data-listing-meta]', '/tmp/detail-meta-1280.png');
+if (ic.actionsFound) await shotEl('[data-listing-actions]', '/tmp/detail-actions-1280.png', { scroll: true });
+
 await shot('/tmp/detail-style-1280.png');
 
 // ---------- ③ 📱 390px (мобайл) ----------

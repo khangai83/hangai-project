@@ -1503,6 +1503,58 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- 🎨📍 **МЕТА ИКОНУУД — `📍`/`🔖`/`👁` EMOJI → SVG (PIN/EYE) + «ЗАРЫН ДЭЛГЭРЭНГҮЙ»-ИЙН ICON ХАСАГДАВ (2026-10-10 (96))** —
+  хэрэглэгчийн 4 хүсэлт: ① «📍 26-р хороо үүний өмнөх icon ийг Газрын зургийн
+  өмнөх шиг болго» ② «🔖 Зарын дугаарыг өмнөх icon ийг үгүй хий» ③ «👁 3 үзсэн
+  -ийг icon ийг соль (Icon явуулав, өнгийг нь тодруулаарай)» ④ «Зарын
+  дэлгэрэнгүй хэсгийн 🏷️ Үйлдвэрлэгч: гэх мэтийн бүх icon ийг байхгүй болго,
+  хэрэггүй» ⇒ ⏳ emoji → SVG, хэрэггүй icon ХАСАГДАВ.
+  ⚠️ **DB/SQL/migration/URL/query/logic ХӨНДӨӨГДӨӨГҮЙ** (зөвхөн UI икон; ⚠️
+  `getAttrRows` ба шинж чанарын өгөгдөл ХЭВЭЭР — зөвхөн дэлгэрэнгүйд ХАРАГДАХ нь
+  зогсов ✓).
+  <br>**(1) ➕ `components/HeaderIcons.jsx` → 🆕 `EyeIcon`:** жишиг зургийн нүд —
+  ① тэгш хэмтэй 2 нум (`M2.6 12c1.6-2.9 5-4.9 9.4-4.9s7.8 2 9.4 4.9c-1.6 2.9-5 4.9-9.4
+  4.9s-7.8-2-9.4-4.9Z`) ② хүүхэн хараа `circle r=3.1` (дүүргэлтгүй); `strokeWidth`
+  анхдагч 1.8. ⚠️ `HeartIcon`/`ClockIcon`/`BellIcon`-той ЯГ ИЖИЛ үндэслэл: emoji нь
+  OS бүрд өөр + өөрийн өнгөтэй, SVG нь `currentColor` ⇒ дуудагч тал өнгө/хэмжээг
+  өгнө ✓. `MapPinIcon` (94) ХЭВЭЭР ✓.
+  <br>**(2) 🎨 `components/ListingDetailClient.jsx` — толгойн МЕТА МӨР:** ⏳ `📍`
+  emoji → `<MapPinIcon className="mr-1 inline-block h-[13px] w-[13px] align-[-2px]" />`
+  (хаягны `min-w-0 truncate` span ДОТОР ⇒ `truncate`/`title` ХӨНДӨӨГДӨХГҮЙ ✓) ·
+  ⏳ `🔖` emoji БҮРЭН ХАСАГДАВ (зарын дугаар ЗӨВХӨН текст — «Зарын дугаар:
+  `CADEC52F`») · ⏳ `👁` emoji → **`<EyeIcon className="h-[15px] w-[15px]
+  text-gray-700" />`** — хэрэглэгчийн «өнгийг нь тодруулаарай» ⇒ икон нь
+  `text-gray-700`, хажуугийн тоолуур `text-gray-500` (CDP-д хэмжигдэв:
+  `rgb(69,64,55)` ≠ `rgb(119,111,94)` ✓). ⚠️ Мөрийн ДАРААЛАЛ (байршил → огноо →
+  зарын дугаар) ба `ShareButton`-ийн байрлал (🤍/❤️-ийн АРД) ХӨНДӨӨГДӨӨГҮЙ ✓.
+  <br>**(3) 📋 `ListingDetailClient` — «Зарын дэлгэрэнгүй» ХҮСНЭГТ:** ⏳ `dt` нь
+  `{f.icon} {f.label}:` байсныг **`{f.label}:`** болгов ⇒ icon БҮГД ГАРАХГҮЙ
+  (CDP: 11 мөрөд `svg 0`) · `dd` нь `{f.value}` ХЭВЭЭР ✓.
+  <br>**(4) 🃏 `components/ListingCard.jsx` — КАРТЫН мета мөр:** ижил 2 икон
+  (`MapPinIcon` 13×13 · `EyeIcon` 15×15 `text-gray-700`) — ⚠️ ХОЁР ГАЗАРТ (карт +
+  дэлгэрэнгүй) НЭГ ЭХ СУРВАЛЖ (`HeaderIcons.jsx`) ⇒ «карт дээр нэг, дотроо өөр»
+  зөрүү БАЙХГҮЙ ✓; 🕒 огнооны emoji ХӨНДӨӨГДӨӨГҮЙ (хүсэлтэд байгаагүй ✓).
+  <br>**(5) 🐍 CDP/тестийн ТОГТВОРТОЙ selector (🆕):** `data-listing-meta` (мета мөр)
+  ба `data-listing-actions` (👁/🤍/🔗 мөр) — `data-listing-card`-ийн адил: ⏳ класс
+  мөрөөс хамаарч икон шалгах нь ЭВДРЭМТГИЙ байв ✗ ⇒ 2 файлд НЭГ ижил нэрээр ✓.
+  <br>**(6) 🧪 ТЕСТ (42/42 ✓):** `test:card` 24 ✓ (🆕 `MapPinIcon`/`EyeIcon` +
+  `data-listing-meta` + **⛔ РЕГРЕСС: `📍`/`👁` буцаж орвол FAIL**) ·
+  `test:detail-ui` 23 ✓ (🆕 ⑪: ① pin ② `🔖` ХАСАГДСАН ③ `EyeIcon` ④ хүснэгтэд
+  `{f.label}` — `{f.icon}` ХОРИГЛОНО) · `test:share-btn` 6 ✓ (⏳ `👁 {viewCount}` →
+  `{viewCount} үзсэн` + `EyeIcon`) · `test:location` 36 ✓ (⏳ `📍`/`🔖` байхгүй,
+  ДАРААЛАЛ ХЭВЭЭР) · `npm run build` **EXIT=0 ✓**.
+  <br>**(7) ✅ БОДИТ CHROME (`cdp:detail-style`) 25 OK / 0 FAIL ✓:** ⑨a мета мөр ·
+  ⑨b pin SVG `13×13px` · ⑨c `vertical-align: -2px` + `truncate` ✓ · ⑨d `🔖` 0
+  (мета мөрд ЯГ 1 SVG) · ⑨e `EyeIcon` `15×15px` · ⑨f иконы өнгө ТОД · ⑨g хүснэгт
+  `svg 0` · ⑨h БҮТЭН `main`-д `📍`/`🔖`/`👁` **0** ✓ — ⚠️ 🏷️/🔑 нь сайдбарын
+  «N идэвхтэй зар» тоолуул ((95)-ийн feature, ХӨНДӨӨГДӨӨГҮЙ ✓) тул emoji-шалгалт
+  нь `AdvertFeaturesApp` хэсэг ба `data-*` мөрүүдээр ХЯЗГААРЛАГДАВ ✓ ·
+  📸 `/tmp/detail-meta-1280.png` · `/tmp/detail-actions-1280.png` (3× томруулсан).
+  <br>**(8) 📄 DOC:** `README.md` (энэ буллет) · `docs/IMPROVEMENTS.md` (энэ мөр).
+  🔍 Хайх үг: `EyeIcon`, `MapPinIcon`, `data-listing-meta`, `data-listing-actions`,
+  `{f.label}`, `text-gray-700`
+
+
 - 🎛🪟 **«ШҮҮЛТ» — ТУСДАА ГАРЧ ИРДЭГ ЦОНХ (modal) БОЛОВ (2026-10-10 (95))** —
   хэрэглэгчийн хүсэлт: «Шүүлт ийг тусдаа гарч ирдэг цонх болго, жишээ зураг
   явуулав … шиг». ⚠️ **DB/SQL/migration/URL/DB-шүүлт/logic ХӨНДӨӨГДӨӨГҮЙ**
