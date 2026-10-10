@@ -227,10 +227,21 @@ export default function AppProviders({ children }) {
     const search = typeof window === 'undefined' ? '' : window.location.search;
     router.push(newListingHref(listingPrefillFromSearch(search)));
   }, [user, showToast, router]);
-  // Засах горим: ижил хуудас, гэхдээ `?edit=<id>` — утгууд урьдчилан бөглөгдөнө
+  /**
+   * ✏️ ЗАСАХ ГОРИМ (2026-10-10, хэрэглэгчийн хүсэлт: «Зарыг засах товч дарахад
+   *    3 дахь хуудас руу ШУУД ордог байг») — ижил хуудас, гэхдээ
+   *    `?edit=<id>&step=3` — утгууд урьдчилан бөглөгдөж, 📋 Дэлгэрэнгүй
+   *    хуудас дээр ШУУД нээгдэнэ ✓
+   * ⚠️ `step` нь URL дээр 1-BASED (`AddListingClient`): `step=3` = 📋 Дэлгэрэнгүй
+   *    (📱 дээр 3 дахь дэлгэц; 🖥 ≥640px дээр 3/4/5-р алхам нэгтгэгдсэн
+   *    сүүлийн хуудас — `lastStepIndex`) ✓
+   * ⚠️ «Дутуу алхам руу буцаах» хамгаалалт нь `editId` байвал ажиллахгүй тул
+   *    засах үед энэ хуудсан дээр үлдэнэ (`AddListingClient`) ✓
+   * 🔍 Хайх үг: openEdit, edit, step=3, Засах товч, 3 дахь хуудас
+   */
   const openEdit = useCallback((listing) => {
     if (!user) { showToast('Эхлээд нэвтрэх шаардлагатай', 'error'); setAuthOpen(true); return; }
-    if (listing && listing.id) router.push(`/listings/new?edit=${listing.id}`);
+    if (listing && listing.id) router.push(`/listings/new?edit=${listing.id}&step=3`);
   }, [user, showToast, router]);
   const notifyListingsChanged = useCallback(() => setDataVersion((v) => v + 1), []);
 

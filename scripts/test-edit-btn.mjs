@@ -7,6 +7,10 @@
 //    ② `/my-listings` → 📈 Статистик — 🏆 Онцлох (`MyListingsStatsPanel.jsx`)
 //    ③ `/my-listings` → 📈 Статистик — зар тус БҮРИЙН мөр (мөн адил)
 //    ④ 🖥 Зар нэмэх формысн хураангуйн жижиг pill (`AddListingClient.jsx`)
+//    ⑤ ✏️ Засах товч → 3 ДАХЬ ХУУДАС (2026-10-10, хэрэглэгчийн хүсэлт:
+//       «clicking the edit ad button takes the user directly to the third page»)
+//       — `AppProviders.openEdit()` нь `?edit=<id>&step=3` руу илгээнэ;
+//       `step=3` нь 1-BASED тул `STEPS[2]` = 📋 Дэлгэрэнгүй (`AddListingClient`) ✓
 //
 // ХАМРАХ ХҮРЭЭ (DB/React/CDP ХОЛБОГДОХГҮЙ — зөвхөн Node):
 //   ① `tailwind.config.js` — `success` токен (DEFAULT/dark/light) + 3 сүүдэр
@@ -165,6 +169,27 @@ t('✅ Дүрэм: ногоон нь ЗӨВХӨН «Засах» товчид �
     assert.ok(labels > 0 && green >= labels,
       `${name}: ногоон товч (${green}) нь «✏️ Засах» (${labels})-аас цөөн ✗`);
   }
+});
+
+// ────────────────────────────────────────────────────────────
+console.log('\n── ⑤ 🪜 «✏️ Засах» → 3 ДАХЬ ХУУДАС (2026-10-10) ──');
+
+t('⑤ 🪜 `openEdit` нь `?edit=<id>&step=3` руу илгээнэ — засах үед 📋 Дэлгэрэнгүй ШУУД нээгдэнэ ✓', () => {
+  const APP = readSrc('components/AppProviders.jsx');
+  assert.ok(APP.includes('router.push(`/listings/new?edit=${listing.id}&step=3`)'),
+    '`openEdit` нь `&step=3`-гүй байна ✗ (Засах товч 1-р хуудсан дээр нээгдэнэ)');
+  assert.ok(!APP.includes('router.push(`/listings/new?edit=${listing.id}`)'),
+    'хуучин `?edit=<id>` (step-гүй) линк үлдсэн ✗');
+});
+
+t('⑤ 🪜 URL нь 1-BASED — `step=3` нь `STEPS[2]` = 📋 Дэлгэрэнгүй гэдгийг барина ✓', () => {
+  // ⚠️ `step = Number(?step=3) - 1 = 2` ⇒ `STEPS[2]` нь «Дэлгэрэнгүй» байх ЁСТОЙ;
+  //    хэрэв `STEPS`-ийн дараалал өөрчлөгдвөл энэ шалгалт УНАЖ, «Засах» товч
+  //    санамсаргүй 1-р хуудас руу буцахыг сэрэмжлүүлнэ ✓
+  assert.ok(FORM.includes("const step = Math.min(STEPS.length - 1, Math.max(0, (Number.isFinite(stepRaw) ? stepRaw : 1) - 1))"),
+    '`step`-ийн 1-based → 0-based хөрвүүлэлт өөрчлөгдсөн ✗');
+  assert.match(FORM, /key: 'details',\s+label: 'Дэлгэрэнгүй'/,
+    '`STEPS[2]` нь «Дэлгэрэнгүй» БИШ ✗ (`step=3` өөр хуудас руу заана)');
 });
 
 console.log(`\n✅ Нийт ${passed} шалгалт амжилттай — «✏️ Засах» нь 3 газарт НЭГ ногоон; `

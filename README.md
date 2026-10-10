@@ -1503,6 +1503,34 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- ✏️🪜 **«✏️ ЗАСАХ» ТОВЧ 3 ДАХЬ ХУУДАС РУУ ШУУД ОРДОГ БОЛОВ (2026-10-10 (110))** —
+  ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «clicking the "edit ad" button takes the user directly to the
+  third page».
+  <br>**(1) ⏳ ХУУЧИН:** `components/AppProviders.jsx → openEdit()` нь
+  `/listings/new?edit=<id>` руу илгээдэг байв ⇒ форм нь **1-р хуудас (🗂 Ангилал)**
+  дээр нээгдэж, хэрэглэгч зарах гэсэн талбараа хүртэл «Үргэлжлүүлэх»-ийг 2 удаа
+  дарах шаардлагатай байв ✗
+  <br>**(2) ✅ ШИЙДЭЛ (`openEdit`, зөвхөн Tailwind/JS — DB·migration·payload 0 ✓):**
+  линк `?edit=<id>**&step=3**` болов — ⚠️ URL дээрх `step` нь **1-BASED**
+  (`AddListingClient`: `step = Number(?step) - 1`) тул `step=3` = `STEPS[2]` =
+  **📋 Дэлгэрэнгүй** (📱 дээр 3 дахь дэлгэц; 🖥 ≥640px дээр 3/4/5-р алхам
+  нэгтгэгдсэн сүүлийн хуудас `lastStepIndex`) ✓ · утгууд нь хэвээр
+  `fetchListingById()`-ээр урьдчилан бөглөгдөнө ✓ · «Дутуу алхам руу буцаах»
+  хамгаалалт нь `editId` байвал ажиллахгүй (`AddListingClient`) тул засах үед
+  зөвхөн энэ хуудсан дээр үлдэнэ ✓
+  <br>**(3) ⚠️ 1, 2-Р АЛХАМ ХӨНДӨӨГДӨӨГҮЙ:** шинэ зар (`openAdd` → `/listings/new`
+  + ангилал урьдчилан бөглөх) нь `?step`-гүй тул **хэвээр 1-р хуудсаас** эхэлнэ ✓ ·
+  ✅ «✏️ Засах» товч 3 газарт (`MyListingsClient` карт · `MyListingsStatsPanel`
+  🏆 Онцлох ба зар тус бүр) БҮГД нэг `openEdit`-оор дамжина ⇒ нэг дор засагдав ✓ ·
+  `scripts/cdp-job-chips.mjs`-д байсан `?edit=…&step=3` хэв аль хэдийн байсан тул
+  форм энэ URL дээр ажилладаг нь БАТАЛГААТАЙ ✓
+  <br>**(4) 🧪 ТЕСТ:** `npm run test:edit-btn` **13 → 15 ✓** (🆕 ⑤ 2 шалгалт:
+  ① `openEdit` нь `&step=3`-тай, ⛔ step-гүй хуучин линк БАЙХГҮЙ; ② `step` нь
+  `?step` 1-based → 0-based хөрвүүлэлттэй ба `STEPS[2]` нь «Дэлгэрэнгүй» —
+  `STEPS`-ийн дараалал солигдвол УНАХАР ✓) · `npm run build` **EXIT=0 ✓**
+  📁 `components/AppProviders.jsx`, `scripts/test-edit-btn.mjs`
+  🔍 Хайх үг: `openEdit`, `?edit=`, `&step=3`, `STEPS[2]`, «Зарыг засах»,
+  «3 дахь хуудас»
 - 🎯📐 **ЗАРЫН ДЭЛГЭРЭНГҮЙ — ТӨВЛӨРҮҮЛЭЛТ + ② БАГАНЫ ЗАЙ 24 → 16px (2026-10-10 (109))** —
   ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Align the ad details with the ad image. Center the content
   on the screen — keep the column layout in mind. Also, shift the information in the
