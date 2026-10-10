@@ -463,7 +463,10 @@ export default function ListingCard({ listing, author, attrsLine }) {
                ⚠️ `build_year` нь DB · форм · ДЭЛГЭРЭНГҮЙ хуудас · шүүлтэд
                ХЭВЭЭР (`ListingDetailClient` ⑦ хүснэгтэд «Ашиглалтанд орсон он» ✓)
             ② бусад хэсэг → `attrsLine` (HomeClient нь `formatAttrsLine`-ээр бэлдэнэ;
-               🚗 машин: гүйлт · хурдны хайрцаг · хөдөлгүүр · түлш ✓)
+               🆕 (112): 🚗 машин дээр ЗӨВХӨН гүйлт · түлш — хэрэглэгчийн хүсэлт
+               «Let's display only the mileage and fuel type on the car listing
+               card» ⇒ толгой (брэнд+загвар+он) нь картын ГАРЧИГТ бий тул
+               мөрөнд давхардахгүй ✓ «95,200 км · ⛽ Хайбрид»)
             ⚠️ Хоосон бол мөр ОГТ ГАРАХГҮЙ (`''`) ✓
             ⚠️ 🗑 `getFloorLabel` импорт + `floorLabel` ХАСАГДАВ (карт дээр
                хэрэггүй болов; Дэлгэрэнгүй хуудсанд ХЭВЭЭР ✓) */}

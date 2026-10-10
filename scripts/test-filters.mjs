@@ -149,12 +149,14 @@ t('🔀 Хөтлөгч форм, шүүлт, картын мөр ГУРВААС 
   assert.ok(!sec.attrFields.some((x) => x.key === 'drive'));
   assert.ok(!sec.attrFilters.includes('drive'));
   // ⚠️ Хуучин заруудын `attrs.drive` нь DB-д ХЭВЭЭР байгаа ч карт дээр ГАРАХГҮЙ ✓
+  // 🆕 (112): картын мөр нь ЗӨВХӨН гүйлт + түлш болов ⇒ өнгө/хөдөлгүүр ч
+  //    ГАРАХГҮЙ (хэрэглэгчийн хүсэлт: зөвхөн гүйлт ба түлш ✓)
   const line = formatAttrsLine('auto', {
     brand: 'Nissan', model: 'Leaf', engine: 'Цахилгаан (EV)',
     fuel: 'Цахилгаан', color: 'Цагаан', drive: 'Урд',
   });
+  assert.equal(line, '⛽ Цахилгаан', line);
   assert.ok(!line.includes('Урд'), line);
-  assert.ok(line.includes('Цахилгаан (EV)') && line.includes('🎨 Цагаан'), line);
 });
 
 t('🚗 Жолооны хүрд (steering) — форм БА карт (Зөв / Буруу), шүүлтэд ОРООГҮЙ', () => {
@@ -171,41 +173,60 @@ t('🚗 Жолооны хүрд (steering) — форм БА карт (Зөв / 
   // ③ Шүүлтэд ОРООГҮЙ (mileage/engine-ийн зарчим ✓)
   assert.ok(!sec.attrFilters.includes('steering'));
   assert.ok(!getAttrFilters('auto').some((x) => x.key === 'steering'));
-  // ④ Картын мөр: «🚗 Зөв хүрд» (зөвхөн «Зөв» гэвэл утга нь ойлгомжгүй ✗)
+  // ④ Картын мөр нь (112)-ээс хойш ЗӨВХӨН гүйлт + түлш ⇒ `steering` ГАРАХГҮЙ ✓
+  //    ⚠️ `steering` нь DB · форм · ДЭЛГЭРЭНГҮЙ хүснэгтэд ХЭВЭЭР ✓
   const line = formatAttrsLine('auto', {
-    brand: 'Toyota', model: 'Sai', transmission: 'Автомат', steering: 'Зөв',
+    brand: 'Toyota', model: 'Sai', transmission: 'Автомат', steering: 'Зөв', fuel: 'Хайбрид',
   });
-  assert.ok(line.includes('🚗 Зөв хүрд'), line);
-  assert.ok(line.includes('⚙️ Автомат'), line);
+  assert.equal(line, '⛽ Хайбрид', line);
+  assert.ok(!line.includes('Зөв хүрд'), `карт дээр «хүрд» ГАРАХ ЁСГҮЙ ✗: ${line}`);
+  assert.ok(!line.includes('⚙️'), `карт дээр хайрцаг ГАРАХ ЁСГҮЙ ✗: ${line}`);
   // ⑤ 🔀 ХУУЧИН `drive` (Урд/Хойд/Бүх — хөтлөгчийн төрөл) нь ХӨНДӨГДӨӨГҮЙ
   assert.notEqual(f.options[0], 'Урд');
   assert.equal(getAttrField('auto', 'drive'), null);
 });
 
-t('🔧 Картын мөр: хүрээний утга нэгжээ өөрөө агуулна, ХУУЧИН тоон утга «л»-тэй', () => {
-  const line = formatAttrsLine('auto', {
-    brand: 'Toyota', model: 'Prius', year: '2021', transmission: 'Автомат',
-    engine: '1.5л - 2.0л', fuel: 'Хайбрид',
-  });
-  assert.ok(line.includes('1.5л - 2.0л'), line);
-  assert.ok(!line.includes('1.5л - 2.0л л'), `«л» ДАВХАРДАВ ✗: ${line}`);
+t('🔧 Хөдөлгүүр: хүрээний утга нэгжээ өөрөө агуулна, ХУУЧИН тоон утга «л»-тэй', () => {
+  // 🆕 (112): картын мөрөөс 🔧 хөдөлгүүр ХАСАГДСАН (зөвхөн гүйлт + түлш ✓) тул
+  //    нэгжийн дүрэм нь ДЭЛГЭРЭНГҮЙ хүснэгтээр (`getAttrRows`) шалгагдана ✓
+  assert.equal(getAttrRows('auto', { engine: '1.5л - 2.0л' })[0].value, '1.5л - 2.0л');
+  assert.ok(
+    !getAttrRows('auto', { engine: '1.5л - 2.0л' })[0].value.includes('1.5л - 2.0л л'),
+    '«л» ДАВХАРДАВ ✗',
+  );
   // ⚠️ ХУУЧИН/demo («2.5») — нэгж нь ХЭВЭЭР залгагдана ✓
-  assert.ok(formatAttrsLine('auto', { engine: '2.5' }).includes('2.5 л'));
-  assert.ok(formatAttrsLine('auto', { engine: '4.6' }).includes('4.6 л'));
+  assert.equal(getAttrRows('auto', { engine: '2.5' })[0].value, '2.5 л');
+  assert.equal(getAttrRows('auto', { engine: '4.6' })[0].value, '4.6 л');
   // ⚠️ «Цахилгаан (EV)» нь тоон БИШ тул «л» ЗАЛГАГДАХГҮЙ ✓
-  assert.equal(formatAttrsLine('auto', { engine: 'Цахилгаан (EV)' }), 'Цахилгаан (EV)');
+  assert.equal(getAttrRows('auto', { engine: 'Цахилгаан (EV)' })[0].value, 'Цахилгаан (EV)');
 });
 
-t('🚗 Картын мөр: «Өнгө» нь толгойн (Загвар/он) ДАРАА, ГҮЙЛТИЙН ӨМНӨ (2026-10-01 (2))', () => {
+t('🚗 (112) Картын мөр: ЗӨВХӨН гүйлт ба түлш — бусад үзүүлэлт ГАРАХГҮЙ', () => {
+  // ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (2026-10-10): «Let's display only the mileage and fuel
+  // type on the car listing card» ⇒ «95,200 км · ⛽ Хайбрид» ✓
   const line = formatAttrsLine('auto', {
     brand: 'Toyota', model: 'Prius', year: '2021', importYear: '2022', color: 'Цагаан',
     mileage: '95200', transmission: 'Автомат', engine: '1.5л - 2.0л', fuel: 'Хайбрид',
   });
-  // ⚠️ Толгой нь «брэнд + загвар + он» НЭГ хэсэг тул «Өнгө» нь толгойн
-  //    ДАРААХ эхний үзүүлэлт болно (`CARD_ATTR_ORDER.auto` — color нь model-ийн
-  //    дараа, year нь `skip`-д байдаг тул мөрөнд ДАХИН гарахгүй ✓)
-  assert.equal(line,
-    'Toyota Prius, 2021 · 🎨 Цагаан · 📥 2022 онд орж ирсэн · 95,200 км · ⚙️ Автомат · 1.5л - 2.0л · ⛽ Хайбрид');
+  assert.equal(line, '95,200 км · ⛽ Хайбрид');
+  // ⚠️ Толгой нь картын ГАРЧИГТ байдаг (`autoTitle` — «Toyota Prius, 2021») тул
+  //    мөрөнд ДАХИН гарахгүй ✓
+  assert.ok(!line.includes('Toyota') && !line.includes('2021'), line);
+  assert.ok(!/🎨|📥|⚙️|🚗/.test(line), line);
+  // ⚠️ Гүйлт/түлшгүй зар дээр мөр ХООСОН ⇒ карт дээр мөр ОГТ ГАРАХГҮЙ ✓
+  assert.equal(formatAttrsLine('auto', { brand: 'Nissan', model: 'X-Trail', year: '2019' }), '');
+});
+
+t('🚗 (112) Карт дээр «Өнгө»/«Орж ирсэн он» ч ГАРАХГҮЙ (2026-10-01 (2)-ын дүрэм СУларлаа)', () => {
+  // ⏳ 2026-10-01 (2): картын мөр нь «толгой · 🎨 өнгө · 📥 орж ирсэн он ·
+  //    гүйлт · ⚙️ хайрцаг · хөдөлгүүр · ⛽ түлш» байв.
+  // 🆕 2026-10-10 (112): хэрэглэгчийн хүсэлтээр мөр нь ЗӨВХӨН гүйлт + түлш
+  //    болсон тул өнгө/орж ирсэн он/хайрцаг/хөдөлгүүр ГАРАХГҮЙ ✓
+  const line = formatAttrsLine('auto', {
+    brand: 'Toyota', model: 'Prius', year: '2021', importYear: '2022', color: 'Цагаан',
+    mileage: '95200', transmission: 'Автомат', engine: '1.5л - 2.0л', fuel: 'Хайбрид',
+  });
+  assert.equal(line, '95,200 км · ⛽ Хайбрид');
 });
 
 t('🚙 Загвар нь ЧӨЛӨӨТ ТЕКСТ шүүлт (filterable, select БИШ) + ОЛОН СОНГОЛТТОЙ', () => {
@@ -454,22 +475,23 @@ t("getAttrRangeKeys('year') → { from:'year_from', to:'year_to' } (HomeClient/q
   assert.equal(`attr_${getAttrRangeKeys('importYear').from}`, 'attr_importYear_from');
 });
 
-// ---- ④ 🚗 Картын мөр дээрх шинэ үзүүлэлт ----
-t("formatAttrsLine: «Toyota Harrier, 2018 · 📥 2021 онд орж ирсэн · 95,200 км…»", () => {
+// ---- ④ 🚗 Картын мөр (🆕 112: зөвхөн гүйлт ба түлш) ----
+t('formatAttrsLine (112): «95,200 км · ⛽ Хайбрид» — толгой/орж ирсэн он ГАРАХГҮЙ', () => {
   const line = formatAttrsLine('auto', {
     brand: 'Toyota', model: 'Harrier', year: '2018', importYear: '2021',
     mileage: '95200', transmission: 'Автомат', engine: '2.5', fuel: 'Хайбрид',
   });
-  assert.ok(line.startsWith('Toyota Harrier, 2018'));
-  assert.ok(line.includes('📥 2021 онд орж ирсэн'));
-  assert.ok(line.includes('95,200 км'));
-  // ⚠️ «Үйлдвэрлэсэн он» ДАВХАРДАХГҮЙ (head дотор нэг л удаа)
-  assert.equal(line.split('2018').length - 1, 1);
+  assert.equal(line, '95,200 км · ⛽ Хайбрид');
+  // ⚠️ Толгой нь картын гарчигт (`autoTitle`), «орж ирсэн он» нь дэлгэрэнгүй
+  //    хуудсанд — картын мөрөнд ДАХИН ГАРАХГҮЙ ✓
+  assert.ok(!line.includes('📥') && !line.includes('Toyota'), line);
+  // ⚠️ «км» нь зөвхөн НЭГ удаа (нэгж давхардахгүй ✓)
+  assert.equal(line.split('км').length - 1, 1);
 });
 
-t('formatAttrsLine: importYear хоосон бол мөрөнд ОРОХГҮЙ (хоосон таслалтгүй)', () => {
-  const line = formatAttrsLine('auto', { brand: 'Nissan', model: 'X-Trail', importYear: '' });
-  assert.equal(line, 'Nissan X-Trail');
+t('formatAttrsLine (112): гүйлт/түлшгүй `attrs` → мөр ХООСОН (хоосон таслалтгүй)', () => {
+  assert.equal(formatAttrsLine('auto', { brand: 'Nissan', model: 'X-Trail', importYear: '' }), '');
+  assert.equal(formatAttrsLine('auto', { brand: 'Nissan', model: 'X-Trail', year: '2019' }), '');
 });
 
 // ---- ⑤ ⚽ Аяллын хэрэгсэл (hobby): ХЯЛБАР ФОРМ (2026-09-29) ----
