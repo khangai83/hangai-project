@@ -209,20 +209,52 @@ t('② сэргээлт нь формоо бэлдэх эффектийн ДАР
   assert.ok(initAt > 0 && restoreAt > initAt, `init=${initAt} restore=${restoreAt}`);
 });
 
-t('② 🆕 (115) ноорог сэргээхэд 3-р алхмын дэлгэц ХАМГААЛАЛТТАЙ сэргээгдэнэ (🏷️ Брэнд алгасахгүй ✓)', () => {
+t("② 🆕 (115) ноорог сэргээхэд 3-р алхмын дэлгэцийн ГАРЫН ТЭМДЭГ хадгалагдана (🏷️ Брэнд алгасахгүй ✓)", () => {
   /**
    * 🎯 2026-10-10-ны гомдол: «📱 дээр 💻 Notebook-ийн зар оруулахад 🏷️ Брэнд
    *    асуухгүй байна» ⇒ хуучин нооргийн `mobileDetailStep` (`'attr-condition'`)
-   *    нь ШИНЭ 7 дэлгэцийн сүүлчийнх рүү зааж байв ✗ ⇒ сэргээлт нь хамгаалалтыг
-   *    (доорх `detailIdx`) асаах ЁСТОЙ — тэр нь хариулаагүй эхний дэлгэцээс
-   *    (🏷️ Брэнд) эхлүүлнэ ✓
+   *    нь ШИНЭ 7 дэлгэцийн СҮҮЛИЙНХ рүү зааж байв ✗ ⇒ сэргээлт нь ТЭР ҮЕИЙН
+   *    дэлгэцүүдийн ГАРЫН ТЭМДГИЙГ (`mobileDetailScreens`) авч, доорх `detailIdx`
+   *    нь жагсаалт СОЛИГДСОН (эсвэл ноорог ХУУЧИН) үед л «хариулаагүй эхний
+   *    дэлгэц»-ээс эхлүүлнэ ✓
+   * ⚠️ Гурван төлөв ЯЛГАРНА: `null` = ноорог сэргээгээгүй (хамгаалалт ХЭРЭГГҮЙ —
+   *    санамсаргүй REFRESH-ийн дараа хэрэглэгч ЯГ байсан дэлгэц дээрээ үлдэнэ ✓
+   *    2026-10-05 (54) · `cdp:picker` ⑪⁗) · `''` = ХУУЧИН ноорог (хамгаална ✓) ·
+   *    мөр = жагсаалт ИЖИЛ бол хамгаалалт ХЭРЭГГҮЙ ✓
    */
   const at = FORM.indexOf('НООРОГ СЭРГЭЭХ');
   const block = FORM.slice(at, FORM.indexOf('НООРОГ БИЧИХ', at));
   assert.ok(block.includes('setMobileDetailStep(draft.mobileDetailStep)'), 'дэлгэц сэргээхгүй ✗');
-  assert.ok(block.includes('setDraftStepGuard(true)'), 'хамгаалалт асаахгүй ✗ (2026-10-10-ны гомдол)');
-  // ⚠️ Туг нь `null` болж УСТАХГҮЙ — зөвхөн `false` (унтраах = хэрэглэгч өөрөө хөдөлсөн ✓)
-  assert.equal(block.includes('setDraftStepGuard(null)'), false);
+  assert.ok(block.includes("setDraftScreenSig(String(draft.mobileDetailScreens || ''))"),
+    'гарын тэмдэг сэргээхгүй ✗ (2026-10-10-ны гомдол)');
+  assert.match(FORM, /const \[draftScreenSig, setDraftScreenSig\] = useState\(null\)/, 'тугийн анхдагч нь `null` БИШ ✗');
+  // 💾 АВТО-ХАДГАЛАЛТ нь тэр үеийн гарын тэмдгийг БИЧНЭ ✓ (ноорог → сэргээлт)
+  const saveAt = FORM.indexOf('НООРОГ БИЧИХ');
+  assert.ok(FORM.slice(saveAt, saveAt + 4000).includes('mobileDetailScreens: detailScreensSig'),
+    'гарын тэмдэг бичихгүй ✗');
+});
+
+t('② 🆕 (115) `serializeDraft`/`parseDraft` нь `mobileDetailScreens`-ийг хадгална (хуучин payload → \'\' ✓)', () => {
+  const keys = ['title', 'section'];
+  const raw = serializeDraft({
+    form: { title: 'а', section: 'computers' }, keys,
+    mobileDetailStep: 'attr-condition', mobileDetailScreens: 'attr-brand|attr-condition',
+  });
+  const d = parseDraft(raw, { keys });
+  assert.equal(d.mobileDetailScreens, 'attr-brand|attr-condition');
+  assert.equal(d.mobileDetailStep, 'attr-condition');
+  // ⚠️ ХУУЧИН payload (талбар ОГТ БАЙХГҮЙ) → `''` ⇒ хамгаалалт ХҮЧИНТЭЙ ✓
+  const legacy = JSON.stringify({
+    v: DRAFT_VERSION, savedAt: Date.now(), editId: '', form: { title: 'а' },
+    pendingCount: 0, mobileDetailStep: 'attr-condition',
+  });
+  assert.equal(parseDraft(legacy, { keys }).mobileDetailScreens, '');
+  // ⚠️ ХЭТ УРТ (хор хөнөөлтэй/гажиг payload) → `''` (хязгаар ✓)
+  const tampered = JSON.stringify({
+    v: DRAFT_VERSION, savedAt: Date.now(), editId: '', form: { title: 'а' },
+    pendingCount: 0, mobileDetailScreens: 'x'.repeat(600),
+  });
+  assert.equal(parseDraft(tampered, { keys }).mobileDetailScreens, '');
 });
 
 t('② АВТО-ХАДГАЛАЛТ: `draftReady` дуустал бичихгүй/устгахгүй + debounce (`DRAFT_SAVE_DELAY`)', () => {

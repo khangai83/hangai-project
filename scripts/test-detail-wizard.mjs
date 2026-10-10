@@ -271,13 +271,17 @@ t('📱 Хүчингүй түлхүүр (ж: хэсэг солигдов) → Э
   assert.match(FORM, /const raw = detailIdxRaw < 0 \? 0 : detailIdxRaw/);
 });
 
-t('📱🆕 (115) НООРГИЙН ДЭЛГЭЦИЙН ХАМГААЛАЛТ — хариулаагүй асуултыг АЛГАСАХГҮЙ ✓', () => {
+t('📱🆕 (115) НООРГИЙН ДЭЛГЭЦИЙН ХАМГААЛАЛТ — зөвхөн дэлгэц СОЛИГДСОН үед хариулаагүй асуултыг алгасахгүй ✓', () => {
   /**
    * 🎯 2026-10-10-ны гомдол: «📱 дээр 💻 Notebook-ийн зар оруулахад 🏷️ Брэнд ба
    *    бусад талбарыг АСУУХГҮЙ байна» ⇒ нооргийн `mobileDetailStep` нь ХУУЧИРСАН
    *    (2026-10-07 (57)-аас өмнөх 1 дэлгэцтэй үеийн `'attr-condition'`) байсан тул
    *    ШИНЭ 7 дэлгэцийн СҮҮЛИЙН дэлгэц рүү зааж, эхний 6 асуулт алга болж байв ✗
    *    ⇒ сэргээлтийн дараа «хариулаагүй эхний дэлгэц»-ээс хойш эхлэхийг хориглоно ✓
+   * ⚠️ ЗӨВХӨН `draftScreenSig` (ноорог хадгалагдах үеийн дэлгэцүүдийн ГАРЫН
+   *    ТЭМДЭГ) нь ОДООГИЙН жагсаалттай ТААРАХГҮЙ үед. Жагсаалт ИЖИЛ бол
+   *    санамсаргүй REFRESH-ийн дараа хэрэглэгч ЯГ байсан дэлгэц дээрээ үлдэнэ ✓
+   *    (2026-10-05 (54)-ийн зан төлөв — `cdp:picker` ⑪⁗ ХӨНДӨӨГДӨХГҮЙ ✓)
    */
   // ⚠️ ДАРААЛАЛ ЧУХАЛ: `detailIdx` нь `detailAnswerText`-ийн ДАРАА бодогдоно —
   //    хамгаалалт нь түүнийг ашигладаг (өмнө нь бичвэл TDZ-ээр форм унана ✗)
@@ -286,21 +290,25 @@ t('📱🆕 (115) НООРГИЙН ДЭЛГЭЦИЙН ХАМГААЛАЛТ — �
   assert.ok(answerAt > 0 && idxAt > answerAt, `answer=${answerAt} idx=${idxAt}`);
   const guard = bodyOf(FORM, 'const detailIdx = (() => {');
   assert.match(guard, /const raw = detailIdxRaw < 0 \? 0 : detailIdxRaw;/);
-  assert.match(guard, /if \(!draftStepGuard \|\| raw === 0\) return raw;/);
+  assert.match(guard, /if \(draftScreenSig === null \|\| draftScreenSig === detailScreensSig \|\| raw === 0\) return raw;/);
   assert.match(guard, /const blank = detailScreens\.findIndex\(\(s\) => !detailAnswerText\(s\.key\)\);/);
   assert.match(guard, /return blank >= 0 && blank < raw \? blank : raw;/);
-  // ⚠️ НЭГ УДААГИЙНХ: сэргээлтэд асаана · 4 газарт унтарна (урагшлах · буцах ·
-  //    ✏️ засах · 🗑 ноорог устгах) — эс бөгөөс «Алгасах» ажиллахгүй болно ✗
-  assert.match(FORM, /setDraftStepGuard\(true\)/, 'ноорог сэргээхэд туг асаахгүй ✗');
+  // 📱 Гарын тэмдэг нь ДЭЛГЭЦҮҮДЭЭС (нэг эх сурвалж) бодогдоно ✓
+  assert.match(FORM, /const detailScreensSig = detailScreens\.map\(\(s\) => s\.key\)\.join\('\|'\);/);
+  // ⚠️ НЭГ УДААГИЙНХ: урагшлах/буцах/✏️ засах/🗑 ноорог устгах — 4 газарт `null`
+  //    болно; эс бөгөөс «Алгасах» ажиллахгүй болно ✗
   for (const [name, marker] of [
     ['📱 урагшлах', 'const mobileDetailNext = () => {'],
     ['📱 буцах', 'const mobileDetailBack = () => {'],
     ['✏️ засах', 'const mobileAnswerEdit = (key) => {'],
     ['🗑 ноорог устгах', 'const discardDraft = () => {'],
   ]) {
-    assert.ok(bodyOf(FORM, marker).includes('setDraftStepGuard(false)'),
+    assert.ok(bodyOf(FORM, marker).includes('setDraftScreenSig(null)'),
       `${name}: хамгаалалт унтраахгүй ✗`);
   }
+  // ⚠️ `setDraftScreenSig(true/false)` ХЭЗЭЭ Ч БАЙХГҮЙ — зөвхөн `null` эсвэл мөр ✓
+  assert.equal(FORM.includes('setDraftScreenSig(true)'), false);
+  assert.equal(FORM.includes('setDraftScreenSig(false)'), false);
 });
 
 t("📱 `data-mobile-active` нь ТЕКСТ ('true'/'false') — boolean БИШ (React-ийн data-* зан ✓)", () => {

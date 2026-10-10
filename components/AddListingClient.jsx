@@ -1081,18 +1081,26 @@ export default function AddListingClient() {
    */
   const [mobileDetailStep, setMobileDetailStep] = useState('title');
   /**
-   * 🆕 2026-10-10 (115) — «📝 НООРГИЙН ДЭЛГЭЦИЙН ХАМГААЛАЛТ»: `mobileDetailStep` нь
-   *    НООРГИЙН хамт ХАДГАЛАГДАЖ, сэргээгддэг. Хэрэв дэлгэцийн ЖАГСААЛТ өөрчлөгдсөн
-   *    бол (ж: 2026-10-07 (57) — 💻 Notebook-ийн үзүүлэлт 1 → 7 болов) ХУУЧИН
-   *    нооргийн түлхүүр нь СҮҮЛИЙН дэлгэц рүү зааж, хэрэглэгч 🏷️ Брэнд · 🖥️ Загвар ·
-   *    📺 Дэлгэц · ⚙️ CPU · 🧠 RAM · 💾 Хард-ыг ХАРАХГҮЙ өнгөрөх аюултай байв ✗
+   * 🆕 2026-10-10 (115) — «📝 НООРГИЙН ДЭЛГЭЦИЙН ГАРЫН ТЭМДЭГ»: `mobileDetailStep`
+   *    нь НООРГИЙН хамт ХАДГАЛАГДАЖ, сэргээгддэг. Хэрэв дэлгэцийн ЖАГСААЛТ
+   *    өөрчлөгдсөн бол (ж: 2026-10-07 (57) — 💻 Notebook-ийн үзүүлэлт 1 → 7 болов)
+   *    ХУУЧИН нооргийн түлхүүр нь СҮҮЛИЙН дэлгэц рүү зааж, хэрэглэгч 🏷️ Брэнд ·
+   *    Загвар · Дэлгэц · CPU · RAM · Хард-ыг ХАРАХГҮЙ өнгөрөх аюултай байв ✗
    *    (DB-д бодит жишээ: `property_type='Notebook'`, `attrs={condition,negotiable}` ✓)
-   *    ⇒ сэргээлтийн ДАРАА нэг удаа «ХАРИУЛААГҮЙ эхний дэлгэц»-ээс хойш эхлэхийг
-   *    ХОРИГЛОНО (доорх `detailIdx`); хэрэглэгч анх урагшлах/буцах/✏️ засах үед
-   *    туг УНТАРНА — түүнээс хойш «Алгасах» хэвийн ажиллана ✓
+   *    ⇒ доорх `detailIdx` нь тэр үед «ХАРИУЛААГҮЙ эхний дэлгэц»-ээс хойш эхлэхийг
+   *    ХОРИГЛОНО ✓
+   * ⚠️ Утга нь ноорогт ХАДГАЛАГДСАН дэлгэцүүдийн ГАРЫН ТЭМДЭГ (`a|b|c`):
+   *    • `null` — ноорог сэргээгээгүй ⇒ хамгаалалт ХЭРЭГГҮЙ ✓
+   *    • `''`   — ХУУЧИН ноорог (гарын тэмдэг ХАДГАЛАГДААГҮЙ үед бичигдсэн) ⇒
+   *               жагсаалт солигдсон байж болзошгүй тул ХАМГААЛНА ✓
+   *    • мөр   — жагсаалт ИЖИЛ бол хамгаалалт ХЭРЭГГҮЙ: санамсаргүй REFRESH-ийн
+   *               дараа хэрэглэгч ЯГ байсан дэлгэц дээрээ үлдэнэ ✓ (2026-10-05 (54))
+   * ⚠️ Хамгаалалт нь НЭГ УДААГИЙНХ: урагшлах/буцах/✏️ засах/🗑 устгах үед `null`
+   *    болно ⇒ дараа нь «Алгасах» хэвийн ажиллана (алгассан асуулт руу буцаж
+   *    ЧИРЭХГҮЙ ✗✓)
    * ⚠️ Зөвхөн 📱 <640px-д нөлөөлнө (`detailScreens` нь зөвхөн мобайл дүрэм ✓)
    */
-  const [draftStepGuard, setDraftStepGuard] = useState(false);
+  const [draftScreenSig, setDraftScreenSig] = useState(null);
   /**
    * 🔢🎡 СОНГОЛТТОЙ ТООН ТАЛБАРЫН ДУГУЙ (2026-10-02) — нэг л дугуй байна, түүнд
    *    ОДОО нээлттэй талбарын бүх мэдээлэл (`{title, items, value, hint,
@@ -1265,9 +1273,9 @@ export default function AddListingClient() {
     //    `findIndex < 0 → 0` хамгаалалттай ✓)
     if (draft.mobileDetailStep) {
       setMobileDetailStep(draft.mobileDetailStep);
-      // 🆕 (115) — сэргээсэн түлхүүр нь ХУУЧИРСАН дэлгэц рүү зааж болно ⇒ доорх
-      //    `detailIdx` хамгаалалт нь хариулаагүй асуултаас эхлэхийг батална ✓
-      setDraftStepGuard(true);
+      // 🆕 (115) — тэр үеийн дэлгэцийн ГАРЫН ТЭМДЭГ ('' = хуучин ноорог) ⇒
+      //    доорх `detailIdx` хамгаалалт хуучирсан/солисон жагсаалтыг барина ✓
+      setDraftScreenSig(String(draft.mobileDetailScreens || ''));
     }
     setDraftNotice({ pendingCount: draft.pendingCount, savedAt: draft.savedAt });
     setDraftReady(true);
@@ -1298,6 +1306,11 @@ export default function AddListingClient() {
           keys: Object.keys(emptyForm()),
           pendingCount: pending.length,
           mobileDetailStep,
+          // 🆕 (115) — 📱 дэлгэцийн ГАРЫН ТЭМДЭГ: сэргээлт дээр жагсаалт солигдсоныг
+          //    илрүүлнэ ✓ (⚠️ deps-д ОРУУЛАХГҮЙ — `detailScreens` нь доор тооцогддог;
+          //    тэр нь зөвхөн `form.section`/`propertyType`-оос хамаардаг тул form-ын
+          //    өөрчлөлттэй хамт бичигдэнэ ✓)
+          mobileDetailScreens: detailScreensSig,
           editId,
         });
         if (raw) window.localStorage.setItem(draftStorageKey, raw);
@@ -1380,7 +1393,7 @@ export default function AddListingClient() {
     baselineRef.current = JSON.stringify(initial);
     setDraftNotice(null);
     setMobileDetailStep('title');
-    setDraftStepGuard(false); // 🆕 (115) — анхдагч форм: хамгаалалт хэрэггүй ✓
+    setDraftScreenSig(null); // 🆕 (115) — анхдагч форм: хамгаалалт хэрэггүй ✓
     setWheel(null);
     setError('');
     if (!isEdit) gotoStep(0);
@@ -2128,20 +2141,27 @@ export default function AddListingClient() {
    *    хэрэглэгч 🏷️ Брэнд … 💾 Хард-ыг ХАРАХГҮЙ өнгөрч, брэндгүй зар нийтлэгдэх
    *    аюултай байв ✗
    *
-   * ✅ ШИЙДЭЛ: ноорог сэргээсэн үед (`draftStepGuard`) эхлэх индекс нь
+   * ✅ ШИЙДЭЛ: ноорог сэргээсэн ба ЖАГСААЛТ ТЭР ҮЕИЙНХЭЭС ӨӨР (`draftScreenSig`
+   *    гарын тэмдэг таарахгүй, эсвэл ноорог ХУУЧИН) үед эхлэх индекс нь
    *    `min(mobileDetailStep`, ХАРИУЛААГҮЙ ЭХНИЙ дэлгэц)` — өөрөөр хэлбэл
    *    ХАРИУЛААГҮЙ асуултыг АЛГАСАХГҮЙ ✓ (хариулттай хэсэг хэвээр: «🏷️ Брэнд …
    *    💾 Хард» бөглөсөн хүн ЯГ байсан дэлгэцээсээ үргэлжилнэ ✓)
-   * ⚠️ Хамгаалалт нь НЭГ УДААГИЙНХ: хэрэглэгч урагшлах/буцах/✏️ засах үед туг
-   *    унтарна (`setDraftStepGuard(false)`) ⇒ дараа нь «Алгасах» хэвийн ажиллана
+   * ⚠️ Жагсаалт ИЖИЛ бол хамгаалалт ХЭРЭГГҮЙ ⇒ санамсаргүй REFRESH-ийн дараа
+   *    хэрэглэгч ЯГ байсан дэлгэц дээрээ үлдэнэ ✓ (2026-10-05 (54)-ийн зан төлөв
+   *    ХӨНДӨӨГДӨӨГҮЙ — `cdp:picker` ⑪⁗ шалгалт ✓)
+   * ⚠️ Хамгаалалт нь НЭГ УДААГИЙНХ: хэрэглэгч урагшлах/буцах/✏️ засах/🗑 устгах
+   *    үед туг `null` болно ⇒ дараа нь «Алгасах» хэвийн ажиллана
    *    (алгассан асуулт руу буцаж ЧИРЭХГҮЙ ✗✓)
    * ⚠️ Утга нь `detailAnswerText`-ээс (нэг эх сурвалж) — шинэ state/DB БАЙХГҮЙ ✓
    * ⚠️ Түлхүүр олдохгүй бол (ж: хэсэг солигдов) → ЭХНИЙ дэлгэц (`title`) ✓
    */
+  /** 📱 Одоогийн дэлгэцүүдийн ГАРЫН ТЭМДЭГ — ноорогт бичигдсэнтэй харьцуулна ✓ */
+  const detailScreensSig = detailScreens.map((s) => s.key).join('|');
   const detailIdxRaw = detailScreens.findIndex((s) => s.key === mobileDetailStep);
   const detailIdx = (() => {
     const raw = detailIdxRaw < 0 ? 0 : detailIdxRaw;
-    if (!draftStepGuard || raw === 0) return raw;
+    // ⚠️ `draftScreenSig === null` — ноорог сэргээгээгүй ⇒ туг БАЙХГҮЙ ✓
+    if (draftScreenSig === null || draftScreenSig === detailScreensSig || raw === 0) return raw;
     const blank = detailScreens.findIndex((s) => !detailAnswerText(s.key));
     return blank >= 0 && blank < raw ? blank : raw;
   })();
@@ -2273,7 +2293,7 @@ export default function AddListingClient() {
     }
     setError('');
     if (isLastDetail) { goNext(); return; }
-    setDraftStepGuard(false); // 🆕 (115) — хэрэглэгч өөрөө урагшлав ⇒ хамгаалалт унтарна ✓
+    setDraftScreenSig(null); // 🆕 (115) — хэрэглэгч өөрөө урагшлав ⇒ хамгаалалт унтарна ✓
     setMobileDetailStep(detailScreens[detailIdx + 1].key);
   };
   /**
@@ -2284,7 +2304,7 @@ export default function AddListingClient() {
   const mobileDetailBack = () => {
     setError('');
     if (isFirstDetail) { goBack(); return; }
-    setDraftStepGuard(false); // 🆕 (115) — буцсан = хэрэглэгчийн өөрийн байрлал ✓
+    setDraftScreenSig(null); // 🆕 (115) — буцсан = хэрэглэгчийн өөрийн байрлал ✓
     setMobileDetailStep(detailScreens[detailIdx - 1].key);
   };
 
@@ -2316,7 +2336,7 @@ export default function AddListingClient() {
     setWheel(null);
     if (key === 'step-category') { gotoStep(0); return; }
     if (key === 'step-location') { gotoStep(1); return; }
-    setDraftStepGuard(false); // 🆕 (115) — ✏️ засах = хэрэглэгчийн өөрийн сонголт ✓
+    setDraftScreenSig(null); // 🆕 (115) — ✏️ засах = хэрэглэгчийн өөрийн сонголт ✓
     setMobileDetailStep(key);
   };
 
