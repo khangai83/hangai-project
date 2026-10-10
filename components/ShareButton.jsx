@@ -105,8 +105,14 @@ export default function ShareButton({
            ③ `text-gray-700` → **`text-gray-900`** (жишиг зургийн `#0D0D0E`
               бараг хар өнгө; манай Sandstone `gray-900` = `#1B1815`)
            ④ hover нь `hover:bg-gray-200` (дүүргэлтээ нэг шат гүнзгийрүүлнэ) ✓
+         🆕 (104) ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «style the "Share" … elements … to match
+         the size and font of the accompanying text» ⇒ ⏳ `font-semibold
+         text-gray-900` → **`font-normal text-gray-500`** — «Хуваалцах» бичиг нь
+         хажуугийн мета тексттэй (16px · `text-base` · system sans · `gray-500`)
+         ЯГ ИЖИЛ болов ✓ (⚠️ pill-ийн хэлбэр (102)-ын хэв ХЭВЭЭР — зөвхөн
+         БИЧГИЙН хэмжээ/фонт/өнгө өөрчлөгдөв ✓)
          @see ListingDetailClient.jsx — ❤️ pill нь ЯГ ИЖИЛ хэв ✓ */
-      className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-gray-100 px-4 font-semibold text-gray-900 transition hover:bg-gray-200 ${
+      className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-gray-100 px-4 font-normal text-gray-500 transition hover:bg-gray-200 ${
         copied ? 'text-primary' : ''
       } ${className}`}
     >

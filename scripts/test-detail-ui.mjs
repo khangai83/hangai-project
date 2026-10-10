@@ -170,9 +170,12 @@ t('⑥ 📝 «Тайлбар» нь `break-words` — ЗАЙГҮЙ урт үг �
    *  CDP хэмжилт (1280px, 892 тэмдэгт зайгүй үгтэй зар): өмнө нь `<p>`-ээс
    *  **6856px** хэтэрч, ХУУДАСНЫ хэвтээ гүйлт **6418px** байв ✗ → `break-words`
    *  (`overflow-wrap: break-word`)-оор 0 болов ✓
-   *  ⚠️ `whitespace-pre-line` (мөр таслалт) ХӨНДӨӨГДӨӨГҮЙ ✓ */
-  assert.match(DET_CODE, /<p className="whitespace-pre-line break-words text-\[15px\] leading-\[1\.8\] text-gray-600">\{listing\.description\}<\/p>/,
-    'Тайлбарын `<p>`-д `break-words` алга ✗ (урт үг хайрцгаас хэтэрнэ)');
+   *  ⚠️ `whitespace-pre-line` (мөр таслалт) ХӨНДӨӨГДӨӨГҮЙ ✓
+   *  🆕 (104): `<p>` нь ч мөн `max-w-[840px]` — ЗУРАГ ба ТАЙЛБАР нэг өргөн,
+   *  нэг зүүн ирмэгтэй (хэрэглэгч: «align the advertisement image and the
+   *  description») ✓ */
+  assert.match(DET_CODE, /<p className="max-w-\[840px\] whitespace-pre-line break-words text-\[15px\] leading-\[1\.8\] text-gray-600">\{listing\.description\}<\/p>/,
+    'Тайлбарын `<p>`-д `break-words`/`max-w-[840px]` алга ✗ (урт үг хайрцгаас хэтэрнэ)');
 });
 
 t('⑥ 👤 Нийтлэгч: аватар `size={96}` (тусдаа мөрөнд — ⚠️ 120px шиг хэт том БИШ) ✓', () => {
@@ -373,8 +376,12 @@ t('⑪ (96) Мета мөр: `📍` → `MapPinIcon` SVG · `🔖` ХАСАГД�
   assert.ok(!/🔖/.test(DET_CODE), '🔖 emoji буцаж орсон ✗ ((96): icon ХАСАГДСАН байх ЁСТОЙ)');
   // ⚠️ Зарын дугаарын дүрслэл — 🆕 (97): ⏳ «Зарын дугаар:» → «ID:» (жишиг сайтын
   //    хэв: «ID: 10801626»); ⚠️ БОГИНО дугаар (`shortId`) ХӨНДӨӨГДӨӨГҮЙ ✓
-  assert.ok(DET_CODE.includes('ID: <span className="font-mono font-semibold text-gray-600">{shortId}</span>'),
-    'ID текст/утга ХӨНДӨӨГДСӨН ✗ ((97): «ID: XXXXXXXX»)');
+  //    🆕 (104): ⏳ `font-mono font-semibold text-gray-600` ХАСАГДАВ — ID утга нь
+  //    хажуугийн мета тексттэй ЯГ ИЖИЛ (16px · system sans · `text-gray-500`) ✓
+  assert.ok(DET_CODE.includes('ID: <span className="tabular-nums">{shortId}</span>'),
+    'ID текст/утга ХӨНДӨӨГДСӨН ✗ ((97): «ID: XXXXXXXX» · (104): sans/16px)');
+  assert.ok(!/font-mono/.test(DET_CODE),
+    'ID нь MONO фонттой ХЭВЭЭР ✗ ((104): мета текстийн фонтой тааруулах ЁСТОЙ)');
   // ⚠️ CDP (бодит Chrome) нь ЭДГЭЭР selector-оор хэмждэг — байхгүй бол CDP SKIP ✓
   assert.match(DET_CODE, /data-listing-meta/, 'мета мөрний `data-listing-meta` selector алга ✗');
   assert.match(DET_CODE, /data-listing-actions/, '«үзсэн/таалагдсан/хуваалцах» мөрний `data-listing-actions` алга ✗');
@@ -446,13 +453,21 @@ t('⑫ (102) Мета мөр: 16px (`text-base`) + 🕒 `ClockIcon` SVG + ❤️
     '❤️ pill-ийн зүрхэн 24px (`h-6 w-6`) + `strokeWidth={2}` БИШ ✗');
 });
 
-t('⑫b (102) Сонгосон зураг 800×600: `aspect-[4/3]` + `max-w-[800px]` ✓', () => {
+t('⑫b (102)(104) Сонгосон зураг 4:3 — `aspect-[4/3]` + `max-w-[840px]` ✓', () => {
   /** «change selected photo size to 800x600» ⇒ gallery-ийн ҮНДСЭН зураг нь
-   *  4:3 (`aspect-[4/3]` = 800×600-ийн харьцаа) ба дээд тал нь 800px өргөн
-   *  (1280px дэлгэцэд ЯГ 800×600) ✓ ⏳ `h-[280px]`/`sm:h-[440px]` (1.95:1 —
-   *  хэт хавтгай) ХАСАГДАВ ✓ */
-  assert.ok(DET_CODE.includes('className="mx-auto w-full max-w-[800px] overflow-hidden rounded-xl"'),
-    'галерейн хайрцаг `max-w-[800px]` БИШ ✗');
+   *  4:3 (`aspect-[4/3]`) ✓ ⏳ `h-[280px]`/`sm:h-[440px]` (1.95:1 — хэт хавтгай)
+   *  ХАСАГДАВ ✓
+   *  🆕 (104): «adjust the width so that it measures approximately 23 cm on a
+   *  23.8-inch screen and approximately 17 cm on a 13.1-inch screen» ⇒
+   *  `max-w-[800px]` + `mx-auto` → **`max-w-[840px]`** — 23.8″ 1920×1080
+   *  (`36.44 px/см`) ⇒ 840/36.44 = **23.0 см**; 13.1″ retina (логик 1440×900 ⇒
+   *  `50.28 px/см`) ⇒ 840/50.28 = **16.7 см ≈ 17 см** ✓ (харьцаа 4:3 ХЭВЭЭР ⇒
+   *  840×630 — «пропорцоо хадгал» ✓)
+   *  ⚠️ `mx-auto` ХАСАГДАВ — зураг ЗҮҮН ирмэгээс эхэлж «Тайлбар»-тай зэрэгцэнэ ✓ */
+  assert.ok(DET_CODE.includes('className="w-full max-w-[840px] overflow-hidden rounded-xl"'),
+    'галерейн хайрцаг `max-w-[840px]` (төвлөрүүлэлтгүй) БИШ ✗');
+  assert.ok(!/mx-auto w-full max-w-\[800px\]/.test(DET_CODE),
+    '⏳ (102)-ын `mx-auto … max-w-[800px]` буцаж орсон ✗');
   assert.ok(DET_CODE.includes('data-gallery-main'),
     'үндсэн зургийн `data-gallery-main` дэгээ алга ✗');
   assert.ok(DET_CODE.includes('className="aspect-[4/3] w-full object-cover"'),
@@ -461,6 +476,33 @@ t('⑫b (102) Сонгосон зураг 800×600: `aspect-[4/3]` + `max-w-[800
     '⏳ хуучин `h-[280px]`/`sm:h-[440px]` дүрслэл үлдсэн ✗');
   assert.ok(DET_CODE.includes('className="flex aspect-[4/3] w-full items-center justify-center text-7xl"'),
     'зураггүй зарын хайрцаг `aspect-[4/3]` БИШ ✗');
+});
+
+// ---------- ⑫c 📏🖼 (104) ЗУРАГ ⟂ ТАЙЛБАР зэрэгцэв + Share/ID/нүд мета фонттой ----------
+t('⑫c (104) Зураг ⟂ тайлбар нэг өргөн · Share/ID/👁 мета текстийн фонттой таарав ✓', () => {
+  /** ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (104): «align the advertisement image and the
+   *  description» ба «style the "Share" and "ID" elements, as well as the eye
+   *  icon, to match the size and font of the accompanying text»
+   *  ① ЗУРАГ: `max-w-[840px]` (≈23 см @23.8″ · ≈17 см @13.1″) — төвлөрөхгүй ✓
+   *  ② ТАЙЛБАР: `<p>` ч мөн `max-w-[840px]` ⇒ НЭГ өргөн, НЭГ зүүн ирмэг ✓
+   *  ③ ХУВААЛЦАХ: pill-ийн бичиг `font-normal text-gray-500` (16px) ✓
+   *  ④ ID: `font-mono`/`font-semibold`/`text-gray-600` ХАСАГДАВ ✓
+   *  ⑤ 👁 нүд: 20px → **16px** (`h-4 w-4` = мета текстийн `text-base`) ✓
+   *  ⚠️ ЗӨВХӨН эдгээр элемент; 📍 pin/🕒 цаг (20px) ба pill-ийн хэлбэр
+   *     (`h-11` · `bg-gray-100` · `rounded-full`) ХӨНДӨӨГДӨӨГҮЙ ✓ */
+  assert.ok(DET_CODE.includes('className="max-w-[840px] whitespace-pre-line break-words text-[15px] leading-[1.8] text-gray-600"'),
+    'тайлбарын `<p>` нь `max-w-[840px]` (зурагтай нэг өргөн) БИШ ✗');
+  assert.ok(DET_CODE.includes('className="inline-flex items-center gap-1 tabular-nums"'),
+    '👁 мета мөр `font-semibold text-gray-600`-оос чөлөөлөгдөөгүй ✗');
+  assert.ok(DET_CODE.includes('<EyeIcon className="h-4 w-4 text-gray-700" />'),
+    '👁 нүдний икон `h-4 w-4` (16px = мета текст) БИШ ✗');
+  assert.ok(!/EyeIcon className="h-5 w-5/.test(DET_CODE),
+    '⏳ (100)-ийн 20px нүдний икон буцаж орсон ✗');
+  const SHARE = readSrc('components/ShareButton.jsx');
+  assert.ok(SHARE.includes('px-4 font-normal text-gray-500 transition hover:bg-gray-200'),
+    '«Хуваалцах» pill-ийн бичиг `font-normal text-gray-500` (мета текст) БИШ ✗');
+  assert.ok(!/font-semibold text-gray-900/.test(SHARE),
+    '⏳ (102)-ын `font-semibold text-gray-900` буцаж орсон ✗');
 });
 
 

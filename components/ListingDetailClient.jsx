@@ -671,20 +671,36 @@ export default function ListingDetailClient({ id }) {
           <span aria-hidden="true" className="text-gray-300">·</span>
           {/* 👁 ҮЗСЭН — icon + тоо (🆕 (97): галерейн footer-оос энэ мөрөнд шилжив;
               жишиг сайтын хэвээр зөвхөн тоо — «37 үзсэн» БИШ «37») ✓ */}
-          <span data-icon="eye" title="Энэ зарыг хэдэн хүн үзсэн" className="inline-flex items-center gap-1 font-semibold tabular-nums text-gray-600">
+          {/* 🆕 (104) ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «style the "Share" and "ID" elements,
+              as well as the eye icon, to match the size and font of the
+              accompanying text» ⇒ ⏳ `font-semibold text-gray-600` ХАСАГДАВ —
+              хажуугийн мета тексттэй (16px · `text-gray-500`) ЯГ ИЖИЛ болов ✓
+              (`tabular-nums` ҮЛДЭВ — цифрүүд зэрэгцээд харагдана ✓) */}
+          <span data-icon="eye" title="Энэ зарыг хэдэн хүн үзсэн" className="inline-flex items-center gap-1 tabular-nums">
             {/* 🆕 (100): 👁 icon 18→**20px** («eye icon-ыг томруул») — 📍-тэй
                 ЯГ ИЖИЛ хэмжээ (20×20) ⇒ хоёр икон тэнцүү харагдана ✓
                 🆕 (102) ХЭМЖИЛТ БАТАЛСАН: жишиг зургийн нүдний зураас 16px
                 (16×10px) = манай 20px box-той `EyeIcon`-ийн зураас ЯГ 16×10px
                 ⇒ 20px нь ЗӨВ хэмжээ байсан (хөндөх шаардлагагүй ✓)
+                🆕 (104) «…as well as the eye icon, to match the size and font of
+                the accompanying text» ⇒ икон 20px → **16px** (`h-4 w-4` = мета
+                текстийн `text-base` = 16px) — ХЭМЖЭЭ нь текстээ дагана ✓
+                ⚠️ ЗӨВХӨН нүдний икон өөрчлөгдөв — 📍 pin ба 🕒 цаг 20px ХЭВЭЭР
+                ((96)(98)(100)-ийн «иконуудыг томруул» шийдэл хүчинтэй ✓)
                 ⚠️ `data-icon="eye"` — 🆕 (102) CDP/тестийн ТОГТВОРТОЙ selector ✓ */}
-            <EyeIcon className="h-5 w-5 text-gray-700" />
+            <EyeIcon className="h-4 w-4 text-gray-700" />
             {viewCount}
           </span>
           <span aria-hidden="true" className="text-gray-300">·</span>
-          {/* 🆔 ID — 🆕 (97): ⏳ «Зарын дугаар:» → «ID:» (жишиг сайтын хэв: «ID: 10801626») */}
+          {/* 🆔 ID — 🆕 (97): ⏳ «Зарын дугаар:» → «ID:» (жишиг сайтын хэв: «ID: 10801626»)
+              🆕 (104) ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «style the "Share" and "ID" elements …
+              to match the size and font of the accompanying text» ⇒ ⏳ `font-mono
+              font-semibold text-gray-600` ХАСАГДАВ — утга нь хажуугийн мета
+              тексттэй ЯГ ИЖИЛ (16px · system sans · `text-gray-500`) ✓
+              (`tabular-nums` — цифрүүд зэрэгцээд харагдана; ⚠️ MONO фонт
+              ХАСАГДАВ («фонтыг тааруул» хүсэлт ✓) */}
           <span title={`Зарын дугаар — бүтэн ID: ${listing.id}`} className="whitespace-nowrap">
-            ID: <span className="font-mono font-semibold text-gray-600">{shortId}</span>
+            ID: <span className="tabular-nums">{shortId}</span>
           </span>
 
           {/* ❤️ ТААЛАГДСАН · 🔗 ХУВААЛЦАХ — pill товч (⏳ (97)-д мөрийн БАРУУН захад
@@ -736,17 +752,28 @@ export default function ListingDetailClient({ id }) {
                  `h-[280px] sm:h-[440px]` — өргөн нь слатыг БҮТЭН дүүргэж
                  (~858px) **1.95:1** болж хэт ХАВТГАЙ (кино шиг) сунадаг байв ✗
                  ⇒ одоо ① ХАРЬЦАА нь **4:3** (`aspect-[4/3]` = 800×600-ийн
-                 ЯГ харьцаа) ② ХЭМЖЭЭ нь **дээд тал нь 800px** өргөн
-                 (`max-w-[800px]` + `mx-auto` — 1280px дэлгэцэд ЯГ **800×600**,
-                 мобайлд слатын бүтэн өргөн) ✓
-                 ⚠️ `mx-auto` — 800px нь слатаас (858px) нарийн тул зургийг
-                 ТӨВЛӨРҮҮЛНЭ (зураг/тоолуур/сум/thumbnail БҮГД нэг хайрцагт
-                 тул ижил өргөнтэй хэвээр ✓ — сум нь зургийн ЯГ ирмэг дээр
-                 (`.relative` нь хайрцгийн өргөнтэй) ✓)
-                 ⚠️ `object-cover` ХЭВЭЭР — 4:3 биш зураг (ж: босоо) нь
-                 хайрцгийг дүүргэж, илүү хэсэг нь тайрагдана (⏳ өмнөхтэй ижил
-                 зарчим ✓); `h-[280px]`/`sm:h-[440px]` ХАСАГДАВ ✗ */}
-          <div className="mx-auto w-full max-w-[800px] overflow-hidden rounded-xl">
+                 ЯГ харьцаа) ✓ — `object-cover` ХЭВЭЭР (4:3 биш босоо зураг
+                 хайрцгийг дүүргэж, илүү хэсэг нь тайрагдана) ✓
+              🆕 (104) ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «align the advertisement image and
+                 the description … adjust the width so that it measures
+                 approximately 23 cm on a 23.8-inch screen and approximately
+                 17 cm on a 13.1-inch screen. Please ensure these proportions
+                 are maintained.» ⇒
+                 ① ХЭМЖЭЭ нь **`max-w-[840px]`** (⏳ (102)-ийн `800px` байв):
+                    БОДИТ пикселийн нягтрал (CSS px/см) — 23.8″ 1920×1080
+                    (`92.56 PPI` ⇒ `36.44 px/см`) → 840 ÷ 36.44 = **23.0 см** ✓;
+                    13.1″ retina (логик 1440×900 ⇒ `50.28 px/см`) →
+                    840 ÷ 50.28 = **16.7 см ≈ 17 см** ✓
+                    (⚠️ CSS px нь дэлгэцийн нягтралаас хамаарч биеийн хэмжээ
+                    өөрчлөгддөг тул НЭГ утга `840px` нь ХОЁР дэлгэцэд ≈23/≈17 см
+                    өгнө — `cm` нэгж биш, `px` бичнэ ✓)
+                 ② `mx-auto` ХАСАГДАВ ✗ — зураг нь ЗҮҮН ирмэгээс эхэлж, доорх
+                    «Тайлбар»-ын тексттэй НЭГ ИРМЭГТЭЙ болно (⏳ төвлөрүүлсэн
+                    зураг тайлбараас ~29px шилжсэн байв ✗)
+                 ③ ХАРЬЦАА 4:3 ХЭВЭЭР ⇒ **840×630** (`aspect-[4/3]` —
+                    «proportions are maintained» ✓)
+                 ⚠️ `h-[280px]`/`sm:h-[440px]` ХАСАГДСАН ХЭВЭЭР (буцахгүй ✗) */}
+          <div className="w-full max-w-[840px] overflow-hidden rounded-xl">
             <div className="relative">
               {/* ⚠️ ЗУРАГ дээр «таалагдсан/үзсэн» тэмдэглээ БАЙХГҮЙ (карттай ижил).
                   👁/❤️ тоо ба ❤️/🤍 toggle нь доорх FB-style footer мөрөнд. */}
@@ -946,8 +973,13 @@ export default function ListingDetailClient({ id }) {
                   ⚠️ CDP хэмжилт (1280px, `🥚 ыбөыбө…` 892 тэмдэгт үгтэй зар):
                      өмнө нь `<p>`-ээс **6856px** хэтэрч, ХУУДАСНЫ хэвтээ гүйлт
                      **6418px** байв ✗ → одоо 0 ✓
-                  ⚠️ `whitespace-pre-line` ХӨНДӨӨГДӨӨГҮЙ (мөр таслалт хэвээр) */}
-              <p className="whitespace-pre-line break-words text-[15px] leading-[1.8] text-gray-600">{listing.description}</p>
+                  ⚠️ `whitespace-pre-line` ХӨНДӨӨГДӨӨГҮЙ (мөр таслалт хэвээр)
+              🆕 (104) ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «align the advertisement image and
+                 the description» ⇒ `<p>` нь ч МӨН `max-w-[840px]` — ЗУРАГ ба
+                 ТАЙЛБАР ЯГ ИЖИЛ өргөн, ЯГ ИЖИЛ ЗҮҮН ирмэгтэй боллоо ✓
+                 (⏳ зураг төвлөрсөн, текст бүтэн багана байсан тул зэрэгцэхгүй
+                 байв ✗; CDP ⑨q — gallery.left === desc.left, өргөн тэнцүү ✓) */}
+              <p className="max-w-[840px] whitespace-pre-line break-words text-[15px] leading-[1.8] text-gray-600">{listing.description}</p>
             </section>
           )}
 

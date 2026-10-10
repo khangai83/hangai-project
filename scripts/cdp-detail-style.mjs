@@ -34,6 +34,17 @@
  *      нэр `break-words` (тасрахгүй) ✓ · 📋 линк нь `aside` дахь линктэй ЯГ
  *      ИЖИЛ (`/sellers/<id>` — нэг эх сурвалж `AdvertiserCard`) ✓ ·
  *      📱 390px дээр хүснэгтийн ДООР бууна (overflow 0) ✓ `h1` ЯГ 1 ХЭВЭЭР ✓
+ *   ⑪ 📏🖼 (104) ЗУРАГ ⟂ ТАЙЛБАР ЗЭРЭГЦЭВ — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «align the
+ *      advertisement image and the description … adjust the width so that it
+ *      measures approximately 23 cm on a 23.8-inch screen and approximately
+ *      17 cm on a 13.1-inch screen» ⇒ gallery-ийн хайрцаг
+ *      `mx-auto … max-w-[800px]` → **`w-full max-w-[840px]`** (төвлөрөхгүй, ЗҮҮН
+ *      ирмэгээс эхэлнэ) ⇒ 1280px дэлгэцэд үндсэн зураг **840×630** (4:3 ХЭВЭЭР);
+ *      «Тайлбар»-ын `<p>` ч мөн `max-w-[840px]` ⇒ ЗУРАГ ба ТАЙЛБАР ЯГ ИЖИЛ
+ *      өргөн/зүүн ирмэгтэй ✓ (биеийн хэмжээ: 23.8″ 1920×1080 — `36.44 px/см` ⇒
+ *      840/36.44 = **23.0 см** · 13.1″ retina — `50.28 px/см` ⇒ 840/50.28 =
+ *      **16.7 см ≈ 17 см**) · 👁 нүд 20×20 → **16×16px** (мета текстийн 16px) —
+ *      «Share/ID/нүд мета тексттэй тааруул» хүсэлт ✓ (📍 pin 20px ХЭВЭЭР)
  *   ⑥ 🐍 JS exception 0 (Leaflet-ээс бусад) ба hydration/
  *      `validateDOMNesting` алдаа 0 ✓
  *   ⑨ 🎨 SVG ИКОНУУД (🆕 (96) · ✏️ (98) ТОМРУУЛАВ · ✏️ (100) ДАХИН) — мета мөр
@@ -62,8 +73,9 @@
  *      «дэвсгэргүй» товч нь зургийн pill-тэй таарахгүй байв ✗
  *      (⚠️ ХҮРЭЭ 0px ХЭВЭЭР — (100)-ийн шийдэл хүчинтэй ✓) ④ `🔗` EMOJI →
  *      **`ShareIcon` SVG** (зургийн сум; товч бүрд ЯГ 1 svg) ⑤ СОНГОСОН
- *      ЗУРГИЙН ХЭМЖЭЭ **800×600** (`[data-gallery-main]`, `aspect-[4/3]` +
- *      `max-w-[800px]`) — 1280px дэлгэцэд зүүн слат 858px тул ЯГ 800×600 ✓
+ *      ЗУРГИЙН ХЭМЖЭЭ **840×630** (`[data-gallery-main]`, `aspect-[4/3]` +
+ *      `max-w-[840px]` — ✏️ (104)) — 1280px дэлгэцэд зүүн слат 858px тул ЯГ
+ *      840×630 ✓ (⏳ (102)-д 800×600 байв)
  *      ⚠️ мета мөрд SVG 5 болсон (pin · цаг · нүд · зүрхэн · хуваалцах) ⇒
  *      иконуудыг ИНДЕКСЭЭР БИШ `data-icon` АТРИБУТААР олно ✓
  *   ⑦ 📸 /tmp/detail-style-1280.png · /tmp/detail-style-390.png
@@ -410,10 +422,20 @@ const ICONS = `(() => {
   const eyeCs = eye ? getComputedStyle(eye) : null;
   const eyeBox = eye ? eye.getBoundingClientRect() : null;
   const viewsSpan = eye ? eye.closest('span') : null;
-  //   🆕 (102) 🖼 СОНГОСОН ЗУРГИЙН ХЭМЖЭЭ 800×600 — gallery-ийн ҮНДСЭН зураг
-  //   (1280px дэлгэцэд зүүн слат 858px ⇒ max-w-[800px] ХҮЧИНТЭЙ + 4:3 = 800×600)
+  //   🆕 (102) 🖼 СОНГОСОН ЗУРГИЙН ХЭМЖЭЭ — ✏️ (104): 840×630 болов — gallery-ийн
+  //   ҮНДСЭН зураг (1280px дэлгэцэд зүүн слат 858px ⇒ max-w-[840px] ХҮЧИНТЭЙ +
+  //   4:3 = 840×630)
   const gimg = main.querySelector('[data-gallery-main]');
   const gbox = gimg ? gimg.getBoundingClientRect() : null;
+  //   🆕 (104) «ЗУРАГ ⟂ ТАЙЛБАР» ЗЭРЭГЦЭЛ — gallery-ийн ХАЙРЦАГ
+  //   (w-full max-w-[840px] overflow-hidden rounded-xl) ба «Тайлбар»-ын p
+  //   тэмдэгт (max-w-[840px]) хоёрын зүүн ирмэг/өргөн ЯГ ИЖИЛ байх ЁСТОЙ ✓
+  //   (⏳ (102)-д зураг mx-auto-оор ТӨВЛӨРСӨН тул ирмэг нь ЗӨРЖ байв ✗)
+  //   ⚠️ ЭНЭ БЛОК МӨН JS ТЕМПЛЕЙТ МӨР ДОТОР — grave accent ХЭРЭГЛЭХГҮЙ ✗
+  const galWrap = gimg ? gimg.closest('div.overflow-hidden') : null;
+  const gwBox = galWrap ? galWrap.getBoundingClientRect() : null;
+  const descP = main.querySelector('p.whitespace-pre-line');
+  const dBox = descP ? descP.getBoundingClientRect() : null;
   //   🆕 (99) ЗАЙ ХААХ — ❤️/🔗 pill ба мета хоорондын ЗАЙГ бодитоор хэмжинэ:
   //   idSpan.right (ID текстийн төгсгөл) → favBtn.left = gap-x + ml-1;
   //   rightFree = мөрийн баруун зах хүртэлх СУЛ зай — ml-auto байсан бол 0 ✓
@@ -451,6 +473,10 @@ const ICONS = `(() => {
     metaFont: metaCs ? metaCs.fontSize : null,
     //   🆕 (102) gallery-ийн үндсэн зураг (жишиг: 800×600 — 1280px дэлгэцэд) ✓
     gallery: gbox ? { w: Math.round(gbox.width), h: Math.round(gbox.height) } : null,
+    //   🆕 (104) gallery-ийн ХАЙРЦАГ ба «Тайлбар»-ын p тэмдэгт (зэрэгцэл) ✓
+    //   ⚠️ ТЕМПЛЕЙТ МӨР ДОТОР — grave accent ХЭРЭГЛЭХГҮЙ ✗
+    galleryWrap: gwBox ? { x: Math.round(gwBox.left), w: Math.round(gwBox.width) } : null,
+    desc: dBox ? { x: Math.round(dBox.left), w: Math.round(dBox.width) } : null,
     eye: eye ? { w: Math.round(eyeBox.width), h: Math.round(eyeBox.height), color: eyeCs.color } : null,
     actionsColor: actions ? getComputedStyle(actions).color : null,
     gap: {
@@ -506,8 +532,8 @@ check('⑨d 🔖 emoji БАЙХГҮЙ — зарын дугаар ЗӨВХӨН �
   ic.metaEmoji.length === 0 && !!ic.metaText && ic.metaText.includes('ID:'),
   ic.metaEmoji.length ? `${ic.metaEmoji.join(' ')} үлдсэн ✗`
     : `${ic.metaSvg} svg (pin + цаг + нүд + зүрхэн + хуваалцах) ✓`);
-check('⑨e 👁 emoji БАЙХГҮЙ — «N» нь `EyeIcon` SVG 20×20px (🆕 (100) томруулав)',
-  !!ic.eye && ic.eye.w === 20 && ic.eye.h === 20 && /^\d+$/.test((ic.views || '').trim()),
+check('⑨e 👁 emoji БАЙХГҮЙ — «N» нь `EyeIcon` SVG **16×16px** (✏️ (104): мета текстийн `text-base` 16px-тэй таарав)',
+  !!ic.eye && ic.eye.w === 16 && ic.eye.h === 16 && /^\d+$/.test((ic.views || '').trim()),
   ic.views ? `${ic.views} · svg ${ic.eye ? `${ic.eye.w}×${ic.eye.h}` : '—'}px` : 'алга');
 check('⑨f 👁 иконы өнгө нь тоолуурынхнаас ТОД («өнгийг нь тодруулаарай»)',
   !!ic.eye && !!ic.actionsColor && ic.eye.color !== ic.actionsColor,
@@ -545,8 +571,8 @@ check('⑨j 🎨 ЖИШИГ ЗУРГИЙН PILL (🆕 (102)) — ❤️/↪ 44px
   ic.gap
     ? `❤️ ${ic.gap.favH}px · bg ${ic.gap.favBg} · r ${ic.gap.favRadius} · border ${ic.gap.favBorder}px ⟂ ↪ ${ic.gap.shareH}px · bg ${ic.gap.shareBg} · border ${ic.gap.shareBorder}px`
     : '—');
-check('⑨k 🔍 ICON ТОМРУУЛАВ (🆕 (100)) — 📍 pin === 👁 нүд (20×20px, ХОЁР ИЖИЛ) — «icon-ыг томруул» хүсэлт ✓',
-  !!ic.pin && !!ic.eye && ic.pin.w === 20 && ic.pin.h === 20 && ic.eye.w === 20 && ic.eye.h === 20,
+check('⑨k 🔍 ICON (🆕 (100) · ✏️ (104)) — 📍 pin 20×20px ХЭВЭЭР · 👁 нүд **16×16px** (мета текстийн 16px-тэй таарав) ✓',
+  !!ic.pin && !!ic.eye && ic.pin.w === 20 && ic.pin.h === 20 && ic.eye.w === 16 && ic.eye.h === 16,
   ic.pin && ic.eye ? `📍 ${ic.pin.w}×${ic.pin.h}px · 👁 ${ic.eye.w}×${ic.eye.h}px` : '—');
 /*   🆕 (101) ❤️/🤍 EMOJI → `HeartIcon` SVG (хэрэглэгчийн хавсаргасан жишиг зургийн
      хэв: НИМГЭН ХАР ЗУРААСТАЙ зүрхэн). ⏳ emoji нь OS бүрд өөрөөр зурагдаж,
@@ -574,9 +600,21 @@ check('⑨o ❤️/↪ PILL-ИЙН ИКОН 24×24px (🆕 (102)) — `HeartIcon
   ic.gap
     ? `❤️ ${ic.gap.favIconSize}px (svg ${ic.gap.favSvg}) ⟂ ↪ ${ic.gap.shareIconSize}px (svg ${ic.gap.shareSvg}) · «${ic.gap.shareText}»`
     : '—');
-check('⑨p 🖼 СОНГОСОН ЗУРГИЙН ХЭМЖЭЭ 800×600 (🆕 (102)) — `[data-gallery-main]` 1280px дэлгэцэд ЯГ 800×600 (4:3, `max-w-[800px]`) ✓',
-  !!ic.gallery && ic.gallery.w === 800 && ic.gallery.h === 600,
+check('⑨p 🖼 СОНГОСОН ЗУРГИЙН ХЭМЖЭЭ 840×630 (🆕 (102) · ✏️ (104)) — `[data-gallery-main]` 1280px дэлгэцэд ЯГ 840×630 (4:3, `max-w-[840px]`) ✓',
+  !!ic.gallery && ic.gallery.w === 840 && ic.gallery.h === 630,
   ic.gallery ? `${ic.gallery.w}×${ic.gallery.h}px` : 'зураг алга');
+/*   🆕 (104) 📏 «ЗУРАГ ⟂ ТАЙЛБАР» — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «align the advertisement
+     image and the description» ⇒ зураг ТӨВЛӨРӨХӨӨ БОЛИВ (`mx-auto` ХАСАГДАВ) ба
+     «Тайлбар»-ын `<p>` ч мөн `max-w-[840px]` ⇒ ХОЁРЫН ЗҮҮН ИРМЭГ ба ӨРГӨН ЯГ ИЖИЛ
+     байх ЁСТОЙ ✓ (⏳ (102)-д зураг 800px, төвлөрсөн — тайлбар нь бүтэн багана байв ✗)
+     ⛔ `mx-auto` буцаж орвол ирмэг зөрөх ⇒ УНАХАР ✓
+     ⚠️ биеийн хэмжээ: 840px = 23.0 см @23.8″ 1920×1080 · 16.7 см ≈ 17 см @13.1″ retina */
+check('⑨q 📏 (104) ЗУРАГ ⟂ ТАЙЛБАР — нэг зүүн ирмэг · нэг өргөн (`max-w-[840px]`, төвлөрөхгүй) ✓',
+  !!ic.galleryWrap && !!ic.desc &&
+    Math.abs(ic.galleryWrap.x - ic.desc.x) <= 1 && Math.abs(ic.galleryWrap.w - ic.desc.w) <= 1,
+  ic.galleryWrap && ic.desc
+    ? `зураг x=${ic.galleryWrap.x} w=${ic.galleryWrap.w} ⟂ тайлбар x=${ic.desc.x} w=${ic.desc.w}`
+    : `зураг ${ic.galleryWrap ? 'ok' : '—'} · тайлбар ${ic.desc ? 'ok' : '—'}`);
 if (ic.metaFound) await shotEl('[data-listing-meta]', '/tmp/detail-meta-1280.png');
 if (ic.actionsFound) await shotEl('[data-listing-actions]', '/tmp/detail-actions-1280.png', { scroll: true });
 

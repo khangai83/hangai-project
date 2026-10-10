@@ -114,10 +114,17 @@ t('↪ Товчны бичиг/дэгээ: `label = \'Хуваалцах\'` + `d
     '⏳ `🔗` emoji-той хуучин сэлгэлт ХАСАГДААГҮЙ байна ✗');
 });
 
-t('🎨 PILL нь жишиг зургийн хэв (🆕 (102)): `h-11` · `bg-gray-100` · `rounded-full` ✓', () => {
+t('🎨 PILL нь жишиг зургийн хэв (🆕 (102)(104)): `h-11` · `bg-gray-100` · `rounded-full` ✓', () => {
+  /* 🆕 (104) ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «style the "Share" and "ID" elements … to
+     match the size and font of the accompanying text» ⇒ ⏳ `font-semibold
+     text-gray-900` → **`font-normal text-gray-500`** — «Хуваалцах» бичиг нь
+     хажуугийн мета тексттэй (16px · system sans · `gray-500`) ЯГ ИЖИЛ ✓
+     (⚠️ pill-ийн хэлбэр/хэмжээ (102)-ын хэв ХЭВЭЭР) */
   assert.match(SHARE,
-    /className=\{`inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-gray-100 px-4 font-semibold text-gray-900 transition hover:bg-gray-200 \$\{/,
-    'pill-ийн класс (h-11 · bg-gray-100 · rounded-full · px-4 · text-gray-900) алга ✗');
+    /className=\{`inline-flex h-11 shrink-0 items-center gap-2 rounded-full bg-gray-100 px-4 font-normal text-gray-500 transition hover:bg-gray-200 \$\{/,
+    'pill-ийн класс (h-11 · bg-gray-100 · rounded-full · px-4 · font-normal text-gray-500) алга ✗');
+  assert.ok(!/font-semibold text-gray-900/.test(codeOnly(SHARE)),
+    '⏳ (102)-ын `font-semibold text-gray-900` буцаж орсон ✗ ((104): мета текст)');
   /* ⚠️ Зөвхөн КОД дээр шалгана — ⏳ (100)-ийн «`border border-gray-200`
      ХАСАГДАВ» гэсэн ТАЙЛБАР нь файлд үлдсэн (хуурамч улаан ✗) */
   assert.ok(!/border border-gray-200/.test(codeOnly(SHARE)),
