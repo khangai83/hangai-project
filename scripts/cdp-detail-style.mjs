@@ -25,6 +25,15 @@
  *   ④ 💰 холбоо барих хайрцаг (баруун багана) нь ЦАГААН (`rgb(255, 255, 255)`)
  *      ба сүүдэргүй (`box-shadow: none`) ✓
  *   ⑤ 📱 390px: саарал дүүргэлт 0 ба хэвтээ гүйлт 0 ✓
+ *   ⑩ 👤 НИЙТЛЭГЧИЙН КАРТ «📋 ЗАРЫН ДЭЛГЭРЭНГҮЙ»-ИЙН ХАЖУУД (🆕 (103)) —
+ *      ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Display the advertiser's information alongside the
+ *      ad details» ⇒ `[data-advertiser-card]` нь хүснэгтийн БАРУУН талд
+ *      (`lg` 2 багана, 300px + 24px зай) байрлана: хайрцаг нь ЦАГААН · 1px
+ *      хүрээ · `rounded-xl` (12px) · `p-4` (16px) · сүүдэргүй — (87)-ийн
+ *      «саарал дүүргэлт хориотой» дүрмийн дагуу ✓ · аватар 96px карт дотроо ·
+ *      нэр `break-words` (тасрахгүй) ✓ · 📋 линк нь `aside` дахь линктэй ЯГ
+ *      ИЖИЛ (`/sellers/<id>` — нэг эх сурвалж `AdvertiserCard`) ✓ ·
+ *      📱 390px дээр хүснэгтийн ДООР бууна (overflow 0) ✓ `h1` ЯГ 1 ХЭВЭЭР ✓
  *   ⑥ 🐍 JS exception 0 (Leaflet-ээс бусад) ба hydration/
  *      `validateDOMNesting` алдаа 0 ✓
  *   ⑨ 🎨 SVG ИКОНУУД (🆕 (96) · ✏️ (98) ТОМРУУЛАВ · ✏️ (100) ДАХИН) — мета мөр
@@ -572,6 +581,93 @@ if (ic.metaFound) await shotEl('[data-listing-meta]', '/tmp/detail-meta-1280.png
 if (ic.actionsFound) await shotEl('[data-listing-actions]', '/tmp/detail-actions-1280.png', { scroll: true });
 
 await shot('/tmp/detail-style-1280.png');
+/*   🆕 (103) 👤 ЗАР НИЙТЛЭГЧ — «📋 Зарын дэлгэрэнгүй» ХҮСНЭГТИЙН ХАЖУУД:
+     ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Display the advertiser's information alongside the ad
+     details» ⇒ нийтлэгчийн карт нь `lg` дээр хүснэгтийн БАРУУН талд (300px
+     багана, 24px зай), мобайл дээр хүснэгтийн ДООР гарна (⏳ зөвхөн `aside`-ийн
+     үнэ/холбоо барих хайрцагт байв ✗).
+     ⚠️ НЭГ ЭХ СУРВАЛЖ: карт нь `AdvertiserCard` компонент — `aside` дахь карт
+        ХӨНДӨӨГДӨӨГҮЙ (📋 линкийн `href` ХОЁР газарт ЯГ ИЖИЛ байх ЁСТОЙ ✓)
+     ⛔ картыг буцаагаад зөвхөн `aside`-д үлдээвэл (`data-advertiser-card` 0) ⇒
+        УНАХАР ✓ · ⛔ хайрцаг нь (87)-ийн ЦАГААН/1px/`rounded-xl` хэвээс зөрвөл ⇒
+        УНАХАР ✓ (`bg-gray-*` дүүргэлт хориотой — ②/②b шалгалттай ижил дүрэм)
+     ⚠️ ЭНЭ БЛОК МӨН JS ТЕМПЛЕЙТ МӨР ДОТОР — grave accent/DOLLAR-BRACE ХЭРЭГЛЭХГҮЙ ✗ */
+const ADV = `(() => {
+  const main = document.querySelector('main');
+  if (!main) return { noMain: true };
+  const B = (el) => {
+    const b = el.getBoundingClientRect();
+    return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height), r: Math.round(b.right), b: Math.round(b.bottom) };
+  };
+  const flat = (s) => (s || '').replace(/\\s+/g, ' ').trim();
+  const sec = main.querySelector('section[data-component="AdvertFeaturesApp"]');
+  const dl = sec ? sec.querySelector('dl') : null;
+  const card = main.querySelector('[data-advertiser-card]');
+  const cs = card ? getComputedStyle(card) : null;
+  const link = card ? card.querySelector('a[href^="/sellers/"]') : null;
+  const aside = main.querySelector('aside');
+  const asideLink = aside ? aside.querySelector('a[href^="/sellers/"]') : null;
+  const asideLinks = aside ? aside.querySelectorAll('a[href^="/sellers/"]').length : 0;
+  const nameEl = card ? card.querySelector('span.min-w-0.break-words') : null;
+  const ncs = nameEl ? getComputedStyle(nameEl) : null;
+  const avatar = card ? [...card.querySelectorAll('*')].filter((el) => {
+    const b = el.getBoundingClientRect();
+    return Math.round(b.width) === 96 && Math.round(b.height) === 96;
+  }) : [];
+  const h3 = card ? card.querySelector('h3') : null;
+  return {
+    noMain: false,
+    hasSec: !!sec, hasDl: !!dl, hasCard: !!card,
+    inSection: !!(card && sec && sec.contains(card)),
+    card: card ? B(card) : null,
+    dl: dl ? B(dl) : null,
+    mainBox: B(main),
+    bg: cs ? cs.backgroundColor : null,
+    radius: cs ? cs.borderTopLeftRadius : null,
+    border: cs ? cs.borderTopWidth : null,
+    pad: cs ? cs.paddingLeft : null,
+    shadow: cs ? cs.boxShadow : null,
+    heading: h3 ? flat(h3.textContent) : '',
+    cardLink: link ? link.getAttribute('href') : null,
+    asideLink: asideLink ? asideLink.getAttribute('href') : null,
+    asideLinks,
+    nameWrap: ncs ? ncs.overflowWrap : null,
+    avatar96: avatar.length,
+    h1: document.querySelectorAll('h1').length,
+    scrollW: document.documentElement.scrollWidth,
+    vw: window.innerWidth,
+  };
+})()`;
+const ad = await evalJs(ADV);
+check('⑩ 👤 (🆕 103) Нийтлэгчийн карт «📋 Зарын дэлгэрэнгүй» ХЭСЭГТ байна (`data-advertiser-card`)',
+  !ad.noMain && ad.hasSec && ad.hasDl && ad.hasCard && ad.inSection,
+  ad.noMain ? '`main` алга' : (ad.hasCard
+    ? `карт ${ad.card.w}×${ad.card.h}px · хэсэгт ${ad.inSection ? 'дотор ✓' : 'ГАДНА ✗'}`
+    : 'карт алга ✗ (`AdvertiserCard` — хүснэгтийн хажууд)'));
+check('⑩b 📐 (103) 1280px: карт нь хүснэгтийн БАРУУН талд — 2 БАГАНА (`lg:grid-cols-[minmax(0,1fr)_300px]`)',
+  !!ad.card && !!ad.dl && ad.card.x >= ad.dl.r + 8 && ad.card.x <= ad.dl.r + 40 &&
+    ad.card.w >= 298 && ad.card.w <= 302,
+  ad.card && ad.dl
+    ? `хүснэгт [${ad.dl.x}…${ad.dl.r}] ⟂ карт [${ad.card.x}…${ad.card.r}] (${ad.card.w}px · зай ${ad.card.x - ad.dl.r}px)`
+    : 'хүснэгт/карт алга');
+check('⑩c 🎨 (103) Картын хайрцаг ЦАГААН · 1px хүрээ · `rounded-xl` (12px) · сүүдэргүй — (87)-ийн хэв',
+  ad.bg === 'rgb(255, 255, 255)' && ad.border === '1px' && ad.radius === '12px' &&
+    ad.shadow === 'none' && ad.pad === '16px',
+  ad.bg ? `bg ${ad.bg} · border ${ad.border} · r ${ad.radius} · pad ${ad.pad} · shadow ${ad.shadow}` : '—');
+check('⑩d 🏷 (103) Гарчиг «Зар нийтлэгч» + 📋 линк нь `aside`-тай ЯГ ИЖИЛ (`/sellers/<id>`) — нэг эх сурвалж',
+  ad.heading === 'Зар нийтлэгч' && (ad.cardLink
+    ? ad.asideLink === ad.cardLink && ad.asideLinks === 2
+    : ad.asideLinks === 0),
+  `гарчиг «${ad.heading}» · картын линк ${ad.cardLink || '—'} · aside ${ad.asideLink || '—'} (${ad.asideLinks} линк)`);
+check('⑩e 👤 (103) Аватар 96px нь карт дотроо · нэр нь `break-words` (хэтэрч/тасарч ХАРАГДАХГҮЙ)',
+  ad.cardLink ? ad.avatar96 === 1 && ad.nameWrap === 'break-word' : true,
+  ad.cardLink ? `92px→${ad.avatar96} ширхэг 96px · overflow-wrap ${ad.nameWrap}` : 'нийтлэгч тодорхойгүй (линк 0) — алгасна');
+check('⑩f 🚫 (103) Хэвтээ гүйлт 0 + карт `main`-аас ГАДНА ГАРАХГҮЙ (1280px) + H1 ЯГ 1 ХЭВЭЭР',
+  ad.scrollW <= ad.vw + 1 && !!ad.card && ad.card.r <= ad.mainBox.r + 1 && ad.h1 === 1,
+  `scrollW ${ad.scrollW}/${ad.vw} · карт ${ad.card ? ad.card.r : '—'} ≤ main ${ad.mainBox.r} · h1 ${ad.h1}`);
+await shotEl('section[data-component="AdvertFeaturesApp"]', '/tmp/detail-features-1280.png', { scroll: true });
+
+
 
 // ---------- ③ 📱 390px (мобайл) ----------
 await goto(`${BASE}${href}`, 390, 900);
@@ -585,6 +681,19 @@ check('⑤b2 📱 390px: БҮТЭН ХУУДАС (доод цэс оруулаа
 check('⑤c 📱 390px: хэвтээ гүйлт 0', m.scrollW <= m.vw + 1, `scrollW ${m.scrollW} / vw ${m.vw}`);
 check('⑤d 📱 390px: хэсгүүд ХАЙРЦАГГҮЙ (radius 0px)',
   m.sections.every((s) => s.radius === '0px'), m.sections.map((s) => s.radius).join(' · '));
+/*   🆕 (103) 📱 390px: нэг баганат хэв — нийтлэгчийн карт нь хүснэгтийн
+     ЯГ ДООР (`card.y ≥ dl.bottom`) бууна; `lg:grid-cols-…` нь ЗӨВХӨН ≥1024px
+     тул мобайл дээр ХОЁР БАГАНА БОЛОХГҮЙ, overflow 0 ХЭВЭЭР ✓ */
+const am = await evalJs(ADV);
+check('⑤e 📱 390px (🆕 103): нийтлэгчийн карт хүснэгтийн ДООР (1 багана) · overflow 0',
+  !!am.card && !!am.dl && am.card.y >= am.dl.b - 2 && am.scrollW <= am.vw + 1 &&
+    am.card.r <= am.mainBox.r + 1,
+  am.card && am.dl
+    ? `хүснэгт…${am.dl.b} ⟶ карт ${am.card.y} (${am.card.w}×${am.card.h}px) · scrollW ${am.scrollW}/${am.vw}`
+    : 'карт/хүснэгт алга ✗');
+await shotEl('[data-advertiser-card]', '/tmp/detail-advertiser-390.png', { scroll: true });
+
+
 await shot('/tmp/detail-style-390.png');
 
 // ---------- ④ 🐍 JS алдаа ----------

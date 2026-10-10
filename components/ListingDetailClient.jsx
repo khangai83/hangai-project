@@ -49,6 +49,150 @@ import SimilarListings from './SimilarListings';
 //    БУЦАВ: `🕒` emoji биш, `ClockIcon` ✓)
 import { MapPinIcon, ClockIcon, EyeIcon, HeartIcon } from './HeaderIcons';
 
+/**
+ * 👤 ЗАР НИЙТЛЭГЧИЙН КАРТ — НЭГ ЭХ СУРВАЛЖ, ХОЁР ГАЗАРТ (🆕 2026-10-10 (103))
+ * ============================================================
+ * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Display the advertiser's information alongside the ad
+ * details» ⇒ нийтлэгчийн мэдээлэл нь «📋 Зарын дэлгэрэнгүй» хүснэгтийн
+ * ХАЖУУД (үндсэн багана, `lg` дээр 2 баганат хэв) гарна. ⏳ Өмнө нь зөвхөн
+ * БАРУУН баганын (`aside`) 💰 үнэ/холбоо барих хайрцаг дотор байв.
+ *
+ * ⚠️ ХОЁР ГАЗАРТ рендэрлэгддэг (① хүснэгтийн хажууд ② `aside`-ийн хайрцагт)
+ *    тул тэмдэглэгээг ХОЁР ДАХИН БИЧИХГҮЙ — энэ компонент нь ЦОРЫН ГАНЦ
+ *    эх сурвалж ✓ (класс/линк/текст нь ХОЁР газарт ЯГ ИЖИЛ гарна)
+ * ⚠️ (61)(64)(66)(71)-ийн гэрээ ХЭВЭЭР: аватар **96px**, картын ДЭЭД талд
+ *    ТУСДАА мөрөнд ГОЛЛУУЛЖ; нэр `truncate` БИШ `break-words`; `sellerAvatar`
+ *    (нэрээ нуух тохиргоо → профайл зураггүй); ✅ badge ба «📋 N идэвхтэй зар»
+ *    линк нь ЗӨВХӨН `user_id`-тай үед ✓
+ */
+function AdvertiserCard({ listing, sellerName, sellerAvatar, joinedText, sellerStats }) {
+  return listing.user_id ? (
+  /* ===== ЗАР НИЙТЛЭГЧ РҮҮ ОРОХ (линк) =====
+     Дарвал `/sellers/<user_id>` — түүний БУСАД зарууд
+     «🏷️ Зарах» / «🔑 Түрээслэх» гэж ЯЛГАГДАН харагдана.
+     ⚠️ 2026-10-08 (62): хүрээ нь ОДОО `<div>` — дотор нь 2 ЛИНК
+     байна (HTML-д `<a>` дотор `<a>` ХОРИОТОЙ): ① толгой мөр
+     (аватар + нэр → `/sellers/<id>`) ② «📋 {N} идэвхтэй зар».
+     ⚠️ `group` + `hover:bg-primary-light` нь ХҮРЭЭ (`<div>`) дээр
+     үлдсэн тул КАРТЫН харагдац ХӨНДӨӨГДӨӨГҮЙ ✓
+     🆕 2026-10-08 (64): толгойн линк нь ОДОО ГОЛЛУУЛСАН
+     БАГАНА (`flex flex-col items-center`) — профайл зураг
+     картын дээд талд, нэр/✅/огноо доор нь; «›» нь баруун дээд
+     буланд (`absolute right-0 top-0`) — 2 линк ЗЭРЭГЦЭЭ хэвээр ✓
+     🆕 2026-10-08 (66): профайл зурагны хэмжээ `64` → **`96px`**
+     (хэрэглэгчийн хүсэлт: «жаахан томруулаад өгөөч») — аватар нь
+     ОДОО өөрийн гэсэн мөрөнд байгаа тул КАРТЫН өргөн хөндөгдөхгүй
+     (300px хэвээр), зөвхөн өндөр нь **176 → 208px** болов;
+     ⚠️ `size={120}` л хэт том (350px баганад багтахгүй) ✓ */
+    <div className="group rounded-lg p-3 transition hover:bg-primary-light">
+      <Link
+        href={`/sellers/${listing.user_id}`}
+        title="Энэ хүний бусад зарыг харах"
+        className="relative flex flex-col items-center gap-2 text-center"
+      >
+        {/* 🆕 2026-10-08 (64) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Зарын эзэний Profile зургийг
+            картых нь дээд талд, жаахан томруулаад тавиад өгөөч» ⇒
+            Аватар нь картын ХАМГИЙН ДЭЭД талд, ТУСДАА мөрөнд (нэр,
+            ✅, огноо нь ДООР нь), ГОЛЛУУЛЖ + `size={44}` → `size={64}`
+            (жаахан том — ⚠️ (61)-ийн 120px шиг хэт том БИШ) ⇒
+            профайл карт шиг харагдац болов ✓
+            🆕 (66): «жаахан том» хэмжээ нь ОДОО **`size={96}`**
+            (хэрэглэгчийн хүсэлт: «жаахан томруулаад өгөөч») —
+            аватар нь тусдаа мөрөнд тул картын ЗАДАРГАА ХОХИРОХГҮЙ:
+            CDP хэмжилт 96px дээр карт 300×176 → **300×208px**,
+            📱 390px дээр 316×208, гадагш гарсан элемент **0**,
+            хэвтээ гүйлт **0** ✓ (⚠️ `size={120}` ХЭВЭЭР ХОРИОТОЙ)
+            ⏳ (61) — ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «Зар нийтлэгчийн мэдээлэл
+            карт дотроо бүрэн харагдахгүй байна» ⇒ `size={120}`
+            (2026-09-27-ны андуу орсон утга — тухайн commit нь КАРТЫН
+            өндрийн тухай байв) нь 350px-ийн баганад багтахгүй, баруун
+            талын мэдээллийг 3-4 мөрөөр эвдэж байв ✗ (CDP: аватар 120px,
+            мөр 144px өндөр, «✅ Утсаар баталгаажсан»/«Элссэн огноо» 2 мөр
+            болж тасарч байв) ⇒ `size={44}` болов ✓
+            ⚠️ Нэр нь `truncate` БИШ `break-words` — урт нэр КАРТ ДОТРОО
+            бүтнээрээ (2 мөр болж ч) харагдана ✓
+            🆕 2026-10-08 (71): `src={sellerAvatar}` — «Профайл нэрээ
+            зар дээр гаргах уу? → Үгүй» үед `null` тул профайл зураг
+            ГАРАХГҮЙ (зөвхөн үсэг-орлуулга ✓) */}
+        <Avatar src={sellerAvatar} name={sellerName} size={96} />
+        <div className="w-full min-w-0">
+
+          {/* ✅ БАТАЛГААЖСАН badge (Facebook-ийнх шиг) — ListingCard-тай
+              ижил. ⚠️ Зөвхөн `listing.user_id` БАЙГАА үед (энэ салбар)
+              — эс бөгөөс нийтлэгч тодорхойгүй тул badge ч байхгүй ✓ */}
+          <div className="flex items-center justify-center gap-1.5 text-base font-semibold text-gray-800 transition group-hover:text-primary">
+            <span className="min-w-0 break-words">{sellerName}</span>
+            <VerifiedBadge size={16} className="text-primary" />
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-x-2 text-xs text-gray-500">
+          {/* ✅ Утсаар баталгаажсан — БҮРТГЭЛ нь verify.mn-ийн SMS-ээр
+                л болдог тул бүх хэрэглэгч баталгаажсан  (олон сонголттой
+                «Verified account»-тай ижил утга). */}
+            <span className="font-semibold text-secondary-dark">✅ Утсаар баталгаажсан</span>
+            {joinedText && <span>· Элссэн огноо: {joinedText}</span>}
+          </div>
+          {/* ⏳ 2026-10-08 (62): «📋 {N} зар нийтэлсэн» мөр ЭНД БАЙСАН —
+              одоо толгойн линкээс ГАДНА, ТУСДАА ЛИНК болж (доор) ✓ */}
+        </div>
+        <span aria-hidden="true" className="absolute right-0 top-0 text-lg text-gray-300 transition group-hover:text-primary">›</span>
+      </Link>
+
+      {/* 🆕 2026-10-08 (62) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «…“Зарын тоо зар нийтэлсэн”
+          гэж харагдаж байгаа. Энэ хэсгийг нь Link болгож харагдуул. Гэхдээ
+          текстийг нь “Зарын тоо идвэхтэй зар” гэж зас. Карыг нь тэр чигээр нь
+          link болгож харагдуулахгүй» ⇒
+          ① «Зарын тоо» мөр нь ТУСДАА ЛИНК болов — линк шиг ХАРАГДАНА
+             (⏳ өмнө нь саарал энгийн текст байсан тул линк гэдэг нь
+             мэдэгддэггүй байв ✗): `text-primary` + `underline
+             underline-offset-2` — репогийн бусад текст линктэй ЯГ ИЖИЛ хэв
+             (`FavoritesClient`/`SavedSearchesClient`/`SearchHistoryClient`) ✓
+          ② текст: «📋 {N} зар нийтэлсэн» → «📋 {N} идэвхтэй зар»
+             ⏳ (62)-т «Зарын тоо:» гэсэн УГТВАРТАЙ байсан — (63) угтвар ХАСАГДАВ
+             (хэрэглэгч: «“Зарын тоо:” гэж текст гаргахгүй ээ, зүгээр л зарын тоогоо бич») ✓
+             (⚠️ `listings`-д «идэвхгүй» гэсэн төлөв/`status` БАГАНА БАЙХГҮЙ
+             — `0001_schema.sql`: бүх мөр нь нийтлэгдсэн, ИДЭВХТЭЙ зар ⇒ тоо нь
+             ЯГ зөв ✓)
+          ③ КАРТ (толгой мөр) ХӨНДӨӨГДӨӨГҮЙ — линк шиг харагдах нь ЗӨВХӨН
+             энэ мөр ✓ (`hover:bg-primary-light` нь хүрээ дээр үлдсэн)
+          ⚠️ HTML-д `<a>` дотор `<a>` ХОРИОТОЙ тул дээрх толгойн линкээс
+          ГАДНА (ах дүү элемент) байрлана — тиймээс хүрээ нь `<div>` болов ✓
+          🆕 (64): «📋 N идэвхтэй зар» линк нь ОДОО КАРТЫН ГОЛД
+          (`justify-center`) — аватар/нэр голлуулсан тул задаргаа ч
+          тэгш харагдана ✓ (линк өөрөө, өнгө/зураас/`href`/`title`
+          ХӨНДӨӨГДӨӨГҮЙ) ✓
+          🔍 Хайх үг: sellerStatsLink, идэвхтэй зар */}
+      <Link
+        href={`/sellers/${listing.user_id}`}
+        title="Энэ хүний БҮХ идэвхтэй зарыг харах"
+        className="mt-2 flex max-w-full flex-wrap items-center justify-center gap-x-2 text-xs font-semibold text-primary underline underline-offset-2 hover:text-primary"
+      >
+        {sellerStats && sellerStats.total > 0 ? (
+          <>
+            <span>📋 {sellerStats.total} идэвхтэй зар</span>
+            {sellerStats.sell > 0 && <span className="font-semibold text-primary">🏷️ {sellerStats.sell}</span>}
+            {sellerStats.rent > 0 && <span className="font-semibold text-secondary-dark">🔑 {sellerStats.rent}</span>}
+          </>
+        ) : (
+          <span>📋 идэвхтэй зар</span>
+        )}
+      </Link>
+    </div>
+  ) : (
+    <div className="flex flex-col items-center gap-2 rounded-lg p-3 text-center">
+      <Avatar src={sellerAvatar} name={sellerName} size={96} />
+      <div className="w-full min-w-0">
+        {/* 🆕 2026-10-08 (61): нэр `truncate` БИШ `break-words` —
+            дээрх (`user_id`-тай) салбартай ИЖИЛ: урт нэр карт дотроо
+            бүтнээрээ харагдана ✓ */}
+        <div className="break-words text-base font-semibold text-gray-800">
+          {sellerName}
+        </div>
+        <div className="text-xs text-gray-500">Зар нийтэлсэн</div>
+      </div>
+    </div>
+  );
+}
+
 export default function ListingDetailClient({ id }) {
   const { showToast } = useToast();
   const { user } = useAuth();
@@ -732,6 +876,10 @@ export default function ListingDetailClient({ id }) {
               🆕 2026-10-01 (16): машин/ажил/компьютер … зарууд ч мөртэй болов
                  (`features`-д `attrs` нэмэгдэв — `lib/locationData.js → getAttrRows`)
                  → тэдгээр дэлгэрэнгүй хуудсанд ч ЭНЭ 2 БАГАНАТ хүснэгт гарна ✓
+              🆕 2026-10-10 (103): хүснэгтийн ХАЖУУД нь 👤 нийтлэгчийн карт
+                 (`AdvertiserCard`, `lg` дээр баруун талын 300px багана) нэмэгдэв
+                 ⇒ хүснэгт нь ОДОО зүүн багана (`min-w-0`), 📱 `lg`-ээс доош
+                 карт нь хүснэгтийн ДООР буулна ✓ (`aside` дахь карт ХЭВЭЭР)
               ⚠️ ХҮРЭЭНИЙ ДҮРЭМ (`sm:` = 2 багана): сүүлийн МӨРИЙН 2 нүд доод
                  хүрээгээ алдана. Мөр дүүрэн бол (`features.length % 2 === 0`)
                  тэр нь `:nth-last-child(-n+2)`; гэхдээ СОНДГОЙ тоо (ж: 🚗 9 мөр)
@@ -740,26 +888,50 @@ export default function ListingDetailClient({ id }) {
                  мөр дунд ганц 1px зураас үлдэнэ ✗ (2026-10-01 (16)-д зассан) */}    
           {features.length > 0 && (
             <section data-component="AdvertFeaturesApp" className="mt-6 border-t border-gray-200 pt-6">
-              <h2 className="mb-2 text-base font-semibold text-gray-800">Зарын дэлгэрэнгүй</h2>
-              <dl className="grid grid-cols-1 sm:grid-cols-2">
-                {features.map((f) => (
-                  <div
-                    key={f.key || f.label}
-                    className={`flex items-baseline gap-3 border-b border-gray-200 py-3 text-sm last:border-b-0 ${
-                      features.length % 2 === 0 ? 'sm:[&:nth-last-child(-n+2)]:border-b-0' : 'sm:[&:last-child]:border-b-0'
-                    }`}
-                  >
-                    {/* 🆕 (96): ⏳ `{f.icon} {f.label}` → **`{f.label}`** — БҮХ icon
-                        ХАСАГДАВ (хэрэглэгчийн хүсэлт: «🏷️ Үйлдвэрлэгч: гэх мэтийн
-                        бүх icon ийг байхгүй болго, хэрэггүй» ✓).
-                        ⚠️ `getAttrRows`-ийн `icon` утга (форм/шүүлтийн нэг эх
-                        сурвалж — `attrFields`) ХӨНДӨӨГДӨӨГҮЙ, зөвхөн ЭНД
-                        дүрслэгдэхгүй ✓ (форм/сайдбарын чип иконууд ХЭВЭЭР) */}
-                    <dt className="w-[45%] shrink-0 text-gray-500">{f.label}:</dt>
-                    <dd className="min-w-0 flex-1 font-medium text-gray-900">{f.value}</dd>
-                  </div>
-                ))}
-              </dl>
+              {/* 🆕 2026-10-10 (103) `lg` дээр 2 БАГАНА: зүүн тал нь «📋 Зарын
+                  дэлгэрэнгүй» хүснэгт, БАРУУН тал нь 👤 нийтлэгчийн карт
+                  (`AdvertiserCard`). ⚠️ `minmax(0,1fr)` — урт утга (`break-words`)
+                  баганаас халихгүй; 📱 `lg`-ээс доош карт нь хүснэгтийн ДООР ✓ */}
+              <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+                <div className="min-w-0">
+                  <h2 className="mb-2 text-base font-semibold text-gray-800">Зарын дэлгэрэнгүй</h2>
+                  <dl className="grid grid-cols-1 sm:grid-cols-2">
+                    {features.map((f) => (
+                      <div
+                        key={f.key || f.label}
+                        className={`flex items-baseline gap-3 border-b border-gray-200 py-3 text-sm last:border-b-0 ${
+                          features.length % 2 === 0 ? 'sm:[&:nth-last-child(-n+2)]:border-b-0' : 'sm:[&:last-child]:border-b-0'
+                        }`}
+                      >
+                        {/* 🆕 (96): ⏳ `{f.icon} {f.label}` → **`{f.label}`** — БҮХ icon
+                            ХАСАГДАВ (хэрэглэгчийн хүсэлт: «🏷️ Үйлдвэрлэгч: гэх мэтийн
+                            бүх icon ийг байхгүй болго, хэрэггүй» ✓).
+                            ⚠️ `getAttrRows`-ийн `icon` утга (форм/шүүлтийн нэг эх
+                            сурвалж — `attrFields`) ХӨНДӨӨГДӨӨГҮЙ, зөвхөн ЭНД
+                            дүрслэгдэхгүй ✓ (форм/сайдбарын чип иконууд ХЭВЭЭР) */}
+                        <dt className="w-[45%] shrink-0 text-gray-500">{f.label}:</dt>
+                        <dd className="min-w-0 flex-1 font-medium text-gray-900">{f.value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+                {/* 👤 ЗАР НИЙТЛЭГЧ (🆕 2026-10-10 (103)) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ:
+                    «Display the advertiser's information alongside the ad details» ⇒
+                    хүснэгтийн хажууд (⏳ зөвхөн `aside`-ийн хайрцагт байв ✗).
+                    ⚠️ Хайрцаг нь ЦАГААН (`bg-white`) — (87)-ийн «саарал дүүргэлт
+                    ХОРИОТОЙ» дүрэмд нийцнэ (хүрээ 1px · `rounded-xl`) ✓
+                    ⚠️ `data-advertiser-card` — CDP хэмжилтийн дэгээ ✓ */}
+                <div data-advertiser-card className="rounded-xl border border-gray-200 bg-white p-4">
+                  <h3 className="mb-3 text-center text-sm font-semibold text-gray-700">Зар нийтлэгч</h3>
+                  <AdvertiserCard
+                    listing={listing}
+                    sellerName={sellerName}
+                    sellerAvatar={sellerAvatar}
+                    joinedText={joinedText}
+                    sellerStats={sellerStats}
+                  />
+                </div>
+              </div>
             </section>
           )}
 
@@ -833,129 +1005,17 @@ export default function ListingDetailClient({ id }) {
                 зөвхөн үнэ (бүх UI дээр нэгэн жигд хассан). */}
 
             <div className="mt-5 space-y-3">
-              {listing.user_id ? (
- /* ===== ЗАР НИЙТЛЭГЧ РҮҮ ОРОХ (линк) =====
-                   Дарвал `/sellers/<user_id>` — түүний БУСАД зарууд
-                   «🏷️ Зарах» / «🔑 Түрээслэх» гэж ЯЛГАГДАН харагдана.
-                   ⚠️ 2026-10-08 (62): хүрээ нь ОДОО `<div>` — дотор нь 2 ЛИНК
-                   байна (HTML-д `<a>` дотор `<a>` ХОРИОТОЙ): ① толгой мөр
-                   (аватар + нэр → `/sellers/<id>`) ② «📋 {N} идэвхтэй зар».
-                   ⚠️ `group` + `hover:bg-primary-light` нь ХҮРЭЭ (`<div>`) дээр
-                   үлдсэн тул КАРТЫН харагдац ХӨНДӨӨГДӨӨГҮЙ ✓
-                   🆕 2026-10-08 (64): толгойн линк нь ОДОО ГОЛЛУУЛСАН
-                   БАГАНА (`flex flex-col items-center`) — профайл зураг
-                   картын дээд талд, нэр/✅/огноо доор нь; «›» нь баруун дээд
-                   буланд (`absolute right-0 top-0`) — 2 линк ЗЭРЭГЦЭЭ хэвээр ✓
-                   🆕 2026-10-08 (66): профайл зурагны хэмжээ `64` → **`96px`**
-                   (хэрэглэгчийн хүсэлт: «жаахан томруулаад өгөөч») — аватар нь
-                   ОДОО өөрийн гэсэн мөрөнд байгаа тул КАРТЫН өргөн хөндөгдөхгүй
-                   (300px хэвээр), зөвхөн өндөр нь **176 → 208px** болов;
-                   ⚠️ `size={120}` л хэт том (350px баганад багтахгүй) ✓ */
-                <div className="group rounded-lg p-3 transition hover:bg-primary-light">
-                  <Link
-                    href={`/sellers/${listing.user_id}`}
-                    title="Энэ хүний бусад зарыг харах"
-                    className="relative flex flex-col items-center gap-2 text-center"
-                  >
-                    {/* 🆕 2026-10-08 (64) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Зарын эзэний Profile зургийг
-                        картых нь дээд талд, жаахан томруулаад тавиад өгөөч» ⇒
-                        Аватар нь картын ХАМГИЙН ДЭЭД талд, ТУСДАА мөрөнд (нэр,
-                        ✅, огноо нь ДООР нь), ГОЛЛУУЛЖ + `size={44}` → `size={64}`
-                        (жаахан том — ⚠️ (61)-ийн 120px шиг хэт том БИШ) ⇒
-                        профайл карт шиг харагдац болов ✓
-                        🆕 (66): «жаахан том» хэмжээ нь ОДОО **`size={96}`**
-                        (хэрэглэгчийн хүсэлт: «жаахан томруулаад өгөөч») —
-                        аватар нь тусдаа мөрөнд тул картын ЗАДАРГАА ХОХИРОХГҮЙ:
-                        CDP хэмжилт 96px дээр карт 300×176 → **300×208px**,
-                        📱 390px дээр 316×208, гадагш гарсан элемент **0**,
-                        хэвтээ гүйлт **0** ✓ (⚠️ `size={120}` ХЭВЭЭР ХОРИОТОЙ)
-                        ⏳ (61) — ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «Зар нийтлэгчийн мэдээлэл
-                        карт дотроо бүрэн харагдахгүй байна» ⇒ `size={120}`
-                        (2026-09-27-ны андуу орсон утга — тухайн commit нь КАРТЫН
-                        өндрийн тухай байв) нь 350px-ийн баганад багтахгүй, баруун
-                        талын мэдээллийг 3-4 мөрөөр эвдэж байв ✗ (CDP: аватар 120px,
-                        мөр 144px өндөр, «✅ Утсаар баталгаажсан»/«Элссэн огноо» 2 мөр
-                        болж тасарч байв) ⇒ `size={44}` болов ✓
-                        ⚠️ Нэр нь `truncate` БИШ `break-words` — урт нэр КАРТ ДОТРОО
-                        бүтнээрээ (2 мөр болж ч) харагдана ✓
-                        🆕 2026-10-08 (71): `src={sellerAvatar}` — «Профайл нэрээ
-                        зар дээр гаргах уу? → Үгүй» үед `null` тул профайл зураг
-                        ГАРАХГҮЙ (зөвхөн үсэг-орлуулга ✓) */}
-                    <Avatar src={sellerAvatar} name={sellerName} size={96} />
-                    <div className="w-full min-w-0">
-                      {/* ✅ БАТАЛГААЖСАН badge (Facebook-ийнх шиг) — ListingCard-тай
-                          ижил. ⚠️ Зөвхөн `listing.user_id` БАЙГАА үед (энэ салбар)
-                          — эс бөгөөс нийтлэгч тодорхойгүй тул badge ч байхгүй ✓ */}
-                      <div className="flex items-center justify-center gap-1.5 text-base font-semibold text-gray-800 transition group-hover:text-primary">
-                        <span className="min-w-0 break-words">{sellerName}</span>
-                        <VerifiedBadge size={16} className="text-primary" />
-                      </div>
-                      <div className="flex flex-wrap items-center justify-center gap-x-2 text-xs text-gray-500">
-                      {/* ✅ Утсаар баталгаажсан — БҮРТГЭЛ нь verify.mn-ийн SMS-ээр
-                            л болдог тул бүх хэрэглэгч баталгаажсан  (олон сонголттой
-                            «Verified account»-тай ижил утга). */}
-                        <span className="font-semibold text-secondary-dark">✅ Утсаар баталгаажсан</span>
-                        {joinedText && <span>· Элссэн огноо: {joinedText}</span>}
-                      </div>
-                      {/* ⏳ 2026-10-08 (62): «📋 {N} зар нийтэлсэн» мөр ЭНД БАЙСАН —
-                          одоо толгойн линкээс ГАДНА, ТУСДАА ЛИНК болж (доор) ✓ */}
-                    </div>
-                    <span aria-hidden="true" className="absolute right-0 top-0 text-lg text-gray-300 transition group-hover:text-primary">›</span>
-                  </Link>
-                {/* 🆕 2026-10-08 (62) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «…“Зарын тоо зар нийтэлсэн”
-                    гэж харагдаж байгаа. Энэ хэсгийг нь Link болгож харагдуул. Гэхдээ
-                    текстийг нь “Зарын тоо идвэхтэй зар” гэж зас. Карыг нь тэр чигээр нь
-                    link болгож харагдуулахгүй» ⇒
-                    ① «Зарын тоо» мөр нь ТУСДАА ЛИНК болов — линк шиг ХАРАГДАНА
-                       (⏳ өмнө нь саарал энгийн текст байсан тул линк гэдэг нь
-                       мэдэгддэггүй байв ✗): `text-primary` + `underline
-                       underline-offset-2` — репогийн бусад текст линктэй ЯГ ИЖИЛ хэв
-                       (`FavoritesClient`/`SavedSearchesClient`/`SearchHistoryClient`) ✓
-                    ② текст: «📋 {N} зар нийтэлсэн» → «📋 {N} идэвхтэй зар»
-                       ⏳ (62)-т «Зарын тоо:» гэсэн УГТВАРТАЙ байсан — (63) угтвар ХАСАГДАВ
-                       (хэрэглэгч: «“Зарын тоо:” гэж текст гаргахгүй ээ, зүгээр л зарын тоогоо бич») ✓
-                       (⚠️ `listings`-д «идэвхгүй» гэсэн төлөв/`status` БАГАНА БАЙХГҮЙ
-                       — `0001_schema.sql`: бүх мөр нь нийтлэгдсэн, ИДЭВХТЭЙ зар ⇒ тоо нь
-                       ЯГ зөв ✓)
-                    ③ КАРТ (толгой мөр) ХӨНДӨӨГДӨӨГҮЙ — линк шиг харагдах нь ЗӨВХӨН
-                       энэ мөр ✓ (`hover:bg-primary-light` нь хүрээ дээр үлдсэн)
-                    ⚠️ HTML-д `<a>` дотор `<a>` ХОРИОТОЙ тул дээрх толгойн линкээс
-                    ГАДНА (ах дүү элемент) байрлана — тиймээс хүрээ нь `<div>` болов ✓
-                    🆕 (64): «📋 N идэвхтэй зар» линк нь ОДОО КАРТЫН ГОЛД
-                    (`justify-center`) — аватар/нэр голлуулсан тул задаргаа ч
-                    тэгш харагдана ✓ (линк өөрөө, өнгө/зураас/`href`/`title`
-                    ХӨНДӨӨГДӨӨГҮЙ) ✓
-                    🔍 Хайх үг: sellerStatsLink, идэвхтэй зар */}
-                <Link
-                  href={`/sellers/${listing.user_id}`}
-                  title="Энэ хүний БҮХ идэвхтэй зарыг харах"
-                  className="mt-2 flex max-w-full flex-wrap items-center justify-center gap-x-2 text-xs font-semibold text-primary underline underline-offset-2 hover:text-primary"
-                >
-                  {sellerStats && sellerStats.total > 0 ? (
-                    <>
-                      <span>📋 {sellerStats.total} идэвхтэй зар</span>
-                      {sellerStats.sell > 0 && <span className="font-semibold text-primary">🏷️ {sellerStats.sell}</span>}
-                      {sellerStats.rent > 0 && <span className="font-semibold text-secondary-dark">🔑 {sellerStats.rent}</span>}
-                    </>
-                  ) : (
-                    <span>📋 идэвхтэй зар</span>
-                  )}
-                </Link>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center gap-2 rounded-lg p-3 text-center">
-                  <Avatar src={sellerAvatar} name={sellerName} size={96} />
-                  <div className="w-full min-w-0">
-                    {/* 🆕 2026-10-08 (61): нэр `truncate` БИШ `break-words` —
-                        дээрх (`user_id`-тай) салбартай ИЖИЛ: урт нэр карт дотроо
-                        бүтнээрээ харагдана ✓ */}
-                    <div className="break-words text-base font-semibold text-gray-800">
-                      {sellerName}
-                    </div>
-                    <div className="text-xs text-gray-500">Зар нийтэлсэн</div>
-                  </div>
-                </div>
-              )}
+              {/* 👤 ЗАР НИЙТЛЭГЧ — НЭГ ЭХ СУРВАЛЖ (🆕 2026-10-10 (103)): ЯГ энэ
+                  карт нь дээрх «📋 Зарын дэлгэрэнгүй» хүснэгтийн ХАЖУУД ч
+                  гарна (`AdvertiserCard` — дэлгэрэнгүй хэсэгт) ✓
+                  ⚠️ Тиймээс тэмдэглэгээг хоёр дахин бичихгүй ✓ */}
+              <AdvertiserCard
+                listing={listing}
+                sellerName={sellerName}
+                sellerAvatar={sellerAvatar}
+                joinedText={joinedText}
+                sellerStats={sellerStats}
+              />
 
               {listing.phone && (
                 phoneShown ? (

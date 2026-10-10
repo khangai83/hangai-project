@@ -262,7 +262,9 @@ t('⑧ 👤 Зарын эзэний зураг: картын ДЭЭД талд, 
   assert.ok(av > 0 && nm > av,
     'аватар нь нэрийн мөрөөс ӨМНӨ (картын дээд талд) байх ёстой ✗');
   // ⚠️ Аватар нь толгойн линкийн ЭХНИЙ элемент (`relative` линк дотор) ✓
-  assert.ok(DET_CODE.includes('name={sellerName} size={96} />\n                    <div className="w-full min-w-0">'),
+  //    🆕 (103): тэмдэглэгээ нь `AdvertiserCard` компонент руу шилжсэн тул
+  //    мөрийн ЭХНИЙ хоосон зай тогтмол БИШ — `\s*`-ээр л шалгана ✓
+  assert.match(DET_CODE, /name=\{sellerName\} size=\{96\} \/>\s*<div className="w-full min-w-0">/,
     'аватар нь толгойн линкийн эхний элемент (96px) БИШ ✗');
   assert.ok(DET_CODE.includes('className="flex items-center justify-center gap-1.5 text-base font-semibold'),
     'нэрийн мөр ГОЛЛУУЛСАН БИШ ✗');
@@ -464,5 +466,45 @@ t('⑫b (102) Сонгосон зураг 800×600: `aspect-[4/3]` + `max-w-[800
 
 });
 
-console.log(`\n✅ БҮГД ОК: ${passed} тест — jobs зураггүй · Нэр талбар · тэгш өнцөгт Avatar · бүх зарт газрын зураг · урт текст 'break-words' · нийтлэгчийн карт (96px аватар картын ДЭЭД талд, ГОЛЛУУЛЖ) · «📋 N идэвхтэй зар» ТУСДАА ЛИНК · 🎨 саарал дүүргэлт 0 · 🏷️ зарын гарчиг (харагдах H1) · 🎨 мета иконууд (📍/👁 → SVG, 🔖 ба шинж чанарын icon ХАСАГДАВ) ✓\n`);
+// ---------- ⑬ 👤 ЗАР НИЙТЛЭГЧ — «📋 Зарын дэлгэрэнгүй»-ийн ХАЖУУД (2026-10-10 (103)) ----------
+t('⑬ (103) 👤 Зар нийтлэгчийн карт нь «Зарын дэлгэрэнгүй» хүснэгтийн ХАЖУУД ✓', () => {
+  /** ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Display the advertiser's information alongside the ad
+   *  details» ⇒ нийтлэгчийн карт нь хүснэгтийн БАРУУН талд (`lg` дээр 2 багана)
+   *  бас гарна. ⏳ Өмнө нь зөвхөн БАРУУН баганын (`aside`) үнэ/холбоо барих
+   *  хайрцаг дотор байв ✗
+   *  ⚠️ Тэмдэглэгээ нь `AdvertiserCard` компонент (ЦОРЫН ГАНЦ эх сурвалж) —
+   *     `aside` дахь карт ХӨНДӨӨГДӨӨГҮЙ, ижил класс/линк/текст гарна ✓
+   *  📱 `lg`-ээс доош (мобайл) карт нь хүснэгтийн ДООР буулна (нэг багана) ✓ */
+  // ① Нэг эх сурвалж: `<AdvertiserCard />` нь ЯГ 2 газарт дуудагдана ✓
+  assert.equal((DET_CODE.match(/<AdvertiserCard\b/g) || []).length, 2,
+    '`<AdvertiserCard` нь 2 газарт (хүснэгтийн хажууд + `aside`) дуудагдах ЁСТОЙ ✗');
+  assert.ok(/function AdvertiserCard\(/.test(DET_CODE),
+    '`AdvertiserCard` компонент (нэг эх сурвалж) алга ✗');
+  assert.equal((DET_CODE.match(/name=\{sellerName\} size=\{96\}/g) || []).length, 2,
+    'аватар 96px нь компонентоос ГАДНА давхардсан (тэмдэглэгээ хуваагдсан) ✗');
+  // ② Хүснэгтийн хэсэгт: `lg` 2 баганат grid + `data-advertiser-card` дэгээ ✓
+  assert.ok(DET_CODE.includes('className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]"'),
+    '«Зарын дэлгэрэнгүй» хэсэг нь `lg` 2 баганат grid БИШ ✗');
+  assert.ok(DET_CODE.includes('data-advertiser-card'),
+    'картын `data-advertiser-card` дэгээ алга ✗ (CDP хэмжилт хийх боломжгүй)');
+  assert.ok(DET_CODE.includes('className="rounded-xl border border-gray-200 bg-white p-4"'),
+    'картын хайрцаг ЦАГААН (`bg-white`) БИШ ✗ ((87): саарал дүүргэлт хориотой)');
+  assert.ok(DET_CODE.includes('<h3 className="mb-3 text-center text-sm font-semibold text-gray-700">Зар нийтлэгч</h3>'),
+    '«Зар нийтлэгч» гарчиг алга ✗');
+  // ③ Дараалал: `section` → хүснэгт (`<dl>`) → карт (баруун багана) ✓
+  const sec = DET_CODE.indexOf('data-component="AdvertFeaturesApp"');
+  const dl = DET_CODE.indexOf('<dl className="grid grid-cols-1 sm:grid-cols-2">');
+  const card = DET_CODE.indexOf('data-advertiser-card');
+  assert.ok(sec > 0 && dl > sec && card > dl,
+    `дараалал буруу (section ${sec} → dl ${dl} → карт ${card}) ✗`);
+  // ④ (16)(87)(102)-ын гэрээ ХӨНДӨӨГДӨӨГҮЙ: хэсгүүд 1px дээд зураастай (4),
+  //    мөр бүрэн болон сондгой үеийн хүрээний дүрэм ХЭВЭЭР ✓
+  assert.equal((DET_CODE.match(/mt-6 border-t border-gray-200 pt-6/g) || []).length, 4,
+    '(103)-д хэсгүүдийн «хайрцаггүй + 1px дээд зураас» хэв эвдэрсэн ✗');
+  assert.ok(DET_CODE.includes("features.length % 2 === 0 ? 'sm:[&:nth-last-child(-n+2)]:border-b-0' : 'sm:[&:last-child]:border-b-0'"),
+    'шинж чанарын хүрээний дүрэм (16) ХӨНДӨӨГДӨӨГҮЙ байх ЁСТОЙ ✗');
+});
+
+
+console.log(`\n✅ БҮГД ОК: ${passed} тест — jobs зураггүй · Нэр талбар · тэгш өнцөгт Avatar · бүх зарт газрын зураг · урт текст 'break-words' · нийтлэгчийн карт (96px аватар картын ДЭЭД талд, ГОЛЛУУЛЖ) · «📋 N идэвхтэй зар» ТУСДАА ЛИНК · 🎨 саарал дүүргэлт 0 · 🏷️ зарын гарчиг (харагдах H1) · 🎨 мета иконууд (📍/👁 → SVG, 🔖 ба шинж чанарын icon ХАСАГДАВ) · 🆕 (103): 👤 зар нийтлэгчийн карт «📋 Зарын дэлгэрэнгүй» хүснэгтийн ХАЖУУД (нэг эх сурвалж — AdvertiserCard) ✓\n`);
 

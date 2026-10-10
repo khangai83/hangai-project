@@ -7,6 +7,15 @@
  *      (`closest('a') === өөрөө`) ✓
  *   ② КАРТ (толгой мөр) нь линк шиг ХАРАГДАХГҮЙ — хүрээ нь `<div>`, доогуур
  *      зураасгүй, харин дотроо 2 линк (толгой + «идэвхтэй зар») ✓
+ *      ⚠️ 2026-10-10 (103): хүрээний класс нь `group rounded-lg p-3 transition
+ *      hover:bg-primary-light` — СААРАЛ/КРЕМ дүүргэлт (`bg-gray-50`/`bg-gray-100`)
+ *      ХҮРЭЭ дээр БАЙХГҮЙ (87-ийн «саарал дүүргэлт ХОРИОТОЙ» дүрэм ✓)
+ *      ⏳ (62)-ийн шалгалт `rounded-lg bg-gray-50 p-3` гэж ШААРДАЖ байв —
+ *      `git show HEAD`-ийн `ListingDetailClient.jsx:854` нь класс нь `bg-gray-50`-ГҮЙ
+ *      гэдгийг батална ⇒ тэр шалгалт 2026-10-08-аас хойш ҮРГЭЛЖ УНАЖ байв ✗ (зассан ✓)
+ *      🆕 (103): карт нь ОДОО ХОЁР газар (① «📋 Зарын дэлгэрэнгүй» хүснэгтийн
+ *      ХАЖУУД ② баруун `aside`) — markup нь нэг эх сурвалж (`AdvertiserCard`) тул
+ *      линк/текст/аватар ЯГ ИЖИЛ; ⚠️ тоо нь ЯГ 2 (1 = карт алга ✗ · 3+ = давхардсан ✗)
  *   ③ Хэмжээ: картаас гадагш гарсан элемент 0 · хуудасны хэвтээ гүйлт 0 ✓
  *   ④ БОДИТ ХУЛГАНААР дарахад `/sellers/<user_id>` руу шилжинэ ✓
  *   ⑤ 📱 390px мобайл: линк харагдана, overflow 0 ✓ · консол дээр JS exception 0 ✓
@@ -189,7 +198,25 @@ check('① cursor: pointer', p.statsCursor === 'pointer', p.statsCursor);
 // ---------- ② КАРТ линк шиг харагдахгүй ----------
 check('② картын хүрээ нь `<div>` (линк БИШ)', p.boxTag === 'DIV', `tag=${p.boxTag}`);
 check('② картын хүрээ доогуур зураасгүй', p.boxDecoration === 'none', p.boxDecoration);
-check('② хүрээ нь хуучин фонт/хүрээний классаа хадгалсан', /rounded-lg bg-gray-50 p-3/.test(p.boxClass) && /hover:bg-primary-light/.test(p.boxClass));
+// 🆕 2026-10-10 (103): хүрээний класс нь `group rounded-lg p-3 transition hover:bg-primary-light`
+//    — СААРАЛ/КРЕМ дүүргэлт (`bg-gray-50`/`bg-gray-100`) ХҮРЭЭ дээр БАЙХГҮЙ ✓
+//    ⏳ (62)-ийн шалгалт `rounded-lg bg-gray-50 p-3` гэж шаарддаг байв — `git show HEAD`
+//    (`ListingDetailClient.jsx:854`) нь класс нь `bg-gray-50`-ГҮЙ гэдгийг батална
+//    ⇒ тэр шалгалт ХУУЧИРСАН, 2026-10-08-аас хойш ҮРГЭЛЖ УНАЖ байв ✗ (зассан ✓)
+check('② хүрээ нь `rounded-lg p-3` + `hover:bg-primary-light` ХАДГАЛСАН · СААРАЛ дүүргэлтгүй',
+  /rounded-lg p-3/.test(p.boxClass) && /hover:bg-primary-light/.test(p.boxClass) && !/bg-gray-50|bg-gray-100/.test(p.boxClass),
+  p.boxClass.slice(0, 96));
+
+// 🆕 2026-10-10 (103) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Display the advertiser's information
+//    alongside the ad details» ⇒ нийтлэгчийн карт нь ОДОО ХОЁР газар:
+//    ① «📋 Зарын дэлгэрэнгүй» хүснэгтийн ХАЖУУД (`[data-component="AdvertFeaturesApp"]`)
+//    ② баруун `aside`. Markup нь ГАНЦ эх сурвалж (`AdvertiserCard`) тул линк/текст
+//    ЯГ ИЖИЛ байх ЁСТОЙ; ⚠️ тоо нь ЯГ 2 — 1 бол карт алга болсон ✗, 3+ бол markup
+//    ДАВХАРДСАН (нэг эх сурвалж алдагдсан) ✗
+const dup = await evalJs(`(() => { const l = [...document.querySelectorAll('a')].filter((x) => x.textContent.includes('идэвхтэй зар')); return { total: l.length, inFeatures: l.filter((x) => !!x.closest('[data-component="AdvertFeaturesApp"]')).length, inAside: l.filter((x) => !!x.closest('aside')).length, box: document.querySelectorAll('[data-advertiser-card]').length }; })()`);
+check('② (103) карт 2 газар (хүснэгтийн хажууд + `aside`) — линк ЯГ 2, markup ДАВХАРДААГҮЙ',
+  dup.total === 2 && dup.inFeatures === 1 && dup.inAside === 1 && dup.box === 1,
+  `линк=${dup.total} · хүснэгтийн хэсэгт=${dup.inFeatures} · aside=${dup.inAside} · хайрцаг=${dup.box}`);
 check('② карт дотор ЯГ 2 линк (толгой + «идэвхтэй зар»)', p.anchorsInBox === 2, `${p.anchorsInBox}`);
 check('② толгойн линк мөн `/sellers/<user_id>` руу', p.headerHref === `/sellers/${UID}`, `header=${p.headerHref}`);
 check('② толгойн линк линк шиг ХАРАГДАХГҮЙ (зураасгүй)', p.headerDecoration === 'none', p.headerDecoration);
