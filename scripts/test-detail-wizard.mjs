@@ -97,9 +97,11 @@
 //   ⑧ 🖥 (111) 3 ДАХЬ ХУУДАС = «НЭГ ЦАГААН ХУУДАС + БҮЛГИЙН ГАРЧИГ»
 //      (2026-10-10, хэрэглэгчийн хүсэлт: «look like a page with an attachment …
 //      I don't want to clutter up the form like a junk box … change only Step 3
-//      form») — 🖥 ≥640px дээр `DetailSection` (📄 Үндсэн мэдээлэл →
-//      🏷 Үзүүлэлтүүд → 💰 Үнэ ба төлбөр → ☎️ Холбоо барих →
-//      📎 Хавсралт (зураг)) нь `hidden sm:flex` тул 📱 wizard ХӨНДӨӨГДӨХГҮЙ ✓ ·
+//      form») — 🖥 ≥640px дээр `DetailSection` гарчиг (⚠️ (111′) 5-аас 2 үлдэв:
+//      ☎️ Холбоо барих · 📎 Хавсралт (зураг) — «📄 Үндсэн мэдээлэл · 🏷 Үзүүлэлтүүд ·
+//      💰 Үнэ ба төлбөр» нь хэрэглэгчийн хүсэлтээр ХАСАГДСАН, `title`-гүй бол
+//      `DetailSection` нь `null` ✓) нь `hidden sm:flex` тул 📱 wizard
+//      ХӨНДӨӨГДӨХГҮЙ ✓ ·
 //      ЦАГААН хуудас нь ЗӨВХӨН 3 дахь хуудсанд (`isDesktop && step >= 2`) —
 //      1, 2-р алхам крем хэвээр (user: «steps 1 and 2 remain as they are») ✓
 //      🔍 Хайх үг: DetailSection, data-detail-section, !bg-white, sm:flex
@@ -940,32 +942,41 @@ t('🏷️ (105) АВТО-ГАРЧИГ: 🚗 Машин / 💻 Notebook дээр
     '`form.title` холбоос ХӨНДӨӨГДСӨН ✗');
 });
 
-t('📄 (111) 3 ДАХЬ ХУУДАС — «НЭГ ЦАГААН ХУУДАС + БҮЛГИЙН ГАРЧИГ»: 5 бүлэг · `hidden sm:flex` · цагаан нь ЗӨВХӨН 3 дахь хуудсанд ✓', () => {
+t('📄 (111) 3 ДАХЬ ХУУДАС — «НЭГ ЦАГААН ХУУДАС + БҮЛГИЙН ГАРЧИГ»: гарчиг нь ЗӨВХӨН ☎️/📎 · `hidden sm:flex` · цагаан нь ЗӨВХӨН 3 дахь хуудсанд ✓', () => {
   /** 🎯 Хэрэглэгчийн хүсэлт: «look like a page with an attachment … I don't want
    *  to clutter up the form like a junk box … change only Step 3 form» ⇒
-   *  📋 Дэлгэрэнгүй хуудас нь ЦАГААН болж, УРТ ЦУВАА талбарууд нь 5 бүлэгт
-   *  хуваагдана. ⚠️ Энэ шалгалт нь ГУРВАН регрессийг барина: ① 📱 дээр гарчиг
-   *  гарч ирэх ② 1, 2-р алхам ч цагаан болох ③ хасагдсан алхмын гарчиг
+   *  📋 Дэлгэрэнгүй хуудас нь ЦАГААН болж, УРТ ЦУВАА талбарууд нь бүлэгт хуваагдана.
+   *  ⚠️ (111′) «📄 Үндсэн мэдээлэл · 🏷 Үзүүлэлтүүд · 💰 Үнэ ба төлбөр гэсэн
+   *  бичгүүдийг хас» ⇒ 5-аас 2 гарчиг үлдэв (☎️ Холбоо барих · 📎 Хавсралт (зураг)).
+   *  ⚠️ Энэ шалгалт нь ГУРВАН регрессийг барина: ① 📱 дээр гарчиг гарч ирэх
+   *  ② 1, 2-р алхам ч цагаан болох ③ хасагдсан алхмын гарчиг
    *  (`data-step-heading`) буцаж орох ✓ */
-  // ① Компонент + CDP-ийн ТОГТВОРТОЙ selector
+  // ① Компонент + CDP-ийн ТОГТВОРТОЙ selector + `title`-гүй бол ОГТ рендэрлэхгүй
   assert.ok(CODE.includes('function DetailSection({ id, icon, title })'), '`DetailSection` компонент алга ✗');
+  assert.ok(CODE.includes('if (!title) return null;'), '`title`-гүй бүлэг рендэрлэгдэхгүй болох нөхцөл алга ✗');
   assert.ok(CODE.includes('data-detail-section={id}'), '`data-detail-section` selector алга ✗');
-  // ② 5 бүлэг — дарааллаар (📄 Үндсэн → 📎 Хавсралт)
-  for (const id of ['basics', 'specs', 'price', 'contact', 'attachment']) {
-    assert.ok(CODE.includes(`<DetailSection id="${id}"`), `бүлэг «${id}» алга ✗`);
+  // ② ⛔ (111′) ХАСАГДСАН 3 гарчиг — prop нь Ч байхгүй (эх кодод гарчиг `title="…"` хэлбэрээр үлдэхгүй ✓)
+  for (const [id, dead] of [['basics', 'Үндсэн мэдээлэл'], ['specs', 'Үзүүлэлтүүд'], ['price', 'Үнэ ба төлбөр']]) {
+    assert.ok(CODE.includes(`<DetailSection id="${id}" />`), `\`<DetailSection id="${id}" />\` (гарчиггүй) алга ✗`);
+    assert.ok(!CODE.includes(`title="${dead}"`), `⛔ «${dead}» гарчиг буцаж орсон ✗ (хэрэглэгч хас гэсэн)`);
+  }
+  // ③ ✅ ҮЛДСЭН 2 гарчиг — ☎️ Холбоо барих · 📎 Хавсралт (зураг) (хөндөгдөөгүй ✓)
+  for (const [id, icon, title] of [['contact', '☎️', 'Холбоо барих'], ['attachment', '📎', 'Хавсралт (зураг)']]) {
+    assert.ok(CODE.includes(`<DetailSection id="${id}" icon="${icon}" title="${title}" />`),
+      `«${title}» гарчиг алга ✗`);
   }
   assert.ok(CODE.indexOf('id="basics"') < CODE.indexOf('id="attachment"'), 'бүлгүүдийн дараалал буруу ✗');
-  // ③ Гарчиг нь ЗӨВХӨН 🖥 ≥640px — 📱 «асуулт бүр нэг дэлгэц» ХӨНДӨӨГДӨХГҮЙ ✓
+  // ④ Гарчиг нь ЗӨВХӨН 🖥 ≥640px — 📱 «асуулт бүр нэг дэлгэц» ХӨНДӨӨГДӨХГҮЙ ✓
   assert.ok(CODE.includes('mb-3 hidden items-baseline gap-x-2 border-b border-gray-200 pb-1.5 sm:flex'),
     'бүлгийн гарчиг `hidden sm:flex` БИШ ✗ (📱 дээр гарч ирнэ)');
-  // ④ ЦАГААН хуудас нь ЗӨВХӨН 3 дахь хуудсанд — 1, 2-р алхам КРЕМ хэвээр ✓
+  // ⑤ ЦАГААН хуудас нь ЗӨВХӨН 3 дахь хуудсанд — 1, 2-р алхам КРЕМ хэвээр ✓
   assert.ok(CODE.includes("className={`section-card !p-0 ${isDesktop && step >= 2 ? '!bg-white' : ''}`}"),
     '`!bg-white` нөхцөл алга/өөр ✗ (1, 2-р алхам ч цагаан болно)');
-  // ⑤ DOM/талбарууд ХӨНДӨӨГДӨӨГҮЙ — мобайл wizard-ийн дэгээнүүд хэвээр ✓
+  // ⑥ DOM/талбарууд ХӨНДӨӨГДӨӨГҮЙ — мобайл wizard-ийн дэгээнүүд хэвээр ✓
   for (const sel of ['data-form-row="details"', 'data-detail-row="attrs"', 'data-step-block="media-images"', 'data-mobile-active']) {
     assert.ok(CODE.includes(sel), `\`${sel}\` алга ✗`);
   }
-  // ⑥ Алхмын хасагдсан гарчиг БУЦАЖ ИРЭЭГҮЙ (CDP: `[data-step-heading]` = 0) ✓
+  // ⑦ Алхмын хасагдсан гарчиг БУЦАЖ ИРЭЭГҮЙ (CDP: `[data-step-heading]` = 0) ✓
   assert.ok(!CODE.includes('data-step-heading'), '`data-step-heading` буцаж орсон ✗');
 });
 

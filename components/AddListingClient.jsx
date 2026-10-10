@@ -613,8 +613,12 @@ function MobileAnswers({ rows = [], onEdit }) {
  *    an attachment. I don't want to clutter up the form like a junk box …
  *    change only Step 3 form» ⇒ 📋 Дэлгэрэнгүй (3 дахь хуудас) дээрх УРТ
  *    ЦУВАА талбарууд нь ЦАГААН «хуудас» дотор **бүлэг гарчигтай** хэсгүүдэд
- *    хуваагдана (📄 Үндсэн мэдээлэл → 🏷 Үзүүлэлтүүд → 💰 Үнэ ба төлбөр →
- *    ☎️ Холбоо барих → 📎 Хавсралт (зураг)) ✓
+ *    хуваагдана.
+ *
+ * ⚠️ (111′) 2026-10-10 — хэрэглэгчийн хүсэлт: «📄 Үндсэн мэдээлэл · 🏷 Үзүүлэлтүүд ·
+ *    💰 Үнэ ба төлбөр гэсэн бичгүүдийг хас» ⇒ 5-аас **2 гарчиг** үлдэв:
+ *    ☎️ Холбоо барих · 📎 Хавсралт (зураг). `basics`/`specs`/`price` нь `title`-гүй
+ *    болсноор ОГТ рендэрлэгдэхгүй (`null` — хоосон `div` ч үлдэхгүй ✓)
  *
  * ⚠️ `hidden sm:flex` — ЗӨВХӨН 🖥 ≥640px дээр ХАРАГДАНА:
  *    • 📱 <640px дээр форм нь «асуулт бүр НЭГ ДЭЛГЭЦ» хэвээр — бүлгийн гарчиг
@@ -625,10 +629,17 @@ function MobileAnswers({ rows = [], onEdit }) {
  * ⚠️ Зөвхөн ХАРАГДАЦ (Tailwind класс) — DOM/`form`/`payload`/DB/migration 0 ✓
  * ⚠️ `data-detail-section` нь CDP/тестийн ТОГТВОРТОЙ selector — ⏳ хасагдсан
  *    АЛХМЫН гарчиг (`data-step-heading` = 0 байх ёстой) ХЭВЭЭР 0 ✓
+ *    (111′: `data-detail-section` нь ЗӨВХӨН гарчигтай 2 бүлэгт = 2 ✓)
  * 🔍 Хайх үг: DetailSection, data-detail-section, бүлэг гарчиг, цагаан хуудас,
- *    «page with an attachment», junk box
+ *    «page with an attachment», junk box, if (!title)
  */
 function DetailSection({ id, icon, title }) {
+  /** ⚠️ (111′) 2026-10-10 — хэрэглэгчийн хүсэлт: «📄 Үндсэн мэдээлэл · 🏷 Үзүүлэлтүүд ·
+   *  💰 Үнэ ба төлбөр гэсэн бичгүүдийг хас» ⇒ `title`-гүй бүлэг нь ОГТ
+   *  рендэрлэгдэхгүй (`null`) — хоосон `div` ч DOM-д үлдэхгүй ✓
+   *  ⚠️ Гарчигтай үлдсэн бүлэг (☎️ Холбоо барих · 📎 Хавсралт (зураг)) ХӨНДӨӨГДӨӨГҮЙ ✓
+   *  🔍 Хайх үг: DetailSection, «Үндсэн мэдээлэл» ХАСАГДСАН, if (!title) */
+  if (!title) return null;
   return (
     <div
       data-detail-section={id}
@@ -3196,8 +3207,8 @@ export default function AddListingClient() {
                 ⚠️ Толгойд асуултын нэр ГАРАХГҮЙ (нэр ДАВХАРДАХГҮЙ ✓) — асуулт
                    нь доор, өөрийн талбарын толгойн мөрөнд (label) харагдана ✓ */}
             <MobileAnswers rows={mobileAnswerRows} onEdit={mobileAnswerEdit} />
-            {/* 📄 ① БҮЛЭГ · ҮНДСЭН МЭДЭЭЛЭЛ (🖥 ≥640px — `DetailSection`-ийг үз) */}
-            <DetailSection id="basics" icon="📄" title="Үндсэн мэдээлэл" />
+            {/* 📄 ① БҮЛЭГ · ҮНДСЭН МЭДЭЭЛЭЛ (⚠️ (111′) гарчиг ХАСАГДСАН — `DetailSection` `title`-гүй бол `null`) */}
+            <DetailSection id="basics" />
             {/* ═══ 🏷️ ЗАРЫН ГАРЧИГ (2026-10-02) — БҮХ ХЭСЭГТ, ХАМГИЙН ЭХЭНД ═══
                 хэрэглэгчийн хүсэлт: «Бүх зард Зарын гарчиг гэдэг утга оруулахаа
                 мартсан байна. Тэр нь зарын карт дээр Үнэ мэдээллийн доор bold
@@ -3313,10 +3324,10 @@ export default function AddListingClient() {
                 🔎 `searchable: true` (ж: 🏷️ Үйлдвэрлэгч — 95 сонголт) нь ХАЙЛТТАЙ
                    COMBOBOX: бичнэ → жагсаалт шүүгдэнэ; жагсаалтад байхгүй
                    брэндийг ГАРААР бичиж болно ✓ (хэрэглэгчийн хүсэлт). */}
-            {/* 🏷 ② БҮЛЭГ · ҮЗҮҮЛЭЛТҮҮД (🖥 ≥640px — `DetailSection`-ийг үз)
-                ⚠️ Гарчиг нь `attrFields`-ийн нөхцөлөөс ГАДНА — доор нь Өрөө/Талбай/
-                   давхар/угаалгын өрөө/гараж ч багтана (`showSpecsSection`) ✓ */}
-            {showSpecsSection && <DetailSection id="specs" icon="🏷" title="Үзүүлэлтүүд" />}
+            {/* 🏷 ② БҮЛЭГ · ҮЗҮҮЛЭЛТҮҮД (⚠️ (111′) гарчиг ХАСАГДСАН)
+                ⚠️ `showSpecsSection`-ийг ХЭВЭЭР үлдээв (нөхцөлтэй дэгээ) — гарчиг
+                   өөрөө `DetailSection`-д `title`-гүй тул рендэрлэгдэхгүй ✓ */}
+            {showSpecsSection && <DetailSection id="specs" />}
             {attrFields.length > 0 && (
               /* ⚠️ 2026-10-01 (5 дахь засвар): «Дэлгэрэнгүй хэсгийн мэдээллийг
                  оруулах хэсгийг ЦУВАА буюу 1 БАГАНА болго» → 3-р алхмын БҮХ
@@ -3853,9 +3864,9 @@ export default function AddListingClient() {
                    (хуудас хагас хоосон болохгүй ✓); 📱 дээр ЗӨВХӨН 4 дэх
                    дэлгэцэд ✓ */}
             <div data-step-block="price" className={step === 3 ? '' : step === 2 || step === 4 ? 'hidden sm:block' : 'hidden'}>
-            {/* 💰 ③ БҮЛЭГ · ҮНЭ БА ТӨЛБӨР (🖥 ≥640px; доор нь 📝 Тайлбар ба
-                🎥 видео блок үргэлжилнэ — `DetailSection`-ийг үз) */}
-            <DetailSection id="price" icon="💰" title="Үнэ ба төлбөр" />
+            {/* 💰 ③ БҮЛЭГ · ҮНЭ БА ТӨЛБӨР (⚠️ (111′) гарчиг ХАСАГДСАН; доор нь 📝 Тайлбар
+                ба 🎥 видео блок үргэлжилнэ) */}
+            <DetailSection id="price" />
             <div className="form-row">
               <div className="form-group">
                 <label>{priceFieldTitle} </label>
