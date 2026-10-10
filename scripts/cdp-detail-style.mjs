@@ -27,12 +27,14 @@
  *   ⑤ 📱 390px: саарал дүүргэлт 0 ба хэвтээ гүйлт 0 ✓
  *   ⑥ 🐍 JS exception 0 (Leaflet-ээс бусад) ба hydration/
  *      `validateDOMNesting` алдаа 0 ✓
- *   ⑨ 🎨 SVG ИКОНУУД (🆕 (96)) — мета мөр (`[data-listing-meta]`): 📍 emoji
- *      ХАСАГДАЖ `MapPinIcon` (13×13px, `vertical-align: -2px` ⇒ хаягны
- *      `truncate` эвдрэхгүй), `🔖` БҮХЭЛДЭЭ арилсан (зарын дугаар ЗӨВХӨН текст) ✓
- *      · `[data-listing-actions]`: 👁 → `EyeIcon` (15×15px, өнгө нь тоолуурынхаас
- *      ТОД — хэрэглэгчийн «өнгийг нь тодруулаарай») · 📋 «Зарын дэлгэрэнгүй»
- *      хүснэгтийн `dt`/`dd`-д icon/svg 0 · БҮТЭН `main` дээр 📍/🔖/👁 emoji 0 ✓
+ *   ⑨ 🎨 SVG ИКОНУУД (🆕 (96) · ✏️ (98) ТОМРУУЛАВ) — мета мөр
+ *      (`[data-listing-meta]` = `[data-listing-actions]` — 🆕 (97) нэг мөр):
+ *      📍 emoji ХАСАГДАЖ `MapPinIcon` (**16×16px**, `vertical-align: -3px` ⇒
+ *      хаягны `truncate` эвдрэхгүй), `🔖` БҮХЭЛДЭЭ арилсан (зарын дугаар
+ *      ЗӨВХӨН «ID: …» текст) ✓ · 👁 → `EyeIcon` (**18×18px**, өнгө нь
+ *      тоолуурынхаас ТОД — хэрэглэгчийн «өнгийг нь тодруулаарай») · 📋 «Зарын
+ *      дэлгэрэнгүй» хүснэгтийн `dt`/`dd`-д icon/svg 0 · БҮТЭН `main` дээр
+ *      📍/🔖/👁 emoji 0 ✓
  *      (⚠️ 🏷️/🔑 сайдбарын «N идэвхтэй зар» тоолуул нь (95)-ийн feature — ХӨНДӨӨГДӨӨГҮЙ)
  *   ⑦ 📸 /tmp/detail-style-1280.png · /tmp/detail-style-390.png
  *      (+ 🆕 (96) 3× томруулсан: /tmp/detail-meta-1280.png · /tmp/detail-actions-1280.png)
@@ -334,8 +336,10 @@ const shotEl = async (sel, file, { scale = 3, pad = 10, scroll = false } = {}) =
 //   дэлгэрэнгүй хэсгийн 🏷️ Үйлдвэрлэгч: гэх мэтийн бүх icon ийг байхгүй болго»
 //   ⇒ ⏳ emoji → SVG (`MapPinIcon`/`EyeIcon`), 🔖 ба шинж чанарын icon ХАСАГДАВ ✓
 //   ⚠️ ЭНД БОДИТ DOM + `getComputedStyle` ХЭМЖИГДЭНЭ (эх кодын гэрээ БИШ):
-//      pin 13px + `vertical-align: -2px` (хаягны `truncate` эвдрэхгүй) ·
-//      нүд 15px ба өнгө нь тоолуурынхаас ТОД · `dt` icon/svg 0 · emoji 0 ✓
+//      pin 16px + `vertical-align: -3px` (хаягны `truncate` эвдрэхгүй) ·
+//      нүд 18px ба өнгө нь тоолуурынхаас ТОД · `dt` icon/svg 0 · emoji 0 ✓
+//   🆕 (97)(98): `[data-listing-actions]` нь мета мөртэй НЭГ div болсон ⇒
+//      pin = SVG[0], нүд = SVG[1] (❤️/🤍 ба 🔗 нь emoji — SVG БИШ) ✓
 const ICONS = `(() => {
   const EMO = ['📍', '🔖', '👁'];
   const SPEC = ['🏷️', '🚗', '📅'];
@@ -345,14 +349,16 @@ const ICONS = `(() => {
   const meta = main.querySelector('[data-listing-meta]');
   const actions = main.querySelector('[data-listing-actions]');
   const metaSvgs = meta ? [...meta.querySelectorAll('svg')] : [];
+  //   🆕 (97): 👁/❤️/🔗 нь толгойн мета мөр рүү шилжсэн ⇒ `[data-listing-actions]`
+  //   === `[data-listing-meta]` (НЭГ л div) тул SVG-үүд нэг дор: [0] 📍 pin,
+  //   [1] 👁 нүд (❤️/🤍 ба 🔗 нь emoji — SVG БИШ) ✓
   const pin = metaSvgs[0] || null;
   const pinCs = pin ? getComputedStyle(pin) : null;
   const pinBox = pin ? pin.getBoundingClientRect() : null;
-  const viewsSpan = actions
-    ? [...actions.querySelectorAll('span')].find((s) => /үзсэн/.test(s.textContent || '') && s.querySelector('svg'))
-    : null;
-  const eye = viewsSpan ? viewsSpan.querySelector('svg') : null;
+  const eye = metaSvgs[1] || null;
   const eyeCs = eye ? getComputedStyle(eye) : null;
+  const eyeBox = eye ? eye.getBoundingClientRect() : null;
+  const viewsSpan = eye ? eye.closest('span') : null;
   const feat = main.querySelector('section[data-component="AdvertFeaturesApp"]');
   const dts = feat ? [...feat.querySelectorAll('dt')] : [];
   const dds = feat ? [...feat.querySelectorAll('dd')] : [];
@@ -372,7 +378,7 @@ const ICONS = `(() => {
     } : null,
     actionsFound: !!actions,
     views: viewsSpan ? flat(viewsSpan.textContent) : null,
-    eye: eye ? { w: Math.round(eye.getBoundingClientRect().width), color: eyeCs.color } : null,
+    eye: eye ? { w: Math.round(eyeBox.width), h: Math.round(eyeBox.height), color: eyeCs.color } : null,
     actionsColor: actions ? getComputedStyle(actions).color : null,
     dt: {
       count: dts.length,
@@ -385,17 +391,17 @@ const ICONS = `(() => {
 })()`;
 const ic = await evalJs(ICONS);
 check('⑨ 🎨 Мета мөр олдлоо (`data-listing-meta`)', !ic.noMain && ic.metaFound, ic.metaText || '—');
-check('⑨b 📍 emoji БАЙХГҮЙ — оронд нь `MapPinIcon` SVG 13×13px',
-  !!ic.pin && ic.pin.w === 13 && ic.pin.h === 13, ic.pin ? `${ic.pin.w}×${ic.pin.h}px` : 'SVG алга');
-check('⑨c 📍 SVG текстийн урсгалд суусан (`vertical-align: -2px`) — хаягны `truncate` хэвээр',
-  !!ic.pin && ic.pin.va === '-2px' && ic.pin.trunc,
+check('⑨b 📍 emoji БАЙХГҮЙ — оронд нь `MapPinIcon` SVG 16×16px (🆕 (98) томруулав)',
+  !!ic.pin && ic.pin.w === 16 && ic.pin.h === 16, ic.pin ? `${ic.pin.w}×${ic.pin.h}px` : 'SVG алга');
+check('⑨c 📍 SVG текстийн урсгалд суусан (`vertical-align: -3px`) — хаягны `truncate` хэвээр',
+  !!ic.pin && ic.pin.va === '-3px' && ic.pin.trunc,
   ic.pin ? `va ${ic.pin.va} · truncate ${ic.pin.trunc ? 'yes' : 'no'}` : '—');
-check('⑨d 🔖 emoji БАЙХГҮЙ — зарын дугаар ЗӨВХӨН текст (мета мөрд emoji 0)',
-  ic.metaEmoji.length === 0 && !!ic.metaText && ic.metaText.includes('Зарын дугаар:'),
-  ic.metaEmoji.length ? `${ic.metaEmoji.join(' ')} үлдсэн ✗` : `${ic.metaSvg} svg (зөвхөн pin) ✓`);
-check('⑨e 👁 emoji БАЙХГҮЙ — «N үзсэн» нь `EyeIcon` SVG 15×15px',
-  !!ic.eye && ic.eye.w === 15 && /үзсэн/.test(ic.views || ''),
-  ic.views ? `${ic.views} · svg ${ic.eye ? ic.eye.w : '—'}px` : 'алга');
+check('⑨d 🔖 emoji БАЙХГҮЙ — зарын дугаар ЗӨВХӨН текст «ID:» (мета мөрд emoji 0)',
+  ic.metaEmoji.length === 0 && !!ic.metaText && ic.metaText.includes('ID:'),
+  ic.metaEmoji.length ? `${ic.metaEmoji.join(' ')} үлдсэн ✗` : `${ic.metaSvg} svg (pin + нүд) ✓`);
+check('⑨e 👁 emoji БАЙХГҮЙ — «N» нь `EyeIcon` SVG 18×18px (🆕 (98) томруулав)',
+  !!ic.eye && ic.eye.w === 18 && ic.eye.h === 18 && /^\d+$/.test((ic.views || '').trim()),
+  ic.views ? `${ic.views} · svg ${ic.eye ? `${ic.eye.w}×${ic.eye.h}` : '—'}px` : 'алга');
 check('⑨f 👁 иконы өнгө нь тоолуурынхнаас ТОД («өнгийг нь тодруулаарай»)',
   !!ic.eye && !!ic.actionsColor && ic.eye.color !== ic.actionsColor,
   ic.eye ? `${ic.eye.color} ≠ ${ic.actionsColor}` : '—');

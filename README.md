@@ -1503,6 +1503,24 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- 🔍📍 **МЕТА ИКОНУУД ТОМРУУЛАВ — `MapPinIcon` 13 → 16px, `EyeIcon` 15 → 18px (2026-10-10 (98))** —
+  хэрэглэгчийн хүсэлт: «could you please increase that icons my web already applied»
+  + 📍/👁 зурагууд ⇒ иконууд хэт жижиг байв.
+  <br>**(1) 📍 `MapPinIcon`:** ⏳ `h-[13px] w-[13px] align-[-2px]` → **`h-4 w-4
+  align-[-3px]`** (16px) — `components/ListingDetailClient.jsx` (толгойн мета мөр)
+  ба `components/ListingCard.jsx` (картын мета мөр) ХОЁУЛАА; ⚠️ `align-[-2px]` →
+  `-3px` (иконы өндөр нэмэгдсэн тул текстийн суурьтай нийцүүлэв). ⚠️ `HomeClient`
+  дахь `MapPinIcon` (Байршлын шүүлт) аль хэдийн `h-4 w-4` (16px) байсан ⇒ ОДОО
+  бүх газар НЭГ хэмжээтэй ✓.
+  <br>**(2) 👁 `EyeIcon`:** ⏳ `h-[15px] w-[15px]` → **`h-[18px] w-[18px]`** (18px),
+  `text-gray-700` (ТОД) ХЭВЭЭР — `components/ListingDetailClient.jsx`.
+  <br>**(3) 🧪 ТЕСТ:** `cdp:detail-style` (бодит Chrome) — ⑨b pin **16×16px** · ⑨c
+  `vertical-align: -3px` · ⑨d мета мөрд «ID:» · ⑨e нүд **18×18px** + тоо нь зөвхөн
+  цифр (🆕 (97): `[data-listing-actions]` нь мета мөртэй НЭГ div ⇒ pin = SVG[0],
+  нүд = SVG[1]) ✓. ⚠️ Эх кодын гэрээний тестүүд (размер шалгадаггүй) ХЭВЭЭР ✓:
+  `test:card` 24 ✓ · `test:detail-ui` 23 ✓ · `test:share-btn` 6 ✓ · `test:location`
+  36 ✓ · `test:brand` 20 ✓ · `npm run build` **EXIT=0 ✓**.
+  🔍 Хайх үг: `h-4 w-4`, `align-[-3px]`, `h-[18px] w-[18px]`, `MapPinIcon`, `EyeIcon`
 - 🎴 **КАРТ + ДЭЛГЭРЭНГҮЙ — ЖИШИГ САЙТЫН ХЭВ: ҮНЭ→ГАРЧИГ ДАРААЛАЛ, ҮЗСЭН/ТААЛАГДСАН/ХУВААЛЦАХ ТОЛГОЙН МӨРӨНД (2026-10-10 (97))** —
   хэрэглэгчийн хүсэлт: «change card detail like attached photo. change position
   like attached photo, it's included Үзсэн, Таалагдсан, Хуваалцах design and

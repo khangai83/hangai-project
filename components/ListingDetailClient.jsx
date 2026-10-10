@@ -458,7 +458,7 @@ export default function ListingDetailClient({ id }) {
                  ⚠️ SVG нь ТЕКСТИЙН УРСГАЛД (`inline-block`) орсон тул хаягны
                  `truncate` ХӨНДӨӨГДӨХГҮЙ ✓ (`align-[-2px]` — текстийн суурьтай нийцүүлнэ) */}
           <span className="min-w-0 truncate" title={address || NO_LOCATION_LABEL}>
-            <MapPinIcon className="mr-1 inline-block h-[13px] w-[13px] align-[-2px]" />
+            <MapPinIcon className="mr-1 inline-block h-4 w-4 align-[-3px]" />
             {address || NO_LOCATION_LABEL}
           </span>
           <span aria-hidden="true" className="text-gray-300">·</span>
@@ -468,7 +468,7 @@ export default function ListingDetailClient({ id }) {
           {/* 👁 ҮЗСЭН — icon + тоо (🆕 (97): галерейн footer-оос энэ мөрөнд шилжив;
               жишиг сайтын хэвээр зөвхөн тоо — «37 үзсэн» БИШ «37») ✓ */}
           <span title="Энэ зарыг хэдэн хүн үзсэн" className="inline-flex items-center gap-1 font-semibold tabular-nums text-gray-600">
-            <EyeIcon className="h-[15px] w-[15px] text-gray-700" />
+            <EyeIcon className="h-[18px] w-[18px] text-gray-700" />
             {viewCount}
           </span>
           <span aria-hidden="true" className="text-gray-300">·</span>
