@@ -89,7 +89,7 @@ export default function ShareButton({
       title={copied ? 'Хуулагдлаа' : label}
       aria-label={copied ? 'Хуулагдлаа' : label}
       data-share-button
-      className={`-my-1 inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 font-semibold text-gray-500 transition hover:bg-primary/5 hover:text-primary ${
+      className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 font-semibold text-gray-700 transition hover:border-primary/40 hover:text-primary ${
         copied ? 'text-primary' : ''
       } ${className}`}
     >

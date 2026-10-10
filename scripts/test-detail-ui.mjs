@@ -321,8 +321,15 @@ t('⑩ 🏷️ Дэлгэрэнгүй хуудсанд ЗАРЫН ГАРЧИГ �
   // ① НЭГ ЭХ СУРВАЛЖ — `lib/format.js → listingTitle` (карттай ЯГ ижил) ✓
   assert.ok(/import \{[^}]*\blistingTitle\b[^}]*\} from '\.\.\/lib\/format'/.test(DET_CODE),
     '`listingTitle` нь `../lib/format`-аас импортлогдоогүй (гарчиг 2 газар зөрөх эрсдэл) ✗');
-  assert.ok(DET_CODE.includes('const adTitle = listingTitle(listing);'),
-    'гарчиг нь НЭГ ЭХ СУРВАЛЖААС (`listingTitle(listing)`) уншигдахгүй байна ✗');
+  // 🆕 (97) 🚗 АВТО нөөц гарчиг — хэрэглэгчийн хүсэлт: «Only car detail card like
+  //    photo, it's head is category name Toyota Harrier, Its Brand and Model then
+  //    manufactured date/Imported year» ⇒ зар оруулагч бичээгүй бол `carTitle`
+  assert.ok(DET_CODE.includes("const adTitle = listingTitle(listing) || (isAuto ? carTitle(listing.attrs) : '');"),
+    '🚗 АВТО нөөц гарчиг (`carTitle`) алга ✗ («Toyota Harrier, 2017/2024» гарахгүй)');
+  assert.ok(/import \{[^}]*\bcarTitle\b[^}]*\} from '\.\.\/lib\/format'/.test(DET_CODE),
+    '`carTitle` нь `../lib/format`-аас импортлогдоогүй ✗');
+  assert.ok(DET_CODE.includes("const isAuto = (listing.section || 'real-estate') === 'auto';"),
+    '`isAuto` шалгалт алга ✗ (бусад хэсэгт авто-гарчиг орж болзошгүй)');
   // ② H1 нь `data-listing-title` тэмдэгтэй ба ЯГ НЭГ удаа ✓
   assert.ok(DET_CODE.includes('data-listing-title'),
     '`h1[data-listing-title]` тэмдэг алга (CDP барих боломжгүй) ✗');
@@ -351,22 +358,27 @@ t('⑪ (96) Мета мөр: `📍` → `MapPinIcon` SVG · `🔖` ХАСАГД�
   assert.match(DET_CODE, /<MapPinIcon\b/, 'хаягны `MapPinIcon` (📍 emoji биш) алга ✗');
   assert.ok(!/📍/.test(DET_CODE), '📍 emoji буцаж орсон ✗ ((96): `MapPinIcon` байх ЁСТОЙ)');
   assert.ok(!/🔖/.test(DET_CODE), '🔖 emoji буцаж орсон ✗ ((96): icon ХАСАГДСАН байх ЁСТОЙ)');
-  // ⚠️ Зарын дугаарын УТГА/текст ХӨНДӨӨГДӨӨГҮЙ (зөвхөн icon арилав ✓)
-  assert.ok(DET_CODE.includes('Зарын дугаар: <span className="font-mono font-semibold text-gray-600">{shortId}</span>'),
-    'зарын дугаарын текст/утга ХӨНДӨӨГДСӨН ✗');
+  // ⚠️ Зарын дугаарын дүрслэл — 🆕 (97): ⏳ «Зарын дугаар:» → «ID:» (жишиг сайтын
+  //    хэв: «ID: 10801626»); ⚠️ БОГИНО дугаар (`shortId`) ХӨНДӨӨГДӨӨГҮЙ ✓
+  assert.ok(DET_CODE.includes('ID: <span className="font-mono font-semibold text-gray-600">{shortId}</span>'),
+    'ID текст/утга ХӨНДӨӨГДСӨН ✗ ((97): «ID: XXXXXXXX»)');
   // ⚠️ CDP (бодит Chrome) нь ЭДГЭЭР selector-оор хэмждэг — байхгүй бол CDP SKIP ✓
   assert.match(DET_CODE, /data-listing-meta/, 'мета мөрний `data-listing-meta` selector алга ✗');
   assert.match(DET_CODE, /data-listing-actions/, '«үзсэн/таалагдсан/хуваалцах» мөрний `data-listing-actions` алга ✗');
 });
 
-t('⑪ (96) «N үзсэн» нь `EyeIcon` SVG — өнгө ТОД (`text-gray-700`) ✓', () => {
-  /** ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «👁 3 үзсэн -ийг icon ийг соль (Icon явуулав, өнгийг
-   *  нь тодруулаарай)» ⇒ ⏳ `👁` emoji → `EyeIcon`; ⚠️ өнгө нь тоолуурын
-   *  `text-gray-500`-аас ТОД (`text-gray-700`) байх ЁСТОЙ ✓ */
+t('⑪ (97) 👁 ҮЗСЭН нь `EyeIcon` SVG — толгойн мета мөрөнд, зөвхөн тоо ✓', () => {
+  /** ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (🆕 (97)): «change position like attached photo, it's
+   *  included Үзсэн, Таалагдсан, Хуваалцах» ⇒ `👁 N` нь толгойн мета мөрөнд
+   *  (`📍 хаяг · 🕒 огноо · 👁 N · ID: X`) шилжив; ⚠️ өмнөх (96)-ийн ТОД өнгө
+   *  (`text-gray-700`) ХЭВЭЭР ✓; текст нь «N үзсэн» БИШ зөвхөн «N» (жишиг сайт) ✓ */
   assert.match(DET_CODE, /<EyeIcon className="[^"]*text-gray-700[^"]*"/,
     '`EyeIcon` нь ТОД өнгөтэй (`text-gray-700`) БИШ ✗');
   assert.ok(!/👁/.test(DET_CODE), '👁 emoji буцаж орсон ✗ ((96): `EyeIcon` байх ЁСТОЙ)');
-  assert.ok(DET_CODE.includes('{viewCount} үзсэн'), '«N үзсэн» текст ХӨНДӨӨГДСӨН ✗');
+  assert.ok(DET_CODE.includes('{viewCount}'), 'үзсэн тоо (`{viewCount}`) ХӨНДӨӨГДСӨН ✗');
+  // ⛔ (97): «{viewCount} үзсэн» урт текст БУЦАЖ ОРОХ ЁСГҮЙ (зөвхөн тоо) ✓
+  assert.ok(!DET_CODE.includes('{viewCount} үзсэн'),
+    '«{viewCount} үзсэн» буцаж орсон ✗ ((97): зөвхөн «{viewCount}» тоо)');
 });
 
 t('⑪ (96) «Зарын дэлгэрэнгүй» хүснэгтэд icon ХАРАГДАХГҮЙ (`{f.label}` — `f.icon` биш) ✓', () => {

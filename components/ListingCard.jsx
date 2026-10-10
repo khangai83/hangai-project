@@ -6,9 +6,10 @@ import { shortPriceLabel, hasRealPrice, getPropertyIcon, firstImage, carTitle, t
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 import VerifiedBadge from './VerifiedBadge';
 // 📍👁 2026-10-10 (96) — МЕТА МӨРИЙН ICONУУД EMOJI → SVG (хэрэглэгчийн хүсэлт):
-//    ① 📍 → `MapPinIcon` (🗺 «Газрын зураг» товчны pin-тай ЯГ ИЖИЛ) ② 👁 → `EyeIcon`.
-//    ⚠️ Дэлгэрэнгүй хуудасны ЯГ ТЭР иконууд — хоёр гадаргуу нэг харагдацтай ✓
-import { MapPinIcon, EyeIcon } from './HeaderIcons';
+//    ① 📍 → `MapPinIcon` (🗺 «Газрын зураг» товчны pin-тай ЯГ ИЖИЛ).
+//    ⚠️ 🆕 (97) Карт дээр 👁 «үзсэн» тоо ХАСАГДАВ — жишиг сайтын карт нь зөвхөн
+//       «🕒 огноо | 📍 хаяг» харуулна ⇒ `EyeIcon` импорт хэрэггүй болов ✓
+import { MapPinIcon } from './HeaderIcons';
 
 /**
  * 🖼 КАРТ ДЭЭРХ ЦЭГИЙН ДЭЭД ХЯЗГААР (🆕 (85)) — 5-аас олон зурагтай үед цэгүүд
@@ -26,17 +27,17 @@ const MAX_CARD_DOTS = 5;
  *    `sm:h-[300px]`) — ОДОО **БОСОО**: ЗУРАГ ДЭЭРЭЭ бүтэн өргөн, доор нь
  *    мэдээлэл ⇒ жагсаалт нь БАГАНАТ GRID болно (карт бүр ~290px өргөн) ✓
  *
- * 🎨 ЛАВЛАХ ЗАГВАР (жишиг сайт) — 🆕 (86): хайрцаггүй, ГАРЧИГ → МЭДЭЭЛЭЛ → ҮНЭ:
+ * 🎨 ЛАВЛАХ ЗАГВАР (жишиг сайт) — 🆕 (97): ҮНЭ → ГАРЧИГ → МЭДЭЭЛЭЛ → МЕТА:
  *   ┌─────────────────────────────────┐
  *   │  🖼 ЗУРАГ — БҮТЭН өргөн + КАРУСЕЛЬ│ ← `aspect-[4/3]` + `rounded-xl` (85)
- *   │  [Зарах]    ❤️ 5      ‹      ›   │ ← ❤️ БАРУУН ДЭЭД (🆕 (86), цагаан товч)
+ *   │  [Зарах]          ‹      ›      │ ← «Зарах/Түрээслэх» badge (зүүн дээд)
  *   │         • • ○ • •                │ ← цэгүүд (2…5 зурагтай үед)
  *   │  🎥                  🖼 2/16      │ ← АМЬД тоолуур (баруун ДООД)
  *   ├─────────────────────────────────┤  ⛔ хүрээ/сүүдэр/саарал хайрцаг БАЙХГҮЙ
+ *   │  340 сая ₮ ✅            ❤️      │ ← 💰 ҮНЭ (22px, bold) + ✅ | ❤️ баруун захад
  *   │  Toyota Vellfire, 2017/2026      │ ← 🏷️ гарчиг (🚗 АВТО-гарчиг, 2 мөр)
  *   │  135,500 км · Автомат · 2.5 л    │ ← 📋 мэдээллийн мөр
- *   │  🕒 27 минутын өмнө | (pin) Баянзүрх │ ← 📅 мета мөр (+ 👁 нүдний икон баруун захад)
- *   │  340 сая ₮ ✅                    │ ← 💰 ҮНЭ (22px, bold) ХАМГИЙН ДООР
+ *   │  🕒 27 минутын өмнө | (pin) Баянзүрх │ ← 📅 мета мөр (ХАМГИЙН ДООР)
  *   └─────────────────────────────────┘
  *
  * 🆕 (86) 2026-10-09 — «жишиг сайтын design» 3 ДАХЬ ЗАСВАР (хэрэглэгчийн хүсэлт:
@@ -150,8 +151,8 @@ export default function ListingCard({ listing, author, attrsLine }) {
   const isFav = favoriteIds.includes(listing.id);
   // ❤️ Нийт хэдэн хүн таалагдсан (listings.likes — supabase/migrations/0007)
   const likes = useLikeCount(listing.id, listing.likes);
-  // 👁 Нийт хэдэн хүн үзсэн (listings.views — 0007_listing_likes_views.sql)
-  const views = Number(listing.views) || 0;
+  // ⚠️ 🆕 (97): 👁 «үзсэн» тоо карт дээр ХАСАГДАВ — жишиг сайтын карт нь зөвхөн
+  //    «🕒 огноо | 📍 хаяг» харуулдаг; тоо нь дэлгэрэнгүй хуудсанд ХЭВЭЭР ✓
   const isSell = listing.category === 'sell';
   // ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд (хэрэглэгчийн хүсэлт) —
   //    бусад хэсэгт (авто/ажил/компьютер…) энэ badge ХАРАГДАХГҮЙ.
@@ -339,52 +340,62 @@ export default function ListingCard({ listing, author, attrsLine }) {
           </span>
         )}
 
-        {/* ❤️/🤍 — МИНИЙ favourite toggle БА нийт тоо (`listings.likes`, 0007)
-            🆕 2026-10-09 (86): **ЗУРГИЙН БАРУУН ДЭЭД БУЛАНД** — хэрэглэгчийн
-            хүсэлт: «like ийг картныхаа баруун дээд буланд гаргачих» (жишиг сайтын
-            хэв: зургийн баруун дээд буланд ЦАГААН товчтой зүрхэн ✓)
-            ⚠️ ⏳ (78) — үнийн мөрөнд, (85) — үнийн хажууд байв ⇒ ОДОО зурган дээр ✓
-            ⚠️ `z-10` — «Зарах / Түрээслэх» badge ба 🖼 тоолуураас ДЭЭР байрлана ✓
-            ⚠️ Карт бүхэлдээ `<Link>` тул `preventDefault` + `stopPropagation`
-               ЗААВАЛ (эс бөгөөс зүрхэн дарахад ЗАР РУУ шилжинэ ✗) ✓
-            ⚠️ Товч нь `/favorites`-ийн «Хасах» товчтой МӨРГӨЛДӨХГҮЙ — тэр нь
-               картын баруун ДОО буланд (🆕 (86): бүх дэлгэцэд) байрлана ✓ */ }
-        <button
-          type="button"
-          data-fav-toggle
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleFavorite(listing.id);
-          }}
-          aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
-          title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
-          className={`absolute right-2 top-2 z-10 inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-white/90 px-2.5 text-[13px] font-semibold shadow-card backdrop-blur-sm transition hover:bg-white hover:text-red-600 ${
-            isFav ? 'text-red-600' : 'text-gray-700'
-          }`}
-        >
-          {isFav ? '❤️' : '🤍'} {likes}
-        </button>
       </div>
 
       {/* ══════ 📋 МЭДЭЭЛЭЛ (доод) — ЗУРГИЙН ДООР ══════
           🆕 (86): хайрцаг БАЙХГҮЙ болов ⇒ текст нь ЗУРГИЙН зүүн захад ТЭГШ
           (⏳ (78)-д `p-3.5` — саарал карт дотор «доторлосон» байв ✓) */}
       <div className="flex flex-1 flex-col pt-2.5">
-        {/* 🗑 👤 НИЙТЛЭГЧИЙН BAND (Avatar 28px + нэр + ✅) ХАСАГДАВ — 2026-10-09 (85)
-            (хэрэглэгч: «зар оруулагчийн Profile зураг нэрийг ч хасна уу») ⇒
-            ✅ `VerifiedBadge` нь доорх ҮНИЙ МӨРӨНД шилжив — жишиг сайтын машин
-            карт дээр «68 сая ₮ ✓» гэж яг ийм байрлалтай ✓
-            ⚠️ `listing.show_name` (0042) ба `0017` нь карт дээр ЗӨВХӨН ✅ тэмдгийг
-               удирдана; `author` проп нь хуудсууд дээр ХЭВЭЭР дамжигдана
-               (band-ыг буцаах бол зөвхөн энэ блокыг сэргээнэ ✓) */}
+        {/* 💰 ҮНЭ — ЗУРГИЙН ЯГ ДОР (хамгийн дээд мөр) + ✅ баталгаа ЯГ ХАЖУУД;
+            ❤️/🤍 favourite toggle нь мөрийн БАРУУН ЗАХАД (🆕 (97) — жишиг сайтын
+            картын хэв). Дараалал: ҮНЭ → ГАРЧИГ → МЭДЭЭЛЭЛ → МЕТА.
+            ⚠️ «Үнэ тохирно» карт дээр ГАРАХГҮЙ (`hasRealPrice` — 2026-10-02) ✓
+            ⚠️ 🗑 👤 НИЙТЛЭГЧИЙН BAND (Avatar 28px + нэр) КАРТ ДЭЭР БАЙХГҮЙ (85) —
+               `listing.show_name` (0042/0017) нь карт дээр ЗӨВХӨН ✅ тэмдгийг удирдана;
+               `author` проп хуудсууд дээр ХЭВЭЭР (band-ыг буцаах бол блок сэргээнэ ✓) */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            {hasRealPrice(listing) && (
+              <div className="min-w-0 text-[22px] font-extrabold leading-tight tracking-[-0.01em] text-gray-900">
+                {shortPriceLabel(listing)}
+              </div>
+            )}
+            {/* ✅ БАТАЛГААЖСАН — үнийн ЯГ ХАЖУУД (🆕 (85), жишиг сайтын хэв)
+                ⚠️ `show_name === false` (зар оруулагч нэрээ нуусан) бол ГАРАХГҮЙ ✓ */}
+            {authorVisible && <VerifiedBadge size={15} className="text-primary" />}
+          </div>
+          {/* ❤️/🤍 — МИНИЙ favourite toggle БА нийт тоо (`listings.likes`, 0007)
+              🆕 (97): жишиг сайтын картын хэвээр ҮНИЙ МӨРИЙН БАРУУН ЗАХАД
+              (⏳ (86)-д зургийн баруун дээд буланд цагаан товчтой байв ✓)
+              ⚠️ Карт бүхэлдээ `<Link>` тул `preventDefault` + `stopPropagation`
+                 ЗААВАЛ (эс бөгөөс зүрхэн дарахад ЗАР РУУ шилжинэ ✗) ✓
+              ⚠️ `/favorites`-ийн «Хасах» товч нь картын баруун ДОО буланд —
+                 энэ зүрхэнтэй мөргөлдөхгүй ✓ */}
+          <button
+            type="button"
+            data-fav-toggle
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleFavorite(listing.id);
+            }}
+            aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
+            title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
+            className={`-mr-1 -mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[18px] leading-none transition hover:bg-red-50 hover:text-red-600 ${
+              isFav ? 'text-red-600' : 'text-gray-700'
+            }`}
+          >
+            {isFav ? '❤️' : '🤍'}
+          </button>
+        </div>
 
-        {/* 🏷️ ЗАРЫН ГАРЧИГ — ХАМГИЙН ДЭЭД МӨР (🆕 (86) жишиг сайтын ДАРААЛАЛ:
-            ГАРЧИГ → МЭДЭЭЛЭЛ → ҮНЭ; ⏳ (78)/(85)-д үнэ нь ЭХЭНД байв)
+        {/* 🏷️ ЗАРЫН ГАРЧИГ — ҮНИЙ ЯГ ДООР (🆕 (97) жишиг сайтын ДАРААЛАЛ:
+            ҮНЭ → ГАРЧИГ → МЭДЭЭЛЭЛ → МЕТА; ⏳ (86)-д гарчиг ХАМГИЙН ДЭЭД мөрөнд,
+            үнэ ХАМГИЙН ДООР байв ✗)
             ⚠️ `line-clamp-2` (**2 мөр**) + `text-[15px] font-semibold`
                ХӨНДӨӨГДӨӨГҮЙ (`test-card` гэрээ ✓) */ }
         {title && (
-          <div className="line-clamp-2 text-[15px] font-semibold leading-snug text-gray-900" title={title}>
+          <div className="mt-1 line-clamp-2 text-[15px] font-semibold leading-snug text-gray-900" title={title}>
             {title}
           </div>
         )}
@@ -414,63 +425,33 @@ export default function ListingCard({ listing, author, attrsLine }) {
         {/* ⚠️ 2026-10-06: 📝 ТАЙЛБАР блок ХАСАГДАВ (хэрэглэгчийн хүсэлт) —
             карт дээр `listing.description` харуулахгүй ✓ (Дэлгэрэнгүй хуудсанд ХЭВЭЭР) */}
 
-        {/* 📅 МЕТА МӨР — 🕒 огноо | 📍 хаяг   …   👁 үзсэн
+        {/* 📅 МЕТА МӨР — 🕒 огноо | 📍 хаяг (🆕 (97) — ХАМГИЙН ДООД мөр)
+            🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «attached 2 cards, study and change my card
+               information» ⇒ жишиг сайтын карт нь зөвхөн «огноо | хаяг» харуулна
+               ⇒ 👁 «үзсэн» тоо эндээс ХАСАГДАВ (дэлгэрэнгүй хуудсанд ХЭВЭЭР ✓)
+            ⚠️ `mt-auto` — бүх картын мета мөр НЭГ ЗУРААСАНД эгнэхийн тулд картын
+               ёроолд тогтоно ✓ (⏳ (86)-д `mt-auto` нь үний мөрөнд байв — үнэ
+               одоо ДЭЭШЭЭ (зургийн яг дор) гарсан ✓)
             🆕 (86): хүрээ-зураас (`border-t`) ХАСАГДАВ — жишиг сайтын карт дээр
-               мөрүүдийн хооронд зураас БАЙХГҮЙ ✓ · `mt-auto` ХАСАГДСАН (үнэ нь
-               хамгийн доор тогтоно — доорх үний мөр `mt-auto`-тай ✓)
-            ⚠️ ❤️/🤍 энд БАЙХГҮЙ (78: үнийн мөрөнд → 🆕 (86): ЗУРГИЙН баруун
-               дээд буланд ✓)
+               мөрүүдийн хооронд зураас БАЙХГҮЙ ✓
             📱 МОБАЙЛ: хаяг нь `order-last w-full` → БҮТЭН мөр болж доош бууна
                (эс бөгөөс `pr-20`-ийн дараа хаяг «…» болж бүрэн алга болно ✗);
                ≥640px-д `sm:order-none sm:flex-1` → нэг мөрөнд буцаж эгнэнэ ✓
-            ⚠️ `pr-20` — /favorites-ийн «Хасах» товч (🆕 (86): БҮХ дэлгэцэд баруун
-               ДОО буланд) доод 2 мөрний баруун захад давхцаж болзошгүй тул мөр
-               БҮРД 80px нөөц үлдээнэ (⏳ `sm:pr-0` ХАСАГДАВ ✓)
-            🆕 (96): ⏳ `📍` ба `👁` emoji → SVG (`MapPinIcon`/`EyeIcon`; ⚠️ дэлгэрэнгүй
-               хуудасныхтай ЯГ ижил) — хэрэглэгчийн хүсэлт: «📍 26-р хороо үүний
-               өмнөх icon ийг Газрын зургийн өмнөх шиг болго» · «👁 3 үзсэн -ийг
-               icon ийг соль (Icon явуулав, өнгийг нь тодруулаарай)» ✓
-            ⚠️ `data-listing-meta` — CDP/тестийн ТОГТВОРТОЙ selector (🆕 (96)) ✓ */}
-        <div data-listing-meta className="flex flex-wrap items-center gap-x-3 gap-y-0.5 pr-20 pt-0.5 text-[13px] text-gray-500 sm:flex-nowrap">
+            ⚠️ `pr-20` — /favorites-ийн «Хасах» товч (БҮХ дэлгэцэд баруун ДОО
+               буланд) энэ мөрийн баруун захад давхарлаж болзошгүй тул 80px нөөц ✓
+            🆕 (96): ⏳ `📍` emoji → `MapPinIcon` (🗺 «Газрын зураг» товчны pin-тай
+               ЯГ ИЖИЛ SVG; дэлгэрэнгүй хуудасныхтай ИЖИЛ ✓). ⚠️ SVG нь ТЕКСТИЙН
+               УРСГАЛД (`inline-block`) орсон тул хаягны `truncate` ХӨНДӨӨГДӨХГҮЙ ✓
+            ⚠️ `data-listing-meta` — CDP/тестийн ТОГТВОРТОЙ selector ✓ */}
+        <div data-listing-meta className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-0.5 pr-20 pt-0.5 text-[13px] text-gray-500 sm:flex-nowrap">
           <span className="whitespace-nowrap" title="Нийтэлсэн огноо">🕒 {timeAgo(listing.created_at)}</span>
           {address && (
             <span className="order-last w-full truncate sm:order-none sm:w-auto sm:flex-1" title={address}>
               <span aria-hidden="true" className="mr-1.5 hidden text-gray-300 sm:inline">|</span>
-              {/* 🆕 (96): ⏳ `📍` emoji → `MapPinIcon` (🗺 «Газрын зураг» товчны
-                  pin-тай ЯГ ИЖИЛ SVG; дэлгэрэнгүй хуудасныхтай ИЖИЛ ✓).
-                  ⚠️ SVG нь ТЕКСТИЙН УРСГАЛД (`inline-block`) орсон тул хаягны
-                  `truncate` ХӨНДӨӨГДӨХГҮЙ ✓ */}
               <MapPinIcon className="mr-1 inline-block h-[13px] w-[13px] align-[-2px]" />
               {address}
             </span>
           )}
-          <span className="ml-auto flex shrink-0 items-center gap-2">
-            <span className="inline-flex items-center gap-1 font-semibold tabular-nums text-gray-600" title="Энэ зарыг хэдэн хүн үзсэн">
-              {/* 🆕 (96): ⏳ `👁` emoji → `EyeIcon` SVG («өнгийг нь тодруулаарай» ⇒
-                  `text-gray-700` — тоолуурын `text-gray-600`-аас ТОД ✓) */}
-              <EyeIcon className="h-[15px] w-[15px] text-gray-700" />
-              {views}
-            </span>
-          </span>
-        </div>
-
-        {/* 💰 ҮНЭ — ХАМГИЙН ДООД МӨР (🆕 (86) жишиг сайтын хэв: үнэ нь ХАМГИЙН
-            ДООР, ТОМ bold) + ✅ баталгаа ЯГ ХАЖУУД ✓
-            ⚠️ 22px extrabold + товч формат ХӨНДӨӨГДӨӨГҮЙ (`test-card` гэрээ ✓);
-               «Үнэ тохирно» карт дээр ГАРАХГҮЙ (`hasRealPrice` — 2026-10-02) ✓
-            ⚠️ `mt-auto` — бүх картын үнэ НЭГ ЗУРААСАНД эгнэхийн тулд мөрийг
-               картын ёроолд тогтооно ✓ (⏳ (86)-аас өмнө энэ нь мета мөрд байв)
-            ⚠️ Баруун тал нь ХООСОН — /favorites-ийн «Хасах» товч тэнд overlay
-               болж сууна (тиймээс `pr-*` нөөц ШААРДЛАГАГҮЙ) ✓ */}
-        <div className="mt-auto flex items-center gap-2 pt-1.5">
-          {hasRealPrice(listing) && (
-            <div className="min-w-0 text-[22px] font-extrabold leading-tight tracking-[-0.01em] text-gray-900">
-              {shortPriceLabel(listing)}
-            </div>
-          )}
-          {/* ✅ БАТАЛГААЖСАН — үнийн ЯГ ХАЖУУД (🆕 (85), жишиг сайтын хэв)
-              ⚠️ `show_name === false` (зар оруулагч нэрээ нуусан) бол ГАРАХГҮЙ ✓ */}
-          {authorVisible && <VerifiedBadge size={15} className="text-primary" />}
         </div>
       </div>
     </Link>

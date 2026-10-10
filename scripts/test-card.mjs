@@ -115,14 +115,15 @@ t('💰 Үнэ нь ТОМ bold (`text-[22px] font-extrabold`) + ТОВЧ фор
   assert.ok(!/\bpriceLabel\b/.test(CARD_CODE), 'карт дээр урт `priceLabel` буцаж орсон ✗');
 });
 
-t('❤️/🤍 нь ЗУРГИЙН БАРУУН ДЭЭД буланд (`right-2 top-2`, цагаан товч) — 🆕 (86)', () => {
-  // Хэрэглэгчийн хүсэлт: «like ийг картныхаа баруун дээд буланд гаргачих»
-  assert.match(CARD_CODE, /absolute right-2 top-2 z-10 inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-white\/90/,
-    '❤️ товч нь зургийн БАРУУН ДЭЭД буланд (цагаан `bg-white/90` товч) БИШ ✗');
+t('❤️/🤍 нь ҮНИЙ МӨРИЙН БАРУУН ЗАХАД (🆕 (97) — жишиг сайтын карт)', () => {
+  // Хэрэглэгчийн хүсэлт: «attached 2 cards, study and change my card information»
+  //   ⇒ жишиг сайтын карт: үнэ нь зурагны ЯГ ДОР, ❤️ нь үний мөрийн БАРУУН захад ✓
+  assert.match(CARD_CODE, /-mr-1 -mt-0\.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full/,
+    '❤️ товч нь ҮНИЙ МӨРИЙН БАРУУН захад (жижиг дугуй товч) БИШ ✗');
   assert.match(CARD_CODE, /data-fav-toggle/, '❤️ товчны `data-fav-toggle` дэгээ алга ✗');
-  // ⚠️ ⏳ (78): үнийн мөрөнд, (85): үнийн хажууд байв ⇒ БУЦАЖ ОРОХ ЁСГҮЙ ✗
-  assert.ok(!/ml-auto inline-flex shrink-0 items-center gap-1 rounded-full/.test(CARD_CODE),
-    '❤️ товч үнийн мөрөнд (хуучин байрлал) буцаж орсон ✗');
+  // ⛔ РЕГРЕСС: ⏳ (86)-ийн «зургийн баруун дээд буланд цагаан товч» БУЦАЖ ОРОХ ЁСГҮЙ
+  assert.ok(!/absolute right-2 top-2 z-10 inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-white\/90/.test(CARD_CODE),
+    '⏳ (86)-ийн зурган дээрх ❤️ товч буцаж орсон ✗ ((97): үний мөрөнд байх ЁСТОЙ)');
   // ⚠️ `toggleFavorite` ЗӨВХӨН 1 удаа дуудагдана (товч НЭГ л байна ✓)
   assert.equal((CARD_CODE.match(/toggleFavorite\(listing\.id\)/g) || []).length, 1,
     '`toggleFavorite` нь 1-ээс олон газар дуудагдаж байна ✗');
@@ -147,14 +148,14 @@ t('🎨 (86) Карт нь ХАЙРЦАГГҮЙ (хүрээ/сүүдэр/саа�
   assert.ok(!/border-t border-gray-100/.test(CARD_CODE), 'мөрүүдийн хоорондох зураас буцаж орсон ✗');
 });
 
-t('🔀 (86) ДАРААЛАЛ: 🏷️ гарчиг → 📋 мэдээлэл → 🕒/📍 мета → 💰 үнэ (ХАМГИЙН ДООР)', () => {
+t('🔀 (97) ДАРААЛАЛ: 💰 үнэ → 🏷️ гарчиг → 📋 мэдээлэл → 🕒/📍 мета (ХАМГИЙН ДООР)', () => {
   const iTitle = CARD_CODE.indexOf('line-clamp-2 text-[15px]');
   const iPrice = CARD_CODE.indexOf('text-[22px] font-extrabold');
-  assert.ok(iTitle > 0 && iPrice > 0 && iTitle < iPrice,
-    'гарчиг нь ҮНИЙ МӨРӨӨС ДЭЭР БИШ ✗ (жишиг сайтын дараалал: гарчиг → мэдээлэл → үнэ)');
-  // ⚠️ Үнэ нь `mt-auto` — бүх картын үнэ НЭГ ЗУРААСАНД эгнэнэ ✓
-  assert.match(CARD_CODE, /<div className="mt-auto flex items-center gap-2 pt-1\.5">/,
-    'үний мөр нь картын ёроолд тогтохгүй (`mt-auto`) ✗');
+  assert.ok(iTitle > 0 && iPrice > 0 && iPrice < iTitle,
+    'үнэ нь гарчгийн ДЭЭР (зургийн ЯГ ДОР) БИШ ✗ (жишиг сайтын дараалал: үнэ → гарчиг → мэдээлэл)');
+  // ⚠️ Мета мөр нь `mt-auto` — бүх картын мета НЭГ ЗУРААСАНД эгнэнэ ✓
+  assert.match(CARD_CODE, /<div data-listing-meta className="mt-auto flex flex-wrap/,
+    'мета мөр нь картын ёроолд тогтохгүй (`mt-auto`) ✗');
 });
 
 t('🏷️ Гарчиг нь 2 МӨР (`line-clamp-2`) — `listingTitle` (0027)', () => {
@@ -267,19 +268,19 @@ t('🏷️ «Зарах / Түрээслэх» badge — ЗӨВХӨН үл хө�
 
 
 // ---------- ④ ДООД МЕТА МӨР ----------
-t('📅 Доод мета мөр: 🕒 `timeAgo` | `MapPinIcon` хаяг + `EyeIcon` views (❤️ ГАРАХГҮЙ)', () => {
+t('📅 Доод мета мөр: 🕒 `timeAgo` | `MapPinIcon` хаяг (`EyeIcon` views ХАСАГДАВ — 🆕 (97))', () => {
   assert.match(CARD_CODE, /timeAgo\(listing\.created_at\)/, 'огноо (`timeAgo`) алга ✗');
   assert.match(CARD_CODE, /address &&/, 'хаягийн хаалт алга ✗');
   assert.match(CARD_CODE, /formatAddress\(listing\)/, 'хаяг (`formatAddress`) алга ✗');
   // 🆕 2026-10-10 (96) — хэрэглэгчийн хүсэлт: «📍 26-р хороо үүний өмнөх icon ийг
-  //    Газрын зургийн өмнөх шиг болго» · «👁 3 үзсэн -ийг icon ийг соль (Icon
-  //    явуулав, өнгийг нь тодруулаарай)» ⇒ ⏳ `📍`/`👁` emoji → SVG.
-  //    ⚠️ Дэлгэрэнгүй хуудасныхтай ЯГ ижил иконууд (`HeaderIcons.jsx`) ✓
+  //    Газрын зургийн өмнөх шиг болго» ⇒ ⏳ `📍` emoji → `MapPinIcon` SVG.
+  //    ⚠️ Дэлгэрэнгүй хуудасныхтай ЯГ ижил икон (`HeaderIcons.jsx`) ✓
   assert.match(CARD_CODE, /<MapPinIcon\b/, 'хаягийн `MapPinIcon` (📍 emoji биш) алга ✗');
-  assert.match(CARD_CODE, /<EyeIcon\b/, 'тоолуурын `EyeIcon` (👁 emoji биш) алга ✗');
-  assert.match(CARD_CODE, /\{views\}/, 'үзсэн тоо (`{views}`) алга ✗');
-  // ⚠️ Мета мөр нь CDP/тестийн ТОГТВОРТОЙ selector-той (`data-listing-card`-ийн
-  //    адил) — эс бөгөөс икон шалгалт нь класс мөрөөс хамаарч эвдрэмтгий ✗ (🆕 (96))
+  // ⛔ (97): 👁 «үзсэн» тоо карт дээр БАЙХГҮЙ — жишиг сайтын карт зөвхөн
+  //    «🕒 огноо | 📍 хаяг» харуулна (тоо нь дэлгэрэнгүй хуудсанд ХЭВЭЭР ✓)
+  assert.ok(!/<EyeIcon\b/.test(CARD_CODE),
+    '`EyeIcon` карт дээр буцаж орсон ✗ ((97): зөвхөн огноо|хаяг)');
+  assert.ok(!/\{views\}/.test(CARD_CODE), '`{views}` карт дээр буцаж орсон ✗ ((97): хасагдсан)');
   // ⛔ РЕГРЕСС: emoji буцаж орвол ✗ (SVG байх ЁСТОЙ — OS бүрд ижил харагдана)
   assert.ok(!/📍/.test(CARD_CODE), '📍 emoji буцаж орсон ✗ ((96): SVG байх ЁСТОЙ)');
   assert.ok(!/👁/.test(CARD_CODE), '👁 emoji буцаж орсон ✗ ((96): SVG байх ЁСТОЙ)');

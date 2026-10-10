@@ -1503,6 +1503,38 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- 🎴 **КАРТ + ДЭЛГЭРЭНГҮЙ — ЖИШИГ САЙТЫН ХЭВ: ҮНЭ→ГАРЧИГ ДАРААЛАЛ, ҮЗСЭН/ТААЛАГДСАН/ХУВААЛЦАХ ТОЛГОЙН МӨРӨНД (2026-10-10 (97))** —
+  хэрэглэгчийн хүсэлт: «change card detail like attached photo. change position
+  like attached photo, it's included Үзсэн, Таалагдсан, Хуваалцах design and
+  position … Only car detail card like photo, it's head is category name Toyota
+  Harrier, Its Brand and Model then manufactured date/Imported year … attached
+  2 cards, study and change my card information. one is car card, one is product
+  card» ⇒ ⏳👇 3 өөрчлөлт (⚠️ **DB/SQL/migration/URL/query ХӨНДӨӨГДӨӨГҮЙ** — зөвхөн UI).
+  <br>**(1) 🏷️ ЗАРЫН ДЭЛГЭРЭНГҮЙ ТОЛГОЙ** (`components/ListingDetailClient.jsx`):
+  ⏳ (2026-10-01/07)д 👁 үзсэн · ❤️ таалагдсан · 🔗 Хуваалцах нь ГАЛЕРЕЙН доорх
+  footer-т байв ✗ ⇒ ОДОО **толгойн мета мөрөнд** (жишиг сайтын хэв):
+  `📍 хаяг · 🕒 огноо · 👁 N · ID: XXXXXXXX` + мөрийн БАРУУН захад хүрээтэй
+  pill товч `[❤️ N]` ба `[🔗 Хуваалцах]`. ⏳ «Зарын дугаар:» → **«ID:»**,
+  ⏳ «{viewCount} үзсэн» → зөвхөн **тоо** (`{viewCount}`). ⚠️ Дараалал (👁 → ❤️ → 🔗)
+  ба `data-listing-meta`/`data-listing-actions` selector ХЭВЭЭР (CDP/тест ✓);
+  галерейн доорх хуучин footer БҮРЭН ХАСАГДАВ. `ShareButton.jsx` нь pill
+  (`h-8 rounded-full border border-gray-200 bg-white px-3`) болов.
+  <br>**(2) 🚗 АВТО ДЭЛГЭРЭНГҮЙ ГАРЧИГ:** зар оруулагч гарчиг БИЧЭЭГҮЙ бол H1 нь
+  `lib/format.js → carTitle(attrs)` — «Toyota Harrier, 2017/2024» (брэнд + загвар,
+  үйлдвэрлэсэн/орж ирсэн он; карт дээрхтэй ЯГ ИЖИЛ нэг эх сурвалж) ✓.
+  <br>**(3) 🃏 КАРТ** (`components/ListingCard.jsx`): ⏳ (86) дараалал «гарчиг →
+  мэдээлэл → мета → үнэ (хамгийн доор)» ба ❤️ нь зургийн баруун дээд буланд байв ✗
+  ⇒ ОДОО жишиг сайтын хэв: **ҮНЭ (22px bold) + ✅** нь зургийн ЯГ ДОР, ❤️ нь
+  үний мөрийн БАРУУН захад (жижиг дугуй товч), доор нь гарчиг → мэдээлэл →
+  `🕒 огноо | 📍 хаяг` (`mt-auto`). ⚠️ 👁 «үзсэн» тоо карт дээр ХАСАГДАВ
+  (дэлгэрэнгүйд ХЭВЭЭР); ✅ `authorVisible`, `hasRealPrice`, карусель, `pr-20` ХЭВЭЭР ✓.
+  <br>**(4) 🧪 ТЕСТ:** `test:card` **24/24 ✓** (🆕 (97): ❤️ үний мөрөнд + дараалал
+  ҮНЭ→ГАРЧИГ, ⛔ (86)-ийн зурган дээрх ❤️/`EyeIcon`/`{views}` РЕГРЕСС ХОРИГ) ·
+  `test:detail-ui` **23/23 ✓** (⏳ «ID:» + 🚗 `carTitle` H1) · `test:share-btn`
+  **6/6 ✓** · `npm run test:location` **36/36 ✓** · `npm run test:brand`
+  **20/20 ✓** · `npm run test:format` 36 ✓ · `npm run build` **EXIT=0 ✓**.
+  🔍 Хайх үг: `shortPriceLabel`, `data-fav-toggle`, `carTitle`, `isAuto`,
+  `data-listing-actions`, `ID: <span`, `{[viewCount]}` (viewCount)
 - 🎨📍 **МЕТА ИКОНУУД — `📍`/`🔖`/`👁` EMOJI → SVG (PIN/EYE) + «ЗАРЫН ДЭЛГЭРЭНГҮЙ»-ИЙН ICON ХАСАГДАВ (2026-10-10 (96))** —
   хэрэглэгчийн 4 хүсэлт: ① «📍 26-р хороо үүний өмнөх icon ийг Газрын зургийн
   өмнөх шиг болго» ② «🔖 Зарын дугаарыг өмнөх icon ийг үгүй хий» ③ «👁 3 үзсэн

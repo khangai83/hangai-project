@@ -404,7 +404,9 @@ t('⑥ 🆕`ListingDetailClient` — 📍 · 🕒 · 🔖 НЭГ МӨРӨНД (�
   //    ⚠️ мөрийн ДАРААЛАЛ (байршил → огноо → зарын дугаар) ХӨНДӨӨГДӨӨГҮЙ ✓
   const at = row.indexOf('{address || NO_LOCATION_LABEL}');
   const time = row.indexOf('🕒 {timeAgo(listing.created_at)}');
-  const id = row.indexOf('Зарын дугаар:');
+  // 🆕 (97): ⏳ «Зарын дугаар:» → «ID:» (жишиг сайтын хэв) — ⚠️ зөвхөн ХАРАГДАХ
+  //    «ID: <span»-ыг барина (title дахь «… бүтэн ID: …»-тай андуурахгүй ✓)
+  const id = row.indexOf('ID: <span');
   assert.ok(at >= 0, 'хаяг нэг мөрөнд БАЙХГҮЙ');
   assert.ok(time > at, '🕒 нь хаягны ДАРАА байх ёстой ✗');
   assert.ok(id > time, 'зарын дугаар нь 🕒-ийн ДАРАА байх ёстой ✗');

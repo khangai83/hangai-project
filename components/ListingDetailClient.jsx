@@ -15,7 +15,7 @@ import Avatar from './Avatar';
 import VerifiedBadge from './VerifiedBadge';
 import { trackListingView } from '../lib/statsClient';
 import { normalizeError } from '../lib/errors';
-import { formatPrice, shortPriceLabel, negotiableNote, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress, shortListingId, listingTitle } from '../lib/format';
+import { formatPrice, shortPriceLabel, negotiableNote, getPropertyIcon, getCategoryLabel, getPropertyTypeLabel, getGarageLabel, timeAgo, formatAddress, shortListingId, listingTitle, carTitle } from '../lib/format';
 // 🔄 «СОЛИНО» (2026-10-09) — үнийн доорх мөр («🤝 Үнэ тохирно»-гийн ЯГ ДООР).
 //    ⚠️ Дүрэм нь `lib/swapFilter.mjs` (цэвэр) — форм ☑ ба хайлтын чиптэй
 //    нэг эх сурвалж ✓
@@ -234,7 +234,14 @@ export default function ListingDetailClient({ id }) {
   //    дууддаг тул гарчиг 2 газар өөр харагдах боломжгүй ✓
   //    ⚠️ `null` (0027-оос өмнөх 782 хуучин зар) эсвэл зөвхөн зай байвал `''`
   //    буцаана ⇒ доорх H1 нь `sr-only` хэвээр үлдэнэ ✓
-  const adTitle = listingTitle(listing);
+  // 🆕 (97) 🚗 АВТО: зар оруулагч гарчиг БИЧЭЭГҮЙ бол `attrs`-аас
+  //    «Toyota Harrier, 2017/2024» (брэнд + загвар, үйлдвэрлэсэн/орж ирсэн он)
+  //    — жишиг сайтын машин деталь хуудасны гарчигтай ЯГ ИЖИЛ ✓ (`carTitle`;
+  //    хэрэглэгчийн хүсэлт: «Only car detail card like photo, it's head is
+  //    category name Toyota Harrier, Its Brand and Model then manufactured
+  //    date/Imported year»). ⚠️ Зар оруулагчийн бичсэн гарчиг ТҮРҮҮЛНЭ ✓
+  const isAuto = (listing.section || 'real-estate') === 'auto';
+  const adTitle = listingTitle(listing) || (isAuto ? carTitle(listing.attrs) : '');
   const garageLabel = getGarageLabel(listing.has_garage);
   const isSell = listing.category === 'sell';
   // ⚠️ «Зарах / Түрээслэх» badge, ₮/м², ипотекийн тооцоолуур нь ЗӨВХӨН
@@ -381,8 +388,10 @@ export default function ListingDetailClient({ id }) {
       <Breadcrumb items={buildListingBreadcrumb(listing)} />
 
       {/* ===== ГАРЧИГ (HEADER) =====
-          ⚠️ 👁/❤️ тоо БА ❤️ товч энд БАЙХГҮЙ — Facebook-ийн зарчмаар зургийн
-             ДОР (доорх Gallery картын footer) байрлана. */}
+          🆕 (97): 👁 үзсэн · ❤️ таалагдсан · 🔗 Хуваалцах нь ОДОО ЭНД —
+             толгойн мета мөрөнд (`📍 хаяг · 🕒 огноо · 👁 N · ID: X` +
+             баруун захад `[❤️ N]`/`[🔗 Хуваалцах]` pill) байрлана
+             (⏳ өмнө нь зургийн ДОР доорх Gallery картын footer-т байв ✗). */}
       <header className="mb-5">
         {/* ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд (`ListingCard`-ийн ижил).
             ⚠️ 2026-10-07: ЭНЭ мөрнөөс «ID: <бүтэн uuid>» ХАСАГДАВ — хэрэглэгчид
@@ -418,24 +427,26 @@ export default function ListingDetailClient({ id }) {
         >
           {adTitle || `${getPropertyIcon(listing.property_type, listing.section)} ${typeLabel}${address ? ` — ${address}` : ''}`}
         </h1>
-        {/* ===== 📍 БАЙРШИЛ · 🕒 НИЙТЭЛСЭН · 🔖 ЗАРЫН ДУГААР — НЭГ МӨРӨНД (жишиг сайт хэв) =====
-            ⚠️ 2026-10-01 (14) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТЭЭР ГАЛЕРЕЙ КАРТЫН footer-оос
-               ЭНД БУЦАЖ ИРЭВ («📍 … · 📅 … энийгээ буцаагаад байранд нь тавия»).
-            ⚠️ 2026-10-07 — 🔖 БОГИНО ЗАРЫН ДУГААР нэмэгдэж, огнооны icon 📅 → 🕒 болов
-               (карт дээрхтэй ЯГ ижил).
-            ⚠️ 2026-10-07 (2 дахь засвар) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «жишиг сайт шиг 1 мөрөнд
-               хийчих боломж алга уу» ⇒ (өмнө нь 📍 нь 1-р мөр, 🕒·🔖 нь 2-р мөр байв)
-               ОДОО БҮГД НЭГ МӨРӨНД: `📍 хаяг · 🕒 огноо · 🔖 зарын дугаар`.
-               Дэлгэц нарийсахад `flex-wrap`-ээр эвхэгдэнэ — хэвтээ overflow ✗ ✓
-            ⚠️ Огноо ХАРЬЦАНГУУ (`timeAgo` — карт дээрхтэй ЯГ ижил); зарын дугаар нь
-               БОГИНО (`shortListingId`); бүтэн uuid нь `title` (hover) дээр — админ
+        {/* ===== 📍 БАЙРШИЛ · 🕒 НИЙТЭЛСЭН · 👁 ҮЗСЭН · 🆔 ID + ❤️/🔗 — НЭГ МӨРӨНД =====
+            🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ (🆕 (97)): «change card detail like attached
+               photo. change position like attached photo, it's included Үзсэн,
+               Таалагдсан, Хуваалцах design and position» ⇒ жишиг сайтын
+               дэлгэрэнгүй толгойн ЯГ хэв: зүүн талд `📍 хаяг · 🕒 огноо · 👁 N ·
+               ID: XXXXXXXX`, БАРУУН захад хүрээтэй pill товч `[❤️ N]` ба
+               `[🔗 Хуваалцах]`.
+            ⚠️ ДАРААЛАЛ (тестийн гэрээ): 👁 үзсэн → ❤️ таалагдсан → 🔗 Хуваалцах
+            ⚠️ ⏳ (2026-10-01 (14) / 2026-10-07) 👁/❤️/🔗 нь ГАЛЕРЕЙН доорх footer-т
+               байв ⇒ ОДОО ТОЛГОЙ руу шилжив (жишиг сайтын хэв) — тэр footer
+               БҮРЭН ХАСАГДАВ ✓
+            ⚠️ Огноо ХАРЬЦАНГУУ (`timeAgo` — карт дээрхтэй ЯГ ижил); ID нь БОГИНО
+               (`shortListingId`); бүтэн uuid нь `title` (hover) дээр — админ
                ID-ийн эхний тэмдэгтээр хайдаг тул богино дугаар шууд олдоно ✓
-            🆕 2026-10-10 (96) — ICON ЗАСВАР (хэрэглэгчийн хүсэлт): ⏳ `📍` ба `👁`
-               emoji → SVG (`MapPinIcon`/`EyeIcon`), ⏳ `🔖` ХАСАГДАВ;
-               ⚠️ мөрийн дараалал (байршил → огноо → зарын дугаар) ХӨНДӨӨГДӨӨГҮЙ ✓
-            ⚠️ `data-listing-meta` — бодит DOM-ыг шалгах CDP/тестийн ТОГТВОРТОЙ
-               selector (`data-listing-card`/`data-listing-title`-ийн адил) ✓ */}
-        <div data-listing-meta className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-gray-500">
+            🆕 (96) — ICON ЗАСВАР: ⏳ `📍` ба `👁` emoji → SVG (`MapPinIcon`/
+               `EyeIcon`), ⏳ `🔖` ХАСАГДАВ ✓
+            ⚠️ `data-listing-meta` + `data-listing-actions` — бодит DOM-ыг шалгах
+               CDP/тестийн ТОГТВОРТОЙ selector; Дэлгэц нарийсахад `flex-wrap`-ээр
+               эвхэгдэнэ — хэвтээ overflow ✗ ✓ */}
+        <div data-listing-meta data-listing-actions className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-gray-500">
           {/* 📍 Байршил — 🚫 «Байршил сонгохгүй» чекбоксоор хадгалагдсан зар
               (`city = ''`) дээр «Хаяг тодорхойгүй» БИШ, «Байршил заагаагүй»
               гэж харуулна (хэрэглэгч ЗОРИУДОО заагаагүй тул «алдаа» мэт
@@ -454,13 +465,36 @@ export default function ListingDetailClient({ id }) {
           {/* 🕒 ОГНОО — харьцангуу (`timeAgo` — карт дээрхтэй ЯГ ижил) */}
           <span title="Нийтэлсэн огноо" className="whitespace-nowrap">🕒 {timeAgo(listing.created_at)}</span>
           <span aria-hidden="true" className="text-gray-300">·</span>
-          {/* 🆕 (96) БОГИНО ЗАРЫН ДУГААР — ⏳ `🔖` emoji ХАСАГДАВ (хэрэглэгчийн
-              хүсэлт: «🔖 Зарын дугаарыг өмнөх icon ийг үгүй хий» — «Зарын
-              дугаар:» гэсэн текст нь дангаараа ойлгомжтой тул icon ХЭРЭГГҮЙ ✓);
-              бүтэн uuid нь `title` (hover) дээр ✓ */}
-          <span title={`Зарын дугаар — бүтэн ID: ${listing.id}`} className="whitespace-nowrap">
-            Зарын дугаар: <span className="font-mono font-semibold text-gray-600">{shortId}</span>
+          {/* 👁 ҮЗСЭН — icon + тоо (🆕 (97): галерейн footer-оос энэ мөрөнд шилжив;
+              жишиг сайтын хэвээр зөвхөн тоо — «37 үзсэн» БИШ «37») ✓ */}
+          <span title="Энэ зарыг хэдэн хүн үзсэн" className="inline-flex items-center gap-1 font-semibold tabular-nums text-gray-600">
+            <EyeIcon className="h-[15px] w-[15px] text-gray-700" />
+            {viewCount}
           </span>
+          <span aria-hidden="true" className="text-gray-300">·</span>
+          {/* 🆔 ID — 🆕 (97): ⏳ «Зарын дугаар:» → «ID:» (жишиг сайтын хэв: «ID: 10801626») */}
+          <span title={`Зарын дугаар — бүтэн ID: ${listing.id}`} className="whitespace-nowrap">
+            ID: <span className="font-mono font-semibold text-gray-600">{shortId}</span>
+          </span>
+
+          {/* ❤️ ТААЛАГДСАН · 🔗 ХУВААЛЦАХ — мөрийн БАРУУН захад (🆕 (97), pill товч)
+              ⚠️ Дараалал: эхлээд ❤️ таалагдсан, дараа нь 🔗 Хуваалцах ✓ */}
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              data-fav-toggle
+              onClick={() => toggleFavorite(listing.id)}
+              aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
+              title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
+              className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 font-semibold tabular-nums text-gray-700 transition hover:border-red-200 hover:text-red-600 ${
+                isFav ? 'text-red-600' : ''
+              }`}
+            >
+              {isFav ? '❤️' : '🤍'} {likeCount}
+            </button>
+            {/* ⚠️ `ShareButton` нь одоогийн хуудасны URL-ыг clipboard-д хуулна ✓ */}
+            <ShareButton className="hover:border-primary/40" />
+          </div>
         </div>
       </header>
 
@@ -527,53 +561,12 @@ export default function ListingDetailClient({ id }) {
               </div>
             )}
 
-            {/* ===== FB-style POST FOOTER — 👁/❤️/🔗 тоо ЗУРГИЙН ДОР =====
-                ⚠️ НҮҮРЭН ДЭЭРХ КАРТТАЙ (ListingCard.jsx) ЯГ ИЖИЛ загвар:
-                   `👁 N үзсэн` ба `🤍/❤️ N таалагдсан` — сүүлийнх нь ӨӨРӨӨ
-                   товч: дарвал ❤️↔🤍 солигдож, сервер дээрх тоо ±1 болно.
-                ⚠️ 🆕 2026-10-07 — 🔗 ХУВААЛЦАХ товч (`ShareButton`) нэмэгдэв
-                   (хэрэглэгчийн хүсэлт) — дарахад зарын ЛИНК clipboard-д
-                   хуулагдана ✓
-                ⚠️ 🆕 2026-10-07 (2 дахь засвар) — хэрэглэгч: «Хуваалцах ыг
-                   Таалагдсаны ард талд нь хийчих л дээ» ⇒ дараалал болов:
-                   👁 үзсэн → 🤍/❤️ таалагдсан → 🔗 Хуваалцах (ХАМГИЙН АРД)
-                ⚠️ Өмнө нь «таалагдсан» ХОЁР газарт (зүүн талд тоо + баруун талд
-                   том товч) харагддаг байсныг нэгтгэв — duplicate байхгүй.
-                ⚠️ Зурган дээр ямар ч тэмдэглээ байхгүй (карттай ижил дүрэм).
-                ⚠️ 2026-10-01 (14): 📍/📅 нь ЭНЭ footer-ийн 2 дахь мөрөөс ХАСАГДАЖ,
-                   толгойн доорх (`<header>`) 📍 1-р мөр / 📅 2-р мөр рүү БУЦАЖ
-                   байрлав ✓ — карт дотор ЗӨВХӨН энэ (👁/🤍) мөр үлдэв
-                ⚠️ Тоо нь серверээс (listings.views / listings.likes — 0007).
-                🆕 (96): ⏳ `👁 N үзсэн` → **`<EyeIcon /> N үзсэн`** (emoji → SVG;
-                   ⚠️ ДАРААЛАЛ ба `ShareButton`-ийн байрлал ХӨНДӨӨГДӨӨГҮЙ ✓)
-                ⚠️ `data-listing-actions` — CDP/тестийн ТОГТВОРТОЙ selector (🆕 (96)) ✓ */}
-            <div data-listing-actions className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-gray-200 pt-3 text-[13px] text-gray-500">
-              <span title="Энэ зарыг хэдэн хүн үзсэн" className="inline-flex items-center gap-1 font-semibold tabular-nums">
-                {/* 🆕 (96): ⏳ `👁` emoji → `EyeIcon` SVG (хэрэглэгч нүдний зургийг
-                    илгээж «өнгийг нь тодруулаарай» гэсэн ⇒ `text-gray-700` —
-                    хажуугийн `text-gray-500` текстээс ТОД ✓) */}
-                <EyeIcon className="h-[15px] w-[15px] text-gray-700" />
-                {viewCount} үзсэн
-              </span>
-              <button
-                type="button"
-                onClick={() => toggleFavorite(listing.id)}
-                aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
-                title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
-                className={`-my-1 inline-flex items-center gap-1 rounded-full px-2 py-1 font-semibold tabular-nums text-gray-500 transition hover:bg-red-50 hover:text-red-600 ${
-                  isFav ? 'text-red-600' : ''
-                }`}
-              >
-                {isFav ? '❤️' : '🤍'} {likeCount} таалагдсан
-              </button>
-              {/* 🔗 ХУВААЛЦАХ — хэрэглэгчийн хүсэлт: «зар хуваалцах буюу зарын
-                  link хуулж авах товчийг Үзсэн …-ын хажууд оруулаад ирвэл зүгээр».
-                  ⚠️ 🆕 2026-10-07 (2 дахь засвар) — хэрэглэгч: «Хуваалцах ыг
-                     Таалагдсаны ард талд нь хийчих л дээ» ⇒ энэ товч нь
-                     🤍/❤️ «таалагдсан» товчны ДАРАА (ХАМГИЙН АРД) байрлав.
-                  ⚠️ `ShareButton` нь одоогийн хуудасны URL-ыг clipboard-д хуулна ✓ */}
-              <ShareButton />
-            </div>
+            {/* 🗑 (97) «FB-style POST FOOTER» (👁 үзсэн / ❤️ таалагдсан / 🔗
+                Хуваалцах) ЭНДЭЭС БҮРЭН ХАСАГДАВ — тэдгээр нь ОДОО дээрх ТОЛГОЙН
+                мета мөрөнд (`<header>` → `[data-listing-meta][data-listing-actions]`),
+                жишиг сайтын дэлгэрэнгүй хуудасны хэвээр ✓
+                ⚠️ `data-listing-actions` selector толгойн мөрөнд ХЭВЭЭР
+                   (CDP/тестийн тогтвортой дэгээ) ✓ */}
           </div>
 
           {/* ===== 🎥 ВИДЕО (YouTube) =====
