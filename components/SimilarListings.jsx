@@ -24,6 +24,11 @@
  *     агуулгад нөлөөлөхгүй ✓
  *   • 📱 Мобайл 1 багана · `sm` 2 · `lg` 3 · `2xl` 4 (жагсаалтын бусад
  *     хуудсуудтай ижил grid — `/favorites`-ийн адил) ✓
+ *   • 🆕 (109) 2026-10-10: БЛОК нь `mx-auto w-full max-w-[1206px]` — зарын
+ *     дэлгэрэнгүй хуудасны ҮНДСЭН АГУУЛГАТАЙ (гарчиг · 840px зураг/тайлбар ·
+ *     350px сайдбар) НЭГ ТӨВЛӨРСӨН баганад ЗЭРЭГЦЭНЭ ✓ (⏳ өмнө нь бүтэн
+ *     өргөн (1536px) байсан тул төвлөрсөн агуулгын доор ЗҮҮН тийш хэтэрч
+ *     харагдав ✗)
  *
  * 🔍 ХАЙХ ҮГ: SimilarListings, data-similar-listings, fetchSimilarListings,
  *    Төстэй зарууд
@@ -76,7 +81,7 @@ export default function SimilarListings({ listing }) {
   if (!items || items.length === 0) return null;
 
   return (
-    <section data-similar-listings className="mt-6">
+    <section data-similar-listings className="mx-auto mt-6 w-full max-w-[1206px]">
       <h2 className="mb-3 text-lg font-bold text-gray-800">🔎 Төстэй зарууд</h2>
       {/* 🧱 Баганат grid — карт нь БОСОО (`ListingCard`) тул бүтэн өргөнтэй
           нэг багана биш, grid шаардна ✓

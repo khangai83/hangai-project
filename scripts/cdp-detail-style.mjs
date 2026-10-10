@@ -83,6 +83,18 @@
  *      иконуудыг ИНДЕКСЭЭР БИШ `data-icon` АТРИБУТААР олно ✓
  *   ⑦ 📸 /tmp/detail-style-1280.png · /tmp/detail-style-390.png
  *      (+ 🆕 (96) 3× томруулсан: /tmp/detail-meta-1280.png · /tmp/detail-actions-1280.png)
+ *   ⑫ 📐🆕 (109) ТӨВЛӨРҮҮЛЭЛТ + ② БАГАНЫ ЗАЙ — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Align the
+ *      ad details with the ad image. Center the content on the screen — keep
+ *      the column layout in mind. Also, shift the information in the second
+ *      column … closer to the first column to minimize the gap.» ⇒ бүх агуулга
+ *      (breadcrumb · гарчиг/мета · 2 баганат grid · «Төстэй зарууд») нь нэг
+ *      `mx-auto w-full max-w-[1206px]` (**840 + 16 + 350**) баганад багтаж
+ *      ДЭЛГЭЦИЙН ТӨВД байрлана ба ①⟂② зай 24px → **16px** болов ⇒ шалгалт ⑨r
+ *      (зай 16±1px · зүүн/баруун сул зай тэнцүү) ✓
+ *      ⚠️ (109)-д ХОЁР STALE шалгалт зассан: ⑩b нь `dl.w >= main.w - 2`
+ *      (`<main>` нь хил хүрээ тул БОЛОМЖГҮЙ байв) → `dl.w >= sec.w - 2` ✓;
+ *      ⑩c/⑤e нь `asideLinks === 1` → линк ② (нэр + «📋 N идэвхтэй зар») тул
+ *      `≥1 && ≤2` ✓
  *
  * ⚙️ АЖИЛЛУУЛАХ:
  *   1) `npm run build && npm run start` (http://localhost:3000)
@@ -439,6 +451,12 @@ const ICONS = `(() => {
   const gwBox = galWrap ? galWrap.getBoundingClientRect() : null;
   const descP = main.querySelector('p.whitespace-pre-line');
   const dBox = descP ? descP.getBoundingClientRect() : null;
+  //   🆕 (109) ② БАГАНА (aside) ба main — ①⟂② БАГАНЫ ЗАЙ (16px) ба
+  //   БҮТЭН БЛОКИЙН ТӨВЛӨРҮҮЛЭЛТИЙГ хэмжинэ ⇒ ⑨r ✓
+  //   (⚠️ ЭНЭ БЛОК МӨН JS ТЕМПЛЕЙТ МӨР ДОТОР — grave accent ХЭРЭГЛЭХГҮЙ ✗)
+  const asideEl = main.querySelector('aside');
+  const aBox = asideEl ? asideEl.getBoundingClientRect() : null;
+  const mBox = main.getBoundingClientRect();
   //   🆕 (99) ЗАЙ ХААХ — ❤️/🔗 pill ба мета хоорондын ЗАЙГ бодитоор хэмжинэ:
   //   idSpan.right (ID текстийн төгсгөл) → favBtn.left = gap-x + ml-1;
   //   rightFree = мөрийн баруун зах хүртэлх СУЛ зай — ml-auto байсан бол 0 ✓
@@ -480,6 +498,9 @@ const ICONS = `(() => {
     //   ⚠️ ТЕМПЛЕЙТ МӨР ДОТОР — grave accent ХЭРЭГЛЭХГҮЙ ✗
     galleryWrap: gwBox ? { x: Math.round(gwBox.left), w: Math.round(gwBox.width) } : null,
     desc: dBox ? { x: Math.round(dBox.left), w: Math.round(dBox.width) } : null,
+    //   🆕 (109) ② багана ба main — ①⟂② зай ба ТӨВЛӨРҮҮЛЭЛТИЙН хэмжээ ✓
+    aside: aBox ? { x: Math.round(aBox.left), w: Math.round(aBox.width) } : null,
+    mainBox: { x: Math.round(mBox.left), w: Math.round(mBox.width) },
     eye: eye ? { w: Math.round(eyeBox.width), h: Math.round(eyeBox.height), color: eyeCs.color } : null,
     actionsColor: actions ? getComputedStyle(actions).color : null,
     gap: {
@@ -620,6 +641,26 @@ check('⑨q 📏 (104) ЗУРАГ ⟂ ТАЙЛБАР — нэг зүүн ирм�
   ic.galleryWrap && ic.desc
     ? `зураг x=${ic.galleryWrap.x} w=${ic.galleryWrap.w} ⟂ тайлбар x=${ic.desc.x} w=${ic.desc.w}`
     : `зураг ${ic.galleryWrap ? 'ok' : '—'} · тайлбар ${ic.desc ? 'ok' : '—'}`);
+/*   🆕 (109) 📐 ТӨВЛӨРҮҮЛЭЛТ ⟂ ② БАГАНЫ ЗАЙ — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ:
+     «Align the ad details with the ad image. Center the content on the screen —
+     keep the column layout in mind. Also, shift the information in the second
+     column … closer to the first column to minimize the gap.» ⇒
+     ① БҮХ АГУУЛГА нь нэг `mx-auto w-full max-w-[1206px]` (840 + 16 + 350)
+        баганад багтаж ДЭЛГЭЦИЙН ТӨВД байрлана (зүүн/баруун сул зай ТЭНЦҮҮ) ✓
+     ② ① ба ② баганын хоорондын зай 24px → **16px** (`gap-x-4`) ⇒ зурагны
+        баруун ирмэг ба `aside`-ийн зүүн ирмэг дунд ердөө 16px ✓
+     ⛔ `mx-auto`/`max-w-[1206px]`/`gap-x-4`-ийн аль нэг нь буцаж орвол ⇒ УНАХАР ✓ */
+const colGap = ic.aside && ic.galleryWrap
+  ? Math.round(ic.aside.x - (ic.galleryWrap.x + ic.galleryWrap.w))
+  : null;
+const blockLeft = ic.galleryWrap && ic.mainBox ? Math.round(ic.galleryWrap.x - ic.mainBox.x) : null;
+const blockRight = ic.aside && ic.mainBox
+  ? Math.round(ic.mainBox.x + ic.mainBox.w - (ic.aside.x + ic.aside.w))
+  : null;
+check('⑨r 📐 (109) ТӨВЛӨРСӨН 1206px БАГАНА (840+16+350) — ①⟂② зай 16px · зүүн/баруун зай ТЭНЦҮҮ ✓',
+  colGap !== null && Math.abs(colGap - 16) <= 1 &&
+    blockLeft !== null && blockRight !== null && Math.abs(blockLeft - blockRight) <= 2,
+  `①⟂② зай ${colGap}px (16 байх ЁСТОЙ) · блок зүүн ${blockLeft}px ⟂ баруун ${blockRight}px (тэнцүү байх ЁСТОЙ)`);
 if (ic.metaFound) await shotEl('[data-listing-meta]', '/tmp/detail-meta-1280.png');
 if (ic.actionsFound) await shotEl('[data-listing-actions]', '/tmp/detail-actions-1280.png', { scroll: true });
 
@@ -671,12 +712,24 @@ const ad = await evalJs(ADV);
 check('⑩ ⛔ (106) Хүснэгтийн хажуугийн ДАВХАР нийтлэгчийн карт ХАСАГДСАН (`[data-advertiser-card]` 0)',
   !ad.noMain && ad.hasSec && ad.hasDl && ad.dupCard === 0 && ad.twoCol === 0,
   ad.noMain ? 'main алга' : `хүснэгт ${ad.hasDl ? 'ok' : '—'} · давхар карт ${ad.dupCard} · 2 баганат хүрээ ${ad.twoCol}`);
-check('⑩b 📐 (106) Хүснэгт дахин БҮТЭН ӨРГӨН (1 багана) — `main`-ийг бүтэн эзэлнэ',
-  !!ad.dl && !!ad.mainBox && ad.dl.w >= ad.mainBox.w - 2,
-  ad.dl ? `хүснэгт ${ad.dl.w}px / main ${ad.mainBox.w}px` : 'хүснэгт алга ✗');
-check('⑩c 👤 (106) Нийтлэгчийн карт ЗӨВХӨН `aside`-д — 📋 линк ЯГ 1 (markup ДАВХАРДААГҮЙ)',
-  !!ad.aside && ad.asideLinks === 1,
-  `aside ${ad.aside ? 'ok' : 'алга ✗'} · 📋 линк ${ad.asideLinks} (1 байх ЁСТОЙ)`);
+/*   ✏️ (109) 2026-10-10 STALE ЗАСВАР: ⏳ `ad.dl.w >= ad.mainBox.w - 2` гэж
+     харьцуулж байв — гэвч `<main>` нь ХИЛ ХҮРЭЭ (padding 0, `page-container`
+     нь дотор нь) тул хүснэгт (`dl`) нь `main`-ийг ХЭЗЭЭ Ч бүтэн эзлэх
+     БОЛОМЖГҮЙ (padding + (109)-ийн төвлөрсөн 1206px багана) ⇒ шалгалт
+     ҮРГЭЛЖ УНАДАГ байв ✗
+     ⇒ ОДОО зөвхөн «хүснэгт нь ӨӨРИЙН СЕКЦЭЭ бүтэн эзлэх (2 баганат хажуу
+     хүрээ БАЙХГҮЙ)» гэдгийг шалгана — (106)-ийн ЖИНХЭНЭ санаа ✓ */
+check('⑩b 📐 (106)(109) Хүснэгт нь секцээ БҮТЭН эзэлнэ (хажуугийн 2 баганат хүрээ БАЙХГҮЙ)',
+  !!ad.dl && !!ad.sec && ad.dl.w >= ad.sec.w - 2,
+  ad.dl ? `хүснэгт ${ad.dl.w}px / секц ${ad.sec ? ad.sec.w : '—'}px` : 'хүснэгт алга ✗');
+/*   ✏️ (109) STALE ЗАСВАР: ⏳ `asideLinks === 1` байв — гэвч `aside` нь ②
+     линк агуулна: ① нийтлэгчийн нэр/аватар линк ② «📋 N идэвхтэй зар» линк
+     ((95)-ийн feature — «ТУСДАА ЛИНК») ⇒ 2 нь ЗӨВ; ДАВХРЫГ `dupCard === 0`
+     ба `AdvertiserCard`-ийн ГАНЦ дуудлага (`test:detail-ui` ⑬) барьдаг ✓
+     ⇒ лимит нь **≤ 2** (заргүй нийтлэгчид 1) ✓ */
+check('⑩c 👤 (106) Нийтлэгчийн карт ЗӨВХӨН `aside`-д — линк ≤ 2 (нэр + 📋 тоолуул, ДАВХАРДАЛГҮЙ)',
+  !!ad.aside && ad.asideLinks >= 1 && ad.asideLinks <= 2,
+  `aside ${ad.aside ? 'ok' : 'алга ✗'} · линк ${ad.asideLinks} (1–2 байх ЁСТОЙ)`);
 check('⑩d 🎨 (106) `aside`-ийн карт: аватар ЯГ 96px + нэр `break-words` ((64)(66)(87) ХЭВЭЭР)',
   ad.avatar96 === 1 && ad.nameWrap === 'break-word',
   `96px аватар ${ad.avatar96} · overflow-wrap ${ad.nameWrap}`);
@@ -704,9 +757,9 @@ check('⑤d 📱 390px: хэсгүүд ХАЙРЦАГГҮЙ (radius 0px)',
      мобайл дээр ХОЁР БАГАНА болох боломжгүй, overflow 0 ХЭВЭЭР ✓ */
 const am = await evalJs(ADV);
 check('⑤e 📱 390px (🆕 106): карт хүснэгтийн хажууд БАЙХГҮЙ · хүснэгт 1 багана · overflow 0',
-  !am.noMain && am.dupCard === 0 && am.twoCol === 0 && am.asideLinks <= 1 &&
+  !am.noMain && am.dupCard === 0 && am.twoCol === 0 && am.asideLinks >= 1 && am.asideLinks <= 2 &&
     am.scrollW <= am.vw + 1 && !!am.sec && !!am.dl && am.dl.w <= am.sec.w + 1,
-  am.noMain ? 'main алга' : `давхар карт ${am.dupCard} · 2 баганат хүрээ ${am.twoCol} · aside линк ${am.asideLinks} · хүснэгт ${am.dl ? am.dl.w : '—'}/${am.sec ? am.sec.w : '—'} · scrollW ${am.scrollW}/${am.vw}`);
+  am.noMain ? 'main алга' : `давхар карт ${am.dupCard} · 2 баганат хүрээ ${am.twoCol} · aside линк ${am.asideLinks} (1–2) · хүснэгт ${am.dl ? am.dl.w : '—'}/${am.sec ? am.sec.w : '—'} · scrollW ${am.scrollW}/${am.vw}`);
 await shotEl('aside', '/tmp/detail-advertiser-390.png', { scroll: true });
 
 

@@ -534,14 +534,41 @@ export default function ListingDetailClient({ id }) {
 
   return (
     <div className="page-container">
-      <Breadcrumb items={buildListingBreadcrumb(listing)} />
+      {/* 🆕 (109) 2026-10-10 — 🎯 ЗАРЫН ДЭЛГЭРЭНГҮЙ ХУУДСНЫ ГҮЙЦЭТГЭЛ:
+          ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Align the ad details with the ad image. Center the
+          content on the screen — keep the column layout in mind. Also, shift the
+          information in the second column (such as the advertiser and price
+          details) closer to the first column to minimize the gap.»
+          ⇒ ⏳ (104)-д зураг 840px болсон ч `page-container` нь `max-w-[1536px]`
+            хэвээр байсан тул ② багана (350px) нь ХАМГИЙН БАРУУН захад наалдаж,
+            ХОЁР БАГАНЫ ХООРОНДЫН ЗАЙ ≈298px болж (зураг 840 + слат 274 + gap 24)
+            хуудас ЗҮҮН тийш хазайж, гарчиг/мета нь зургийн ирмэгээс 100+px
+            ЗҮҮН тийш эхэлдэг байв ✗
+          ⇒ ОДОО: ① БҮХ АГУУЛГА (breadcrumb · гарчиг/мета · 2 баганат grid ·
+            «Төстэй зарууд») нь НЭГ ТӨВЛӨРСӨН 840 + 16 + 350 = **`max-w-[1206px]`**
+            баганад багтах ба `mx-auto`-оор ДЭЛГЭЦИЙН ТӨВД байрлана ✓
+            ② ② багана ① баганын ЯГ ДООР (зай 24px → **16px** = `gap-x-4`) ⇒
+               зурагны баруун ирмэг ба сайдбарын зүүн ирмэг дунд ердөө 16px ✓
+            ③ ① багана 840px ЯГ ТААРСАН тул доторх БҮХ блок (галерей · тайлбар ·
+               шинж чанар · газрын зураг) НЭГ ЗҮҮН ИРМЭГ/НЭГ ӨРГӨНТЭЙ ✓
+               (⏳ өмнө нь шинж чанарын хүснэгт ба газрын зураг нь БҮТЭН багана
+               (1536px дэлгэцэд 1114px) байсан бол галерей/тайлбар 840px байв ⇒
+               ИРМЭГ ЗӨРЖ байв ✗)
+            ⚠️ 1280px дэлгэцэд `page-container` = 1232px > 1206px ⇒ gallery-ийн
+               үндсэн зураг ХЭВЭЭР ЯГ **840×630** (4:3 — (102)/(104) хүчинтэй ✓);
+               `cdp:detail` ⑨p/⑨q шалгалт хэвээр ТЭНЦЭНЭ ✓
+            ⚠️ 📱 lg-ээс доош (1 багана) ХӨНДӨӨГДӨХГҮЙ — `max-w-[1206px]` нь
+               дэлгэцээс бага бол `w-full` мэт ажиллана ✓ */}
+      <div className="mx-auto w-full max-w-[1206px]">
+        <Breadcrumb items={buildListingBreadcrumb(listing)} />
+      </div>
 
       {/* ===== ГАРЧИГ (HEADER) =====
           🆕 (97): 👁 үзсэн · ❤️ таалагдсан · 🔗 Хуваалцах нь ОДОО ЭНД —
              толгойн мета мөрөнд (`📍 хаяг · 🕒 огноо · 👁 N · ID: X` +
              баруун захад `[❤️ N]`/`[🔗 Хуваалцах]` pill) байрлана
              (⏳ өмнө нь зургийн ДОР доорх Gallery картын footer-т байв ✗). */}
-      <header className="mb-5">
+      <header className="mx-auto mb-5 w-full max-w-[1206px]">
         {/* ⚠️ «Зарах / Түрээслэх» нь ЗӨВХӨН үл хөдлөхөд (`ListingCard`-ийн ижил).
             ⚠️ 2026-10-07: ЭНЭ мөрнөөс «ID: <бүтэн uuid>» ХАСАГДАВ — хэрэглэгчид
                хэт урт байсан тул БОГИНО дугаар (`shortListingId`) болж доорх
@@ -747,7 +774,11 @@ export default function ListingDetailClient({ id }) {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_350px]">
+      {/* ⚠️ (109): `mx-auto w-full max-w-[1206px]` = 840 (① багана) + 16 (`gap-x-4`)
+          + 350 (② багана) — энэ нь (104)-ийн 840px зурагтай ЯГ таарсан тул
+          `minmax(0,1fr)` нь ЯГ 840px болж, сайдбар ЗУРГИЙН АРД (16px зайтай)
+          наалдана ✓ (⏳ (104)–(108) `gap-6` + бүтэн өргөн ⇒ зай ≈298px байв ✗) */}
+      <div className="mx-auto grid w-full max-w-[1206px] grid-cols-1 gap-x-4 gap-y-6 lg:grid-cols-[minmax(0,1fr)_350px]">
         {/* ===== ЗҮҮН БАГАНА ===== */}
         <div className="min-w-0">
           {/* Gallery */}
