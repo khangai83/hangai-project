@@ -309,7 +309,9 @@ t('📋 getAttrRows(real-estate): 💳 мөр нэмэгдэнэ (шошго м�
 
 t('📋 getAttrRows(auto): attr мөрүүдийн ДАРАА, олон нэгцэл нь «, »-ээр', () => {
   const rows = getAttrRows('auto', { brand: 'Toyota', payment_terms: ['cash', 'lease'] });
-  assert.deepEqual(rows.map((r) => r.key), ['brand', PAYMENT_ATTR_KEY]);
+  /** ⚠️ 2026-10-10 (113): 🏷️ `brand` мөр нь машины ДЭЛГЭРЭНГҮЙ хүснэгтээс
+   *  ХАСАГДАВ (гарчигт аль хэдийн байдаг) ⇒ зөвхөн 💳 төлбөрийн мөр үлдэнэ ✓ */
+  assert.deepEqual(rows.map((r) => r.key), [PAYMENT_ATTR_KEY]);
   assert.equal(rows[rows.length - 1].value, 'Хувь лизингээр, Бэлэн төлөлтөөр');
 });
 
@@ -430,8 +432,9 @@ t('📝 AddListingClient.jsx: ОЛОН сонголт + ЗААВАЛ шалга�
   assert.match(payRegion, /data-payment-value=\{o\.value\}/, 'чипийн дэгээ холбогдоогүй ✗');
   assert.match(payRegion, /onClick=\{\(\) => togglePayment\(o\.value\)\}/,
     'нэг эх сурвалж (`togglePayment`) холбогдоогүй ✗');
-  assert.match(payRegion, /\{on && <span aria-hidden="true">✓<\/span>\}/,
-    'идэвхтэй чип дээр `✓` тэмдэг алга ✗');
+  //  🆕 (114) `✓` тэмдэгтийн оронд SVG (`CheckIcon`) — форм дээр emoji 0 ✓
+  assert.match(payRegion, /\{on && <CheckIcon className="h-\[14px\] w-\[14px\]" \/>\}/,
+    'идэвхтэй чип дээр `CheckIcon` (SVG) алга ✗');
   assert.ok(!/type="checkbox"/.test(payRegion), 'форм дээр ☑ checkbox хэвээр байна ✗');
   assert.ok(!/pay-grid/.test(payRegion), 'форм дээр `.pay-grid` хэвээр байна ✗');
   assert.ok(!/pay-check/.test(payRegion), 'форм дээр `.pay-check` хэвээр байна ✗');

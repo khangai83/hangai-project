@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
+/** (114): `✕` тэмдэгтийн оронд SVG — фонтоос хамаарахгүй, өнгийг дагана ✓ */
+import { CloseIcon } from './HeaderIcons';
 import {
   DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM, PICK_ZOOM, PICK_ZOOM_FOUND, isValidCoord,
   geocodeUrl, parseGeocodeResults, reverseGeocodeUrl, parseReverseResult,
@@ -55,7 +57,7 @@ export const MAP_PICKER_SEARCH_ERR = 'Хайлт амжилтгүй — инте
 /** ⚠️ ШУДАРГА мессеж: OpenStreetMap-д Монголын хороо БҮГД байхгүй ✗ —
  *  хэрэглэгчид «яагаад олдохгүй байна» гэдгийг шууд хэлж, ДАРААГИЙН АЛХМЫГ заана ✓ */
 export const MAP_PICKER_NOT_FOUND =
-  'Юу ч олдсонгүй — «Хан-Уул, Улаанбаатар» гэх мэт бичиж үзнэ үү (OSM-д хороо бүр байхгүй), эсвэл 📍 Миний байршил / газрын зургийг гараар тааруулна уу';
+  'Юу ч олдсонгүй — «Хан-Уул, Улаанбаатар» гэх мэт бичиж үзнэ үү (OSM-д хороо бүр байхгүй), эсвэл «Миний байршил» товч / газрын зургийг гараар тааруулна уу';
 export const MAP_PICKER_GEO_ERR = 'Байршил тодорхойлогдсонгүй (зөвшөөрөл?)';
 /** 🆕 🗺 ОДООГИЙН пингийн ХАЯГ (reverse-geocode) — 6 дахь засвар (2026-10-06).
  *  ⚠️ OSM-д хороо байхгүй тул хаяг (гудамж · хороолол · дүүрэг) л гарна ✓ */
@@ -64,7 +66,7 @@ export const MAP_PICKER_PLACE_ERR = 'Хаяг тодорхойлогдсонгү
 
 /** 🆕 📐 Дүүргийн хилээс ГАДНА пин тавив — accuracy сануулга (7 дахь засвар) */
 export const MAP_PICKER_OUTSIDE_WARN =
-  '⚠️ Пин нь сонгосон дүүргийн хилээс ГАДНА байна — байршлаа тааруулна уу';
+  'Пин нь сонгосон дүүргийн хилээс ГАДНА байна — байршлаа тааруулна уу';
 
 /** 📐 Дүүргийн хил — пин ДОТОР (хөх) / ГАДНА (улаан) */
 const BOUNDARY_STYLE_OK = { color: '#2563eb', weight: 2, opacity: 0.7, fill: true, fillColor: '#2563eb', fillOpacity: 0.05 };
@@ -390,13 +392,13 @@ export default function LocationMapPicker({ center, value, zoom, subtitle, city,
             onClick={onClose}
             className="grid h-8 w-8 place-items-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
           >
-            ✕
+            <CloseIcon className="h-[15px] w-[15px]" />
           </button>
         </div>
 
         {/* Байршлын мөр */}
         <div className="flex items-center gap-2 border-b border-gray-100 bg-gray-50 px-5 py-2.5 text-[13.5px] font-medium text-gray-700">
-          <span aria-hidden="true">📍</span>
+          <PinIcon className="h-[15px] w-[15px] shrink-0 text-gray-400" />
           <span className="min-w-0 truncate">{subtitle || 'Байршил'}</span>
         </div>
 
@@ -425,9 +427,10 @@ export default function LocationMapPicker({ center, value, zoom, subtitle, city,
               type="button"
               data-map-picker-my-location
               onClick={goMyLocation}
-              className="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-[14px] font-semibold text-gray-800 transition hover:bg-gray-50"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-[14px] font-semibold text-gray-800 transition hover:bg-gray-50"
             >
-              📍 <span className="hidden sm:inline">{MAP_PICKER_MY_LOCATION}</span>
+              <PinIcon className="h-[16px] w-[16px]" />
+              <span className="hidden sm:inline">{MAP_PICKER_MY_LOCATION}</span>
             </button>
           </form>
           {(err || results.length > 0) && (
@@ -446,7 +449,8 @@ export default function LocationMapPicker({ center, value, zoom, subtitle, city,
                   onClick={() => pickResult(r)}
                   className="block w-full border-t border-gray-100 px-4 py-2.5 text-left text-[13px] text-gray-700 transition first:border-t-0 hover:bg-gray-50"
                 >
-                  <span aria-hidden="true">📌</span> {r.label || `${r.lat}, ${r.lng}`}
+                  <PinIcon className="mr-1 inline-block h-[14px] w-[14px] align-[-2px] text-gray-400" />
+                  {r.label || `${r.lat}, ${r.lng}`}
                 </button>
               ))}
             </div>
@@ -484,8 +488,9 @@ export default function LocationMapPicker({ center, value, zoom, subtitle, city,
         {/* Доод үйлдэл */}
         <div className="flex flex-col gap-3 border-t border-gray-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <span className="flex min-w-0 flex-col gap-0.5">
-            <span data-map-picker-center className="text-[12.5px] text-gray-500">
-              📍 {coords.lat}, {coords.lng}
+            <span data-map-picker-center className="inline-flex items-center gap-1.5 text-[12.5px] text-gray-500">
+              <PinIcon className="h-[13px] w-[13px] shrink-0 text-gray-400" />
+              {coords.lat}, {coords.lng}
             </span>
             {/* 🆕 🗺 ОДООГИЙН пингийн ХАЯГ (reverse-geocode) — 6 дахь засвар (2026-10-06).
                 ⚠️ `placeState` нь CDP/тестэд (loading/ok/err) — хаяг заавал
@@ -496,7 +501,7 @@ export default function LocationMapPicker({ center, value, zoom, subtitle, city,
               className={`min-w-0 truncate text-[12.5px] ${placeState === 'ok' ? 'font-medium text-gray-700' : 'text-gray-400'}`}
             >
               {placeState === 'ok' && place
-                ? `🗺 ${place.label}`
+                ? place.label
                 : placeState === 'loading'
                   ? MAP_PICKER_PLACE_LOADING
                   : MAP_PICKER_PLACE_ERR}

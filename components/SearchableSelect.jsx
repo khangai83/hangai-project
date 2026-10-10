@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { SearchIcon, CheckIcon, CloseIcon } from './HeaderIcons';
 
 /**
  * 🔎 ХАЙЛТТАЙ СОНГОЛТ (combobox) — урт жагсаалтаас ХАЙЖ олох + ГАРААР БИЧИХ.
@@ -82,7 +83,7 @@ export default function SearchableSelect({
   const rows = useMemo(() => {
     const out = filtered.map((o) => ({ value: String(o), label: String(o) }));
     if (allowFreeText && q && !hasExact) {
-      out.unshift({ value: text.trim(), label: `🔍 «${text.trim()}» гэж хайх`, free: true });
+      out.unshift({ value: text.trim(), label: `«${text.trim()}» гэж хайх`, free: true });
     }
     return out;
   }, [filtered, allowFreeText, q, hasExact, text]);
@@ -159,9 +160,9 @@ export default function SearchableSelect({
       <div className="relative">
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[14px] text-gray-400"
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
         >
-          🔎
+          <SearchIcon className="h-[15px] w-[15px]" />
         </span>
         <input
           type="text"
@@ -190,9 +191,9 @@ export default function SearchableSelect({
             type="button"
             aria-label="Арилгах"
             onClick={() => commit('')}
-            className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-[14px] text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
           >
-            ✕
+            <CloseIcon className="h-[13px] w-[13px]" />
           </button>
         )}
       </div>
@@ -227,7 +228,7 @@ export default function SearchableSelect({
                 }`}
               >
                 <span className="truncate">{r.label}</span>
-                {on && <span aria-hidden="true">✓</span>}
+                {on && <CheckIcon className="h-[14px] w-[14px] shrink-0" />}
               </button>
             );
           })}

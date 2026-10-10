@@ -208,7 +208,8 @@ t('💳 «Төлбөрийн нөхцөл» дэлгэц нь ЗӨВХӨН `show
   // ⚠️ Бусад хэсэгт (ажил/компьютер/бараа/үйлчилгээ) дэлгэц НЭМЭГДЭХГҮЙ ✓
   assert.ok(screensBody.includes("if (showPayments) out.push({\n      key: 'payments'"),
     'payments нөхцөл (showPayments)');
-  assert.ok(screensBody.includes("title: '💳 Төлбөрийн нөхцөл'"), 'гарчиг');
+  assert.ok(screensBody.includes("title: 'Төлбөрийн нөхцөл'"), 'гарчиг');
+  /** ⚠️ (114) дэлгэцийн гарчигт emoji БАЙХГҮЙ ✓ */
   // ⚠️ Заавал нь зөвхөн ШИНЭ зард (`required: !isEdit`) — хуучин зарууд
   //    `attrs.payment_terms`-гүй тул засах горимд хаагдахгүй ✓
   const payScreen = screensBody.slice(screensBody.indexOf("key: 'payments'"));
@@ -515,7 +516,12 @@ t('🖥 `DesktopSummary` нь ТОГТВОРТОЙ selector (`data-desktop-summa
 });
 
 t('🖥 🗂 АНГИЛАЛ ба 📍 БАЙРШИЛ нь `step`-ЭЭР АЛХАМ АЛХМААР НЭЭГДЭНЭ (🖥 алхамт ✓)', () => {
-  assert.ok(desktopSummaryComp.includes('🗂 Ангилал:'), '① 🗂 мөр байх ёстой');
+  /** ⚠️ (114) emoji ХАСАГДАВ: «🗂 Ангилал:» → «Ангилал:» (хэрэглэгчийн хүсэлт:
+   *  «зар оруулах хуудас дээрх emoji-г бүгдийг нь хас») ✓
+   *  ⚠️ Шалгалт нь JSX-ийн ТЕКСТ дээр (`>` дараах дүрс) — тайлбар (коммент)
+   *     дотор emoji байх нь ЗҮГЭЭР (бусад файлын ИЖИЛ хэв ✓) */
+  assert.ok(desktopSummaryComp.includes('Ангилал:'), '① Ангилал мөр байх ёстой');
+  assert.ok(!/>\s*🗂/.test(desktopSummaryComp), '🗂 emoji буцаж орсон ✗ ((114): зөвхөн текст)');
   assert.ok(desktopSummaryComp.includes('data-desktop-summary-location'), '② 📍 мөрийн selector');
   /** ⚠️ 2026-10-05 (2 дахь засвар): 🖥 дээр ч алхамт болсон тул 📍 мөр нь
    *  `step >= 2` үед л гарна (Байршил алхмаас хойш) ✓ */
@@ -619,6 +625,7 @@ t('🆕🖥 ✏️ ЗАСАХ товч: 🗂 Ангилал ба 📍 Байрш
     '① 🗂 Ангиллын «Засах» товч дутуу ✗');
   assert.ok(desktopSummaryComp.includes("editBtn('location', 'Байршлыг')"),
     '② 📍 Байршлын «Засах» товч дутуу ✗');
+  /** ⚠️ (114) emoji ХАСАГДАВ: «✏️ Засах» → «Засах» ✓ */
   /** ⚠️ Мөр тус бүрд ТУСДАА товч — НЭГ товч хоёуланг нь засдаг БОЛОХГҮЙ
    *  ⚠️ Тодорхойлолт нь `const editBtn = (` (тиймээс `editBtn(`-д ОРОХГҮЙ) ⇒
    *  `editBtn(` нь ЯГ 2 ДУУДАЛТ (② dropdown биш, 2 мөр ✓) */
@@ -626,7 +633,9 @@ t('🆕🖥 ✏️ ЗАСАХ товч: 🗂 Ангилал ба 📍 Байрш
     '`editBtn` тодорхойлолт дутуу ✗');
   assert.equal((desktopSummaryComp.match(/editBtn\(/g) || []).length, 2,
     '`editBtn(` = 2 дуудалт (мөр тус бүрд ТУСДАА товч ✓)');
-  assert.ok(desktopSummaryComp.includes('✏️ Засах'), 'товчны бичиг «✏️ Засах» ✓');
+  assert.ok(desktopSummaryComp.includes('Засах'), 'товчны бичиг «Засах» ✓');
+  /** ⚠️ (114) emoji ХАСАГДАВ — JSX-ийн ТЕКСТ дээр шалгана (коммент биш ✓) */
+  assert.ok(!/>\s*✏️/.test(desktopSummaryComp), '✏️ emoji буцаж орсон ✗ ((114): `PencilIcon` эсвэл текст)');
 });
 
 t('🆕🖥 ✏️ товч нь `type="button"` — `<form onSubmit>` ДОТОР `submit` болж кетэхгүй ✓', () => {
@@ -836,8 +845,14 @@ t('🏷️ `submitLabel` нь НЭГ ЭХ СУРВАЛЖ (нэг л доод т�
   assert.equal((FORM.match(/const submitLabel = /g) || []).length, 1, 'тодорхойлолт ЯГ 1 байх ёстой');
   assert.equal((FORM.match(/\{submitLabel\}/g) || []).length, 1, 'хэрэглээ ЯГ 1 (нэг доод товч) байх ёстой');
   assert.match(FORM, /isEdit \? 'Хадгалж байна\.\.\.' : 'Нийтэлж байна\.\.\.'/);
-  assert.match(FORM, /isEdit \? '💾 Өөрчлөлтийг хадгалах' : '✅ Зар нийтлэх'/);
-  assert.match(FORM, /'🗜 Зургуудыг шахаж байна\.\.\.'/);
+  assert.match(FORM, /isEdit \? 'Өөрчлөлтийг хадгалах' : 'Зар нийтлэх'/);
+  assert.match(FORM, /'Зургуудыг шахаж байна\.\.\.'/);
+  /** ⚠️ (114) emoji ХАСАГДАВ: «💾 Өөрчлөлтийг хадгалах»/«✅ Зар нийтлэх»/
+   *  «🗜 Зургуудыг шахаж байна…» → зөвхөн текст. ⚠️ Шалгалт нь ЗӨВХӨН
+   *  `submitLabel`-ийн блок дээр (коммент дотор emoji байх нь ЗҮГЭЭР ✓) */
+  const subFrom = FORM.indexOf('const submitLabel = ');
+  const subBlock = FORM.slice(subFrom, subFrom + 220);
+  assert.ok(!/[💾✅🗜]/.test(subBlock), 'товчны emoji буцаж орсон ✗ ((114): зөвхөн текст)');
 });
 
 t('🪜 Алхмын навиг: СТАБИЛ селекторууд (`data-step-back` · `data-step-next` · `data-step-submit` ✓)', () => {
@@ -953,7 +968,8 @@ t('📄 (111) 3 ДАХЬ ХУУДАС — «НЭГ ЦАГААН ХУУДАС»: 
    *  ② 1, 2-р алхам ч цагаан болох ③ хасагдсан алхмын гарчиг
    *  (`data-step-heading`) буцаж орох ✓ */
   // ① Компонент + CDP-ийн ТОГТВОРТОЙ selector + `title`-гүй бол ОГТ рендэрлэхгүй
-  assert.ok(CODE.includes('function DetailSection({ id, icon, title })'), '`DetailSection` компонент алга ✗');
+  /** ⚠️ (114) `icon` проп ХАСАГДАВ (☎️ emoji) ⇒ тэмдэгт нь `{ id, title }` ✓ */
+  assert.ok(CODE.includes('function DetailSection({ id, title })'), '`DetailSection` компонент алга ✗ (114: icon проп хасcан)');
   assert.ok(CODE.includes('if (!title) return null;'), '`title`-гүй бүлэг рендэрлэгдэхгүй болох нөхцөл алга ✗');
   assert.ok(CODE.includes('data-detail-section={id}'), '`data-detail-section` selector алга ✗');
   // ② ⛔ (111′/″) ХАСАГДСАН 4 гарчиг — prop нь Ч байхгүй (эх кодод гарчиг `title="…"` хэлбэрээр үлдэхгүй ✓)
@@ -962,8 +978,9 @@ t('📄 (111) 3 ДАХЬ ХУУДАС — «НЭГ ЦАГААН ХУУДАС»: 
     assert.ok(CODE.includes(`<DetailSection id="${id}" />`), `\`<DetailSection id="${id}" />\` (гарчиггүй) алга ✗`);
     assert.ok(!CODE.includes(`title="${dead}"`), `⛔ «${dead}» гарчиг буцаж орсон ✗ (хэрэглэгч хас гэсэн)`);
   }
-  // ③ ✅ ҮЛДСЭН ЦОРЫН НЭГ гарчиг — ☎️ Холбоо барих (хөндөгдөөгүй ✓)
-  assert.ok(CODE.includes('<DetailSection id="contact" icon="☎️" title="Холбоо барих" />'),
+  // ③ ✅ ҮЛДСЭН ЦОРЫН НЭГ гарчиг — ☎️ Холбоо барих (emoji нь (114)-д ХАСАГДАВ,
+  //    гарчиг нь ХЭВЭЭР ✓)
+  assert.ok(CODE.includes('<DetailSection id="contact" title="Холбоо барих" />'),
     '☎️ Холбоо барих гарчиг алга ✗');
   assert.equal((CODE.match(/<DetailSection /g) || []).length, 5, '`DetailSection` дуудлагын тоо 5 БИШ ✗');
   assert.equal((CODE.match(/<DetailSection [^>]*title="/g) || []).length, 1,

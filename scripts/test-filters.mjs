@@ -2992,11 +2992,16 @@ t('🖼 HomeClient: tile нь `<img>` (emoji БИШ) + нэр нь ДООР + К
   assert.match(grid, /data-section-value=\{s\.value\}/, '`data-section-value` алга ✗');
 });
 
-t('🎨 `icon` (emoji) нь tile-ээс ГАДНА ХЭВЭЭР (форм/attr мөр) — 12 хэсэг бүрд', () => {
+t('🎨 `icon` (emoji) нь tile-ээс ГАДНА ХЭВЭЭР (карт/attr мөр) — 12 хэсэг бүрд', () => {
   assert.equal(SECTIONS.filter((s) => !s.icon).length, 0, '`icon` нь заавал байх ёстой ✗');
   const add = readFileSync(new URL('../components/AddListingClient.jsx', import.meta.url), 'utf8');
-  // ⚠️ Зарын форм нь `SECTIONS[].icon`-ыг ХЭВЭЭР уншина (emoji-г ХӨНДӨӨГҮЙ ✓)
-  assert.match(add, /icon: s\.icon/, 'форм нь `SECTIONS[].icon`-ыг ашиглахаа больсон ✗');
+  /** ⚠️ (114) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «зар оруулах хуудас дээрх emoji-г бүгдийг
+   *  нь хас». ⇒ зарын ФОРМ нь `SECTIONS[].icon` (emoji)-ыг ОДОО РЕНДЭРЛЭХГҮЙ
+   *  (⏳ өмнө нь `icon: s.icon` байв ✗). Emoji нь ЗӨВХӨН карт/attr мөр/
+   *  хайлтын tile-д үлдэнэ (`lib/locationData.js` ХӨНДӨӨГДӨӨГҮЙ ✓) */
+  assert.ok(!/icon:\s*s\.icon/.test(add), 'форм `SECTIONS[].icon`-ыг дахин уншиж эхэлсэн ✗ ((114) emoji → SVG)');
+  assert.ok(!/PROPERTY_TYPE_ICONS/.test(add), 'форм `PROPERTY_TYPE_ICONS` (emoji)-ыг дахин уншиж эхэлсэн ✗');
+  assert.ok(!/\{f\.icon\}/.test(add), 'форм `{f.icon}` (emoji) буцаж орсон ✗ ((114))');
 });
 
 // ============================================================

@@ -18,6 +18,7 @@
 // `lib/queries.js → normalizeYouTubeUrl()` дээр хадгалах үед болно).
 // ============================================================
 import { parseYouTube } from '../lib/youtube.mjs';
+import { PlayIcon, CloseIcon } from './HeaderIcons';
 
 export default function YouTubeField({ value, onChange }) {
   const raw = String(value || '');
@@ -27,7 +28,7 @@ export default function YouTubeField({ value, onChange }) {
 
   return (
     <div className="form-group">
-      <label>🎥 YouTube видео (сонголтоор)</label>
+      <label>YouTube видео (сонголтоор)</label>
 
       <div className="flex items-stretch gap-2">
         <input
@@ -48,7 +49,7 @@ export default function YouTubeField({ value, onChange }) {
             title="Линкийг арилгах"
             className="shrink-0 rounded-lg border border-gray-200 bg-white px-3 text-sm font-bold text-gray-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
           >
-            ✕
+            <CloseIcon className="h-[15px] w-[15px]" />
           </button>
         )}
       </div>
@@ -67,10 +68,12 @@ export default function YouTubeField({ value, onChange }) {
             {/* ⚠️ Зөвхөн youtube.mjs-ийн угсарсан i.ytimg.com URL */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={parsed.thumbUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
-            <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-xl">▶️</span>
+            <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-white">
+              <PlayIcon className="h-7 w-7" />
+            </span>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[12px] font-bold text-secondary">✅ YouTube видео бэлэн</p>
+            <p className="text-[12px] font-bold text-secondary">YouTube видео бэлэн</p>
             <a
               href={parsed.watchUrl}
               target="_blank"

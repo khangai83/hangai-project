@@ -357,7 +357,7 @@ ok('📋 Дэлгэрэнгүй + 💰 Үнэ + 📝 Тайлбар + ☎️ у�
 ok('🪜 `[data-step-next]` DOM-д БАЙХГҮЙ ✗ (🖥 дээр ХООСОН хуудас руу явахгүй ✓)',
   p.next.present === false, JSON.stringify(p.next));
 ok('✅ `[data-step-submit]` ХАРАГДАЖ байна + «Зар нийтлэх» + `type=submit` ✓',
-  p.submit.present && p.submit.visible && p.submit.text === '✅ Зар нийтлэх' && p.submit.type === 'submit',
+  p.submit.present && p.submit.visible && p.submit.text === 'Зар нийтлэх' && p.submit.type === 'submit',
   JSON.stringify(p.submit));
 ok('← `[data-step-back]` харагдаж байна ✓', p.back.present && p.back.visible, JSON.stringify(p.back));
 ok('🏷️ «Зарын гарчиг» бөглөгдөв (заавал талбар) ✓', (await fillTitle('CDP алхмын тест')) === 'OK');
@@ -392,8 +392,8 @@ ok('📱 5-Р ДЭЛГЭЦ рүү шилжив (`?step=5`) ✓', p.url.includes(
 ok('📱 ?step=5: `media` + `media-images` харагдана ✓',
   JSON.stringify(p.visibleBlocks) === JSON.stringify(MOBILE_STEP5), JSON.stringify(p.visibleBlocks));
 ok('📱 ?step=5: breadcrumb = «Зураг» ✓', p.step === 'Зураг', JSON.stringify(p.step));
-ok('✅ `[data-step-submit]` ХАРАГДАЖ байна («✅ Зар нийтлэх» ✓)',
-  p.submit.present && p.submit.visible && p.submit.text === '✅ Зар нийтлэх', JSON.stringify(p.submit));
+ok('✅ `[data-step-submit]` ХАРАГДАЖ байна («Зар нийтлэх» ✓)',
+  p.submit.present && p.submit.visible && p.submit.text === 'Зар нийтлэх', JSON.stringify(p.submit));
 
 // ────────────────────────────────────────────────────────────
 console.log('\n── ③ 🖥 1440px (буцаж): ?step=5 ч НЭГТГЭСЭН 5 БЛОК ──');
@@ -403,8 +403,8 @@ ok('🖥 resize (📱→🖥) хийсний дараа ч ?step=5 дээр 5 б
   JSON.stringify(p.visibleBlocks) === JSON.stringify(MERGED_BLOCKS), JSON.stringify(p.visibleBlocks));
 ok('🧭 `?step=5` дээр ч breadcrumb = «Дэлгэрэнгүй ба үнэ, зураг» ✓ (🖥 дээр нэг хуудас = нэг нэр ✓)',
   p.step === 'Дэлгэрэнгүй ба үнэ, зураг', JSON.stringify(p.step));
-ok('🖥 `?step=5` дээр ч «✅ Зар нийтлэх» ✓',
-  p.submit.visible && p.submit.text === '✅ Зар нийтлэх', JSON.stringify(p.submit));
+ok('🖥 `?step=5` дээр ч «Зар нийтлэх» ✓',
+  p.submit.visible && p.submit.text === 'Зар нийтлэх', JSON.stringify(p.submit));
 ok('🖥 Товч ХОЁР БАЙХГҮЙ — `[data-step-next]` 0 ба `[data-step-submit]` 1 ✓',
   p.next.present === false && p.submit.present === true,
   `${JSON.stringify(p.next)} / ${JSON.stringify(p.submit)}`);

@@ -169,7 +169,7 @@ t('① `isDirtyForm` нь JSON МӨР хүлээн авна (`baselineRef.curren
 });
 
 t('① мэдэгдлийн текст: зураг байвал «дахин нэмнэ үү» сануулга (зураг хадгалагдахгүй ✓)', () => {
-  assert.equal(draftNoticeText({ pendingCount: 0 }), '📝 Хадгалагдсан ноорог сэргээгдлээ');
+  assert.equal(draftNoticeText({ pendingCount: 0 }), 'Хадгалагдсан ноорог сэргээгдлээ');
   assert.ok(draftNoticeText({ pendingCount: 2 }).includes('зургуудаа ДАХИН нэмнэ үү'));
 });
 

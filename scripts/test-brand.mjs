@@ -34,6 +34,13 @@
 //     `zarmn:*` — CustomEvent нэр (favorites · savedSearches · searchHistory ·
 //     notifications · messages · stats)
 //
+// 🆕 (114) ЗАР ОРУУЛАХ ХУУДАС (форм ба туслах компонентууд) дээр ЦЭВЭР код
+//   дээрх emoji 0 — хэрэглэгчийн хүсэлт: «zar oruulax heseg deereh emoji
+//   bvhiiig ni has» ⇒ форм · газрын зургийн сонгогч · хайлттай сонгогч ·
+//   YouTube талбар · тооны хүрд БҮГД. ⏳ Иконууд `components/HeaderIcons.jsx`
+//   доторх SVG болов (`CheckIcon` · `CloseIcon` — фонт бүрд өөр зурагдах
+//   `✓`/`✕` тэмдэгтийн оронд, `currentColor`-оор өнгө дагана ✓)
+//
 // АЖИЛЛУУЛАХ:  npm run test:brand
 // ============================================================
 import fs from 'node:fs';
@@ -239,6 +246,53 @@ t('🎨 Толгой ба мобайл доод цэс нь ЦАГААН бол�
   //    хүрэх/дарах мөчид гардаг хариу үйлдэл тул ХӨНДӨӨГДӨӨГҮЙ ✓ (жишиг сайт
   //    дээр ч холбоос дээгүүр гүйлгэхэд ижил тодруулга гардаг)
   assert.match(AP_CODE, /hover:bg-gray-50/, 'ховерын хариу үйлдэл ХАСАГДСАН ✗ (UX)');
+});
+
+// ---------- 🧩 (114) ЗАР ОРУУЛАХ ХУУДАС — EMOJI 0 (2026-10-10) ----------
+/**
+ * 🧽 Тайлбарыг ЗАЙГААР маскилна — ⚠️ мөрийн ДУГААР ба БАЙТ урт ХӨНДӨӨГДӨХГҮЙ
+ *    (алдааны мөрдөлт яг эх файлын мөрөөр гарахын тулд `codeOnly`-оос ЯЛГААТАЙ:
+ *    энэ нь мөрийн дараах тайлбарыг (`const a = 1; // …`) ч маскилна ✓)
+ */
+const maskComments = (src) => src
+  .replace(/\{\/\*[\s\S]*?\*\/\}/g, (m) => m.replace(/[^\n]/g, ' '))
+  .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+  .replace(/(^|\s)\/\/[^\n]*/gm, (m) => m.replace(/[^\n]/g, ' '));
+
+/**
+ * 🎯 ЗӨВХӨН emoji/пиктограф — ⚠️ `←` `→` `›` `▸` `—` `…` `«»` `↑↓` нь
+ *    ХЭВЛЭЛИЙН (typography) тэмдэгт, emoji БИШ тул орохгүй ✓
+ */
+const FORM_EMOJI = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}]/u;
+
+t('🧩 (114) Зар оруулах хуудас + туслах компонентууд: ЦЭВЭР код дээр emoji 0 ✓', () => {
+  const FORM_FILES = [
+    'components/AddListingClient.jsx',     // ① форм (алхам/wizard, чип, товч)
+    'components/LocationMapPicker.jsx',    // ② газрын зургийн сонгогч (модаль)
+    'components/SearchableSelect.jsx',     // ③ хайлттай сонгогч (марк/брэнд)
+    'components/YouTubeField.jsx',         // ④ YouTube линк талбар
+    'components/WheelPicker.jsx',          // ⑤ тооны хүрд (он/давхар)
+  ];
+  const bad = [];
+  for (const f of FORM_FILES) {
+    maskComments(readSrc(f)).split('\n').forEach((line, i) => {
+      if (FORM_EMOJI.test(line)) bad.push(`${f}:${i + 1}  ${line.trim()}`);
+    });
+  }
+  assert.deepEqual(bad, [], `форм дээр emoji эргэж орсон ✗:\n${bad.join('\n')}`);
+});
+
+t('🧩 (114) `✓`/`✕` тэмдэгт нь SVG БОЛОВ — `CheckIcon`/`CloseIcon` (HeaderIcons) ✓', () => {
+  // ⚠️ Фонт бүрд өөр зурагдах тэмдэгтийн оронд `currentColor` дагадаг SVG ✓
+  assert.ok(ICONS_CODE.includes('export function CheckIcon('), '`CheckIcon` (HeaderIcons) алга ✗');
+  assert.ok(ICONS_CODE.includes('export function CloseIcon('), '`CloseIcon` (HeaderIcons) алга ✗');
+  const FORM_CODE = maskComments(readSrc('components/AddListingClient.jsx'));
+  assert.equal((FORM_CODE.match(/<CheckIcon /g) || []).length, 3,
+    'форм дээр `CheckIcon` ЯГ 3 (чип + 2 мобайл сонголт) байх ёстой ✗');
+  assert.equal((FORM_CODE.match(/<CloseIcon /g) || []).length, 1,
+    'форм дээр `CloseIcon` ЯГ 1 (газрын зургийн «Арилгах») байх ёстой ✗');
+  assert.doesNotMatch(FORM_CODE, /<span aria-hidden="true">[✓✕]/,
+    '`✓`/`✕` тэмдэгт (`<span aria-hidden>`) буюу буцаж орсон ✗');
 });
 
 console.log(`\n✅ Нийт ${passed} шалгалт амжилттай — лого «ZarBook.mn» (ЗӨВХӨН текст, нүүр хуудасны ГАНЦ линк; 🆕 (91) тусдаа икон ХАСАГДАВ) + брэнд БҮГДЭЭ ZarBook.mn ✓\n`);

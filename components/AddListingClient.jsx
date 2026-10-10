@@ -5,11 +5,18 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, useToast, useUI } from './AppProviders';
 import { createListing, updateListing, uploadImages, fetchListingById } from '../lib/queries';
-import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, hasSimpleForm, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSection, getSubtypes, hasCategoryChoice, getSectionCategories, getSubtypeGroups, findSubtypeGroup, getAttrFields, PROPERTY_TYPE_ICONS, descriptionAfterTitle, hasAutoTitle } from '../lib/locationData';
+import { CITIES, getDistricts, getKhoroos, hasApartmentFields, hasFloorFields, hasRoomsFields, hasBathroomFields, hasSimpleForm, BALCONY_OPTIONS, GARAGE_OPTIONS, SECTIONS, getSection, getSubtypes, hasCategoryChoice, getSectionCategories, getSubtypeGroups, findSubtypeGroup, getAttrFields, descriptionAfterTitle, hasAutoTitle } from '../lib/locationData';
 import { normalizePhone, getPropertyTypeLabel, formatThousands, digitCount, shortPrice, isNegotiablePrice, NEGOTIABLE_PRICE_LABEL, NEGOTIABLE_SALARY_LABEL, MAX_LISTING_TITLE_LENGTH } from '../lib/format';
 import phoneEmail from '../lib/phoneEmail';
 import YouTubeField from './YouTubeField';
 import SearchableSelect from './SearchableSelect';
+/**
+ * 🧩 (114) ЗАР ОРУУЛАХ ХУУДАСНЫ EMOJI → SVG ИКОН (2026-10-10).
+ * Хэрэглэгчийн хүсэлт: «зар оруулах хуудас дээрх emoji-г бүгдийг нь хас».
+ * ⚠️ Emoji нь OS/фонт бүрд өөр харагдана ✗ — SVG нь `currentColor`-оор
+ *    зурагдаж, товчны саарал/хар өнгийг дагана ✓
+ */
+import { SearchIcon, PinIcon, PencilIcon, CameraIcon, LoaderIcon, LockIcon, CheckIcon, CloseIcon } from './HeaderIcons';
 // 🗺 ГАЗРЫН ЗУРАГ ДЭЭРХ ПИН-ПИКЕР (2026-10-06) — `жишиг сайт` мэт modal
 import LocationMapPicker from './LocationMapPicker';
 import { parseYouTube } from '../lib/youtube.mjs';
@@ -312,7 +319,8 @@ function khorooPatch(city, district, khoroo) {
  *     (сонгосон утга БИШ — тогтмол нэр тул давхардал үүсгэхгүй ✓)
  *  @param {string}   p.pickRole  `data-picker` утга (`section`|`level2`|`level3`) —
  *     ⚠️ CDP/тестийн тогтвортой selector (`[data-picker="section"] button`) ✓
- *  @param {Array}    p.items     `{ value, label, icon?, badge? }`
+ *  @param {Array}    p.items     `{ value, label, badge? }` — ⚠️ (114) `icon`
+ *     (emoji) БАЙХГҮЙ: зар оруулах хуудасны emoji БҮГД ХАСАГДАВ ✓
  *  @param {string}   p.value     сонгогдсон утга (`items[].value`-тай тэнцэнэ)
  *  @param {Function} p.onPick    утга сонгоход дуудагдана
  *  @param {string}   [p.emptyText] хоосон үеийн тайлбар
@@ -348,7 +356,6 @@ function PickerColumn({ pickRole, mobileLabel, items, value, onPick, emptyText =
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                {it.icon ? <span aria-hidden="true">{it.icon}</span> : null}
                 <span className="min-w-0 flex-1">{it.label}</span>
                 {typeof it.badge === 'number' && it.badge > 0 ? (
                   <span className={`shrink-0 rounded-full px-1.5 text-[10px] font-semibold ${active ? 'bg-white/25 text-white' : 'bg-gray-100 text-gray-500'}`}>
@@ -405,7 +412,7 @@ function MobileQuestion({ title, items, value, onPick, onBack, emptyText = 'Со
       {/* 🔎 Хайлт (жишиг сайтын «Хайх зүйлсээ бичнэ үү») */}
       <div className="relative mt-3">
         <span aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-          🔍
+          <SearchIcon className="h-[17px] w-[17px]" />
         </span>
         <input
           type="text"
@@ -431,7 +438,6 @@ function MobileQuestion({ title, items, value, onPick, onBack, emptyText = 'Со
                 it.value === value ? 'font-semibold text-primary' : 'text-gray-800'
               }`}
             >
-              {it.icon ? <span aria-hidden="true">{it.icon}</span> : null}
               <span className="min-w-0 flex-1">{it.label}</span>
               <span aria-hidden="true" className="text-gray-300">›</span>
             </button>
@@ -515,7 +521,7 @@ function MobileOptions({ items = [], value = '', onPick, skip = false, onSkip })
               onClick={() => onPick(it.value)}
               className={`mob-option${on ? ' mob-option-on' : ''}`}
             >
-              {on ? <span aria-hidden="true">✓</span> : null}
+              {on ? <CheckIcon className="h-[14px] w-[14px] shrink-0" /> : null}
               <span className="min-w-0 truncate">{it.label}</span>
             </button>
           );
@@ -565,7 +571,7 @@ function MobileAnswers({ rows = [], onEdit }) {
                   </span>
                 ) : null}
               </span>
-              <span aria-hidden="true" className="shrink-0 text-gray-300">✏️</span>
+              <span aria-hidden="true" className="shrink-0 text-gray-300"><PencilIcon className="h-4 w-4" /></span>
             </button>
           </li>
         ))}
@@ -633,7 +639,7 @@ function MobileAnswers({ rows = [], onEdit }) {
  * 🔍 Хайх үг: DetailSection, data-detail-section, бүлэг гарчиг, цагаан хуудас,
  *    «page with an attachment», junk box, if (!title)
  */
-function DetailSection({ id, icon, title }) {
+function DetailSection({ id, title }) {
   /** ⚠️ (111′/″) 2026-10-10 — хэрэглэгчийн хүсэлт: «📄 Үндсэн мэдээлэл · 🏷 Үзүүлэлтүүд ·
    *  💰 Үнэ ба төлбөр … 📎 Хавсралт (зураг) гэсэн бичгүүдийг хас» ⇒ `title`-гүй
    *  бүлэг нь ОГТ рендэрлэгдэхгүй (`null`) — хоосон `div` ч DOM-д үлдэхгүй ✓
@@ -647,7 +653,7 @@ function DetailSection({ id, icon, title }) {
     >
       {/* ⚠️ `h3` — гарчиг нь форм дотор, screen reader-т бүлгийн түвшин ✓ */}
       <h3 className="text-[15px] font-bold leading-tight text-gray-900">
-        <span aria-hidden="true">{icon}</span> {title}
+        {title}
       </h3>
     </div>
   );
@@ -670,7 +676,7 @@ function DesktopSummary({ categoryPath, locationPath, step = 0, onEdit }) {
       aria-label={`${label} засах`}
       className="shrink-0 rounded-md border border-success-dark bg-success px-1.5 py-0.5 text-[11px] font-semibold leading-none text-white transition hover:bg-success-dark"
     >
-      ✏️ Засах
+      Засах
     </button>
   );
   return (
@@ -681,7 +687,7 @@ function DesktopSummary({ categoryPath, locationPath, step = 0, onEdit }) {
       {/* ① 🗂 АНГИЛАЛ — `step >= 1` (Ангилал алхмаас хойш) + ✏️ Засах ✓ */}
       <span className="inline-flex items-center gap-1.5">
         <span>
-          🗂 Ангилал:{' '}
+          Ангилал:{' '}
           {categoryPath
             ? <b className="font-semibold text-gray-900">{categoryPath}</b>
             : <span className="text-gray-400">сонгоогүй</span>}
@@ -692,7 +698,7 @@ function DesktopSummary({ categoryPath, locationPath, step = 0, onEdit }) {
       {step >= 2 && (
         <span data-desktop-summary-location className="inline-flex items-center gap-1.5">
           <span>
-            📍 Зарын байршил:{' '}
+            Зарын байршил:{' '}
             {locationPath
               ? <b className="font-semibold text-gray-900">{locationPath}</b>
               : <span className="text-gray-400">сонгоогүй</span>}
@@ -805,8 +811,7 @@ const attrWheelUnit = (f) => f.choiceUnit || (f.type === 'number' ? 'он' : '')
  * 🔍 Хайх үг: ChoiceField, data-choice-trigger, data-choice-input, WheelPicker
  *
  * @param {string}   label     талбарын нэр (label)
- * @param {string}   [icon]    нэрийн өмнөх дүрс (ж: `'📅'`)
- * @param {string}   [hint]    оролтын доорх 💡 тайлбар
+ * @param {string}   [hint]    оролтын доорх тайлбар (⚠️ (114): `💡` emoji хасcан ✓)
  * @param {string}   [wheelHint] дугуйн толгойд гарах тайлбар (хоосон бол `hint`)
  * @param {string}   value     одоогийн утга
  * @param {Array}    items     `[{ value, label }]` (дугуйн мөрүүд — хоосон
@@ -837,7 +842,7 @@ const attrWheelUnit = (f) => f.choiceUnit || (f.type === 'number' ? 'он' : '')
  *      «Алгасах / Үргэлжлүүлэх» товч ГАРАХ ЁСТОЙ (`pick: false` ✓)
  */
 function ChoiceField({
-  label, icon = '', hint = '', wheelHint = '', value = '', items = [], unit = '',
+  label, hint = '', wheelHint = '', value = '', items = [], unit = '',
   testId, placeholder = '', min, max, desktopControl = 'input', onChange,
   onPick, onSkip, openWheel, fieldKey = '', mobileActive, plusValue = '',
   mobileInput = false,
@@ -855,7 +860,7 @@ function ChoiceField({
       data-detail-field={fieldKey || undefined}
       data-mobile-active={mobileActive === undefined ? undefined : (mobileActive ? 'true' : 'false')}
     >
-      <label>{icon ? `${icon} ` : ''}{label}</label>
+      <label>{label}</label>
       <div className="flex w-full items-stretch gap-2">
         {/* ═ 🖥 ≥640px: ГАР БИЧИЛТ (өмнөх зан төлөв ХЭВЭЭР) ═ */}
         {desktopControl === 'select' ? (
@@ -913,7 +918,7 @@ function ChoiceField({
           data-empty={shown ? 'false' : 'true'}
           aria-haspopup="dialog"
           onClick={() => openWheel({
-            title: `${icon ? `${icon} ` : ''}${label}`,
+            title: label,
             items,
             value,
             hint: wheelHint || hint,
@@ -921,7 +926,7 @@ function ChoiceField({
           })}
           className="mob-wheel-link sm:hidden"
         >
-          🎡 Гүйлгээд сонгох
+          Гүйлгээд сонгох
         </button>
       ) : null}
       {hint ? <p className="form-hint">{hint}</p> : null}
@@ -1336,7 +1341,7 @@ export default function AddListingClient() {
   const goHome = () => router.push(isEdit ? '/my-listings' : '/');
   const requestCancel = () => {
     if (submitting) return;
-    if (isDirty() && !window.confirm('Оруулсан мэдээлэл НООРОГ болж ХАДГАЛАГДАНА — дараа нь энэ хуудсанд орход «📝 Хадгалагдсан ноорог сэргээгдлээ» гэж буцаж ирнэ. Гарахдаа итгэлтэй байна уу?')) {
+    if (isDirty() && !window.confirm('Оруулсан мэдээлэл НООРОГ болж ХАДГАЛАГДАНА — дараа нь энэ хуудсанд орход «Хадгалагдсан ноорог сэргээгдлээ» гэж буцаж ирнэ. Гарахдаа итгэлтэй байна уу?')) {
       return;
     }
     goHome();
@@ -1586,7 +1591,7 @@ export default function AddListingClient() {
      ========================================================================== */
   const sectionValue = form.section || 'real-estate';
   const sectionDef = getSection(sectionValue);
-  const sectionItems = SECTIONS.map((s) => ({ value: s.value, label: s.label, icon: s.icon }));
+  const sectionItems = SECTIONS.map((s) => ({ value: s.value, label: s.label }));
   /** «Зарах / Түрээслэх» — ⚠️ ЗӨВХӨН үл хөдлөхөд (`hasCategoryChoice`).
    *  ⚠️ «Бүгд» (`all`) нь зарын формд УТГАГҮЙ — зар нь үргэлж `sell`/`rent` тул хасна ✓ */
   const showCategoryChoice = hasCategoryChoice(sectionValue);
@@ -1605,7 +1610,7 @@ export default function AddListingClient() {
   const level2Value = showCategoryChoice ? form.category : hasGroups ? openGroup : form.propertyType;
   /* ③ дахь багана (leaf) — үл хөдлөх: бүх төрөл; бүлэгтэй: нээлттэй бүлгийн item-үүд */
   const level3Items = showCategoryChoice
-    ? subtypes.map((t) => ({ value: t, label: getPropertyTypeLabel(t, form.category), icon: PROPERTY_TYPE_ICONS[t] || '' }))
+    ? subtypes.map((t) => ({ value: t, label: getPropertyTypeLabel(t, form.category) }))
     : (subtypeGroups.find((g) => g.label === openGroup)?.items || []).map((t) => ({ value: t, label: t }));
   /**
    * ⚠️ 2026-10-01 (**4 дэх засвар**): баганын толгой (`columnTitleOf` /
@@ -2007,7 +2012,7 @@ export default function AddListingClient() {
     /** Хэсгийн нэмэлт талбарууд (брэнд/он/гүйлт/компьютер …) — нэг нэгээрээ */
     attrFields.forEach((f) => out.push({
       key: `attr-${f.key}`,
-      title: `${f.icon ? `${f.icon} ` : ''}${f.label}`,
+      title: f.label,
       group: 'attrs',
       /** 📱 Сонголттой бол дарж сонгоод ШУУД дараагийн асуулт (товч ХАРАГДАХГҮЙ) */
       pick: isAttrPick(f),
@@ -2019,7 +2024,7 @@ export default function AddListingClient() {
      */
     if (showPayments) out.push({
       key: 'payments',
-      title: '💳 Төлбөрийн нөхцөл',
+      title: 'Төлбөрийн нөхцөл',
       group: 'payments',
       required: !isEdit,
     });
@@ -2113,7 +2118,7 @@ export default function AddListingClient() {
    */
   const pickedCategoryPath = form.propertyType
     ? [
-      `${sectionDef.icon} ${sectionDef.label}`,
+      `${sectionDef.label}`,
       showCategoryChoice ? categoryItems.find((c) => c.value === form.category)?.label : '',
       selectedGroupLabel,
       selectedLeafLabel,
@@ -2295,7 +2300,7 @@ export default function AddListingClient() {
       if (mapped.length) setPending((p) => [...p, ...mapped]);
       if (report.failed) {
         setError(
-          `⚠️ ${report.failed} зураг оруулагдсангүй (${report.failedNames.join(', ')}). ${UNREADABLE_IMAGE_HINT}`
+          `${report.failed} зураг оруулагдсангүй (${report.failedNames.join(', ')}). ${UNREADABLE_IMAGE_HINT}`
         );
       }
       setLastReport({
@@ -2567,7 +2572,7 @@ export default function AddListingClient() {
       try { window.localStorage.removeItem(draftStorageKey); } catch { /* ignore */ }
 
       notifyListingsChanged();
-      showToast(isEdit ? 'Зар амжилттай засагдлаа ✅' : 'Зар амжилттай нийтлэгдлээ ✅');
+      showToast(isEdit ? 'Зар амжилттай засагдлаа' : 'Зар амжилттай нийтлэгдлээ');
       router.push('/my-listings');
     } catch (err) {
       setError(err.message || (isEdit ? 'Зар засахад алдаа гарлаа' : 'Зар нэмэхэд алдаа гарлаа'));
@@ -2591,7 +2596,7 @@ export default function AddListingClient() {
     return (
       <div className="page-container">
         <div className="mx-auto mt-6 max-w-md rounded-2xl border border-gray-200 bg-gray-100 p-8 text-center shadow-card">
-          <div className="mb-4 text-6xl">🔑</div>
+          <div className="mb-4 flex justify-center text-gray-400"><LockIcon className="h-12 w-12" strokeWidth={1.4} /></div>
           <h1 className="text-xl font-semibold">Зар оруулахын тулд нэвтрэх шаардлагатай</h1>
           <p className="mt-2 text-[13px] text-gray-500">
             Утасны дугаараараа нэвтэрсний дараа зарыг үргэлжлүүлэн оруулна.
@@ -2645,10 +2650,10 @@ export default function AddListingClient() {
    *    доод товч ХОЁУЛАА энэ мөрийг л ашиглана ✓
    */
   const submitLabel = compressing
-    ? '🗜 Зургуудыг шахаж байна...'
+    ? 'Зургуудыг шахаж байна...'
     : submitting
       ? (isEdit ? 'Хадгалж байна...' : 'Нийтэлж байна...')
-      : (isEdit ? '💾 Өөрчлөлтийг хадгалах' : '✅ Зар нийтлэх');
+      : (isEdit ? 'Өөрчлөлтийг хадгалах' : 'Зар нийтлэх');
 
   return (
     <div className="page-container">
@@ -2757,7 +2762,7 @@ export default function AddListingClient() {
                     onClick={discardDraft}
                     className="shrink-0 rounded-full bg-white/15 px-2.5 py-1 font-semibold text-white transition hover:bg-white/25"
                   >
-                    🗑 Устгах
+                    Устгах
                   </button>
                 </div>
               </div>
@@ -2867,7 +2872,7 @@ export default function AddListingClient() {
               {form.propertyType ? (
                 <>
                   Сонгосон:{' '}
-                  <b className="text-gray-900">{sectionDef.icon} {sectionDef.label}</b>
+                  <b className="text-gray-900">{sectionDef.label}</b>
                   {showCategoryChoice && (
                     <> › <b className="text-gray-900">{categoryItems.find((c) => c.value === form.category)?.label}</b></>
                   )}
@@ -2992,7 +2997,7 @@ export default function AddListingClient() {
               ) : form.city ? (
                 <>
                   Сонгосон:{' '}
-                  <b className="text-gray-900">📍 {form.city}</b>
+                  <b className="text-gray-900">{form.city}</b>
                   {form.district ? <> › <b className="text-gray-900">{form.district}</b></> : null}
                   {form.khoroo ? <> › <b className="text-gray-900">{form.khoroo}</b></> : null}
                 </>
@@ -3024,21 +3029,22 @@ export default function AddListingClient() {
                     onClick={() => setMapPickerOpen(true)}
                     className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-[14px] font-semibold text-gray-800 transition hover:border-primary hover:text-primary"
                   >
-                    🗺 Газрын зураг дээр заах
+                    <PinIcon className="h-[17px] w-[17px]" /> Газрын зураг дээр заах
                   </button>
                   {hasCoords(form) && (
                     <>
-                      <span data-map-picker-value className="text-[13px] font-medium text-gray-600">
-                        📍 {Number(form.latitude).toFixed(5)}, {Number(form.longitude).toFixed(5)}
+                      <span data-map-picker-value className="inline-flex items-center gap-1.5 text-[13px] font-medium text-gray-600">
+                        <PinIcon className="h-[14px] w-[14px]" />
+                        {Number(form.latitude).toFixed(5)}, {Number(form.longitude).toFixed(5)}
                         {mapPickIsApprox ? ' (ойролцоо)' : ''}
                       </span>
                       <button
                         type="button"
                         data-map-picker-clear
                         onClick={clearMapPick}
-                        className="text-[13px] font-semibold text-gray-400 transition hover:text-red-500"
+                        className="inline-flex items-center gap-1 text-[13px] font-semibold text-gray-400 transition hover:text-red-500"
                       >
-                        ✕ Арилгах
+                        <CloseIcon className="h-[13px] w-[13px]" /> Арилгах
                       </button>
                     </>
                   )}
@@ -3080,7 +3086,7 @@ export default function AddListingClient() {
                        resolve-map-link, isShortMapsLink */}
                 <div className="mt-3 border-t border-gray-200 pt-3">
                   <label className="mb-1.5 block text-[12.5px] font-semibold text-gray-600">
-                    📋 {MAP_LINK_LABEL}
+                    {MAP_LINK_LABEL}
                   </label>
                   <div className="flex flex-col gap-2 sm:flex-row">
                     <input
@@ -3382,7 +3388,7 @@ export default function AddListingClient() {
                     data-detail-field={`attr-${f.key}`}
                     data-mobile-active={detailFieldActive(`attr-${f.key}`)}
                   >
-                    <label>{f.icon ? `${f.icon} ` : ''}{f.label}</label>
+                    <label>{f.label}</label>
                     {f.formChips ? (
                       /**
                        * 🎛 ЧИП ТАЛБАР (2026-10-03 (11), хэрэглэгчийн хүсэлт:
@@ -3433,7 +3439,7 @@ export default function AddListingClient() {
                               onClick={() => setAttrCascade(f, on ? '' : o)}
                               className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
                             >
-                              {on && <span aria-hidden="true">✓</span>}
+                              {on && <CheckIcon className="h-[14px] w-[14px]" />}
                               {o}
                             </button>
                           );
@@ -3449,7 +3455,6 @@ export default function AddListingClient() {
                        *    `number` талбарын урьдчих зан ХӨНДӨГДӨӨГҮЙ ✓
                        */
                       <ChoiceField
-                        icon={f.icon}
                         label={f.label}
                         value={value}
                         items={attrWheelItems(f, value)}
@@ -3529,8 +3534,8 @@ export default function AddListingClient() {
                     {f.optionsFrom && (
                       <p className="form-hint">
                         {depOptions.length
-                          ? `💡 «${depValue}»-ийн ${depOptions.length} загвар — бичиж хайгаад сонгоно уу (жагсаалтад байхгүй бол гараар бичнэ)`
-                          : `💡 Эхлээд «🏷️ Үйлдвэрлэгч»-ээ сонгоход загварын жагсаалт гарна (гараар бичиж ч болно)`}
+                          ? `«${depValue}»-ийн ${depOptions.length} загвар — бичиж хайгаад сонгоно уу (жагсаалтад байхгүй бол гараар бичнэ)`
+                          : `Эхлээд «Үйлдвэрлэгч»-ээ сонгоход загварын жагсаалт гарна (гараар бичиж ч болно)`}
                       </p>
                     )}
                   </div>
@@ -3544,7 +3549,7 @@ export default function AddListingClient() {
                      `sm:col-span-2` ХЭРЭГГҮЙ — үлдээвэл grid дотор ДАЛД 2 дахь
                      track үүсгэж, «бүтэн өргөн» гэсэн утга алдагдана ✗ */
                   <p className="form-hint">
-                    💻 Notebook-ийн үзүүлэлтүүд — заавал биш: дээрээс мэдэх хэсгээ л сонгоно уу
+                    Notebook-ийн үзүүлэлтүүд — заавал биш: дээрээс мэдэх хэсгээ л сонгоно уу
                   </p>
                 )}
               </div>
@@ -3586,7 +3591,7 @@ export default function AddListingClient() {
                   data-detail-field="payments"
                   data-mobile-active={detailFieldActive('payments')}
                 >
-                  <label>💳 Төлбөрийн нөхцөл</label>
+                  <label>Төлбөрийн нөхцөл</label>
                   <div
                     className="flex flex-wrap gap-2"
                     data-payment-picker
@@ -3606,7 +3611,7 @@ export default function AddListingClient() {
                           onClick={() => togglePayment(o.value)}
                           className={`chip-toggle ${on ? 'chip-toggle-active' : ''}`}
                         >
-                          {on && <span aria-hidden="true">✓</span>}
+                          {on && <CheckIcon className="h-[14px] w-[14px]" />}
                           {o.label}
                         </button>
                       );
@@ -3614,7 +3619,7 @@ export default function AddListingClient() {
                   </div>
                   <p className="form-hint">
                     {form.payments.length
-                      ? `✅ ${countPayments(form.payments)} нөхцөл сонгосон — хайлт дээр эдгээрийн АЛЬ НЭГ нь тохирох зарууд гарна`
+                      ? `${countPayments(form.payments)} нөхцөл сонгосон — хайлт дээр эдгээрийн АЛЬ НЭГ нь тохирох зарууд гарна`
                       : 'Олон нөхцөл зэрэг сонгож болно (ж: «Хувь лизингээр» ба «Бартер сонирхоно»)'}
                   </p>
                 </div>
@@ -4022,7 +4027,7 @@ export default function AddListingClient() {
                 ⚠️ `?step=5` (🖥 дээр) хаягаар орвол ч ХАРАГДАХААР үлдэнэ ✓ */}
             <div data-step-block="media" className={step === 4 ? '' : step === 2 || step === 3 ? 'hidden sm:block' : 'hidden'}>
             {/* ☎️ ④ БҮЛЭГ · ХОЛБОО БАРИХ (🖥 ≥640px — `DetailSection`-ийг үз) */}
-            <DetailSection id="contact" icon="☎️" title="Холбоо барих" />
+            <DetailSection id="contact" title="Холбоо барих" />
             <div className="form-row">
               <div className="form-group">
                 <label>Холбоо барих утас *</label>
@@ -4072,7 +4077,7 @@ export default function AddListingClient() {
                     🔍 Хайх үг: showName, listing-show-name, show_name, 0042 */}
                 <div className="mt-3" data-listing-show-name-block>
                   <label htmlFor="listing-show-name">
-                    👤 Профайл нэрээ зар дээр гаргах уу?
+                    Профайл нэрээ зар дээр гаргах уу?
                   </label>
                   <select
                     id="listing-show-name"
@@ -4135,11 +4140,15 @@ export default function AddListingClient() {
                 }`}
                 onClick={() => document.getElementById('imageInput')?.click()}
               >
-                <div className="text-[40px]">{compressing ? '⏳' : '📷'}</div>
+                <div className="flex justify-center text-gray-400">
+                  {compressing
+                    ? <LoaderIcon className="h-10 w-10 animate-spin" />
+                    : <CameraIcon className="h-10 w-10" strokeWidth={1.4} />}
+                </div>
                 <p>{compressing ? 'Зургуудыг шахаж байна...' : 'Зураг оруулахын тулд дарна уу'}</p>
                 <p className="form-hint">
                   Дээд тал нь 10 зураг — jpg · png · webp · avif · gif · svg · heic
-                  (iPhone-ийн heic нь автоматаар jpg болно) · 🗜 автоматаар <b>1600px / 82%</b> болж шахагдана
+                  (iPhone-ийн heic нь автоматаар jpg болно) · автоматаар <b>1600px / 82%</b> болж шахагдана
                 </p>
               </div>
               <input
@@ -4154,9 +4163,9 @@ export default function AddListingClient() {
 
               {lastReport && (
                 <p className="form-hint">
-                  🗜 <b>{lastReport.count} зураг</b> шахагдлаа: {formatBytes(lastReport.totalOriginal)} →{' '}
+                  <b>{lastReport.count} зураг</b> шахагдлаа: {formatBytes(lastReport.totalOriginal)} →{' '}
                   <b>{formatBytes(lastReport.totalNew)}</b>
-                  {lastReport.savedPercent > 0 && ` · ${lastReport.savedPercent}% хэмнэлт 🎉`}
+                  {lastReport.savedPercent > 0 && ` · ${lastReport.savedPercent}% хэмнэлт`}
                 </p>
               )}
 

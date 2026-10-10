@@ -452,8 +452,8 @@ ok('📱 «Барилгын нийт давхар» — ЖИНХЭНЭ ГАР Б
   JSON.stringify({ hasInput: f0.hasInput, visible: f0.inputVisible, tag: f0.inputTag }));
 ok('📱 2 БАГАНАТ ЖАГСААЛТ БАЙХГҮЙ (`[data-mobile-option]` = 0, «Алгасах» линк ч байхгүй ✓)',
   f0.options === 0 && f0.skipVisible === false, JSON.stringify({ options: f0.options, skip: f0.skipVisible }));
-ok('📱 хоосон үед «🎡 Гүйлгээд сонгох» холбоос + `data-empty="true"` (дугуй нь НЭМЭЛТ боломж хэвээр ✓)',
-  f0.trigVisible && f0.trigText === '🎡 Гүйлгээд сонгох' && f0.trigEmpty === 'true',
+ok('📱 хоосон үед «Гүйлгээд сонгох» холбоос + `data-empty="true"` (дугуй нь НЭМЭЛТ боломж хэвээр — 🆕 (114): emoji ХАСАГДАВ ✓)',
+  f0.trigVisible && f0.trigText === 'Гүйлгээд сонгох' && f0.trigEmpty === 'true',
   `${f0.trigVisible} / ${f0.trigText} / ${f0.trigEmpty}`);
 /** ⚠️ Дараалал нь 3-р алхмын дараалалтай ИЖИЛ (угаалгын өрөө нь 2 өрөөт
  *  орон сууцад БАЙХГҮЙ тул ХАМГИЙН СҮҮЛД — эс бөгөөс урагш гүйлгээд

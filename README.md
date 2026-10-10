@@ -1503,6 +1503,55 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- 🧩🚫 **ЗАР ОРУУЛАХ ХУУДАС (форм ба ТУСЛАХ КОМПОНЕНТУУД) ДЭЭРХ EMOJI БҮГД ХАСАГДАЖ, SVG ИКОН БОЛОВ (2026-10-10 (114))** —
+  хэрэглэгчийн хүсэлт: «зар оруулах хэсэг дээрх emoji-г бүгдийг нь хас» ⇒ зарын
+  **форм** (wizard-ийн 5 алхам, чип, товч) ба түүний **туслах компонентууд** дээрх
+  emoji БҮГД ХАСАГДАВ. ⚠️ Emoji нь OS/фонт бүрд өөр зурагдаж, өөрийн өнгөтэй ✗ —
+  SVG икон нь `currentColor`-оор зурагдаж товчны саарал/хар өнгийг дагана ✓.
+  <br>**(1) 🧩 FILE-УУД (5):** `components/AddListingClient.jsx` (форм) ·
+  `components/LocationMapPicker.jsx` (газрын зургийн модаль) ·
+  `components/SearchableSelect.jsx` (хайлттай сонгогч) ·
+  `components/YouTubeField.jsx` (YouTube линк) · `components/WheelPicker.jsx`
+  (тооны хүрд — ⏳ өөрчлөлт ШААРДЛАГАГҮЙ байв, emoji 0 ✓). ⚠️ Тест нь эдгээр
+  5 файлыг ТОГТВОРТОЙ жагсаалтаар шалгана (шинэ emoji буцаж орохыг хориглоно ✓)
+  <br>**(2) ➕ `components/HeaderIcons.jsx` — 7 ШИНЭ SVG ИКОН:** `PencilIcon` (⏳ `✏️`) ·
+  `CameraIcon` (⏳ `📷` — зураг оруулах dropzone) · `LoaderIcon` (⏳ `⏳` — зураг шахаж
+  байх; ⚠️ эргэлт `animate-spin`-ийг ДУУДАГЧ өгнө) · `PlayIcon` (⏳ `▶️` — видео
+  thumbnail, `fill="currentColor"`) · `LockIcon` (⏳ `🔑`) · `CheckIcon` (⏳ `✓`) ·
+  `CloseIcon` (⏳ `✕`) — бүгд өмнөх иконуудтай ЯГ ИЖИЛ хэв (`Icon` суурь +
+  `strokeWidth` параметр ✓). ⚠️ `HeaderIcons.jsx`-ийн тайлбарт emoji нь ТҮҮХИЙН
+  бичлэг болж үлдэв (код дээр ХАРАГДАХГҮЙ — зөвхөн `//` тайлбар ✓)
+  <br>**(3) ⚙️ `✓`/`✕` ТЭМДЭГТ → SVG (форм):** `lucide`-маягийн `CheckIcon` нь
+  ① чип/сонголтын `active` төлөв ②📱 2 мобайл сонголтын мөр — нийт **3** газар;
+  `CloseIcon` нь газрын зургийн «Арилгах» — **1** газар (`<span aria-hidden="true">✓`
+  хэлбэр БҮРЭН ХАСАГДАВ ✓)
+  <br>**(4) 🗂 `icon:` ӨГӨГДЛИЙГ РЕНДЕРЛЭХЭЭ БОЛИВ (strip-at-render):** форм нь
+  ⏳ `SECTIONS[].icon` (`icon: s.icon`) · `PROPERTY_TYPE_ICONS` · `getAttrFields().icon`
+  (`{f.icon} {f.label}`) — эдгээрийг **emoji-тэй хамт харуулж байв** ✗ ⇒ одоо
+  форм дээр ЗӨВХӨН ТЕКСТ (`{f.label}`). ⚠️ `lib/locationData.js` ХӨНДӨӨГДӨӨГҮЙ ✓ —
+  emoji нь **карт / attr мөр / хайлтын tile** дээр ХЭВЭЭР үлдэнэ (нэг эх сурвалж ✓)
+  <br>**(5) 📝 ТЕКСТ ЭМХЭТГЭЛ** (`lib/listingDraft.mjs`, `lib/listingLocation.mjs`):
+  нооргийн мэдэгдэл `📝 Хадгалагдсан ноорог …` → **`Хадгалагдсан ноорог …`** ·
+  байршлын чекбокс `📍 Байршил сонгохгүй` → **`Байршил сонгохгүй`** · хураангуй
+  `🚫 Байршил заагаагүй …` → **`Байршил заагаагүй …`** (утга/хэлбэр ХӨНДӨӨГДӨӨГҮЙ;
+  `window.confirm`-ын текст ч ижил болгов ✓)
+  <br>**(6) 🧪 ТЕСТ:** `test:brand` **22 ✓** (🆕 (114) блок — 5 файлын ЦЭВЭР код
+  (тайлбар маскилсан) дээр `[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}]`
+  = **0** + `CheckIcon`×3/`CloseIcon`×1 + ⛔ `<span aria-hidden="true">✓/✕` буцаж
+  орохгүй) · `test:payments` **36 ✓** (чип нь `CheckIcon`-оор) · `test:wizard` **67 ✓** ·
+  `test:draft` **30 ✓** · `test:filters` **132 ✓** · `test:location` **37 ✓** ·
+  `test:location-map` **71 ✓** (`🗺 Газрын зураг дээр заах` → текст) · `test:prefill` 28 ·
+  `test:youtube` 18 · `test:sofa` 13 · `test:choices` 36 · `test:format` 38 ·
+  `test:card` 25 · `test:detail-ui` 28 · `test:share-btn` 7 · `test:similar` 39 —
+  БҮГД ✓ · `npm run build` **EXIT=0 ✓**
+  <br>**(7) ✅ БОДИТ CHROME (CDP):** `cdp:picker` **185/185 ✓** (🆕 (114) хэсэг: мөрийн
+  шошго emoji-гүй — `Ангилал:` · `Зарын байршил:`; `labelEmoji` DOM-проб нь `<b>`
+  доторх УТГЫГ (`💰 Зарах`, `💻 Notebook`) тооцохгүй ✓) · `cdp:steps` **45/45 ✓** ·
+  `cdp:wheel` **51/51 ✓** (`🎡 Гүйлгээд сонгох` → `Гүйлгээд сонгох`) · JS алдаа **0**
+  <br>**(8) 📄 DOC:** энэ буллет. 🔍 Хайх үг: `CheckIcon`, `CloseIcon`, `PencilIcon`,
+  `CameraIcon`, `LoaderIcon`, `PlayIcon`, `LockIcon`, `icon: s.icon`, `{f.label}`,
+  «Ангилал:», `labelEmoji`
+
 - 📄📎 **3 ДАХЬ ХУУДАС — «НЭГ ЦАГААН ХУУДАС + БҮЛГИЙН ГАРЧИГ» (2026-10-10 (111))** —
   ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Change the ad submission form to look like a page with an
   attachment. I don't want to clutter up the form like a junk box … change only

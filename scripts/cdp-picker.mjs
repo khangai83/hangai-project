@@ -363,6 +363,17 @@ const PROBE = `(() => {
         visible: el.getBoundingClientRect().width > 0,
         location: Boolean(el.querySelector('[data-desktop-summary-location]')),
         text: (el.innerText || '').replace(/\\s+/g, ' ').trim(),
+        /**
+         * 🆕 (114) МӨР БҮРД emoji БАЙХГҮЙ — ⚠️ зөвхөн ШОШГО ба товчны текст
+         *    дээр: утга («b» — тег) нь ӨГӨГДӨЛ (ж: «💰 Зарах», «💻 Notebook»)
+         *    тул шалгалтаас ХАСАВ (клон дээр «b» тегийг устгаж шалгана ✓)
+         *    (⚠️ энэ template literal дотор backtick БИЧИХГҮЙ ✗)
+         */
+        labelEmoji: (() => {
+          const c = el.cloneNode(true);
+          c.querySelectorAll('b').forEach((b) => b.remove());
+          return /[\\u{1F000}-\\u{1FAFF}\\u{2600}-\\u{27BF}\\u{2B00}-\\u{2BFF}\\u{FE0F}]/u.test(c.textContent || '');
+        })(),
       };
     })(),
     /**
@@ -648,9 +659,11 @@ ok('🖥 2-р алхам (📍 Байршил): 🗂 СОНГОСОН АНГИЛ
   JSON.stringify(p9.desktopSummary));
 ok('🖥 2-р алхам: 📍 мөр ХҮСНЭГТЭД ГАРАХГҮЙ (`step >= 2` хаалт ✓ — давхардал 0)',
   p9.desktopSummary?.location === false
-  && !(p9.desktopSummary?.text || '').includes('📍')
+  /** ⚠️ (114): хүснэгтийн ШОШГО/товч emoji-гүй (📂/📍/✏️ БҮГД ХАСАГДАВ ✓);
+   *  утга (`b`) нь өгөгдөл (ж: «💰 Зарах») тул шалгалтаас ГАДНА ✓ */
+  && p9.desktopSummary?.labelEmoji === false
   && (p9.locationSummary || '').includes('Улаанбаатар'),
-  JSON.stringify({ loc: p9.desktopSummary?.location, text: p9.desktopSummary?.text, lsum: p9.locationSummary }));
+  JSON.stringify({ loc: p9.desktopSummary?.location, labelEmoji: p9.desktopSummary?.labelEmoji, text: p9.desktopSummary?.text, lsum: p9.locationSummary }));
 
 console.log('\n── ⑥′ БАЙРШЛЫН БАГАНУУД: Хот → Дүүрэг → Хороо ──');
 await click('[data-picker="loc-district"] button[data-picker-value="Баянгол"]');
@@ -709,7 +722,8 @@ ok('🖥 3-р алхам (📋 Дэлгэрэнгүй): 🗂 АНГИЛАЛ ба
   p13.desktopSummary?.has === true && p13.desktopSummary?.visible === true && p13.desktopSummary?.location === true,
   JSON.stringify(p13.desktopSummary));
 ok('🖥 3-р алхам: хүснэгтэд сонгосон БОДИТ УТГУУД бий (📱 `MobileAnswers`-тай НЭГ ЭХ СУРВАЛЖ ✓)',
-  ['🗂 Ангилал', '📍 Зарын байршил', 'Үл хөдлөх', '▸', 'Дархан-Уул']
+  // ⚠️ (114): мөрийн ШОШГО нь emoji-гүй («Ангилал:», «Зарын байршил:») ✓
+  ['Ангилал', 'Зарын байршил', 'Үл хөдлөх', '▸', 'Дархан-Уул']
     .every((x) => (p13.desktopSummary?.text || '').includes(x)),
   p13.desktopSummary?.text);
 
@@ -731,8 +745,8 @@ ok('🖥 ✏️ «Засах» товч ХОЁУЛАА бий (category + locati
   p13.summaryEdit?.category === true && p13.summaryEdit?.location === true
   && p13.summaryEdit?.count === 2 && p13.summaryEdit?.typeButton === true,
   JSON.stringify(p13.summaryEdit));
-ok('🖥 ✏️ товчны бичиг нь мөр тус бүрд ИЖИЛ («✏️ Засах | ✏️ Засах ✓)',
-  (p13.summaryEdit?.text || '') === '✏️ Засах | ✏️ Засах',
+ok('🖥 ✏️ товчны бичиг нь мөр тус бүрд ИЖИЛ («Засах | Засах» — (114): emoji ХАСАГДАВ ✓)',
+  (p13.summaryEdit?.text || '') === 'Засах | Засах',
   JSON.stringify(p13.summaryEdit?.text));
 
 /** ① 🗂 Ангилал — 1-р алхам руу буцаана */
@@ -1745,10 +1759,14 @@ ok('sidebar: 🔀 «Хөтлөгч» шүүлт БАЙХГҮЙ (0 талбар)'
 // ⚠️ 2026-10-04 (35): 🏷️ «Үйлдвэрлэгч»/🚙 «Загвар» нь сайдбараас ГАРЧ,
 //    `CarPicker` (modal) руу шилжсэн
 // 🆕 2026-10-04 (37) → 🆕 2026-10-06 (17): 🎨 «Өнгө» (ба ⛽/⚙️) нь ⏳ (37)-д
-//    үр дүнгийн ДЭЭРХ ХЭВТЭЭ мөр (`#filter-bar`) руу «eBay-ийн Color ⌄» шиг
-//    pill болж байв ✗ — 🆕 (17)-д хэрэглэгчийн хүсэлтээр САЙДБАРТ БУЦАВ
-//    («Өнгө, Түлш, Хурдны хайрцаг … Төлбөрийн нөхцөлийн ардаас оруул») ⇒
-//    `#filter-bar` нь АВТО дээр ОГТ БАЙХГҮЙ ✓ (sidebar-д 3 attr шүүлт ✓)
+//    үр дүнгийн ДЭЭРХ ХЭВТЭЭ мөр (`#filter-bar`) руу «жишиг сайтын Color ⌄» шиг
+//    pill болж байв ✗ — 🆕 (17)-д хэрэглэгчийн хүсэлтээр САЙДБАРТ БУЦАВ;
+//    🆕 2026-10-10 (89): байнгын сайдбар ХАСАГДАВ ⇒ БҮХ шүүлт нь pill ✓
+// ⚠️ 🆕 2026-10-10 (92): мөрөнд ХАМГИЙН ИХДЭЭ `MAX_BAR_PILLS = 6` pill (7 дах нь
+//    «Шүүлт» товч) ⇒ авто дээр ҮНДСЭН 4 pill (📍 · 🚙 · 💳 · 🔄) багтсаны дараа
+//    ЗӨВХӨН 2 attr pill (🎨 Өнгө · ⚙️ Хурдны хайрцаг) багтаж, ⛽ «Түлш» нь
+//    «Шүүлт» панель доторх «Бусад шүүлт» (`data-filter-overflow`) руу шилжинэ ✓
+//    (⏳ (89)-ийн «3 attr pill мөрөнд» гэрээ нь (92)-д ХҮЧИНГҮЙ болов)
 const SIDE_ORDER = `(() => [...document.querySelectorAll('#filter-bar [aria-label]')]
   .map((el) => (el.getAttribute('aria-label') || '').trim()).filter(Boolean))()`;
 const sideOrder = await evaluate(SIDE_ORDER);
@@ -1757,12 +1775,30 @@ ok('🚗 sidebar: 🏷️ «Үйлдвэрлэгч» / 🚙 «Загвар» с�
   JSON.stringify(sideOrder));
 const sideAttrCount = await evaluate(
   `document.querySelectorAll('#filter-bar [data-attr-filter]').length`);
-ok('🎛 (89): авто дээр 🎨/⛽/⚙️ (3 attr) нь `#filter-bar`-ийн PILL',
-  sideAttrCount === 3, `sideAttr=${sideAttrCount}`);
+ok('🎛 (92): авто дээр `#filter-bar`-д 2 attr pill (🎨 Өнгө · ⚙️ Хурдны хайрцаг — 6 pill-ийн хязгаар ✓)',
+  sideAttrCount === 2, `sideAttr=${sideAttrCount}`);
 const barPills = await evaluate(
   `[...document.querySelectorAll('#filter-bar [data-filter-pill]')].map((p) => p.getAttribute('data-filter-pill'))`);
-ok('🎛 (89): авто дээр `#filter-bar` БИЙ — 🎨/⛽/⚙️ pill (БҮХ шүүлт pill ✓)',
-  ['color', 'transmission', 'fuel'].every((k) => barPills.includes(k)), JSON.stringify(barPills));
+ok('🎛 (92): авто дээр `#filter-bar` pill ≤ 6 ба 🎨/⚙️ БИЙ (⛽ нь мөрөнд БАГТАХГҮЙ ✓)',
+  barPills.includes('color') && barPills.includes('transmission')
+  && !barPills.includes('fuel') && barPills.length <= 6, JSON.stringify(barPills));
+/**
+ * 🆕 (114): «Бусад шүүлт»-ийн БОДИТ DOM — ⏳ дээрх 2 шалгалт нь (92)-ийн
+ *    `MAX_BAR_PILLS` хязгаарыг тооцохгүй «мөрөнд 3 attr pill» гэж хүлээж
+ *    ХУУЧИРСАН байв ✗ ⇒ ⛽ «Түлш» нь «Шүүлт» панель доторх
+ *    `[data-filter-overflow]` блокт байгааг панелийг НЭЭЖ батална ✓
+ */
+const overflowPills = await (async () => {
+  await evaluate(`(() => { document.querySelector('[data-all-filters]')?.click(); return true; })()`);
+  await wait(900);
+  const keys = await evaluate(
+    `[...document.querySelectorAll('[data-filter-overflow] [data-filter-pill]')].map((p) => p.getAttribute('data-filter-pill'))`);
+  await evaluate(`(() => { document.querySelector('[data-filters-close]')?.click(); return true; })()`);
+  await wait(600);
+  return keys;
+})();
+ok('🎛 (92): ⛽ «Түлш» нь «Шүүлт» → «Бусад шүүлт» pill (утга/URL/DB ХЭВЭЭР ✓)',
+  overflowPills.includes('fuel'), JSON.stringify(overflowPills));
 
 // ── ⑦‴ 🏷️🚙 SIDEBAR → `CarPicker` (modal): Үйлдвэрлэгч → Загвар КАСКАД ──
 /**

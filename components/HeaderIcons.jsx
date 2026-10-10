@@ -331,3 +331,115 @@ export function BellIcon({ className = 'h-4 w-4', strokeWidth = 1.6 }) {
     </Icon>
   );
 }
+/**
+ * ✏️ ЗАСАХ ИКОН — «Засах» pill товч ба мобайл хариултын засах мөр (2026-10-10 (114)).
+ *
+ * ⏳ Энэ нь `✏️` emoji-г ОРЛОСОН SVG (хэрэглэгчийн хүсэлт: «зар оруулах
+ *    хуудас дээрх emoji-г бүгдийг нь хас»). Emoji нь OS/фонт бүрд өөр
+ *    харагдана ✗, SVG нь `currentColor`-оор зурагдаж товчны өнгийг дагана ✓
+ *
+ * @param {{className?:string, strokeWidth?:number}} props
+ */
+export function PencilIcon({ className = 'h-4 w-4', strokeWidth = 1.8 }) {
+  return (
+    <Icon className={className} strokeWidth={strokeWidth}>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </Icon>
+  );
+}
+
+/**
+ * 📷 ЗУРГИЙН ИКОН — «Зураг оруулах» dropzone (2026-10-10 (114), `📷` emoji-г орлов)
+ *
+ * @param {{className?:string, strokeWidth?:number}} props
+ */
+export function CameraIcon({ className = 'h-4 w-4', strokeWidth = 1.7 }) {
+  return (
+    <Icon className={className} strokeWidth={strokeWidth}>
+      <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.1a1.5 1.5 0 0 0 1.3-.75l.6-1.05A1.5 1.5 0 0 1 10.8 3.5h2.4a1.5 1.5 0 0 1 1.3.7l.6 1.05A1.5 1.5 0 0 0 16.4 6h1.1A2.5 2.5 0 0 1 20 8.5v8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5z" />
+      <circle cx="12" cy="12.5" r="3.2" />
+    </Icon>
+  );
+}
+
+/**
+ * ⏳ АЧААЛЖ БАЙГАА ИКОН — зураг шахаж байх үе (2026-10-10 (114), `⏳` emoji-г орлов).
+ *
+ * ⚠️ Эргэлтийг (`animate-spin`) ДУУДАГЧ нь өгнө — икон нь зөвхөн дүрс ✓
+ *
+ * @param {{className?:string, strokeWidth?:number}} props
+ */
+export function LoaderIcon({ className = 'h-4 w-4', strokeWidth = 2 }) {
+  return (
+    <Icon className={className} strokeWidth={strokeWidth}>
+      <circle cx="12" cy="12" r="9" opacity="0.25" />
+      <path d="M21 12a9 9 0 0 0-9-9" />
+    </Icon>
+  );
+}
+
+/**
+ * ▶️ ТОГЛОХ ИКОН — видео thumbnail-ийн төв (2026-10-10 (114), `▶️` emoji-г орлов).
+ * ⚠️ Дүүргэлттэй (`fill="currentColor"`) тул `Icon`-ыг ашиглахгүй ✓
+ *
+ * @param {{className?:string}} props
+ */
+export function PlayIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
+      <path d="M8 5.4v13.2L19 12z" />
+    </svg>
+  );
+}
+
+/**
+ * 🔑 ТҮГЖИЙН ИКОН — «нэвтрэх шаардлагатай» хамгаалалтын карт (2026-10-10 (114),
+ * `🔑` emoji-г орлов).
+ *
+ * @param {{className?:string, strokeWidth?:number}} props
+ */
+export function LockIcon({ className = 'h-4 w-4', strokeWidth = 1.7 }) {
+  return (
+    <Icon className={className} strokeWidth={strokeWidth}>
+      <rect x="4.5" y="10.5" width="15" height="9.5" rx="2.2" />
+      <path d="M8.2 10.5V8a3.8 3.8 0 0 1 7.6 0v2.5" />
+    </Icon>
+  );
+}
+
+/**
+ * ✓ СОНГОГДСОН ИКОН — чип/мобайл сонголтын идэвхтэй төлөв (2026-10-10 (114)).
+ *
+ * ⏳ Энэ нь `✓` (U+2713) тэмдэгтийг ОРЛОСОН SVG (хэрэглэгчийн хүсэлт: «зар
+ *    оруулах хуудас дээрх emoji-г бүгдийг нь хас»). Тэмдэгт нь фонт бүрд
+ *    өөр зурагдаж, зузаан/байрлал нь хянагдахгүй байв ✗ — SVG нь `currentColor`
+ *    -оор зурагдаж, идэвхтэй чипийн цагаан өнгийг дагана ✓
+ *
+ * @param {{className?:string, strokeWidth?:number}} props
+ */
+export function CheckIcon({ className = 'h-3.5 w-3.5', strokeWidth = 2.4 }) {
+  return (
+    <Icon className={className} strokeWidth={strokeWidth}>
+      <path d="M4.5 12.5 9.5 17.5 19.5 6.5" />
+    </Icon>
+  );
+}
+
+/**
+ * ✕ ЦУЦЛАХ/АРИЛГАХ ИКОН — «✕ Арилгах» товчны зүүн тэмдэг (2026-10-10 (114)).
+ *
+ * ⏳ Энэ нь `✕` (U+2715) тэмдэгтийг ОРЛОСОН SVG (`CheckIcon`-ий ЯГ ИЖИЛ
+ *    үндэслэл — фонтоос хамаарахгүй, `currentColor`-оор өнгө солино ✓)
+ *
+ * @param {{className?:string, strokeWidth?:number}} props
+ */
+export function CloseIcon({ className = 'h-3.5 w-3.5', strokeWidth = 2.2 }) {
+  return (
+    <Icon className={className} strokeWidth={strokeWidth}>
+      <path d="M6 6l12 12" />
+      <path d="M18 6 6 18" />
+    </Icon>
+  );
+}
+

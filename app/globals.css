@@ -500,7 +500,8 @@
   .mob-option {
     @apply flex w-full items-start gap-1.5 border-b border-gray-100 py-3 text-left text-[15px] leading-snug text-primary transition active:bg-primary-light;
   }
-  /* ⚠️ Идэвхтэй сонголт нь өнгөөрөө (`.text-primary`) + `✓` тэмдгээр ялгарна ✓ */
+  /* ⚠️ Идэвхтэй сонголт нь өнгөөрөө (`.text-primary`) + `CheckIcon` SVG-ээр ялгарна
+     ((114): `✓` тэмдэгт ХАСАГДАВ — фонт бүрд өөр зурагдаж, өнгө дагахгүй байв ✓) */
   .mob-option-on {
     @apply font-semibold;
   }
