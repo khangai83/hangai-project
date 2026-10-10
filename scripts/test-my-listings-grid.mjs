@@ -20,6 +20,15 @@
 //      ⑦ 💰 ҮНЭ хамгийн ЭХЭНД, 22px bold (`shortPriceLabel`; ⏳ `priceLabel` БИШ) ✓
 //      ⑧ Мэдээллийн/мета мөр нь ЗӨВХӨН ТЕКСТ (emoji ХАСАГДАВ) + `MapPinIcon` pin ✓
 //
+// 🆕 (107) 2026-10-10 — КАРТТАЙ ЯГ ИЖИЛ ТЕКСТИЙН ХЭВ + 📍📅 ДАРААЛАЛ
+//    (хэрэглэгчийн хүсэлт: «change cards design text style to like attached
+//    cards … Also, swap location, the date of creation on the card of bottom
+//    section»):
+//      ⑨ 📍📅 мета: **байршил ЭХЭНД, огноо ТӨГСГӨЛД** (⏳ огноо эхэнд байв ✗)
+//      ⑩ 🗺 хаяг `formatCardAddress` («Улаанбаатар — Баянгол — 2-р хороо»;
+//         ⏳ `formatAddress` — хороо эхэнд, ', ' — ХАСАГДАВ) ✓
+//      ⑪ 🔤 гарчиг `font-normal` (BOLD биш) · мэдээлэл/мета `text-[15px] text-gray-500` ✓
+//
 // ⚠️ ЗӨВХӨН ХАРАГДАЦ: fetch/DB/payload/линк/товчны үйлдэл ХӨНДӨӨГДӨӨГҮЙ ✓
 //
 // АЖИЛЛУУЛАХ:  npm run test:my-grid
@@ -123,6 +132,25 @@ t('📋 (101) Мэдээллийн/мета мөр ЗӨВХӨН ТЕКСТ + `Ma
   assert.ok(MY.includes('break-words'), 'хаягны мөр таслалт (`break-words`) алга ✗');
   // ⚠️ МЭДЭЭЛЭЛ АЛГА БОЛООГҮЙ — нэг мөрөнд « · »-ээр холбогдсон хэвээр ✓
   assert.ok(MY.includes(".filter(Boolean).join(' · ')"), 'мэдээллийн мөрийн нэгтгэл алга ✗');
+});
+
+// ---------- 🆕 (107) КАРТТАЙ ЯГ ИЖИЛ: 📍📅 ДАРААЛАЛ + ТЕКСТИЙН ХЭВ ----------
+t('🎨 (107) Мета: 📍 байршил ЭХЭНД, 📅 огноо ТӨГСГӨЛД + картын хаяг/текстийн хэв ✓', () => {
+  /** 🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «change cards design text style to like attached
+   *  cards … Also, swap location, the date of creation on the card of bottom
+   *  section» ⇒ `ListingCard`-тай ЯГ ИЖИЛ дараалал ба хэмжээ ✓ */
+  assert.ok(MY.includes('formatCardAddress(l)'), 'картын хаяг (`formatCardAddress`) алга ✗');
+  assert.ok(!MY.includes('formatAddress(l)'), 'хуучин `formatAddress` буцаж орсон ✗ ((107))');
+  const iPlace = MY.indexOf('<MapPinIcon');
+  const iTime = MY.indexOf('timeAgo(l.created_at)');
+  assert.ok(iPlace > 0 && iTime > 0 && iPlace < iTime,
+    'мета дараалал буруу — 📍 байршил нь 📅 огнооноос ӨМНӨ байх ЁСТОЙ ✗ ((107))');
+  assert.ok(MY.includes('mt-auto pt-1 text-[15px] leading-snug text-gray-500'),
+    'мета мөр `text-[15px] leading-snug` биш ✗');
+  assert.ok(MY.includes('line-clamp-2 text-[16px] font-normal leading-snug text-gray-900'),
+    'гарчиг `font-normal` биш ✗ ((107))');
+  assert.ok(MY.includes('mt-1.5 truncate text-[15px] text-gray-500'),
+    'мэдээллийн мөр `text-[15px] text-gray-500` биш ✗ ((107))');
 });
 
 console.log(`\n✅ Нийт ${passed} шалгалт амжилттай — «Миний зарууд» нь 🖥 DESKTOP дээр 2-3 баганатай (вертикаль карт) ✓\n`);

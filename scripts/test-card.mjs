@@ -11,6 +11,21 @@
 //     (⏳ (78)-аас өмнө нийтлэгчийн band байв — 🆕 (85)-д ХАСАГДАВ)
 //   • ЖАГСААЛТ нь БАГАНАТ GRID (нүүр · /favorites · /history · /sellers)
 //
+// 🆕 2026-10-10 (107) — «attached cards» ТЕКСТИЙН ХЭВ + 📍📅 ДАРААЛАЛ
+//    (хэрэглэгчийн хүсэлт: «change cards design text style to like attached
+//    cards to real estate, notebook, cars cards. Also, swap location, the date
+//    of creation on the card of bottom section»):
+//    ① 📍📅 мета мөр: ⏳ (97)–(101) «огноо | 📍 хаяг» → **хаяг ЭХЭНД, огноо
+//       ТӨГСГӨЛД** («📍 Улаанбаатар — Баянгол — 2-р хороо | 2 өдрийн өмнө») ✓
+//    ② 🗺 хаяг `formatCardAddress` («Улаанбаатар — Баянгол — 2-р хороо» —
+//       хот → дүүрэг → хороо, « — »; ⏳ `formatAddress` ХАСАГДАВ — тэр нь
+//       дэлгэрэнгүй хуудсанд л үлдэв) ✓
+//    ③ 🔤 гарчиг `font-semibold` → **`font-normal`** (BOLD биш) · 📋 мэдээлэл
+//       ба 📍📅 мета `text-[15px] text-gray-500` (⏳ 14px/gray-600 ба 13px) ✓
+//    ④ 🧩 мета мөр нь `flex` БИШ — **текстийн урсгал** (`leading-snug`) ✓
+//    ⚠️ ҮНЭ (22px extrabold) · 🖼 4:3 · ❤️-ийн байрлал · ✅ · карусель —
+//       БҮГД ХӨНДӨӨГДӨӨГҮЙ ✓
+//
 // 🆕 2026-10-09 (86) — «жишиг сайтын design» 3 ДАХЬ засвар (хэрэглэгчийн хүсэлт:
 //    «like ийг картныхаа баруун дээд буланд гаргачих … картны design харагдах
 //     байдлыг жишиг сайт шиг болго»):
@@ -148,19 +163,40 @@ t('🎨 (86) Карт нь ХАЙРЦАГГҮЙ (хүрээ/сүүдэр/саа�
   assert.ok(!/border-t border-gray-100/.test(CARD_CODE), 'мөрүүдийн хоорондох зураас буцаж орсон ✗');
 });
 
-t('🔀 (97) ДАРААЛАЛ: 💰 үнэ → 🏷️ гарчиг → 📋 мэдээлэл → 🕒/📍 мета (ХАМГИЙН ДООР)', () => {
+t('🔀 (97) ДАРААЛАЛ: 💰 үнэ → 🏷️ гарчиг → 📋 мэдээлэл → 📍/📅 мета (ХАМГИЙН ДООР)', () => {
   const iTitle = CARD_CODE.indexOf('line-clamp-2 text-[16px]');
   const iPrice = CARD_CODE.indexOf('text-[22px] font-extrabold');
   assert.ok(iTitle > 0 && iPrice > 0 && iPrice < iTitle,
     'үнэ нь гарчгийн ДЭЭР (зургийн ЯГ ДОР) БИШ ✗ (жишиг сайтын дараалал: үнэ → гарчиг → мэдээлэл)');
   // ⚠️ Мета мөр нь `mt-auto` — бүх картын мета НЭГ ЗУРААСАНД эгнэнэ ✓
-  assert.match(CARD_CODE, /<div data-listing-meta className="mt-auto flex flex-wrap/,
-    'мета мөр нь картын ёроолд тогтохгүй (`mt-auto`) ✗');
+  // 🆕 (107): мета нь `flex` БИШ — текстийн урсгал (`text-[15px] leading-snug`) ✓
+  assert.match(CARD_CODE, /<div data-listing-meta className="mt-auto pr-20 pt-0\.5 text-\[15px\] leading-snug text-gray-500">/,
+    'мета мөр нь картын ёроолд тогтохгүй (`mt-auto pr-20 text-[15px] …`) ✗');
 });
 
 t('🏷️ Гарчиг нь 2 МӨР (`line-clamp-2`) — `listingTitle` (0027)', () => {
   assert.match(CARD_CODE, /line-clamp-2 text-\[16px\]/, 'гарчиг 2 мөр (`line-clamp-2 text-[16px]`) биш ✗');
   assert.match(CARD_CODE, /listingTitle\(listing\)/, '`listingTitle` ашиглахгүй ✗');
+  // 🆕 (107) ТЕКСТИЙН ХЭВ: жишиг зургийн картын гарчиг нь BOLD БИШ — `font-normal` ✓
+  assert.match(CARD_CODE, /line-clamp-2 text-\[16px\] font-normal leading-snug text-gray-900/,
+    'гарчиг `text-[16px] font-normal leading-snug text-gray-900` биш ✗ ((107) жишиг зургийн хэв)');
+});
+
+// ---------- 🆕 (107) ТЕКСТИЙН ХЭВ (жишиг зургийн карт) ----------
+t('🎨 (107) ТЕКСТИЙН ХЭВ — гарчиг BOLD биш · мэдээлэл/мета 15px gray-500 (жишиг зургийн карт) ✓', () => {
+  /** 🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «change cards design text style to like attached
+   *  cards to real estate, notebook, cars cards» ⇒ ① гарчиг `font-semibold` →
+   *  **`font-normal`** ② 📋 мэдээлэл `text-[14px] text-gray-600` →
+   *  **`text-[15px] text-gray-500`** ③ 📍📅 мета `text-[13px]` → **`text-[15px]`** ✓ */
+  assert.ok(!/font-semibold leading-snug text-gray-900/.test(CARD_CODE),
+    'гарчиг буцаж BOLD (`font-semibold`) болов ✗ ((107): жишиг зургийн карт)');
+  // ⚠️ 📋 мэдээллийн мөр ХОЁУЛАА (🏠 «{buildYear} он» · 🚗 `attrsLine`) 15px gray-500 ✓
+  assert.match(CARD_CODE, /mt-1\.5 truncate text-\[15px\] text-gray-500/,
+    'мэдээллийн мөр `text-[15px] text-gray-500` биш ✗');
+  assert.match(CARD_CODE, /gap-x-3 gap-y-1 text-\[15px\] text-gray-500/,
+    '🏠 мэдээллийн мөр `text-[15px] text-gray-500` биш ✗');
+  assert.ok(!/text-\[14px\] text-gray-600/.test(CARD_CODE),
+    'хуучин `text-[14px] text-gray-600` буцаж орсон ✗ ((107))');
 });
 
 t('🗑 📝 Тайлбар (`listing.description`) карт дээр БАЙХГҮЙ (2026-10-06)', () => {
@@ -280,7 +316,11 @@ t('🏷️ «Зарах / Түрээслэх» badge — ЗӨВХӨН үл хө�
 t('📅 Доод мета мөр: `timeAgo` | `MapPinIcon` хаяг (🕒 emoji ХАСАГДАВ — 🆕 (101); `EyeIcon` views ХАСАГДАВ — (97))', () => {
   assert.match(CARD_CODE, /timeAgo\(listing\.created_at\)/, 'огноо (`timeAgo`) алга ✗');
   assert.match(CARD_CODE, /address &&/, 'хаягийн хаалт алга ✗');
-  assert.match(CARD_CODE, /formatAddress\(listing\)/, 'хаяг (`formatAddress`) алга ✗');
+  assert.match(CARD_CODE, /formatCardAddress\(listing\)/, 'хаяг (`formatCardAddress`) алга ✗');
+  // ⛔ (107) РЕГРЕСС ХОРИО: карт дээр ХУУЧИН `formatAddress` буцаж ОРОХГҮЙ
+  //    (тэр нь хороо → дүүрэг → хот, ', ' — зөвхөн дэлгэрэнгүй хуудсанд ✓)
+  assert.ok(!/formatAddress\(listing\)/.test(CARD_CODE),
+    'карт дээр хуучин `formatAddress` буцаж орсон ✗ ((107): `formatCardAddress` байх ЁСТОЙ)');
   // 🆕 2026-10-10 (96) — хэрэглэгчийн хүсэлт: «📍 26-р хороо үүний өмнөх icon ийг
   //    Газрын зургийн өмнөх шиг болго» ⇒ ⏳ `📍` emoji → `MapPinIcon` SVG.
   //    ⚠️ Дэлгэрэнгүй хуудасныхтай ЯГ ижил икон (`HeaderIcons.jsx`) ✓
@@ -300,9 +340,24 @@ t('📅 Доод мета мөр: `timeAgo` | `MapPinIcon` хаяг (🕒 emoji 
   assert.ok(!/🕒/.test(CARD_CODE), '🕒 emoji буцаж орсон ✗ ((101): зөвхөн текст)');
   // 🆕 (101) ХАЯГ нь `truncate`-ГҮЙ — БҮТЭН харагдана, урт үедээ мөр таслана ✓
   //    (⏳ хаяг «2-р хороо, Баянгол, Ул…» гэж тайрагддаг байв ✗)
-  assert.match(CARD_CODE, /order-last w-full break-words/, 'хаягны мөр таслалт (`break-words`) алга ✗');
-  assert.ok(!/order-last w-full truncate/.test(CARD_CODE),
+  assert.match(CARD_CODE, /<span className="break-words" title=\{address\}>/,
+    'хаягны мөр таслалт (`break-words`) алга ✗');
+  assert.ok(!/truncate[^"]*" title=\{address\}/.test(CARD_CODE),
     'хаяг буцаж `truncate` болов ✗ ((101): бүтэн харагдах ЁСТОЙ)');
+  // 🆕 (107) ДАРААЛАЛ СОЛИГДОВ: 📍 ХАЯГ нь ЭХЭНД, 📅 огноо нь ТӨГСГӨЛД
+  //    (хэрэглэгчийн хүсэлт: «swap location, the date of creation on the card of
+  //    bottom section») — ⏳ (97)–(101)-д «огноо | 📍 хаяг» байв ✗
+  const iAddr = CARD_CODE.indexOf('formatCardAddress(listing)');
+  const iTime = CARD_CODE.indexOf('timeAgo(listing.created_at)');
+  assert.ok(iAddr > 0 && iTime > 0 && iAddr < iTime,
+    'мета мөрийн дараалал буруу — 📍 хаяг нь 📅 огнооноос ӨМНӨ байх ЁСТОЙ ✗ ((107))');
+  // ⚠️ Тусгаарлагч `|` нь ОГНООНЫ span дотор БА хаяг ХООСОН үед ГАРАХГҮЙ
+  //    (`{address && …}`) ⇒ «| 2 өдрийн өмнө» гэж эхлэхгүй ✓
+  assert.match(CARD_CODE, /\{address && <span aria-hidden="true" className="mx-1\.5 text-gray-300">\|<\/span>\}/,
+    'тусгаарлагч `|` нь хаягийн хяналттай (`{address && …}`) БИШ ✗ ((107))');
+  // ⛔ РЕГРЕСС ХОРИО: хуучин `flex` мета (`order-last w-full`) буцаж ОРОХГҮЙ
+  assert.ok(!/order-last w-full/.test(CARD_CODE),
+    'хуучин flex мета (`order-last w-full`) буцаж орсон ✗ ((107): текстийн урсгал)');
 });
 
 t('❤️/🤍 нь favorite toggle — `preventDefault` + `stopPropagation` (Link доторх товч)', () => {
@@ -319,7 +374,8 @@ t('❤️/🤍 нь favorite toggle — `preventDefault` + `stopPropagation` (Li
 });
 
 t('🛡 /favorites-ийн «Хасах» товчтой мөргөлдөхгүй — мета мөр БҮХ дэлгэцэд `pr-20` (🆕 (86))', () => {
-  assert.match(CARD_CODE, /pr-20 pt-0\.5 text-\[13px\] text-gray-500/, 'мета мөрний `pr-20` нөөц алга ✗');
+  // 🆕 (107): мета нь `text-[15px] leading-snug` (⏳ `text-[13px]` — жишиг зүйгээс ЖИЖИГ байв)
+  assert.match(CARD_CODE, /pr-20 pt-0\.5 text-\[15px\] leading-snug text-gray-500/, 'мета мөрний `pr-20` нөөц алга ✗');
   // ⚠️ (86): «Хасах» товч БҮХ дэлгэцэд баруун ДОО буланд шилжсэн ⇒ `sm:pr-0`
   //    (desktop-д нөөцийг арилгах) ХАСАГДАВ — эс бөгөөс товч ТЕКСТ дээр сууна ✗
   assert.ok(!/sm:pr-0/.test(CARD_CODE), '`sm:pr-0` буцаж орсон ✗ (desktop-д товч текст дарах болно)');

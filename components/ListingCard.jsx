@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { shortPriceLabel, hasRealPrice, getPropertyIcon, firstImage, autoTitle, timeAgo, formatAddress, listingTitle } from '../lib/format';
+import { shortPriceLabel, hasRealPrice, getPropertyIcon, firstImage, autoTitle, timeAgo, formatCardAddress, listingTitle } from '../lib/format';
 import { toggleFavorite, useFavorites, useLikeCount } from '../lib/favorites';
 import VerifiedBadge from './VerifiedBadge';
 // 📍👁 2026-10-10 (96) — МЕТА МӨРИЙН ICONУУД EMOJI → SVG (хэрэглэгчийн хүсэлт):
 //    ① 📍 → `MapPinIcon` (🗺 «Газрын зураг» товчны pin-тай ЯГ ИЖИЛ).
 //    ⚠️ 🆕 (97) Карт дээр 👁 «үзсэн» тоо ХАСАГДАВ — жишиг сайтын карт нь зөвхөн
-//       «🕒 огноо | 📍 хаяг» харуулна ⇒ `EyeIcon` импорт хэрэггүй болов ✓
+//       «📍 хаяг | 📅 огноо» харуулна (🆕 (107)-д дараалал нь хаяг → огноо
+//       болов) ⇒ `EyeIcon` импорт хэрэггүй болов ✓
 import { MapPinIcon, HeartIcon } from './HeaderIcons';
 
 /**
@@ -37,8 +38,30 @@ const MAX_CARD_DOTS = 5;
  *   │  340 сая ₮ ✅            ❤️      │ ← 💰 ҮНЭ (22px, bold) + ✅ | ❤️ баруун захад
  *   │  Toyota Vellfire, 2017/2026      │ ← 🏷️ гарчиг (🚗 АВТО-гарчиг, 2 мөр)
  *   │  135,500 км · Автомат · 2.5 л    │ ← 📋 мэдээллийн мөр
- *   │  27 минутын өмнө | (pin) Баянзүрх│ ← 📅 мета мөр (ХАМГИЙН ДООР, emoji-гүй)
+ *   │  (pin) Улаанбаатар — Баянгол   │ ← 📍📅 мета мөр (ХАМГИЙН ДООР, emoji-гүй)
+ *   │  2-р хороо | 27 минутын өмнө   │ ←    🆕 (107): хаяг ЭХЭНД, огноо ТӨГСГӨЛД
  *   └─────────────────────────────────┘
+ *
+ * 🆕 (107) 2026-10-10 — «ЖИШИГ ЗУРГИЙН КАРТ ШИГ ТЕКСТИЙН ХЭВ» (хэрэглэгчийн
+ *   хүсэлт: «change cards design text style to like attached cards to real
+ *   estate, notebook, cars cards. Also, swap location, the date of creation on
+ *   the card of bottom section»):
+ *   ① 📍📅 МЕТА МӨРИЙН ДАРААЛАЛ СОЛИГДОВ — ⏳ (97)–(101) «огноо | 📍 хаяг»
+ *      байсныг **⬅ буцаав**: ОДОО **хаяг ЭХЭНД, огноо ТӨГСГӨЛД**
+ *      («📍 Улаанбаатар — Баянгол — 2-р хороо | 2 өдрийн өмнө») ✓
+ *   ② 🗺 ХАЯГ нь `formatCardAddress` — **хот → дүүрэг → хороо**, « — »
+ *      тусгаарлагчтай (⏳ `formatAddress` — «2-р хороо, Баянгол, Улаанбаатар»);
+ *      ⚠️ дэлгэрэнгүй хуудсанд `formatAddress` ХЭВЭЭР ✓
+ *   ③ 🔤 ТЕКСТИЙН ХЭВ: гарчиг `font-semibold` → **`font-normal`** (жишиг зургийн
+ *      картын гарчиг нь BOLD биш), 📋 мэдээлэл `text-[14px] text-gray-600` →
+ *      **`text-[15px] text-gray-500`**, 📍📅 мета `text-[13px]` → **`text-[15px]`**
+ *      + `leading-snug` (жишиг зургийн мэдээлэл ба мета НЭГ хэмжээтэй) ✓
+ *   ④ 🧩 Мета мөр нь `flex` БИШ — **ТЕКСТИЙН УРСГАЛ** (жишиг зургийн карт дээр
+ *      «1 минутын өмнө | Улаанбаатар — Сонгинохайрхан — Авто худалдааны
+ *      цогцолбор» гэж мөр таслан зөөгддөг) ✓
+ *   ⑤ ⚠️ Байршил ХООСОН бол `|` ч, хаяг ч ГАРАХГҮЙ (зөвхөн огноо) ✓
+ *   ⚠️ ҮНЭ (`text-[22px] font-extrabold` + `shortPriceLabel`), 🖼 4:3, ❤️-ийн
+ *      байрлал, ✅ баталгаа, карусель — БҮГД ХӨНДӨӨГДӨӨГҮЙ ✓
  *
  * 🆕 (101) 2026-10-10 — «ХАВСАРГАСАН 2 КАРТ ШИГ» (хэрэглэгчийн хүсэлт):
  *   «change to all detail card … attached 2 cards, study and change my card
@@ -133,7 +156,8 @@ const MAX_CARD_DOTS = 5;
  *    data-card-counter, data-card-dots, data-fav-toggle, activeIdx, goToImage,
  *    MAX_CARD_DOTS, autoTitle, carTitle, notebookTitle, snap-x snap-mandatory,
  *    rounded-xl, bg-white/90,
- *    pt-2.5, border-t ХАСАГДАВ, pr-20
+ *    pt-2.5, border-t ХАСАГДАВ, pr-20, formatCardAddress, text-[15px],
+ *    leading-snug, font-normal, mx-1.5 text-gray-300
  *    grid-cols-1 sm:grid-cols-2 (жагсаалтын grid нь ХУУДАС бүр дээр)
  */
 export default function ListingCard({ listing, author, attrsLine }) {
@@ -180,7 +204,10 @@ export default function ListingCard({ listing, author, attrsLine }) {
   //    Core i5, 16 GB»); ⚠️ авто-гарчиг ХООСОН бол (аттр дутуу) хуучин
   //    заруудын бичсэн `title` нөөцөөрөө харагдана ✓
   const title = autoTitle(listing) || listingTitle(listing);
-  const address = formatAddress(listing);
+  // 📍 Хаяг — 🆕 (107): КАРТЫН хэв («Улаанбаатар — Баянгол — 2-р хороо» —
+  //    хот → дүүрэг → хороо, « — » тусгаарлагчтай, жишиг сайтын карт) ✓
+  //    ⚠️ Дэлгэрэнгүй хуудас нь `formatAddress` (хороо → дүүрэг → хот) ХЭВЭЭР ✓
+  const address = formatCardAddress(listing);
   // ⚠️ 2026-10-06: 📝 ТАЙЛБАР карт дээр ХАСАГДАВ (хэрэглэгчийн хүсэлт:
   //    «Нүүр хуудас дээрх зарын карт дээрээс Тайлбарыг байхгүй болго»).
   //    `listing.description`-ыг унших/харуулах код БАЙХГҮЙ; карт нь НЭГ
@@ -412,10 +439,14 @@ export default function ListingCard({ listing, author, attrsLine }) {
         {/* 🏷️ ЗАРЫН ГАРЧИГ — ҮНИЙ ЯГ ДООР (🆕 (97) жишиг сайтын ДАРААЛАЛ:
             ҮНЭ → ГАРЧИГ → МЭДЭЭЛЭЛ → МЕТА; ⏳ (86)-д гарчиг ХАМГИЙН ДЭЭД мөрөнд,
             үнэ ХАМГИЙН ДООР байв ✗)
-            ⚠️ `line-clamp-2` (**2 мөр**) + `text-[15px] font-semibold`
-               ХӨНДӨӨГДӨӨГҮЙ (`test-card` гэрээ ✓) */ }
+            🆕 (107) ТЕКСТИЙН ХЭВ (хэрэглэгчийн хүсэлт: «change cards design
+               text style to like attached cards»): ⏳ `font-semibold` (600) →
+               **`font-normal`** (400) — жишиг зургийн картын гарчиг нь ТОМООС
+               биш, энгийн жингээр харагдана (үнэ л BOLD байна) ✓
+            ⚠️ `line-clamp-2` (**2 мөр**) + `text-[16px]` ХӨНДӨӨГДӨӨГҮЙ
+               (`test-card` гэрээ ✓) */ }
         {title && (
-          <div className="mt-1 line-clamp-2 text-[16px] font-semibold leading-snug text-gray-900" title={title}>
+          <div className="mt-1 line-clamp-2 text-[16px] font-normal leading-snug text-gray-900" title={title}>
             {title}
           </div>
         )}
@@ -432,7 +463,7 @@ export default function ListingCard({ listing, author, attrsLine }) {
                хэрэггүй болов; Дэлгэрэнгүй хуудсанд ХЭВЭЭР ✓) */}
         {isRealEstate
           ? buildYear > 0 && (
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-gray-600">
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[15px] text-gray-500">
                 {/* 🆕 (101) ⏳ `📅 {buildYear} он` → **`{buildYear} он`** (emoji ХАСАГДАВ)
                     — жишиг зургийн карт дээр мэдээллийн мөр нь ЗӨВХӨН текст
                     («20,400 км · Автомат · 4.0 л · Бензин»), icon/emoji БАЙХГҮЙ ✓ */}
@@ -440,7 +471,7 @@ export default function ListingCard({ listing, author, attrsLine }) {
               </div>
             )
           : attrsLine && (
-              <div className="mt-1.5 truncate text-[14px] text-gray-600" title={attrsLine}>
+              <div className="mt-1.5 truncate text-[15px] text-gray-500" title={attrsLine}>
                 {attrsLine}
               </div>
             )}
@@ -448,40 +479,41 @@ export default function ListingCard({ listing, author, attrsLine }) {
         {/* ⚠️ 2026-10-06: 📝 ТАЙЛБАР блок ХАСАГДАВ (хэрэглэгчийн хүсэлт) —
             карт дээр `listing.description` харуулахгүй ✓ (Дэлгэрэнгүй хуудсанд ХЭВЭЭР) */}
 
-        {/* 📅 МЕТА МӨР — 🕒 огноо | 📍 хаяг (🆕 (97) — ХАМГИЙН ДООД мөр)
-            🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «attached 2 cards, study and change my card
-               information» ⇒ жишиг сайтын карт нь зөвхөн «огноо | хаяг» харуулна
-               ⇒ 👁 «үзсэн» тоо эндээс ХАСАГДАВ (дэлгэрэнгүй хуудсанд ХЭВЭЭР ✓)
+        {/* 📍📅 МЕТА МӨР — 📍 хаяг | 📅 огноо (🆕 (107) — ХАМГИЙН ДООД мөр)
+            🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «change cards design text style to like
+               attached cards … Also, swap location, the date of creation on the
+               card of bottom section» ⇒ ⏳ (97)–(101)-ийн «огноо | хаяг»
+               дараалал СОЛИГДОВ — ОДОО **хаяг ЭХЭНД, огноо ТӨГСГӨЛД**:
+               «📍 Улаанбаатар — Баянгол — 2-р хороо | 2 өдрийн өмнө» ✓
             ⚠️ `mt-auto` — бүх картын мета мөр НЭГ ЗУРААСАНД эгнэхийн тулд картын
                ёроолд тогтоно ✓ (⏳ (86)-д `mt-auto` нь үний мөрөнд байв — үнэ
                одоо ДЭЭШЭЭ (зургийн яг дор) гарсан ✓)
             🆕 (86): хүрээ-зураас (`border-t`) ХАСАГДАВ — жишиг сайтын карт дээр
                мөрүүдийн хооронд зураас БАЙХГҮЙ ✓
-            📱 МОБАЙЛ: хаяг нь `order-last w-full` → БҮТЭН мөр болж доош бууна
-               (эс бөгөөс `pr-20`-ийн дараа хаяг «…» болж бүрэн алга болно ✗);
-               ≥640px-д `sm:order-none sm:flex-1` → нэг мөрөнд буцаж эгнэнэ ✓
+            🆕 (107) ТЕКСТИЙН УРСГАЛ (`flex flex-wrap` БИШ): жишиг зургийн карт
+               дээр доод мөр нь НЭГ урсгал текст мэтээр мөр таслан зөөгддөг
+               («1 минутын өмнө | Улаанбаатар — Сонгинохайрхан — Авто …») ⇒
+               `text-[15px]` (⏳ `text-[13px]` — жишиг зүйгээс ЖИЖИГ байв) +
+               `leading-snug`, тусгаарлагч `|` нь `mx-1.5 text-gray-300` ✓
+            ⚠️ Хаяг ХООСОН бол `|` ч ГАРАХГҮЙ (зөвхөн огноо гарна) — хяналт
+               `{address && …}` ХОЁУЛАНД (хаяг + тусгаарлагч) ✓
+            ⚠️ `break-words` — хаяг урт үедээ ДООШОО мөр таслана (`truncate` ХОРИГ) ✓
             ⚠️ `pr-20` — /favorites-ийн «Хасах» товч (БҮХ дэлгэцэд баруун ДОО
                буланд) энэ мөрийн баруун захад давхарлаж болзошгүй тул 80px нөөц ✓
-            🆕 (96): ⏳ `📍` emoji → `MapPinIcon` (🗺 «Газрын зураг» товчны pin-тай
-               ЯГ ИЖИЛ SVG; дэлгэрэнгүй хуудасныхтай ИЖИЛ ✓). ⚠️ SVG нь ТЕКСТИЙН
-               УРСГАЛД (`inline-block`) орсон тул хаягны `truncate` ХӨНДӨӨГДӨХГҮЙ ✓
+            🆕 (96): `MapPinIcon` SVG (📍 emoji БИШ) хаягны ӨМНӨ; `inline-block`
+               тул мөр таслалтыг ХӨНДӨӨХГҮЙ ✓
             ⚠️ `data-listing-meta` — CDP/тестийн ТОГТВОРТОЙ selector ✓ */}
-        <div data-listing-meta className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-0.5 pr-20 pt-0.5 text-[13px] text-gray-500 sm:flex-nowrap">
-          {/* 🆕 (101) ⏳ `🕒 {timeAgo(...)}` → **`{timeAgo(...)}`** — жишиг зургийн
-              карт дээр «4 минутын өмнө | Улаанбаатар — Хан-Уул — Viva city» гэж
-              ЦАГИЙН дүрсГҮЙ, зөвхөн текст + `|` тусгаарлагчтай харагдана ✓ */}
-          <span className="whitespace-nowrap" title="Нийтэлсэн огноо">{timeAgo(listing.created_at)}</span>
+        <div data-listing-meta className="mt-auto pr-20 pt-0.5 text-[15px] leading-snug text-gray-500">
           {address && (
-            /* 🆕 (101) `truncate` ХАСАГДАВ (⏳ хаяг «…» болж тайрагддаг байв ✗) —
-               жишиг зургийн хэв: хаяг нь БҮТЭН харагдана, урт үедээ ДООШОО
-               МӨР таслан (2 мөр) зөөгдөнө (`break-words`) ✓
-               ⚠️ `sm:flex-1` — хаяг нь үлдсэн зайг эзэлж, дотооддоо мөр таслана ✓ */
-            <span className="order-last w-full break-words sm:order-none sm:w-auto sm:flex-1" title={address}>
-              <span aria-hidden="true" className="mr-1.5 hidden text-gray-300 sm:inline">|</span>
+            <span className="break-words" title={address}>
               <MapPinIcon className="mr-1 inline-block h-5 w-5 align-[-4px]" />
               {address}
             </span>
           )}
+          <span className="whitespace-nowrap" title="Нийтэлсэн огноо">
+            {address && <span aria-hidden="true" className="mx-1.5 text-gray-300">|</span>}
+            {timeAgo(listing.created_at)}
+          </span>
         </div>
       </div>
     </Link>

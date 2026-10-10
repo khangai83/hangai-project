@@ -61,7 +61,7 @@ const codeOnly = (rel) => codeLines(stripJsxComments(readSrc(rel)));
 const fmtSrc = readSrc('lib/format.js').replace(/^import .*from '\.\/locationData';?$/m, '');
 const fmtTmp = path.join(ROOT, '.format.location.tmp.mjs');
 fs.writeFileSync(fmtTmp, fmtSrc);
-const { formatAddress } = await import(`${fmtTmp}?t=${Date.now()}`);
+const { formatAddress, formatCardAddress } = await import(`${fmtTmp}?t=${Date.now()}`);
 fs.unlinkSync(fmtTmp);
 
 let passed = 0;
@@ -379,7 +379,25 @@ t('⑥ `formatAddress()` — байршилгүй үед `\'\'` (карт дээ
 t('⑥ `ListingCard` — 📍 мөр нь ХЯНАЛТТАЙ (`{address && (…)`) ⇒ хоосон үед мөр байхгүй', () => {
   const card = codeLines(readSrc('components/ListingCard.jsx'));
   assert.ok(card.includes('{address && ('), 'хаяг хяналтгүй боллоо ✗');
-  assert.ok(card.includes('formatAddress(listing)'));
+  // 🆕 (107): карт нь КАРТЫН хэв («Улаанбаатар — Баянгол — 2-р хороо») —
+  //    `formatAddress` (хороо → дүүрэг → хот) нь дэлгэрэнгүй хуудсанд л үлдэв ✓
+  assert.ok(card.includes('formatCardAddress(listing)'), 'картын хаяг (`formatCardAddress`) алга ✗');
+});
+
+t('⑥ 🆕 (107) `formatCardAddress()` — хот → дүүрэг → хороо, « — » тусгаарлагчтай', () => {
+  /** 🎯 ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «change cards design text style to like attached
+   *  cards … Also, swap location, the date of creation on the card of bottom
+   *  section» ⇒ жишиг зургийн карт: «Улаанбаатар — Сонгинохайрхан — 15-р хороо» */
+  assert.equal(formatCardAddress({ city: 'Улаанбаатар', district: 'Баянгол', khoroo: '2-р хороо' }),
+    'Улаанбаатар — Баянгол — 2-р хороо');
+  // ⚠️ Байршилгүй/дутуу үед ГАРАХГҮЙ (`''`) — « — » тусгаарлагч үлдэхгүй ✓
+  assert.equal(formatCardAddress({ city: '', district: null, khoroo: null }), '');
+  assert.equal(formatCardAddress(null), '');
+  assert.equal(formatCardAddress({ city: 'Улаанбаатар', district: 'Баянгол', khoroo: null }),
+    'Улаанбаатар — Баянгол');
+  // ⚠️ `formatAddress` (дэлгэрэнгүй хуудас) ХӨНДӨӨГДӨӨГҮЙ — дараалал/тусгаарлагч өөр ✓
+  assert.equal(formatAddress({ city: 'Улаанбаатар', district: 'Баянгол', khoroo: '2-р хороо' }),
+    '2-р хороо, Баянгол, Улаанбаатар');
 });
 
 t('⑥ `ListingDetailClient` — «Хаяг тодорхойгүй» БИШ «Байршил заагаагүй»', () => {

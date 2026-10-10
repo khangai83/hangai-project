@@ -27,6 +27,11 @@
  *      · ③l карт нь ХАЙРЦАГГҮЙ (`border-top-width: 0px` ба дэвсгэр
  *      `rgba(0, 0, 0, 0)` — жишиг сайтын хэв) ✓ · 🆕 ③m (87) ЗУРГИЙН ХАЙРЦАГ
  *      ч СААРАЛГҮЙ (`bg-gray-100` арилав — «бүх саарал өнгийг үгүй хий») ✓
+ *   ③n 🆕 (107) 📍📅 ДООД МЕТА МӨР: **байршил ЭХЭНД, огноо ТӨГСГӨЛД** —
+ *      pin (`svg`) нь мета мөрийн ЭХНИЙ хүүхэд, `|` тусгаарлагч байгаа ба
+ *      СҮҮЛИЙН хүүхэн дэх текст нь ХАРЬЦАНГУЙ ЦАГ («… минутын өмнө» /
+ *      «Өчигдөр» / «2026.10.10») ✓ (хэрэглэгчийн хүсэлт: «swap location, the
+ *      date of creation on the card of bottom section») ✓
  *   ④ 📱 390px: НЭГ БАГАНА (2 дахь карт нь 1-ийнхээ ЗАГИНАА доор) ба
  *      хэвтээ гүйлт 0 (`scrollWidth ≤ innerWidth + 1`) ✓
  *   ⑤ 🗂 /favorites: картууд БАГАНАТ (≥2 нэг мөрөнд, 1280px), «Хасах»
@@ -207,6 +212,11 @@ const PROBE = `(() => {
         bg: getComputedStyle(c).backgroundColor,
         title: title ? R(title) : null,
         countBadge: badge ? R(badge) : null,
+        // 🆕 (107): 📍📅 ДООД МЕТА МӨР — байршил ЭХЭНД (pin нь ЭХНИЙ хүүхэд),
+        //    огноо ТӨГСГӨЛД; текст нь «Улаанбаатар — Баянгол — 2-р хороо | 2 өдрийн өмнө» ✓
+        metaText: (() => { const m = c.querySelector('[data-listing-meta]'); return m ? (m.innerText || '').replace(/\s+/g, ' ').trim() : ''; })(),
+        metaSvgInFirst: (() => { const m = c.querySelector('[data-listing-meta]'); return m && m.firstElementChild ? m.firstElementChild.querySelectorAll('svg').length : -1; })(),
+        metaLastText: (() => { const m = c.querySelector('[data-listing-meta]'); return m && m.lastElementChild ? (m.lastElementChild.innerText || '').replace(/\s+/g, ' ').trim() : ''; })(),
       };
     }),
   };
@@ -270,6 +280,13 @@ check('③l 🎨 (86) Карт нь ХАЙРЦАГГҮЙ (хүрээ/сүүдэ�
   c0.border === '0px' && c0.bg === 'rgba(0, 0, 0, 0)', `border ${c0.border} · bg ${c0.bg}`);
 check('③m 🎨 (87) ЗУРГИЙН хайрцаг ч СААРАЛГҮЙ (`bg-gray-100` арилав)',
   c0.imgBg === 'rgba(0, 0, 0, 0)', `img bg ${c0.imgBg}`);
+// 🆕 (107) 📍📅 ДООД МЕТА МӨР — хэрэглэгчийн хүсэлт: «swap location, the date of
+//    creation on the card of bottom section» ⇒ байршил ЭХЭНД (pin нь ЭХНИЙ
+//    хүүхэд), огноо ТӨГСГӨЛД (`|` тусгаарлагчтай) ✓
+check('③n 📍📅 (107) Доод мөр: 📍 байршил ЭХЭНД, 📅 огноо ТӨГСГӨЛД',
+  !!c0.metaText && c0.metaSvgInFirst === 1 && /\|/.test(c0.metaText)
+  && /(Саяхан|минутын өмнө|цагийн өмнө|Өчигдөр|өдрийн өмнө|\d{4}\.\d{2}\.\d{2})/.test(c0.metaLastText),
+  `«${c0.metaText}» · last «${c0.metaLastText}» · firstSvg ${c0.metaSvgInFirst}`);
 if (c0.countBadge) {
   check('③e 🖼 зургийн тоо нь БАРУУН ДООД буланд',
     c0.countBadge.b <= c0.img.b + 2 && c0.countBadge.x > c0.img.x + c0.img.w / 2,
