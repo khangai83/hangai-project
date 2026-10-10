@@ -27,17 +27,21 @@
  *   ⑤ 📱 390px: саарал дүүргэлт 0 ба хэвтээ гүйлт 0 ✓
  *   ⑥ 🐍 JS exception 0 (Leaflet-ээс бусад) ба hydration/
  *      `validateDOMNesting` алдаа 0 ✓
- *   ⑨ 🎨 SVG ИКОНУУД (🆕 (96) · ✏️ (98) ТОМРУУЛАВ) — мета мөр
+ *   ⑨ 🎨 SVG ИКОНУУД (🆕 (96) · ✏️ (98) ТОМРУУЛАВ · ✏️ (100) ДАХИН) — мета мөр
  *      (`[data-listing-meta]` = `[data-listing-actions]` — 🆕 (97) нэг мөр):
- *      📍 emoji ХАСАГДАЖ `MapPinIcon` (**16×16px**, `vertical-align: -3px` ⇒
+ *      📍 emoji ХАСАГДАЖ `MapPinIcon` (**20×20px**, `vertical-align: -4px` ⇒
  *      хаягны `truncate` эвдрэхгүй), `🔖` БҮХЭЛДЭЭ арилсан (зарын дугаар
- *      ЗӨВХӨН «ID: …» текст) ✓ · 👁 → `EyeIcon` (**18×18px**, өнгө нь
- *      тоолуурынхаас ТОД — хэрэглэгчийн «өнгийг нь тодруулаарай») · 📋 «Зарын
- *      дэлгэрэнгүй» хүснэгтийн `dt`/`dd`-д icon/svg 0 · БҮТЭН `main` дээр
- *      📍/🔖/👁 emoji 0 ✓
+ *      ЗӨВХӨН «ID: …» текст) ✓ · 👁 → `EyeIcon` (**20×20px** — 📍-тэй ЯГ ИЖИЛ,
+ *      өнгө нь тоолуурынхаас ТОД — хэрэглэгчийн «өнгийг нь тодруулаарай») · 📋
+ *      «Зарын дэлгэрэнгүй» хүснэгтийн `dt`/`dd`-д icon/svg 0 · БҮТЭН `main`
+ *      дээр 📍/🔖/👁 emoji 0 ✓
  *      · 🆕 (99) ЗАЙ ХААСАН: мөрийн `gap-x` 8px → **4px**, ❤️ ↔ 🔗 **4px**,
  *      ❤️/🔗 нь «ID: …»-ийн ЯГ ДАРАА (`ml-auto` ХАСАГДАВ ⇒ баруун сул зай
  *      > 24px байх ЁСТОЙ — баруун захад түлхэгдсэн бол ✗) ✓
+ *      · 🆕 (100) ХҮРЭЭ ХАСАВ + ICON ТОМРУУЛАВ: ❤️/🔗 товчны «surrounding
+ *      border» (`border border-gray-200 bg-white`, `px-3`) ХАСАГДАВ ⇒
+ *      `border-width: 0px` ба дэвсгэр `rgba(0, 0, 0, 0)`, hover нь зөвхөн
+ *      ӨНГӨӨР (`hover:text-red-600` / `hover:text-primary`), `px-1` ✓ ·
  *      (⚠️ 🏷️/🔑 сайдбарын «N идэвхтэй зар» тоолуул нь (95)-ийн feature — ХӨНДӨӨГДӨӨГҮЙ)
  *   ⑦ 📸 /tmp/detail-style-1280.png · /tmp/detail-style-390.png
  *      (+ 🆕 (96) 3× томруулсан: /tmp/detail-meta-1280.png · /tmp/detail-actions-1280.png)
@@ -405,6 +409,13 @@ const ICONS = `(() => {
       rightFree,
       hasFav: !!favBtn,
       hasShare: !!shareBtn,
+      //   🆕 (100) «Surrounding border» ХАСАГДАВ эсэхийг бодитоор хэмжинэ —
+      //   Tailwind preflight-ийн дараа button-ы border-width нь 0 БАЙХ ЁСТОЙ ✓
+      //   (⚠️ ЭНЭ БЛОК МӨН JS ТЕМПЛЕЙТ МӨР ДОТОР — grave accent ХЭРЭГЛЭХГҮЙ ✗)
+      favBorder: favBtn ? parseFloat(getComputedStyle(favBtn).borderTopWidth) || 0 : null,
+      shareBorder: shareBtn ? parseFloat(getComputedStyle(shareBtn).borderTopWidth) || 0 : null,
+      favBg: favBtn ? getComputedStyle(favBtn).backgroundColor : null,
+      shareBg: shareBtn ? getComputedStyle(shareBtn).backgroundColor : null,
     },
     dt: {
       count: dts.length,
@@ -417,16 +428,16 @@ const ICONS = `(() => {
 })()`;
 const ic = await evalJs(ICONS);
 check('⑨ 🎨 Мета мөр олдлоо (`data-listing-meta`)', !ic.noMain && ic.metaFound, ic.metaText || '—');
-check('⑨b 📍 emoji БАЙХГҮЙ — оронд нь `MapPinIcon` SVG 16×16px (🆕 (98) томруулав)',
-  !!ic.pin && ic.pin.w === 16 && ic.pin.h === 16, ic.pin ? `${ic.pin.w}×${ic.pin.h}px` : 'SVG алга');
-check('⑨c 📍 SVG текстийн урсгалд суусан (`vertical-align: -3px`) — хаягны `truncate` хэвээр',
-  !!ic.pin && ic.pin.va === '-3px' && ic.pin.trunc,
+check('⑨b 📍 emoji БАЙХГҮЙ — оронд нь `MapPinIcon` SVG 20×20px (🆕 (100) томруулав)',
+  !!ic.pin && ic.pin.w === 20 && ic.pin.h === 20, ic.pin ? `${ic.pin.w}×${ic.pin.h}px` : 'SVG алга');
+check('⑨c 📍 SVG текстийн урсгалд суусан (`vertical-align: -4px`) — хаягны `truncate` хэвээр',
+  !!ic.pin && ic.pin.va === '-4px' && ic.pin.trunc,
   ic.pin ? `va ${ic.pin.va} · truncate ${ic.pin.trunc ? 'yes' : 'no'}` : '—');
 check('⑨d 🔖 emoji БАЙХГҮЙ — зарын дугаар ЗӨВХӨН текст «ID:» (мета мөрд emoji 0)',
   ic.metaEmoji.length === 0 && !!ic.metaText && ic.metaText.includes('ID:'),
   ic.metaEmoji.length ? `${ic.metaEmoji.join(' ')} үлдсэн ✗` : `${ic.metaSvg} svg (pin + нүд) ✓`);
-check('⑨e 👁 emoji БАЙХГҮЙ — «N» нь `EyeIcon` SVG 18×18px (🆕 (98) томруулав)',
-  !!ic.eye && ic.eye.w === 18 && ic.eye.h === 18 && /^\d+$/.test((ic.views || '').trim()),
+check('⑨e 👁 emoji БАЙХГҮЙ — «N» нь `EyeIcon` SVG 20×20px (🆕 (100) томруулав)',
+  !!ic.eye && ic.eye.w === 20 && ic.eye.h === 20 && /^\d+$/.test((ic.views || '').trim()),
   ic.views ? `${ic.views} · svg ${ic.eye ? `${ic.eye.w}×${ic.eye.h}` : '—'}px` : 'алга');
 check('⑨f 👁 иконы өнгө нь тоолуурынхнаас ТОД («өнгийг нь тодруулаарай»)',
   !!ic.eye && !!ic.actionsColor && ic.eye.color !== ic.actionsColor,
@@ -449,6 +460,15 @@ check('⑨i 📏 ЗАЙ ХААСАН (🆕 (99)) — мета хооронд 4px
   ic.gap
     ? `gap-x ${ic.gap.x}px · ID→❤️ ${ic.gap.idFav}px · ❤️↔🔗 ${ic.gap.favShare}px · баруун сул зай ${ic.gap.rightFree}px`
     : '—');
+check('⑨j 🚫 «Surrounding border» ХАСАГДСАН (🆕 (100)) — ❤️/🔗 товчны border-width 0px · дэвсгэр тунгалаг (bg-white ХАСАГДСАН)',
+  !!ic.gap && ic.gap.favBorder === 0 && ic.gap.shareBorder === 0 &&
+    ic.gap.favBg === 'rgba(0, 0, 0, 0)' && ic.gap.shareBg === 'rgba(0, 0, 0, 0)',
+  ic.gap
+    ? `❤️ border ${ic.gap.favBorder}px · bg ${ic.gap.favBg} ⟂ 🔗 border ${ic.gap.shareBorder}px · bg ${ic.gap.shareBg}`
+    : '—');
+check('⑨k 🔍 ICON ТОМРУУЛАВ (🆕 (100)) — 📍 pin === 👁 нүд (20×20px, ХОЁР ИЖИЛ) — «icon-ыг томруул» хүсэлт ✓',
+  !!ic.pin && !!ic.eye && ic.pin.w === 20 && ic.pin.h === 20 && ic.eye.w === 20 && ic.eye.h === 20,
+  ic.pin && ic.eye ? `📍 ${ic.pin.w}×${ic.pin.h}px · 👁 ${ic.eye.w}×${ic.eye.h}px` : '—');
 if (ic.metaFound) await shotEl('[data-listing-meta]', '/tmp/detail-meta-1280.png');
 if (ic.actionsFound) await shotEl('[data-listing-actions]', '/tmp/detail-actions-1280.png', { scroll: true });
 

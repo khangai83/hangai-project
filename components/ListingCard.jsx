@@ -448,7 +448,7 @@ export default function ListingCard({ listing, author, attrsLine }) {
           {address && (
             <span className="order-last w-full truncate sm:order-none sm:w-auto sm:flex-1" title={address}>
               <span aria-hidden="true" className="mr-1.5 hidden text-gray-300 sm:inline">|</span>
-              <MapPinIcon className="mr-1 inline-block h-4 w-4 align-[-3px]" />
+              <MapPinIcon className="mr-1 inline-block h-5 w-5 align-[-4px]" />
               {address}
             </span>
           )}

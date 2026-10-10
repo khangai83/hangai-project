@@ -468,7 +468,9 @@ export default function ListingDetailClient({ id }) {
                  `truncate` ХӨНДӨӨГДӨХГҮЙ ✓ (`align-[-3px]` — 🆕 (98) иконыг 16px
                  болгосон тул суурьтай нийцүүлэх зай 2px → 3px ✓) */}
           <span className="min-w-0 truncate" title={address || NO_LOCATION_LABEL}>
-            <MapPinIcon className="mr-1 inline-block h-4 w-4 align-[-3px]" />
+            {/* 🆕 (100): 📍 icon 16→**20px** («location icon-ыг томруул») —
+                20px икон 13px тексттэй суурь нийцүүлэх зай 3→4px ✓ */}
+            <MapPinIcon className="mr-1 inline-block h-5 w-5 align-[-4px]" />
             {address || NO_LOCATION_LABEL}
           </span>
           <span aria-hidden="true" className="text-gray-300">·</span>
@@ -478,7 +480,9 @@ export default function ListingDetailClient({ id }) {
           {/* 👁 ҮЗСЭН — icon + тоо (🆕 (97): галерейн footer-оос энэ мөрөнд шилжив;
               жишиг сайтын хэвээр зөвхөн тоо — «37 үзсэн» БИШ «37») ✓ */}
           <span title="Энэ зарыг хэдэн хүн үзсэн" className="inline-flex items-center gap-1 font-semibold tabular-nums text-gray-600">
-            <EyeIcon className="h-[18px] w-[18px] text-gray-700" />
+            {/* 🆕 (100): 👁 icon 18→**20px** («eye icon-ыг томруул») — 📍-тэй
+                ЯГ ИЖИЛ хэмжээ (20×20) ⇒ хоёр икон тэнцүү харагдана ✓ */}
+            <EyeIcon className="h-5 w-5 text-gray-700" />
             {viewCount}
           </span>
           <span aria-hidden="true" className="text-gray-300">·</span>
@@ -498,14 +502,14 @@ export default function ListingDetailClient({ id }) {
               onClick={() => toggleFavorite(listing.id)}
               aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
               title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
-              className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 font-semibold tabular-nums text-gray-700 transition hover:border-red-200 hover:text-red-600 ${
+              className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-1 font-semibold tabular-nums text-gray-700 transition hover:text-red-600 ${
                 isFav ? 'text-red-600' : ''
               }`}
             >
               {isFav ? '❤️' : '🤍'} {likeCount}
             </button>
             {/* ⚠️ `ShareButton` нь одоогийн хуудасны URL-ыг clipboard-д хуулна ✓ */}
-            <ShareButton className="hover:border-primary/40" />
+            <ShareButton className="" />
           </div>
         </div>
       </header>

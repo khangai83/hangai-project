@@ -1503,6 +1503,36 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- 🚫🔍 **❤️/🔗-ИЙН «SURROUNDING BORDER» ХАСАВ + 📍/👁 ICON ДАХИН ТОМРУУЛАВ — 20×20px (2026-10-10 (100))** —
+  хэрэглэгчийн хүсэлт: «what kind of Surrounding border on like and share, romove
+  it quickly. Increase eye icon and location icon quickly» ⇒ (97)-д оруулсан pill
+  хэв (хүрээ + цагаан дэвсгэр) нь мета мөрийн ПЛАЙН тексттэй зөрчилдөж, ❤️/🔗
+  «тусдаа товч» мэт харагдаж байв.
+  <br>**(1) 🚫 Хүрээ/дэвсгэр ХАСАГДАВ:** ❤️ (`components/ListingDetailClient.jsx`)
+  ба 🔗 (`components/ShareButton.jsx`) товчны `border border-gray-200 bg-white`
+  **БҮРЭН ХАСАГДАВ** ⇒ `border-width: 0px` · дэвсгэр `rgba(0, 0, 0, 0)`; hover нь
+  зөвхөн **ӨНГӨӨР** (`hover:text-red-600` / `hover:text-primary`, ⏳
+  `hover:border-red-200`/`hover:border-primary/40` ХАСАГДАВ) ✓. `px-3` → **`px-1`**
+  (хүрээ байхгүй бол 12px padding нь дахин ХООСОН зай үүсгэнэ ✗); `h-8` хэвээр —
+  товчны дарах талбай хадгалагдав ✓. `ListingDetailClient`-ийн
+  `<ShareButton className="hover:border-primary/40" />` ⇒ `className=""` ✓
+  ⚠️ «Хуваалцах» текст, 🤍/❤️ emoji, clipboard механизм ХӨНДӨӨГДӨӨГҮЙ ✓
+  <br>**(2) 🔍 ICON 20×20px:** 📍 `MapPinIcon` `h-4 w-4` (16px) → **`h-5 w-5`** ·
+  👁 `EyeIcon` `h-[18px] w-[18px]` → **`h-5 w-5`** — ХОЁР икон ОДОО ЯГ ИЖИЛ
+  хэмжээтэй ✓. ⚠️ `vertical-align` `-3px` → **`-4px`** (20px икон 13px тексттэй
+  нийцэх зай); `ListingDetailClient` (толгой) ба `ListingCard` (карт) ХОЁУЛАА ✓
+  <br>**(3) 🧪 ТЕСТ (cdp:detail):** 🆕 ⑨j — бодит `getComputedStyle().borderTopWidth
+  === 0` ба `backgroundColor === 'rgba(0, 0, 0, 0)'` (хүрээ буцаж орвол УНАХАР ✓);
+  🆕 ⑨k — `getBoundingClientRect()` 📍 === 👁 === **20×20px**; ⑨b/⑨c/⑨e нь 16/18px
+  → 20×20px ба `vertical-align: -4px` болж шинэчлэгдэв ✓
+  <br>**(4) VERIFY:** `cdp:detail` **28 OK / 0 FAIL** — ⑨i `gap-x 4px · ID→❤️ 8px ·
+  ❤️↔🔗 4px · баруун сул зай 575px` · ⑨j `❤️ border 0px · bg rgba(0, 0, 0, 0) ⟂ 🔗
+  border 0px · bg rgba(0, 0, 0, 0)` · ⑨k `📍 20×20px · 👁 20×20px` ✓;
+  `test:location` 36 · `test:detail-ui` 23 · `test:card` 24 · `test:share-btn` 6 ·
+  `test:brand` 20 ✓ · `npm run build` EXIT=0 ✓
+  📸 `/tmp/detail-meta-1280.png` (мета мөр — хүрээгүй, том иконтой).
+  🔍 Хайх үг: `Surrounding border`, `border: 0`, `h-5 w-5`, `align-[-4px]`,
+  `px-1 font-semibold`, `rgba(0, 0, 0, 0)`
 - 📏🔗 **ДЭЛГЭРЭНГҮЙ ТОЛГОЙН МЕТА МӨРИЙН ЗАЙ ХААВ — `gap-x` 8→4px, `ml-auto` ХАСАГДАВ, ❤️↔🔗 4px (2026-10-10 (99))** —
   хэрэглэгчийн хүсэлт: «cloud you to close the gap like and share on the detail
   cart. It's location, created date, id, eye showed, like and share» ⇒ дэлгэрэнгүй

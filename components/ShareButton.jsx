@@ -89,7 +89,10 @@ export default function ShareButton({
       title={copied ? 'Хуулагдлаа' : label}
       aria-label={copied ? 'Хуулагдлаа' : label}
       data-share-button
-      className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 font-semibold text-gray-700 transition hover:border-primary/40 hover:text-primary ${
+      /* 🆕 (100): «Surrounding border» ХАСАГДАВ — ⏳ `border border-gray-200
+         bg-white` pill-ийн хүрээ/дэвсгэр байв ⇒ одоо ЦЭВЭР icon+текст
+         (`px-1` — товчны хэмжээ хадгалагдана, hover нь ӨНГӨӨР л ✓) */
+      className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-1 font-semibold text-gray-700 transition hover:text-primary ${
         copied ? 'text-primary' : ''
       } ${className}`}
     >
