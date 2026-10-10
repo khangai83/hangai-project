@@ -3443,41 +3443,49 @@ export default function HomeClient() {
 
                 </div>
 
-                {/* ⇅ ЭРЭМБЭЛЭХ + 🗺 ГАЗРЫН ЗУРАГ — ШУГАМЫН ДООР, БАРУУН тийшээ
-                    (жишиг сайтын «Sort: …» мөр шиг). 🆕 2026-10-10 (92):
-                    «⇅ Эрэмбэлэх» нь ХҮРЭЭГҮЙ — зөвхөн икон + тодруулга + сонголт
-                    + ▾ ✓ (`data-listing-sort`/`data-view-toggle` дэгээ ХЭВЭЭР) */}
-                <div className="mb-3 flex flex-wrap items-center justify-end gap-3 pt-2.5">
-                  <label
-                    htmlFor="listing-sort"
-                    className="inline-flex items-center gap-1.5 text-[13px] text-gray-600"
-                  >
-                    <span aria-hidden="true" className="text-[13px] text-gray-400">⇅</span>
-                    <span className="hidden sm:inline">Эрэмбэлэх:</span>
-                    <select
-                      id="listing-sort"
-                      data-listing-sort
-                      aria-label="Эрэмбэлэх"
-                      className="cursor-pointer appearance-none bg-transparent text-[13px] font-semibold text-gray-900 focus:outline-none"
-                      value={sort}
-                      onChange={(e) => changeSort(e.target.value)}
-                    >
-                      {SORT_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
-                    <span aria-hidden="true" className="text-[11px] text-gray-400">▾</span>
-                  </label>
+                {/* 📊 ҮР ДҮНГИЙН ТОО + ⇅ ЭРЭМБЭЛЭХ + 🗺 ХАРАХ ГОРИМ — шугамын доор
+                    (жишиг сайтын «N results … Sort: …» мөрийн хэв):
+                    ЗҮҮН талд хэдэн зар олдсон нь, БАРУУН талд эрэмбэлэлт ба
+                    харах горим; мөрийн ДООР нь ДАХИН нэг шугам (`border-b`) ✓
+                    🆕 2026-10-10 (93): ⏳ (92)-т ЭНЭ МӨР ГАРААГҮЙ байв —
+                    хэрэглэгчийн жишиг зурагтай ЯГ тааруулав (2 шугам + тоо) ✓
+                    ⚠️ `data-listing-sort`/`data-view-toggle` дэгээ ХЭВЭЭР */}
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-gray-200 py-3">
+                  <p className="text-[13px] text-gray-700">
+                    {typeof total === 'number' ? `${formatCount(total)} зар олдлоо` : ''}
+                  </p>
 
-                  <button
-                    type="button"
-                    data-view-toggle
-                    aria-pressed={view === 'map'}
-                    onClick={() => setView(view === 'map' ? 'list' : 'map')}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[13px] font-medium text-gray-700 transition-all duration-150 ease-out hover:border-primary/40 hover:text-primary"
-                  >
-                    {view === 'map' ? '☰ Жагсаалт руу буцах' : '🗺 Газрын зураг дээр харах'}
-                  </button>
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                    <label
+                      htmlFor="listing-sort"
+                      className="inline-flex items-center gap-1.5 text-[13px] text-gray-600"
+                    >
+                      <span>Эрэмбэлэх:</span>
+                      <select
+                        id="listing-sort"
+                        data-listing-sort
+                        aria-label="Эрэмбэлэх"
+                        className="cursor-pointer appearance-none bg-transparent text-[13px] font-semibold text-gray-900 focus:outline-none"
+                        value={sort}
+                        onChange={(e) => changeSort(e.target.value)}
+                      >
+                        {SORT_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                      <ChevronDownIcon className="h-3.5 w-3.5 shrink-0 text-gray-500" />
+                    </label>
+
+                    <button
+                      type="button"
+                      data-view-toggle
+                      aria-pressed={view === 'map'}
+                      onClick={() => setView(view === 'map' ? 'list' : 'map')}
+                      className="inline-flex items-center gap-1.5 text-[13px] font-medium text-gray-700 transition-colors hover:text-primary"
+                    >
+                      {view === 'map' ? '☰ Жагсаалт' : '🗺 Газрын зураг'}
+                    </button>
+                  </div>
                 </div>
 
 
