@@ -268,7 +268,39 @@ t('📝 (2026-10-07) `descriptionAfterTitle` — энгийн формтой х�
 
 t('📱 Хүчингүй түлхүүр (ж: хэсэг солигдов) → ЭХНИЙ дэлгэц рүү унана (index < 0 → 0 ✓)', () => {
   assert.match(FORM, /const detailIdxRaw = detailScreens\.findIndex\(\(s\) => s\.key === mobileDetailStep\)/);
-  assert.match(FORM, /const detailIdx = detailIdxRaw < 0 \? 0 : detailIdxRaw/);
+  assert.match(FORM, /const raw = detailIdxRaw < 0 \? 0 : detailIdxRaw/);
+});
+
+t('📱🆕 (115) НООРГИЙН ДЭЛГЭЦИЙН ХАМГААЛАЛТ — хариулаагүй асуултыг АЛГАСАХГҮЙ ✓', () => {
+  /**
+   * 🎯 2026-10-10-ны гомдол: «📱 дээр 💻 Notebook-ийн зар оруулахад 🏷️ Брэнд ба
+   *    бусад талбарыг АСУУХГҮЙ байна» ⇒ нооргийн `mobileDetailStep` нь ХУУЧИРСАН
+   *    (2026-10-07 (57)-аас өмнөх 1 дэлгэцтэй үеийн `'attr-condition'`) байсан тул
+   *    ШИНЭ 7 дэлгэцийн СҮҮЛИЙН дэлгэц рүү зааж, эхний 6 асуулт алга болж байв ✗
+   *    ⇒ сэргээлтийн дараа «хариулаагүй эхний дэлгэц»-ээс хойш эхлэхийг хориглоно ✓
+   */
+  // ⚠️ ДАРААЛАЛ ЧУХАЛ: `detailIdx` нь `detailAnswerText`-ийн ДАРАА бодогдоно —
+  //    хамгаалалт нь түүнийг ашигладаг (өмнө нь бичвэл TDZ-ээр форм унана ✗)
+  const answerAt = FORM.indexOf('const detailAnswerText = (key) => {');
+  const idxAt = FORM.indexOf('const detailIdx = (() => {');
+  assert.ok(answerAt > 0 && idxAt > answerAt, `answer=${answerAt} idx=${idxAt}`);
+  const guard = bodyOf(FORM, 'const detailIdx = (() => {');
+  assert.match(guard, /const raw = detailIdxRaw < 0 \? 0 : detailIdxRaw;/);
+  assert.match(guard, /if \(!draftStepGuard \|\| raw === 0\) return raw;/);
+  assert.match(guard, /const blank = detailScreens\.findIndex\(\(s\) => !detailAnswerText\(s\.key\)\);/);
+  assert.match(guard, /return blank >= 0 && blank < raw \? blank : raw;/);
+  // ⚠️ НЭГ УДААГИЙНХ: сэргээлтэд асаана · 4 газарт унтарна (урагшлах · буцах ·
+  //    ✏️ засах · 🗑 ноорог устгах) — эс бөгөөс «Алгасах» ажиллахгүй болно ✗
+  assert.match(FORM, /setDraftStepGuard\(true\)/, 'ноорог сэргээхэд туг асаахгүй ✗');
+  for (const [name, marker] of [
+    ['📱 урагшлах', 'const mobileDetailNext = () => {'],
+    ['📱 буцах', 'const mobileDetailBack = () => {'],
+    ['✏️ засах', 'const mobileAnswerEdit = (key) => {'],
+    ['🗑 ноорог устгах', 'const discardDraft = () => {'],
+  ]) {
+    assert.ok(bodyOf(FORM, marker).includes('setDraftStepGuard(false)'),
+      `${name}: хамгаалалт унтраахгүй ✗`);
+  }
 });
 
 t("📱 `data-mobile-active` нь ТЕКСТ ('true'/'false') — boolean БИШ (React-ийн data-* зан ✓)", () => {

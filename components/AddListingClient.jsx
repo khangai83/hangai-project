@@ -1081,6 +1081,19 @@ export default function AddListingClient() {
    */
   const [mobileDetailStep, setMobileDetailStep] = useState('title');
   /**
+   * 🆕 2026-10-10 (115) — «📝 НООРГИЙН ДЭЛГЭЦИЙН ХАМГААЛАЛТ»: `mobileDetailStep` нь
+   *    НООРГИЙН хамт ХАДГАЛАГДАЖ, сэргээгддэг. Хэрэв дэлгэцийн ЖАГСААЛТ өөрчлөгдсөн
+   *    бол (ж: 2026-10-07 (57) — 💻 Notebook-ийн үзүүлэлт 1 → 7 болов) ХУУЧИН
+   *    нооргийн түлхүүр нь СҮҮЛИЙН дэлгэц рүү зааж, хэрэглэгч 🏷️ Брэнд · 🖥️ Загвар ·
+   *    📺 Дэлгэц · ⚙️ CPU · 🧠 RAM · 💾 Хард-ыг ХАРАХГҮЙ өнгөрөх аюултай байв ✗
+   *    (DB-д бодит жишээ: `property_type='Notebook'`, `attrs={condition,negotiable}` ✓)
+   *    ⇒ сэргээлтийн ДАРАА нэг удаа «ХАРИУЛААГҮЙ эхний дэлгэц»-ээс хойш эхлэхийг
+   *    ХОРИГЛОНО (доорх `detailIdx`); хэрэглэгч анх урагшлах/буцах/✏️ засах үед
+   *    туг УНТАРНА — түүнээс хойш «Алгасах» хэвийн ажиллана ✓
+   * ⚠️ Зөвхөн 📱 <640px-д нөлөөлнө (`detailScreens` нь зөвхөн мобайл дүрэм ✓)
+   */
+  const [draftStepGuard, setDraftStepGuard] = useState(false);
+  /**
    * 🔢🎡 СОНГОЛТТОЙ ТООН ТАЛБАРЫН ДУГУЙ (2026-10-02) — нэг л дугуй байна, түүнд
    *    ОДОО нээлттэй талбарын бүх мэдээлэл (`{title, items, value, hint,
    *    onPick}`) хадгалагдана ✓ (талбар бүрд тусдаа state хийвэл 6+ ширхэг
@@ -1250,7 +1263,12 @@ export default function AddListingClient() {
     // 📱 3-р алхмын «аль асуулт дээр байсан» — асуултын түлхүүр нь хадгалагдана
     //    (⚠️ буруу/хуучирсан түлхүүр нь эхний дэлгэц рүү унана — код нь
     //    `findIndex < 0 → 0` хамгаалалттай ✓)
-    if (draft.mobileDetailStep) setMobileDetailStep(draft.mobileDetailStep);
+    if (draft.mobileDetailStep) {
+      setMobileDetailStep(draft.mobileDetailStep);
+      // 🆕 (115) — сэргээсэн түлхүүр нь ХУУЧИРСАН дэлгэц рүү зааж болно ⇒ доорх
+      //    `detailIdx` хамгаалалт нь хариулаагүй асуултаас эхлэхийг батална ✓
+      setDraftStepGuard(true);
+    }
     setDraftNotice({ pendingCount: draft.pendingCount, savedAt: draft.savedAt });
     setDraftReady(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1362,6 +1380,7 @@ export default function AddListingClient() {
     baselineRef.current = JSON.stringify(initial);
     setDraftNotice(null);
     setMobileDetailStep('title');
+    setDraftStepGuard(false); // 🆕 (115) — анхдагч форм: хамгаалалт хэрэггүй ✓
     setWheel(null);
     setError('');
     if (!isEdit) gotoStep(0);
@@ -2055,17 +2074,11 @@ export default function AddListingClient() {
     if (showApartment) out.push({ key: 'garage', title: 'Гараж', group: 'garage', pick: true });
     return out;
   })();
-  /** ⚠️ Түлхүүр олдохгүй бол (ж: хэсэг солигдов) → ЭХНИЙ дэлгэц (`title`) ✓ */
-  const detailIdxRaw = detailScreens.findIndex((s) => s.key === mobileDetailStep);
-  const detailIdx = detailIdxRaw < 0 ? 0 : detailIdxRaw;
-  const activeDetail = detailScreens[detailIdx];
-  const isFirstDetail = detailIdx === 0;
-  const isLastDetail = detailIdx === detailScreens.length - 1;
-  /** 📱 Мөр/талбар «энэ дэлгэцэн дээр байна уу» → `data-mobile-active` (CSS ✓) */
-  const detailRowActive = (group) => (activeDetail.group === group ? 'true' : 'false');
-  const detailFieldActive = (key) => (activeDetail.key === key ? 'true' : 'false');
-  /** 📱 Одоогийн асуулт нь «дарж сонгох» жагсаалттай юу → доод товч ХАРАГДАХГҮЙ ✓ */
-  const activePick = !!activeDetail.pick;
+  /**
+   * ⚠️ `detailIdx` / `activeDetail` (🆕 (115) — «хариулаагүй асуултаас эхлэх»
+   *    хамгаалалттай) нь `detailAnswerText`-ийн ДАРАА бодогдоно (доор) —
+   *    хамгаалалт нь `detailAnswerText`-ээс хамаардаг тул ✓
+   */
 
   /**
    * 📱 «Өмнөх хариулт» мөрийн УТГА (жишиг сайтын мөрийн доод текст) — 2026-10-03.
@@ -2100,6 +2113,46 @@ export default function AddListingClient() {
     }
     return '';
   };
+
+  /**
+   * 🆕 2026-10-10 (115) — 📱 3-р алхмын ОДООГИЙН дэлгэц (`detailIdx`).
+   *
+   * 🎯 ХЭРЭГЛЭГЧИЙН ГОМДОЛ: «📱 дээр 💻 Notebook-ийн зар оруулахад 🏷️ Брэнд ба
+   *    бусад талбарыг АСУУХГҮЙ байна» ⇒ DB-д `property_type='Notebook'` боловч
+   *    `attrs` нь зөвхөн `{condition, negotiable}` байсан ✓
+   *
+   * 🔍 ШАЛТГААН: 📱 дээр «аль асуулт дээр байсан» нь `mobileDetailStep` (түлхүүр)-ээр
+   *    НООРГИЙН хамт хадгалагдаж, сэргээгддэг. Дэлгэцийн ЖАГСААЛТ өөрчлөгдсөн үед
+   *    (ж: 2026-10-07 (57) — 💻 Notebook-ийн үзүүлэлт 1 → 7 болов) ХУУЧИН нооргийн
+   *    түлхүүр (`'attr-condition'`) нь ШИНЭ жагсаалтын СҮҮЛИЙН дэлгэц рүү зааж,
+   *    хэрэглэгч 🏷️ Брэнд … 💾 Хард-ыг ХАРАХГҮЙ өнгөрч, брэндгүй зар нийтлэгдэх
+   *    аюултай байв ✗
+   *
+   * ✅ ШИЙДЭЛ: ноорог сэргээсэн үед (`draftStepGuard`) эхлэх индекс нь
+   *    `min(mobileDetailStep`, ХАРИУЛААГҮЙ ЭХНИЙ дэлгэц)` — өөрөөр хэлбэл
+   *    ХАРИУЛААГҮЙ асуултыг АЛГАСАХГҮЙ ✓ (хариулттай хэсэг хэвээр: «🏷️ Брэнд …
+   *    💾 Хард» бөглөсөн хүн ЯГ байсан дэлгэцээсээ үргэлжилнэ ✓)
+   * ⚠️ Хамгаалалт нь НЭГ УДААГИЙНХ: хэрэглэгч урагшлах/буцах/✏️ засах үед туг
+   *    унтарна (`setDraftStepGuard(false)`) ⇒ дараа нь «Алгасах» хэвийн ажиллана
+   *    (алгассан асуулт руу буцаж ЧИРЭХГҮЙ ✗✓)
+   * ⚠️ Утга нь `detailAnswerText`-ээс (нэг эх сурвалж) — шинэ state/DB БАЙХГҮЙ ✓
+   * ⚠️ Түлхүүр олдохгүй бол (ж: хэсэг солигдов) → ЭХНИЙ дэлгэц (`title`) ✓
+   */
+  const detailIdxRaw = detailScreens.findIndex((s) => s.key === mobileDetailStep);
+  const detailIdx = (() => {
+    const raw = detailIdxRaw < 0 ? 0 : detailIdxRaw;
+    if (!draftStepGuard || raw === 0) return raw;
+    const blank = detailScreens.findIndex((s) => !detailAnswerText(s.key));
+    return blank >= 0 && blank < raw ? blank : raw;
+  })();
+  const activeDetail = detailScreens[detailIdx];
+  const isFirstDetail = detailIdx === 0;
+  const isLastDetail = detailIdx === detailScreens.length - 1;
+  /** 📱 Мөр/талбар «энэ дэлгэцэн дээр байна уу» → `data-mobile-active` (CSS ✓) */
+  const detailRowActive = (group) => (activeDetail.group === group ? 'true' : 'false');
+  const detailFieldActive = (key) => (activeDetail.key === key ? 'true' : 'false');
+  /** 📱 Одоогийн асуулт нь «дарж сонгох» жагсаалттай юу → доод товч ХАРАГДАХГҮЙ ✓ */
+  const activePick = !!activeDetail.pick;
 
   /**
    * 🖥 ① 🗂 АНГИЛАЛ · ② 📍 ЗАРЫН ДЭД БАЙРШИЛ — СОНГОСОН ЗАМ (2026-10-05)
@@ -2220,6 +2273,7 @@ export default function AddListingClient() {
     }
     setError('');
     if (isLastDetail) { goNext(); return; }
+    setDraftStepGuard(false); // 🆕 (115) — хэрэглэгч өөрөө урагшлав ⇒ хамгаалалт унтарна ✓
     setMobileDetailStep(detailScreens[detailIdx + 1].key);
   };
   /**
@@ -2230,6 +2284,7 @@ export default function AddListingClient() {
   const mobileDetailBack = () => {
     setError('');
     if (isFirstDetail) { goBack(); return; }
+    setDraftStepGuard(false); // 🆕 (115) — буцсан = хэрэглэгчийн өөрийн байрлал ✓
     setMobileDetailStep(detailScreens[detailIdx - 1].key);
   };
 
@@ -2261,6 +2316,7 @@ export default function AddListingClient() {
     setWheel(null);
     if (key === 'step-category') { gotoStep(0); return; }
     if (key === 'step-location') { gotoStep(1); return; }
+    setDraftStepGuard(false); // 🆕 (115) — ✏️ засах = хэрэглэгчийн өөрийн сонголт ✓
     setMobileDetailStep(key);
   };
 

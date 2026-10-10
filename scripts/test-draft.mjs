@@ -209,6 +209,22 @@ t('② сэргээлт нь формоо бэлдэх эффектийн ДАР
   assert.ok(initAt > 0 && restoreAt > initAt, `init=${initAt} restore=${restoreAt}`);
 });
 
+t('② 🆕 (115) ноорог сэргээхэд 3-р алхмын дэлгэц ХАМГААЛАЛТТАЙ сэргээгдэнэ (🏷️ Брэнд алгасахгүй ✓)', () => {
+  /**
+   * 🎯 2026-10-10-ны гомдол: «📱 дээр 💻 Notebook-ийн зар оруулахад 🏷️ Брэнд
+   *    асуухгүй байна» ⇒ хуучин нооргийн `mobileDetailStep` (`'attr-condition'`)
+   *    нь ШИНЭ 7 дэлгэцийн сүүлчийнх рүү зааж байв ✗ ⇒ сэргээлт нь хамгаалалтыг
+   *    (доорх `detailIdx`) асаах ЁСТОЙ — тэр нь хариулаагүй эхний дэлгэцээс
+   *    (🏷️ Брэнд) эхлүүлнэ ✓
+   */
+  const at = FORM.indexOf('НООРОГ СЭРГЭЭХ');
+  const block = FORM.slice(at, FORM.indexOf('НООРОГ БИЧИХ', at));
+  assert.ok(block.includes('setMobileDetailStep(draft.mobileDetailStep)'), 'дэлгэц сэргээхгүй ✗');
+  assert.ok(block.includes('setDraftStepGuard(true)'), 'хамгаалалт асаахгүй ✗ (2026-10-10-ны гомдол)');
+  // ⚠️ Туг нь `null` болж УСТАХГҮЙ — зөвхөн `false` (унтраах = хэрэглэгч өөрөө хөдөлсөн ✓)
+  assert.equal(block.includes('setDraftStepGuard(null)'), false);
+});
+
 t('② АВТО-ХАДГАЛАЛТ: `draftReady` дуустал бичихгүй/устгахгүй + debounce (`DRAFT_SAVE_DELAY`)', () => {
   assert.ok(/const DRAFT_SAVE_DELAY = 400;/.test(FORM));
   const block = FORM.slice(FORM.indexOf('НООРОГ БИЧИХ'));
