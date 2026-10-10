@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAuth, useToast, useUI } from './AppProviders';
 import { fetchMyListings, deleteListing } from '../lib/queries';
 import { normalizeError } from '../lib/errors';
-import { priceLabel, negotiableNote, getPropertyIcon, timeAgo, getFloorLabel, getGarageLabel } from '../lib/format';
+import { shortPriceLabel, negotiableNote, getPropertyIcon, timeAgo, getFloorLabel, getGarageLabel, formatAddress, listingTitle, carTitle } from '../lib/format';
 // 🔄 «СОЛИНО» (2026-10-09) — 🤝 «Үнэ тохирно»-гийн ЯГ ДООР гарах мөр
 //    (нэг эх сурвалж: `lib/swapFilter.mjs` — форм ☑/хайлтын чиптэй ижил ✓)
 import { SWAP_ICON, swapLabel } from '../lib/swapFilter.mjs';
@@ -16,6 +16,9 @@ import MyListingsStatsPanel from './MyListingsStatsPanel';
  *    (`lib/listingLocation.mjs`) ✓
  */
 import { NO_LOCATION_LABEL } from '../lib/listingLocation.mjs';
+// 📍 2026-10-10 (101) — КАРТ НЬ `ListingCard`-ЫН ХЭВ РҮҮ ШИЛЖИВ ⇒ хаягны pin
+//    нь карт/дэлгэрэнгүй хуудасныхтай ЯГ ИЖИЛ SVG (`HeaderIcons`) ✓
+import { MapPinIcon } from './HeaderIcons';
 
 /**
  * Энэ хуудас нь ЗӨВХӨН ӨӨРИЙН зарыг харуулна.
@@ -162,28 +165,53 @@ export default function MyListingsClient() {
                — олон баганад ЭВТЭЙ (⏳ `sm:flex-row` хэвтээ карт нь 2-3 баганад
                багтахгүй тул ХАСАГДАВ ✓). ⚠️ Зөвхөн ХАРАГДАЦ — fetch/DB/payload
                ХӨНДӨӨГДӨӨГҮЙ. */
+            /* 🆕 (101) 2026-10-10 — «attached 2 cards, study and change my card
+               information … change to all detail card» ⇒ «Миний зарууд»-ын ТУСДАА
+               карт нь ЗАРЫН КАРТТАЙ (`ListingCard`) ИЖИЛ хэв рүү шилжив:
+               ① хайрцаг/сүүдэр/СААРАЛ дүүргэлт ХАСАГДАВ (`border-gray-200`
+                  `bg-gray-100` `shadow-card` `hover:-translate-y-0.5` байхгүй) ✓
+               ② ЗУРАГ 4:3 (`h-[150px]` → `aspect-[4/3] rounded-xl`) — карттай ЯГ ижил ✓
+               ③ ДАРААЛАЛ: 💰 үнэ (22px bold) → 🏷️ гарчиг → 📋 мэдээлэл → 📅 мета ✓
+               ④ Мэдээллийн/мета мөр нь ЗӨВХӨН ТЕКСТ (📅/📍/🛏 … emoji ХАСАГДАВ —
+                  картын хэв, жишиг зургийн «20,400 км · Автомат · 4.0 л · Бензин») ✓
+               ⚠️ ❤️ favourite toggle ЭНД БАЙХГҮЙ — энэ нь «миний» зарын
+                  УДИРДЛАГЫН хуудас (`✏️ Засах`/`🗑 Устгах` товчтой) ✓
+               ⚠️ Зөвхөн ХАРАГДАЦ — fetch/DB/payload ХӨНДӨӨГДӨӨГҮЙ ✓ */
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {listings.map((l) => {
                 const firstImage = Array.isArray(l.images) && l.images.length ? l.images[0] : null;
-                /* 🆕 2026-10-07 (59): хавтээ карт → ВЕРТИКАЛЬ — `sm:flex-row
-                   sm:items-center` ХАСАГДАВ (2-3 баганын grid-д эвтэй ✓) */
+                /* 🏷️ Гарчиг — карттай ЯГ ижил дүрэм (`ListingCard`): зар
+                   оруулагчийн бичсэн гарчиг → 🚗 машин бол `carTitle` → хоосон ✓ */
+                const title = listingTitle(l) || ((l.section || 'real-estate') === 'auto' ? carTitle(l.attrs) : '');
+                /* 📋 МЭДЭЭЛЛИЙН МӨР — ⏳ тусдаа `<p>` мөр бүр (🛏/🚿/📐/🏢/📅/🚪/🅿️)
+                   нь ОДОО « · »-ээр холбогдсон НЭГ мөр болов (картын хэв рүү) —
+                   emoji-гүй, `text-[14px] text-gray-600` ✓ МЭДЭЭЛЭЛ АЛГА БОЛООГҮЙ ✓ */
+                const specs = [
+                  l.rooms > 0 ? `${l.rooms} өрөө` : '',
+                  l.bathrooms > 0 ? `${l.bathrooms} угаалгын өрөө` : '',
+                  l.area > 0 ? `${l.area} м²` : '',
+                  getFloorLabel(l.floor, l.total_floors),
+                  l.build_year > 0 ? `${l.build_year} он` : '',
+                  l.balconies > 0 ? `Тагт: ${l.balconies}` : '',
+                  getGarageLabel(l.has_garage) ? `Гараж: ${getGarageLabel(l.has_garage)}` : '',
+                ].filter(Boolean).join(' · ');
+                /* 📍 Хаяг — байршил заагаагүй зар дээр «Байршил заагаагүй»
+                   (нэг эх сурвалж: `lib/listingLocation.mjs`) ✓ */
+                const place = formatAddress(l) || NO_LOCATION_LABEL;
                 return (
-                  <div
-                    key={l.id}
-                    className="group flex flex-col gap-4 rounded-xl border border-gray-200 bg-gray-100 p-4 shadow-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-card-hover"
-                  >
+                  <div key={l.id} className="group flex flex-col gap-2">
                     {/* ⚠️ КАРТ БҮХЭЛДЭЭ линк — «👁 Харах» товч ХЭРЭГГҮЙ.
                         Үйлдлийн товчнууд (Засах/Устгах) нь линкээс ГАДНА —
                         `<a>` дотор `<button>` хийх нь invalid HTML. */}
                     <Link
                       href={`/listings/${l.id}`}
                       title="Зарын дэлгэрэнгүйг харах"
-                      className="flex min-w-0 flex-1 flex-col gap-4 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45"
+                      className="flex min-w-0 flex-1 flex-col rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45"
                     >
-                      {/* 🆕 2026-10-07 (59): зураг нь БҮХ дэлгэцэд бүтэн өргөн
-                          (`w-full`) — карт вертикаль болсон тул `sm:h-20 sm:w-[100px]`
-                          жижиг thumbnail ХАСАГДАВ ✓ */}
-                      <div className="h-[150px] w-full shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                      {/* 🖼 ЗУРАГ — 4:3 (`aspect-[4/3]`) БҮТЭН өргөн, `rounded-xl`
+                          (карттай ЯГ ижил; ⏳ `h-[150px] rounded-lg bg-gray-100`
+                          ХАСАГДАВ — (101) хайрцаг/саарал байхгүй ✓) */}
+                      <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl">
                         {firstImage ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -193,37 +221,43 @@ export default function MyListingsClient() {
                             className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center text-2xl">{getPropertyIcon(l.property_type)}</div>
+                          <div className="flex h-full w-full items-center justify-center text-5xl">{getPropertyIcon(l.property_type)}</div>
                         )}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="mb-1 text-base font-semibold transition group-hover:text-primary">
-                          {getPropertyIcon(l.property_type)} {l.property_type}
-                        </h4>
-                        {/* 📍 Байршил — 🚫 байршилгүй зар дээр «📍 » ганцаараа
-                            үлдэхээс сэргийлж «Байршил заагаагүй» гэж харуулна
-                            (нэг эх сурвалж: `lib/listingLocation.mjs`) */}
-                        <p className="text-[13px] text-gray-500">
-                          📍 {[l.city, l.district].filter(Boolean).join(', ') || NO_LOCATION_LABEL}
-                        </p>
-                        <p className="text-[13px] text-gray-500">💰 {priceLabel(l)}</p>
+                      <div className="flex min-w-0 flex-1 flex-col pt-2.5">
+                        {/* 💰 ҮНЭ — зургийн ЯГ ДОР, хамгийн ТОМ (карттай ижил 22px) */}
+                        <div className="text-[22px] font-extrabold leading-tight tracking-[-0.01em] text-gray-900">
+                          {shortPriceLabel(l)}
+                        </div>
                         {/* 🤝 «Үнэ тохирно» — үнийн ЯГ ДОР (2026-09-29) */}
                         {negotiableNote(l) && (
-                          <p className="text-[12px] font-semibold text-amber-700">🤝 {negotiableNote(l)}</p>
+                          <div className="text-[12px] font-semibold text-amber-700">{negotiableNote(l)}</div>
                         )}
-                        {/* 🔄 «Солино» (2026-10-09) — 🤝-гийн ЯГ ДООР; зөвхөн
+                        {/* 🔄 «Солино» (2026-10-09) — 🤝-гийн ЯГ ДОР; зөвхөн
                             тэмдэглэсэн зарууд дээр гарна (`lib/swapFilter.mjs`) */}
                         {swapLabel(l) && (
-                          <p className="text-[12px] font-semibold text-emerald-700">{SWAP_ICON} {swapLabel(l)}</p>
+                          <div className="text-[12px] font-semibold text-emerald-700">{SWAP_ICON} {swapLabel(l)}</div>
                         )}
-                        {l.rooms > 0 && <p className="text-[13px] text-gray-500">🛏 {l.rooms} өрөө</p>}
-                        {l.bathrooms > 0 && <p className="text-[13px] text-gray-500">🚿 {l.bathrooms} угаалгын өрөө</p>}
-                        {l.area > 0 && <p className="text-[13px] text-gray-500">📐 {l.area} м²</p>}
-                        {getFloorLabel(l.floor, l.total_floors) && <p className="text-[13px] text-gray-500">🏢 {getFloorLabel(l.floor, l.total_floors)}</p>}
-                        {l.build_year > 0 && <p className="text-[13px] text-gray-500">📅 Ашиглалтанд орсон: {l.build_year} он</p>}
-                        {l.balconies > 0 && <p className="text-[13px] text-gray-500">🚪 Тагт: {l.balconies}</p>}
-                        {getGarageLabel(l.has_garage) && <p className="text-[13px] text-gray-500">🅿️ Гараж: {getGarageLabel(l.has_garage)}</p>}
-                        <p className="text-xs text-gray-400">📅 {timeAgo(l.created_at)}</p>
+                        {title && (
+                          <div className="mt-1 line-clamp-2 text-[16px] font-semibold leading-snug text-gray-900" title={title}>
+                            {title}
+                          </div>
+                        )}
+                        {specs && (
+                          <div className="mt-1.5 truncate text-[14px] text-gray-600" title={specs}>
+                            {specs}
+                          </div>
+                        )}
+                        {/* 📅 МЕТА МӨР — огноо | 📍 хаяг (картын хэв; `mt-auto` ⇒
+                            бүх картын мета мөр НЭГ ЗУРААСАНД эгнэнэ ✓) */}
+                        <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-0.5 pt-1 text-[13px] text-gray-500 sm:flex-nowrap">
+                          <span className="whitespace-nowrap">{timeAgo(l.created_at)}</span>
+                          <span className="order-last w-full break-words sm:order-none sm:w-auto sm:flex-1" title={place}>
+                            <span aria-hidden="true" className="mr-1.5 hidden text-gray-300 sm:inline">|</span>
+                            <MapPinIcon className="mr-1 inline-block h-5 w-5 align-[-4px]" />
+                            {place}
+                          </span>
+                        </div>
                       </div>
                     </Link>
                     {/* 🆕 2026-10-07 (59): товчнууд БҮХ дэлгэцэд ХЭВТЭЭ мөрөнд

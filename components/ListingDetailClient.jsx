@@ -44,7 +44,7 @@ import SimilarListings from './SimilarListings';
 //    ② 👁 → `EyeIcon` — илгээсэн нүдний зураг (өнгө нь ТОД)
 //    ⚠️ emoji нь OS бүрд өөрөөр зурагдаж, өнгө нь текстийг дагахгүй ✗
 //    (үндэслэлийг `components/HeaderIcons.jsx`-ийн тайлбарт бичсэн ✓)
-import { MapPinIcon, EyeIcon } from './HeaderIcons';
+import { MapPinIcon, EyeIcon, HeartIcon } from './HeaderIcons';
 
 export default function ListingDetailClient({ id }) {
   const { showToast } = useToast();
@@ -474,8 +474,10 @@ export default function ListingDetailClient({ id }) {
             {address || NO_LOCATION_LABEL}
           </span>
           <span aria-hidden="true" className="text-gray-300">·</span>
-          {/* 🕒 ОГНОО — харьцангуу (`timeAgo` — карт дээрхтэй ЯГ ижил) */}
-          <span title="Нийтэлсэн огноо" className="whitespace-nowrap">🕒 {timeAgo(listing.created_at)}</span>
+          {/* 🕒 ОГНОО — харьцангуу (`timeAgo` — карт дээрхтэй ЯГ ижил)
+              🆕 (101) ⏳ `🕒 {timeAgo(...)}` → **`{timeAgo(...)}`** — картын мета
+              мөртэй ЯГ ижил болов (жишиг зургийн хэв: цагийн дүрсГҮЙ) ✓ */}
+          <span title="Нийтэлсэн огноо" className="whitespace-nowrap">{timeAgo(listing.created_at)}</span>
           <span aria-hidden="true" className="text-gray-300">·</span>
           {/* 👁 ҮЗСЭН — icon + тоо (🆕 (97): галерейн footer-оос энэ мөрөнд шилжив;
               жишиг сайтын хэвээр зөвхөн тоо — «37 үзсэн» БИШ «37») ✓ */}
@@ -502,11 +504,15 @@ export default function ListingDetailClient({ id }) {
               onClick={() => toggleFavorite(listing.id)}
               aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
               title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
-              className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-1 font-semibold tabular-nums text-gray-700 transition hover:text-red-600 ${
-                isFav ? 'text-red-600' : ''
+              className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-1 font-semibold tabular-nums transition hover:text-red-600 ${
+                isFav ? 'text-red-600' : 'text-gray-700'
               }`}
             >
-              {isFav ? '❤️' : '🤍'} {likeCount}
+              {/* 🆕 (101) ⏳ `{isFav ? '❤️' : '🤍'} {likeCount}` emoji → SVG —
+                  картын зүрхэнтэй ЯГ ИЖИЛ (`HeartIcon`, `filled={isFav}`) ⇒
+                  хэрэглэгчийн хавсаргасан жишиг зургийн хэв (нимгэн хар зураас) ✓ */}
+              <HeartIcon className="h-5 w-5" filled={isFav} />
+              {likeCount}
             </button>
             {/* ⚠️ `ShareButton` нь одоогийн хуудасны URL-ыг clipboard-д хуулна ✓ */}
             <ShareButton className="" />

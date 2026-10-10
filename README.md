@@ -1503,6 +1503,62 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- 🎴🧩 **БҮХ ЗАРЫН КАРТ «ХАВСАРГАСАН 2 КАРТ»-ЫН ХЭВ РҮҮ ШИЛЖИВ — ❤️ EMOJI → SVG · 🕒/📅 ХАСАГДАВ · ХАЯГ БҮТЭН (2026-10-10 (101))** —
+  хэрэглэгчийн хүсэлт: «change card detail like attached photo … it's included
+  Үзсэн, Таалагдсан, Хуваалцах design and position change to like attached photo.
+  change to all detail card. … attached 2 cards, stady and change my card
+  information. one is car card, one is product cart» (машины «Toyota Land Cruiser
+  300, 2025/2025» ба буйдангийн «2.80 м хэмжээтэй буйдан» гэсэн 2 карт хавсаргав)
+  ⇒ (97)–(100)-ийн дараа ч **ГУРВАН зөрүү** үлдсэн байв: ① зүрхэн нь `🤍`/`❤️`
+  **EMOJI** (зураг дээр НИМГЭН ХАР **ЗУРААСТАЙ** зүрхэн) ② `🕒`/`📅` **emoji**
+  (зураг дээр мэдээллийн мөр **ЗӨВХӨН текст**) ③ хаяг `truncate`-ээр «…» болж
+  **тайрагддаг** (зураг дээр БҮТЭН харагдана).
+  <br>**(1) ❤️ EMOJI → SVG** (`components/HeaderIcons.jsx`): `HeartIcon`-д `filled`
+  проп нэмэв — анхдагч `false` = **зураастай (outline)**, `filled={isFav}` =
+  **дүүргэлттэй** (`fill="currentColor"`). ⏳ `{isFav ? '❤️' : '🤍'}` emoji
+  `ListingCard` ба `ListingDetailClient`-ээс ХАСАГДАВ ⇒ зүрхэн нь `text-gray-900`
+  (идэвхгүй) / `text-red-600` (таалагдсан) өнгийг дагана (emoji нь OS бүрд өөрөөр
+  зурагдаж, `text-*`-г дагадаггүй байв ✗). ⚠️ `AppProviders`-ийн толгойн ❤️
+  `filled`-ГҮЙ = ХЭВЭЭР ✓ идэвхтэй төлөвт икон нь ДҮҮРГЭЛТТЭЙ болно ✓
+  <br>**(2) 🕒/📅 EMOJI ХАСАГДАВ:** картын мета мөр `🕒 2 өдрийн өмнө` → **`2 өдрийн
+  өмнө`**; үл хөдлөхийн мэдээллийн мөр `📅 2023 он` → **`2023 он`**; дэлгэрэнгүй
+  хуудсанд ч мөн адил ✓. ⚠️ `MapPinIcon` pin ба `EyeIcon` **ХЭВЭЭР** — (96)/(100)-ийн
+  «icon-ыг томруул» хүсэлт тул хасагдаагүй ✓
+  <br>**(3) 📍 ХАЯГ БҮТЭН ХАРАГДАНА:** `ListingCard`-ийн хаягны `truncate` →
+  **`break-words`** ⇒ урт хаяг «…» болохгүй, доош мөр таслана (жишиг зургийн
+  «4 минутын өмнө | Улаанбаатар — Хан-Уул — Viva city») ✓. Гарчиг `text-[15px]` →
+  **`text-[16px]`** (зургийн гарчиг мэдээллийн мөрөөс ТОМ харагдана) ✓
+  <br>**(4) 🧩 ТУСДАА КАРТУУД ИЖИЛ ХЭВ РҮҮ:** «Миний зарууд»
+  (`components/MyListingsClient.jsx`) — `border border-gray-200` · `bg-gray-100` ·
+  `shadow-card` · `hover:-translate-y-0.5` **ХАСАГДАВ**, зураг `h-[150px] rounded-lg`
+  → **`aspect-[4/3] rounded-xl`**, дараалал нь **💰 үнэ (22px, `shortPriceLabel`) →
+  🏷️ гарчиг (`listingTitle` → 🚗 `carTitle`) → 📋 мэдээлэл (` · `-ээр холбосон НЭГ
+  мөр, emoji-гүй) → 📅 мета (`timeAgo` | `MapPinIcon` + хаяг)**; ⚠️ мэдээлэл АЛГА
+  БОЛООГҮЙ (өрөө/угаалгын өрөө/м²/давхар/он/тагт/гараж бүгд нэг мөрөнд) ✓,
+  `✏️ Засах`/`🗑 Устгах` товч ба функционал ХЭВЭЭР ✓. Админ
+  (`components/AdminListingsClient.jsx`) — `bg-gray-100` + `shadow-card` ХАСАГДАВ
+  (нягт жагсаалт тул хүрээ нь мөрүүдийг ялгахад ҮЛДЭВ ✓). ⚠️ `ListingCard` нь нүүр ·
+  Таалагдсан · Түүх · Нийтлэгч · Төстэй зарууд БҮГДЭД хэрэглэгддэг ⇒ нэг засвар
+  БҮХ дэлгэцэд нөлөөлнө ✓
+  <br>**(5) 🧪 ТЕСТ:** `test:card` **24 ✓** · `test:detail-ui` **24 ✓** ·
+  `test:my-grid` **9 ✓** · `test:share-btn` **6 ✓** · `test:location` **36 ✓** ·
+  `test:similar` **39 ✓** · `test:brand` **20 ✓** · `test:format` **36 ✓** ·
+  `test:sofa` **13 ✓** · `test:showname` **12 ✓** · `test:search` **77 ✓** ·
+  `test:saved-searches` **24 ✓** · `test:search-history` **27 ✓** ·
+  `cdp:card-grid` **30 OK / 0 FAIL ✓** · `cdp:detail` **29 OK / 0 FAIL ✓** ·
+  `cdp:similar` **11 OK / 0 FAIL ✓** · hydration/`validateDOMNesting` алдаа 0 ·
+  `npm run build` **EXIT=0 ✓**.
+  ⚠️ `cdp-card-grid.mjs`-ийн **4 шалгалт (86)-ийн ХУУЧИН хэвээр** байсан (код нь
+  (97)-д өөрчлөгдсөн ч тест шинэчлэгдээгүй ✗ — латент FAIL): ③ «зүрхэн ЗУРГИЙН
+  баруун дээд буланд» → «ҮНИЙ МӨРИЙН баруун захад»; ③c «❤️ N» текст → товчинд
+  `HeartIcon` SVG 1, текст 0 (шинэ `heartSvg` probe); ③d «гарчиг үнийн дээр» →
+  «үнэ гарчгийн дээр»; ④d мобайл ч мөн адил ✓. 🆕 `cdp-detail-style`-д **⑨l** —
+  бодит Chrome дээр «Таалагдсан» товчинд SVG **ЯГ 1** (`favSvg`) ✓
+  ⚠️ `cdp-card-grid.mjs` ба `cdp-detail-style.mjs`-ийн JS template литерал дотор
+  grave accent (0x60) ХЭРЭГЛЭХГҮЙ ✗ (мөрийг эрт хааж SyntaxError болно — энэ
+  удаа ч баригдав)
+  🔍 Хайх үг: `HeartIcon`, `filled={isFav}`, `aspect-[4/3]`, `break-words`,
+  `shortPriceLabel`, `heartSvg`, `favSvg`, `MyListingsClient`
 - 🚫🔍 **❤️/🔗-ИЙН «SURROUNDING BORDER» ХАСАВ + 📍/👁 ICON ДАХИН ТОМРУУЛАВ — 20×20px (2026-10-10 (100))** —
   хэрэглэгчийн хүсэлт: «what kind of Surrounding border on like and share, romove
   it quickly. Increase eye icon and location icon quickly» ⇒ (97)-д оруулсан pill

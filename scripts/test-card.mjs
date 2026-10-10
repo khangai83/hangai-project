@@ -149,7 +149,7 @@ t('🎨 (86) Карт нь ХАЙРЦАГГҮЙ (хүрээ/сүүдэр/саа�
 });
 
 t('🔀 (97) ДАРААЛАЛ: 💰 үнэ → 🏷️ гарчиг → 📋 мэдээлэл → 🕒/📍 мета (ХАМГИЙН ДООР)', () => {
-  const iTitle = CARD_CODE.indexOf('line-clamp-2 text-[15px]');
+  const iTitle = CARD_CODE.indexOf('line-clamp-2 text-[16px]');
   const iPrice = CARD_CODE.indexOf('text-[22px] font-extrabold');
   assert.ok(iTitle > 0 && iPrice > 0 && iPrice < iTitle,
     'үнэ нь гарчгийн ДЭЭР (зургийн ЯГ ДОР) БИШ ✗ (жишиг сайтын дараалал: үнэ → гарчиг → мэдээлэл)');
@@ -159,7 +159,7 @@ t('🔀 (97) ДАРААЛАЛ: 💰 үнэ → 🏷️ гарчиг → 📋 м�
 });
 
 t('🏷️ Гарчиг нь 2 МӨР (`line-clamp-2`) — `listingTitle` (0027)', () => {
-  assert.match(CARD_CODE, /line-clamp-2 text-\[15px\]/, 'гарчиг 2 мөр (`line-clamp-2 text-[15px]`) биш ✗');
+  assert.match(CARD_CODE, /line-clamp-2 text-\[16px\]/, 'гарчиг 2 мөр (`line-clamp-2 text-[16px]`) биш ✗');
   assert.match(CARD_CODE, /listingTitle\(listing\)/, '`listingTitle` ашиглахгүй ✗');
 });
 
@@ -205,10 +205,13 @@ t('🏠 (85) БАЙРНЫ мөр: 🛏 өрөө · 🚿 угаалгын өрө�
     '`rooms`/`bathrooms`/`area` буцаж орсон ✗');
   assert.ok(!/getFloorLabel|floorLabel/.test(CARD_CODE), '🏢 давхар (`getFloorLabel`) буцаж орсон ✗');
   assert.ok(!/🏢/.test(CARD_CODE), '🏢 тэмдэг карт дээр буцаж орсон ✗');
-  // ✅ 📅 «ашиглалтанд орсон он» ХЭВЭЭР (хэрэглэгч хасахыг хүсээгүй ✓)
+  // ✅ «Ашиглалтанд орсон он» ХЭВЭЭР (хэрэглэгч хасахыг хүсээгүй ✓)
+  //    🆕 (101): ⏳ `📅 {buildYear} он` → `{buildYear} он` (emoji ХАСАГДАВ —
+  //    жишиг зургийн мэдээллийн мөр нь ЗӨВХӨН текст ✓)
   assert.match(CARD_CODE, /const buildYear = Number\(listing\.build_year\) > 0/,
     '📅 `buildYear` шалгалт алга ✗');
-  assert.match(CARD_CODE, /📅 \{buildYear\} он/, '«📅 <он> он» мөр алга ✗');
+  assert.match(CARD_CODE, /\{buildYear\} он/, '«<он> он» мөр алга ✗');
+  assert.ok(!/📅/.test(CARD_CODE), '📅 emoji буцаж орсон ✗ ((101): зөвхөн текст)');
 });
 
 t('🚗 (85) АВТО-ГАРЧИГ — зар оруулагч бичээгүй бол `attrs`-аас (`carTitle`)', () => {
@@ -268,7 +271,7 @@ t('🏷️ «Зарах / Түрээслэх» badge — ЗӨВХӨН үл хө�
 
 
 // ---------- ④ ДООД МЕТА МӨР ----------
-t('📅 Доод мета мөр: 🕒 `timeAgo` | `MapPinIcon` хаяг (`EyeIcon` views ХАСАГДАВ — 🆕 (97))', () => {
+t('📅 Доод мета мөр: `timeAgo` | `MapPinIcon` хаяг (🕒 emoji ХАСАГДАВ — 🆕 (101); `EyeIcon` views ХАСАГДАВ — (97))', () => {
   assert.match(CARD_CODE, /timeAgo\(listing\.created_at\)/, 'огноо (`timeAgo`) алга ✗');
   assert.match(CARD_CODE, /address &&/, 'хаягийн хаалт алга ✗');
   assert.match(CARD_CODE, /formatAddress\(listing\)/, 'хаяг (`formatAddress`) алга ✗');
@@ -286,13 +289,27 @@ t('📅 Доод мета мөр: 🕒 `timeAgo` | `MapPinIcon` хаяг (`EyeIc
   assert.ok(!/👁/.test(CARD_CODE), '👁 emoji буцаж орсон ✗ ((96): SVG байх ЁСТОЙ)');
   // ⚠️ Мета мөр CDP-д `data-listing-meta`-аар олддог (класс мөр биш) ✓
   assert.match(CARD_CODE, /data-listing-meta/, 'мета мөрний `data-listing-meta` selector алга ✗');
+  // 🆕 (101) ⏳ `🕒 {timeAgo(...)}` emoji ХАСАГДАВ — жишиг зургийн мета мөр нь
+  //    «4 минутын өмнө | Улаанбаатар — Хан-Уул — Viva city» (дүрсГҮЙ) ✓
+  assert.ok(!/🕒/.test(CARD_CODE), '🕒 emoji буцаж орсон ✗ ((101): зөвхөн текст)');
+  // 🆕 (101) ХАЯГ нь `truncate`-ГҮЙ — БҮТЭН харагдана, урт үедээ мөр таслана ✓
+  //    (⏳ хаяг «2-р хороо, Баянгол, Ул…» гэж тайрагддаг байв ✗)
+  assert.match(CARD_CODE, /order-last w-full break-words/, 'хаягны мөр таслалт (`break-words`) алга ✗');
+  assert.ok(!/order-last w-full truncate/.test(CARD_CODE),
+    'хаяг буцаж `truncate` болов ✗ ((101): бүтэн харагдах ЁСТОЙ)');
 });
 
 t('❤️/🤍 нь favorite toggle — `preventDefault` + `stopPropagation` (Link доторх товч)', () => {
   assert.match(CARD_CODE, /toggleFavorite\(listing\.id\)/, '`toggleFavorite` дуудахгүй ✗');
   assert.match(CARD_CODE, /e\.preventDefault\(\)/, 'карт руу шилжихээс сэргийлэхгүй ✗');
   assert.match(CARD_CODE, /e\.stopPropagation\(\)/, '`stopPropagation` алга ✗');
-  assert.match(CARD_CODE, /isFav \? '❤️' : '🤍'/, '❤️/🤍 сэлгэхгүй ✗');
+  assert.match(CARD_CODE, /isFav \? 'text-red-600' : 'text-gray-900'/,
+    'зүрхний идэвхтэй/идэвхгүй өнгө (`text-red-600`/`text-gray-900`) алга ✗');
+  // 🆕 (101) ⏳ `{isFav ? '❤️' : '🤍'}` emoji → `HeartIcon` SVG (`filled={isFav}`) —
+  //    жишиг зургийн зүрхэн нь нимгэн ХАР зураастай; emoji нь OS бүрд өөр/өөрийн
+  //    өнгөтэй зурагдаж, `text-*`-г дагадаггүй байв ✗
+  assert.match(CARD_CODE, /<HeartIcon\b[^>]*filled=\{isFav\}/, '`<HeartIcon filled={isFav} />` алга ✗');
+  assert.ok(!/❤️|🤍/.test(CARD_CODE), '❤️/🤍 emoji буцаж орсон ✗ ((101): `HeartIcon` байх ЁСТОЙ)');
 });
 
 t('🛡 /favorites-ийн «Хасах» товчтой мөргөлдөхгүй — мета мөр БҮХ дэлгэцэд `pr-20` (🆕 (86))', () => {

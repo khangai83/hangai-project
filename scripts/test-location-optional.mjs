@@ -407,19 +407,23 @@ t('⑥ 🆕`ListingDetailClient` — 📍 · 🕒 · 🔖 НЭГ МӨРӨНД (�
   const row = src.slice(anchor);
   // 🆕 2026-10-10 (96): ⏳ `📍` emoji → `MapPinIcon` SVG, ⏳ `🔖` emoji ХАСАГДАВ —
   //    ⚠️ мөрийн ДАРААЛАЛ (байршил → огноо → зарын дугаар) ХӨНДӨӨГДӨӨГҮЙ ✓
+  // 🆕 (101): ⏳ `🕒 {timeAgo(...)}` → `{timeAgo(...)}` — картын мета мөртэй ЯГ
+  //    ижил (жишиг зургийн хэв: цагийн дүрсГҮЙ, зөвхөн текст) ⇒ anchor нь
+  //    ЗӨВХӨН `{timeAgo(listing.created_at)}` (emoji-гүй) ✓
   const at = row.indexOf('{address || NO_LOCATION_LABEL}');
-  const time = row.indexOf('🕒 {timeAgo(listing.created_at)}');
+  const time = row.indexOf('{timeAgo(listing.created_at)}');
   // 🆕 (97): ⏳ «Зарын дугаар:» → «ID:» (жишиг сайтын хэв) — ⚠️ зөвхөн ХАРАГДАХ
   //    «ID: <span»-ыг барина (title дахь «… бүтэн ID: …»-тай андуурахгүй ✓)
   const id = row.indexOf('ID: <span');
   assert.ok(at >= 0, 'хаяг нэг мөрөнд БАЙХГҮЙ');
-  assert.ok(time > at, '🕒 нь хаягны ДАРАА байх ёстой ✗');
-  assert.ok(id > time, 'зарын дугаар нь 🕒-ийн ДАРАА байх ёстой ✗');
+  assert.ok(time > at, 'огноо нь хаягны ДАРАА байх ёстой ✗');
+  assert.ok(id > time, 'зарын дугаар нь огнооны ДАРАА байх ёстой ✗');
   assert.ok(row.includes('{shortId}'), 'богино зарын дугаар (`shortId`) алга ✗');
-  // ⛔ РЕГРЕСС: `📍`/`🔖` emoji буцаж орвол ✗ ((96): pin SVG + iconгүй текст)
+  // ⛔ РЕГРЕСС: `📍`/`🔖`/`🕒` emoji буцаж орвол ✗ ((96)/(101): SVG + iconгүй текст)
   assert.match(row, /<MapPinIcon\b/, 'хаягны `MapPinIcon` (📍 emoji биш) алга ✗');
   assert.ok(!/📍/.test(row), '📍 emoji буцаж орсон ✗ ((96): `MapPinIcon` байх ЁСТОЙ)');
   assert.ok(!/🔖/.test(row), '🔖 emoji буцаж орсон ✗ ((96): icon ХАСАГДСАН байх ЁСТОЙ)');
+  assert.ok(!/🕒/.test(row), '🕒 emoji буцаж орсон ✗ ((101): зөвхөн текст)');
 });
 
 t('⑥ `MyListingsClient` — «📍 » хоосон үлдэхгүй (fallback текст)', () => {

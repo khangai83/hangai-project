@@ -12,8 +12,9 @@
  *   ② 🖼 ЗУРАГ нь ДЭЭРЭЭ: картын өргөнийг БҮТЭН дүүргэж (`img.w ≈ card.w`),
  *      харьцаа нь 4:3 (`img.h / img.w` = 0.75 ±0.05), мэдээллийн блок
  *      зургийн ДООР (зургийн доод ≤ агуулгын эхлэл +2px) ✓
- *   ③ ❤️ нь ЗУРГИЙН БАРУУН ДЭЭД буланд (🆕 (86)): зүрхний дээд ирмэг нь зургийн
- *      дээд ирмэгээс ≤12px ба товч нь зургийн баруун ХАГАСТ байрлана ✓
+ *   ③ ❤️ нь ҮНИЙ МӨРИЙН БАРУУН захад (🆕 (97); ⏳ (86)-д зургийн баруун дээд
+ *      буланд байв) — товчны ДОТОР `HeartIcon` SVG (🆕 (101): emoji БИШ,
+ *      текст/тоо ГАРАХГҮЙ) ✓
  *      ⚠️ Товчийг `button[aria-label]`-аар БИШ **`button[data-fav-toggle]`**-оор
  *      олно — каруселийн ‹ › товч МӨН `aria-label`-тай (эхний тохирол нь ‹ товч
  *      болж, ❤️-г алдана ✗)
@@ -22,7 +23,7 @@
  *      2 дахь зураг руу ШИЛЖИНЭ (`scrollLeft > 10`), тоолуур «🖼 2/n» болж,
  *      ЗАР РУУ ШИЛЖИХГҮЙ (`/` дээрээ үлдэнэ) · ‹ › ба цэгүүд DOM-д байна ✓
  *      ⚠️ 2+ зурагтай карт ОЛДОХГҮЙ бол (DB-ээс хамаарна) ℹ️ SKIP ✓
- *   ③d 🔀 ГАРЧИГ нь ҮНИЙ МӨРӨӨС ДЭЭР (🆕 (86) дараалал: гарчиг → мэдээлэл → үнэ)
+ *   ③d 🔀 ҮНЭ нь ГАРЧГИЙН ДЭЭР (🆕 (97) дараалал: үнэ → гарчиг → мэдээлэл → мета)
  *      · ③l карт нь ХАЙРЦАГГҮЙ (`border-top-width: 0px` ба дэвсгэр
  *      `rgba(0, 0, 0, 0)` — жишиг сайтын хэв) ✓ · 🆕 ③m (87) ЗУРГИЙН ХАЙРЦАГ
  *      ч СААРАЛГҮЙ (`bg-gray-100` арилав — «бүх саарал өнгийг үгүй хий») ✓
@@ -191,6 +192,8 @@ const PROBE = `(() => {
         price: price ? R(price) : null,
         heart: heart ? R(heart) : null,
         heartText: heart ? (heart.innerText || '').trim() : '',
+        // 🆕 (101): зүрхэн нь emoji БИШ — HeartIcon SVG байх ЁСТОЙ ✓
+        heartSvg: heart ? heart.querySelectorAll('svg').length : 0,
         // 🖼 🆕 (85) карусель: slide бүр картын өргөнтэй ИЖИЛ байх ёстой ✓
         slides: scroller ? scroller.querySelectorAll('[data-card-slide]').length : 0,
         slideW: slide0 ? R(slide0).w : 0,
@@ -247,16 +250,22 @@ check('②c Мэдээллийн блок зургийн ДООР', !!c0.img && 
 check('②d Агуулга картын хүрээнээс ГАРАХГҮЙ', !!c0.content && c0.content.b <= c0.box.b + 2,
   `content.b ${c0.content?.b} ≤ card.b ${c0.box.b}`);
 
-check('③ ❤️ нь ЗУРГИЙН БАРУУН ДЭЭД буланд (🆕 (86))', !!c0.heart && !!c0.img
-  && c0.heart.y - c0.img.y <= 12 && c0.heart.b <= c0.img.b && c0.heart.x > c0.img.x + c0.img.w / 2,
-  `heart ${c0.heart?.x},${c0.heart?.y} / img ${c0.img?.x},${c0.img?.y}`);
-check('③b ❤️ нь картын БАРУУН ХАГАСТ (зургийн баруун дээд булан)', !!c0.heart && c0.heart.x > c0.box.x + c0.box.w / 2,
+// 🆕 (101) ⏳ (86)-ийн «зургийн баруун дээд булан» → ОДОО зүрхэн нь ҮНИЙ МӨРИЙН
+//    БАРУУН ЗАХАД сууна (жишиг зургийн карт: «218 сая ₮          ♡») ✓
+check('③ ❤️ нь ҮНИЙ МӨРИЙН БАРУУН захад (🆕 (97)/(101))', !!c0.heart && !!c0.price
+  && c0.heart.y >= c0.price.y - 12 && c0.heart.b <= c0.price.b + 12
+  && c0.heart.x > c0.box.x + c0.box.w / 2,
+  `heart ${c0.heart?.x},${c0.heart?.y} / price ${c0.price?.x},${c0.price?.y}`);
+check('③b ❤️ нь картын БАРУУН ХАГАСТ', !!c0.heart && c0.heart.x > c0.box.x + c0.box.w / 2,
   `heart.x ${c0.heart?.x} > ${Math.round(c0.box.x + c0.box.w / 2)}`);
 /** ⚠️ Emoji-гийн variation selector (U+FE0F) нь regex-ийг эвддэг тул цэвэрлэнэ */
 const heartClean = (c0.heartText || '').replace(/[\uFE0E\uFE0F]/g, '');
-check('③c ❤️/🤍 товч нь тоотой («❤️ N»/«🤍 N»)', /^[❤🤍]\s*\d+$/u.test(heartClean), c0.heartText);
-check('③d Гарчиг нь ҮНИЙ мөрөөс ДЭЭР (🆕 (86) дараалал: гарчиг → мэдээлэл → үнэ)',
-  !!c0.title && !!c0.price && c0.title.y < c0.price.y, `title.y ${c0.title?.y} < price.y ${c0.price?.y}`);
+// 🆕 (101) ⏳ «❤️ N»/«🤍 N» emoji текст → ОДОО `HeartIcon` SVG (текст ГАРАХГҮЙ):
+//    emoji нь OS бүрд өөрөөр зурагдаж, `text-*` өнгийг дагадаггүй байв ✗
+check('③c ❤️ товч нь `HeartIcon` SVG (emoji/тоо БИШ, 🆕 (101))',
+  c0.heartSvg === 1 && heartClean === '', `svg ${c0.heartSvg} · текст «${c0.heartText}»`);
+check('③d ҮНЭ нь ГАРЧГИЙН ДЭЭР (🆕 (97) дараалал: үнэ → гарчиг → мэдээлэл → мета)',
+  !!c0.title && !!c0.price && c0.price.y < c0.title.y, `price.y ${c0.price?.y} < title.y ${c0.title?.y}`);
 check('③l 🎨 (86) Карт нь ХАЙРЦАГГҮЙ (хүрээ/сүүдэр/саарал БАЙХГҮЙ)',
   c0.border === '0px' && c0.bg === 'rgba(0, 0, 0, 0)', `border ${c0.border} · bg ${c0.bg}`);
 check('③m 🎨 (87) ЗУРГИЙН хайрцаг ч СААРАЛГҮЙ (`bg-gray-100` арилав)',
@@ -328,9 +337,10 @@ check('④b Мобайл: НЭГ багана (2 дахь карт нь 1-ийн
 check('④c Мобайл: зураг бүтэн өргөн + 4:3', !!m0.img
   && Math.abs(m0.img.w - m0.box.w) <= 2 && m0.img.h / m0.img.w >= 0.70 && m0.img.h / m0.img.w <= 0.80,
   m0.img ? `${m0.img.w}×${m0.img.h}` : '—');
-check('④d Мобайл: ❤️ нь зургийн БАРУУН ДЭЭД буланд', !!m0.heart && !!m0.img
-  && m0.heart.y - m0.img.y <= 12 && m0.heart.b <= m0.img.b && m0.heart.x > m0.img.x + m0.img.w / 2,
-  `heart ${m0.heart?.x},${m0.heart?.y} / img ${m0.img?.x},${m0.img?.y}`);
+check('④d Мобайл: ❤️ нь ҮНИЙ МӨРИЙН БАРУУН захад (🆕 (101))', !!m0.heart && !!m0.price
+  && m0.heart.y >= m0.price.y - 12 && m0.heart.b <= m0.price.b + 12
+  && m0.heart.x > m0.box.x + m0.box.w / 2,
+  `heart ${m0.heart?.x},${m0.heart?.y} / price ${m0.price?.x},${m0.price?.y}`);
 await shot('/tmp/card-grid-home-390.png');
 
 // ---------- ④ /favorites — 1280px ----------

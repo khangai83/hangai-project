@@ -10,6 +10,16 @@
 //      ③ Зураг БҮХ дэлгэцэд бүтэн өргөн (`w-full`) — `sm:h-20 sm:w-[100px]` ХАСАГДСАН ✓
 //      ④ Товчнууд БҮХ дэлгэцэд ХЭВТЭЭ мөрөнд — `sm:w-auto sm:flex-col` ХАСАГДСАН ✓
 //
+// 🆕 (101) 2026-10-10 — КАРТ НЬ ЗАРЫН КАРТТАЙ (`ListingCard`) ИЖИЛ ХЭВ РҮҮ ШИЛЖИВ
+//    (хэрэглэгчийн хүсэлт: «attached 2 cards, study and change my card
+//    information … change to all detail card»). Энэ тест тэр гэрээг бариулна:
+//      ⑤ 🖼 Зураг 4:3 (`aspect-[4/3]`) + `rounded-xl` — ⏳ `h-[150px] rounded-lg
+//         bg-gray-100` ХАСАГДСАН ✓
+//      ⑥ ⛔ ХАЙРЦАГ/СҮҮДЭР/СААРАЛ дүүргэлт БАЙХГҮЙ (`border border-gray-200`,
+//         `bg-gray-100`, `shadow-card`, `hover:-translate-y-0.5` — бүгд ХАСАГДСАН) ✓
+//      ⑦ 💰 ҮНЭ хамгийн ЭХЭНД, 22px bold (`shortPriceLabel`; ⏳ `priceLabel` БИШ) ✓
+//      ⑧ Мэдээллийн/мета мөр нь ЗӨВХӨН ТЕКСТ (emoji ХАСАГДАВ) + `MapPinIcon` pin ✓
+//
 // ⚠️ ЗӨВХӨН ХАРАГДАЦ: fetch/DB/payload/линк/товчны үйлдэл ХӨНДӨӨГДӨӨГҮЙ ✓
 //
 // АЖИЛЛУУЛАХ:  npm run test:my-grid
@@ -61,10 +71,13 @@ t('🧱 Карт бүр ВЕРТИКАЛЬ — `sm:flex-row` (хавтээ ка�
   assert.ok(!MY.includes('sm:flex-row'), '`sm:flex-row` үлдсэн ✗');
 });
 
-t('🖼 Зураг БҮХ дэлгэцэд бүтэн өргөн — `sm:h-20 sm:w-[100px]` ХАСАГДСАН ✓', () => {
+t('🖼 Зураг БҮХ дэлгэцэд бүтэн өргөн + 4:3 (`aspect-[4/3]`, 🆕 (101)) ✓', () => {
   assert.ok(!MY.includes('sm:h-20 sm:w-[100px]'), 'жижиг thumbnail (`sm:h-20 sm:w-[100px]`) үлдсэн ✗');
-  assert.ok(MY.includes('className="h-[150px] w-full shrink-0 overflow-hidden rounded-lg bg-gray-100"'),
-    'зургийн `w-full` класс дутуу/өөр ✗');
+  // 🆕 (101): ⏳ `h-[150px] … rounded-lg bg-gray-100` → `aspect-[4/3] … rounded-xl`
+  //    (картын хэв рүү шилжив — саарал дүүргэлтгүй ✓)
+  assert.ok(MY.includes('className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl"'),
+    'зургийн 4:3 класс дутуу/өөр ✗');
+  assert.ok(!MY.includes('h-[150px]'), 'хуучин `h-[150px]` зургийн хайрцаг үлдсэн ✗');
 });
 
 t('🔘 Товчнууд БҮХ дэлгэцэд ХЭВТЭЭ мөрөнд — `sm:w-auto sm:flex-col` ХАСАГДСАН ✓', () => {
@@ -78,6 +91,38 @@ t('✅ ФУНКЦИОНАЛ ХӨНДӨӨГДӨӨГҮЙ — зарын линк �
   assert.ok(MY.includes('>🗑 Устгах</button>'), '«🗑 Устгах» дутуу ✗');
   assert.ok(MY.includes('onClick={() => openEdit(l)}'), '`openEdit(l)` дутуу ✗');
   assert.ok(MY.includes('onClick={() => handleDelete(l)}'), '`handleDelete(l)` дутуу ✗');
+});
+
+// ---------- 🆕 (101) КАРТ НЬ ЖИШИГ ЗУРГИЙН ХЭВ РҮҮ ----------
+t('⛔ (101) ХАЙРЦАГ / СҮҮДЭР / СААРАЛ дүүргэлт БАЙХГҮЙ (картын хэв) ✓', () => {
+  /** ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «change to all detail card» ⇒ «Миний зарууд»-ын карт
+   *  ч `ListingCard`-тай ИЖИЛ: хайрцаг/сүүдэр/саарал БАЙХГҮЙ ✓ */
+  assert.ok(!MY.includes('bg-gray-100'), 'саарал дүүргэлт (`bg-gray-100`) буцаж орсон ✗');
+  assert.ok(!MY.includes('shadow-card'), 'сүүдэр (`shadow-card`) буцаж орсон ✗');
+  assert.ok(!MY.includes('hover:-translate-y-0.5'), 'hover «үсрэлт» буцаж орсон ✗');
+  assert.ok(!MY.includes('border border-gray-200'), 'картын хүрээ буцаж орсон ✗');
+});
+
+t('💰 (101) ҮНЭ хамгийн ЭХЭНД — 22px bold `shortPriceLabel` ✓', () => {
+  assert.ok(MY.includes('text-[22px] font-extrabold'), '22px bold үнэ алга ✗');
+  assert.ok(MY.includes('shortPriceLabel(l)'), '`shortPriceLabel` ашиглахгүй ✗');
+  assert.ok(!MY.includes('priceLabel(l)'), 'урт `priceLabel` буцаж орсон ✗');
+  const iLink = MY.indexOf('href={`/listings/${l.id}`}');
+  const iPrice = MY.indexOf('text-[22px] font-extrabold');
+  const iTitle = MY.indexOf('line-clamp-2 text-[16px]');
+  assert.ok(iLink > 0 && iPrice > iLink && iTitle > iPrice,
+    'картын дараалал буруу (зураг → үнэ → гарчиг байх ЁСТОЙ) ✗');
+});
+
+t('📋 (101) Мэдээллийн/мета мөр ЗӨВХӨН ТЕКСТ + `MapPinIcon` pin ✓', () => {
+  /** Жишиг зургийн карт дээр мэдээлэл нь «20,400 км · Автомат · 4.0 л · Бензин»,
+   *  мета нь «4 минутын өмнө | Улаанбаатар — Хан-Уул — Viva city» — дүрсГҮЙ ✓
+   *  ⇒ ⏳ тусдаа `<p>📍/🛏/🚿/📐/🏢/📅/🚪/🅿️ …</p>` мөрүүд ХАСАГДАВ. */
+  assert.ok(MY.includes('<MapPinIcon'), 'хаягны `MapPinIcon` алга ✗');
+  assert.ok(!/📍|🕒|📅|🛏|🚿|📐|🏢|🚪|🅿️/.test(MY), 'хуучин emoji мэдээллийн мөр буцаж орсон ✗');
+  assert.ok(MY.includes('break-words'), 'хаягны мөр таслалт (`break-words`) алга ✗');
+  // ⚠️ МЭДЭЭЛЭЛ АЛГА БОЛООГҮЙ — нэг мөрөнд « · »-ээр холбогдсон хэвээр ✓
+  assert.ok(MY.includes(".filter(Boolean).join(' · ')"), 'мэдээллийн мөрийн нэгтгэл алга ✗');
 });
 
 console.log(`\n✅ Нийт ${passed} шалгалт амжилттай — «Миний зарууд» нь 🖥 DESKTOP дээр 2-3 баганатай (вертикаль карт) ✓\n`);

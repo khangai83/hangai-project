@@ -353,8 +353,8 @@ t('⑪ (96) Мета мөр: `📍` → `MapPinIcon` SVG · `🔖` ХАСАГД�
    *  өмнөх шиг болго. 🔖 Зарын дугаарыг өмнөх icon ийг үгүй хий» ⇒ ① хаягны
    *  `📍` emoji → `MapPinIcon` (🗺 «Газрын зураг» товчны pin-тай ЯГ ИЖИЛ SVG)
    *  ② зарын дугаарын `🔖` emoji ХАСАГДАВ (текст нь дангаараа ойлгомжтой ✓) */
-  assert.match(DET_CODE, /import \{ ?MapPinIcon, EyeIcon ?\} from '\.\/HeaderIcons'/,
-    '`MapPinIcon`/`EyeIcon` нь `./HeaderIcons`-аас импортлогдоогүй ✗');
+  assert.match(DET_CODE, /import \{ ?MapPinIcon, EyeIcon, HeartIcon ?\} from '\.\/HeaderIcons'/,
+    '`MapPinIcon`/`EyeIcon`/`HeartIcon` нь `./HeaderIcons`-аас импортлогдоогүй ✗');
   assert.match(DET_CODE, /<MapPinIcon\b/, 'хаягны `MapPinIcon` (📍 emoji биш) алга ✗');
   assert.ok(!/📍/.test(DET_CODE), '📍 emoji буцаж орсон ✗ ((96): `MapPinIcon` байх ЁСТОЙ)');
   assert.ok(!/🔖/.test(DET_CODE), '🔖 emoji буцаж орсон ✗ ((96): icon ХАСАГДСАН байх ЁСТОЙ)');
@@ -379,6 +379,19 @@ t('⑪ (97) 👁 ҮЗСЭН нь `EyeIcon` SVG — толгойн мета мө�
   // ⛔ (97): «{viewCount} үзсэн» урт текст БУЦАЖ ОРОХ ЁСГҮЙ (зөвхөн тоо) ✓
   assert.ok(!DET_CODE.includes('{viewCount} үзсэн'),
     '«{viewCount} үзсэн» буцаж орсон ✗ ((97): зөвхөн «{viewCount}» тоо)');
+});
+
+t('⑪ (101) ❤️/🤍 EMOJI → `HeartIcon` SVG — карттай ЯГ ИЖИЛ ✓', () => {
+  /** ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «change to all detail card … it's included Үзсэн,
+   *  Таалагдсан, Хуваалцах design and position change to like attached photo»
+   *  ⇒ «Таалагдсан» нь зургийн хэвээр НИМГЭН ХАР ЗУРААСТАЙ зүрхэн болов:
+   *  ⏳ `{isFav ? '❤️' : '🤍'}` emoji → **`<HeartIcon filled={isFav} />`** (`(101)`)
+   *  ⚠️ Карт дахь зүрхэнтэй (`ListingCard`) ЯГ ИЖИЛ икон/төлөв ✓ */
+  assert.match(DET_CODE, /<HeartIcon\b[^>]*filled=\{isFav\}/, '`<HeartIcon filled={isFav} />` алга ✗');
+  assert.ok(!/❤️|🤍/.test(DET_CODE), '❤️/🤍 emoji буцаж орсон ✗ ((101): `HeartIcon` байх ЁСТОЙ)');
+  assert.ok(DET_CODE.includes('{likeCount}'), 'таалагдсан тоо (`{likeCount}`) ХӨНДӨӨГДСӨН ✗');
+  // 🆕 (101) `🕒` emoji ХАСАГДАВ — картын мета мөртэй ЯГ ижил (зөвхөн текст) ✓
+  assert.ok(!/🕒/.test(DET_CODE), '🕒 emoji буцаж орсон ✗ ((101): зөвхөн текст)');
 });
 
 t('⑪ (96) «Зарын дэлгэрэнгүй» хүснэгтэд icon ХАРАГДАХГҮЙ (`{f.label}` — `f.icon` биш) ✓', () => {

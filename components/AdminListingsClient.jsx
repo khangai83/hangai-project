@@ -230,7 +230,11 @@ export default function AdminListingsClient() {
             const isSell = row.category === 'sell';
             const imgCount = Array.isArray(row.images) ? row.images.length : 0;
             return (
-              <div key={row.id} className="rounded-xl border border-gray-200 bg-gray-100 p-4 shadow-card">
+              /* 🆕 (101) — ⏳ `bg-gray-100` + `shadow-card` («хуучин карт»-ын хэв)
+                 ХАСАГДАВ: бүх зарын карт нь одоо ХАЙРЦАГГҮЙ/сүүдэргүй
+                 (жишиг зургийн хэв, `③l` гэрээ). ЭНЭ нь админы нягт ЖАГСААЛТ
+                 (модерацийн хэрэгсэл) тул хүрээ нь мөрүүдийг ялгахад ҮЛДЭВ ✓ */
+              <div key={row.id} className="rounded-xl border border-gray-200 p-4">
                 <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span className={`badge ${isSell ? 'badge-sell' : 'badge-rent'}`}>{isSell ? 'Зарах' : 'Түрээс'}</span>
                   <span className="text-[13px] font-semibold text-gray-800">

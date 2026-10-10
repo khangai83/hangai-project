@@ -344,9 +344,11 @@ const shotEl = async (sel, file, { scale = 3, pad = 10, scroll = false } = {}) =
 //   ⇒ ⏳ emoji → SVG (`MapPinIcon`/`EyeIcon`), 🔖 ба шинж чанарын icon ХАСАГДАВ ✓
 //   ⚠️ ЭНД БОДИТ DOM + `getComputedStyle` ХЭМЖИГДЭНЭ (эх кодын гэрээ БИШ):
 //      pin 16px + `vertical-align: -3px` (хаягны `truncate` эвдрэхгүй) ·
-//      нүд 18px ба өнгө нь тоолуурынхаас ТОД · `dt` icon/svg 0 · emoji 0 ✓
+//      нүд 20px ба өнгө нь тоолуурынхаас ТОД · `dt` icon/svg 0 · emoji 0 ✓
 //   🆕 (97)(98): `[data-listing-actions]` нь мета мөртэй НЭГ div болсон ⇒
-//      pin = SVG[0], нүд = SVG[1] (❤️/🤍 ба 🔗 нь emoji — SVG БИШ) ✓
+//      pin = SVG[0], нүд = SVG[1] ✓
+//   🆕 (101): ❤️/🤍 emoji → `HeartIcon` SVG ⇒ зүрхэн = SVG[2] (🔗 нь ХЭВЭЭР
+//      emoji/текст — `ShareButton` нь `🔗` тэмдэгт + «Хуваалцах» текст) ✓
 const ICONS = `(() => {
   const EMO = ['📍', '🔖', '👁'];
   const SPEC = ['🏷️', '🚗', '📅'];
@@ -358,7 +360,9 @@ const ICONS = `(() => {
   const metaSvgs = meta ? [...meta.querySelectorAll('svg')] : [];
   //   🆕 (97): 👁/❤️/🔗 нь толгойн мета мөр рүү шилжсэн ⇒ [data-listing-actions]
   //   === [data-listing-meta] (НЭГ л div) тул SVG-үүд нэг дор: [0] 📍 pin,
-  //   [1] 👁 нүд (❤️/🤍 ба 🔗 нь emoji — SVG БИШ) ✓
+  //   [1] 👁 нүд, [2] ❤️ зүрхэн (🆕 (101) — ⏳ emoji байв) ✓
+  //   ⚠️ favBtn.querySelectorAll('svg') нь ЯГ 1 байх ЁСТОЙ (⑨l) — 🔗 товч нь
+  //      текст/emoji тул энэ тоонд ОРОХГҮЙ ✓
   //   ⚠️ (99) ЭНЭ МӨРҮҮД НЬ JS ТЕМПЛЕЙТ МӨР ДОТОР — grave accent (0x60) ХЭРЭГЛЭЖ
   //      БОЛОХГҮЙ ✗ (тэр тэмдэгт мөрийг эрт хааж, ICONS нь ReferenceError-оор
   //      унадаг байв — (97)-д нэмсэн тайлбар дээр гарсан латент алдаа)
@@ -416,6 +420,10 @@ const ICONS = `(() => {
       shareBorder: shareBtn ? parseFloat(getComputedStyle(shareBtn).borderTopWidth) || 0 : null,
       favBg: favBtn ? getComputedStyle(favBtn).backgroundColor : null,
       shareBg: shareBtn ? getComputedStyle(shareBtn).backgroundColor : null,
+      //   🆕 (101) ❤️/🤍 EMOJI → HeartIcon SVG ⇒ meta мөрд SVG-ийн тоо 3
+      //   (📍 pin · 👁 нүд · ❤️ зүрхэн); товчин дотор ТЕКСТ (тоо) ч БАЙНА ✓
+      favSvg: favBtn ? favBtn.querySelectorAll('svg').length : 0,
+      favText: favBtn ? flat(favBtn.textContent) : null,
     },
     dt: {
       count: dts.length,
@@ -469,6 +477,12 @@ check('⑨j 🚫 «Surrounding border» ХАСАГДСАН (🆕 (100)) — ❤�
 check('⑨k 🔍 ICON ТОМРУУЛАВ (🆕 (100)) — 📍 pin === 👁 нүд (20×20px, ХОЁР ИЖИЛ) — «icon-ыг томруул» хүсэлт ✓',
   !!ic.pin && !!ic.eye && ic.pin.w === 20 && ic.pin.h === 20 && ic.eye.w === 20 && ic.eye.h === 20,
   ic.pin && ic.eye ? `📍 ${ic.pin.w}×${ic.pin.h}px · 👁 ${ic.eye.w}×${ic.eye.h}px` : '—');
+/*   🆕 (101) ❤️/🤍 EMOJI → `HeartIcon` SVG (хэрэглэгчийн хавсаргасан жишиг зургийн
+     хэв: НИМГЭН ХАР ЗУРААСТАЙ зүрхэн). ⏳ emoji нь OS бүрд өөрөөр зурагдаж,
+     `text-*` өнгийг дагадаггүй байв ✗ ⇒ товчин дотор SVG нь ЯГ 1 байх ЁСТОЙ ✓ */
+check('⑨l ❤️ EMOJI → SVG (🆕 (101)) — «Таалагдсан» товчинд `HeartIcon` SVG 1 ширхэг (emoji дүрс 0)',
+  !!ic.gap && ic.gap.favSvg === 1,
+  ic.gap ? `fav svg ${ic.gap.favSvg} · текст «${ic.gap.favText}»` : '—');
 if (ic.metaFound) await shotEl('[data-listing-meta]', '/tmp/detail-meta-1280.png');
 if (ic.actionsFound) await shotEl('[data-listing-actions]', '/tmp/detail-actions-1280.png', { scroll: true });
 

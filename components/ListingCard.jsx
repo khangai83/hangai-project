@@ -9,7 +9,7 @@ import VerifiedBadge from './VerifiedBadge';
 //    ① 📍 → `MapPinIcon` (🗺 «Газрын зураг» товчны pin-тай ЯГ ИЖИЛ).
 //    ⚠️ 🆕 (97) Карт дээр 👁 «үзсэн» тоо ХАСАГДАВ — жишиг сайтын карт нь зөвхөн
 //       «🕒 огноо | 📍 хаяг» харуулна ⇒ `EyeIcon` импорт хэрэггүй болов ✓
-import { MapPinIcon } from './HeaderIcons';
+import { MapPinIcon, HeartIcon } from './HeaderIcons';
 
 /**
  * 🖼 КАРТ ДЭЭРХ ЦЭГИЙН ДЭЭД ХЯЗГААР (🆕 (85)) — 5-аас олон зурагтай үед цэгүүд
@@ -37,8 +37,22 @@ const MAX_CARD_DOTS = 5;
  *   │  340 сая ₮ ✅            ❤️      │ ← 💰 ҮНЭ (22px, bold) + ✅ | ❤️ баруун захад
  *   │  Toyota Vellfire, 2017/2026      │ ← 🏷️ гарчиг (🚗 АВТО-гарчиг, 2 мөр)
  *   │  135,500 км · Автомат · 2.5 л    │ ← 📋 мэдээллийн мөр
- *   │  🕒 27 минутын өмнө | (pin) Баянзүрх │ ← 📅 мета мөр (ХАМГИЙН ДООР)
+ *   │  27 минутын өмнө | (pin) Баянзүрх│ ← 📅 мета мөр (ХАМГИЙН ДООР, emoji-гүй)
  *   └─────────────────────────────────┘
+ *
+ * 🆕 (101) 2026-10-10 — «ХАВСАРГАСАН 2 КАРТ ШИГ» (хэрэглэгчийн хүсэлт):
+ *   «change to all detail card … attached 2 cards, study and change my card
+ *    information. one is car card, one is product card» ⇒ карт нь жишиг зургийн
+ *    хэв рүү БҮРЭН нийцэв:
+ *   ① `🤍`/`❤️` EMOJI → **`HeartIcon` SVG** (`components/HeaderIcons.jsx`,
+ *      `filled={isFav}`) — зургийн зүрхэн нь нимгэн ХАР зураастай; ⏳ emoji нь
+ *      OS бүрд өөр өөрөөр зурагдаж, `text-*` өнгийг дагадаггүй байв ✗
+ *   ② `🕒` ба `📅` EMOJI ХАСАГДАВ — зургийн мэдээллийн мөр нь ЗӨВХӨН текст
+ *      («20,400 км · Автомат · 4.0 л · Бензин», «4 минутын өмнө | Улаанбаатар …»)
+ *   ③ ХАЯГ нь `truncate`-ГҮЙ — БҮТЭН харагдана, урт үедээ доош мөр таслана ✓
+ *   ④ Гарчиг 15px → **16px** (зургийн гарчиг мэдээллийн мөрөөс ТОМ харагдана) ✓
+ *   ⚠️ «Миний зарууд» (`MyListingsClient`) ба админ (`AdminListingsClient`)-ийн
+ *      ТУСДАА картууд ч ижил хэв рүү шилжив (хайрцаг/сүүдэр/саарал ХАСАГДАВ) ✓
  *
  * 🆕 (86) 2026-10-09 — «жишиг сайтын design» 3 ДАХЬ ЗАСВАР (хэрэглэгчийн хүсэлт:
  *    «like ийг картныхаа баруун дээд буланд гаргачих … картны design харагдах
@@ -381,11 +395,15 @@ export default function ListingCard({ listing, author, attrsLine }) {
             }}
             aria-label={isFav ? 'Таалагдсан жагсаалтаас хасах' : 'Таалагдсан жагсаалтад нэмэх'}
             title={isFav ? 'Таалагдсанаас хасах' : 'Надад таалагдсан'}
-            className={`-mr-1 -mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[18px] leading-none transition hover:bg-red-50 hover:text-red-600 ${
-              isFav ? 'text-red-600' : 'text-gray-700'
+            className={`-mr-1 -mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition hover:text-red-600 ${
+              isFav ? 'text-red-600' : 'text-gray-900'
             }`}
           >
-            {isFav ? '❤️' : '🤍'}
+            {/* 🆕 (101) ⏳ `{isFav ? '❤️' : '🤍'}` emoji → **`HeartIcon` SVG**
+                (жишиг зургийн хэв: нимгэн ХАР зураастай зүрхэн). ⏳ emoji нь OS
+                бүрд өөр өөрөөр/өөрийн өнгөтэй зурагдаж, `text-*`-г дагадаггүй байв ✗
+                ⇒ одоо `currentColor` — идэвхтэй үед `text-red-600`, `filled` ✓ */}
+            <HeartIcon className="h-6 w-6" filled={isFav} />
           </button>
         </div>
 
@@ -395,7 +413,7 @@ export default function ListingCard({ listing, author, attrsLine }) {
             ⚠️ `line-clamp-2` (**2 мөр**) + `text-[15px] font-semibold`
                ХӨНДӨӨГДӨӨГҮЙ (`test-card` гэрээ ✓) */ }
         {title && (
-          <div className="mt-1 line-clamp-2 text-[15px] font-semibold leading-snug text-gray-900" title={title}>
+          <div className="mt-1 line-clamp-2 text-[16px] font-semibold leading-snug text-gray-900" title={title}>
             {title}
           </div>
         )}
@@ -413,7 +431,10 @@ export default function ListingCard({ listing, author, attrsLine }) {
         {isRealEstate
           ? buildYear > 0 && (
               <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-gray-600">
-                <span title="Ашиглалтанд орсон он">📅 {buildYear} он</span>
+                {/* 🆕 (101) ⏳ `📅 {buildYear} он` → **`{buildYear} он`** (emoji ХАСАГДАВ)
+                    — жишиг зургийн карт дээр мэдээллийн мөр нь ЗӨВХӨН текст
+                    («20,400 км · Автомат · 4.0 л · Бензин»), icon/emoji БАЙХГҮЙ ✓ */}
+                <span title="Ашиглалтанд орсон он">{buildYear} он</span>
               </div>
             )
           : attrsLine && (
@@ -443,10 +464,17 @@ export default function ListingCard({ listing, author, attrsLine }) {
                ЯГ ИЖИЛ SVG; дэлгэрэнгүй хуудасныхтай ИЖИЛ ✓). ⚠️ SVG нь ТЕКСТИЙН
                УРСГАЛД (`inline-block`) орсон тул хаягны `truncate` ХӨНДӨӨГДӨХГҮЙ ✓
             ⚠️ `data-listing-meta` — CDP/тестийн ТОГТВОРТОЙ selector ✓ */}
-        <div data-listing-meta className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-0.5 pr-20 pt-0.5 text-[13px] text-gray-500 sm:flex-nowrap">
-          <span className="whitespace-nowrap" title="Нийтэлсэн огноо">🕒 {timeAgo(listing.created_at)}</span>
+        <div data-listing-meta className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-0.5 pr-20 pt-0.5 text-[13px] text-gray-500 sm:flex-nowrap">
+          {/* 🆕 (101) ⏳ `🕒 {timeAgo(...)}` → **`{timeAgo(...)}`** — жишиг зургийн
+              карт дээр «4 минутын өмнө | Улаанбаатар — Хан-Уул — Viva city» гэж
+              ЦАГИЙН дүрсГҮЙ, зөвхөн текст + `|` тусгаарлагчтай харагдана ✓ */}
+          <span className="whitespace-nowrap" title="Нийтэлсэн огноо">{timeAgo(listing.created_at)}</span>
           {address && (
-            <span className="order-last w-full truncate sm:order-none sm:w-auto sm:flex-1" title={address}>
+            /* 🆕 (101) `truncate` ХАСАГДАВ (⏳ хаяг «…» болж тайрагддаг байв ✗) —
+               жишиг зургийн хэв: хаяг нь БҮТЭН харагдана, урт үедээ ДООШОО
+               МӨР таслан (2 мөр) зөөгдөнө (`break-words`) ✓
+               ⚠️ `sm:flex-1` — хаяг нь үлдсэн зайг эзэлж, дотооддоо мөр таслана ✓ */
+            <span className="order-last w-full break-words sm:order-none sm:w-auto sm:flex-1" title={address}>
               <span aria-hidden="true" className="mr-1.5 hidden text-gray-300 sm:inline">|</span>
               <MapPinIcon className="mr-1 inline-block h-5 w-5 align-[-4px]" />
               {address}
