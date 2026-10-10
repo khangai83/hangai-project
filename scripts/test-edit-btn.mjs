@@ -154,8 +154,14 @@ t('✅ Дүрэм: «✏️ Засах» бичгийн ОЙР (`±250 тэмд�
 
 t('✅ Дүрэм: ногоон нь ЗӨВХӨН «Засах» товчид — бусад товч `success` болоогүй ✓', () => {
   for (const [name, src] of [['MyListingsClient', MY], ['MyListingsStatsPanel', STATS]]) {
-    const green = (src.match(/btn-success/g) || []).length;
-    const labels = (src.match(/✏️ Засах/g) || []).length;
+    // ⚠️ ЗӨВХӨН ЖИНХЭНЭ КОДЫГ тоолно — `/* … */` (JSX `{/* … */}` ч) ба `//`
+    //    комментуудыг ХАСААД (🆕 2026-10-10 (106): ⏳ (105)-д `MyListingsClient`-д
+    //    «миний зарын УДИРДЛАГЫН хуудас (`✏️ Засах`/`🗑 Устгах` товчтой)» гэсэн
+    //    коммент нэмэгдсэнээр «✏️ Засах» 3 удаа тоологдож, энэ шалгалт ХУУЧИРЧ
+    //    буруу унах болсон ✗ ⇒ зөвхөн товчны бичиг/классыг тоолдог болов ✓)
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+    const green = (code.match(/btn-success/g) || []).length;
+    const labels = (code.match(/✏️ Засах/g) || []).length;
     assert.ok(labels > 0 && green >= labels,
       `${name}: ногоон товч (${green}) нь «✏️ Засах» (${labels})-аас цөөн ✗`);
   }

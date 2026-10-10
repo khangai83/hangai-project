@@ -13,9 +13,9 @@
  *      ⏳ (62)-ийн шалгалт `rounded-lg bg-gray-50 p-3` гэж ШААРДАЖ байв —
  *      `git show HEAD`-ийн `ListingDetailClient.jsx:854` нь класс нь `bg-gray-50`-ГҮЙ
  *      гэдгийг батална ⇒ тэр шалгалт 2026-10-08-аас хойш ҮРГЭЛЖ УНАЖ байв ✗ (зассан ✓)
- *      🆕 (103): карт нь ОДОО ХОЁР газар (① «📋 Зарын дэлгэрэнгүй» хүснэгтийн
- *      ХАЖУУД ② баруун `aside`) — markup нь нэг эх сурвалж (`AdvertiserCard`) тул
- *      линк/текст/аватар ЯГ ИЖИЛ; ⚠️ тоо нь ЯГ 2 (1 = карт алга ✗ · 3+ = давхардсан ✗)
+ *      ⏳ (103): карт нь ХОЁР газар (① хүснэгтийн ХАЖУУД ② баруун `aside`)
+ *      гардаг байв ⇒ 🆕 (106) ДАВХАР хувилбар ХАСАГДАВ — карт (ба «📋 N
+ *      идэвхтэй зар» линк) ЗӨВХӨН `aside`-д; ⚠️ линк ЯГ 1 (2+ = давхардсан ✗)
  *   ③ Хэмжээ: картаас гадагш гарсан элемент 0 · хуудасны хэвтээ гүйлт 0 ✓
  *   ④ БОДИТ ХУЛГАНААР дарахад `/sellers/<user_id>` руу шилжинэ ✓
  *   ⑤ 📱 390px мобайл: линк харагдана, overflow 0 ✓ · консол дээр JS exception 0 ✓
@@ -207,15 +207,16 @@ check('② хүрээ нь `rounded-lg p-3` + `hover:bg-primary-light` ХАДГ�
   /rounded-lg p-3/.test(p.boxClass) && /hover:bg-primary-light/.test(p.boxClass) && !/bg-gray-50|bg-gray-100/.test(p.boxClass),
   p.boxClass.slice(0, 96));
 
-// 🆕 2026-10-10 (103) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Display the advertiser's information
-//    alongside the ad details» ⇒ нийтлэгчийн карт нь ОДОО ХОЁР газар:
-//    ① «📋 Зарын дэлгэрэнгүй» хүснэгтийн ХАЖУУД (`[data-component="AdvertFeaturesApp"]`)
-//    ② баруун `aside`. Markup нь ГАНЦ эх сурвалж (`AdvertiserCard`) тул линк/текст
-//    ЯГ ИЖИЛ байх ЁСТОЙ; ⚠️ тоо нь ЯГ 2 — 1 бол карт алга болсон ✗, 3+ бол markup
-//    ДАВХАРДСАН (нэг эх сурвалж алдагдсан) ✗
+// 🆕 2026-10-10 (106) — ⏳ (103)-ын «Display the advertiser's information
+//    alongside the ad details» хүсэлтээр нийтлэгчийн карт нь ХОЁР газар
+//    (📋 хүснэгтийн ХАЖУУД + `aside`) гардаг байв ⇒ 🆕 (106) «delete the
+//    advertiser card that was created most recently» ⇒ хүснэгтийн хажуугийн
+//    ДАВХАР карт ХАСАГДАВ. Карт (ба «📋 N идэвхтэй зар» линк) нь ЗӨВХӨН
+//    `aside`-д — markup нь ГАНЦ эх сурвалж (`AdvertiserCard`) тул линк ЯГ 1
+//    байх ЁСТОЙ; ⚠️ 2+ бол markup ДАВХАРДСАН (нэг эх сурвалж алдагдсан) ✗
 const dup = await evalJs(`(() => { const l = [...document.querySelectorAll('a')].filter((x) => x.textContent.includes('идэвхтэй зар')); return { total: l.length, inFeatures: l.filter((x) => !!x.closest('[data-component="AdvertFeaturesApp"]')).length, inAside: l.filter((x) => !!x.closest('aside')).length, box: document.querySelectorAll('[data-advertiser-card]').length }; })()`);
-check('② (103) карт 2 газар (хүснэгтийн хажууд + `aside`) — линк ЯГ 2, markup ДАВХАРДААГҮЙ',
-  dup.total === 2 && dup.inFeatures === 1 && dup.inAside === 1 && dup.box === 1,
+check('② (106) карт ГАНЦ газар (`aside`) — линк ЯГ 1 · хүснэгтийн хажууд ДАВХАРДАЛ 0 · хайрцаг 0',
+  dup.total === 1 && dup.inFeatures === 0 && dup.inAside === 1 && dup.box === 0,
   `линк=${dup.total} · хүснэгтийн хэсэгт=${dup.inFeatures} · aside=${dup.inAside} · хайрцаг=${dup.box}`);
 check('② карт дотор ЯГ 2 линк (толгой + «идэвхтэй зар»)', p.anchorsInBox === 2, `${p.anchorsInBox}`);
 check('② толгойн линк мөн `/sellers/<user_id>` руу', p.headerHref === `/sellers/${UID}`, `header=${p.headerHref}`);

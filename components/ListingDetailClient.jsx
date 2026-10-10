@@ -50,16 +50,16 @@ import SimilarListings from './SimilarListings';
 import { MapPinIcon, ClockIcon, EyeIcon, HeartIcon } from './HeaderIcons';
 
 /**
- * 👤 ЗАР НИЙТЛЭГЧИЙН КАРТ — НЭГ ЭХ СУРВАЛЖ, ХОЁР ГАЗАРТ (🆕 2026-10-10 (103))
+ * 👤 ЗАР НИЙТЛЭГЧИЙН КАРТ — ГАНЦ ГАЗАРТ (🆕 2026-10-10 (106))
  * ============================================================
- * ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Display the advertiser's information alongside the ad
- * details» ⇒ нийтлэгчийн мэдээлэл нь «📋 Зарын дэлгэрэнгүй» хүснэгтийн
- * ХАЖУУД (үндсэн багана, `lg` дээр 2 баганат хэв) гарна. ⏳ Өмнө нь зөвхөн
- * БАРУУН баганын (`aside`) 💰 үнэ/холбоо барих хайрцаг дотор байв.
+ * ⚠️ (103)-д энэ карт «📋 Зарын дэлгэрэнгүй» хүснэгтийн ХАЖУУД Ч (үндсэн
+ *    баганад, `lg` 2 баганат хэв) давхар гардаг байв ⇒ **тухайн ДАВХАРДАЛ
+ *    ХАСАГДАВ** (хэрэглэгчийн хүсэлт: «delete the advertiser card that was
+ *    created most recently») — карт нь ОДОО ЗӨВХӨН баруун баганын (`aside`)
+ *    💰 үнэ/холбоо барих хайрцаг дотор, **НЭГ ГАЗАРТ** ✓
+ *    (⏳ (103)-ын «хажууд» хувилбар нь ижил мэдээллийг хоёр удаа харуулж,
+ *    хүснэгтийг 300px-аар нарийсгаж байв ✗)
  *
- * ⚠️ ХОЁР ГАЗАРТ рендэрлэгддэг (① хүснэгтийн хажууд ② `aside`-ийн хайрцагт)
- *    тул тэмдэглэгээг ХОЁР ДАХИН БИЧИХГҮЙ — энэ компонент нь ЦОРЫН ГАНЦ
- *    эх сурвалж ✓ (класс/линк/текст нь ХОЁР газарт ЯГ ИЖИЛ гарна)
  * ⚠️ (61)(64)(66)(71)-ийн гэрээ ХЭВЭЭР: аватар **96px**, картын ДЭЭД талд
  *    ТУСДАА мөрөнд ГОЛЛУУЛЖ; нэр `truncate` БИШ `break-words`; `sellerAvatar`
  *    (нэрээ нуух тохиргоо → профайл зураггүй); ✅ badge ба «📋 N идэвхтэй зар»
@@ -683,14 +683,15 @@ export default function ListingDetailClient({ id }) {
                 ЯГ ИЖИЛ хэмжээ (20×20) ⇒ хоёр икон тэнцүү харагдана ✓
                 🆕 (102) ХЭМЖИЛТ БАТАЛСАН: жишиг зургийн нүдний зураас 16px
                 (16×10px) = манай 20px box-той `EyeIcon`-ийн зураас ЯГ 16×10px
-                ⇒ 20px нь ЗӨВ хэмжээ байсан (хөндөх шаардлагагүй ✓)
-                🆕 (104) «…as well as the eye icon, to match the size and font of
-                the accompanying text» ⇒ икон 20px → **16px** (`h-4 w-4` = мета
-                текстийн `text-base` = 16px) — ХЭМЖЭЭ нь текстээ дагана ✓
-                ⚠️ ЗӨВХӨН нүдний икон өөрчлөгдөв — 📍 pin ба 🕒 цаг 20px ХЭВЭЭР
-                ((96)(98)(100)-ийн «иконуудыг томруул» шийдэл хүчинтэй ✓)
+                ⇒ 20px нь ЗӨВ хэмжээ байсан ✓
+                ⏳ (104) 16px болгосон байв ⇒ 🆕 (106) ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ:
+                «change to same size Eye icon and Like ikon on ad card detail …
+                increase eye icon size» ⇒ **20px БУЦАВ** (`h-5 w-5`) — ❤️
+                таалагдсан pill-ийн зүрхэнтэй (мөн (106)-д 20px болов) ЯГ ИЖИЛ
+                хэмжээ ⇒ мета мөр ба pill-ийн иконууд ТЭНЦЭВ ✓
+                ⚠️ ЗӨВХӨН нүдний икон өөрчлөгдөв — 📍 pin ба 🕒 цаг 20px ХЭВЭЭР ✓
                 ⚠️ `data-icon="eye"` — 🆕 (102) CDP/тестийн ТОГТВОРТОЙ selector ✓ */}
-            <EyeIcon className="h-4 w-4 text-gray-700" />
+            <EyeIcon className="h-5 w-5 text-gray-700" />
             {viewCount}
           </span>
           <span aria-hidden="true" className="text-gray-300">·</span>
@@ -729,10 +730,15 @@ export default function ListingDetailClient({ id }) {
               {/* 🆕 (101) ⏳ `{isFav ? '❤️' : '🤍'} {likeCount}` emoji → SVG —
                   картын зүрхэнтэй ЯГ ИЖИЛ (`HeartIcon`, `filled={isFav}`) ⇒
                   хэрэглэгчийн хавсаргасан жишиг зургийн хэв (нимгэн хар зураас) ✓
-                  🆕 (102) `h-5` → **`h-6 w-6`** + `strokeWidth={2}` — жишиг
-                  зургийн зүрхэн (22×19px зураас, ЗУЗААН) нь мета мөрийн
-                  иконуудаас (20px) ТОМ харагдана ✓ */}
-              <HeartIcon className="h-6 w-6" strokeWidth={2} filled={isFav} />
+                  🆕 (102) `strokeWidth={2}` ХЭВЭЭР ✓
+                  🆕 (106) `h-6 w-6` → **`h-5 w-5`** (24 → 20px) —
+                  ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «change to same size Eye icon and Like
+                  ikon on ad card detail … decrease like icon» ⇒ мета мөрийн
+                  👁 үзсэн иконтой (мөн (106)-д 20px болсон) ЯГ ИЖИЛ хэмжээтэй
+                  болов ✓
+                  ⚠️ Товчны pill (`h-11` · `bg-gray-100`)-ийн хэлбэр ХӨНДӨӨГДӨӨГҮЙ;
+                  «Хуваалцах» pill-ийн сум 24px ХЭВЭЭР (хүсэлтэд байгаагүй) ✓ */}
+              <HeartIcon className="h-5 w-5" strokeWidth={2} filled={isFav} />
               {likeCount}
             </button>
             {/* ⚠️ `ShareButton` нь одоогийн хуудасны URL-ыг clipboard-д хуулна ✓ */}
@@ -905,10 +911,10 @@ export default function ListingDetailClient({ id }) {
               🆕 2026-10-01 (16): машин/ажил/компьютер … зарууд ч мөртэй болов
                  (`features`-д `attrs` нэмэгдэв — `lib/locationData.js → getAttrRows`)
                  → тэдгээр дэлгэрэнгүй хуудсанд ч ЭНЭ 2 БАГАНАТ хүснэгт гарна ✓
-              🆕 2026-10-10 (103): хүснэгтийн ХАЖУУД нь 👤 нийтлэгчийн карт
-                 (`AdvertiserCard`, `lg` дээр баруун талын 300px багана) нэмэгдэв
-                 ⇒ хүснэгт нь ОДОО зүүн багана (`min-w-0`), 📱 `lg`-ээс доош
-                 карт нь хүснэгтийн ДООР буулна ✓ (`aside` дахь карт ХЭВЭЭР)
+              ⛔ 2026-10-10 (106): (103)-ын «хүснэгтийн ХАЖУУД гардаг нийтлэгчийн
+                 карт» (ба `lg` 2 баганат хэв) БҮРЭН ХАСАГДАВ — хэрэглэгчийн
+                 хүсэлт: «delete the advertiser card that was created most
+                 recently» ⇒ хүснэгт нь дахин БҮТЭН ӨРГӨН, карт нь `aside`-д ✓
               ⚠️ ХҮРЭЭНИЙ ДҮРЭМ (`sm:` = 2 багана): сүүлийн МӨРИЙН 2 нүд доод
                  хүрээгээ алдана. Мөр дүүрэн бол (`features.length % 2 === 0`)
                  тэр нь `:nth-last-child(-n+2)`; гэхдээ СОНДГОЙ тоо (ж: 🚗 9 мөр)
@@ -917,50 +923,30 @@ export default function ListingDetailClient({ id }) {
                  мөр дунд ганц 1px зураас үлдэнэ ✗ (2026-10-01 (16)-д зассан) */}    
           {features.length > 0 && (
             <section data-component="AdvertFeaturesApp" className="mt-6 border-t border-gray-200 pt-6">
-              {/* 🆕 2026-10-10 (103) `lg` дээр 2 БАГАНА: зүүн тал нь «📋 Зарын
-                  дэлгэрэнгүй» хүснэгт, БАРУУН тал нь 👤 нийтлэгчийн карт
-                  (`AdvertiserCard`). ⚠️ `minmax(0,1fr)` — урт утга (`break-words`)
-                  баганаас халихгүй; 📱 `lg`-ээс доош карт нь хүснэгтийн ДООР ✓ */}
-              <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
-                <div className="min-w-0">
-                  <h2 className="mb-2 text-base font-semibold text-gray-800">Зарын дэлгэрэнгүй</h2>
-                  <dl className="grid grid-cols-1 sm:grid-cols-2">
-                    {features.map((f) => (
-                      <div
-                        key={f.key || f.label}
-                        className={`flex items-baseline gap-3 border-b border-gray-200 py-3 text-sm last:border-b-0 ${
-                          features.length % 2 === 0 ? 'sm:[&:nth-last-child(-n+2)]:border-b-0' : 'sm:[&:last-child]:border-b-0'
-                        }`}
-                      >
-                        {/* 🆕 (96): ⏳ `{f.icon} {f.label}` → **`{f.label}`** — БҮХ icon
-                            ХАСАГДАВ (хэрэглэгчийн хүсэлт: «🏷️ Үйлдвэрлэгч: гэх мэтийн
-                            бүх icon ийг байхгүй болго, хэрэггүй» ✓).
-                            ⚠️ `getAttrRows`-ийн `icon` утга (форм/шүүлтийн нэг эх
-                            сурвалж — `attrFields`) ХӨНДӨӨГДӨӨГҮЙ, зөвхөн ЭНД
-                            дүрслэгдэхгүй ✓ (форм/сайдбарын чип иконууд ХЭВЭЭР) */}
-                        <dt className="w-[45%] shrink-0 text-gray-500">{f.label}:</dt>
-                        <dd className="min-w-0 flex-1 font-medium text-gray-900">{f.value}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </div>
-                {/* 👤 ЗАР НИЙТЛЭГЧ (🆕 2026-10-10 (103)) — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ:
-                    «Display the advertiser's information alongside the ad details» ⇒
-                    хүснэгтийн хажууд (⏳ зөвхөн `aside`-ийн хайрцагт байв ✗).
-                    ⚠️ Хайрцаг нь ЦАГААН (`bg-white`) — (87)-ийн «саарал дүүргэлт
-                    ХОРИОТОЙ» дүрэмд нийцнэ (хүрээ 1px · `rounded-xl`) ✓
-                    ⚠️ `data-advertiser-card` — CDP хэмжилтийн дэгээ ✓ */}
-                <div data-advertiser-card className="rounded-xl border border-gray-200 bg-white p-4">
-                  <h3 className="mb-3 text-center text-sm font-semibold text-gray-700">Зар нийтлэгч</h3>
-                  <AdvertiserCard
-                    listing={listing}
-                    sellerName={sellerName}
-                    sellerAvatar={sellerAvatar}
-                    joinedText={joinedText}
-                    sellerStats={sellerStats}
-                  />
-                </div>
-              </div>
+              {/* 🆕 (106): ⏳ (103)-ын `lg` 2 баганат хэв (хүснэгт ⟂ нийтлэгчийн
+                  карт, 300px) ХАСАГДАВ — хэрэглэгчийн хүсэлт: «delete the
+                  advertiser card that was created most recently» ⇒ хүснэгт нь
+                  дахин БҮТЭН ӨРГӨН (1 багана), карт нь ЗӨВХӨН `aside`-д ✓ */}
+              <h2 className="mb-2 text-base font-semibold text-gray-800">Зарын дэлгэрэнгүй</h2>
+              <dl className="grid grid-cols-1 sm:grid-cols-2">
+                {features.map((f) => (
+                  <div
+                    key={f.key || f.label}
+                    className={`flex items-baseline gap-3 border-b border-gray-200 py-3 text-sm last:border-b-0 ${
+                      features.length % 2 === 0 ? 'sm:[&:nth-last-child(-n+2)]:border-b-0' : 'sm:[&:last-child]:border-b-0'
+                    }`}
+                  >
+                    {/* 🆕 (96): ⏳ `{f.icon} {f.label}` → **`{f.label}`** — БҮХ icon
+                        ХАСАГДАВ (хэрэглэгчийн хүсэлт: «🏷️ Үйлдвэрлэгч: гэх мэтийн
+                        бүх icon ийг байхгүй болго, хэрэггүй» ✓).
+                        ⚠️ `getAttrRows`-ийн `icon` утга (форм/шүүлтийн нэг эх
+                        сурвалж — `attrFields`) ХӨНДӨӨГДӨӨГҮЙ, зөвхөн ЭНД
+                        дүрслэгдэхгүй ✓ (форм/сайдбарын чип иконууд ХЭВЭЭР) */}
+                    <dt className="w-[45%] shrink-0 text-gray-500">{f.label}:</dt>
+                    <dd className="min-w-0 flex-1 font-medium text-gray-900">{f.value}</dd>
+                  </div>
+                ))}
+              </dl>
             </section>
           )}
 
@@ -1039,10 +1025,10 @@ export default function ListingDetailClient({ id }) {
                 зөвхөн үнэ (бүх UI дээр нэгэн жигд хассан). */}
 
             <div className="mt-5 space-y-3">
-              {/* 👤 ЗАР НИЙТЛЭГЧ — НЭГ ЭХ СУРВАЛЖ (🆕 2026-10-10 (103)): ЯГ энэ
-                  карт нь дээрх «📋 Зарын дэлгэрэнгүй» хүснэгтийн ХАЖУУД ч
-                  гарна (`AdvertiserCard` — дэлгэрэнгүй хэсэгт) ✓
-                  ⚠️ Тиймээс тэмдэглэгээг хоёр дахин бичихгүй ✓ */}
+              {/* 👤 ЗАР НИЙТЛЭГЧИЙН КАРТ — ГАНЦ ГАЗАР (🆕 (106)): ⏳ (103)-ын
+                  «📋 Зарын дэлгэрэнгүй» хүснэгтийн ХАЖУУД гардаг ДАВХАР
+                  хувилбар ХАСАГДАВ (хэрэглэгчийн хүсэлт: «delete the advertiser
+                  card that was created most recently») ⇒ карт нь ЗӨВХӨН ЭНД ✓ */}
               <AdvertiserCard
                 listing={listing}
                 sellerName={sellerName}

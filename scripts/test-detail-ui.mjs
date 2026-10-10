@@ -443,16 +443,18 @@ t('⑫ (102) Мета мөр: 16px (`text-base`) + 🕒 `ClockIcon` SVG + ❤️
    *  фонт/өнгөтэй болов (хэмжилт: x-height 9px ⇒ 16px · pill 44px · `#F2F2F3`):
    *  ① `text-[13px]` → **`text-base`** (16px) ② огнооны өмнө **`ClockIcon`** SVG
    *  (⏳ (101)-д 🕒 emoji ХАСАГДСАН байв — жишиг зургийн мета мөрөнд цагийн икон
-   *  БАЙНА ✓) ③ зүрхэн 20px → **24px** (`h-6 w-6`) — жишигт pill-ийн икон нь мета
-   *  иконуудаас ТОМ ✓ */
+   *  БАЙНА ✓) ③ (102) зүрхэн 24px (`h-6 w-6`) байсныг 🆕 (106) **20px**
+   *  (`h-5 w-5`) болгов — хэрэглэгчийн хүсэлт: «change to same size Eye icon
+   *  and Like ikon on ad card detail … decrease like icon» ⇒ мета мөрийн 👁
+   *  үзсэн иконтой (мөн (106)-д 20px) ЯГ ИЖИЛ хэмжээ ✓ */
   assert.ok(DET_CODE.includes('className="flex flex-wrap items-center gap-x-1 gap-y-1 text-base text-gray-500"'),
     'мета мөр «16px» (`text-base`) БИШ ✗');
   assert.ok(DET_CODE.includes('<ClockIcon className="h-5 w-5 text-gray-700" />'),
     'огнооны өмнө `ClockIcon` SVG алга ✗');
   assert.ok(DET_CODE.includes('data-icon="clock"'),
     'цагийн иконы `data-icon="clock"` дэгээ алга ✗');
-  assert.ok(DET_CODE.includes('<HeartIcon className="h-6 w-6" strokeWidth={2} filled={isFav} />'),
-    '❤️ pill-ийн зүрхэн 24px (`h-6 w-6`) + `strokeWidth={2}` БИШ ✗');
+  assert.ok(DET_CODE.includes('<HeartIcon className="h-5 w-5" strokeWidth={2} filled={isFav} />'),
+    '❤️ pill-ийн зүрхэн 20px (`h-5 w-5`) + `strokeWidth={2}` БИШ ✗');
 });
 
 t('⑫b (102)(104) Сонгосон зураг 4:3 — `aspect-[4/3]` + `max-w-[840px]` ✓', () => {
@@ -489,17 +491,19 @@ t('⑫c (104) Зураг ⟂ тайлбар нэг өргөн · Share/ID/👁 �
    *  ② ТАЙЛБАР: `<p>` ч мөн `max-w-[840px]` ⇒ НЭГ өргөн, НЭГ зүүн ирмэг ✓
    *  ③ ХУВААЛЦАХ: pill-ийн бичиг `font-normal text-gray-500` (16px) ✓
    *  ④ ID: `font-mono`/`font-semibold`/`text-gray-600` ХАСАГДАВ ✓
-   *  ⑤ 👁 нүд: 20px → **16px** (`h-4 w-4` = мета текстийн `text-base`) ✓
+   *  ⑤ ⏳ (104) 👁 нүд 16px (`h-4 w-4`) байсныг 🆕 (106) **20px** (`h-5 w-5`)
+   *     болгов — «change to same size Eye icon and Like ikon … increase eye
+   *     icon size» ⇒ ❤️ pill-ийн зүрхэнтэй (мөн (106)-д 20px) ЯГ ИЖИЛ хэмжээ ✓
    *  ⚠️ ЗӨВХӨН эдгээр элемент; 📍 pin/🕒 цаг (20px) ба pill-ийн хэлбэр
    *     (`h-11` · `bg-gray-100` · `rounded-full`) ХӨНДӨӨГДӨӨГҮЙ ✓ */
   assert.ok(DET_CODE.includes('className="max-w-[840px] whitespace-pre-line break-words text-[15px] leading-[1.8] text-gray-600"'),
     'тайлбарын `<p>` нь `max-w-[840px]` (зурагтай нэг өргөн) БИШ ✗');
   assert.ok(DET_CODE.includes('className="inline-flex items-center gap-1 tabular-nums"'),
     '👁 мета мөр `font-semibold text-gray-600`-оос чөлөөлөгдөөгүй ✗');
-  assert.ok(DET_CODE.includes('<EyeIcon className="h-4 w-4 text-gray-700" />'),
-    '👁 нүдний икон `h-4 w-4` (16px = мета текст) БИШ ✗');
-  assert.ok(!/EyeIcon className="h-5 w-5/.test(DET_CODE),
-    '⏳ (100)-ийн 20px нүдний икон буцаж орсон ✗');
+  assert.ok(DET_CODE.includes('<EyeIcon className="h-5 w-5 text-gray-700" />'),
+    '👁 нүдний икон `h-5 w-5` (20px) БИШ ✗');
+  assert.ok(!/EyeIcon className="h-4 w-4/.test(DET_CODE),
+    '⏳ (104)-ийн 16px нүдний икон буцаж орсон ✗');
   const SHARE = readSrc('components/ShareButton.jsx');
   assert.ok(SHARE.includes('px-4 font-normal text-gray-500 transition hover:bg-gray-200'),
     '«Хуваалцах» pill-ийн бичиг `font-normal text-gray-500` (мета текст) БИШ ✗');
@@ -510,45 +514,44 @@ t('⑫c (104) Зураг ⟂ тайлбар нэг өргөн · Share/ID/👁 �
 
 });
 
-// ---------- ⑬ 👤 ЗАР НИЙТЛЭГЧ — «📋 Зарын дэлгэрэнгүй»-ийн ХАЖУУД (2026-10-10 (103)) ----------
-t('⑬ (103) 👤 Зар нийтлэгчийн карт нь «Зарын дэлгэрэнгүй» хүснэгтийн ХАЖУУД ✓', () => {
-  /** ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Display the advertiser's information alongside the ad
-   *  details» ⇒ нийтлэгчийн карт нь хүснэгтийн БАРУУН талд (`lg` дээр 2 багана)
-   *  бас гарна. ⏳ Өмнө нь зөвхөн БАРУУН баганын (`aside`) үнэ/холбоо барих
-   *  хайрцаг дотор байв ✗
-   *  ⚠️ Тэмдэглэгээ нь `AdvertiserCard` компонент (ЦОРЫН ГАНЦ эх сурвалж) —
-   *     `aside` дахь карт ХӨНДӨӨГДӨӨГҮЙ, ижил класс/линк/текст гарна ✓
-   *  📱 `lg`-ээс доош (мобайл) карт нь хүснэгтийн ДООР буулна (нэг багана) ✓ */
-  // ① Нэг эх сурвалж: `<AdvertiserCard />` нь ЯГ 2 газарт дуудагдана ✓
-  assert.equal((DET_CODE.match(/<AdvertiserCard\b/g) || []).length, 2,
-    '`<AdvertiserCard` нь 2 газарт (хүснэгтийн хажууд + `aside`) дуудагдах ЁСТОЙ ✗');
+// ---------- ⑬ 👤 ЗАР НИЙТЛЭГЧ — ГАНЦ ГАЗАР: `aside` (2026-10-10 (106)) ----------
+t('⑬ (106) 👤 Зар нийтлэгчийн карт нь ЗӨВХӨН `aside`-д — давхардал ХАСАГДАВ ✓', () => {
+  /** ⏳ (103)-д нийтлэгчийн карт нь «📋 Зарын дэлгэрэнгүй» хүснэгтийн ХАЖУУД Ч
+   *  (үндсэн баганад, `lg` 2 баганат хэв — 300px) давхар гардаг байв ⇒
+   *  ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «delete the advertiser card that was created most
+   *  recently» ⇒ тэр ДАВХАР хувилбар БҮРЭН ХАСАГДАВ, карт нь ЗӨВХӨН баруун
+   *  баганын (`aside`) үнэ/холбоо барих хайрцаг дотор ✓
+   *  ⚠️ `AdvertiserCard` компонент (нэг эх сурвалж) ХЭВЭЭР — зөвхөн НЭГ
+   *     газарт дуудагдана ✓ */
+  // ① Нэг эх сурвалж: `<AdvertiserCard />` нь ЯГ 1 газарт (`aside`) дуудагдана ✓
+  assert.equal((DET_CODE.match(/<AdvertiserCard\b/g) || []).length, 1,
+    '`<AdvertiserCard` нь ЗӨВХӨН `aside`-д (ЯГ 1 газар) дуудагдах ЁСТОЙ ✗');
   assert.ok(/function AdvertiserCard\(/.test(DET_CODE),
     '`AdvertiserCard` компонент (нэг эх сурвалж) алга ✗');
-  assert.equal((DET_CODE.match(/name=\{sellerName\} size=\{96\}/g) || []).length, 2,
-    'аватар 96px нь компонентоос ГАДНА давхардсан (тэмдэглэгээ хуваагдсан) ✗');
-  // ② Хүснэгтийн хэсэгт: `lg` 2 баганат grid + `data-advertiser-card` дэгээ ✓
-  assert.ok(DET_CODE.includes('className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]"'),
-    '«Зарын дэлгэрэнгүй» хэсэг нь `lg` 2 баганат grid БИШ ✗');
-  assert.ok(DET_CODE.includes('data-advertiser-card'),
-    'картын `data-advertiser-card` дэгээ алга ✗ (CDP хэмжилт хийх боломжгүй)');
-  assert.ok(DET_CODE.includes('className="rounded-xl border border-gray-200 bg-white p-4"'),
-    'картын хайрцаг ЦАГААН (`bg-white`) БИШ ✗ ((87): саарал дүүргэлт хориотой)');
-  assert.ok(DET_CODE.includes('<h3 className="mb-3 text-center text-sm font-semibold text-gray-700">Зар нийтлэгч</h3>'),
-    '«Зар нийтлэгч» гарчиг алга ✗');
-  // ③ Дараалал: `section` → хүснэгт (`<dl>`) → карт (баруун багана) ✓
+  // ② ⛔ РЕГРЕСС ХОРИО: (103)-ын хүснэгтийн хажуугийн давхар карт буцаж ОРОХГҮЙ ✓
+  assert.ok(!DET_CODE.includes('data-advertiser-card'),
+    '⏳ (103)-ын `data-advertiser-card` (хүснэгтийн ХАЖУУД гардаг давхар карт) буцаж орсон ✗');
+  assert.ok(!DET_CODE.includes('lg:grid-cols-[minmax(0,1fr)_300px]'),
+    '⏳ (103)-ын `lg` 2 баганат хэв (хүснэгт ⟂ карт) буцаж орсон ✗');
+  // ③ Хүснэгт нь дахин БҮТЭН ӨРГӨН: `section` → `<h2>` → `<dl>` (дунд div 0) ✓
   const sec = DET_CODE.indexOf('data-component="AdvertFeaturesApp"');
+  const h2 = DET_CODE.indexOf('<h2 className="mb-2 text-base font-semibold text-gray-800">Зарын дэлгэрэнгүй</h2>');
   const dl = DET_CODE.indexOf('<dl className="grid grid-cols-1 sm:grid-cols-2">');
-  const card = DET_CODE.indexOf('data-advertiser-card');
-  assert.ok(sec > 0 && dl > sec && card > dl,
-    `дараалал буруу (section ${sec} → dl ${dl} → карт ${card}) ✗`);
+  assert.ok(sec > 0 && h2 > sec && dl > h2,
+    `дараалал буруу (section ${sec} → h2 ${h2} → dl ${dl}) ✗`);
+  // ③b ⛔ Хүснэгтийн хэсэг ДОТОР нийтлэгчийн тэмдэглэгээ (аватар/«Зар нийтлэгч»)
+  //     БАЙХГҮЙ — (106)-д блок бүхэлдээ хасагдсан ⇒ зөвхөн `aside`-д ✓
+  const featRegion = DET_CODE.slice(sec, DET_CODE.indexOf('<AdvertiserCard', sec));
+  assert.ok(!/<Avatar\b/.test(featRegion) && !/Зар нийтлэгч/.test(featRegion),
+    '«Зарын дэлгэрэнгүй» хэсэг ДОТОР нийтлэгчийн картын тэмдэглэгээ (аватар / «Зар нийтлэгч») буцаж орсон ✗');
   // ④ (16)(87)(102)-ын гэрээ ХӨНДӨӨГДӨӨГҮЙ: хэсгүүд 1px дээд зураастай (4),
   //    мөр бүрэн болон сондгой үеийн хүрээний дүрэм ХЭВЭЭР ✓
   assert.equal((DET_CODE.match(/mt-6 border-t border-gray-200 pt-6/g) || []).length, 4,
-    '(103)-д хэсгүүдийн «хайрцаггүй + 1px дээд зураас» хэв эвдэрсэн ✗');
+    '(106)-д хэсгүүдийн «хайрцаггүй + 1px дээд зураас» хэв эвдэрсэн ✗');
   assert.ok(DET_CODE.includes("features.length % 2 === 0 ? 'sm:[&:nth-last-child(-n+2)]:border-b-0' : 'sm:[&:last-child]:border-b-0'"),
     'шинж чанарын хүрээний дүрэм (16) ХӨНДӨӨГДӨӨГҮЙ байх ЁСТОЙ ✗');
 });
 
 
-console.log(`\n✅ БҮГД ОК: ${passed} тест — jobs зураггүй · Нэр талбар · тэгш өнцөгт Avatar · бүх зарт газрын зураг · урт текст 'break-words' · нийтлэгчийн карт (96px аватар картын ДЭЭД талд, ГОЛЛУУЛЖ) · «📋 N идэвхтэй зар» ТУСДАА ЛИНК · 🎨 саарал дүүргэлт 0 · 🏷️ зарын гарчиг (харагдах H1) · 🎨 мета иконууд (📍/👁 → SVG, 🔖 ба шинж чанарын icon ХАСАГДАВ) · 🆕 (103): 👤 зар нийтлэгчийн карт «📋 Зарын дэлгэрэнгүй» хүснэгтийн ХАЖУУД (нэг эх сурвалж — AdvertiserCard) ✓\n`);
+console.log(`\n✅ БҮГД ОК: ${passed} тест — jobs зураггүй · Нэр талбар · тэгш өнцөгт Avatar · бүх зарт газрын зураг · урт текст 'break-words' · нийтлэгчийн карт (96px аватар картын ДЭЭД талд, ГОЛЛУУЛЖ) · «📋 N идэвхтэй зар» ТУСДАА ЛИНК · 🎨 саарал дүүргэлт 0 · 🏷️ зарын гарчиг (харагдах H1) · 🎨 мета иконууд (📍/👁 → SVG, 🔖 ба шинж чанарын icon ХАСАГДАВ) · 🆕 (106): 👤 зар нийтлэгчийн карт ЗӨВХӨН aside-д (хүснэгтийн хажуугийн давхардал ХАСАГДАВ) · 👁 үзсэн 20px = ❤️ таалагдсан 20px ✓\n`);
 

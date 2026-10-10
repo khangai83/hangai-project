@@ -25,15 +25,15 @@
  *   ④ 💰 холбоо барих хайрцаг (баруун багана) нь ЦАГААН (`rgb(255, 255, 255)`)
  *      ба сүүдэргүй (`box-shadow: none`) ✓
  *   ⑤ 📱 390px: саарал дүүргэлт 0 ба хэвтээ гүйлт 0 ✓
- *   ⑩ 👤 НИЙТЛЭГЧИЙН КАРТ «📋 ЗАРЫН ДЭЛГЭРЭНГҮЙ»-ИЙН ХАЖУУД (🆕 (103)) —
- *      ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Display the advertiser's information alongside the
- *      ad details» ⇒ `[data-advertiser-card]` нь хүснэгтийн БАРУУН талд
- *      (`lg` 2 багана, 300px + 24px зай) байрлана: хайрцаг нь ЦАГААН · 1px
- *      хүрээ · `rounded-xl` (12px) · `p-4` (16px) · сүүдэргүй — (87)-ийн
- *      «саарал дүүргэлт хориотой» дүрмийн дагуу ✓ · аватар 96px карт дотроо ·
- *      нэр `break-words` (тасрахгүй) ✓ · 📋 линк нь `aside` дахь линктэй ЯГ
- *      ИЖИЛ (`/sellers/<id>` — нэг эх сурвалж `AdvertiserCard`) ✓ ·
- *      📱 390px дээр хүснэгтийн ДООР бууна (overflow 0) ✓ `h1` ЯГ 1 ХЭВЭЭР ✓
+ *   ⑩ 👤 НИЙТЛЭГЧИЙН КАРТ — ГАНЦ ГАЗАР: баруун `aside` (🆕 (106)) —
+ *      ⏳ (103)-д ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ «Display the advertiser's information
+ *      alongside the ad details»-ээр карт нь хүснэгтийн БАРУУН талд (`lg` 2
+ *      багана, 300px) ч гардаг байв ⇒ 🆕 (106) «delete the advertiser card that
+ *      was created most recently» ⇒ ДАВХАР хувилбар ХАСАГДАВ
+ *      (`[data-advertiser-card]` 0) ⇒ хүснэгт дахин БҮТЭН ӨРГӨН (1 багана) ✓
+ *      · карт ЗӨВХӨН `aside`-д (`AdvertiserCard` — нэг эх сурвалж, 📋 линк ЯГ
+ *      1) · аватар 96px карт дотроо · нэр `break-words` (тасрахгүй) ✓ ·
+ *      📱 390px дээр ч 2 багана БОЛОХГҮЙ, overflow 0 ✓ `h1` ЯГ 1 ХЭВЭЭР ✓
  *   ⑪ 📏🖼 (104) ЗУРАГ ⟂ ТАЙЛБАР ЗЭРЭГЦЭВ — ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «align the
  *      advertisement image and the description … adjust the width so that it
  *      measures approximately 23 cm on a 23.8-inch screen and approximately
@@ -43,8 +43,10 @@
  *      «Тайлбар»-ын `<p>` ч мөн `max-w-[840px]` ⇒ ЗУРАГ ба ТАЙЛБАР ЯГ ИЖИЛ
  *      өргөн/зүүн ирмэгтэй ✓ (биеийн хэмжээ: 23.8″ 1920×1080 — `36.44 px/см` ⇒
  *      840/36.44 = **23.0 см** · 13.1″ retina — `50.28 px/см` ⇒ 840/50.28 =
- *      **16.7 см ≈ 17 см**) · 👁 нүд 20×20 → **16×16px** (мета текстийн 16px) —
- *      «Share/ID/нүд мета тексттэй тааруул» хүсэлт ✓ (📍 pin 20px ХЭВЭЭР)
+ *      **16.7 см ≈ 17 см**) · 👁 нүд 20×20 → (104) 16×16px байсныг 🆕 (106)
+ *      буцаан **20×20px** болгов — ❤️ pill-ийн зүрхэнтэй (мөн (106)-д 20px)
+ *      ЯГ ИЖИЛ хэмжээ («change to same size Eye icon and Like ikon … increase
+ *      eye icon size») ✓ (📍 pin 20px ХЭВЭЭР)
  *   ⑥ 🐍 JS exception 0 (Leaflet-ээс бусад) ба hydration/
  *      `validateDOMNesting` алдаа 0 ✓
  *   ⑨ 🎨 SVG ИКОНУУД (🆕 (96) · ✏️ (98) ТОМРУУЛАВ · ✏️ (100) ДАХИН) — мета мөр
@@ -69,7 +71,8 @@
  *      ТЕКСТ 13px → **16px** (`text-base`; жишиг: x-height 9px, ascender 12px)
  *      ③ ❤️/↪ PILL нь жишиг зургийн ДҮҮРГЭЛТТЭЙ pill болов: **h 44px**
  *      (`h-11`) · `bg-gray-100` (`rgb(244, 241, 234)`) · `rounded-full`
- *      (9999px) · `text-gray-900` · икон **24px** (`h-6`) — ⏳ (100)-ийн
+ *      (9999px) · `text-gray-900` · икон 24px (`h-6`) → 🆕 (106) **20px**
+ *      (`h-5 w-5` — 👁 үзсэн иконтой ЯГ ИЖИЛ) — ⏳ (100)-ийн
  *      «дэвсгэргүй» товч нь зургийн pill-тэй таарахгүй байв ✗
  *      (⚠️ ХҮРЭЭ 0px ХЭВЭЭР — (100)-ийн шийдэл хүчинтэй ✓) ④ `🔗` EMOJI →
  *      **`ShareIcon` SVG** (зургийн сум; товч бүрд ЯГ 1 svg) ⑤ СОНГОСОН
@@ -532,8 +535,8 @@ check('⑨d 🔖 emoji БАЙХГҮЙ — зарын дугаар ЗӨВХӨН �
   ic.metaEmoji.length === 0 && !!ic.metaText && ic.metaText.includes('ID:'),
   ic.metaEmoji.length ? `${ic.metaEmoji.join(' ')} үлдсэн ✗`
     : `${ic.metaSvg} svg (pin + цаг + нүд + зүрхэн + хуваалцах) ✓`);
-check('⑨e 👁 emoji БАЙХГҮЙ — «N» нь `EyeIcon` SVG **16×16px** (✏️ (104): мета текстийн `text-base` 16px-тэй таарав)',
-  !!ic.eye && ic.eye.w === 16 && ic.eye.h === 16 && /^\d+$/.test((ic.views || '').trim()),
+check('⑨e 👁 emoji БАЙХГҮЙ — «N» нь `EyeIcon` SVG **20×20px** (🆕 (106): 📍 pin-тэй ЯГ ИЖИЛ · ✏️ (104)-ийн 16px ХАСАГДАВ)',
+  !!ic.eye && ic.eye.w === 20 && ic.eye.h === 20 && /^\d+$/.test((ic.views || '').trim()),
   ic.views ? `${ic.views} · svg ${ic.eye ? `${ic.eye.w}×${ic.eye.h}` : '—'}px` : 'алга');
 check('⑨f 👁 иконы өнгө нь тоолуурынхнаас ТОД («өнгийг нь тодруулаарай»)',
   !!ic.eye && !!ic.actionsColor && ic.eye.color !== ic.actionsColor,
@@ -571,8 +574,8 @@ check('⑨j 🎨 ЖИШИГ ЗУРГИЙН PILL (🆕 (102)) — ❤️/↪ 44px
   ic.gap
     ? `❤️ ${ic.gap.favH}px · bg ${ic.gap.favBg} · r ${ic.gap.favRadius} · border ${ic.gap.favBorder}px ⟂ ↪ ${ic.gap.shareH}px · bg ${ic.gap.shareBg} · border ${ic.gap.shareBorder}px`
     : '—');
-check('⑨k 🔍 ICON (🆕 (100) · ✏️ (104)) — 📍 pin 20×20px ХЭВЭЭР · 👁 нүд **16×16px** (мета текстийн 16px-тэй таарав) ✓',
-  !!ic.pin && !!ic.eye && ic.pin.w === 20 && ic.pin.h === 20 && ic.eye.w === 16 && ic.eye.h === 16,
+check('⑨k 🔍 ICON (🆕 (100) · ✏️ (104) · 🆕 (106)) — 📍 pin 20×20px ХЭВЭЭР · 👁 нүд **20×20px** БУЦАВ (📏 pin-тэй тэнцэв · ✏️ (104)-ийн 16px ХАСАГДАВ) ✓',
+  !!ic.pin && !!ic.eye && ic.pin.w === 20 && ic.pin.h === 20 && ic.eye.w === 20 && ic.eye.h === 20,
   ic.pin && ic.eye ? `📍 ${ic.pin.w}×${ic.pin.h}px · 👁 ${ic.eye.w}×${ic.eye.h}px` : '—');
 /*   🆕 (101) ❤️/🤍 EMOJI → `HeartIcon` SVG (хэрэглэгчийн хавсаргасан жишиг зургийн
      хэв: НИМГЭН ХАР ЗУРААСТАЙ зүрхэн). ⏳ emoji нь OS бүрд өөрөөр зурагдаж,
@@ -585,7 +588,9 @@ check('⑨l ❤️ EMOJI → SVG (🆕 (101)) — «Таалагдсан» то�
      хэмжсэн 4 гэрээ:
        ① 🕒 ЦАГИЙН ИКОН (⏳ (101)-д ХАСАГДСАН) — огнооны өмнө SVG байх ЁСТОЙ ✓
        ② МЕТА ТЕКСТ **16px** (`text-base`) — жишиг: x-height 9px ⇒ ~16px ✓
-       ③ PILL-ийн ИКОН **24px** (`h-6`) — мета иконуудаас (20px) ТОМ ✓
+       ③ PILL-ийн ИКОН **24px** (`h-6`) — ⏳ (102)-д мета иконуудаас (20px) ТОМ
+          байв ⇒ 🆕 (106) ❤️ нь **20px** (`h-5 w-5`) болж 👁-тэй ТЭНЦЭВ
+          (↪ «Хуваалцах» сум 24px ХЭВЭЭР — хүсэлтэд байгаагүй) ✓
        ④ СОНГОСОН ЗУРГИЙН ХЭМЖЭЭ **800×600** (`[data-gallery-main]`, 4:3) ✓ */
 check('⑨m 🕒 ЦАГИЙН ИКОН БУЦАВ (🆕 (102)) — огнооны өмнө `ClockIcon` SVG 20×20px · өнгө нь 👁-тэй ЯГ ИЖИЛ (`text-gray-700`) · ⏳ `🕒` emoji 0',
   !!ic.clock && ic.clock.w === 20 && ic.clock.h === 20 && !!ic.eye && ic.clock.color === ic.eye.color &&
@@ -593,8 +598,8 @@ check('⑨m 🕒 ЦАГИЙН ИКОН БУЦАВ (🆕 (102)) — огноон�
   ic.clock ? `🕒 ${ic.clock.w}×${ic.clock.h}px · ${ic.clock.color} · «${ic.clockText}»` : 'SVG алга');
 check('⑨n 📏 МЕТА ТЕКСТ 16px (`text-base`, 🆕 (102)) — жишиг зургийн хэмжээ (⏳ 13px нь жижиг байв ✗)',
   ic.metaFont === '16px', ic.metaFont || '—');
-check('⑨o ❤️/↪ PILL-ИЙН ИКОН 24×24px (🆕 (102)) — `HeartIcon` + `ShareIcon` SVG 1/1 (`🔗` emoji 0) · мета иконуудаас (20px) ТОМ ✓',
-  !!ic.gap && ic.gap.favIconSize === 24 && ic.gap.shareIconSize === 24 &&
+check('⑨o ❤️/↪ PILL-ИЙН ИКОН (🆕 (102) · 🆕 (106)) — ❤️ **20×20px** (👁-тэй ЯГ ИЖИЛ) ⟂ ↪ 24×24px ХЭВЭЭР · `HeartIcon` + `ShareIcon` SVG 1/1 (`🔗` emoji 0) ✓',
+  !!ic.gap && ic.gap.favIconSize === 20 && ic.gap.shareIconSize === 24 &&
     ic.gap.favSvg === 1 && ic.gap.shareSvg === 1 &&
     !!ic.gap.shareText && !ic.gap.shareText.includes('\u{1F517}'),
   ic.gap
@@ -619,16 +624,15 @@ if (ic.metaFound) await shotEl('[data-listing-meta]', '/tmp/detail-meta-1280.png
 if (ic.actionsFound) await shotEl('[data-listing-actions]', '/tmp/detail-actions-1280.png', { scroll: true });
 
 await shot('/tmp/detail-style-1280.png');
-/*   🆕 (103) 👤 ЗАР НИЙТЛЭГЧ — «📋 Зарын дэлгэрэнгүй» ХҮСНЭГТИЙН ХАЖУУД:
-     ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «Display the advertiser's information alongside the ad
-     details» ⇒ нийтлэгчийн карт нь `lg` дээр хүснэгтийн БАРУУН талд (300px
-     багана, 24px зай), мобайл дээр хүснэгтийн ДООР гарна (⏳ зөвхөн `aside`-ийн
-     үнэ/холбоо барих хайрцагт байв ✗).
-     ⚠️ НЭГ ЭХ СУРВАЛЖ: карт нь `AdvertiserCard` компонент — `aside` дахь карт
-        ХӨНДӨӨГДӨӨГҮЙ (📋 линкийн `href` ХОЁР газарт ЯГ ИЖИЛ байх ЁСТОЙ ✓)
-     ⛔ картыг буцаагаад зөвхөн `aside`-д үлдээвэл (`data-advertiser-card` 0) ⇒
-        УНАХАР ✓ · ⛔ хайрцаг нь (87)-ийн ЦАГААН/1px/`rounded-xl` хэвээс зөрвөл ⇒
-        УНАХАР ✓ (`bg-gray-*` дүүргэлт хориотой — ②/②b шалгалттай ижил дүрэм)
+/*   🆕 (106) 👤 ЗАР НИЙТЛЭГЧ — ГАНЦ ГАЗАР: баруун `aside`:
+     ⏳ (103)-д ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ «Display the advertiser's information
+     alongside the ad details»-ээр нийтлэгчийн карт нь «📋 Зарын дэлгэрэнгүй»
+     хүснэгтийн БАРУУН талд (`lg` 2 багана, 300px + 24px зай) ч гардаг байв ⇒
+     🆕 (106) ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «delete the advertiser card that was created
+     most recently» ⇒ тэр ДАВХАР хувилбар БҮРЭН ХАСАГДАВ; карт нь ЗӨВХӨН баруун
+     `aside`-д (`AdvertiserCard` — нэг эх сурвалж) — (87)-ийн ЦАГААН/1px хэв ✓
+     ⛔ `[data-advertiser-card]` эсвэл хүснэгтийн 2 баганат хүрээ буцаж орвол ⇒
+        УНАХАР ✓ · ⛔ хүснэгт бүтэн өргөнөө алдвал ⇒ УНАХАР ✓
      ⚠️ ЭНЭ БЛОК МӨН JS ТЕМПЛЕЙТ МӨР ДОТОР — grave accent/DOLLAR-BRACE ХЭРЭГЛЭХГҮЙ ✗ */
 const ADV = `(() => {
   const main = document.querySelector('main');
@@ -637,72 +641,48 @@ const ADV = `(() => {
     const b = el.getBoundingClientRect();
     return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height), r: Math.round(b.right), b: Math.round(b.bottom) };
   };
-  const flat = (s) => (s || '').replace(/\\s+/g, ' ').trim();
-  const sec = main.querySelector('section[data-component="AdvertFeaturesApp"]');
-  const dl = sec ? sec.querySelector('dl') : null;
-  const card = main.querySelector('[data-advertiser-card]');
-  const cs = card ? getComputedStyle(card) : null;
-  const link = card ? card.querySelector('a[href^="/sellers/"]') : null;
-  const aside = main.querySelector('aside');
-  const asideLink = aside ? aside.querySelector('a[href^="/sellers/"]') : null;
-  const asideLinks = aside ? aside.querySelectorAll('a[href^="/sellers/"]').length : 0;
-  const nameEl = card ? card.querySelector('span.min-w-0.break-words') : null;
-  const ncs = nameEl ? getComputedStyle(nameEl) : null;
-  const avatar = card ? [...card.querySelectorAll('*')].filter((el) => {
+  const size96 = (root) => root ? [...root.querySelectorAll('*')].filter((el) => {
     const b = el.getBoundingClientRect();
     return Math.round(b.width) === 96 && Math.round(b.height) === 96;
-  }) : [];
-  const h3 = card ? card.querySelector('h3') : null;
+  }).length : 0;
+  const sec = main.querySelector('section[data-component="AdvertFeaturesApp"]');
+  const dl = sec ? sec.querySelector('dl') : null;
+  const aside = main.querySelector('aside');
+  const nameEl = aside ? aside.querySelector('span.min-w-0.break-words') : null;
+  const ncs = nameEl ? getComputedStyle(nameEl) : null;
   return {
     noMain: false,
-    hasSec: !!sec, hasDl: !!dl, hasCard: !!card,
-    inSection: !!(card && sec && sec.contains(card)),
-    card: card ? B(card) : null,
+    hasSec: !!sec, hasDl: !!dl,
+    dupCard: main.querySelectorAll('[data-advertiser-card]').length,
+    twoCol: main.querySelectorAll('section[data-component="AdvertFeaturesApp"] > div.grid, section[data-component="AdvertFeaturesApp"] > div[class*="lg:grid-cols"]').length,
+    sec: sec ? B(sec) : null,
     dl: dl ? B(dl) : null,
     mainBox: B(main),
-    bg: cs ? cs.backgroundColor : null,
-    radius: cs ? cs.borderTopLeftRadius : null,
-    border: cs ? cs.borderTopWidth : null,
-    pad: cs ? cs.paddingLeft : null,
-    shadow: cs ? cs.boxShadow : null,
-    heading: h3 ? flat(h3.textContent) : '',
-    cardLink: link ? link.getAttribute('href') : null,
-    asideLink: asideLink ? asideLink.getAttribute('href') : null,
-    asideLinks,
+    aside: aside ? B(aside) : null,
+    asideLinks: aside ? aside.querySelectorAll('a[href^="/sellers/"]').length : 0,
     nameWrap: ncs ? ncs.overflowWrap : null,
-    avatar96: avatar.length,
+    avatar96: size96(aside),
     h1: document.querySelectorAll('h1').length,
     scrollW: document.documentElement.scrollWidth,
     vw: window.innerWidth,
   };
 })()`;
 const ad = await evalJs(ADV);
-check('⑩ 👤 (🆕 103) Нийтлэгчийн карт «📋 Зарын дэлгэрэнгүй» ХЭСЭГТ байна (`data-advertiser-card`)',
-  !ad.noMain && ad.hasSec && ad.hasDl && ad.hasCard && ad.inSection,
-  ad.noMain ? '`main` алга' : (ad.hasCard
-    ? `карт ${ad.card.w}×${ad.card.h}px · хэсэгт ${ad.inSection ? 'дотор ✓' : 'ГАДНА ✗'}`
-    : 'карт алга ✗ (`AdvertiserCard` — хүснэгтийн хажууд)'));
-check('⑩b 📐 (103) 1280px: карт нь хүснэгтийн БАРУУН талд — 2 БАГАНА (`lg:grid-cols-[minmax(0,1fr)_300px]`)',
-  !!ad.card && !!ad.dl && ad.card.x >= ad.dl.r + 8 && ad.card.x <= ad.dl.r + 40 &&
-    ad.card.w >= 298 && ad.card.w <= 302,
-  ad.card && ad.dl
-    ? `хүснэгт [${ad.dl.x}…${ad.dl.r}] ⟂ карт [${ad.card.x}…${ad.card.r}] (${ad.card.w}px · зай ${ad.card.x - ad.dl.r}px)`
-    : 'хүснэгт/карт алга');
-check('⑩c 🎨 (103) Картын хайрцаг ЦАГААН · 1px хүрээ · `rounded-xl` (12px) · сүүдэргүй — (87)-ийн хэв',
-  ad.bg === 'rgb(255, 255, 255)' && ad.border === '1px' && ad.radius === '12px' &&
-    ad.shadow === 'none' && ad.pad === '16px',
-  ad.bg ? `bg ${ad.bg} · border ${ad.border} · r ${ad.radius} · pad ${ad.pad} · shadow ${ad.shadow}` : '—');
-check('⑩d 🏷 (103) Гарчиг «Зар нийтлэгч» + 📋 линк нь `aside`-тай ЯГ ИЖИЛ (`/sellers/<id>`) — нэг эх сурвалж',
-  ad.heading === 'Зар нийтлэгч' && (ad.cardLink
-    ? ad.asideLink === ad.cardLink && ad.asideLinks === 2
-    : ad.asideLinks === 0),
-  `гарчиг «${ad.heading}» · картын линк ${ad.cardLink || '—'} · aside ${ad.asideLink || '—'} (${ad.asideLinks} линк)`);
-check('⑩e 👤 (103) Аватар 96px нь карт дотроо · нэр нь `break-words` (хэтэрч/тасарч ХАРАГДАХГҮЙ)',
-  ad.cardLink ? ad.avatar96 === 1 && ad.nameWrap === 'break-word' : true,
-  ad.cardLink ? `92px→${ad.avatar96} ширхэг 96px · overflow-wrap ${ad.nameWrap}` : 'нийтлэгч тодорхойгүй (линк 0) — алгасна');
-check('⑩f 🚫 (103) Хэвтээ гүйлт 0 + карт `main`-аас ГАДНА ГАРАХГҮЙ (1280px) + H1 ЯГ 1 ХЭВЭЭР',
-  ad.scrollW <= ad.vw + 1 && !!ad.card && ad.card.r <= ad.mainBox.r + 1 && ad.h1 === 1,
-  `scrollW ${ad.scrollW}/${ad.vw} · карт ${ad.card ? ad.card.r : '—'} ≤ main ${ad.mainBox.r} · h1 ${ad.h1}`);
+check('⑩ ⛔ (106) Хүснэгтийн хажуугийн ДАВХАР нийтлэгчийн карт ХАСАГДСАН (`[data-advertiser-card]` 0)',
+  !ad.noMain && ad.hasSec && ad.hasDl && ad.dupCard === 0 && ad.twoCol === 0,
+  ad.noMain ? 'main алга' : `хүснэгт ${ad.hasDl ? 'ok' : '—'} · давхар карт ${ad.dupCard} · 2 баганат хүрээ ${ad.twoCol}`);
+check('⑩b 📐 (106) Хүснэгт дахин БҮТЭН ӨРГӨН (1 багана) — `main`-ийг бүтэн эзэлнэ',
+  !!ad.dl && !!ad.mainBox && ad.dl.w >= ad.mainBox.w - 2,
+  ad.dl ? `хүснэгт ${ad.dl.w}px / main ${ad.mainBox.w}px` : 'хүснэгт алга ✗');
+check('⑩c 👤 (106) Нийтлэгчийн карт ЗӨВХӨН `aside`-д — 📋 линк ЯГ 1 (markup ДАВХАРДААГҮЙ)',
+  !!ad.aside && ad.asideLinks === 1,
+  `aside ${ad.aside ? 'ok' : 'алга ✗'} · 📋 линк ${ad.asideLinks} (1 байх ЁСТОЙ)`);
+check('⑩d 🎨 (106) `aside`-ийн карт: аватар ЯГ 96px + нэр `break-words` ((64)(66)(87) ХЭВЭЭР)',
+  ad.avatar96 === 1 && ad.nameWrap === 'break-word',
+  `96px аватар ${ad.avatar96} · overflow-wrap ${ad.nameWrap}`);
+check('⑩e 🚫 (106) Хэвтээ гүйлт 0 + карт `main`-ээс ГАДНА ГАРАХГҮЙ (1280px) + H1 ЯГ 1',
+  ad.scrollW <= ad.vw + 1 && !!ad.aside && ad.aside.r <= ad.mainBox.r + 1 && ad.h1 === 1,
+  `scrollW ${ad.scrollW}/${ad.vw} · карт ${ad.aside ? ad.aside.r : '—'} ≤ main ${ad.mainBox.r} · h1 ${ad.h1}`);
 await shotEl('section[data-component="AdvertFeaturesApp"]', '/tmp/detail-features-1280.png', { scroll: true });
 
 
@@ -719,17 +699,15 @@ check('⑤b2 📱 390px: БҮТЭН ХУУДАС (доод цэс оруулаа
 check('⑤c 📱 390px: хэвтээ гүйлт 0', m.scrollW <= m.vw + 1, `scrollW ${m.scrollW} / vw ${m.vw}`);
 check('⑤d 📱 390px: хэсгүүд ХАЙРЦАГГҮЙ (radius 0px)',
   m.sections.every((s) => s.radius === '0px'), m.sections.map((s) => s.radius).join(' · '));
-/*   🆕 (103) 📱 390px: нэг баганат хэв — нийтлэгчийн карт нь хүснэгтийн
-     ЯГ ДООР (`card.y ≥ dl.bottom`) бууна; `lg:grid-cols-…` нь ЗӨВХӨН ≥1024px
-     тул мобайл дээр ХОЁР БАГАНА БОЛОХГҮЙ, overflow 0 ХЭВЭЭР ✓ */
+/*   🆕 (106) 📱 390px: хүснэгт нь БҮТЭН өргөн (1 багана) ба нийтлэгчийн карт
+     хүснэгтийн ХАЖУУД БАЙХГҮЙ — зөвхөн `aside`-д; `lg:grid-cols-…` ХАСАГДСАН тул
+     мобайл дээр ХОЁР БАГАНА болох боломжгүй, overflow 0 ХЭВЭЭР ✓ */
 const am = await evalJs(ADV);
-check('⑤e 📱 390px (🆕 103): нийтлэгчийн карт хүснэгтийн ДООР (1 багана) · overflow 0',
-  !!am.card && !!am.dl && am.card.y >= am.dl.b - 2 && am.scrollW <= am.vw + 1 &&
-    am.card.r <= am.mainBox.r + 1,
-  am.card && am.dl
-    ? `хүснэгт…${am.dl.b} ⟶ карт ${am.card.y} (${am.card.w}×${am.card.h}px) · scrollW ${am.scrollW}/${am.vw}`
-    : 'карт/хүснэгт алга ✗');
-await shotEl('[data-advertiser-card]', '/tmp/detail-advertiser-390.png', { scroll: true });
+check('⑤e 📱 390px (🆕 106): карт хүснэгтийн хажууд БАЙХГҮЙ · хүснэгт 1 багана · overflow 0',
+  !am.noMain && am.dupCard === 0 && am.twoCol === 0 && am.asideLinks <= 1 &&
+    am.scrollW <= am.vw + 1 && !!am.sec && !!am.dl && am.dl.w <= am.sec.w + 1,
+  am.noMain ? 'main алга' : `давхар карт ${am.dupCard} · 2 баганат хүрээ ${am.twoCol} · aside линк ${am.asideLinks} · хүснэгт ${am.dl ? am.dl.w : '—'}/${am.sec ? am.sec.w : '—'} · scrollW ${am.scrollW}/${am.vw}`);
+await shotEl('aside', '/tmp/detail-advertiser-390.png', { scroll: true });
 
 
 await shot('/tmp/detail-style-390.png');
