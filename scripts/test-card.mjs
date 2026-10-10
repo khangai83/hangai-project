@@ -190,11 +190,12 @@ t('🎨 (107) ТЕКСТИЙН ХЭВ — гарчиг BOLD биш · мэдээ
    *  **`text-[15px] text-gray-500`** ③ 📍📅 мета `text-[13px]` → **`text-[15px]`** ✓ */
   assert.ok(!/font-semibold leading-snug text-gray-900/.test(CARD_CODE),
     'гарчиг буцаж BOLD (`font-semibold`) болов ✗ ((107): жишиг зургийн карт)');
-  // ⚠️ 📋 мэдээллийн мөр ХОЁУЛАА (🏠 «{buildYear} он» · 🚗 `attrsLine`) 15px gray-500 ✓
+  // ⚠️ 📋 мэдээллийн мөр (`attrsLine`) 15px gray-500 ✓
   assert.match(CARD_CODE, /mt-1\.5 truncate text-\[15px\] text-gray-500/,
     'мэдээллийн мөр `text-[15px] text-gray-500` биш ✗');
-  assert.match(CARD_CODE, /gap-x-3 gap-y-1 text-\[15px\] text-gray-500/,
-    '🏠 мэдээллийн мөр `text-[15px] text-gray-500` биш ✗');
+  // 🆕 (108): 🏠 үл хөдлөхийн мэдээллийн мөр БАЙХГҮЙ (`!isRealEstate` хаалт) ✓
+  assert.match(CARD_CODE, /\{!isRealEstate && attrsLine && \(/,
+    '🏠 үл хөдлөхийн мэдээллийн мөр хасагдаагүй ✗ ((108))');
   assert.ok(!/text-\[14px\] text-gray-600/.test(CARD_CODE),
     'хуучин `text-[14px] text-gray-600` буцаж орсон ✗ ((107))');
 });
@@ -232,21 +233,24 @@ t('✅ (85) БАТАЛГААЖСАН нь ҮНИЙ хажууд — `authorVisib
     '`data-fav-toggle` нь 1-ээс олон газар байна ✗');
 });
 
-t('🏠 (85) БАЙРНЫ мөр: 🛏 өрөө · 🚿 угаалгын өрөө · 📐 м² · 🏢 давхар ХАСАГДАВ', () => {
+t('🏠 (85)(108) БАЙРНЫ/МЭДЭЭЛЛИЙН мөр: 🛏 өрөө · 🚿 угаалгын өрөө · 📐 м² · 🏢 давхар ХАСАГДАВ', () => {
   // Хэрэглэгчийн хүсэлт: «мэдээллийн хувьд, Өрөөний тоо, угаалгын өрөөний тоо,
-  // талбайн хэмжээ, давхар гэх мэдээллийг хасна уу» ⇒ зөвхөн 📅 он үлдэв ✓
+  // талбайн хэмжээ, давхар гэх мэдээллийг хасна уу»
   assert.ok(!/өрөө/.test(CARD_CODE), '🛏 «… өрөө» мөр буцаж орсон ✗');
   assert.ok(!/угаалгын өрөө/.test(CARD_CODE), '🚿 «угаалгын өрөө» мөр буцаж орсон ✗');
   assert.ok(!/listing\.rooms|listing\.bathrooms|listing\.area\b/.test(CARD_CODE),
     '`rooms`/`bathrooms`/`area` буцаж орсон ✗');
   assert.ok(!/getFloorLabel|floorLabel/.test(CARD_CODE), '🏢 давхар (`getFloorLabel`) буцаж орсон ✗');
   assert.ok(!/🏢/.test(CARD_CODE), '🏢 тэмдэг карт дээр буцаж орсон ✗');
-  // ✅ «Ашиглалтанд орсон он» ХЭВЭЭР (хэрэглэгч хасахыг хүсээгүй ✓)
-  //    🆕 (101): ⏳ `📅 {buildYear} он` → `{buildYear} он` (emoji ХАСАГДАВ —
-  //    жишиг зургийн мэдээллийн мөр нь ЗӨВХӨН текст ✓)
-  assert.match(CARD_CODE, /const buildYear = Number\(listing\.build_year\) > 0/,
-    '📅 `buildYear` шалгалт алга ✗');
-  assert.match(CARD_CODE, /\{buildYear\} он/, '«<он> он» мөр алга ✗');
+  // 🗑 (108) 2026-10-10: «📅 Ашиглалтанд орсон он» БАС ХАСАГДАВ — хэрэглэгчийн
+  //    хүсэлт: «remove Ашиглалтанд орсон он from on the card … just delete from
+  //    real estate card» ⇒ `buildYear` хувьсагч, `{buildYear} он` мөр ба
+  //    `title="Ашиглалтанд орсон он"` tooltip ГУРВУУЛАА БАЙХГҮЙ ✓
+  //    (⚠️ `build_year` нь Дэлгэрэнгүй хуудас/форм/шүүлтэд ХЭВЭЭР ✓)
+  assert.ok(!/const buildYear/.test(CARD_CODE), '🗑 (108) `buildYear` буцаж орсон ✗');
+  assert.ok(!/\{buildYear\}/.test(CARD_CODE), '🗑 (108) «<он> он» мөр буцаж орсон ✗');
+  assert.ok(!/Ашиглалтанд орсон он/.test(CARD_CODE),
+    '🗑 (108) «Ашиглалтанд орсон он» буцаж орсон ✗');
   assert.ok(!/📅/.test(CARD_CODE), '📅 emoji буцаж орсон ✗ ((101): зөвхөн текст)');
 });
 

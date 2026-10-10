@@ -1503,6 +1503,24 @@ nullable) нь `0001_schema.sql`-д АЛЬ ХЭДИЙН байна ⇒ **migrati
   🔍 Хайх үг: `xl:grid-cols-4`, `noSection`, `gridTemplateColumns`, `noSection ?`
   🔍 Хайх үг: `ListingCard`, `aspect-[4/3]`, `data-listing-card`, `cdp:card-grid`,
   `grid-cols-1 sm:grid-cols-2`
+- 🗑🏠 **ҮЛ ХӨДЛӨХИЙН КАРТААС «АШИГЛАЛТАНД ОРСОН ОН» МӨР ХАСАГДАВ (2026-10-10 (108))** —
+  ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «remove Ашиглалтанд орсон он: from on the card. quickly
+  no need any test, just delete from real state card».
+  <br>**(1) 🗑 ХАСАГДАВ:** `components/ListingCard.jsx`-ийн 🏠 үл хөдлөхийн салбар
+  (`isRealEstate ? buildYear > 0 && (<div …><span title="Ашиглалтанд орсон
+  он">{buildYear} он</span></div>) : attrsLine && …`) БҮРЭН ХАСАГДАВ ⇒ ОДОО
+  `{!isRealEstate && attrsLine && (…)}` — үл хөдлөхийн карт дээр ЗӨВХӨН 🏷️
+  гарчиг + 📍📅 мета үлдэнэ (жишиг зургийн карттай ЯГ ижил: «770 сая ₮ /
+  Paradise plaza-д 125.8 мкв оффис / 1 минутын өмнө | Улаанбаатар — Баянзүрх —
+  26-р хороо») ✓ · `buildYear` хувьсагч ба `title` tooltip ч ХАСАГДАВ.
+  <br>**(2) ⚠️ ХЭВЭЭР:** `build_year` нь DB · форм (`AddListingClient`) ·
+  ДЭЛГЭРЭНГҮЙ хуудсын хүснэгт («Ашиглалтанд орсон он») · шүүлт («Ашиглалтанд
+  орсон он 2010+») — БҮГД ХӨНДӨӨГДӨӨГҮЙ · **Migration 0** (зөвхөн харагдац) ✓
+  <br>**(3) 🧪 ТЕСТ:** `test:card` **25** ((85)-ийн гэрээ нь (108)-ыг бариулна —
+  `buildYear` / `{buildYear}` / «Ашиглалтанд орсон он» БАЙХГҮЙ ба `{!isRealEstate
+  && attrsLine && (` хаалт) · `npm run build` **EXIT=0** ✓
+  🔍 Хайх үг: `isRealEstate ? buildYear`, `!isRealEstate && attrsLine`,
+  `remove Ашиглалтанд орсон он`
 - 🎨📍📅 **КАРТЫН ТЕКСТИЙН ХЭВ ЖИШИГ ЗУРГИЙН ХЭВ РҮҮ + ДООД МӨР: ХАЯГ ЭХЭНД, ОГНОО ТӨГСГӨЛД (2026-10-10 (107))** —
   ХЭРЭГЛЭГЧИЙН ХҮСЭЛТ: «change cards design text style to like attached cards
   to real estate, notebook, cars cards. Also, swap location, the date of
@@ -9894,11 +9912,12 @@ the card of bottom section»): ① 📍📅 доод мөр нь **ХАЯГ ЭХ
   (брэнд + загвар, үйлдвэрлэсэн/орж ирсэн он — жишиг сайтын машин карт) гэж
   бүтээнэ; ⚠️ бичсэн гарчиг БАЙВАЛ түрүүлнэ (хэрэглэгчийн үгийг дарж бичихгүй ✓);
   `lib/format.js → carTitle`, `test:format` **4 тест ✓**
-- **📋 Мэдээллийн мөр** — 🏠 үл хөдлөхөд **ЗӨВХӨН `📅 <он> он`** (ашиглалтанд
-  орсон он; 🆕 **2026-10-09 (85): 🛏 өрөө · 🚿 угаалгын өрөө · 📐 м² · 🏢 давхар
-  ХАСАГДАВ** — хэрэглэгчийн хүсэлт «мэдээллийн хувьд, Өрөөний тоо, угаалгын
-  өрөөний тоо, талбайн хэмжээ, давхар гэх мэдээллийг хасна уу» ⇒ `getFloorLabel`
-  импорт ч хасагдав); бусад хэсэгт `attrsLine` (`formatAttrsLine` — 🚗 машин:
+- **📋 Мэдээллийн мөр** — 🆕 **(108) 2026-10-10: 🏠 үл хөдлөхөд МӨР БАЙХГҮЙ**
+  (⏳ (85)–(107) «📅 <он> он» + `title="Ашиглалтанд орсон он"` гардаг байв ⇒
+  БҮРЭН ХАСАГДАВ — хэрэглэгчийн хүсэлт: «remove Ашиглалтанд орсон он from on the
+  card … just delete from real estate card»; ⚠️ 🛏 өрөө · 🚿 угаалгын өрөө ·
+  📐 м² · 🏢 давхар нь (85)-д аль хэдийн хасагдсан ба `getFloorLabel` импорт ч
+  хасагдав); бусад хэсэгт `attrsLine` (`formatAttrsLine` — 🚗 машин:
   гүйлт · хурдны хайрцаг · хөдөлгүүр · түлш). 🆕 (107): `text-[15px]
   text-gray-500` (⏳ `text-[14px] text-gray-600` байв — жишиг зургийн карт дээр
   мэдээлэл ба 📍📅 мета НЭГ хэмжээ/өнгөтэй ✓; ⚠️ `formatAttrsLine`-ийн icon
